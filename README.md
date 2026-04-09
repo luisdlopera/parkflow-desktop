@@ -1,72 +1,32 @@
-# Parkflow Desktop
+# Parkflow Monorepo
 
-Sistema de gestion de parqueadero desktop-first para Windows, pensado para parqueaderos pequenos y medianos.
+Plataforma de parqueaderos desktop-first preparada para crecer a web y backend escalable.
 
-## Objetivo
-- Desktop con Tauri 2 y Next.js
-- Persistencia desde el inicio con PostgreSQL + Prisma
-- Preparado para crecer a multi-caja, red local y sincronizacion futura
+## Apps
+- apps/desktop: Tauri 2 (desktop, hardware, offline, sync agent)
+- apps/web: Next.js (panel admin, tarifas, usuarios, reportes)
+- apps/api: Spring Boot 3 (negocio central, auth, auditoria, sync)
 
-## Stack
-- Tauri 2
-- Next.js (App Router)
-- TypeScript strict
-- Prisma ORM
-- PostgreSQL
-- Tailwind CSS
-- React Hook Form + Zod
+## Packages
+- packages/ui: componentes UI compartidos (pendiente)
+- packages/types: contratos y tipos compartidos (pendiente)
+- packages/sdk: cliente HTTP (pendiente)
 
-## Estructura base
-- src/ app Next.js y UI
-- src-tauri/ contenedor desktop
-- prisma/ esquema y seed
-- src/modules/ dominio y reglas de negocio
+## Desarrollo rapido
 
-## Desarrollo local
-1) Configura variables
-
-```
-copy .env.example .env
+```bash
+pnpm dev:web
+pnpm dev:desktop
 ```
 
-2) Levanta PostgreSQL en Docker
+## Base de datos local (dev)
 
-```
+```bash
 pnpm db:up
-```
-
-3) Migraciones y seed
-
-```
 pnpm prisma:migrate
 pnpm prisma:seed
 ```
 
-4) Iniciar dev (Next + Tauri)
-
-```
-pnpm dev
-```
-
-## Produccion
-- Docker NO es requisito para el cliente final.
-- En produccion se usa PostgreSQL nativo instalado en el equipo.
-- La app desktop se empaca con Tauri y se conecta a la base local.
-
-## Scripts utiles
-- dev: Tauri + Next
-- dev:web: solo Next
-- db:up / db:down: Postgres en Docker (solo dev)
-- prisma:migrate: migraciones
-- prisma:seed: seed inicial
-- build:desktop: build Tauri
-
-## Riesgos tecnicos y mitigaciones
-1) Prisma requiere runtime Node.
-   - Mitigacion: ejecutar Next/Prisma como proceso local controlado por Tauri (sidecar Node).
-2) Next.js en desktop requiere build y arranque controlado.
-   - Mitigacion: usar build de Next y ejecutar server local controlado por Tauri.
-
-## Notas
-- No se usa backend separado ni microservicios.
-- Arquitectura monolitica local lista para evolucionar.
+## Notas de migracion
+- Prisma queda temporal en apps/web mientras se migra a Spring Boot + Flyway.
+- La UI web actual se mantiene sin cambios funcionales.
