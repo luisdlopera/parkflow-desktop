@@ -1,0 +1,24 @@
+meta {
+  name: 03_get_active_list
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{apiBaseUrl}}/sessions/active-list
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("listado contiene placa activa", function() {
+    const body = res.getBody();
+    const rows = typeof body === "string" ? JSON.parse(body) : body;
+    const hit = rows.find(r => r.plate === "{{plateMain}}");
+    expect(!!hit).to.equal(true);
+  });
+}

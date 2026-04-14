@@ -1,0 +1,50 @@
+meta {
+  name: 09_create_entry_lost_flow
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{apiBaseUrl}}/entries
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "plate": "{{plateLost}}",
+    "type": "CAR",
+    "rateId": "{{rateCarId}}",
+    "operatorUserId": "{{cashierOperatorId}}",
+    "entryAt": "2026-04-14T11:00:00-05:00",
+    "site": "Sede Norte",
+    "lane": "Carril 2",
+    "booth": "Caja 2",
+    "terminal": "TERM-02",
+    "observations": "Ingreso QA ticket perdido",
+    "vehicleCondition": "Sin novedades ingreso ticket perdido",
+    "conditionChecklist": [
+      "carroceria_ok"
+    ],
+    "conditionPhotoUrls": [
+      "https://example.test/photos/qa200b-entry-1.jpg"
+    ]
+  }
+}
+
+tests {
+  test("status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("captura ticketLost", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    bru.setEnvVar("ticketLost", data.receipt.ticketNumber);
+    expect(data.receipt.status).to.equal("ACTIVE");
+  });
+}

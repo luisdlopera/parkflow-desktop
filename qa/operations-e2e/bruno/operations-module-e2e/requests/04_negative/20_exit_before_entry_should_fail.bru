@@ -1,0 +1,35 @@
+meta {
+  name: 20_exit_before_entry_should_fail
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{apiBaseUrl}}/exits
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "ticketNumber": "{{ticketNegative}}",
+    "operatorUserId": "{{cashierOperatorId}}",
+    "paymentMethod": "CASH",
+    "exitAt": "2026-04-14T15:00:00-05:00",
+    "vehicleCondition": "Sin novedades",
+    "conditionChecklist": [
+      "carroceria_ok"
+    ],
+    "conditionPhotoUrls": []
+  }
+}
+
+tests {
+  test("status 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

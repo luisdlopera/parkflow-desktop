@@ -1,0 +1,49 @@
+meta {
+  name: 15_create_entry_for_negative_cases
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{apiBaseUrl}}/entries
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "plate": "{{plateNegative}}",
+    "type": "CAR",
+    "rateId": "{{rateCarId}}",
+    "operatorUserId": "{{cashierOperatorId}}",
+    "entryAt": "2026-04-14T16:00:00-05:00",
+    "site": "Sede Norte",
+    "lane": "Carril 9",
+    "booth": "Caja 9",
+    "terminal": "TERM-09",
+    "observations": "Base para negativos",
+    "vehicleCondition": "Sin novedades",
+    "conditionChecklist": [
+      "carroceria_ok"
+    ],
+    "conditionPhotoUrls": [
+      "https://example.test/photos/qa900n-entry-1.jpg"
+    ]
+  }
+}
+
+tests {
+  test("status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("guarda ticketNegative", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    bru.setEnvVar("ticketNegative", data.receipt.ticketNumber);
+  });
+}

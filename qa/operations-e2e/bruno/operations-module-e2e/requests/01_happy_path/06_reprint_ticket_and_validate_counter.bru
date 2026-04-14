@@ -1,0 +1,35 @@
+meta {
+  name: 06_reprint_ticket_and_validate_counter
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{apiBaseUrl}}/tickets/reprint
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "ticketNumber": "{{ticketMain}}",
+    "operatorUserId": "{{cashierOperatorId}}",
+    "reason": "Cliente solicita copia para soporte"
+  }
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("reprintCount incrementado", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    expect(data.receipt.reprintCount).to.equal(1);
+  });
+}

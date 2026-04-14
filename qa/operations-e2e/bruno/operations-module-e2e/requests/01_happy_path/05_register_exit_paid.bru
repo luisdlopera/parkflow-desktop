@@ -1,0 +1,47 @@
+meta {
+  name: 05_register_exit_paid
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{apiBaseUrl}}/exits
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "ticketNumber": "{{ticketMain}}",
+    "operatorUserId": "{{cashierOperatorId}}",
+    "paymentMethod": "CASH",
+    "exitAt": "2026-04-14T10:00:00-05:00",
+    "observations": "Salida QA happy path",
+    "vehicleCondition": "Sin novedades a la salida",
+    "conditionChecklist": [
+      "carroceria_ok",
+      "luces_ok",
+      "espejos_ok"
+    ],
+    "conditionPhotoUrls": [
+      "https://example.test/photos/qa100a-exit-1.jpg"
+    ]
+  }
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("sesion cerrada y valor total", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    expect(data.receipt.status).to.equal("CLOSED");
+    expect(data.total).to.not.equal(null);
+  });
+}
