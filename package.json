@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "dev:api": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\dev-api.ps1",
     "dev:web": "pnpm --filter @parkflow/web dev",
     "dev:desktop": "pnpm --filter @parkflow/desktop dev",
     "dev": "pnpm --filter @parkflow/desktop dev",

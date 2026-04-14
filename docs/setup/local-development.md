@@ -4,7 +4,6 @@
 - Node 20+
 - pnpm
 - Java 21
-- Maven
 - Docker (opcional para Postgres)
 
 ## Iniciar web
@@ -22,5 +21,13 @@ pnpm dev:desktop
 ## Iniciar API
 
 ```bash
-mvn -f apps/api/pom.xml spring-boot:run
+pnpm dev:api
+```
+
+Este comando configura `JAVA_HOME` automaticamente en Windows si detecta Java 21.
+
+Alternativa directa:
+
+```bash
+apps/api/gradlew.bat bootRun
 ```
