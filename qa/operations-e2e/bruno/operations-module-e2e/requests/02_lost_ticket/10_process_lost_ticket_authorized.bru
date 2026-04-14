@@ -1,0 +1,38 @@
+meta {
+  name: 10_process_lost_ticket_authorized
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{apiBaseUrl}}/tickets/lost
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "ticketNumber": "{{ticketLost}}",
+    "operatorUserId": "{{adminOperatorId}}",
+    "paymentMethod": "CASH",
+    "reason": "Ticket perdido validado por administrador"
+  }
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("marca lostTicket y cierra", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    expect(data.receipt.status).to.equal("CLOSED");
+    expect(data.receipt.lostTicket).to.equal(true);
+    expect(data.surcharge).to.not.equal(null);
+  });
+}

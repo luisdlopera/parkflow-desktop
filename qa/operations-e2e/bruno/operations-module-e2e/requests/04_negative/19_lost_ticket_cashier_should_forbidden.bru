@@ -1,0 +1,30 @@
+meta {
+  name: 19_lost_ticket_cashier_should_forbidden
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{apiBaseUrl}}/tickets/lost
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "ticketNumber": "{{ticketNegative}}",
+    "operatorUserId": "{{cashierOperatorId}}",
+    "paymentMethod": "CASH",
+    "reason": "Intento no autorizado"
+  }
+}
+
+tests {
+  test("status 403", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

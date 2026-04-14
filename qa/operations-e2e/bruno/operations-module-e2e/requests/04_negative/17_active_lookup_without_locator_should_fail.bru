@@ -1,0 +1,17 @@
+meta {
+  name: 17_active_lookup_without_locator_should_fail
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{apiBaseUrl}}/sessions/active
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

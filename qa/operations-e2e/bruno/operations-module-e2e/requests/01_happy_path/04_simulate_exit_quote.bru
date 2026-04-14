@@ -1,0 +1,24 @@
+meta {
+  name: 04_simulate_exit_quote
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{apiBaseUrl}}/sessions/active?plate={{plateMain}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("retorna duracion y total estimado", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    expect(data.receipt.duration).to.not.equal(null);
+    expect(data.total).to.not.equal(null);
+  });
+}
