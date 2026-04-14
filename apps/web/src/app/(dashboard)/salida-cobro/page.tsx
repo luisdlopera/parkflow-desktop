@@ -1,7 +1,187 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 
+type ActiveLookup = {
+  sessionId: string;
+  receipt: {
+    ticketNumber: string;
+    plate: string;
+    vehicleType: string;
+    duration: string;
+    totalAmount: number | null;
+    rateName: string | null;
+    status: string;
+    lostTicket: boolean;
+    reprintCount: number;
+  };
+  total: number | null;
+};
+
 export default function SalidaCobroPage() {
+  const [ticketNumber, setTicketNumber] = useState("");
+  const [plate, setPlate] = useState("");
+  const [operatorUserId, setOperatorUserId] = useState(
+    process.env.NEXT_PUBLIC_DEFAULT_OPERATOR_USER_ID ?? "00000000-0000-0000-0000-000000000002"
+  );
+  const [vehicleCondition, setVehicleCondition] = useState("Sin novedades a la salida");
+  const [conditionChecklist, setConditionChecklist] = useState("");
+  const [conditionPhotoUrls, setConditionPhotoUrls] = useState("");
+  const [lostReason, setLostReason] = useState("Ticket perdido");
+  const [reprintReason, setReprintReason] = useState("Reimpresion solicitada por cliente");
+  const [searching, setSearching] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [active, setActive] = useState<ActiveLookup | null>(null);
+
+  const apiBase = useMemo(
+    () => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1/operations",
+    []
+  );
+
+  const lookup = async () => {
+    setError("");
+    setMessage("");
+
+    const locator = ticketNumber.trim() || plate.trim();
+    if (!locator) {
+      setError("Ingresa ticket o placa");
+      return;
+    }
+
+    const params = new URLSearchParams();
+    if (ticketNumber.trim()) {
+      params.set("ticketNumber", ticketNumber.trim());
+    } else {
+      params.set("plate", plate.trim().toUpperCase());
+    }
+
+    setSearching(true);
+    try {
+      const response = await fetch(`${apiBase}/sessions/active?${params.toString()}`);
+      const payload = await response.json();
+      if (!response.ok) {
+        setActive(null);
+        setError(payload.error ?? "No se encontro sesion activa");
+        return;
+      }
+      setActive(payload);
+    } catch {
+      setError("Error de red buscando sesion");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const processExit = async (paymentMethod: "CASH" | "CARD") => {
+    if (!active) {
+      setError("Primero busca una sesion activa");
+      return;
+    }
+
+    setProcessing(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch(`${apiBase}/exits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ticketNumber: active.receipt.ticketNumber,
+          operatorUserId,
+          paymentMethod,
+          vehicleCondition,
+          conditionChecklist: conditionChecklist
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
+          conditionPhotoUrls: conditionPhotoUrls
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setError(payload.error ?? "No se pudo registrar la salida");
+        return;
+      }
+
+      setMessage(
+        `Salida registrada. Total: $ ${Number(payload.total ?? 0).toLocaleString("es-CO")}`
+      );
+      setActive(null);
+      setTicketNumber("");
+      setPlate("");
+    } catch {
+      setError("Error de red procesando salida");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const reprintTicket = async () => {
+    if (!active) return;
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch(`${apiBase}/tickets/reprint`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ticketNumber: active.receipt.ticketNumber,
+          operatorUserId,
+          reason: reprintReason
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setError(payload.error ?? "No se pudo reimprimir");
+        return;
+      }
+      setMessage(`Ticket reimpreso (${payload.receipt.ticketNumber})`);
+      setActive(payload);
+    } catch {
+      setError("Error de red en reimpresion");
+    }
+  };
+
+  const lostTicket = async () => {
+    if (!active) return;
+    setProcessing(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch(`${apiBase}/tickets/lost`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ticketNumber: active.receipt.ticketNumber,
+          operatorUserId,
+          reason: lostReason,
+          paymentMethod: "CASH"
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setError(payload.error ?? "No se pudo procesar ticket perdido");
+        return;
+      }
+      setMessage(
+        `Ticket perdido procesado. Total: $ ${Number(payload.total ?? 0).toLocaleString("es-CO")}`
+      );
+      setActive(null);
+    } catch {
+      setError("Error de red procesando ticket perdido");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -13,22 +193,124 @@ export default function SalidaCobroPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="surface rounded-2xl p-6 lg:col-span-2">
           <h2 className="text-lg font-semibold text-slate-900">Resumen rapido</h2>
-          <div className="mt-4 flex items-center gap-3">
-            <Badge label="Activo" tone="warning" />
-            <p className="text-sm text-slate-600">Sesion con placa ABC123</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <input
+              value={operatorUserId}
+              onChange={(event) => setOperatorUserId(event.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              placeholder="Operador UUID"
+            />
+            <input
+              value={ticketNumber}
+              onChange={(event) => setTicketNumber(event.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              placeholder="Ticket (ej: T-20260410-000001)"
+            />
+            <input
+              value={plate}
+              onChange={(event) => setPlate(event.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase"
+              placeholder="Placa (ej: ABC123)"
+            />
           </div>
-          <div className="mt-6 grid gap-3 text-sm text-slate-600">
-            <p>Tiempo total: 2h 05m</p>
-            <p>Tarifa aplicada: Hora carro</p>
-            <p>Subtotal: $ 8.000</p>
+          <div className="mt-3 grid gap-3">
+            <textarea
+              value={vehicleCondition}
+              onChange={(event) => setVehicleCondition(event.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              rows={2}
+              placeholder="Estado del vehiculo a la salida"
+            />
+            <input
+              value={conditionChecklist}
+              onChange={(event) => setConditionChecklist(event.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              placeholder="Checklist salida (coma separada)"
+            />
+            <input
+              value={conditionPhotoUrls}
+              onChange={(event) => setConditionPhotoUrls(event.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              placeholder="Fotos salida (URLs separadas por coma)"
+            />
           </div>
+          <div className="mt-3">
+            <Button
+              type="button"
+              onClick={lookup}
+              disabled={searching || processing}
+              label={searching ? "Buscando..." : "Buscar sesion"}
+              tone="ghost"
+            />
+          </div>
+
+          {active ? (
+            <>
+              <div className="mt-4 flex items-center gap-3">
+                <Badge label="Activo" tone="warning" />
+                <p className="text-sm text-slate-600">Sesion con placa {active.receipt.plate}</p>
+              </div>
+              <div className="mt-6 grid gap-3 text-sm text-slate-600">
+                <p>Ticket: {active.receipt.ticketNumber}</p>
+                <p>Tiempo total: {active.receipt.duration}</p>
+                <p>Tarifa aplicada: {active.receipt.rateName ?? "Sin tarifa"}</p>
+                <p>
+                  Total estimado: $ {Number(active.total ?? active.receipt.totalAmount ?? 0).toLocaleString("es-CO")}
+                </p>
+                <p>Reimpresiones: {active.receipt.reprintCount}</p>
+              </div>
+            </>
+          ) : null}
+
+          {message ? <p className="mt-4 text-sm text-emerald-700">{message}</p> : null}
+          {error ? <p className="mt-4 text-sm text-rose-700">{error}</p> : null}
         </div>
         <div className="surface rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-slate-900">Cobro</h2>
           <p className="mt-2 text-sm text-slate-600">Selecciona metodo y confirma.</p>
+          <div className="mt-4 space-y-3">
+            <input
+              value={reprintReason}
+              onChange={(event) => setReprintReason(event.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              placeholder="Motivo reimpresion"
+            />
+            <input
+              value={lostReason}
+              onChange={(event) => setLostReason(event.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              placeholder="Motivo ticket perdido"
+            />
+          </div>
           <div className="mt-6 space-y-3">
-            <Button label="Cobrar en efectivo" tone="primary" />
-            <Button label="Cobrar con tarjeta" tone="ghost" />
+            <Button
+              type="button"
+              disabled={!active || searching || processing}
+              onClick={() => processExit("CASH")}
+              label={processing ? "Procesando..." : "Cobrar en efectivo"}
+              tone="primary"
+            />
+            <Button
+              type="button"
+              disabled={!active || searching || processing}
+              onClick={() => processExit("CARD")}
+              label="Cobrar con tarjeta"
+              tone="ghost"
+            />
+            <Button
+              type="button"
+              disabled={!active || searching || processing}
+              onClick={reprintTicket}
+              label="Reimprimir ticket"
+              tone="ghost"
+            />
+            <Button
+              type="button"
+              disabled={!active || searching || processing}
+              onClick={lostTicket}
+              label="Procesar ticket perdido"
+              tone="ghost"
+            />
           </div>
         </div>
       </div>
