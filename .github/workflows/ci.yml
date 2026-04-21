@@ -36,3 +36,12 @@ jobs:
         with:
           gradle-version: 8.8
       - run: gradle -p apps/api build
+
+  desktop:
+    name: Desktop (cargo test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test
+        working-directory: apps/desktop/src-tauri
