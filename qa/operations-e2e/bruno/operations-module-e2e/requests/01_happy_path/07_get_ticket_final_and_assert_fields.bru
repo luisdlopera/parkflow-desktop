@@ -1,0 +1,30 @@
+meta {
+  name: 07_get_ticket_final_and_assert_fields
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{apiBaseUrl}}/tickets/{{ticketMain}}
+  body: none
+  auth: none
+}
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("ticket final consistente", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    expect(data.receipt.ticketNumber).to.equal("{{ticketMain}}");
+    expect(data.receipt.status).to.equal("CLOSED");
+    expect(data.receipt.entryOperatorName).to.not.equal(null);
+    expect(data.receipt.exitOperatorName).to.not.equal(null);
+    expect(data.receipt.totalAmount).to.not.equal(null);
+  });
+}

@@ -1,0 +1,32 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: parkflow-api
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/parkflow_dev}
+    username: ${POSTGRES_USER:parkflow}
+    password: ${POSTGRES_PASSWORD:parkflow}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
+  security:
+    api-key: ${PARKFLOW_API_KEY:parkflow-dev-key}

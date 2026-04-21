@@ -1,0 +1,54 @@
+meta {
+  name: 01_create_entry_main
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{apiBaseUrl}}/entries
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "plate": "{{plateMain}}",
+    "type": "CAR",
+    "rateId": "{{rateCarId}}",
+    "operatorUserId": "{{cashierOperatorId}}",
+    "entryAt": "2026-04-14T08:00:00-05:00",
+    "site": "Sede Norte",
+    "lane": "Carril 1",
+    "booth": "Caja 1",
+    "terminal": "TERM-01",
+    "observations": "Ingreso QA happy path",
+    "vehicleCondition": "Sin novedades al ingreso",
+    "conditionChecklist": [
+      "carroceria_ok",
+      "luces_ok",
+      "espejos_ok"
+    ],
+    "conditionPhotoUrls": [
+      "https://example.test/photos/qa100a-entry-1.jpg"
+    ]
+  }
+}
+
+tests {
+  test("status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("retorna ticket y estado ACTIVE", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    expect(data.receipt.ticketNumber).to.not.equal(null);
+    expect(data.receipt.status).to.equal("ACTIVE");
+    bru.setEnvVar("ticketMain", data.receipt.ticketNumber);
+  });
+}

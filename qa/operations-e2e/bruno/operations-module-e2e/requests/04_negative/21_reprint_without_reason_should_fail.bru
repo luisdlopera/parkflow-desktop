@@ -1,0 +1,30 @@
+meta {
+  name: 21_reprint_without_reason_should_fail
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{apiBaseUrl}}/tickets/reprint
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "ticketNumber": "{{ticketMain}}",
+    "operatorUserId": "{{cashierOperatorId}}",
+    "reason": ""
+  }
+}
+
+tests {
+  test("status 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
