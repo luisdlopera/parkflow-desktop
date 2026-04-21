@@ -8,6 +8,7 @@ Para bash:
 
 ~~~sh
 export API_BASE_URL="http://localhost:8080/api/v1/operations"
+export API_KEY="${API_KEY:-parkflow-dev-key}"
 export ADMIN_OPERATOR_ID="00000000-0000-0000-0000-000000000001"
 export CASHIER_OPERATOR_ID="00000000-0000-0000-0000-000000000002"
 export RATE_CAR_ID="10000000-0000-0000-0000-000000000001"
@@ -17,6 +18,12 @@ export PLATE_LOST="QA200B"
 export PLATE_MISMATCH="QA300C"
 export PLATE_NEGATIVE="QA900N"
 ~~~
+
+Todas las peticiones al API deben incluir la cabecera de autenticacion:
+
+`-H "X-API-Key: $API_KEY"`
+
+(En los fragmentos siguientes se omite por brevedad; anexela a cada `curl`.)
 
 ## 2) Happy path
 

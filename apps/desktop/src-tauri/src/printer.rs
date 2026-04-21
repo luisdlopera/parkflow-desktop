@@ -1,4 +1,5 @@
 use crate::escpos::{self, TicketDoc};
+use crate::printer_profile::{self, EscPosProfile};
 use crate::PrintDocumentType;
 use serde::{Deserialize, Serialize};
 use serialport::SerialPort;
@@ -42,8 +43,8 @@ fn document_type_label(t: &PrintDocumentType) -> &'static str {
   }
 }
 
-fn query_status_tcp(stream: &mut TcpStream) -> Result<Option<u8>, std::io::Error> {
-  stream.write_all(&escpos::paper_status_query_bytes())?;
+fn query_status_tcp(stream: &mut TcpStream, query: &[u8]) -> Result<Option<u8>, std::io::Error> {
+  stream.write_all(query)?;
   stream.flush()?;
   let mut b = [0u8; 1];
   match stream.read(&mut b) {
@@ -59,8 +60,8 @@ fn query_status_tcp(stream: &mut TcpStream) -> Result<Option<u8>, std::io::Error
   }
 }
 
-fn query_status_serial(port: &mut dyn SerialPort) -> Result<Option<u8>, std::io::Error> {
-  port.write_all(&escpos::paper_status_query_bytes())?;
+fn query_status_serial(port: &mut dyn SerialPort, query: &[u8]) -> Result<Option<u8>, std::io::Error> {
+  port.write_all(query)?;
   port.flush()?;
   let mut b = [0u8; 1];
   match port.read(&mut b) {
@@ -76,37 +77,16 @@ fn query_status_serial(port: &mut dyn SerialPort) -> Result<Option<u8>, std::io:
   }
 }
 
-/// Paper end detection is model-specific; expose raw `status_byte` in ops tooling instead of guessing.
-fn paper_from_status(b: u8) -> Option<bool> {
-  // GS r 1 is not fully standardized across all vendors. These bits are common on Epson-compatible
-  // devices: if paper-end or paper-near-end is raised, report no paper.
-  let paper_end = (b & 0b0010_0000) != 0;
-  let paper_near_end = (b & 0b0000_1100) != 0;
-  if paper_end || paper_near_end {
-    Some(false)
-  } else {
-    Some(true)
-  }
-}
-
-fn status_hint(b: u8) -> Option<String> {
-  if (b & 0b0010_0000) != 0 {
-    return Some("paper_end_detected".to_string());
-  }
-  if (b & 0b0000_1100) != 0 {
-    return Some("paper_near_end_detected".to_string());
-  }
-  None
-}
-
 pub fn print_ticket_esc_pos(
   conn: &PrinterConnection,
   document_type: &PrintDocumentType,
   ticket_json: &str,
 ) -> Result<EscPosPrintOutcome, String> {
   let ticket: TicketDoc = serde_json::from_str(ticket_json).map_err(|e| e.to_string())?;
+  let profile = printer_profile::resolve_profile(ticket.printer_profile.as_deref());
   let label = document_type_label(document_type);
-  let bytes = escpos::build_receipt(label, &ticket)?;
+  let bytes = escpos::build_receipt(label, &ticket, &profile)?;
+  let query = profile.status_query_bytes();
 
   match conn {
     PrinterConnection::Tcp { host, port } => {
@@ -125,13 +105,13 @@ pub fn print_ticket_esc_pos(
         .write_all(&bytes)
         .map_err(|e| format!("tcp write: {}", e))?;
       stream.flush().map_err(|e| format!("tcp flush: {}", e))?;
-      let status = query_status_tcp(&mut stream).map_err(|e| format!("tcp status: {}", e))?;
-      let confirmed = status.is_some();
+      let status = query_status_tcp(&mut stream, query).map_err(|e| format!("tcp status: {}", e))?;
+      let confirmed = profile.hardware_ready_after_print(status);
       Ok(EscPosPrintOutcome {
         bytes_sent: bytes.len(),
         hardware_confirmed: confirmed,
         status_byte: status,
-        status_hint: status.and_then(status_hint),
+        status_hint: status.and_then(|b| profile.status_hint_gs_r1(b)),
         error: None,
       })
     }
@@ -144,20 +124,21 @@ pub fn print_ticket_esc_pos(
         .write_all(&bytes)
         .map_err(|e| format!("serial write: {}", e))?;
       port.flush().map_err(|e| format!("serial flush: {}", e))?;
-      let status = query_status_serial(port.as_mut()).map_err(|e| format!("serial status: {}", e))?;
-      let confirmed = status.is_some();
+      let status = query_status_serial(port.as_mut(), query).map_err(|e| format!("serial status: {}", e))?;
+      let confirmed = profile.hardware_ready_after_print(status);
       Ok(EscPosPrintOutcome {
         bytes_sent: bytes.len(),
         hardware_confirmed: confirmed,
         status_byte: status,
-        status_hint: status.and_then(status_hint),
+        status_hint: status.and_then(|b| profile.status_hint_gs_r1(b)),
         error: None,
       })
     }
   }
 }
 
-pub fn printer_health_esc_pos(conn: &PrinterConnection) -> PrinterHealthOutcome {
+pub fn printer_health_esc_pos(conn: &PrinterConnection, profile: &EscPosProfile) -> PrinterHealthOutcome {
+  let query = profile.status_query_bytes();
   match conn {
     PrinterConnection::Tcp { host, port } => {
       let addr: SocketAddr = match format!("{}:{}", host, port).parse() {
@@ -185,12 +166,12 @@ pub fn printer_health_esc_pos(conn: &PrinterConnection) -> PrinterHealthOutcome 
         }
       };
       stream.set_read_timeout(Some(Duration::from_millis(900))).ok();
-      match query_status_tcp(&mut stream) {
+      match query_status_tcp(&mut stream, query) {
         Ok(Some(b)) => PrinterHealthOutcome {
           online: true,
           status_byte: Some(b),
-          has_paper: paper_from_status(b),
-          status_hint: status_hint(b),
+          has_paper: profile.has_paper_hint_gs_r1(b),
+          status_hint: profile.status_hint_gs_r1(b),
           error: None,
         },
         Ok(None) => PrinterHealthOutcome {
@@ -225,12 +206,12 @@ pub fn printer_health_esc_pos(conn: &PrinterConnection) -> PrinterHealthOutcome 
           };
         }
       };
-      match query_status_serial(port.as_mut()) {
+      match query_status_serial(port.as_mut(), query) {
         Ok(Some(b)) => PrinterHealthOutcome {
           online: true,
           status_byte: Some(b),
-          has_paper: paper_from_status(b),
-          status_hint: status_hint(b),
+          has_paper: profile.has_paper_hint_gs_r1(b),
+          status_hint: profile.status_hint_gs_r1(b),
           error: None,
         },
         Ok(None) => PrinterHealthOutcome {

@@ -1,6 +1,6 @@
 # Contratos de dominio v1 (congelados)
 
-Fuente de verdad TypeScript: `packages/types/src/index.ts`.
+Fuente de verdad TypeScript: `packages/types/src/contracts.ts` (reexportado por `packages/types/src/index.ts`). Layout de preview alineado al ticket: `packages/types/src/ticket-layout.ts`.
 
 ## Entidades
 

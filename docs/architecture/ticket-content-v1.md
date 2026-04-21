@@ -12,6 +12,7 @@ Plantilla lógica versionada en `TicketDocument.templateVersion` (valor actual: 
 | Consecutivo | `ticketNumber` + `ticketId` |
 | Operador | `operatorName` |
 | QR / código | `qrPayload` (modelo 2 ESC/POS) o `barcodePayload` (texto) |
+| Perfil térmica | `printerProfile` (slug v1, p. ej. `epson_tm_t20iii`, `generic_58mm_esc_pos`) — usado por la capa desktop para cortes/consultas de estado en certificación |
 
 ## Anchos 58 mm y 80 mm
 

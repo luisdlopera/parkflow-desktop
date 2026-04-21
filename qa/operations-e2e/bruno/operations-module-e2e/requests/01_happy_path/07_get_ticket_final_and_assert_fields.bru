@@ -9,6 +9,9 @@ get {
   body: none
   auth: none
 }
+headers {
+  X-API-Key: {{apiKey}}
+}
 
 tests {
   test("status 200", function() {

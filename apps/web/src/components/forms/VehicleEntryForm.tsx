@@ -1,16 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "@/components/ui/Button";
+import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { vehicleEntrySchema, VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { buildApiHeaders } from "@/lib/api";
-import { printReceiptIfTauri } from "@/lib/tauri-print";
+import {
+  buildTicketPreviewForOperation,
+  printReceiptIfTauri,
+  resolvePaperWidthMm
+} from "@/lib/tauri-print";
+import type { VehicleType } from "@parkflow/types";
 
 export default function VehicleEntryForm() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [previewLines, setPreviewLines] = useState<string[] | null>(null);
+  const submitLock = useRef(false);
   const defaultOperatorUserId =
     process.env.NEXT_PUBLIC_DEFAULT_OPERATOR_USER_ID ?? "00000000-0000-0000-0000-000000000002";
 
@@ -33,8 +41,13 @@ export default function VehicleEntryForm() {
   });
 
   const onSubmit = async (values: VehicleEntryFormValues) => {
+    if (submitLock.current) {
+      return;
+    }
+    submitLock.current = true;
     setMessage("");
     setError("");
+    setPreviewLines(null);
 
     try {
       const apiBase =
@@ -70,9 +83,24 @@ export default function VehicleEntryForm() {
         return;
       }
 
+      const printPayload = {
+        sessionId: payload.sessionId,
+        receipt: {
+          ticketNumber: payload.receipt.ticketNumber,
+          plate: payload.receipt.plate,
+          vehicleType: payload.receipt.vehicleType as VehicleType,
+          site: payload.receipt.site ?? values.site?.trim() ?? null,
+          lane: payload.receipt.lane ?? values.lane?.trim() ?? null,
+          booth: payload.receipt.booth ?? values.booth?.trim() ?? null,
+          terminal: payload.receipt.terminal ?? values.terminal?.trim() ?? null,
+          entryAt: payload.receipt.entryAt ?? null
+        }
+      };
+      setPreviewLines(buildTicketPreviewForOperation(printPayload, "ENTRY"));
+
       let printWarning: string | null = null;
       try {
-        printWarning = await printReceiptIfTauri(payload, "ENTRY");
+        printWarning = await printReceiptIfTauri(printPayload, "ENTRY");
       } catch (printError) {
         printWarning =
           printError instanceof Error
@@ -100,6 +128,8 @@ export default function VehicleEntryForm() {
       });
     } catch {
       setError("Error de red registrando ingreso");
+    } finally {
+      submitLock.current = false;
     }
   };
 
@@ -239,6 +269,9 @@ export default function VehicleEntryForm() {
 
       {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+      {previewLines ? (
+        <TicketReceiptPreview lines={previewLines} paperWidthMm={resolvePaperWidthMm()} />
+      ) : null}
     </form>
   );
 }

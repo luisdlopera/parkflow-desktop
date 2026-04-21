@@ -8,9 +8,8 @@ Plataforma de parqueaderos desktop-first preparada para crecer a web y backend e
 - apps/api: Spring Boot 3 (negocio central, auth, auditoria, sync)
 
 ## Packages
-- packages/ui: componentes UI compartidos (pendiente)
-- packages/types: contratos y tipos compartidos (pendiente)
-- packages/sdk: cliente HTTP (pendiente)
+- `packages/types`: contratos v1 (`TicketDocument`, print jobs, sync) y layout de preview de tiquete (`ticket-layout.ts`).
+- `packages/ui` / `packages/sdk`: no definidos aun en el monorepo.
 
 ## Desarrollo rapido
 
@@ -29,4 +28,5 @@ pnpm prisma:seed
 
 ## Notas de migracion
 - Prisma queda temporal en apps/web mientras se migra a Spring Boot + Flyway.
-- La UI web actual se mantiene sin cambios funcionales.
+- El API Spring (`apps/api`) requiere cabecera `X-API-Key` (ver `PARKFLOW_API_KEY` / `app.security.api-key`); alinear `NEXT_PUBLIC_API_KEY` en el build web.
+- Documentacion de auditoria produccion: `docs/architecture/production-readiness-audit.md` y checklist `docs/runbooks/production-validation-checklist.md`.
