@@ -5,6 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "@/components/ui/Button";
 import { vehicleEntrySchema, VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
+import { buildApiHeaders } from "@/lib/api";
+import { printReceiptIfTauri } from "@/lib/tauri-print";
 
 export default function VehicleEntryForm() {
   const [message, setMessage] = useState("");
@@ -40,9 +42,7 @@ export default function VehicleEntryForm() {
 
       const response = await fetch(`${apiBase}/entries`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: buildApiHeaders(),
         body: JSON.stringify({
           ...values,
           rateId: values.rateId?.trim() ? values.rateId.trim() : null,
@@ -70,7 +70,20 @@ export default function VehicleEntryForm() {
         return;
       }
 
-      setMessage(`Ingreso registrado. Ticket: ${payload.receipt.ticketNumber}`);
+      let printWarning: string | null = null;
+      try {
+        printWarning = await printReceiptIfTauri(payload, "ENTRY");
+      } catch (printError) {
+        printWarning =
+          printError instanceof Error
+            ? `No se pudo imprimir en desktop: ${printError.message}`
+            : "No se pudo imprimir en desktop.";
+      }
+      setMessage(
+        printWarning
+          ? `Ingreso registrado. Ticket: ${payload.receipt.ticketNumber}. ${printWarning}`
+          : `Ingreso registrado. Ticket: ${payload.receipt.ticketNumber}`
+      );
       form.reset({
         plate: "",
         type: "CAR",

@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import { buildApiHeaders } from "@/lib/api";
+import { printReceiptIfTauri } from "@/lib/tauri-print";
 
 type ActiveLookup = {
   sessionId: string;
@@ -89,7 +91,7 @@ export default function SalidaCobroPage() {
     try {
       const response = await fetch(`${apiBase}/exits`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildApiHeaders(),
         body: JSON.stringify({
           ticketNumber: active.receipt.ticketNumber,
           operatorUserId,
@@ -111,8 +113,19 @@ export default function SalidaCobroPage() {
         return;
       }
 
+      let printWarning: string | null = null;
+      try {
+        printWarning = await printReceiptIfTauri(payload, "EXIT");
+      } catch (printError) {
+        printWarning =
+          printError instanceof Error
+            ? `No se pudo imprimir en desktop: ${printError.message}`
+            : "No se pudo imprimir en desktop.";
+      }
       setMessage(
-        `Salida registrada. Total: $ ${Number(payload.total ?? 0).toLocaleString("es-CO")}`
+        `Salida registrada. Total: $ ${Number(payload.total ?? 0).toLocaleString("es-CO")}${
+          printWarning ? `. ${printWarning}` : ""
+        }`
       );
       setActive(null);
       setTicketNumber("");
@@ -131,7 +144,7 @@ export default function SalidaCobroPage() {
     try {
       const response = await fetch(`${apiBase}/tickets/reprint`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildApiHeaders(),
         body: JSON.stringify({
           ticketNumber: active.receipt.ticketNumber,
           operatorUserId,
@@ -143,7 +156,18 @@ export default function SalidaCobroPage() {
         setError(payload.error ?? "No se pudo reimprimir");
         return;
       }
-      setMessage(`Ticket reimpreso (${payload.receipt.ticketNumber})`);
+      let printWarning: string | null = null;
+      try {
+        printWarning = await printReceiptIfTauri(payload, "REPRINT");
+      } catch (printError) {
+        printWarning =
+          printError instanceof Error
+            ? `No se pudo imprimir en desktop: ${printError.message}`
+            : "No se pudo imprimir en desktop.";
+      }
+      setMessage(
+        `Ticket reimpreso (${payload.receipt.ticketNumber})${printWarning ? `. ${printWarning}` : ""}`
+      );
       setActive(payload);
     } catch {
       setError("Error de red en reimpresion");
@@ -158,7 +182,7 @@ export default function SalidaCobroPage() {
     try {
       const response = await fetch(`${apiBase}/tickets/lost`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildApiHeaders(),
         body: JSON.stringify({
           ticketNumber: active.receipt.ticketNumber,
           operatorUserId,
@@ -171,8 +195,19 @@ export default function SalidaCobroPage() {
         setError(payload.error ?? "No se pudo procesar ticket perdido");
         return;
       }
+      let printWarning: string | null = null;
+      try {
+        printWarning = await printReceiptIfTauri(payload, "LOST_TICKET");
+      } catch (printError) {
+        printWarning =
+          printError instanceof Error
+            ? `No se pudo imprimir en desktop: ${printError.message}`
+            : "No se pudo imprimir en desktop.";
+      }
       setMessage(
-        `Ticket perdido procesado. Total: $ ${Number(payload.total ?? 0).toLocaleString("es-CO")}`
+        `Ticket perdido procesado. Total: $ ${Number(payload.total ?? 0).toLocaleString("es-CO")}${
+          printWarning ? `. ${printWarning}` : ""
+        }`
       );
       setActive(null);
     } catch {

@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 :root {
-  --color-ash: #f6f3ee;
+  --color-ash: #fff8f1;
   --color-ink: #161717;
-  --color-sand: #efe7dd;
-  --color-ember: #d36b3f;
-  --color-moss: #2e6a5f;
+  --color-sand: #ffedd5;
+  --color-ember: #ea580c;
+  --color-moss: #c2410c;
 }
 
 * {
@@ -15,8 +15,8 @@
 }
 
 body {
-  background: radial-gradient(1200px 600px at 10% 5%, #fff4e7 0%, transparent 60%),
-    radial-gradient(900px 500px at 90% 10%, #e7f4f1 0%, transparent 55%),
+  background: radial-gradient(1200px 600px at 10% 5%, #fff1e3 0%, transparent 60%),
+    radial-gradient(900px 500px at 90% 10%, #ffe0c2 0%, transparent 55%),
     var(--color-ash);
   color: var(--color-ink);
   font-family: var(--font-body);
@@ -34,6 +34,6 @@ body {
 }
 
 .grid-dots {
-  background-image: radial-gradient(rgba(15, 71, 64, 0.2) 1px, transparent 0);
+  background-image: radial-gradient(rgba(194, 65, 12, 0.22) 1px, transparent 0);
   background-size: 18px 18px;
 }
