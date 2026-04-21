@@ -46,5 +46,24 @@ Base path: `/api/v1/operations`
 - `POST /tickets/reprint`: reimprimir ticket (con control de limite por rol)
 - `POST /tickets/lost`: procesar ticket perdido (solo manager/admin)
 
+## Modulo Print Jobs (fase inicial)
+
+Base path: `/api/v1/tickets/print-jobs`
+
+- `POST /`: crear trabajo de impresion (idempotente por `idempotencyKey`)
+- `PATCH /{id}/status`: actualizar estado de trabajo (`queued`, `processing`, `acked`, `failed`, etc.)
+- `POST /{id}/retry`: reencolar trabajo fallido (idempotente por `idempotencyKey`)
+- `GET /{id}`: consultar trabajo de impresion
+- `GET /?sessionId=...|ticketNumber=...`: listar trabajos por sesion o ticket
+
+## Modulo Sync (fase inicial)
+
+Base path: `/api/v1/sync`
+
+- `POST /push`: recibir eventos desde desktop (idempotente por `idempotencyKey`)
+- `GET /pull`: entregar eventos por cursor temporal (`after`, `limit`)
+
 Migraciones Flyway:
 - `src/main/resources/db/migration/V1__operations_module.sql`
+- `src/main/resources/db/migration/V3__print_jobs.sql`
+- `src/main/resources/db/migration/V4__print_attempts_devices_sync_events.sql`
