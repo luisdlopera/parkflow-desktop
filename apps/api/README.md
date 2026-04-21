@@ -28,9 +28,11 @@ Variables por defecto:
 - `POSTGRES_DB=parkflow_dev`
 - `DATABASE_URL=jdbc:postgresql://localhost:5432/parkflow_dev`
 - `CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000`
+- `PARKFLOW_API_KEY` (o `app.security.api-key`): clave para cabecera `X-API-Key` en todos los endpoints salvo health/swagger/docs publicos.
 
 En `apps/web`, define:
 - `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1/operations`
+- `NEXT_PUBLIC_API_KEY` igual a la clave del API (el panel envia `X-API-Key` en cada fetch).
 
 ## Swagger
 - http://localhost:8080/swagger-ui/index.html

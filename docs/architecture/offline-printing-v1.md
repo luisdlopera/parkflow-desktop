@@ -13,7 +13,7 @@
 - DeviceConfig
 
 Source of truth for TypeScript contracts:
-- packages/types/src/index.ts
+- packages/types/src/contracts.ts (barrel `packages/types/src/index.ts`)
 
 ## Idempotency Rules
 1. ticketId is unique per parking operation (entry session/ticket number).

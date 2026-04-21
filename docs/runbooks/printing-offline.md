@@ -12,7 +12,7 @@
 
 1. Ver último `print_attempts` del tiquete (`GET .../print-jobs?ticketNumber=`).
 2. Corregir hardware; usar `POST .../print-jobs/{id}/retry` con nueva `idempotencyKey` de intento.
-3. No marcar `ACKED` sin confirmación técnica (desktop: `hardware_confirmed` en resultado ESC/POS).
+3. No marcar `ACKED` sin confirmación técnica (desktop: `hardware_confirmed` en resultado ESC/POS). Tras el trabajo, el desktop exige **byte de estado** y que **no** se reporte fin de papel duro (bit habitual en respuestas tipo `GS r` Epson-compatible). Si no hay byte o el papel está en fin, el resultado se considera **no confirmado** aunque los bytes se hayan enviado al socket/COM.
 
 ### Impresora caída / timeout TCP
 

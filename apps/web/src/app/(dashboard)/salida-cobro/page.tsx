@@ -1,10 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { buildApiHeaders } from "@/lib/api";
-import { printReceiptIfTauri } from "@/lib/tauri-print";
+import {
+  buildTicketPreviewForOperation,
+  printReceiptIfTauri,
+  resolvePaperWidthMm,
+  type OperationPayload
+} from "@/lib/tauri-print";
+import type { VehicleType } from "@parkflow/types";
 
 type ActiveLookup = {
   sessionId: string;
@@ -12,6 +19,11 @@ type ActiveLookup = {
     ticketNumber: string;
     plate: string;
     vehicleType: string;
+    site?: string | null;
+    lane?: string | null;
+    booth?: string | null;
+    terminal?: string | null;
+    entryAt?: string | null;
     duration: string;
     totalAmount: number | null;
     rateName: string | null;
@@ -21,6 +33,24 @@ type ActiveLookup = {
   };
   total: number | null;
 };
+
+function operationPrintPayload(
+  payload: { sessionId: string; receipt: ActiveLookup["receipt"] }
+): OperationPayload {
+  return {
+    sessionId: payload.sessionId,
+    receipt: {
+      ticketNumber: payload.receipt.ticketNumber,
+      plate: payload.receipt.plate,
+      vehicleType: payload.receipt.vehicleType as VehicleType,
+      site: payload.receipt.site ?? null,
+      lane: payload.receipt.lane ?? null,
+      booth: payload.receipt.booth ?? null,
+      terminal: payload.receipt.terminal ?? null,
+      entryAt: payload.receipt.entryAt ?? null
+    }
+  };
+}
 
 export default function SalidaCobroPage() {
   const [ticketNumber, setTicketNumber] = useState("");
@@ -38,6 +68,8 @@ export default function SalidaCobroPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [active, setActive] = useState<ActiveLookup | null>(null);
+  const [previewLines, setPreviewLines] = useState<string[] | null>(null);
+  const operationLock = useRef(false);
 
   const apiBase = useMemo(
     () => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1/operations",
@@ -62,8 +94,11 @@ export default function SalidaCobroPage() {
     }
 
     setSearching(true);
+    setPreviewLines(null);
     try {
-      const response = await fetch(`${apiBase}/sessions/active?${params.toString()}`);
+      const response = await fetch(`${apiBase}/sessions/active?${params.toString()}`, {
+        headers: buildApiHeaders()
+      });
       const payload = await response.json();
       if (!response.ok) {
         setActive(null);
@@ -83,6 +118,10 @@ export default function SalidaCobroPage() {
       setError("Primero busca una sesion activa");
       return;
     }
+    if (operationLock.current) {
+      return;
+    }
+    operationLock.current = true;
 
     setProcessing(true);
     setError("");
@@ -113,9 +152,12 @@ export default function SalidaCobroPage() {
         return;
       }
 
+      const printPayload = operationPrintPayload(payload);
+      setPreviewLines(buildTicketPreviewForOperation(printPayload, "EXIT"));
+
       let printWarning: string | null = null;
       try {
-        printWarning = await printReceiptIfTauri(payload, "EXIT");
+        printWarning = await printReceiptIfTauri(printPayload, "EXIT");
       } catch (printError) {
         printWarning =
           printError instanceof Error
@@ -134,11 +176,13 @@ export default function SalidaCobroPage() {
       setError("Error de red procesando salida");
     } finally {
       setProcessing(false);
+      operationLock.current = false;
     }
   };
 
   const reprintTicket = async () => {
     if (!active) return;
+    setPreviewLines(null);
     setError("");
     setMessage("");
     try {
@@ -156,9 +200,11 @@ export default function SalidaCobroPage() {
         setError(payload.error ?? "No se pudo reimprimir");
         return;
       }
+      const printPayload = operationPrintPayload(payload);
+      setPreviewLines(buildTicketPreviewForOperation(printPayload, "REPRINT"));
       let printWarning: string | null = null;
       try {
-        printWarning = await printReceiptIfTauri(payload, "REPRINT");
+        printWarning = await printReceiptIfTauri(printPayload, "REPRINT");
       } catch (printError) {
         printWarning =
           printError instanceof Error
@@ -176,6 +222,10 @@ export default function SalidaCobroPage() {
 
   const lostTicket = async () => {
     if (!active) return;
+    if (operationLock.current) {
+      return;
+    }
+    operationLock.current = true;
     setProcessing(true);
     setError("");
     setMessage("");
@@ -195,9 +245,11 @@ export default function SalidaCobroPage() {
         setError(payload.error ?? "No se pudo procesar ticket perdido");
         return;
       }
+      const printPayload = operationPrintPayload(payload);
+      setPreviewLines(buildTicketPreviewForOperation(printPayload, "LOST_TICKET"));
       let printWarning: string | null = null;
       try {
-        printWarning = await printReceiptIfTauri(payload, "LOST_TICKET");
+        printWarning = await printReceiptIfTauri(printPayload, "LOST_TICKET");
       } catch (printError) {
         printWarning =
           printError instanceof Error
@@ -214,6 +266,7 @@ export default function SalidaCobroPage() {
       setError("Error de red procesando ticket perdido");
     } finally {
       setProcessing(false);
+      operationLock.current = false;
     }
   };
 
@@ -299,6 +352,9 @@ export default function SalidaCobroPage() {
 
           {message ? <p className="mt-4 text-sm text-emerald-700">{message}</p> : null}
           {error ? <p className="mt-4 text-sm text-rose-700">{error}</p> : null}
+          {previewLines ? (
+            <TicketReceiptPreview lines={previewLines} paperWidthMm={resolvePaperWidthMm()} />
+          ) : null}
         </div>
         <div className="surface rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-slate-900">Cobro</h2>

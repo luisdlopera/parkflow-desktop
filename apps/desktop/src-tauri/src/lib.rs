@@ -1,5 +1,6 @@
 mod escpos;
 mod printer;
+mod printer_profile;
 
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -654,8 +655,10 @@ fn print_escpos_ticket(
 #[tauri::command]
 fn printer_health_esc_pos(
   connection: printer::PrinterConnection,
+  printer_profile: Option<String>,
 ) -> Result<printer::PrinterHealthOutcome, String> {
-  Ok(printer::printer_health_esc_pos(&connection))
+  let profile = printer_profile::resolve_profile(printer_profile.as_deref());
+  Ok(printer::printer_health_esc_pos(&connection, &profile))
 }
 
 #[tauri::command]

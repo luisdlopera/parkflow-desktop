@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DataTable from "@/components/ui/DataTable";
+import { buildApiHeaders } from "@/lib/api";
 
 type ActiveSessionRow = {
   ticketNumber: string;
@@ -25,7 +26,10 @@ export default function VehiculosActivosPage() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`${apiBase}/sessions/active-list`, { cache: "no-store" });
+      const response = await fetch(`${apiBase}/sessions/active-list`, {
+        cache: "no-store",
+        headers: buildApiHeaders()
+      });
       const payload = await response.json();
       if (!response.ok) {
         setError(payload.error ?? "No se pudo cargar el listado");

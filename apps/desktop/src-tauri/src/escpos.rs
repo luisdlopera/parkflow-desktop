@@ -1,5 +1,6 @@
 //! ESC/POS bytes for 58mm / 80mm thermal printers (subset; vendor-specific status parsing stays conservative).
 
+use crate::printer_profile::EscPosProfile;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -30,6 +31,9 @@ pub struct TicketDoc {
   pub barcode_payload: Option<String>,
   #[serde(rename = "copyNumber")]
   pub copy_number: Option<i32>,
+  /// Matches shared contract `TicketDocument.printerProfile` (slug).
+  #[serde(rename = "printerProfile")]
+  pub printer_profile: Option<String>,
 }
 
 fn line_width_chars(paper_mm: u8) -> usize {
@@ -92,7 +96,7 @@ fn push_qr_model2(buf: &mut Vec<u8>, data: &str) -> Result<(), String> {
 }
 
 /// Build receipt bytes. `kind` is ENTRY | EXIT | REPRINT | LOST_TICKET (SCREAMING_SNAKE_CASE or lowercase).
-pub fn build_receipt(kind: &str, ticket: &TicketDoc) -> Result<Vec<u8>, String> {
+pub fn build_receipt(kind: &str, ticket: &TicketDoc, profile: &EscPosProfile) -> Result<Vec<u8>, String> {
   let paper = ticket.paper_width_mm.unwrap_or(58);
   let w = line_width_chars(paper);
   let mut out = Vec::new();
@@ -153,13 +157,8 @@ pub fn build_receipt(kind: &str, ticket: &TicketDoc) -> Result<Vec<u8>, String> 
   out.push(b'\n');
   out.push(b'\n');
   out.push(b'\n');
-  out.extend_from_slice(&[0x1d, 0x56, 0x00]);
+  out.extend_from_slice(profile.cut_bytes());
   Ok(out)
-}
-
-/// GS r n — paper sensor style status on many Epson-compatible devices.
-pub fn paper_status_query_bytes() -> [u8; 3] {
-  [0x1d, 0x72, 0x01]
 }
 
 #[cfg(test)]
@@ -185,8 +184,10 @@ mod tests {
       qr_payload: None,
       barcode_payload: None,
       copy_number: Some(1),
+      printer_profile: None,
     };
-    let b = build_receipt("ENTRY", &t).expect("bytes");
+    let p = crate::printer_profile::resolve_profile(None);
+    let b = build_receipt("ENTRY", &t, &p).expect("bytes");
     let s = String::from_utf8_lossy(&b);
     assert!(s.contains("T-1"));
     assert!(s.contains("ABC123"));
