@@ -4,6 +4,9 @@ import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.*;
+import com.parkflow.modules.tickets.dto.CreatePrintJobRequest;
+import com.parkflow.modules.tickets.entity.PrintDocumentType;
+import com.parkflow.modules.tickets.service.PrintJobService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
@@ -31,6 +34,7 @@ public class OperationService {
   private final TicketCounterRepository ticketCounterRepository;
   private final VehicleConditionReportRepository vehicleConditionReportRepository;
   private final SessionEventRepository sessionEventRepository;
+  private final PrintJobService printJobService;
   private final ObjectMapper objectMapper;
 
   @Transactional
@@ -90,6 +94,7 @@ public class OperationService {
         operator);
 
     createEvent(session, SessionEventType.ENTRY_RECORDED, operator, "entry");
+    enqueuePrintJob(session, operator, PrintDocumentType.ENTRY, "entry");
 
     return new OperationResultResponse(
         session.getId().toString(),
@@ -149,6 +154,7 @@ public class OperationService {
     detectConditionMismatch(session, operator);
 
     createEvent(session, SessionEventType.EXIT_RECORDED, operator, "exit");
+    enqueuePrintJob(session, operator, PrintDocumentType.EXIT, "exit");
 
     return new OperationResultResponse(
         session.getId().toString(),
@@ -177,6 +183,7 @@ public class OperationService {
     session = parkingSessionRepository.save(session);
 
     createEvent(session, SessionEventType.TICKET_REPRINTED, operator, request.reason());
+  enqueuePrintJob(session, operator, PrintDocumentType.REPRINT, "reprint-" + session.getReprintCount());
 
     DurationCalculator.DurationBreakdown duration =
         DurationCalculator.calculate(
@@ -234,6 +241,7 @@ public class OperationService {
     }
 
     createEvent(session, SessionEventType.LOST_TICKET_MARKED, operator, request.reason());
+  enqueuePrintJob(session, operator, PrintDocumentType.LOST_TICKET, "lost-ticket");
 
     return new OperationResultResponse(
         session.getId().toString(),
@@ -525,5 +533,36 @@ public class OperationService {
     event.setActorUser(actor);
     event.setMetadata(metadataMessage);
     sessionEventRepository.save(event);
+  }
+
+  private void enqueuePrintJob(
+      ParkingSession session, AppUser operator, PrintDocumentType documentType, String reasonSuffix) {
+    String idempotencyKey =
+        "print-"
+            + documentType.name().toLowerCase(Locale.ROOT)
+            + "-"
+            + session.getId()
+            + "-"
+            + reasonSuffix;
+
+    String payloadHash =
+        Integer.toHexString(
+            java.util.Objects.hash(
+                session.getTicketNumber(),
+                session.getEntryAt(),
+                session.getExitAt(),
+                session.getTotalAmount(),
+                session.getReprintCount(),
+                documentType));
+
+    printJobService.create(
+        new CreatePrintJobRequest(
+            session.getId(),
+            operator.getId(),
+            documentType,
+            idempotencyKey,
+            payloadHash,
+            null,
+            session.getTerminal()));
   }
 }
