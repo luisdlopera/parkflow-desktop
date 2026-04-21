@@ -1,0 +1,44 @@
+meta {
+  name: 16_duplicate_entry_same_plate_should_conflict
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{apiBaseUrl}}/entries
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "plate": "{{plateNegative}}",
+    "type": "CAR",
+    "rateId": "{{rateCarId}}",
+    "operatorUserId": "{{cashierOperatorId}}",
+    "entryAt": "2026-04-14T16:05:00-05:00",
+    "site": "Sede Norte",
+    "lane": "Carril 9",
+    "booth": "Caja 9",
+    "terminal": "TERM-09",
+    "observations": "Debe fallar por duplicado",
+    "vehicleCondition": "Sin novedades",
+    "conditionChecklist": [
+      "carroceria_ok"
+    ],
+    "conditionPhotoUrls": [
+      "https://example.test/photos/qa900n-entry-2.jpg"
+    ]
+  }
+}
+
+tests {
+  test("status 409", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

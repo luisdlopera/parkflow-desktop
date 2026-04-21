@@ -1,0 +1,36 @@
+meta {
+  name: 22_close_negative_session_cleanup
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{apiBaseUrl}}/exits
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "ticketNumber": "{{ticketNegative}}",
+    "operatorUserId": "{{cashierOperatorId}}",
+    "paymentMethod": "CASH",
+    "exitAt": "2026-04-14T18:00:00-05:00",
+    "vehicleCondition": "Sin novedades",
+    "conditionChecklist": [
+      "carroceria_ok"
+    ],
+    "conditionPhotoUrls": []
+  }
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

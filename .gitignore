@@ -2,5 +2,12 @@ node_modules
 .next
 dist
 .env
+**/.gradle
+**/build
+**/target
+**/*.tsbuildinfo
+apps/api/target
 src-tauri/target
 src-tauri/gen
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen

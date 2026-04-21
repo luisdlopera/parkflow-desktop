@@ -1,0 +1,28 @@
+meta {
+  name: 02_get_active_by_ticket_or_plate
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{apiBaseUrl}}/sessions/active?ticketNumber={{ticketMain}}
+  body: none
+  auth: none
+}
+headers {
+  X-API-Key: {{apiKey}}
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("coincide placa y status ACTIVE", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    expect(data.receipt.plate).to.equal("{{plateMain}}");
+    expect(data.receipt.status).to.equal("ACTIVE");
+    expect(data.total).to.not.equal(null);
+  });
+}

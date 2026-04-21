@@ -1,0 +1,21 @@
+{
+  "productName": "Parkflow Desktop",
+  "identifier": "com.parkflow.desktop",
+  "version": "0.1.0",
+  "build": {
+    "beforeDevCommand": "pnpm -C ../.. --filter @parkflow/web dev",
+    "beforeBuildCommand": "pnpm -C ../.. --filter @parkflow/web build",
+    "devUrl": "http://localhost:3000",
+    "frontendDist": "../../web/.next"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Parkflow Desktop",
+        "width": 1280,
+        "height": 800,
+        "resizable": true
+      }
+    ]
+  }
+}
