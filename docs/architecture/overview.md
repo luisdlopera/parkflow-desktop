@@ -13,3 +13,4 @@ El objetivo es separar responsabilidades sin romper el flujo actual del MVP.
 - Mapa de entidades e idempotencia: `docs/architecture/domain-contracts-v1.md`.
 - Auditoria main vs develop y brechas de produccion: `docs/architecture/production-readiness-audit.md`.
 - Roadmap post-integracion (prioridad `develop`, fases P0–P2): `docs/architecture/roadmap-implementacion.md`.
+- Prisma en web vs esquema Flyway del API: `docs/architecture/prisma-vs-api-schema.md`.
