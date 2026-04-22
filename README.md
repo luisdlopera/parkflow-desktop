@@ -27,6 +27,6 @@ pnpm prisma:seed
 ```
 
 ## Notas de migracion
-- Prisma queda temporal en apps/web mientras se migra a Spring Boot + Flyway.
+- **Prisma (`apps/web/prisma`)**: legado del layout pre-merge; el negocio en produccion vive en **Flyway + JPA** (`apps/api`). El panel actual usa el API por HTTP, no Prisma. Ver riesgos y opciones en `docs/architecture/prisma-vs-api-schema.md`. No mezclar `prisma migrate`/`db push` con la misma base que Flyway sin saber que tablas crea cada uno.
 - El API Spring (`apps/api`) requiere cabecera `X-API-Key` (ver `PARKFLOW_API_KEY` / `app.security.api-key`); alinear `NEXT_PUBLIC_API_KEY` en el build web.
 - Documentacion de auditoria produccion: `docs/architecture/production-readiness-audit.md` y checklist `docs/runbooks/production-validation-checklist.md`.
