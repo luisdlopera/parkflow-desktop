@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { vehicleEntrySchema, VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { buildApiHeaders } from "@/lib/api";
+import { newIdempotencyKey } from "@/lib/idempotency";
 import {
   buildTicketPreviewForOperation,
   printReceiptIfTauri,
@@ -57,6 +58,7 @@ export default function VehicleEntryForm() {
         method: "POST",
         headers: buildApiHeaders(),
         body: JSON.stringify({
+          idempotencyKey: newIdempotencyKey(),
           ...values,
           rateId: values.rateId?.trim() ? values.rateId.trim() : null,
           site: values.site?.trim() || null,
