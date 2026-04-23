@@ -11,4 +11,6 @@ public interface SyncEventRepository extends JpaRepository<SyncEvent, UUID> {
   Optional<SyncEvent> findByIdempotencyKey(String idempotencyKey);
 
   List<SyncEvent> findByCreatedAtAfterOrderByCreatedAtAsc(OffsetDateTime createdAt);
+
+  long countBySyncedAtIsNull();
 }

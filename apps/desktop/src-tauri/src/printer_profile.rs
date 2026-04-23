@@ -10,6 +10,54 @@ pub enum PrinterProfileId {
   Generic58mmEscPos,
 }
 
+impl PrinterProfileId {
+  pub const DEFAULT: Self = Self::Generic58mmEscPos;
+  pub const ALL: [Self; 5] = [
+    Self::EpsonTmT20Iii,
+    Self::Xprinter80GenericEscPos,
+    Self::BixolonSrp330Iii,
+    Self::BixolonSrp332Ii,
+    Self::Generic58mmEscPos,
+  ];
+
+  pub fn canonical_slug(self) -> &'static str {
+    match self {
+      Self::EpsonTmT20Iii => "epson_tm_t20iii",
+      Self::Xprinter80GenericEscPos => "xprinter_80_generic_esc_pos",
+      Self::BixolonSrp330Iii => "bixolon_srp330iii",
+      Self::BixolonSrp332Ii => "bixolon_srp332ii",
+      Self::Generic58mmEscPos => "generic_58mm_esc_pos",
+    }
+  }
+
+  fn legacy_aliases(self) -> &'static [&'static str] {
+    match self {
+      Self::EpsonTmT20Iii => &["epson-tm-t20iii"],
+      Self::Xprinter80GenericEscPos => &["xprinter-80-generic"],
+      Self::BixolonSrp330Iii => &["bixolon-srp-330iii"],
+      Self::BixolonSrp332Ii => &["bixolon-srp-332ii"],
+      Self::Generic58mmEscPos => &["generic-58mm"],
+    }
+  }
+
+  pub fn parse(raw: &str) -> Option<Self> {
+    let key = raw.trim().to_ascii_lowercase();
+    if key.is_empty() {
+      return Some(Self::DEFAULT);
+    }
+
+    for candidate in Self::ALL {
+      if key == candidate.canonical_slug()
+        || candidate.legacy_aliases().iter().any(|alias| key == *alias)
+      {
+        return Some(candidate);
+      }
+    }
+
+    None
+  }
+}
+
 #[derive(Debug, Clone)]
 pub struct EscPosProfile {
   pub id: PrinterProfileId,
@@ -79,17 +127,76 @@ fn profile(id: PrinterProfileId, cut: &'static [u8], status: &'static [u8]) -> E
 }
 
 pub fn resolve_profile(raw: Option<&str>) -> EscPosProfile {
-  let key = raw.unwrap_or("generic_58mm_esc_pos").trim().to_ascii_lowercase();
-  match key.as_str() {
-    "epson_tm_t20iii" | "epson-tm-t20iii" => profile(PrinterProfileId::EpsonTmT20Iii, CUT_FULL, STATUS_GS_R1),
-    "xprinter_80_generic_esc_pos" | "xprinter-80-generic" => {
-      profile(PrinterProfileId::Xprinter80GenericEscPos, CUT_FULL, STATUS_GS_R1)
+  let input = raw.unwrap_or(PrinterProfileId::DEFAULT.canonical_slug());
+  let resolved = PrinterProfileId::parse(input).unwrap_or_else(|| {
+    eprintln!(
+      "WARN: unknown printer profile '{}'; using {}",
+      input,
+      PrinterProfileId::DEFAULT.canonical_slug()
+    );
+    PrinterProfileId::DEFAULT
+  });
+
+  match resolved {
+    PrinterProfileId::EpsonTmT20Iii
+    | PrinterProfileId::Xprinter80GenericEscPos
+    | PrinterProfileId::BixolonSrp330Iii
+    | PrinterProfileId::BixolonSrp332Ii
+    | PrinterProfileId::Generic58mmEscPos => {
+      profile(resolved, CUT_FULL, STATUS_GS_R1)
     }
-    "bixolon_srp330iii" | "bixolon-srp-330iii" => profile(PrinterProfileId::BixolonSrp330Iii, CUT_FULL, STATUS_GS_R1),
-    "bixolon_srp332ii" | "bixolon-srp-332ii" => profile(PrinterProfileId::BixolonSrp332Ii, CUT_FULL, STATUS_GS_R1),
-    "generic_58mm_esc_pos" | "generic-58mm" | "" => {
-      profile(PrinterProfileId::Generic58mmEscPos, CUT_FULL, STATUS_GS_R1)
-    }
-    _ => profile(PrinterProfileId::Generic58mmEscPos, CUT_FULL, STATUS_GS_R1),
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::PrinterProfileId;
+
+  #[test]
+  fn parse_accepts_canonical_slugs() {
+    assert_eq!(PrinterProfileId::parse("epson_tm_t20iii"), Some(PrinterProfileId::EpsonTmT20Iii));
+    assert_eq!(
+      PrinterProfileId::parse("xprinter_80_generic_esc_pos"),
+      Some(PrinterProfileId::Xprinter80GenericEscPos)
+    );
+    assert_eq!(
+      PrinterProfileId::parse("bixolon_srp330iii"),
+      Some(PrinterProfileId::BixolonSrp330Iii)
+    );
+    assert_eq!(
+      PrinterProfileId::parse("bixolon_srp332ii"),
+      Some(PrinterProfileId::BixolonSrp332Ii)
+    );
+    assert_eq!(
+      PrinterProfileId::parse("generic_58mm_esc_pos"),
+      Some(PrinterProfileId::Generic58mmEscPos)
+    );
+  }
+
+  #[test]
+  fn parse_accepts_legacy_aliases() {
+    assert_eq!(PrinterProfileId::parse("epson-tm-t20iii"), Some(PrinterProfileId::EpsonTmT20Iii));
+    assert_eq!(
+      PrinterProfileId::parse("xprinter-80-generic"),
+      Some(PrinterProfileId::Xprinter80GenericEscPos)
+    );
+    assert_eq!(
+      PrinterProfileId::parse("bixolon-srp-330iii"),
+      Some(PrinterProfileId::BixolonSrp330Iii)
+    );
+    assert_eq!(
+      PrinterProfileId::parse("bixolon-srp-332ii"),
+      Some(PrinterProfileId::BixolonSrp332Ii)
+    );
+    assert_eq!(PrinterProfileId::parse("generic-58mm"), Some(PrinterProfileId::Generic58mmEscPos));
+  }
+
+  #[test]
+  fn parse_handles_empty_and_unknown_values() {
+    assert_eq!(
+      PrinterProfileId::parse("  "),
+      Some(PrinterProfileId::Generic58mmEscPos)
+    );
+    assert_eq!(PrinterProfileId::parse("unknown_model"), None);
   }
 }

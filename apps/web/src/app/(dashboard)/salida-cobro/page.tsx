@@ -5,6 +5,7 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { buildApiHeaders } from "@/lib/api";
+import { newIdempotencyKey } from "@/lib/idempotency";
 import {
   buildTicketPreviewForOperation,
   printReceiptIfTauri,
@@ -70,6 +71,7 @@ export default function SalidaCobroPage() {
   const [active, setActive] = useState<ActiveLookup | null>(null);
   const [previewLines, setPreviewLines] = useState<string[] | null>(null);
   const operationLock = useRef(false);
+  const reprintLock = useRef(false);
 
   const apiBase = useMemo(
     () => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1/operations",
@@ -132,6 +134,7 @@ export default function SalidaCobroPage() {
         method: "POST",
         headers: buildApiHeaders(),
         body: JSON.stringify({
+          idempotencyKey: newIdempotencyKey(),
           ticketNumber: active.receipt.ticketNumber,
           operatorUserId,
           paymentMethod,
@@ -182,6 +185,10 @@ export default function SalidaCobroPage() {
 
   const reprintTicket = async () => {
     if (!active) return;
+    if (reprintLock.current) {
+      return;
+    }
+    reprintLock.current = true;
     setPreviewLines(null);
     setError("");
     setMessage("");
@@ -190,6 +197,7 @@ export default function SalidaCobroPage() {
         method: "POST",
         headers: buildApiHeaders(),
         body: JSON.stringify({
+          idempotencyKey: newIdempotencyKey(),
           ticketNumber: active.receipt.ticketNumber,
           operatorUserId,
           reason: reprintReason
@@ -217,6 +225,8 @@ export default function SalidaCobroPage() {
       setActive(payload);
     } catch {
       setError("Error de red en reimpresion");
+    } finally {
+      reprintLock.current = false;
     }
   };
 
@@ -234,6 +244,7 @@ export default function SalidaCobroPage() {
         method: "POST",
         headers: buildApiHeaders(),
         body: JSON.stringify({
+          idempotencyKey: newIdempotencyKey(),
           ticketNumber: active.receipt.ticketNumber,
           operatorUserId,
           reason: lostReason,
