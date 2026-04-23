@@ -13,7 +13,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@parkflow/print-core": "workspace:*",
     "@parkflow/types": "workspace:*",
+    "idb": "^8.0.0",
     "@hookform/resolvers": "^3.3.4",
     "@prisma/client": "^5.16.1",
     "@tauri-apps/api": "^2.0.0",
