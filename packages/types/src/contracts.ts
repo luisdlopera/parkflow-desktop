@@ -1,6 +1,8 @@
 /** Frozen API surface — see docs/architecture/offline-printing-v1.md */
 export const PARKFLOW_API_V1 = "/api/v1" as const;
 
+import type { TicketPrinterProfile } from "./printer-profiles";
+
 export type VehicleType = "CAR" | "MOTORCYCLE" | "VAN" | "TRUCK" | "OTHER";
 
 export type PrintDocumentType = "ENTRY" | "EXIT" | "REPRINT" | "LOST_TICKET";
@@ -23,17 +25,6 @@ export type TicketPaperWidthMm = 58 | 80;
 
 /** Versioned ticket layout — bump when fields or alignment change. */
 export type TicketTemplateVersion = "ticket-layout-v1";
-
-/**
- * ESC/POS profile slug consumed by the desktop printer layer (`printer_profile::resolve_profile` in Rust).
- * Extend only with a certified hardware matrix entry.
- */
-export type TicketPrinterProfile =
-  | "epson_tm_t20iii"
-  | "xprinter_80_generic_esc_pos"
-  | "bixolon_srp330iii"
-  | "bixolon_srp332ii"
-  | "generic_58mm_esc_pos";
 
 /**
  * Canonical ticket id for idempotency (equals ticketNumber when no external id exists).
