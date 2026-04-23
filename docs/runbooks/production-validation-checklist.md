@@ -7,7 +7,8 @@ Use esta lista en laboratorio y en piloto en sitio. Marque cada item con evidenc
 - [ ] `PARKFLOW_API_KEY` definido en API y `NEXT_PUBLIC_API_KEY` coincide en build web embebido.
 - [ ] CORS / origenes de produccion configurados en API.
 - [ ] `NEXT_PUBLIC_PRINTER_PAPER_MM` = `58` o `80` segun hardware.
-- [ ] `NEXT_PUBLIC_PRINTER_PROFILE` coincide con modelo certificado (`generic_58mm_esc_pos`, `epson_tm_t20iii`, etc.).
+- [ ] `NEXT_PUBLIC_PRINTER_PROFILE` usa slug canonico con underscore (`generic_58mm_esc_pos`, `epson_tm_t20iii`, etc.). Aliases legacy con guion se aceptan por compatibilidad, pero no se recomiendan para nuevas instalaciones.
+- [ ] `NEXT_PUBLIC_PRINTER_STRICT_MODE=true` validado en QA/certificacion para detectar perfiles invalidos antes de produccion.
 - [ ] Conexion impresora: TCP (host/puerto) o serial (COM/baud) verificada con `printer_health_esc_pos`.
 
 ## Operacion y deduplicacion
