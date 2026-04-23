@@ -28,7 +28,7 @@ export default function VehiculosActivosPage() {
     try {
       const response = await fetch(`${apiBase}/sessions/active-list`, {
         cache: "no-store",
-        headers: buildApiHeaders()
+        headers: await buildApiHeaders()
       });
       const payload = await response.json();
       if (!response.ok) {

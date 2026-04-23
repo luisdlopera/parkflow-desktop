@@ -40,7 +40,7 @@ export default function DashboardPage() {
     setSummaryError(null);
     setSessionsError(null);
     try {
-      const sRes = await fetch(`${base()}/supervisor/summary`, { headers: buildApiHeaders() });
+      const sRes = await fetch(`${base()}/supervisor/summary`, { headers: await buildApiHeaders() });
       if (!sRes.ok) {
         setSummaryError("No se pudo cargar resumen de supervisor");
         setSummary(null);
@@ -52,7 +52,7 @@ export default function DashboardPage() {
       setSummary(null);
     }
     try {
-      const aRes = await fetch(`${base()}/sessions/active-list`, { headers: buildApiHeaders() });
+      const aRes = await fetch(`${base()}/sessions/active-list`, { headers: await buildApiHeaders() });
       if (!aRes.ok) {
         setSessionsError("No se pudo listar sesiones activas");
         setSessions([]);

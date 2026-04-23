@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { buildApiHeaders } from "@/lib/api";
 import { newIdempotencyKey } from "@/lib/idempotency";
+import { queueOfflineOperation } from "@/lib/offline-outbox";
 import {
   buildTicketPreviewForOperation,
   printReceiptIfTauri,
@@ -56,9 +57,6 @@ function operationPrintPayload(
 export default function SalidaCobroPage() {
   const [ticketNumber, setTicketNumber] = useState("");
   const [plate, setPlate] = useState("");
-  const [operatorUserId, setOperatorUserId] = useState(
-    process.env.NEXT_PUBLIC_DEFAULT_OPERATOR_USER_ID ?? "00000000-0000-0000-0000-000000000002"
-  );
   const [vehicleCondition, setVehicleCondition] = useState("Sin novedades a la salida");
   const [conditionChecklist, setConditionChecklist] = useState("");
   const [conditionPhotoUrls, setConditionPhotoUrls] = useState("");
@@ -99,7 +97,7 @@ export default function SalidaCobroPage() {
     setPreviewLines(null);
     try {
       const response = await fetch(`${apiBase}/sessions/active?${params.toString()}`, {
-        headers: buildApiHeaders()
+        headers: await buildApiHeaders()
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -132,11 +130,10 @@ export default function SalidaCobroPage() {
     try {
       const response = await fetch(`${apiBase}/exits`, {
         method: "POST",
-        headers: buildApiHeaders(),
+        headers: await buildApiHeaders(),
         body: JSON.stringify({
           idempotencyKey: newIdempotencyKey(),
           ticketNumber: active.receipt.ticketNumber,
-          operatorUserId,
           paymentMethod,
           vehicleCondition,
           conditionChecklist: conditionChecklist
@@ -176,7 +173,17 @@ export default function SalidaCobroPage() {
       setTicketNumber("");
       setPlate("");
     } catch {
-      setError("Error de red procesando salida");
+      const queued = await queueOfflineOperation("EXIT_RECORDED", {
+        ticketNumber: active.receipt.ticketNumber,
+        paymentMethod,
+        occurredAtIso: new Date().toISOString(),
+        origin: "OFFLINE_PENDING_SYNC"
+      });
+      if (queued) {
+        setMessage("Sin internet: salida enviada a cola offline pendiente de sync.");
+      } else {
+        setError("Error de red procesando salida");
+      }
     } finally {
       setProcessing(false);
       operationLock.current = false;
@@ -195,11 +202,10 @@ export default function SalidaCobroPage() {
     try {
       const response = await fetch(`${apiBase}/tickets/reprint`, {
         method: "POST",
-        headers: buildApiHeaders(),
+        headers: await buildApiHeaders(),
         body: JSON.stringify({
           idempotencyKey: newIdempotencyKey(),
           ticketNumber: active.receipt.ticketNumber,
-          operatorUserId,
           reason: reprintReason
         })
       });
@@ -224,7 +230,17 @@ export default function SalidaCobroPage() {
       );
       setActive(payload);
     } catch {
-      setError("Error de red en reimpresion");
+      const queued = await queueOfflineOperation("TICKET_REPRINTED", {
+        ticketNumber: active.receipt.ticketNumber,
+        reason: reprintReason,
+        occurredAtIso: new Date().toISOString(),
+        origin: "OFFLINE_PENDING_SYNC"
+      });
+      if (queued) {
+        setMessage("Sin internet: reimpresion en cola offline.");
+      } else {
+        setError("Error de red en reimpresion");
+      }
     } finally {
       reprintLock.current = false;
     }
@@ -242,11 +258,10 @@ export default function SalidaCobroPage() {
     try {
       const response = await fetch(`${apiBase}/tickets/lost`, {
         method: "POST",
-        headers: buildApiHeaders(),
+        headers: await buildApiHeaders(),
         body: JSON.stringify({
           idempotencyKey: newIdempotencyKey(),
           ticketNumber: active.receipt.ticketNumber,
-          operatorUserId,
           reason: lostReason,
           paymentMethod: "CASH"
         })
@@ -274,7 +289,17 @@ export default function SalidaCobroPage() {
       );
       setActive(null);
     } catch {
-      setError("Error de red procesando ticket perdido");
+      const queued = await queueOfflineOperation("LOST_TICKET", {
+        ticketNumber: active.receipt.ticketNumber,
+        reason: lostReason,
+        occurredAtIso: new Date().toISOString(),
+        origin: "OFFLINE_PENDING_SYNC"
+      });
+      if (queued) {
+        setMessage("Sin internet: operacion de ticket perdido en cola offline.");
+      } else {
+        setError("Error de red procesando ticket perdido");
+      }
     } finally {
       setProcessing(false);
       operationLock.current = false;
@@ -293,12 +318,6 @@ export default function SalidaCobroPage() {
         <div className="surface rounded-2xl p-6 lg:col-span-2">
           <h2 className="text-lg font-semibold text-slate-900">Resumen rapido</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <input
-              value={operatorUserId}
-              onChange={(event) => setOperatorUserId(event.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Operador UUID"
-            />
             <input
               value={ticketNumber}
               onChange={(event) => setTicketNumber(event.target.value)}

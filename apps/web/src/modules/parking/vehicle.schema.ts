@@ -4,7 +4,6 @@ export const vehicleEntrySchema = z.object({
   plate: z.string().min(5, "Placa obligatoria"),
   type: z.enum(["CAR", "MOTORCYCLE", "VAN", "TRUCK", "OTHER"]),
   rateId: z.string().optional().default(""),
-  operatorUserId: z.string().uuid("Operador invalido"),
   site: z.string().optional().default(""),
   lane: z.string().optional().default(""),
   booth: z.string().optional().default(""),

@@ -8,6 +8,7 @@ import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { vehicleEntrySchema, VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { buildApiHeaders } from "@/lib/api";
 import { newIdempotencyKey } from "@/lib/idempotency";
+import { queueOfflineOperation } from "@/lib/offline-outbox";
 import {
   buildTicketPreviewForOperation,
   printReceiptIfTauri,
@@ -20,8 +21,6 @@ export default function VehicleEntryForm() {
   const [error, setError] = useState("");
   const [previewLines, setPreviewLines] = useState<string[] | null>(null);
   const submitLock = useRef(false);
-  const defaultOperatorUserId =
-    process.env.NEXT_PUBLIC_DEFAULT_OPERATOR_USER_ID ?? "00000000-0000-0000-0000-000000000002";
 
   const form = useForm<VehicleEntryFormValues>({
     resolver: zodResolver(vehicleEntrySchema),
@@ -29,7 +28,6 @@ export default function VehicleEntryForm() {
       plate: "",
       type: "CAR",
       rateId: "",
-      operatorUserId: defaultOperatorUserId,
       site: "Principal",
       lane: "",
       booth: "",
@@ -56,7 +54,7 @@ export default function VehicleEntryForm() {
 
       const response = await fetch(`${apiBase}/entries`, {
         method: "POST",
-        headers: buildApiHeaders(),
+        headers: await buildApiHeaders(),
         body: JSON.stringify({
           idempotencyKey: newIdempotencyKey(),
           ...values,
@@ -118,7 +116,6 @@ export default function VehicleEntryForm() {
         plate: "",
         type: "CAR",
         rateId: "",
-        operatorUserId: values.operatorUserId,
         site: values.site,
         lane: values.lane,
         booth: values.booth,
@@ -129,7 +126,17 @@ export default function VehicleEntryForm() {
         conditionPhotoUrls: ""
       });
     } catch {
-      setError("Error de red registrando ingreso");
+      const queued = await queueOfflineOperation("ENTRY_RECORDED", {
+        plate: values.plate,
+        type: values.type,
+        occurredAtIso: new Date().toISOString(),
+        origin: "OFFLINE_PENDING_SYNC"
+      });
+      if (queued) {
+        setMessage("Sin internet: ingreso guardado en cola offline para sincronizacion.");
+      } else {
+        setError("Error de red registrando ingreso");
+      }
     } finally {
       submitLock.current = false;
     }
@@ -170,18 +177,6 @@ export default function VehicleEntryForm() {
           className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
           placeholder="Tarifa por defecto"
         />
-      </div>
-
-      <div>
-        <label className="text-sm font-medium text-slate-700">Operador (UUID)</label>
-        <input
-          {...form.register("operatorUserId")}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-          placeholder="00000000-0000-0000-0000-000000000002"
-        />
-        {form.formState.errors.operatorUserId && (
-          <p className="mt-1 text-xs text-rose-600">{form.formState.errors.operatorUserId.message}</p>
-        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
