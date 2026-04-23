@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Instrument_Sans } from "next/font/google";
+import PrintQueueBootstrap from "@/components/print/PrintQueueBootstrap";
 import "./globals.css";
 
 const displayFont = Space_Grotesk({
@@ -25,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${displayFont.variable} ${bodyFont.variable}`}>
       <body className="min-h-screen bg-ash text-slate-900 antialiased">
+        <PrintQueueBootstrap />
         {children}
       </body>
     </html>
