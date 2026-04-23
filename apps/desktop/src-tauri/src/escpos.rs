@@ -4,35 +4,28 @@ use crate::printer_profile::EscPosProfile;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TicketDoc {
-  #[serde(rename = "ticketId")]
   pub ticket_id: String,
-  #[serde(rename = "templateVersion")]
   pub template_version: Option<String>,
-  #[serde(rename = "paperWidthMm")]
   pub paper_width_mm: Option<u8>,
   pub ticket_number: String,
-  #[serde(rename = "parkingName")]
   pub parking_name: String,
   pub plate: String,
+  /// Ignored for ESC/POS body; may be present for audit/compat (matches `TicketDocument`).
+  #[allow(dead_code)]
+  pub vehicle_type: Option<String>,
   pub site: Option<String>,
   pub lane: Option<String>,
   pub booth: Option<String>,
   pub terminal: Option<String>,
-  #[serde(rename = "operatorName")]
   pub operator_name: Option<String>,
-  #[serde(rename = "issuedAtIso")]
   pub issued_at_iso: String,
-  #[serde(rename = "legalMessage")]
   pub legal_message: Option<String>,
-  #[serde(rename = "qrPayload")]
   pub qr_payload: Option<String>,
-  #[serde(rename = "barcodePayload")]
   pub barcode_payload: Option<String>,
-  #[serde(rename = "copyNumber")]
   pub copy_number: Option<i32>,
   /// Matches shared contract `TicketDocument.printerProfile` (slug).
-  #[serde(rename = "printerProfile")]
   pub printer_profile: Option<String>,
 }
 
@@ -174,6 +167,7 @@ mod tests {
       ticket_number: "T-1".to_string(),
       parking_name: "Test".to_string(),
       plate: "ABC123".to_string(),
+      vehicle_type: None,
       site: None,
       lane: None,
       booth: None,
