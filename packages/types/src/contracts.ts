@@ -3,6 +3,25 @@ export const PARKFLOW_API_V1 = "/api/v1" as const;
 
 import type { TicketPrinterProfile } from "./printer-profiles";
 
+/**
+ * Dispositivo físico configurado (conexión + preset de modelo).
+ * No confundir con el enum `PrinterProfile` de `printer-profiles.ts` (solo preset/vendor).
+ */
+export interface PrintStationConfig {
+  id: string;
+  name: string;
+  modelProfile: TicketPrinterProfile;
+  connection: "tcp" | "usb_serial" | "serial";
+  tcpHost: string | null;
+  tcpPort: number | null;
+  /** COM/tty (USB-CDC) o path serial. */
+  serialPath: string | null;
+  baudRate: number | null;
+}
+
+/** @deprecated alias — usar `PrintStationConfig` (el nombre choca con el enum `PrinterProfile`). */
+export type PrinterProfileDescriptor = PrintStationConfig;
+
 export type VehicleType = "CAR" | "MOTORCYCLE" | "VAN" | "TRUCK" | "OTHER";
 
 export type PrintDocumentType = "ENTRY" | "EXIT" | "REPRINT" | "LOST_TICKET";
@@ -114,6 +133,9 @@ export interface PrintAttemptRecord {
   errorMessage: string | null;
   createdAtIso: string;
 }
+
+/** Alias de dominio: intento de impresión (local o servidor). */
+export type PrintAttempt = PrintAttemptRecord;
 
 /** Server create body — aligns with Java CreatePrintJobRequest. */
 export interface CreatePrintJobRequest {
