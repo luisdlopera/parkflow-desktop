@@ -2,10 +2,12 @@ mod escpos;
 mod printer;
 mod printer_profile;
 
+use keyring::Entry as KeyringEntry;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -71,6 +73,10 @@ pub struct OutboxEvent {
   pub idempotency_key: String,
   pub event_type: String,
   pub payload_json: String,
+  pub origin: String,
+  pub user_id: Option<String>,
+  pub device_id: Option<String>,
+  pub auth_session_id: Option<String>,
   pub status: String,
   pub retry_count: i32,
   pub next_retry_at_unix_ms: Option<i64>,
@@ -82,6 +88,29 @@ pub struct EnqueueOutboxRequest {
   pub idempotency_key: String,
   pub event_type: String,
   pub payload_json: String,
+  pub origin: Option<String>,
+  pub user_id: Option<String>,
+  pub device_id: Option<String>,
+  pub auth_session_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OfflineLeaseRequest {
+  pub session_id: String,
+  pub user_id: String,
+  pub device_id: String,
+  pub expires_at_unix_ms: i64,
+  pub restricted_actions_json: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OfflineLeaseRecord {
+  pub session_id: String,
+  pub user_id: String,
+  pub device_id: String,
+  pub issued_at_unix_ms: i64,
+  pub expires_at_unix_ms: i64,
+  pub restricted_actions_json: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -148,10 +177,29 @@ fn init_local_db() -> Result<Connection, String> {
         idempotency_key TEXT NOT NULL UNIQUE,
         event_type TEXT NOT NULL,
         payload_json TEXT NOT NULL,
+        origin TEXT NOT NULL DEFAULT 'ONLINE',
+        user_id TEXT,
+        device_id TEXT,
+        auth_session_id TEXT,
         status TEXT NOT NULL DEFAULT 'pending',
         retry_count INTEGER NOT NULL DEFAULT 0,
         next_retry_at_unix_ms INTEGER,
         created_at_unix_ms INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS local_settings (
+        setting_key TEXT PRIMARY KEY,
+        setting_value TEXT NOT NULL,
+        updated_at_unix_ms INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS offline_leases (
+        session_id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        device_id TEXT NOT NULL,
+        issued_at_unix_ms INTEGER NOT NULL,
+        expires_at_unix_ms INTEGER NOT NULL,
+        restricted_actions_json TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS sessions (
@@ -494,7 +542,7 @@ fn enqueue_outbox_event(
 
   let existing = connection
     .query_row(
-      "SELECT id, idempotency_key, event_type, payload_json, status, retry_count, next_retry_at_unix_ms, created_at_unix_ms
+      "SELECT id, idempotency_key, event_type, payload_json, origin, user_id, device_id, auth_session_id, status, retry_count, next_retry_at_unix_ms, created_at_unix_ms
        FROM outbox WHERE idempotency_key = ?1",
       params![request.idempotency_key],
       |row| {
@@ -503,10 +551,14 @@ fn enqueue_outbox_event(
           idempotency_key: row.get(1)?,
           event_type: row.get(2)?,
           payload_json: row.get(3)?,
-          status: row.get(4)?,
-          retry_count: row.get(5)?,
-          next_retry_at_unix_ms: row.get(6)?,
-          created_at_unix_ms: row.get(7)?,
+          origin: row.get(4)?,
+          user_id: row.get(5)?,
+          device_id: row.get(6)?,
+          auth_session_id: row.get(7)?,
+          status: row.get(8)?,
+          retry_count: row.get(9)?,
+          next_retry_at_unix_ms: row.get(10)?,
+          created_at_unix_ms: row.get(11)?,
         })
       },
     )
@@ -518,11 +570,24 @@ fn enqueue_outbox_event(
   }
 
   let now = now_unix_ms_i64();
+  let origin = request
+    .origin
+    .clone()
+    .unwrap_or_else(|| "ONLINE".to_string());
   connection
     .execute(
-      "INSERT INTO outbox (idempotency_key, event_type, payload_json, status, retry_count, next_retry_at_unix_ms, created_at_unix_ms)
-       VALUES (?1, ?2, ?3, 'pending', 0, NULL, ?4)",
-      params![request.idempotency_key, request.event_type, request.payload_json, now],
+      "INSERT INTO outbox (idempotency_key, event_type, payload_json, origin, user_id, device_id, auth_session_id, status, retry_count, next_retry_at_unix_ms, created_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'pending', 0, NULL, ?8)",
+      params![
+        request.idempotency_key,
+        request.event_type,
+        request.payload_json,
+        origin,
+        request.user_id,
+        request.device_id,
+        request.auth_session_id,
+        now
+      ],
     )
     .map_err(|error| format!("sqlite outbox insert failed: {}", error))?;
 
@@ -532,6 +597,10 @@ fn enqueue_outbox_event(
     idempotency_key: request.idempotency_key,
     event_type: request.event_type,
     payload_json: request.payload_json,
+    origin,
+    user_id: request.user_id,
+    device_id: request.device_id,
+    auth_session_id: request.auth_session_id,
     status: "pending".to_string(),
     retry_count: 0,
     next_retry_at_unix_ms: None,
@@ -549,7 +618,7 @@ fn claim_outbox_batch(limit: i64, state: tauri::State<'_, AppState>) -> Result<V
   let now = now_unix_ms_i64();
   let mut statement = connection
     .prepare(
-      "SELECT id, idempotency_key, event_type, payload_json, status, retry_count, next_retry_at_unix_ms, created_at_unix_ms
+      "SELECT id, idempotency_key, event_type, payload_json, origin, user_id, device_id, auth_session_id, status, retry_count, next_retry_at_unix_ms, created_at_unix_ms
        FROM outbox
        WHERE status IN ('pending','failed')
          AND (next_retry_at_unix_ms IS NULL OR next_retry_at_unix_ms <= ?1)
@@ -565,10 +634,14 @@ fn claim_outbox_batch(limit: i64, state: tauri::State<'_, AppState>) -> Result<V
         idempotency_key: row.get(1)?,
         event_type: row.get(2)?,
         payload_json: row.get(3)?,
-        status: row.get(4)?,
-        retry_count: row.get(5)?,
-        next_retry_at_unix_ms: row.get(6)?,
-        created_at_unix_ms: row.get(7)?,
+        origin: row.get(4)?,
+        user_id: row.get(5)?,
+        device_id: row.get(6)?,
+        auth_session_id: row.get(7)?,
+        status: row.get(8)?,
+        retry_count: row.get(9)?,
+        next_retry_at_unix_ms: row.get(10)?,
+        created_at_unix_ms: row.get(11)?,
       })
     })
     .map_err(|error| format!("sqlite outbox query failed: {}", error))?;
@@ -698,6 +771,135 @@ fn get_connectivity_state(state: tauri::State<'_, AppState>) -> Result<Connectiv
     .map_err(|error| format!("sqlite connectivity query failed: {}", error))
 }
 
+#[tauri::command]
+fn auth_store_session(payload_json: String) -> Result<(), String> {
+  let entry =
+    KeyringEntry::new("com.parkflow.desktop", "auth-session").map_err(|error| error.to_string())?;
+  entry
+    .set_password(&payload_json)
+    .map_err(|error| format!("keyring set failed: {}", error))
+}
+
+#[tauri::command]
+fn auth_load_session() -> Result<Option<serde_json::Value>, String> {
+  let entry =
+    KeyringEntry::new("com.parkflow.desktop", "auth-session").map_err(|error| error.to_string())?;
+  match entry.get_password() {
+    Ok(raw) => {
+      let parsed: serde_json::Value =
+        serde_json::from_str(&raw).map_err(|error| format!("invalid session payload: {}", error))?;
+      Ok(Some(parsed))
+    }
+    Err(keyring::Error::NoEntry) => Ok(None),
+    Err(error) => Err(format!("keyring get failed: {}", error)),
+  }
+}
+
+#[tauri::command]
+fn auth_clear_session() -> Result<(), String> {
+  let entry =
+    KeyringEntry::new("com.parkflow.desktop", "auth-session").map_err(|error| error.to_string())?;
+  match entry.delete_credential() {
+    Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+    Err(error) => Err(format!("keyring clear failed: {}", error)),
+  }
+}
+
+#[tauri::command]
+fn auth_get_or_create_device_id(state: tauri::State<'_, AppState>) -> Result<String, String> {
+  let connection = state
+    .db
+    .lock()
+    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+
+  let existing: Option<String> = connection
+    .query_row(
+      "SELECT setting_value FROM local_settings WHERE setting_key = 'device_id'",
+      [],
+      |row| row.get(0),
+    )
+    .optional()
+    .map_err(|error| format!("sqlite setting lookup failed: {}", error))?;
+
+  if let Some(value) = existing {
+    return Ok(value);
+  }
+
+  let generated = format!("desktop-{}", Uuid::new_v4());
+  connection
+    .execute(
+      "INSERT INTO local_settings (setting_key, setting_value, updated_at_unix_ms) VALUES ('device_id', ?1, ?2)",
+      params![generated, now_unix_ms_i64()],
+    )
+    .map_err(|error| format!("sqlite setting insert failed: {}", error))?;
+
+  Ok(generated)
+}
+
+#[tauri::command]
+fn auth_upsert_offline_lease(
+  request: OfflineLeaseRequest,
+  state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+  let connection = state
+    .db
+    .lock()
+    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+
+  connection
+    .execute(
+      "INSERT INTO offline_leases (session_id, user_id, device_id, issued_at_unix_ms, expires_at_unix_ms, restricted_actions_json)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+       ON CONFLICT(session_id) DO UPDATE SET
+       user_id = excluded.user_id,
+       device_id = excluded.device_id,
+       issued_at_unix_ms = excluded.issued_at_unix_ms,
+       expires_at_unix_ms = excluded.expires_at_unix_ms,
+       restricted_actions_json = excluded.restricted_actions_json",
+      params![
+        request.session_id,
+        request.user_id,
+        request.device_id,
+        now_unix_ms_i64(),
+        request.expires_at_unix_ms,
+        request.restricted_actions_json
+      ],
+    )
+    .map_err(|error| format!("sqlite offline lease upsert failed: {}", error))?;
+
+  Ok(())
+}
+
+#[tauri::command]
+fn auth_get_offline_lease(
+  session_id: String,
+  state: tauri::State<'_, AppState>,
+) -> Result<Option<OfflineLeaseRecord>, String> {
+  let connection = state
+    .db
+    .lock()
+    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+
+  connection
+    .query_row(
+      "SELECT session_id, user_id, device_id, issued_at_unix_ms, expires_at_unix_ms, restricted_actions_json
+       FROM offline_leases WHERE session_id = ?1",
+      params![session_id],
+      |row| {
+        Ok(OfflineLeaseRecord {
+          session_id: row.get(0)?,
+          user_id: row.get(1)?,
+          device_id: row.get(2)?,
+          issued_at_unix_ms: row.get(3)?,
+          expires_at_unix_ms: row.get(4)?,
+          restricted_actions_json: row.get(5)?,
+        })
+      },
+    )
+    .optional()
+    .map_err(|error| format!("sqlite offline lease query failed: {}", error))
+}
+
 fn start_offline_worker(db_path: std::path::PathBuf) {
   std::thread::spawn(move || loop {
     let now = now_unix_ms_i64();
@@ -807,6 +1009,12 @@ pub fn run() {
       mark_outbox_failed,
       check_backend_heartbeat,
       get_connectivity_state,
+      auth_store_session,
+      auth_load_session,
+      auth_clear_session,
+      auth_get_or_create_device_id,
+      auth_upsert_offline_lease,
+      auth_get_offline_lease,
       print_escpos_ticket,
       printer_health_esc_pos
     ])
