@@ -3,6 +3,8 @@ package com.parkflow.modules.sync.service;
 import com.parkflow.modules.sync.dto.SyncEventResponse;
 import com.parkflow.modules.sync.dto.SyncPushRequest;
 import com.parkflow.modules.sync.dto.SyncReconcileRequest;
+import com.parkflow.modules.auth.entity.AuthAuditAction;
+import com.parkflow.modules.auth.service.AuthAuditService;
 import com.parkflow.modules.sync.entity.SyncDirection;
 import com.parkflow.modules.sync.entity.SyncEvent;
 import com.parkflow.modules.sync.repository.SyncEventRepository;
@@ -22,6 +24,7 @@ public class SyncService {
   private static final Logger log = LoggerFactory.getLogger(SyncService.class);
 
   private final SyncEventRepository syncEventRepository;
+  private final AuthAuditService authAuditService;
 
   @Transactional
   public SyncEventResponse push(SyncPushRequest request) {
@@ -72,6 +75,10 @@ public class SyncService {
     event.setEventType(request.eventType());
     event.setAggregateId(request.aggregateId());
     event.setPayloadJson(request.payloadJson());
+    event.setUserId(request.userId());
+    event.setDeviceId(request.deviceId());
+    event.setSessionId(request.sessionId());
+    event.setOrigin(request.origin() != null ? request.origin() : "ONLINE");
     event.setDirection(SyncDirection.PUSH);
     event.setCreatedAt(OffsetDateTime.now());
     var saved = syncEventRepository.save(event);
@@ -84,6 +91,21 @@ public class SyncService {
     } finally {
       MDC.clear();
     }
+
+    if ("OFFLINE_PENDING_SYNC".equals(saved.getOrigin())) {
+      authAuditService.log(
+          AuthAuditAction.OFFLINE_SYNC,
+          null,
+          null,
+          "OK",
+          java.util.Map.of(
+              "syncEventId", saved.getId().toString(),
+              "eventType", saved.getEventType(),
+              "userId", saved.getUserId() == null ? "" : saved.getUserId(),
+              "deviceId", saved.getDeviceId() == null ? "" : saved.getDeviceId(),
+              "sessionId", saved.getSessionId() == null ? "" : saved.getSessionId()));
+    }
+
     return toResponse(saved);
   }
 
@@ -94,6 +116,10 @@ public class SyncService {
         event.getEventType(),
         event.getAggregateId(),
         event.getPayloadJson(),
+        event.getUserId(),
+        event.getDeviceId(),
+        event.getSessionId(),
+        event.getOrigin(),
         event.getDirection(),
         event.getCreatedAt(),
         event.getSyncedAt());

@@ -3,6 +3,7 @@ package com.parkflow.modules.parking.operation.service;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.parking.operation.repository.*;
 import com.parkflow.modules.tickets.dto.CreatePrintJobRequest;
 import com.parkflow.modules.tickets.entity.PrintDocumentType;
@@ -284,9 +285,9 @@ public class OperationService {
     ParkingSession session = requireActiveSessionForUpdate(request.ticketNumber(), request.plate());
     AppUser operator = findRequiredOperator(request.operatorUserId());
 
-    if (operator.getRole() == UserRole.CASHIER) {
+        if (operator.getRole() == UserRole.CAJERO || operator.getRole() == UserRole.OPERADOR) {
       throw new OperationException(
-          HttpStatus.FORBIDDEN, "Solo MANAGER o ADMIN puede procesar ticket perdido");
+          HttpStatus.FORBIDDEN, "Solo ADMIN o SUPER_ADMIN puede procesar ticket perdido");
     }
     if (request.approximateEntryAt() != null) {
       long driftMinutes =
@@ -444,12 +445,10 @@ public class OperationService {
   }
 
   private AppUser findRequiredOperator(UUID operatorUserId) {
-    if (operatorUserId == null) {
-      throw new OperationException(HttpStatus.BAD_REQUEST, "operatorUserId es obligatorio");
-    }
+    UUID effectiveOperatorId = operatorUserId != null ? operatorUserId : SecurityUtils.requireUserId();
     AppUser user =
         appUserRepository
-            .findById(operatorUserId)
+            .findById(effectiveOperatorId)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
 
     if (!user.isActive()) {
@@ -460,10 +459,13 @@ public class OperationService {
   }
 
   private int maxReprintsForRole(UserRole role) {
+    if (role == UserRole.SUPER_ADMIN) {
+      return Integer.MAX_VALUE;
+    }
     if (role == UserRole.ADMIN) {
       return Integer.MAX_VALUE;
     }
-    if (role == UserRole.MANAGER) {
+    if (role == UserRole.OPERADOR) {
       return 3;
     }
     return 1;
