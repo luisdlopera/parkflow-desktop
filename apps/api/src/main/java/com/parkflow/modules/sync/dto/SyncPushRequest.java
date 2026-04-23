@@ -6,4 +6,8 @@ public record SyncPushRequest(
     @NotBlank String idempotencyKey,
     @NotBlank String eventType,
     @NotBlank String aggregateId,
-    @NotBlank String payloadJson) {}
+    @NotBlank String payloadJson,
+    String userId,
+    String deviceId,
+    String sessionId,
+    String origin) {}

@@ -10,6 +10,10 @@ public record SyncEventResponse(
     String eventType,
     String aggregateId,
     String payloadJson,
+    String userId,
+    String deviceId,
+    String sessionId,
+    String origin,
     SyncDirection direction,
     OffsetDateTime createdAt,
     OffsetDateTime syncedAt) {}

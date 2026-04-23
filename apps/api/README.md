@@ -28,11 +28,34 @@ Variables por defecto:
 - `POSTGRES_DB=parkflow_dev`
 - `DATABASE_URL=jdbc:postgresql://localhost:5432/parkflow_dev`
 - `CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000`
-- `PARKFLOW_API_KEY` (o `app.security.api-key`): clave para cabecera `X-API-Key` en todos los endpoints salvo health/swagger/docs publicos.
+- `PARKFLOW_API_KEY` (o `app.security.api-key`): compatibilidad para cabecera `X-API-Key` en clientes técnicos/internos.
+- `PARKFLOW_JWT_SECRET_BASE64`: secreto base64 para firmar JWT.
+- `PARKFLOW_ACCESS_TOKEN_TTL_MINUTES`: expiracion del access token JWT.
+- `PARKFLOW_REFRESH_TOKEN_TTL_DAYS`: vida maxima del refresh token.
+- `PARKFLOW_OFFLINE_LEASE_HOURS`: lease offline por defecto para desktop.
 
 En `apps/web`, define:
 - `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1/operations`
-- `NEXT_PUBLIC_API_KEY` igual a la clave del API (el panel envia `X-API-Key` en cada fetch).
+- `NEXT_PUBLIC_AUTH_BASE_URL=http://localhost:8080/api/v1/auth`
+- `NEXT_PUBLIC_API_KEY` solo si necesitas compatibilidad con endpoints internos que aún lo lean.
+- `NEXT_PUBLIC_DEVICE_ID`, `NEXT_PUBLIC_DEVICE_NAME`, `NEXT_PUBLIC_DEVICE_PLATFORM`, `NEXT_PUBLIC_DEVICE_FINGERPRINT` para login inicial en web o desktop.
+
+## Auth
+
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/auth/logout`
+- `GET /api/v1/auth/me`
+- `POST /api/v1/auth/change-password`
+- `GET /api/v1/auth/devices`
+- `POST /api/v1/auth/devices/revoke`
+- `POST /api/v1/auth/devices/authorize`
+
+JWT access token: corto, 15 minutos por defecto.
+Refresh token: rotatorio y revocable.
+Sesiones: persistidas en `auth_sessions`.
+Auditoria: persistida en `auth_audit_log`.
+Offline: el desktop guarda sesión en keyring y lease local en SQLite.
 
 ## Swagger
 - http://localhost:8080/swagger-ui/index.html

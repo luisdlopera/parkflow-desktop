@@ -13,7 +13,7 @@ public record EntryRequest(
     @NotBlank String plate,
     @NotNull VehicleType type,
     UUID rateId,
-    @NotNull UUID operatorUserId,
+    UUID operatorUserId,
     OffsetDateTime entryAt,
     String site,
     String lane,

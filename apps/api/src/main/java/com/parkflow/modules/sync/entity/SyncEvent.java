@@ -27,6 +27,15 @@ public class SyncEvent {
   @Column(nullable = false, columnDefinition = "TEXT")
   private String payloadJson;
 
+  private String userId;
+
+  private String deviceId;
+
+  private String sessionId;
+
+  @Column(nullable = false)
+  private String origin = "ONLINE";
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private SyncDirection direction;

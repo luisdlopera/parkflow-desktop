@@ -23,7 +23,12 @@ public class AppUser {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private UserRole role = UserRole.CASHIER;
+  private UserRole role = UserRole.CAJERO;
+
+  @Column(nullable = false)
+  private String passwordHash;
+
+  private OffsetDateTime passwordChangedAt;
 
   @Column(nullable = false)
   private boolean isActive = true;
