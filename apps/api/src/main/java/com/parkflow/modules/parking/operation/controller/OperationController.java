@@ -2,7 +2,9 @@ package com.parkflow.modules.parking.operation.controller;
 
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.parking.operation.service.OperationService;
+import com.parkflow.modules.parking.operation.service.SupervisorService;
 import jakarta.validation.Valid;
+import java.time.ZoneId;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -11,9 +13,22 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/operations")
 public class OperationController {
   private final OperationService operationService;
+  private final SupervisorService supervisorService;
 
-  public OperationController(OperationService operationService) {
+  public OperationController(
+      OperationService operationService, SupervisorService supervisorService) {
     this.operationService = operationService;
+    this.supervisorService = supervisorService;
+  }
+
+  @GetMapping("/supervisor/summary")
+  public OperationsSummaryResponse supervisorSummary(
+      @RequestParam(name = "timeZone", required = false) String timeZone) {
+    ZoneId zone =
+        (timeZone != null && !timeZone.isBlank())
+            ? ZoneId.of(timeZone)
+            : ZoneId.of("America/Bogota");
+    return supervisorService.buildSummary(zone);
   }
 
   @PostMapping("/entries")

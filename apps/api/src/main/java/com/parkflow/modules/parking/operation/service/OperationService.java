@@ -9,6 +9,8 @@ import com.parkflow.modules.tickets.entity.PrintDocumentType;
 import com.parkflow.modules.tickets.service.PrintJobService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -19,6 +21,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class OperationService {
+  private static final Logger log = LoggerFactory.getLogger(OperationService.class);
+  private static final int LOST_TICKET_ENTRY_DRIFT_MAX_MINUTES = 240;
+
   private final AppUserRepository appUserRepository;
   private final VehicleRepository vehicleRepository;
   private final RateRepository rateRepository;
@@ -34,11 +42,19 @@ public class OperationService {
   private final TicketCounterRepository ticketCounterRepository;
   private final VehicleConditionReportRepository vehicleConditionReportRepository;
   private final SessionEventRepository sessionEventRepository;
+  private final OperationIdempotencyRepository operationIdempotencyRepository;
   private final PrintJobService printJobService;
   private final ObjectMapper objectMapper;
+  private final MeterRegistry meterRegistry;
 
   @Transactional
   public OperationResultResponse registerEntry(EntryRequest request) {
+    Optional<OperationResultResponse> replay =
+        tryReplay(request.idempotencyKey(), IdempotentOperationType.ENTRY);
+    if (replay.isPresent()) {
+      return replay.get();
+    }
+
     String normalizedPlate = request.plate().trim().toUpperCase(Locale.ROOT);
 
     parkingSessionRepository
@@ -83,7 +99,18 @@ public class OperationService {
     session.setBooth(request.booth());
     session.setTerminal(request.terminal());
     session.setEntryNotes(request.observations());
-    session = parkingSessionRepository.save(session);
+    try {
+      session = parkingSessionRepository.save(session);
+    } catch (DataIntegrityViolationException ex) {
+      Optional<OperationResultResponse> lateReplay =
+          tryReplay(request.idempotencyKey(), IdempotentOperationType.ENTRY);
+      if (lateReplay.isPresent()) {
+        return lateReplay.get();
+      }
+      throw new OperationException(
+          HttpStatus.CONFLICT,
+          "Vehiculo con ingreso activo, conflicto concurrente o placa duplicada en cola");
+    }
 
     saveVehicleCondition(
         session,
@@ -95,6 +122,9 @@ public class OperationService {
 
     createEvent(session, SessionEventType.ENTRY_RECORDED, operator, "entry");
     enqueuePrintJob(session, operator, PrintDocumentType.ENTRY, "entry");
+    safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.ENTRY, session);
+    meterRegistry.counter("parkflow.operations", "operation", "entry").increment();
+    log.info("audit op=entry sessionId={} ticket={}", session.getId(), session.getTicketNumber());
 
     return new OperationResultResponse(
         session.getId().toString(),
@@ -107,7 +137,13 @@ public class OperationService {
 
   @Transactional
   public OperationResultResponse registerExit(ExitRequest request) {
-    ParkingSession session = findActiveSession(request.ticketNumber(), request.plate());
+    Optional<OperationResultResponse> replay =
+        tryReplay(request.idempotencyKey(), IdempotentOperationType.EXIT);
+    if (replay.isPresent()) {
+      return replay.get();
+    }
+
+    ParkingSession session = requireActiveSessionForUpdate(request.ticketNumber(), request.plate());
     AppUser operator = findRequiredOperator(request.operatorUserId());
 
     if (session.getStatus() != SessionStatus.ACTIVE) {
@@ -140,7 +176,15 @@ public class OperationService {
       payment.setMethod(request.paymentMethod());
       payment.setAmount(price.total());
       payment.setPaidAt(exitAt);
-      paymentRepository.save(payment);
+      try {
+        paymentRepository.save(payment);
+      } catch (DataIntegrityViolationException ex) {
+        Optional<OperationResultResponse> late = tryReplay(request.idempotencyKey(), IdempotentOperationType.EXIT);
+        if (late.isPresent()) {
+          return late.get();
+        }
+        throw ex;
+      }
     }
 
     saveVehicleCondition(
@@ -155,6 +199,9 @@ public class OperationService {
 
     createEvent(session, SessionEventType.EXIT_RECORDED, operator, "exit");
     enqueuePrintJob(session, operator, PrintDocumentType.EXIT, "exit");
+    safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.EXIT, session);
+    meterRegistry.counter("parkflow.operations", "operation", "exit").increment();
+    log.info("audit op=exit sessionId={} ticket={}", session.getId(), session.getTicketNumber());
 
     return new OperationResultResponse(
         session.getId().toString(),
@@ -167,15 +214,31 @@ public class OperationService {
 
   @Transactional
   public OperationResultResponse reprintTicket(ReprintRequest request) {
+    Optional<OperationResultResponse> replay =
+        tryReplay(request.idempotencyKey(), IdempotentOperationType.REPRINT);
+    if (replay.isPresent()) {
+      return replay.get();
+    }
+
     ParkingSession session =
         parkingSessionRepository
-            .findByTicketNumber(request.ticketNumber())
+            .findByTicketNumberForUpdate(request.ticketNumber().trim())
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Ticket no encontrado"));
 
     AppUser operator = findRequiredOperator(request.operatorUserId());
     int maxReprints = maxReprintsForRole(operator.getRole());
     if (session.getReprintCount() >= maxReprints) {
       throw new OperationException(HttpStatus.FORBIDDEN, "Limite de reimpresion alcanzado");
+    }
+    if (maxReprints > 1
+        && maxReprints < Integer.MAX_VALUE
+        && session.getReprintCount() >= maxReprints - 1) {
+      log.warn(
+          "audit reprint near limit role={} ticket={} count={} max={}",
+          operator.getRole(),
+          session.getTicketNumber(),
+          session.getReprintCount(),
+          maxReprints);
     }
 
     session.setReprintCount(session.getReprintCount() + 1);
@@ -184,6 +247,16 @@ public class OperationService {
 
     createEvent(session, SessionEventType.TICKET_REPRINTED, operator, request.reason());
   enqueuePrintJob(session, operator, PrintDocumentType.REPRINT, "reprint-" + session.getReprintCount());
+    safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.REPRINT, session);
+    meterRegistry
+        .counter("parkflow.operations", "operation", "reprint")
+        .increment();
+    log.info(
+        "audit op=reprint sessionId={} ticket={} count={} reason={}",
+        session.getId(),
+        session.getTicketNumber(),
+        session.getReprintCount(),
+        request.reason());
 
     DurationCalculator.DurationBreakdown duration =
         DurationCalculator.calculate(
@@ -202,12 +275,28 @@ public class OperationService {
 
   @Transactional
   public OperationResultResponse processLostTicket(LostTicketRequest request) {
-    ParkingSession session = findActiveSession(request.ticketNumber(), request.plate());
+    Optional<OperationResultResponse> replay =
+        tryReplay(request.idempotencyKey(), IdempotentOperationType.LOST_TICKET);
+    if (replay.isPresent()) {
+      return replay.get();
+    }
+
+    ParkingSession session = requireActiveSessionForUpdate(request.ticketNumber(), request.plate());
     AppUser operator = findRequiredOperator(request.operatorUserId());
 
     if (operator.getRole() == UserRole.CASHIER) {
       throw new OperationException(
           HttpStatus.FORBIDDEN, "Solo MANAGER o ADMIN puede procesar ticket perdido");
+    }
+    if (request.approximateEntryAt() != null) {
+      long driftMinutes =
+          Math.abs(
+              Duration.between(request.approximateEntryAt(), session.getEntryAt()).toMinutes());
+      if (driftMinutes > LOST_TICKET_ENTRY_DRIFT_MAX_MINUTES) {
+        throw new OperationException(
+            HttpStatus.BAD_REQUEST,
+            "Hora aproximada de ingreso no coincide con el registro; verifique placa o acuda a supervisor");
+      }
     }
 
     Rate rate = requireRate(session);
@@ -237,11 +326,29 @@ public class OperationService {
       payment.setMethod(request.paymentMethod());
       payment.setAmount(price.total());
       payment.setPaidAt(exitAt);
-      paymentRepository.save(payment);
+      try {
+        paymentRepository.save(payment);
+      } catch (DataIntegrityViolationException ex) {
+        Optional<OperationResultResponse> late =
+            tryReplay(request.idempotencyKey(), IdempotentOperationType.LOST_TICKET);
+        if (late.isPresent()) {
+          return late.get();
+        }
+        throw ex;
+      }
     }
 
     createEvent(session, SessionEventType.LOST_TICKET_MARKED, operator, request.reason());
   enqueuePrintJob(session, operator, PrintDocumentType.LOST_TICKET, "lost-ticket");
+    safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.LOST_TICKET, session);
+    meterRegistry
+        .counter("parkflow.operations", "operation", "lost_ticket")
+        .increment();
+    log.info(
+        "audit op=lost_ticket sessionId={} ticket={} reason={}",
+        session.getId(),
+        session.getTicketNumber(),
+        request.reason());
 
     return new OperationResultResponse(
         session.getId().toString(),
@@ -379,9 +486,26 @@ public class OperationService {
   }
 
   private ParkingSession findActiveSession(String ticketNumber, String plate) {
+    if (ticketNumber != null && !ticketNumber.isBlank()
+        && plate != null
+        && !plate.isBlank()) {
+      ParkingSession session =
+          parkingSessionRepository
+              .findByStatusAndTicketNumber(SessionStatus.ACTIVE, ticketNumber.trim())
+              .orElseThrow(
+                  () -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
+      if (!session
+          .getVehicle()
+          .getPlate()
+          .equalsIgnoreCase(plate.trim().toUpperCase(Locale.ROOT))) {
+        throw new OperationException(
+            HttpStatus.CONFLICT, "Placa no coincide con el ticket; verifique o use solo un criterio");
+      }
+      return session;
+    }
     if (ticketNumber != null && !ticketNumber.isBlank()) {
       return parkingSessionRepository
-          .findByStatusAndTicketNumber(SessionStatus.ACTIVE, ticketNumber)
+          .findByStatusAndTicketNumber(SessionStatus.ACTIVE, ticketNumber.trim())
           .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
     }
 
@@ -392,6 +516,140 @@ public class OperationService {
     }
 
     throw new OperationException(HttpStatus.BAD_REQUEST, "ticketNumber o plate es obligatorio");
+  }
+
+  private ParkingSession requireActiveSessionForUpdate(String ticketNumber, String plate) {
+    if (ticketNumber != null
+        && !ticketNumber.isBlank()
+        && plate != null
+        && !plate.isBlank()) {
+      ParkingSession session =
+          parkingSessionRepository
+              .findActiveByTicketForUpdate(SessionStatus.ACTIVE, ticketNumber.trim())
+              .orElseThrow(
+                  () -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
+      if (!session
+          .getVehicle()
+          .getPlate()
+          .equalsIgnoreCase(plate.trim().toUpperCase(Locale.ROOT))) {
+        throw new OperationException(
+            HttpStatus.CONFLICT, "Placa no coincide con el ticket; verifique o use solo un criterio");
+      }
+      return session;
+    }
+    if (ticketNumber != null && !ticketNumber.isBlank()) {
+      return parkingSessionRepository
+          .findActiveByTicketForUpdate(SessionStatus.ACTIVE, ticketNumber.trim())
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
+    }
+    if (plate != null && !plate.isBlank()) {
+      return parkingSessionRepository
+          .findActiveByPlateForUpdate(
+              SessionStatus.ACTIVE, plate.trim().toUpperCase(Locale.ROOT))
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
+    }
+    throw new OperationException(HttpStatus.BAD_REQUEST, "ticketNumber o plate es obligatorio");
+  }
+
+  private Optional<OperationResultResponse> tryReplay(
+      String idempotencyKey, IdempotentOperationType expected) {
+    if (idempotencyKey == null || idempotencyKey.isBlank()) {
+      return Optional.empty();
+    }
+    return operationIdempotencyRepository
+        .findByIdempotencyKey(idempotencyKey.trim())
+        .map(
+            row -> {
+              if (row.getOperationType() != expected) {
+                throw new OperationException(
+                    HttpStatus.CONFLICT, "Clave de idempotencia ya usada con otra operacion");
+              }
+              return materializeIdempotentResult(expected, row.getSession().getId());
+            });
+  }
+
+  private void safeRecordIdempotency(
+      String idempotencyKey, IdempotentOperationType type, ParkingSession session) {
+    if (idempotencyKey == null || idempotencyKey.isBlank()) {
+      return;
+    }
+    OperationIdempotency row = new OperationIdempotency();
+    row.setIdempotencyKey(idempotencyKey.trim());
+    row.setOperationType(type);
+    row.setSession(session);
+    row.setCreatedAt(OffsetDateTime.now());
+    try {
+      operationIdempotencyRepository.save(row);
+    } catch (DataIntegrityViolationException ex) {
+      if (operationIdempotencyRepository.findByIdempotencyKey(idempotencyKey.trim()).isPresent()) {
+        return;
+      }
+      throw ex;
+    }
+  }
+
+  private OperationResultResponse materializeIdempotentResult(
+      IdempotentOperationType type, UUID sessionId) {
+    ParkingSession session =
+        parkingSessionRepository
+            .findById(sessionId)
+            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion no encontrada"));
+    return switch (type) {
+      case ENTRY -> new OperationResultResponse(
+          session.getId().toString(),
+          toReceipt(session, 0L, "0h 0m"),
+          "Ingreso (idempotente)",
+          null,
+          null,
+          null);
+      case EXIT -> {
+        if (session.getStatus() != SessionStatus.CLOSED) {
+          throw new OperationException(
+              HttpStatus.CONFLICT, "Idempotencia de salida: sesion aun no cerrada en el servidor");
+        }
+        yield materializePostPaymentResult(
+            session, "Salida (idempotente)", session.isLostTicket());
+      }
+      case LOST_TICKET -> {
+        if (session.getStatus() != SessionStatus.CLOSED || !session.isLostTicket()) {
+          throw new OperationException(
+              HttpStatus.CONFLICT, "Idempotencia ticket perdido: estado invalido en el servidor");
+        }
+        yield materializePostPaymentResult(session, "Ticket perdido (idempotente)", true);
+      }
+      case REPRINT -> materializeReprintResult(session);
+    };
+  }
+
+  private OperationResultResponse materializePostPaymentResult(
+      ParkingSession session, String message, boolean lostSurcharge) {
+    Rate rate = requireRate(session);
+    OffsetDateTime exitAt =
+        session.getExitAt() != null ? session.getExitAt() : OffsetDateTime.now();
+    var duration = DurationCalculator.calculate(session.getEntryAt(), exitAt, rate.getGraceMinutes());
+    var price = PricingCalculator.calculate(rate, duration.billableMinutes(), lostSurcharge);
+    return new OperationResultResponse(
+        session.getId().toString(),
+        toReceipt(session, duration.totalMinutes(), duration.human()),
+        message,
+        price.subtotal(),
+        price.surcharge(),
+        price.total());
+  }
+
+  private OperationResultResponse materializeReprintResult(ParkingSession session) {
+    DurationCalculator.DurationBreakdown duration =
+        DurationCalculator.calculate(
+            session.getEntryAt(),
+            Optional.ofNullable(session.getExitAt()).orElse(OffsetDateTime.now()),
+            0);
+    return new OperationResultResponse(
+        session.getId().toString(),
+        toReceipt(session, duration.totalMinutes(), duration.human()),
+        "Reimpresion (idempotente)",
+        null,
+        null,
+        session.getTotalAmount());
   }
 
   private Rate requireRate(ParkingSession session) {
