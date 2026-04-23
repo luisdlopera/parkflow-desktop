@@ -6,10 +6,17 @@
     "apps/*",
     "packages/*"
   ],
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "serialport",
+      "@serialport/bindings-cpp"
+    ]
+  },
   "scripts": {
     "dev:api": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\dev-api.ps1",
     "dev:web": "pnpm --filter @parkflow/web dev",
     "dev:desktop": "pnpm --filter @parkflow/desktop dev",
+    "dev:print-agent": "pnpm --filter @parkflow/print-agent dev",
     "dev": "pnpm --filter @parkflow/desktop dev",
     "build:web": "pnpm --filter @parkflow/web build",
     "build:desktop": "pnpm --filter @parkflow/desktop build",
