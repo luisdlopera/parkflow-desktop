@@ -3,10 +3,15 @@
 import type {
   PrintDocumentType,
   TicketPaperWidthMm,
-  TicketPrinterProfile,
   VehicleType
 } from "@parkflow/types";
-import { buildTicketPreviewLines } from "@parkflow/types";
+import {
+  buildTicketPreviewLines,
+  DEFAULT_PRINTER_PROFILE,
+  parsePrinterProfile,
+  resolvePrinterProfile as resolvePrinterProfileValue,
+  type TicketPrinterProfile
+} from "@parkflow/types";
 
 type ReceiptPayload = {
   ticketNumber: string;
@@ -51,18 +56,15 @@ export function resolvePaperWidthMm(): TicketPaperWidthMm {
 }
 
 export function resolvePrinterProfile(): TicketPrinterProfile {
-  const raw = (process.env.NEXT_PUBLIC_PRINTER_PROFILE ?? "generic_58mm_esc_pos").trim().toLowerCase();
-  const allowed: TicketPrinterProfile[] = [
-    "epson_tm_t20iii",
-    "xprinter_80_generic_esc_pos",
-    "bixolon_srp330iii",
-    "bixolon_srp332ii",
-    "generic_58mm_esc_pos"
-  ];
-  if (allowed.includes(raw as TicketPrinterProfile)) {
-    return raw as TicketPrinterProfile;
+  const raw = process.env.NEXT_PUBLIC_PRINTER_PROFILE;
+  const strict = (process.env.NEXT_PUBLIC_PRINTER_STRICT_MODE ?? "false").trim().toLowerCase() === "true";
+  const parsed = parsePrinterProfile(raw);
+
+  if (!parsed && raw && raw.trim()) {
+    console.warn(`Unknown printer profile "${raw}". Using ${DEFAULT_PRINTER_PROFILE}.`);
   }
-  return "generic_58mm_esc_pos";
+
+  return resolvePrinterProfileValue(raw, { strict });
 }
 
 export function buildTicketPreviewForOperation(
