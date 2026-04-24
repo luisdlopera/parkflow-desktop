@@ -1,0 +1,35 @@
+meta {
+  name: 01_open_cash
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{cashBaseUrl}}/open
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "site": "Sede Norte",
+    "terminal": "TERM-01",
+    "registerLabel": "Caja Bruno E2E",
+    "openingAmount": 0,
+    "operatorUserId": "{{adminOperatorId}}",
+    "openIdempotencyKey": "bruno-e2e-cash-open-norte-term01",
+    "notes": "Apertura automatica coleccion Bruno"
+  }
+}
+
+tests {
+  test("status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

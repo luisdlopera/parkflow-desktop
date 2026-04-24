@@ -1,7 +1,7 @@
 meta {
   name: 15_create_entry_for_negative_cases
   type: http
-  seq: 15
+  seq: 18
 }
 
 post {
@@ -13,6 +13,7 @@ post {
 headers {
   Content-Type: application/json
   X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
 }
 
 body:json {

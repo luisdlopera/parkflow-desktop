@@ -1,7 +1,7 @@
 meta {
   name: 07_get_ticket_final_and_assert_fields
   type: http
-  seq: 7
+  seq: 10
 }
 
 get {
@@ -11,6 +11,7 @@ get {
 }
 headers {
   X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
 }
 
 tests {

@@ -1,7 +1,7 @@
 meta {
   name: 04_simulate_exit_quote
   type: http
-  seq: 4
+  seq: 7
 }
 
 get {
@@ -11,6 +11,7 @@ get {
 }
 headers {
   X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
 }
 
 tests {

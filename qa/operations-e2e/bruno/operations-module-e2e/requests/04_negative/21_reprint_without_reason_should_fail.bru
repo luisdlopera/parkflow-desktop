@@ -1,7 +1,7 @@
 meta {
   name: 21_reprint_without_reason_should_fail
   type: http
-  seq: 21
+  seq: 24
 }
 
 post {
@@ -13,6 +13,7 @@ post {
 headers {
   Content-Type: application/json
   X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
 }
 
 body:json {

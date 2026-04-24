@@ -1,7 +1,7 @@
 meta {
   name: 19_lost_ticket_cashier_should_forbidden
   type: http
-  seq: 19
+  seq: 22
 }
 
 post {
@@ -13,6 +13,7 @@ post {
 headers {
   Content-Type: application/json
   X-API-Key: {{apiKey}}
+  Authorization: Bearer {{cashierAccessToken}}
 }
 
 body:json {
