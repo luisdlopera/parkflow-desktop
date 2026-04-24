@@ -25,6 +25,7 @@ export function previewLinesFromTicketDocument(
     copyNumber: doc.copyNumber,
     legalMessage: doc.legalMessage,
     qrPayload: doc.qrPayload,
-    barcodePayload: doc.barcodePayload
+    barcodePayload: doc.barcodePayload,
+    detailLines: doc.detailLines ?? null
   });
 }

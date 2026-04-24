@@ -24,7 +24,14 @@ export type PrinterProfileDescriptor = PrintStationConfig;
 
 export type VehicleType = "CAR" | "MOTORCYCLE" | "VAN" | "TRUCK" | "OTHER";
 
-export type PrintDocumentType = "ENTRY" | "EXIT" | "REPRINT" | "LOST_TICKET";
+export type PrintDocumentType =
+  | "ENTRY"
+  | "EXIT"
+  | "REPRINT"
+  | "LOST_TICKET"
+  | "CASH_CLOSING"
+  | "CASH_MOVEMENT"
+  | "CASH_COUNT";
 
 export type PrintJobStatus =
   | "created"
@@ -68,6 +75,8 @@ export interface TicketDocument {
   barcodePayload: string | null;
   copyNumber: number;
   printerProfile?: TicketPrinterProfile | null;
+  /** Lineas extra (arqueo, cierre, comprobantes de caja) — preview y ESC/POS. */
+  detailLines?: string[] | null;
 }
 
 export interface PrintJob {
