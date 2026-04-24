@@ -14,6 +14,8 @@ import org.springframework.data.repository.query.Param;
 public interface ParkingSessionRepository extends JpaRepository<ParkingSession, UUID> {
   long countByStatus(SessionStatus status);
 
+  long countByRate_Id(UUID rateId);
+
   List<ParkingSession> findByStatusOrderByEntryAtAsc(SessionStatus status);
 
   Optional<ParkingSession> findByStatusAndVehicle_Plate(SessionStatus status, String plate);

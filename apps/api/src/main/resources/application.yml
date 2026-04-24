@@ -26,6 +26,11 @@ management:
         include: health,info,prometheus
 
 app:
+  cash:
+    require-open-for-payment: ${PARKFLOW_CASH_REQUIRE_OPEN:true}
+    offline-close-allowed: ${PARKFLOW_CASH_OFFLINE_CLOSE:false}
+    offline-max-manual-movement: ${PARKFLOW_CASH_OFFLINE_MAX_MANUAL:500000}
+    operations-hint: ${PARKFLOW_CASH_OPS_HINT:Abra caja en el mismo terminal que el cobro; parametros por sede pueden relajar politicas.}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
   security:

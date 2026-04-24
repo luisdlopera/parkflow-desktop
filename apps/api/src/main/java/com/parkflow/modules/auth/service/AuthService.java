@@ -53,6 +53,9 @@ public class AuthService {
       throw invalidCredentials(request.email(), request.deviceId());
     }
 
+    user.setLastAccessAt(OffsetDateTime.now());
+    appUserRepository.save(user);
+
     AuthorizedDevice device = upsertDevice(request);
     if (!device.isAuthorized()) {
       authAuditService.log(
