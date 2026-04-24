@@ -14,6 +14,12 @@ export function ticketTitleForDocument(kind: PrintDocumentType): string {
       return "REIMPRESION";
     case "LOST_TICKET":
       return "TIQUETE PERDIDO";
+    case "CASH_CLOSING":
+      return "CIERRE DE CAJA";
+    case "CASH_MOVEMENT":
+      return "MOVIMIENTO CAJA";
+    case "CASH_COUNT":
+      return "ARQUEO DE CAJA";
     default:
       return "PARQUEADERO";
   }
@@ -47,6 +53,7 @@ export function buildTicketPreviewLines(input: {
   legalMessage?: string | null;
   qrPayload?: string | null;
   barcodePayload?: string | null;
+  detailLines?: string[] | null;
 }): string[] {
   const w = lineWidthChars(input.paperWidthMm);
   const lines: string[] = [];
@@ -88,9 +95,15 @@ export function buildTicketPreviewLines(input: {
   if (input.qrPayload) {
     lines.push("");
     lines.push(`[QR] ${input.qrPayload}`);
-  } else if (input.barcodePayload) {
+  } else   if (input.barcodePayload) {
     lines.push("");
     lines.push(`Codigo: ${input.barcodePayload}`);
+  }
+  if (input.detailLines?.length) {
+    lines.push("");
+    for (const row of input.detailLines) {
+      lines.push(row);
+    }
   }
   lines.push("");
   lines.push("");
