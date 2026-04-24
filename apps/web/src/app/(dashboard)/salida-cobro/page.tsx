@@ -7,6 +7,7 @@ import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { buildApiHeaders } from "@/lib/api";
 import { newIdempotencyKey } from "@/lib/idempotency";
 import { queueOfflineOperation } from "@/lib/offline-outbox";
+import { cashPolicy } from "@/lib/cash/cash-api";
 import {
   buildTicketPreviewForOperation,
   printReceiptIfTauri,
@@ -148,7 +149,17 @@ export default function SalidaCobroPage() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        setError(payload.error ?? "No se pudo registrar la salida");
+        let errMsg = typeof payload.error === "string" ? payload.error : "No se pudo registrar la salida";
+        if (/caja/i.test(errMsg)) {
+          try {
+            const site = active.receipt.site ?? undefined;
+            const pol = await cashPolicy(site ?? null);
+            errMsg = `${errMsg} ${pol.operationsHint}`.trim();
+          } catch {
+            /* keep base message */
+          }
+        }
+        setError(errMsg);
         return;
       }
 

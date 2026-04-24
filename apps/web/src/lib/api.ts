@@ -1,5 +1,7 @@
-import { authHeaders } from "@/lib/auth";
+import { authHeaders, type AuthHeaderOptions } from "@/lib/auth";
 
-export async function buildApiHeaders(): Promise<HeadersInit> {
-  return authHeaders();
+export type { AuthHeaderOptions };
+
+export async function buildApiHeaders(options?: AuthHeaderOptions): Promise<HeadersInit> {
+  return authHeaders(options);
 }

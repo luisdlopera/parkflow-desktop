@@ -116,6 +116,72 @@ export async function printThermalReceipt(
   };
 }
 
+/**
+ * Impresion termica para comprobantes de caja (sin sesion de parqueo — no sincroniza PrintJob de ticket).
+ */
+export async function printCashThermalReceipt(
+  ticket: TicketDocument,
+  documentType: PrintDocumentType
+): Promise<{
+  previewLines: string[];
+  warning: string | null;
+  channel: "local_agent" | "tauri" | "queued" | "unavailable";
+}> {
+  const previewLines = previewLinesFromTicketDocument(documentType, ticket);
+  const idempotencyKey = buildPrintQueueIdempotencyKey(ticket.ticketId, documentType);
+  const payload: OperationPayload = {
+    receipt: {
+      ticketNumber: ticket.ticketNumber,
+      plate: ticket.plate,
+      vehicleType: ticket.vehicleType,
+      site: ticket.site,
+      lane: ticket.lane,
+      booth: ticket.booth,
+      terminal: ticket.terminal,
+      entryAt: ticket.issuedAtIso
+    }
+  };
+  const base = createDefaultPrintContext(payload, { idempotencyKey, documentType, ticket });
+  const ctx = await createPrintContextWithUser(base);
+  const syncMeta = { sessionId: null, operatorUserId: ctx.operatorUserId };
+
+  const agent = getLocalAgentClient();
+  if (await agent.probe()) {
+    try {
+      const out = await agent.print(ctx);
+      if (out.channel === "local_agent" && out.result.status !== "failed") {
+        return { previewLines, warning: outcomeWarning(out), channel: "local_agent" };
+      }
+    } catch (e) {
+      await enqueueLocalPrint(idempotencyKey, documentType, ticket, syncMeta);
+      return {
+        previewLines,
+        warning:
+          e instanceof Error
+            ? `Agente de impresion: ${e.message}. Queda en cola local.`
+            : "Error en agente. Queda en cola local.",
+        channel: "queued"
+      };
+    }
+  }
+
+  const tauri = getTauriClient();
+  if (await tauri.probe()) {
+    const out = await tauri.print(ctx);
+    if (out.channel === "tauri") {
+      return { previewLines, warning: outcomeWarning(out), channel: "tauri" };
+    }
+  }
+
+  await enqueueLocalPrint(idempotencyKey, documentType, ticket, syncMeta);
+  return {
+    previewLines,
+    warning:
+      "Sin agente local ni Tauri: comprobante en cola offline. Instala o inicia el Print Agent o abre la app de escritorio.",
+    channel: "queued"
+  };
+}
+
 let workerStarted = false;
 
 export function startLocalPrintQueueWorker(): void {
