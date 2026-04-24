@@ -1,5 +1,6 @@
 package com.parkflow.modules.auth.security;
 
+import com.parkflow.modules.parking.operation.domain.UserRole;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -15,5 +16,13 @@ public final class SecurityUtils {
       throw new OperationException(HttpStatus.UNAUTHORIZED, "No hay sesion de usuario");
     }
     return principal.userId();
+  }
+
+  public static UserRole requireUserRole() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !(auth.getPrincipal() instanceof AuthPrincipal principal)) {
+      throw new OperationException(HttpStatus.UNAUTHORIZED, "No hay sesion de usuario");
+    }
+    return UserRole.valueOf(principal.role());
   }
 }
