@@ -127,6 +127,7 @@ model Payment {
   @@index([paidAt])
 }
 
+/// @deprecated Esquema demo Next/Prisma: la caja operativa vive en el API Java (Flyway `cash_*`). No usar para produccion.
 model CashClosure {
   id             String            @id @default(cuid())
   openedById     String
