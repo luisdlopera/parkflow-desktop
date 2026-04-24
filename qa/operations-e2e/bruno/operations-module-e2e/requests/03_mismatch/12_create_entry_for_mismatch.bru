@@ -1,7 +1,7 @@
 meta {
   name: 12_create_entry_for_mismatch
   type: http
-  seq: 12
+  seq: 15
 }
 
 post {
@@ -13,6 +13,7 @@ post {
 headers {
   Content-Type: application/json
   X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
 }
 
 body:json {

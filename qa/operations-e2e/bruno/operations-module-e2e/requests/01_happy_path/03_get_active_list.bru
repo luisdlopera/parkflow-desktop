@@ -1,7 +1,7 @@
 meta {
   name: 03_get_active_list
   type: http
-  seq: 3
+  seq: 6
 }
 
 get {
@@ -11,6 +11,7 @@ get {
 }
 headers {
   X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
 }
 
 tests {

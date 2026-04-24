@@ -1,0 +1,40 @@
+meta {
+  name: 02_login_cashier
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{authBaseUrl}}/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "email": "cashier@parkflow.local",
+    "password": "password",
+    "deviceId": "bruno-e2e-cashier-device",
+    "deviceName": "Bruno E2E Cajero",
+    "platform": "cli",
+    "fingerprint": "bruno-e2e-fp-cashier"
+  }
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("guarda cashierAccessToken", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    expect(data.accessToken).to.not.equal(null);
+    bru.setEnvVar("cashierAccessToken", data.accessToken);
+  });
+}

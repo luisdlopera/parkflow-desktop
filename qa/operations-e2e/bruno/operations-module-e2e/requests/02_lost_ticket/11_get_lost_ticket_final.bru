@@ -1,7 +1,7 @@
 meta {
   name: 11_get_lost_ticket_final
   type: http
-  seq: 11
+  seq: 14
 }
 
 get {
@@ -11,6 +11,7 @@ get {
 }
 headers {
   X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
 }
 
 tests {

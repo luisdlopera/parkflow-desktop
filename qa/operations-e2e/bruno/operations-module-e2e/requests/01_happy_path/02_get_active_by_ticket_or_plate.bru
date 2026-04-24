@@ -1,7 +1,7 @@
 meta {
   name: 02_get_active_by_ticket_or_plate
   type: http
-  seq: 2
+  seq: 5
 }
 
 get {
@@ -11,6 +11,7 @@ get {
 }
 headers {
   X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
 }
 
 tests {

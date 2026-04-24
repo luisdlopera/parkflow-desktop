@@ -1,0 +1,40 @@
+meta {
+  name: 00_login_admin
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{authBaseUrl}}/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "email": "admin@parkflow.local",
+    "password": "password",
+    "deviceId": "bruno-e2e-admin-device",
+    "deviceName": "Bruno E2E Admin",
+    "platform": "cli",
+    "fingerprint": "bruno-e2e-fp-admin"
+  }
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("guarda accessToken", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    expect(data.accessToken).to.not.equal(null);
+    bru.setEnvVar("accessToken", data.accessToken);
+  });
+}

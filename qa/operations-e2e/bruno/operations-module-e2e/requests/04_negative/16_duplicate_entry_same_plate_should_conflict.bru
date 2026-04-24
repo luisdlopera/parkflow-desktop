@@ -1,7 +1,7 @@
 meta {
   name: 16_duplicate_entry_same_plate_should_conflict
   type: http
-  seq: 16
+  seq: 19
 }
 
 post {
@@ -13,6 +13,7 @@ post {
 headers {
   Content-Type: application/json
   X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
 }
 
 body:json {
