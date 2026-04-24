@@ -1,5 +1,7 @@
 package com.parkflow.modules.parking.operation.service;
 
+import com.parkflow.modules.cash.domain.CashMovementType;
+import com.parkflow.modules.cash.service.CashService;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.parking.operation.exception.OperationException;
@@ -14,6 +16,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class OperationService {
   private static final Logger log = LoggerFactory.getLogger(OperationService.class);
   private static final int LOST_TICKET_ENTRY_DRIFT_MAX_MINUTES = 240;
+  /** Zona operativa por defecto para interpretar franjas horarias de tarifa (alineado con parametros). */
+  private static final ZoneId DEFAULT_OPERATION_ZONE = ZoneId.of("America/Bogota");
 
   private final AppUserRepository appUserRepository;
   private final VehicleRepository vehicleRepository;
@@ -45,6 +50,7 @@ public class OperationService {
   private final SessionEventRepository sessionEventRepository;
   private final OperationIdempotencyRepository operationIdempotencyRepository;
   private final PrintJobService printJobService;
+  private final CashService cashService;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
 
@@ -86,8 +92,8 @@ public class OperationService {
                 });
     vehicle = vehicleRepository.save(vehicle);
 
-    Rate rate = resolveRate(request.rateId(), request.type());
     OffsetDateTime entryAt = request.entryAt() != null ? request.entryAt() : OffsetDateTime.now();
+    Rate rate = resolveRate(request.rateId(), request.type(), request.site(), entryAt);
 
     ParkingSession session = new ParkingSession();
     session.setTicketNumber(nextTicketNumber(entryAt.toLocalDate()));
@@ -172,13 +178,14 @@ public class OperationService {
     session = parkingSessionRepository.save(session);
 
     if (request.paymentMethod() != null) {
+      cashService.assertCashOpenForParkingPayment(session);
       Payment payment = new Payment();
       payment.setSession(session);
       payment.setMethod(request.paymentMethod());
       payment.setAmount(price.total());
       payment.setPaidAt(exitAt);
       try {
-        paymentRepository.save(payment);
+        payment = paymentRepository.save(payment);
       } catch (DataIntegrityViolationException ex) {
         Optional<OperationResultResponse> late = tryReplay(request.idempotencyKey(), IdempotentOperationType.EXIT);
         if (late.isPresent()) {
@@ -186,6 +193,8 @@ public class OperationService {
         }
         throw ex;
       }
+      cashService.recordParkingPayment(
+          session, payment, operator, request.idempotencyKey(), CashMovementType.PARKING_PAYMENT);
     }
 
     saveVehicleCondition(
@@ -322,13 +331,14 @@ public class OperationService {
     session = parkingSessionRepository.save(session);
 
     if (request.paymentMethod() != null) {
+      cashService.assertCashOpenForParkingPayment(session);
       Payment payment = new Payment();
       payment.setSession(session);
       payment.setMethod(request.paymentMethod());
       payment.setAmount(price.total());
       payment.setPaidAt(exitAt);
       try {
-        paymentRepository.save(payment);
+        payment = paymentRepository.save(payment);
       } catch (DataIntegrityViolationException ex) {
         Optional<OperationResultResponse> late =
             tryReplay(request.idempotencyKey(), IdempotentOperationType.LOST_TICKET);
@@ -337,6 +347,8 @@ public class OperationService {
         }
         throw ex;
       }
+      cashService.recordParkingPayment(
+          session, payment, operator, request.idempotencyKey(), CashMovementType.LOST_TICKET_PAYMENT);
     }
 
     createEvent(session, SessionEventType.LOST_TICKET_MARKED, operator, request.reason());
@@ -471,20 +483,56 @@ public class OperationService {
     return 1;
   }
 
-  private Rate resolveRate(UUID rateId, VehicleType vehicleType) {
+  private Rate resolveRate(UUID rateId, VehicleType vehicleType, String site, OffsetDateTime at) {
     if (rateId != null) {
-      return rateRepository
-          .findById(rateId)
-          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
+      Rate r =
+          rateRepository
+              .findById(rateId)
+              .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
+      if (!r.isActive()) {
+        throw new OperationException(HttpStatus.BAD_REQUEST, "La tarifa esta inactiva");
+      }
+      if (!RateApplicability.isApplicable(r, at, DEFAULT_OPERATION_ZONE)) {
+        throw new OperationException(
+            HttpStatus.BAD_REQUEST,
+            "La tarifa no aplica en la fecha/hora de ingreso (franja o vigencia programada)");
+      }
+      return r;
     }
 
-    return rateRepository
-        .findFirstByIsActiveTrueAndVehicleTypeOrderByCreatedAtAsc(vehicleType)
-        .or(() -> rateRepository.findFirstByIsActiveTrueAndVehicleTypeIsNullOrderByCreatedAtAsc())
+    String resolvedSite =
+        site != null && !site.isBlank() ? site.trim() : "DEFAULT";
+
+    return pickFirstApplicable(
+            rateRepository.findAllByIsActiveTrueAndSiteAndVehicleTypeOrderByCreatedAtAsc(
+                resolvedSite, vehicleType),
+            at)
+        .or(
+            () ->
+                pickFirstApplicable(
+                    rateRepository.findAllByIsActiveTrueAndSiteAndVehicleTypeIsNullOrderByCreatedAtAsc(
+                        resolvedSite),
+                    at))
+        .or(
+            () ->
+                pickFirstApplicable(
+                    rateRepository.findAllByIsActiveTrueAndVehicleTypeOrderByCreatedAtAsc(vehicleType),
+                    at))
+        .or(
+            () ->
+                pickFirstApplicable(
+                    rateRepository.findAllByIsActiveTrueAndVehicleTypeIsNullOrderByCreatedAtAsc(), at))
         .orElseThrow(
             () ->
                 new OperationException(
-                    HttpStatus.BAD_REQUEST, "No existe tarifa activa para este tipo de vehiculo"));
+                    HttpStatus.BAD_REQUEST,
+                    "No existe tarifa activa y aplicable ahora para este tipo de vehiculo y sede"));
+  }
+
+  private java.util.Optional<Rate> pickFirstApplicable(List<Rate> rates, OffsetDateTime at) {
+    return rates.stream()
+        .filter(r -> RateApplicability.isApplicable(r, at, DEFAULT_OPERATION_ZONE))
+        .findFirst();
   }
 
   private ParkingSession findActiveSession(String ticketNumber, String plate) {
