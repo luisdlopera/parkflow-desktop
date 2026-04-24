@@ -21,6 +21,16 @@ public class AppUser {
   @Column(nullable = false, unique = true)
   private String email;
 
+  private String document;
+
+  private String phone;
+
+  private String site;
+
+  private String terminal;
+
+  private OffsetDateTime lastAccessAt;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private UserRole role = UserRole.CAJERO;
