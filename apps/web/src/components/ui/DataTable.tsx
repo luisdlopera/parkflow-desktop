@@ -9,7 +9,7 @@ type DataTableProps<T> = {
   rows: T[];
 };
 
-export default function DataTable<T extends Record<string, unknown>>({
+export default function DataTable<T extends object>({
   columns,
   rows
 }: DataTableProps<T>) {

@@ -21,6 +21,13 @@ type StoredSession = {
 
 let memorySession: StoredSession | null = null;
 
+export type AuthHeaderOptions = {
+  /** Optional note stored in server audit metadata for sensitive settings changes. */
+  auditReason?: string;
+  /** Indica operacion en modo offline (p. ej. tope de movimientos de caja en servidor). */
+  offline?: boolean;
+};
+
 function authBaseUrl(): string {
   const raw = process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "http://localhost:8080/api/v1/auth";
   return raw.replace(/\/$/, "");
@@ -158,21 +165,54 @@ export async function refreshIfNeeded(current: StoredSession): Promise<StoredSes
   return rotated;
 }
 
-export async function authHeaders(): Promise<HeadersInit> {
+export async function authHeaders(options?: AuthHeaderOptions): Promise<HeadersInit> {
   const session = await loadSession();
+  const terminalHeader =
+    typeof window !== "undefined"
+      ? process.env.NEXT_PUBLIC_TERMINAL_ID?.trim() ||
+        window.localStorage.getItem("parkflow_terminal_id")?.trim()
+      : undefined;
+  const auditReason = options?.auditReason?.trim();
+  const auditValue =
+    auditReason && auditReason.length > 0
+      ? auditReason.length > 500
+        ? auditReason.slice(0, 500)
+        : auditReason
+      : null;
+
   if (!session) {
-    return {
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "X-API-Key": operationsApiKey()
     };
+    if (terminalHeader) {
+      headers["X-Parkflow-Terminal"] = terminalHeader;
+    }
+    if (auditValue) {
+      headers["X-Parkflow-Audit-Reason"] = auditValue;
+    }
+    if (options?.offline === true) {
+      headers["X-Parkflow-Offline"] = "1";
+    }
+    return headers;
   }
 
   const refreshed = await refreshIfNeeded(session);
-  return {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "X-API-Key": operationsApiKey(),
     Authorization: `Bearer ${refreshed.accessToken}`
   };
+  if (terminalHeader) {
+    headers["X-Parkflow-Terminal"] = terminalHeader;
+  }
+  if (auditValue) {
+    headers["X-Parkflow-Audit-Reason"] = auditValue;
+  }
+  if (options?.offline === true) {
+    headers["X-Parkflow-Offline"] = "1";
+  }
+  return headers;
 }
 
 export async function hasPermission(permission: Permission): Promise<boolean> {
