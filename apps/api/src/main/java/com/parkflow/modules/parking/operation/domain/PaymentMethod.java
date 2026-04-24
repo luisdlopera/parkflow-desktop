@@ -3,5 +3,7 @@ package com.parkflow.modules.parking.operation.domain;
 public enum PaymentMethod {
   CASH,
   CARD,
-  TRANSFER
+  TRANSFER,
+  OTHER,
+  MIXED
 }
