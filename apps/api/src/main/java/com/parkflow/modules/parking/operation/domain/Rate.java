@@ -2,6 +2,7 @@ package com.parkflow.modules.parking.operation.domain;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.Getter;
@@ -33,7 +34,21 @@ public class Rate {
   private int graceMinutes = 0;
 
   @Column(nullable = false)
+  private int toleranceMinutes = 0;
+
+  @Column(nullable = false)
   private int fractionMinutes = 60;
+
+  @Column(nullable = false)
+  private String site = "DEFAULT";
+
+  private LocalTime windowStart;
+
+  private LocalTime windowEnd;
+
+  private OffsetDateTime scheduledActiveFrom;
+
+  private OffsetDateTime scheduledActiveTo;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
