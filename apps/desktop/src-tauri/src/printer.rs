@@ -40,6 +40,9 @@ fn document_type_label(t: &PrintDocumentType) -> &'static str {
     PrintDocumentType::Exit => "EXIT",
     PrintDocumentType::Reprint => "REPRINT",
     PrintDocumentType::LostTicket => "LOST_TICKET",
+    PrintDocumentType::CashClosing => "CASH_CLOSING",
+    PrintDocumentType::CashMovement => "CASH_MOVEMENT",
+    PrintDocumentType::CashCount => "CASH_COUNT",
   }
 }
 

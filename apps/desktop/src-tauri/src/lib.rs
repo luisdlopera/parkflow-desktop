@@ -16,6 +16,9 @@ pub enum PrintDocumentType {
   Exit,
   Reprint,
   LostTicket,
+  CashClosing,
+  CashMovement,
+  CashCount,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -948,6 +951,9 @@ fn parse_document_type(value: String) -> PrintDocumentType {
     "EXIT" => PrintDocumentType::Exit,
     "REPRINT" => PrintDocumentType::Reprint,
     "LOST_TICKET" => PrintDocumentType::LostTicket,
+    "CASH_CLOSING" => PrintDocumentType::CashClosing,
+    "CASH_MOVEMENT" => PrintDocumentType::CashMovement,
+    "CASH_COUNT" => PrintDocumentType::CashCount,
     _ => PrintDocumentType::Entry,
   }
 }
@@ -958,6 +964,9 @@ fn document_type_to_db(value: &PrintDocumentType) -> String {
     PrintDocumentType::Exit => "EXIT".to_string(),
     PrintDocumentType::Reprint => "REPRINT".to_string(),
     PrintDocumentType::LostTicket => "LOST_TICKET".to_string(),
+    PrintDocumentType::CashClosing => "CASH_CLOSING".to_string(),
+    PrintDocumentType::CashMovement => "CASH_MOVEMENT".to_string(),
+    PrintDocumentType::CashCount => "CASH_COUNT".to_string(),
   }
 }
 

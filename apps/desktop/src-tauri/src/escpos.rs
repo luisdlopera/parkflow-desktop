@@ -27,6 +27,8 @@ pub struct TicketDoc {
   pub copy_number: Option<i32>,
   /// Matches shared contract `TicketDocument.printerProfile` (slug).
   pub printer_profile: Option<String>,
+  #[serde(rename = "detailLines")]
+  pub detail_lines: Option<Vec<String>>,
 }
 
 fn line_width_chars(paper_mm: u8) -> usize {
@@ -100,6 +102,9 @@ pub fn build_receipt(kind: &str, ticket: &TicketDoc, profile: &EscPosProfile) ->
     "EXIT" => "SALIDA",
     "REPRINT" => "REIMPRESION",
     "LOST_TICKET" => "TIQUETE PERDIDO",
+    "CASH_CLOSING" => "CIERRE DE CAJA",
+    "CASH_MOVEMENT" => "MOVIMIENTO CAJA",
+    "CASH_COUNT" => "ARQUEO DE CAJA",
     _ => "PARQUEADERO",
   };
   push_line_centered(&mut out, title, w);
@@ -147,6 +152,13 @@ pub fn build_receipt(kind: &str, ticket: &TicketDoc, profile: &EscPosProfile) ->
     out.push(b'\n');
     out.extend_from_slice(format!("Codigo: {}\n", bc).as_bytes());
   }
+  if let Some(ref lines) = ticket.detail_lines {
+    out.push(b'\n');
+    for line in lines {
+      out.extend_from_slice(line.as_bytes());
+      out.push(b'\n');
+    }
+  }
   out.push(b'\n');
   out.push(b'\n');
   out.push(b'\n');
@@ -179,6 +191,7 @@ mod tests {
       barcode_payload: None,
       copy_number: Some(1),
       printer_profile: None,
+      detail_lines: None,
     };
     let p = crate::printer_profile::resolve_profile(None);
     let b = build_receipt("ENTRY", &t, &p).expect("bytes");
