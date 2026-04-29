@@ -22,12 +22,10 @@ pnpm dev:desktop
 
 ```bash
 pnpm db:up
-pnpm prisma:migrate
-pnpm prisma:seed
 ```
 
 ## Notas de migracion
-- **Prisma (`apps/web/prisma`)**: legado del layout pre-merge; el negocio en produccion vive en **Flyway + JPA** (`apps/api`). El panel actual usa el API por HTTP, no Prisma. Ver riesgos y opciones en `docs/architecture/prisma-vs-api-schema.md`. No mezclar `prisma migrate`/`db push` con la misma base que Flyway sin saber que tablas crea cada uno.
+- El backend en produccion usa **Flyway + JPA** (`apps/api`). El panel web usa el API por HTTP.
 - El API Spring (`apps/api`) ahora usa login de usuario con JWT corto + refresh rotatorio. `X-API-Key` queda solo como compatibilidad para clientes técnicos o protección interna, no como auth de usuario.
 - Documentacion de auditoria produccion: `docs/architecture/production-readiness-audit.md` y checklist `docs/runbooks/production-validation-checklist.md`.
 

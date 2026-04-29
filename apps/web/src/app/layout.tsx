@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Instrument_Sans } from "next/font/google";
 import PrintQueueBootstrap from "@/components/print/PrintQueueBootstrap";
+import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ToastProvider } from "@/lib/toast/ToastContext";
 import "./globals.css";
 
 const displayFont = Space_Grotesk({
@@ -15,7 +17,7 @@ const bodyFont = Instrument_Sans({
 
 export const metadata: Metadata = {
   title: "Parkflow Desktop",
-  description: "Parking management desktop app"
+  description: "Parking management desktop app - Offline first"
 };
 
 export default function RootLayout({
@@ -24,10 +26,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={`${displayFont.variable} ${bodyFont.variable}`}>
+    <html lang="es" className={`${displayFont.variable} ${bodyFont.variable}`} suppressHydrationWarning>
       <body className="min-h-screen bg-ash text-slate-900 antialiased">
-        <PrintQueueBootstrap />
-        {children}
+        <ThemeProvider>
+          <ToastProvider>
+            <PrintQueueBootstrap />
+            {children}
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

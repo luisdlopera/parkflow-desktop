@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import DataTable from "@/components/ui/DataTable";
 import { buildApiHeaders } from "@/lib/api";
 
@@ -17,10 +17,8 @@ export default function VehiculosActivosPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const apiBase = useMemo(
-    () => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1/operations",
-    []
-  );
+  // PERFORMANCE: Constant value, no need for useMemo
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1/operations";
 
   const loadRows = useCallback(async () => {
     setLoading(true);
@@ -44,7 +42,7 @@ export default function VehiculosActivosPage() {
     } finally {
       setLoading(false);
     }
-  }, [apiBase]);
+  }, [apiBase]); // PERFORMANCE: apiBase is constant, no need as dependency
 
   useEffect(() => {
     void loadRows();
