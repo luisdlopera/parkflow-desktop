@@ -97,6 +97,7 @@ public class OperationService {
 
     ParkingSession session = new ParkingSession();
     session.setTicketNumber(nextTicketNumber(entryAt.toLocalDate()));
+    session.setPlate(normalizedPlate);
     session.setVehicle(vehicle);
     session.setRate(rate);
     session.setEntryOperator(operator);
@@ -106,6 +107,8 @@ public class OperationService {
     session.setBooth(request.booth());
     session.setTerminal(request.terminal());
     session.setEntryNotes(request.observations());
+    session.setEntryImageUrl(blankToNull(request.entryImageUrl()));
+    session.setSyncStatus(SessionSyncStatus.SYNCED);
     try {
       session = parkingSessionRepository.save(session);
     } catch (DataIntegrityViolationException ex) {
@@ -128,7 +131,14 @@ public class OperationService {
         operator);
 
     createEvent(session, SessionEventType.ENTRY_RECORDED, operator, "entry");
-    enqueuePrintJob(session, operator, PrintDocumentType.ENTRY, "entry");
+    // RELIABILITY: Print job is best-effort; don't fail the operation if printing fails
+    try {
+      enqueuePrintJob(session, operator, PrintDocumentType.ENTRY, "entry");
+    } catch (Exception printError) {
+      log.warn("RELIABILITY: Print job creation failed for session={}, but operation completed. Error: {}",
+          session.getId(), printError.getMessage());
+      // Continue - print job can be retried later
+    }
     safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.ENTRY, session);
     meterRegistry.counter("parkflow.operations", "operation", "entry").increment();
     log.info("audit op=entry sessionId={} ticket={}", session.getId(), session.getTicketNumber());
@@ -172,7 +182,9 @@ public class OperationService {
     session.setExitAt(exitAt);
     session.setExitOperator(operator);
     session.setExitNotes(request.observations());
+    session.setExitImageUrl(blankToNull(request.exitImageUrl()));
     session.setStatus(SessionStatus.CLOSED);
+    session.setSyncStatus(SessionSyncStatus.SYNCED);
     session.setTotalAmount(price.total());
     session.setUpdatedAt(OffsetDateTime.now());
     session = parkingSessionRepository.save(session);
@@ -208,7 +220,14 @@ public class OperationService {
     detectConditionMismatch(session, operator);
 
     createEvent(session, SessionEventType.EXIT_RECORDED, operator, "exit");
-    enqueuePrintJob(session, operator, PrintDocumentType.EXIT, "exit");
+    // RELIABILITY: Print job is best-effort; don't fail the operation if printing fails
+    try {
+      enqueuePrintJob(session, operator, PrintDocumentType.EXIT, "exit");
+    } catch (Exception printError) {
+      log.warn("RELIABILITY: Print job creation failed for session={}, but operation completed. Error: {}",
+          session.getId(), printError.getMessage());
+      // Continue - print job can be retried later, but the exit is already recorded
+    }
     safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.EXIT, session);
     meterRegistry.counter("parkflow.operations", "operation", "exit").increment();
     log.info("audit op=exit sessionId={} ticket={}", session.getId(), session.getTicketNumber());
@@ -256,7 +275,14 @@ public class OperationService {
     session = parkingSessionRepository.save(session);
 
     createEvent(session, SessionEventType.TICKET_REPRINTED, operator, request.reason());
-  enqueuePrintJob(session, operator, PrintDocumentType.REPRINT, "reprint-" + session.getReprintCount());
+    // RELIABILITY: Print job is best-effort; don't fail the operation if printing fails
+    try {
+      enqueuePrintJob(session, operator, PrintDocumentType.REPRINT, "reprint-" + session.getReprintCount());
+    } catch (Exception printError) {
+      log.warn("RELIABILITY: Print job creation failed for session={}, but operation completed. Error: {}",
+          session.getId(), printError.getMessage());
+      // Continue - print job can be retried later
+    }
     safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.REPRINT, session);
     meterRegistry
         .counter("parkflow.operations", "operation", "reprint")
@@ -325,7 +351,9 @@ public class OperationService {
     session.setLostTicketReason(request.reason());
     session.setExitAt(exitAt);
     session.setExitOperator(operator);
-    session.setStatus(SessionStatus.CLOSED);
+    session.setExitImageUrl(blankToNull(request.exitImageUrl()));
+    session.setStatus(SessionStatus.LOST_TICKET);
+    session.setSyncStatus(SessionSyncStatus.SYNCED);
     session.setTotalAmount(price.total());
     session.setUpdatedAt(OffsetDateTime.now());
     session = parkingSessionRepository.save(session);
@@ -352,7 +380,14 @@ public class OperationService {
     }
 
     createEvent(session, SessionEventType.LOST_TICKET_MARKED, operator, request.reason());
-  enqueuePrintJob(session, operator, PrintDocumentType.LOST_TICKET, "lost-ticket");
+    // RELIABILITY: Print job is best-effort; don't fail the operation if printing fails
+    try {
+      enqueuePrintJob(session, operator, PrintDocumentType.LOST_TICKET, "lost-ticket");
+    } catch (Exception printError) {
+      log.warn("RELIABILITY: Print job creation failed for session={}, but operation completed. Error: {}",
+          session.getId(), printError.getMessage());
+      // Continue - print job can be retried later
+    }
     safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.LOST_TICKET, session);
     meterRegistry
         .counter("parkflow.operations", "operation", "lost_ticket")
@@ -421,7 +456,9 @@ public class OperationService {
   @Transactional(readOnly = true)
   public List<ReceiptResponse> listActiveSessions() {
     OffsetDateTime now = OffsetDateTime.now();
-    return parkingSessionRepository.findByStatusOrderByEntryAtAsc(SessionStatus.ACTIVE).stream()
+    // PERFORMANCE: Use findActiveWithAssociations to prevent N+1 queries
+    // This method JOIN FETCHes vehicle and rate associations
+    return parkingSessionRepository.findActiveWithAssociations(SessionStatus.ACTIVE).stream()
         .map(
             session -> {
               DurationCalculator.DurationBreakdown duration =
@@ -435,9 +472,13 @@ public class OperationService {
   }
 
   private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
+    String plate =
+        session.getPlate() != null
+            ? session.getPlate()
+            : (session.getVehicle() != null ? session.getVehicle().getPlate() : null);
     return new ReceiptResponse(
         session.getTicketNumber(),
-        session.getVehicle().getPlate(),
+        plate,
         session.getVehicle().getType().name(),
             session.getSite(),
             session.getLane(),
@@ -452,8 +493,11 @@ public class OperationService {
         session.getTotalAmount(),
         session.getRate() != null ? session.getRate().getName() : null,
         session.getStatus(),
-        session.isLostTicket(),
-        session.getReprintCount());
+        session.isLostTicket() || session.getStatus() == SessionStatus.LOST_TICKET,
+        session.getReprintCount(),
+        session.getEntryImageUrl(),
+        session.getExitImageUrl(),
+        session.getSyncStatus());
   }
 
   private AppUser findRequiredOperator(UUID operatorUserId) {
@@ -503,30 +547,14 @@ public class OperationService {
     String resolvedSite =
         site != null && !site.isBlank() ? site.trim() : "DEFAULT";
 
-    return pickFirstApplicable(
-            rateRepository.findAllByIsActiveTrueAndSiteAndVehicleTypeOrderByCreatedAtAsc(
-                resolvedSite, vehicleType),
-            at)
-        .or(
-            () ->
-                pickFirstApplicable(
-                    rateRepository.findAllByIsActiveTrueAndSiteAndVehicleTypeIsNullOrderByCreatedAtAsc(
-                        resolvedSite),
-                    at))
-        .or(
-            () ->
-                pickFirstApplicable(
-                    rateRepository.findAllByIsActiveTrueAndVehicleTypeOrderByCreatedAtAsc(vehicleType),
-                    at))
-        .or(
-            () ->
-                pickFirstApplicable(
-                    rateRepository.findAllByIsActiveTrueAndVehicleTypeIsNullOrderByCreatedAtAsc(), at))
+    // PERFORMANCE: Single query instead of 4 sequential queries
+    return rateRepository
+        .findFirstApplicableRate(resolvedSite, vehicleType)
+        .filter(r -> RateApplicability.isApplicable(r, at, DEFAULT_OPERATION_ZONE))
         .orElseThrow(
-            () ->
-                new OperationException(
-                    HttpStatus.BAD_REQUEST,
-                    "No existe tarifa activa y aplicable ahora para este tipo de vehiculo y sede"));
+            () -> new OperationException(
+                HttpStatus.BAD_REQUEST,
+                "No existe tarifa activa y aplicable ahora para este tipo de vehiculo y sede"));
   }
 
   private java.util.Optional<Rate> pickFirstApplicable(List<Rate> rates, OffsetDateTime at) {
@@ -618,11 +646,36 @@ public class OperationService {
             });
   }
 
+  /**
+   * Records idempotency information for an operation.
+   * RELIABILITY: If idempotency cannot be recorded, the operation should fail
+   * to prevent duplicates in case of retries.
+   *
+   * @param idempotencyKey the idempotency key (required for financial operations)
+   * @param type the operation type
+   * @param session the affected parking session
+   * @throws IllegalStateException if idempotency cannot be recorded
+   */
   private void safeRecordIdempotency(
       String idempotencyKey, IdempotentOperationType type, ParkingSession session) {
+    // SECURITY/RELIABILITY: Critical operations must have idempotency keys
+    boolean isCriticalOperation = type == IdempotentOperationType.ENTRY
+        || type == IdempotentOperationType.EXIT
+        || type == IdempotentOperationType.LOST_TICKET;
+
     if (idempotencyKey == null || idempotencyKey.isBlank()) {
+      if (isCriticalOperation) {
+        log.error("RELIABILITY: Critical operation {} completed without idempotency key for session {}",
+            type, session.getId());
+        throw new IllegalStateException(
+            "Critical operation must have idempotency key: " + type);
+      }
+      // Non-critical operations can proceed without idempotency (e.g., reprint)
+      log.warn("RELIABILITY: Operation {} has no idempotency key for session {}",
+          type, session.getId());
       return;
     }
+
     OperationIdempotency row = new OperationIdempotency();
     row.setIdempotencyKey(idempotencyKey.trim());
     row.setOperationType(type);
@@ -630,10 +683,16 @@ public class OperationService {
     row.setCreatedAt(OffsetDateTime.now());
     try {
       operationIdempotencyRepository.save(row);
+      log.debug("RELIABILITY: Recorded idempotency key={} for operation={} session={}",
+          idempotencyKey, type, session.getId());
     } catch (DataIntegrityViolationException ex) {
+      // This is expected for duplicate keys - the operation was already recorded
       if (operationIdempotencyRepository.findByIdempotencyKey(idempotencyKey.trim()).isPresent()) {
+        log.debug("RELIABILITY: Duplicate idempotency key={} - operation already recorded", idempotencyKey);
         return;
       }
+      // Unexpected database constraint violation
+      log.error("RELIABILITY: Database error recording idempotency key={}: {}", idempotencyKey, ex.getMessage());
       throw ex;
     }
   }
@@ -657,11 +716,10 @@ public class OperationService {
           throw new OperationException(
               HttpStatus.CONFLICT, "Idempotencia de salida: sesion aun no cerrada en el servidor");
         }
-        yield materializePostPaymentResult(
-            session, "Salida (idempotente)", session.isLostTicket());
+        yield materializePostPaymentResult(session, "Salida (idempotente)", false);
       }
       case LOST_TICKET -> {
-        if (session.getStatus() != SessionStatus.CLOSED || !session.isLostTicket()) {
+        if (session.getStatus() != SessionStatus.LOST_TICKET) {
           throw new OperationException(
               HttpStatus.CONFLICT, "Idempotencia ticket perdido: estado invalido en el servidor");
         }
@@ -733,19 +791,31 @@ public class OperationService {
   }
 
   private void detectConditionMismatch(ParkingSession session, AppUser operator) {
-    Optional<VehicleConditionReport> entryReport =
-        vehicleConditionReportRepository.findFirstBySessionAndStageOrderByCreatedAtAsc(
-            session, ConditionStage.ENTRY);
-    Optional<VehicleConditionReport> exitReport =
-        vehicleConditionReportRepository.findFirstBySessionAndStageOrderByCreatedAtDesc(
-            session, ConditionStage.EXIT);
-
-    if (entryReport.isEmpty() || exitReport.isEmpty()) {
+    // PERFORMANCE: Single query fetches both reports instead of 2 separate queries
+    List<VehicleConditionReport> reports = 
+        vehicleConditionReportRepository.findEntryAndExitReports(session);
+    
+    if (reports.isEmpty()) {
       return;
     }
+    
+    // Find first entry (earliest) and last exit (latest) from the results
+    // Results are ordered by stage ASC, createdAt ASC
+    VehicleConditionReport entry = null;
+    VehicleConditionReport exit = null;
+    
+    for (VehicleConditionReport report : reports) {
+      if (report.getStage() == ConditionStage.ENTRY && entry == null) {
+        entry = report; // First entry is earliest due to ASC ordering
+      }
+      if (report.getStage() == ConditionStage.EXIT) {
+        exit = report; // Keep updating to get the last (latest) exit
+      }
+    }
 
-    VehicleConditionReport entry = entryReport.get();
-    VehicleConditionReport exit = exitReport.get();
+    if (entry == null || exit == null) {
+      return;
+    }
 
     String entryObs = blankToNull(entry.getObservations());
     String exitObs = blankToNull(exit.getObservations());
@@ -815,9 +885,11 @@ public class OperationService {
 
   private String nextTicketNumber(LocalDate date) {
     String key = date.format(DateTimeFormatter.BASIC_ISO_DATE);
+    
+    // RELIABILITY: Pessimistic write lock prevents concurrent duplicates
     TicketCounter counter =
         ticketCounterRepository
-            .findById(key)
+            .findByIdForUpdate(key)
             .orElseGet(
                 () -> {
                   TicketCounter created = new TicketCounter();
@@ -830,7 +902,9 @@ public class OperationService {
     counter.setUpdatedAt(OffsetDateTime.now());
     ticketCounterRepository.save(counter);
 
-    return "T-" + key + "-" + String.format("%06d", counter.getLastNumber());
+    String ticketNumber = "T-" + key + "-" + String.format("%06d", counter.getLastNumber());
+    
+    return ticketNumber;
   }
 
   private void createEvent(

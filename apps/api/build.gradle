@@ -37,6 +37,11 @@ dependencies {
   implementation 'org.mapstruct:mapstruct:1.5.5.Final'
   annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 
+  // SECURITY: Rate limiting to prevent brute force and DoS
+  implementation 'com.bucket4j:bucket4j_jdk17-core:8.17.0'
+  implementation 'com.bucket4j:bucket4j_jdk17-jcache:8.17.0'
+  implementation 'javax.cache:cache-api:1.1.1'
+
   compileOnly 'org.projectlombok:lombok:1.18.34'
   annotationProcessor 'org.projectlombok:lombok:1.18.34'
   testCompileOnly 'org.projectlombok:lombok:1.18.34'

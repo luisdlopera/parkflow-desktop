@@ -42,6 +42,7 @@ public class SecurityConfig {
                 auth.requestMatchers(
                         "/actuator/health",
                         "/actuator/info",
+                        "/actuator/prometheus",  // OBSERVABILITY: Public for monitoring scrapers
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/api/v1/auth/login",

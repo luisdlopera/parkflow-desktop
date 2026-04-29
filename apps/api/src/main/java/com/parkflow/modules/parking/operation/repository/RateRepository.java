@@ -46,4 +46,27 @@ public interface RateRepository extends JpaRepository<Rate, UUID> {
       @Param("site") String site,
       @Param("vehicleType") VehicleType vehicleType,
       @Param("excludeId") UUID excludeId);
+
+  /**
+   * PERFORMANCE: Optimized single-query rate resolution using native SQL.
+   * Uses numeric priority: 1=site+type, 2=site+null, 3=null+type, 4=null+null
+   */
+  @Query(value = """
+      SELECT * FROM rates r
+      WHERE r.is_active = true
+        AND (r.site = :site OR r.site IS NULL)
+        AND (r.vehicle_type = :vehicleType OR r.vehicle_type IS NULL)
+      ORDER BY 
+        CASE 
+          WHEN r.site = :site AND r.vehicle_type = :vehicleType THEN 1
+          WHEN r.site = :site AND r.vehicle_type IS NULL THEN 2
+          WHEN r.site IS NULL AND r.vehicle_type = :vehicleType THEN 3
+          ELSE 4
+        END,
+        r.created_at ASC
+      LIMIT 1
+      """, nativeQuery = true)
+  Optional<Rate> findFirstApplicableRate(
+      @Param("site") String site, 
+      @Param("vehicleType") VehicleType vehicleType);
 }

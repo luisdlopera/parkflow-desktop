@@ -14,7 +14,8 @@ public record LostTicketRequest(
   UUID operatorUserId,
   PaymentMethod paymentMethod,
     @NotBlank String reason,
-    OffsetDateTime approximateEntryAt) {
+    OffsetDateTime approximateEntryAt,
+    String exitImageUrl) {
 
   @AssertTrue(message = "ticketNumber o plate es obligatorio")
   public boolean hasLocator() {
