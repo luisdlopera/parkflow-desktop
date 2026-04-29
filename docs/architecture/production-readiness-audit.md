@@ -1,12 +1,12 @@
 # Auditoria de preparacion para produccion (main vs develop)
 
-Fecha de referencia: alineada con el estado del repositorio en rama `develop`. `main` permanece en el commit inicial (Tauri + Next + Prisma en layout monolitico).
+Fecha de referencia: alineada con el estado del repositorio en rama `develop`. `main` permanece en el commit inicial (Tauri + Next en layout monolitico).
 
 ## 1. Estado actual por rama
 
 ### main
 
-- Layout de app unico: `src/` (Next), `src-tauri/`, `prisma/`, `docker-compose.yml` en raiz.
+- Layout de app unico: `src/` (Next), `src-tauri/`, `docker-compose.yml` en raiz.
 - Sin `apps/api` Spring Boot, sin modulo de operaciones Java, sin print jobs/sync Flyway dedicados en backend propio.
 - Sin paquete `packages/types` ni documentacion `offline-printing-v1` en el arbol esperado del monorepo.
 
@@ -30,11 +30,10 @@ Fecha de referencia: alineada con el estado del repositorio en rama `develop`. `
 ### Migradas (en develop)
 
 - UI de operaciones (ingreso, salida, listados) en `apps/web` con paths equivalentes a las paginas que estaban bajo `src/` en main.
-- Prisma + PostgreSQL para datos propios del panel web (convive con API Spring; README indica transicion).
 
 ### Perdidas / riesgo de regresion
 
-- **Ruta raiz del repo**: scripts y paths cambiaron (`pnpm dev:web`, `apps/web/prisma`). Documentacion antigua que apunte solo a `main` queda obsoleta.
+- **Ruta raiz del repo**: scripts y paths cambiaron (`pnpm dev:web`). Documentacion antigua que apunte solo a `main` queda obsoleta.
 - **main no recibe** automaticamente las capacidades de develop hasta merge explicito.
 
 ## 4. Implementacion y cableado real (develop)

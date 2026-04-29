@@ -19,6 +19,9 @@ public class ParkingSession {
   @Column(nullable = false, unique = true)
   private String ticketNumber;
 
+  @Column(nullable = false, length = 16)
+  private String plate;
+
   @ManyToOne(optional = false)
   @JoinColumn(name = "vehicle_id")
   private Vehicle vehicle;
@@ -47,6 +50,16 @@ public class ParkingSession {
   private String entryNotes;
 
   private String exitNotes;
+
+  @Column(name = "entry_image_url")
+  private String entryImageUrl;
+
+  @Column(name = "exit_image_url")
+  private String exitImageUrl;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "sync_status", nullable = false, length = 20)
+  private SessionSyncStatus syncStatus = SessionSyncStatus.SYNCED;
 
   @Column(nullable = false)
   private boolean lostTicket = false;

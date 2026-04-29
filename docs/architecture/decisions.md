@@ -5,6 +5,4 @@
 
 2) Backend separado en Spring Boot
 - Facilita escalabilidad, auditoria y seguridad empresarial.
-
-3) Prisma temporal en apps/web
-- Mantiene continuidad mientras se migra a Flyway + JPA.
+- Usa Flyway + JPA para persistencia.
