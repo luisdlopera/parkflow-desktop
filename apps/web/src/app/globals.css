@@ -10,6 +10,15 @@
   --color-moss: #c2410c;
 }
 
+/* Dark mode support */
+[data-theme="dark"] {
+  --color-ash: #0f172a;
+  --color-ink: #f8fafc;
+  --color-sand: #1e293b;
+  --color-ember: #fb923c;
+  --color-moss: #fdba74;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -20,6 +29,13 @@ body {
     var(--color-ash);
   color: var(--color-ink);
   font-family: var(--font-body);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+[data-theme="dark"] body {
+  background: radial-gradient(1200px 600px at 10% 5%, #1e293b 0%, transparent 60%),
+    radial-gradient(900px 500px at 90% 10%, #334155 0%, transparent 55%),
+    var(--color-ash);
 }
 
 .bg-ash {
@@ -31,9 +47,100 @@ body {
   border: 1px solid rgba(20, 20, 20, 0.06);
   box-shadow: 0 24px 60px rgba(18, 18, 18, 0.08);
   backdrop-filter: blur(12px);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+[data-theme="dark"] .surface {
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
 }
 
 .grid-dots {
   background-image: radial-gradient(rgba(194, 65, 12, 0.22) 1px, transparent 0);
   background-size: 18px 18px;
+}
+
+[data-theme="dark"] .grid-dots {
+  background-image: radial-gradient(rgba(251, 146, 60, 0.15) 1px, transparent 0);
+}
+
+/* Animaciones para feedback operacional */
+@keyframes success-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.animate-success {
+  animation: success-pulse 0.3s ease-in-out;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+/* Mejoras de accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visible para navegación por teclado */
+:focus-visible {
+  outline: 2px solid var(--color-ember);
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.8);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.5);
+}
+
+/* Input autofill styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px white inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+[data-theme="dark"] input:-webkit-autofill,
+[data-theme="dark"] input:-webkit-autofill:hover,
+[data-theme="dark"] input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #1e293b inset;
+  -webkit-text-fill-color: #f8fafc;
 }

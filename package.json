@@ -22,9 +22,6 @@
     "build:desktop": "pnpm --filter @parkflow/desktop build",
     "lint:web": "pnpm --filter @parkflow/web lint",
     "db:up": "docker compose -f infra/docker-compose.yml up -d",
-    "db:down": "docker compose -f infra/docker-compose.yml down",
-    "prisma:generate": "pnpm --filter @parkflow/web prisma:generate",
-    "prisma:migrate": "pnpm --filter @parkflow/web prisma:migrate",
-    "prisma:seed": "pnpm --filter @parkflow/web prisma:seed"
+    "db:down": "docker compose -f infra/docker-compose.yml down"
   }
 }

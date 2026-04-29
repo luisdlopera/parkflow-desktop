@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
+import { ChangeCalculator } from "@/components/ui/ChangeCalculator";
 import { buildApiHeaders } from "@/lib/api";
 import { newIdempotencyKey } from "@/lib/idempotency";
 import { queueOfflineOperation } from "@/lib/offline-outbox";
@@ -15,6 +16,9 @@ import {
   type OperationPayload
 } from "@/lib/tauri-print";
 import type { VehicleType } from "@parkflow/types";
+import { useExitShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
+import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
+import { useToast } from "@/lib/toast/ToastContext";
 
 type ActiveLookup = {
   sessionId: string;
@@ -71,13 +75,22 @@ export default function SalidaCobroPage() {
   const [previewLines, setPreviewLines] = useState<string[] | null>(null);
   const operationLock = useRef(false);
   const reprintLock = useRef(false);
+  const ticketInputRef = useRef<HTMLInputElement>(null);
+  const { playSuccess, playError } = useOperationSounds();
+  const { success: toastSuccess, error: toastError } = useToast();
 
-  const apiBase = useMemo(
-    () => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1/operations",
-    []
-  );
+  // Auto-focus en campo de ticket al cargar
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      ticketInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
-  const lookup = async () => {
+  // PERFORMANCE: Constant value, no need for useMemo
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1/operations";
+
+  const lookup = useCallback(async () => {
     setError("");
     setMessage("");
 
@@ -104,17 +117,20 @@ export default function SalidaCobroPage() {
       if (!response.ok) {
         setActive(null);
         setError(payload.error ?? "No se encontro sesion activa");
+        playError();
         return;
       }
       setActive(payload);
+      playSuccess();
     } catch {
       setError("Error de red buscando sesion");
+      playError();
     } finally {
       setSearching(false);
     }
-  };
+  }, [ticketNumber, plate, apiBase, playSuccess, playError]);
 
-  const processExit = async (paymentMethod: "CASH" | "CARD") => {
+  const processExit = useCallback(async (paymentMethod: "CASH" | "CARD") => {
     if (!active) {
       setError("Primero busca una sesion activa");
       return;
@@ -160,6 +176,8 @@ export default function SalidaCobroPage() {
           }
         }
         setError(errMsg);
+        toastError(errMsg);
+        playError();
         return;
       }
 
@@ -175,14 +193,22 @@ export default function SalidaCobroPage() {
             ? `No se pudo imprimir en desktop: ${printError.message}`
             : "No se pudo imprimir en desktop.";
       }
-      setMessage(
-        `Salida registrada. Total: $ ${Number(payload.total ?? 0).toLocaleString("es-CO")}${
+      
+      playSuccess();
+      toastSuccess(
+        `Salida registrada. Total: $${Number(payload.total ?? 0).toLocaleString("es-CO")}${
           printWarning ? `. ${printWarning}` : ""
-        }`
+        }`,
+        6000
       );
       setActive(null);
       setTicketNumber("");
       setPlate("");
+      
+      // Re-focus para siguiente operación
+      setTimeout(() => {
+        ticketInputRef.current?.focus();
+      }, 100);
     } catch {
       const queued = await queueOfflineOperation("EXIT_RECORDED", {
         ticketNumber: active.receipt.ticketNumber,
@@ -191,15 +217,27 @@ export default function SalidaCobroPage() {
         origin: "OFFLINE_PENDING_SYNC"
       });
       if (queued) {
-        setMessage("Sin internet: salida enviada a cola offline pendiente de sync.");
+        toastSuccess("Sin internet: salida guardada. Se sincronizará automáticamente al reconectar.");
+        playSuccess();
       } else {
-        setError("Error de red procesando salida");
+        const errMsg = "Error de red procesando salida";
+        setError(errMsg);
+        toastError(errMsg);
+        playError();
       }
     } finally {
       setProcessing(false);
       operationLock.current = false;
     }
-  };
+  }, [active, apiBase, vehicleCondition, conditionChecklist, conditionPhotoUrls, playSuccess, playError, toastSuccess, toastError]);
+
+  // Keyboard shortcuts - definido después de processExit
+  useExitShortcuts({
+    onCashPayment: () => processExit("CASH"),
+    onCardPayment: () => processExit("CARD"),
+    onSearch: lookup,
+    isActive: !!active && !processing
+  });
 
   const reprintTicket = async () => {
     if (!active) return;
@@ -236,6 +274,7 @@ export default function SalidaCobroPage() {
             ? `No se pudo imprimir en desktop: ${printError.message}`
             : "No se pudo imprimir en desktop.";
       }
+      playSuccess();
       setMessage(
         `Ticket reimpreso (${payload.receipt.ticketNumber})${printWarning ? `. ${printWarning}` : ""}`
       );
@@ -249,11 +288,16 @@ export default function SalidaCobroPage() {
       });
       if (queued) {
         setMessage("Sin internet: reimpresion en cola offline.");
+        playSuccess();
       } else {
         setError("Error de red en reimpresion");
+        playError();
       }
     } finally {
-      reprintLock.current = false;
+      // UX: Debounce delay to prevent rapid double-clicks
+      setTimeout(() => {
+        reprintLock.current = false;
+      }, 500);
     }
   };
 
@@ -280,6 +324,7 @@ export default function SalidaCobroPage() {
       const payload = await response.json();
       if (!response.ok) {
         setError(payload.error ?? "No se pudo procesar ticket perdido");
+        playError();
         return;
       }
       const printPayload = operationPrintPayload(payload);
@@ -293,12 +338,16 @@ export default function SalidaCobroPage() {
             ? `No se pudo imprimir en desktop: ${printError.message}`
             : "No se pudo imprimir en desktop.";
       }
+      playSuccess();
       setMessage(
         `Ticket perdido procesado. Total: $ ${Number(payload.total ?? 0).toLocaleString("es-CO")}${
           printWarning ? `. ${printWarning}` : ""
         }`
       );
       setActive(null);
+      setTimeout(() => {
+        ticketInputRef.current?.focus();
+      }, 100);
     } catch {
       const queued = await queueOfflineOperation("LOST_TICKET", {
         ticketNumber: active.receipt.ticketNumber,
@@ -308,8 +357,10 @@ export default function SalidaCobroPage() {
       });
       if (queued) {
         setMessage("Sin internet: operacion de ticket perdido en cola offline.");
+        playSuccess();
       } else {
         setError("Error de red procesando ticket perdido");
+        playError();
       }
     } finally {
       setProcessing(false);
@@ -327,66 +378,116 @@ export default function SalidaCobroPage() {
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="surface rounded-2xl p-6 lg:col-span-2">
-          <h2 className="text-lg font-semibold text-slate-900">Resumen rapido</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Busqueda</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <input
-              value={ticketNumber}
-              onChange={(event) => setTicketNumber(event.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Ticket (ej: T-20260410-000001)"
-            />
-            <input
-              value={plate}
-              onChange={(event) => setPlate(event.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase"
-              placeholder="Placa (ej: ABC123)"
-            />
-          </div>
-          <div className="mt-3 grid gap-3">
-            <textarea
-              value={vehicleCondition}
-              onChange={(event) => setVehicleCondition(event.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              rows={2}
-              placeholder="Estado del vehiculo a la salida"
-            />
-            <input
-              value={conditionChecklist}
-              onChange={(event) => setConditionChecklist(event.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Checklist salida (coma separada)"
-            />
-            <input
-              value={conditionPhotoUrls}
-              onChange={(event) => setConditionPhotoUrls(event.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Fotos salida (URLs separadas por coma)"
-            />
+            <div className="relative">
+              <input
+                ref={ticketInputRef}
+                value={ticketNumber}
+                onChange={(event) => setTicketNumber(event.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    lookup();
+                  }
+                }}
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                placeholder="Numero de ticket"
+                autoFocus
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
+                Enter
+              </span>
+            </div>
+            <div className="relative">
+              <input
+                value={plate}
+                onChange={(event) => setPlate(event.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    lookup();
+                  }
+                }}
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium uppercase focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                placeholder="Placa (ABC123)"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
+                Placa
+              </span>
+            </div>
           </div>
           <div className="mt-3">
-            <Button
+            <button
               type="button"
               onClick={lookup}
               disabled={searching || processing}
-              label={searching ? "Buscando..." : "Buscar sesion"}
-              tone="ghost"
-            />
+              className="w-full sm:w-auto rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white px-6 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+            >
+              {searching ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Buscando...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  Buscar sesion (Ctrl+Enter)
+                </>
+              )}
+            </button>
           </div>
 
           {active ? (
             <>
-              <div className="mt-4 flex items-center gap-3">
-                <Badge label="Activo" tone="warning" />
-                <p className="text-sm text-slate-600">Sesion con placa {active.receipt.plate}</p>
+              {/* Tarjeta de resultado con total destacado */}
+              <div className="mt-6 bg-gradient-to-br from-brand-50 to-amber-50 border-2 border-brand-200 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-brand-500 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <Badge label="Sesion Activa" tone="warning" />
+                    <p className="text-sm text-slate-600 font-medium">Placa: {active.receipt.plate}</p>
+                  </div>
+                </div>
+
+                {/* Total destacado */}
+                <div className="bg-white rounded-xl p-4 mb-4 text-center border border-brand-100">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total a pagar</p>
+                  <p className="text-4xl font-bold text-slate-900">
+                    ${Number(active.total ?? active.receipt.totalAmount ?? 0).toLocaleString("es-CO")}
+                  </p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Tiempo: {active.receipt.duration} • {active.receipt.rateName ?? "Tarifa estándar"}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-white/70 rounded-lg p-3">
+                    <span className="text-slate-500">Ticket:</span>
+                    <span className="font-mono font-medium ml-1">{active.receipt.ticketNumber}</span>
+                  </div>
+                  <div className="bg-white/70 rounded-lg p-3">
+                    <span className="text-slate-500">Reimpresiones:</span>
+                    <span className="font-medium ml-1">{active.receipt.reprintCount}</span>
+                  </div>
+                </div>
               </div>
-              <div className="mt-6 grid gap-3 text-sm text-slate-600">
-                <p>Ticket: {active.receipt.ticketNumber}</p>
-                <p>Tiempo total: {active.receipt.duration}</p>
-                <p>Tarifa aplicada: {active.receipt.rateName ?? "Sin tarifa"}</p>
-                <p>
-                  Total estimado: $ {Number(active.total ?? active.receipt.totalAmount ?? 0).toLocaleString("es-CO")}
-                </p>
-                <p>Reimpresiones: {active.receipt.reprintCount}</p>
+
+              {/* Campos de condición colapsables */}
+              <div className="mt-4 space-y-3">
+                <textarea
+                  value={vehicleCondition}
+                  onChange={(event) => setVehicleCondition(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                  rows={2}
+                  placeholder="Estado del vehiculo a la salida (opcional)"
+                />
               </div>
             </>
           ) : null}
@@ -398,36 +499,83 @@ export default function SalidaCobroPage() {
           ) : null}
         </div>
         <div className="surface rounded-2xl p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Cobro</h2>
-          <p className="mt-2 text-sm text-slate-600">Selecciona metodo y confirma.</p>
+          <h2 className="text-lg font-semibold text-slate-900">Acciones</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            {active 
+              ? "Presione 1 para efectivo, 2 para tarjeta, o use los botones." 
+              : "Busque una sesion activa para habilitar cobros."}
+          </p>
+
+          {/* Botones de cobro grandes */}
           <div className="mt-4 space-y-3">
-            <input
-              value={reprintReason}
-              onChange={(event) => setReprintReason(event.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Motivo reimpresion"
-            />
-            <input
-              value={lostReason}
-              onChange={(event) => setLostReason(event.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Motivo ticket perdido"
-            />
-          </div>
-          <div className="mt-6 space-y-3">
-            <Button
+            <button
               type="button"
               disabled={!active || searching || processing}
               onClick={() => processExit("CASH")}
-              label={processing ? "Procesando..." : "Cobrar en efectivo"}
-              tone="primary"
-            />
-            <Button
+              className={`
+                w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
+                flex items-center gap-3
+                ${active && !processing
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30" 
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"}
+              `}
+            >
+              <div className={`
+                w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg
+                ${active && !processing ? "bg-white/20" : "bg-slate-300"}
+              `}>
+                1
+              </div>
+              <div className="flex-1">
+                <div className="text-lg">Efectivo</div>
+                <div className="text-xs opacity-80 font-normal">Tecla 1</div>
+              </div>
+              {processing && (
+                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              )}
+            </button>
+
+            <button
               type="button"
               disabled={!active || searching || processing}
               onClick={() => processExit("CARD")}
-              label="Cobrar con tarjeta"
-              tone="ghost"
+              className={`
+                w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
+                flex items-center gap-3
+                ${active && !processing
+                  ? "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30" 
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"}
+              `}
+            >
+              <div className={`
+                w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg
+                ${active && !processing ? "bg-white/20" : "bg-slate-300"}
+              `}>
+                2
+              </div>
+              <div className="flex-1">
+                <div className="text-lg">Tarjeta</div>
+                <div className="text-xs opacity-80 font-normal">Tecla 2</div>
+              </div>
+            </button>
+          </div>
+
+          {/* Calculadora de cambio - Solo visible cuando hay monto */}
+          {active && (
+            <div className="mt-6">
+              <ChangeCalculator 
+                totalAmount={Number(active.total ?? active.receipt.totalAmount ?? 0)} 
+              />
+            </div>
+          )}
+
+          {/* Acciones secundarias */}
+          <div className="mt-6 pt-4 border-t border-slate-200 space-y-3">
+            <input
+              value={reprintReason}
+              onChange={(event) => setReprintReason(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              placeholder="Motivo reimpresion"
             />
             <Button
               type="button"
@@ -435,6 +583,13 @@ export default function SalidaCobroPage() {
               onClick={reprintTicket}
               label="Reimprimir ticket"
               tone="ghost"
+            />
+            
+            <input
+              value={lostReason}
+              onChange={(event) => setLostReason(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              placeholder="Motivo ticket perdido"
             />
             <Button
               type="button"

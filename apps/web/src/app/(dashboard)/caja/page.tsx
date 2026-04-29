@@ -97,7 +97,8 @@ export default function CajaPage() {
   const [policy, setPolicy] = useState<CashPolicyDto | null>(null);
   const [registerRows, setRegisterRows] = useState<CashRegisterRow[]>([]);
 
-  const parkingName = useMemo(() => process.env.NEXT_PUBLIC_PARKING_NAME ?? "Parkflow", []);
+  // PERFORMANCE: Constant value, no need for useMemo
+  const parkingName = process.env.NEXT_PUBLIC_PARKING_NAME ?? "Parkflow";
 
   const refreshOutbox = useCallback(async () => {
     const rows = await listCashOutboxPending();

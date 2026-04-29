@@ -34,7 +34,17 @@ function authBaseUrl(): string {
 }
 
 function operationsApiKey(): string {
-  return process.env.NEXT_PUBLIC_API_KEY ?? "parkflow-dev-key";
+  const key = process.env.NEXT_PUBLIC_API_KEY;
+  if (!key || key.trim().length === 0) {
+    // SECURITY: Throw in production, allow empty only in clear dev mode
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("NEXT_PUBLIC_API_KEY is required in production");
+    }
+    // Development fallback - should never reach production builds
+    console.warn("[SECURITY] NEXT_PUBLIC_API_KEY not set - using insecure dev fallback");
+    return "dev-key-change-immediately";
+  }
+  return key.trim();
 }
 
 async function tauriInvoke<T>(cmd: string, payload?: unknown): Promise<T | null> {

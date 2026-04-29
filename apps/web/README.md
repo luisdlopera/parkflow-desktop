@@ -12,4 +12,3 @@ pnpm -C ../../ dev:web
 - dev: inicia Next.js
 - build: build de produccion
 - start: server de produccion
-- prisma:*: acceso a Prisma (temporal)
