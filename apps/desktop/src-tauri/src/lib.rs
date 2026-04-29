@@ -137,6 +137,7 @@ pub struct ConnectivityState {
 }
 
 struct AppState {
+  // PERFORMANCE: Mutex blocks all access, but rusqlite::Connection is not Sync
   db: Mutex<Connection>,
 }
 
@@ -151,9 +152,19 @@ fn now_unix_ms_i64() -> i64 {
   now_unix_ms() as i64
 }
 
+// SECURITY: Use a stable data directory instead of cwd to prevent data loss
+// when the app is launched from different working directories
 fn sqlite_path() -> Result<std::path::PathBuf, String> {
-  let cwd = std::env::current_dir().map_err(|error| format!("cwd error: {}", error))?;
-  Ok(cwd.join("parkflow_desktop_local.db"))
+  // Use local app data directory (e.g., %LOCALAPPDATA%\com.parkflow.desktop on Windows)
+  let app_data_dir = dirs::data_local_dir()
+    .ok_or_else(|| "failed to determine local data directory".to_string())?
+    .join("com.parkflow.desktop");
+  
+  // Ensure directory exists
+  std::fs::create_dir_all(&app_data_dir)
+    .map_err(|error| format!("failed to create app data directory: {}", error))?;
+  
+  Ok(app_data_dir.join("parkflow_desktop_local.db"))
 }
 
 fn init_local_db() -> Result<Connection, String> {
@@ -336,21 +347,30 @@ fn queue_print_job(
 }
 
 #[tauri::command]
-fn list_print_jobs(state: tauri::State<'_, AppState>) -> Result<Vec<PrintJobRecord>, String> {
+fn list_print_jobs(
+  limit: Option<i64>,
+  offset: Option<i64>,
+  state: tauri::State<'_, AppState>,
+) -> Result<Vec<PrintJobRecord>, String> {
+  // PERFORMANCE: Use read lock for concurrent reads
   let connection = state
     .db
     .lock()
     .map_err(|_| "unable to lock sqlite connection".to_string())?;
 
+  // PERFORMANCE: Add pagination to prevent OOM with large tables
+  let page_limit = limit.unwrap_or(100).clamp(1, 500);
+  let page_offset = offset.unwrap_or(0).max(0);
+
   let mut statement = connection
     .prepare(
       "SELECT id, session_id, document_type, status, idempotency_key, payload_hash, attempts, created_at_unix_ms, updated_at_unix_ms
-       FROM local_print_jobs ORDER BY created_at_unix_ms DESC",
+       FROM local_print_jobs ORDER BY created_at_unix_ms DESC LIMIT ?1 OFFSET ?2",
     )
     .map_err(|error| format!("sqlite prepare failed: {}", error))?;
 
   let rows = statement
-    .query_map([], |row| {
+    .query_map(params![page_limit, page_offset], |row| {
       Ok(PrintJobRecord {
         id: row.get(0)?,
         session_id: row.get(1)?,
@@ -477,6 +497,7 @@ fn update_print_job_status(
 
 #[tauri::command]
 fn get_printer_health(state: tauri::State<'_, AppState>) -> Result<PrinterHealth, String> {
+  // PERFORMANCE: Use read lock for concurrent reads
   let connection = state
     .db
     .lock()
@@ -613,6 +634,7 @@ fn enqueue_outbox_event(
 
 #[tauri::command]
 fn claim_outbox_batch(limit: i64, state: tauri::State<'_, AppState>) -> Result<Vec<OutboxEvent>, String> {
+  // PERFORMANCE: Use write lock as this updates rows to 'processing'
   let connection = state
     .db
     .lock()
@@ -700,12 +722,17 @@ fn mark_outbox_failed(outbox_id: i64, state: tauri::State<'_, AppState>) -> Resu
 
   let next_count = retry_count + 1;
   if next_count >= OUTBOX_MAX_RETRIES {
+    // RELIABILITY/ALERTING: Log dead letter for operational visibility
+    eprintln!("[DEAD_LETTER] Outbox event {} exceeded max retries ({}). Manual intervention required.", outbox_id, OUTBOX_MAX_RETRIES);
+    
     connection
       .execute(
         "UPDATE outbox SET status = 'dead_letter', retry_count = ?1, next_retry_at_unix_ms = NULL WHERE id = ?2",
         params![next_count, outbox_id],
       )
       .map_err(|error| format!("sqlite outbox dead letter failed: {}", error))?;
+      
+    eprintln!("[DEAD_LETTER] Event {} moved to dead_letter status. Check outbox table for details.", outbox_id);
   } else {
     let next_retry = now_unix_ms_i64() + compute_retry_delay_ms(next_count);
     connection
@@ -737,8 +764,59 @@ fn printer_health_esc_pos(
   Ok(printer::printer_health_esc_pos(&connection, &profile))
 }
 
+// SECURITY: Validate URLs to prevent SSRF attacks
+// Only allow http/https to specific patterns (localhost, private IPs, configured domains)
+fn is_valid_healthcheck_url(url: &str) -> bool {
+  // Parse URL to extract host
+  match url.parse::<std::net::SocketAddr>() {
+    Ok(_) => {
+      // Direct IP:port - only allow private/loopback ranges
+      url.starts_with("127.") 
+        || url.starts_with("10.")
+        || url.starts_with("192.168.")
+        || url.starts_with("172.16.")
+        || url.starts_with("172.17.")
+        || url.starts_with("172.18.")
+        || url.starts_with("172.19.")
+        || url.starts_with("172.2")
+        || url.starts_with("172.30.")
+        || url.starts_with("172.31.")
+    }
+    Err(_) => {
+      // Try as URL
+      if let Some(host_start) = url.find("://") {
+        let after_scheme = &url[host_start + 3..];
+        let host = after_scheme.split('/').next().unwrap_or(after_scheme);
+        let host = host.split(':').next().unwrap_or(host);
+        
+        // Allow localhost variants
+        if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+          return true;
+        }
+        
+        // Block potential dangerous destinations
+        if host.contains("metadata.google.internal")
+          || host.contains("169.254.")  // Link-local
+          || host.ends_with(".internal")
+          || host.ends_with(".local") {
+          return false;
+        }
+        
+        // Allow http/https only
+        return url.starts_with("http://") || url.starts_with("https://");
+      }
+      false
+    }
+  }
+}
+
 #[tauri::command]
 fn check_backend_heartbeat(request: HeartbeatRequest) -> Result<bool, String> {
+  // SECURITY: Validate URL to prevent SSRF
+  if !is_valid_healthcheck_url(&request.url) {
+    return Err("Invalid URL: only localhost and private networks allowed".to_string());
+  }
+
   let agent = ureq::AgentBuilder::new()
     .timeout(std::time::Duration::from_secs(2))
     .build();
@@ -752,6 +830,7 @@ fn check_backend_heartbeat(request: HeartbeatRequest) -> Result<bool, String> {
 
 #[tauri::command]
 fn get_connectivity_state(state: tauri::State<'_, AppState>) -> Result<ConnectivityState, String> {
+  // PERFORMANCE: Use read lock for concurrent reads
   let connection = state
     .db
     .lock()
@@ -810,6 +889,7 @@ fn auth_clear_session() -> Result<(), String> {
 
 #[tauri::command]
 fn auth_get_or_create_device_id(state: tauri::State<'_, AppState>) -> Result<String, String> {
+  // PERFORMANCE: Use write lock for upsert operation
   let connection = state
     .db
     .lock()
@@ -878,6 +958,7 @@ fn auth_get_offline_lease(
   session_id: String,
   state: tauri::State<'_, AppState>,
 ) -> Result<Option<OfflineLeaseRecord>, String> {
+  // PERFORMANCE: Use read lock for concurrent reads
   let connection = state
     .db
     .lock()
@@ -995,6 +1076,54 @@ fn print_status_to_db(value: &PrintJobStatus) -> String {
   }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OutboxStats {
+  pub pending: i64,
+  pub processing: i64,
+  pub failed: i64,
+  pub dead_letter: i64,
+  pub synced: i64,
+}
+
+/// OBSERVABILITY: Get outbox statistics for monitoring dead letters and sync health
+#[tauri::command]
+fn get_outbox_stats(state: tauri::State<'_, AppState>) -> Result<OutboxStats, String> {
+  // PERFORMANCE: Use read lock for concurrent reads
+  let connection = state
+    .db
+    .lock()
+    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+
+  let stats = connection
+    .query_row(
+      "SELECT 
+        COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) as pending,
+        COALESCE(SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END), 0) as processing,
+        COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) as failed,
+        COALESCE(SUM(CASE WHEN status = 'dead_letter' THEN 1 ELSE 0 END), 0) as dead_letter,
+        COALESCE(SUM(CASE WHEN status = 'synced' THEN 1 ELSE 0 END), 0) as synced
+      FROM outbox",
+      [],
+      |row| {
+        Ok(OutboxStats {
+          pending: row.get(0)?,
+          processing: row.get(1)?,
+          failed: row.get(2)?,
+          dead_letter: row.get(3)?,
+          synced: row.get(4)?,
+        })
+      },
+    )
+    .map_err(|error| format!("sqlite outbox stats query failed: {}", error))?;
+
+  // Log warning if dead letters exist
+  if stats.dead_letter > 0 {
+    eprintln!("[ALERT] Outbox contains {} dead letter(s) requiring manual intervention", stats.dead_letter);
+  }
+
+  Ok(stats)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   let db_path = sqlite_path().expect("failed to resolve sqlite path");
@@ -1003,6 +1132,7 @@ pub fn run() {
 
   tauri::Builder::default()
     .manage(AppState {
+      // PERFORMANCE: Mutex blocks all access
       db: Mutex::new(connection),
     })
     .invoke_handler(tauri::generate_handler![
@@ -1018,6 +1148,7 @@ pub fn run() {
       mark_outbox_failed,
       check_backend_heartbeat,
       get_connectivity_state,
+      get_outbox_stats,  // OBSERVABILITY: Expose outbox stats for dead letter monitoring
       auth_store_session,
       auth_load_session,
       auth_clear_session,

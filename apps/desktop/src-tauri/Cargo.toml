@@ -22,3 +22,5 @@ ureq = { version = "2.10", features = ["tls"] }
 serialport = "4.6"
 keyring = "3.6"
 uuid = { version = "1.10", features = ["v4", "serde"] }
+# Cross-platform directory paths for application data storage
+dirs = "5.0"

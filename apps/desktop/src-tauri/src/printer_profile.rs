@@ -46,15 +46,10 @@ impl PrinterProfileId {
       return Some(Self::DEFAULT);
     }
 
-    for candidate in Self::ALL {
-      if key == candidate.canonical_slug()
+    Self::ALL.into_iter().find(|&candidate| {
+      key == candidate.canonical_slug()
         || candidate.legacy_aliases().iter().any(|alias| key == *alias)
-      {
-        return Some(candidate);
-      }
-    }
-
-    None
+    })
   }
 }
 
