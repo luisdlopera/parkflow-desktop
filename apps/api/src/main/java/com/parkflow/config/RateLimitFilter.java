@@ -16,10 +16,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 /**
  * SECURITY: Rate limiting filter to prevent brute force attacks and DoS.
  * Applied before authentication to protect against unauthenticated attacks.
- * Order: 1 (runs very early in the filter chain)
+ * Order: 2 (runs after CorrelationIdFilter, before security filters)
  */
 @Component
-@Order(1)
+@Order(2)
 public class RateLimitFilter extends OncePerRequestFilter {
 
   private static final Logger log = LoggerFactory.getLogger(RateLimitFilter.class);
