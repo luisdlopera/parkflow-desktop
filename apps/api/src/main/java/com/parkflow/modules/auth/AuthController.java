@@ -2,6 +2,8 @@ package com.parkflow.modules.auth;
 
 import com.parkflow.modules.auth.dto.*;
 import com.parkflow.modules.auth.service.AuthService;
+import com.parkflow.modules.auth.service.PasswordResetService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -12,9 +14,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
   private final AuthService authService;
+  private final PasswordResetService passwordResetService;
 
-  public AuthController(AuthService authService) {
+  public AuthController(AuthService authService, PasswordResetService passwordResetService) {
     this.authService = authService;
+    this.passwordResetService = passwordResetService;
   }
 
   @PostMapping("/login")
@@ -61,5 +65,39 @@ public class AuthController {
   @PreAuthorize("hasAuthority('devices:autorizar')")
   public DeviceInfoResponse authorize(@Valid @RequestBody DeviceDecisionRequest request) {
     return authService.authorizeDevice(request);
+  }
+
+  /**
+   * Request password reset.
+   * SECURITY: Always returns 200 to prevent email enumeration attacks.
+   */
+  @PostMapping("/password-reset/request")
+  @ResponseStatus(HttpStatus.OK)
+  public void requestPasswordReset(@Valid @RequestBody PasswordResetRequest request,
+                                   HttpServletRequest httpRequest) {
+    String ipAddress = getClientIp(httpRequest);
+    passwordResetService.requestReset(new PasswordResetRequest(
+        request.email(), request.deviceId(), ipAddress));
+  }
+
+  /**
+   * Confirm password reset with token.
+   */
+  @PostMapping("/password-reset/confirm")
+  @ResponseStatus(HttpStatus.OK)
+  public void confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmRequest request) {
+    passwordResetService.confirmReset(request);
+  }
+
+  private String getClientIp(HttpServletRequest request) {
+    String xForwardedFor = request.getHeader("X-Forwarded-For");
+    if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+      return xForwardedFor.split(",")[0].trim();
+    }
+    String xRealIp = request.getHeader("X-Real-IP");
+    if (xRealIp != null && !xRealIp.isEmpty()) {
+      return xRealIp;
+    }
+    return request.getRemoteAddr();
   }
 }
