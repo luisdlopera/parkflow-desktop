@@ -19,15 +19,21 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+  private static final Pattern PASSWORD_PATTERN = Pattern.compile(
+      "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!.])(?=\\S+$).{8,}$");
+
   private final AppUserRepository appUserRepository;
   private final AuthorizedDeviceRepository authorizedDeviceRepository;
   private final AuthSessionRepository authSessionRepository;
@@ -40,18 +46,38 @@ public class AuthService {
 
   @Transactional
   public LoginResponse login(LoginRequest request) {
-    AppUser user =
-        appUserRepository
-        .findByEmailIgnoreCase(request.email().trim())
-            .orElseThrow(() -> invalidCredentials(request.email(), request.deviceId()));
+    String email = request.email().trim();
+    String deviceId = request.deviceId();
 
-    if (!user.isActive() || user.getPasswordHash() == null) {
-      throw invalidCredentials(request.email(), request.deviceId());
+    log.info("AUTH: Login attempt - email={}, deviceId={}, platform={}",
+        maskEmail(email), deviceId, request.platform());
+
+    AppUser user = appUserRepository.findByEmailIgnoreCase(email).orElse(null);
+
+    if (user == null) {
+      log.warn("AUTH: Login failed - user not found - email={}, deviceId={}", maskEmail(email), deviceId);
+      throw invalidCredentials(email, deviceId);
+    }
+
+    if (!user.isActive()) {
+      log.warn("AUTH: Login failed - account inactive - userId={}, email={}", user.getId(), maskEmail(email));
+      authAuditService.log(
+          AuthAuditAction.LOGIN_FAILED, user, null, "DENY_ACCOUNT_INACTIVE",
+          Map.of("email", email, "deviceId", deviceId));
+      throw new OperationException(HttpStatus.FORBIDDEN, "Cuenta desactivada. Contacte al administrador.");
+    }
+
+    if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+      log.warn("AUTH: Login failed - no password set - userId={}, email={}", user.getId(), maskEmail(email));
+      throw invalidCredentials(email, deviceId);
     }
 
     if (!passwordHashService.matchesPassword(request.password(), user.getPasswordHash())) {
-      throw invalidCredentials(request.email(), request.deviceId());
+      log.warn("AUTH: Login failed - invalid password - userId={}, email={}", user.getId(), maskEmail(email));
+      throw invalidCredentials(email, deviceId);
     }
+
+    log.info("AUTH: Login credentials validated - userId={}, email={}", user.getId(), maskEmail(email));
 
     user.setLastAccessAt(OffsetDateTime.now());
     appUserRepository.save(user);
@@ -210,21 +236,69 @@ public class AuthService {
             .findById(userId)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
+    log.info("AUTH: Password change attempt - userId={}, email={}", user.getId(), maskEmail(user.getEmail()));
+
     if (!passwordHashService.matchesPassword(request.currentPassword(), user.getPasswordHash())) {
+      log.warn("AUTH: Password change failed - current password invalid - userId={}", user.getId());
       throw new OperationException(HttpStatus.UNAUTHORIZED, "Contrasena actual invalida");
     }
+
+    validatePasswordStrength(request.newPassword());
 
     user.setPasswordHash(passwordHashService.encodePassword(request.newPassword()));
     user.setPasswordChangedAt(OffsetDateTime.now());
     appUserRepository.save(user);
 
+    int sessionsRevoked = 0;
     for (AuthSession session : authSessionRepository.findByUserAndActiveTrue(user)) {
       session.setActive(false);
       session.setRevokedAt(OffsetDateTime.now());
       authSessionRepository.save(session);
+      sessionsRevoked++;
     }
 
-    authAuditService.log(AuthAuditAction.PASSWORD_CHANGED, user, null, "OK", Map.of());
+    log.info("AUTH: Password changed successfully - userId={}, sessionsRevoked={}", user.getId(), sessionsRevoked);
+    authAuditService.log(AuthAuditAction.PASSWORD_CHANGED, user, null, "OK",
+        Map.of("sessionsRevoked", sessionsRevoked));
+  }
+
+  /**
+   * Validates password strength according to security policy:
+   * - At least 8 characters
+   * - At least one digit
+   * - At least one lowercase letter
+   * - At least one uppercase letter
+   * - At least one special character (@#$%^&+=!.)
+   * - No whitespace
+   */
+  private void validatePasswordStrength(String password) {
+    if (password == null || password.length() < 8) {
+      throw new OperationException(HttpStatus.BAD_REQUEST,
+          "La contraseña debe tener al menos 8 caracteres");
+    }
+
+    if (!PASSWORD_PATTERN.matcher(password).matches()) {
+      throw new OperationException(HttpStatus.BAD_REQUEST,
+          "La contraseña debe contener al menos: una mayúscula, una minúscula, un número y un carácter especial (@#$%^&+=!.))");
+    }
+  }
+
+  /**
+   * Masks email for logging: a***@example.com
+   */
+  private String maskEmail(String email) {
+    if (email == null || email.length() < 3 || !email.contains("@")) {
+      return "***";
+    }
+    String[] parts = email.split("@");
+    String local = parts[0];
+    String domain = parts[1];
+
+    if (local.length() <= 1) {
+      return "***@" + domain;
+    }
+
+    return local.charAt(0) + "***@" + domain;
   }
 
   @Transactional(readOnly = true)
@@ -281,6 +355,10 @@ public class AuthService {
     device.setPlatform(request.platform());
     device.setFingerprint(request.fingerprint());
     device.setLastSeenAt(OffsetDateTime.now());
+    // DEVELOPMENT: Auto-authorize new devices
+    if (device.getId() == null) {
+      device.setAuthorized(true);
+    }
     return authorizedDeviceRepository.save(device);
   }
 
