@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: parkflow-api-test
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false
+
+app:
+  cors:
+    allowed-origins: http://localhost:3000
+  security:
+    api-key: test-api-key-12345
+    jwt-secret: dGVzdC1zZWNyZXQta2V5LWZvci10ZXN0aW5nLXB1cnBvc2VzLTEyMw==
+    access-token-ttl-minutes: 15
+    refresh-token-ttl-days: 7
+    offline-lease-hours: 48
+  cash:
+    require-open-for-payment: false
+    offline-close-allowed: false
+    offline-max-manual-movement: 500000
+
+parkflow:
+  jwt:
+    secret: dGVzdC1zZWNyZXQta2V5LWZvci10ZXN0aW5nLXB1cnBvc2VzLTEyMw==
+
+server:
+  port: 0  # Random port for tests
