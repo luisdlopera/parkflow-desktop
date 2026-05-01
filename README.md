@@ -23,7 +23,30 @@ Plataforma de parqueaderos desktop-first preparada para crecer a web y backend e
 
 ---
 
+## Port Architecture
+
+Parkflow usa un sistema de puertos estandarizado con soporte de fallback automático:
+
+| Servicio | Puerto Principal | Fallback |
+|----------|-----------------:|---------:|
+| Web / Next.js | `6001` | `6002` |
+| API / Spring Boot | `6011` | `6012` |
+| PostgreSQL | `6021` | N/A |
+| Redis | `6031` | N/A |
+| WebSocket | `6061` | `6062` |
+
+**Documentación completa**: [docs/architecture/ports.md](docs/architecture/ports.md)
+
+---
+
 ## Comandos de Ejecución
+
+### Verificar puertos disponibles
+
+```bash
+# Verificar que todos los puertos estén libres
+pnpm ports:check
+```
 
 ### Base de Datos (PostgreSQL)
 
@@ -39,31 +62,38 @@ Credenciales por defecto:
 - Usuario: `parkflow`
 - Contraseña: `parkflow`
 - Base de datos: `parkflow_dev`
-- Puerto: `5432`
+- Puerto: `6021` (mapeado desde 5432 en container)
 
 ### Variables de Entorno Requeridas
 
-Antes de ejecutar la API, configura estas variables:
+1. Copia el archivo de ejemplo:
+   ```bash
+   cp .env.example .env
+   ```
 
-```powershell
-# PowerShell
-$env:PARKFLOW_JWT_SECRET_BASE64="VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA="
-$env:PARKFLOW_API_KEY="dev-api-key-123"
-```
+2. Edita `.env` si necesitas cambiar puertos o credenciales.
 
-O en CMD:
-```cmd
-set PARKFLOW_JWT_SECRET_BASE64=VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA=
-set PARKFLOW_API_KEY=dev-api-key-123
-```
+3. Configura las variables de seguridad (requeridas para la API):
+
+   ```powershell
+   # PowerShell
+   $env:PARKFLOW_JWT_SECRET_BASE64="VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA="
+   $env:PARKFLOW_API_KEY="dev-api-key-123"
+   ```
+
+   O en CMD:
+   ```cmd
+   set PARKFLOW_JWT_SECRET_BASE64=VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA=
+   set PARKFLOW_API_KEY=dev-api-key-123
+   ```
 
 ### Ejecutar en Desarrollo
 
 ```bash
-# Ejecutar la API (Spring Boot)
+# Ejecutar la API (Spring Boot) - con fallback automático de puerto
 pnpm dev:api
 
-# Ejecutar el panel web (Next.js)
+# Ejecutar el panel web (Next.js) - con fallback automático de puerto
 pnpm dev:web
 
 # Ejecutar el desktop (Tauri)
@@ -72,6 +102,8 @@ pnpm dev:desktop
 # Ejecutar el agente de impresión
 pnpm dev:print-agent
 ```
+
+> **Nota**: Los scripts `dev:api` y `dev:web` detectan automáticamente si el puerto principal está ocupado y usan el fallback. Verás un mensaje indicando qué puerto quedó activo.
 
 ### Comandos de Construcción
 
@@ -88,43 +120,53 @@ pnpm build:desktop
 ```bash
 # Ejecutar linter en la web
 pnpm lint:web
+
+# Ver configuración de puertos actual
+pnpm ports:config
 ```
 
 ---
 
 ## Flujo de Inicio Rápido
 
-1. **Iniciar la base de datos:**
+1. **Verificar puertos:**
+   ```bash
+   pnpm ports:check
+   ```
+
+2. **Iniciar la base de datos:**
    ```bash
    pnpm db:up
    ```
 
-2. **Configurar variables de entorno** (ver sección anterior)
+3. **Configurar variables de entorno** (ver sección anterior)
 
-3. **Iniciar la API:**
+4. **Iniciar la API:**
    ```bash
    pnpm dev:api
    ```
-   La API estará disponible en: http://localhost:8080
+   La API estará disponible en: http://localhost:6011
+   Si el puerto 6011 está ocupado, usará 6012.
 
-4. **En otra terminal, iniciar el desktop:**
+5. **En otra terminal, iniciar el desktop:**
    ```bash
    pnpm dev:desktop
    ```
 
-5. **O iniciar el panel web:**
+6. **O iniciar el panel web:**
    ```bash
    pnpm dev:web
    ```
-   El panel web estará en: http://localhost:3000
+   El panel web estará en: http://localhost:6001
+   Si el puerto 6001 está ocupado, usará 6002.
 
 ---
 
 ## Documentación API
 
-- **Swagger UI**: http://localhost:8080/swagger-ui/index.html
-- **OpenAPI JSON**: http://localhost:8080/v3/api-docs
-- **Health Check**: http://localhost:8080/actuator/health
+- **Swagger UI**: http://localhost:6011/swagger-ui/index.html (o 6012 si usa fallback)
+- **OpenAPI JSON**: http://localhost:6011/v3/api-docs
+- **Health Check**: http://localhost:6011/actuator/health
 
 ---
 
@@ -132,6 +174,9 @@ pnpm lint:web
 
 ### 1. Iniciar infraestructura
 ```bash
+# Verificar puertos
+pnpm ports:check
+
 # Iniciar base de datos
 pnpm db:up
 
@@ -149,7 +194,7 @@ $env:PARKFLOW_API_KEY="dev-api-key-123"
 ```bash
 pnpm dev:api
 # En otra terminal:
-curl http://localhost:8080/actuator/health
+curl http://localhost:6011/actuator/health
 ```
 
 ### 4. Credenciales válidas para login
@@ -167,8 +212,39 @@ curl http://localhost:8080/actuator/health
 
 ### 5. URLs de acceso
 - **Desktop:** Ventana nativa (Tauri)
-- **Web:** http://localhost:3000
-- **API Swagger:** http://localhost:8080/swagger-ui/index.html
+- **Web:** http://localhost:6001 (o 6002 si usa fallback)
+- **API Swagger:** http://localhost:6011/swagger-ui/index.html (o 6012)
+
+---
+
+## Troubleshooting de Puertos
+
+### Ver qué proceso usa un puerto
+
+**Windows (PowerShell):**
+```powershell
+netstat -ano | findstr :6001
+# Luego con el PID:
+tasklist /FI "PID eq <PID>"
+```
+
+**macOS/Linux:**
+```bash
+lsof -i :6001
+```
+
+### Cambiar puertos si hay conflictos
+
+Edita `.env` en el root del proyecto:
+
+```env
+PARKFLOW_WEB_PORT=7001
+PARKFLOW_WEB_FALLBACK_PORT=7002
+PARKFLOW_API_PORT=7011
+PARKFLOW_API_FALLBACK_PORT=7012
+```
+
+Ver documentación completa en [docs/architecture/ports.md](docs/architecture/ports.md).
 
 ---
 

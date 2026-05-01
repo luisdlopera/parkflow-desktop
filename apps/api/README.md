@@ -2,7 +2,41 @@
 
 Backend Spring Boot 3 (Java 21) con arquitectura modular y preparada para crecer.
 
+## Requisitos previos
+
+- Java 21 (JDK)
+- Docker y Docker Compose (para base de datos PostgreSQL)
+- Gradle (viene incluido con el wrapper)
+
 ## Desarrollo
+
+### 1. Iniciar base de datos
+
+```bash
+pnpm db:up
+```
+
+O directamente:
+
+```bash
+docker compose -f ../../infra/docker-compose.yml up -d
+```
+
+### 2. Configurar variables de entorno
+
+Antes de ejecutar la API, establece las siguientes variables de entorno requeridas:
+
+```bash
+# JWT Secret (genera uno aleatorio o usa este para desarrollo)
+export PARKFLOW_JWT_SECRET_BASE64="VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA="
+
+# API Key para autenticación de clientes técnicos
+export PARKFLOW_API_KEY="dev-api-key-123"
+```
+
+**Nota**: Si no se configuran estas variables, la aplicación fallará al iniciar.
+
+### 3. Ejecutar la API
 
 ```bash
 pnpm dev:api
@@ -13,8 +47,35 @@ Este comando configura `JAVA_HOME` automaticamente en Windows si detecta Java 21
 Alternativa directa con Gradle wrapper:
 
 ```bash
-apps/api/gradlew.bat bootRun
+cd apps/api
+./gradlew.bat bootRun
 ```
+
+### Solución de problemas comunes
+
+#### Error de Flyway: "Found more than one migration with version 5"
+Si encuentras este error, significa que hay archivos de migración duplicados. Solución:
+- Renombra uno de los archivos V5 a una versión superior (ej: V10)
+- En este proyecto, `V5__print_jobs_audit_fields.sql` fue renombrado a `V10__print_jobs_audit_fields.sql`
+
+#### Error: "Could not resolve placeholder 'PARKFLOW_JWT_SECRET_BASE64'"
+Asegúrate de configurar la variable de entorno `PARKFLOW_JWT_SECRET_BASE64` con un valor base64 válido.
+
+## Documentación API (Swagger)
+
+La API incluye documentación interactiva con Swagger UI:
+
+- **Swagger UI**: http://localhost:6011/swagger-ui/index.html (o 6012 si usa fallback)
+- **OpenAPI JSON**: http://localhost:6011/v3/api-docs (o 6012)
+
+### Endpoints públicos (sin autenticación)
+- `/actuator/health` - Estado de salud
+- `/actuator/info` - Información de la aplicación
+- `/actuator/prometheus` - Métricas para monitoreo
+- `/swagger-ui/**` - Interfaz de Swagger
+- `/v3/api-docs/**` - Documentación OpenAPI
+- `/api/v1/auth/login` - Login
+- `/api/v1/auth/refresh` - Refresh token
 
 ## Base de datos local
 
@@ -26,8 +87,8 @@ Variables por defecto:
 - `POSTGRES_USER=parkflow`
 - `POSTGRES_PASSWORD=parkflow`
 - `POSTGRES_DB=parkflow_dev`
-- `DATABASE_URL=jdbc:postgresql://localhost:5432/parkflow_dev`
-- `CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000`
+- `DATABASE_URL=jdbc:postgresql://localhost:6021/parkflow_dev`
+- `CORS_ALLOWED_ORIGINS=http://localhost:6001,http://localhost:6002,http://127.0.0.1:6001,http://127.0.0.1:6002`
 - `PARKFLOW_API_KEY` (o `app.security.api-key`): compatibilidad para cabecera `X-API-Key` en clientes técnicos/internos.
 - `PARKFLOW_JWT_SECRET_BASE64`: secreto base64 para firmar JWT.
 - `PARKFLOW_ACCESS_TOKEN_TTL_MINUTES`: expiracion del access token JWT.
@@ -35,8 +96,8 @@ Variables por defecto:
 - `PARKFLOW_OFFLINE_LEASE_HOURS`: lease offline por defecto para desktop.
 
 En `apps/web`, define:
-- `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1/operations`
-- `NEXT_PUBLIC_AUTH_BASE_URL=http://localhost:8080/api/v1/auth`
+- `NEXT_PUBLIC_API_BASE_URL=http://localhost:6011/api/v1/operations`
+- `NEXT_PUBLIC_AUTH_BASE_URL=http://localhost:6011/api/v1/auth`
 - `NEXT_PUBLIC_API_KEY` solo si necesitas compatibilidad con endpoints internos que aún lo lean.
 - `NEXT_PUBLIC_DEVICE_ID`, `NEXT_PUBLIC_DEVICE_NAME`, `NEXT_PUBLIC_DEVICE_PLATFORM`, `NEXT_PUBLIC_DEVICE_FINGERPRINT` para login inicial en web o desktop.
 
@@ -58,7 +119,7 @@ Auditoria: persistida en `auth_audit_log`.
 Offline: el desktop guarda sesión en keyring y lease local en SQLite.
 
 ## Swagger
-- http://localhost:8080/swagger-ui/index.html
+- http://localhost:6011/swagger-ui/index.html (o 6012 si usa fallback)
 
 ## Modulo Operacion (ingreso/salida)
 
