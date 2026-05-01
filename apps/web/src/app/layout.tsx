@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Instrument_Sans } from "next/font/google";
 import PrintQueueBootstrap from "@/components/print/PrintQueueBootstrap";
+import { Providers } from "./providers";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
-import { ToastProvider } from "@/lib/toast/ToastContext";
 import "./globals.css";
 
 const displayFont = Space_Grotesk({
@@ -29,10 +29,10 @@ export default function RootLayout({
     <html lang="es" className={`${displayFont.variable} ${bodyFont.variable}`} suppressHydrationWarning>
       <body className="min-h-screen bg-ash text-slate-900 antialiased">
         <ThemeProvider>
-          <ToastProvider>
+          <Providers>
             <PrintQueueBootstrap />
             {children}
-          </ToastProvider>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>
