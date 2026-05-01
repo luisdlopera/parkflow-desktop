@@ -59,7 +59,7 @@ export function loadPrintersFromEnv(cwd: string): PrintStationConfig[] {
 
 export const agentPort = parseIntEnv("PRINT_AGENT_PORT", 9_231);
 export const agentApiKey = process.env.PRINT_AGENT_API_KEY?.trim() || "";
-export const allowedOrigins = (process.env.PRINT_AGENT_ALLOWED_ORIGINS || "http://localhost:3000,http://127.0.0.1:3000")
+export const allowedOrigins = (process.env.PRINT_AGENT_ALLOWED_ORIGINS || "http://localhost:6001,http://localhost:6002,http://127.0.0.1:6001,http://127.0.0.1:6002,http://localhost:3000,http://127.0.0.1:3000")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
