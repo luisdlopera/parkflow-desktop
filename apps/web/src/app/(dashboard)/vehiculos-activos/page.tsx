@@ -18,7 +18,7 @@ export default function VehiculosActivosPage() {
   const [error, setError] = useState("");
 
   // PERFORMANCE: Constant value, no need for useMemo
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1/operations";
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
 
   const loadRows = useCallback(async () => {
     setLoading(true);
