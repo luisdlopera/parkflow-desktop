@@ -66,6 +66,7 @@ public class SecurityConfig {
     config.setAllowedOrigins(Arrays.stream(allowedOrigins.split(",")).map(String::trim).toList());
     config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     config.setAllowedHeaders(Arrays.asList("*"));
+    config.setExposedHeaders(Arrays.asList(CorrelationIdFilter.CORRELATION_ID_HEADER)); // Expose correlation ID to clients
     config.setAllowCredentials(true);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
