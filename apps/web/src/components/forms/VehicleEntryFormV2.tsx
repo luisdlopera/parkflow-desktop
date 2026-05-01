@@ -1,9 +1,13 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Button from "@/components/ui/Button";
+import { Input } from "@heroui/input";
+import { Button } from "@heroui/button";
+import { Select, SelectItem } from "@heroui/select";
+import { Checkbox } from "@heroui/checkbox";
+import { Card, CardBody } from "@heroui/card";
 import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { vehicleEntrySchema, VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { buildApiHeaders } from "@/lib/api";
@@ -53,6 +57,12 @@ const VEHICLE_TYPE_CONFIG: Record<VehicleType, { label: string; color: string; i
   TRUCK: { label: "Camión", color: "bg-orange-500", icon: "🚛" },
   OTHER: { label: "Otro", color: "bg-slate-500", icon: "🚙" }
 };
+
+const modeOptions = [
+  { key: "beginner", label: "Principiante" },
+  { key: "expert", label: "Experto" },
+  { key: "speed", label: "Velocidad" },
+];
 
 export default function VehicleEntryFormV2() {
   const [message, setMessage] = useState("");
@@ -170,7 +180,7 @@ export default function VehicleEntryFormV2() {
     clearAutoSave();
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1/operations";
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
       const normalizedPlate = values.plate.trim().toUpperCase();
 
       const response = await fetch(`${apiBase}/entries`, {
@@ -318,65 +328,77 @@ export default function VehicleEntryFormV2() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-500">Modo:</span>
-          <select
-            value={settings.mode}
-            onChange={(e) => setSettings(s => ({ ...s, mode: e.target.value as OperatorMode }))}
-            className="text-xs font-medium bg-slate-100 rounded-lg px-2 py-1 border-0"
+          <Select
+            size="sm"
+            variant="flat"
+            selectedKeys={[settings.mode]}
+            onSelectionChange={(keys) => {
+              const selected = Array.from(keys)[0] as OperatorMode;
+              setSettings(s => ({ ...s, mode: selected }));
+            }}
+            className="w-32"
+            classNames={{
+              trigger: "min-h-0 h-8",
+            }}
           >
-            <option value="beginner">Principiante</option>
-            <option value="expert">Experto</option>
-            <option value="speed">Velocidad</option>
-          </select>
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600"
-            title="Configuración"
+            {modeOptions.map((option) => (
+              <SelectItem key={option.key}>{option.label}</SelectItem>
+            ))}
+          </Select>
+          <Button
+            isIconOnly
+            size="sm"
+            variant="flat"
+            onPress={() => setShowSettings(!showSettings)}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Panel de configuración */}
       {showSettings && (
-        <div className="bg-slate-50 rounded-xl p-4 space-y-3">
-          <h4 className="text-sm font-semibold text-slate-700">Configuración de Operador</h4>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={settings.rememberLocation}
-                onChange={(e) => setSettings(s => ({ ...s, rememberLocation: e.target.checked }))}
-                className="rounded border-slate-300"
-              />
-              Recordar ubicación
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={settings.skipConditionCheck}
-                onChange={(e) => setSettings(s => ({ ...s, skipConditionCheck: e.target.checked }))}
-                className="rounded border-slate-300"
-              />
-              Omitir estado vehículo
-            </label>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-600">Tipo por defecto:</label>
-            <select
-              value={settings.defaultVehicleType}
-              onChange={(e) => setSettings(s => ({ ...s, defaultVehicleType: e.target.value as VehicleType }))}
-              className="text-sm rounded-lg border-slate-200 px-2 py-1"
-            >
-              {Object.entries(VEHICLE_TYPE_CONFIG).map(([key, config]) => (
-                <option key={key} value={key}>{config.icon} {config.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <Card className="bg-slate-50">
+          <CardBody className="p-4 space-y-3">
+            <h4 className="text-sm font-semibold text-slate-700">Configuración de Operador</h4>
+            <div className="flex flex-wrap gap-4">
+              <Checkbox
+                isSelected={settings.rememberLocation}
+                onValueChange={(checked) => setSettings(s => ({ ...s, rememberLocation: checked }))}
+                size="sm"
+              >
+                Recordar ubicación
+              </Checkbox>
+              <Checkbox
+                isSelected={settings.skipConditionCheck}
+                onValueChange={(checked) => setSettings(s => ({ ...s, skipConditionCheck: checked }))}
+                size="sm"
+              >
+                Omitir estado vehículo
+              </Checkbox>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-slate-600">Tipo por defecto:</label>
+              <Select
+                size="sm"
+                variant="flat"
+                selectedKeys={[settings.defaultVehicleType]}
+                onSelectionChange={(keys) => {
+                  const selected = Array.from(keys)[0] as VehicleType;
+                  setSettings(s => ({ ...s, defaultVehicleType: selected }));
+                }}
+                className="w-40"
+              >
+                {Object.entries(VEHICLE_TYPE_CONFIG).map(([key, config]) => (
+                  <SelectItem key={key}>{config.icon} {config.label}</SelectItem>
+                ))}
+              </Select>
+            </div>
+          </CardBody>
+        </Card>
       )}
 
       {/* Formulario Principal */}
@@ -384,24 +406,34 @@ export default function VehicleEntryFormV2() {
         {/* Sección Principal - Siempre visible */}
         <div className="space-y-4">
           {/* Placa */}
-          <div>
-            <label className="text-sm font-semibold text-slate-700 flex items-center justify-between">
-              Placa
-              {settings.platePrefix && (
-                <span className="text-xs text-brand-600 bg-brand-50 px-2 py-0.5 rounded">
-                  Prefijo: {settings.platePrefix}
-                </span>
-              )}
-            </label>
-            <div className="relative mt-2">
-              <input
-                {...form.register("plate")}
-                ref={(e) => {
-                  form.register("plate").ref(e);
+          <Controller
+            name="plate"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Input
+                {...field}
+                ref={(e: HTMLInputElement | null) => {
+                  field.ref(e);
                   (plateInputRef as React.MutableRefObject<HTMLInputElement | null>).current = e;
                 }}
-                className="w-full rounded-2xl border-2 border-slate-200 bg-white px-4 py-4 text-2xl font-bold uppercase tracking-wider text-slate-900 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 outline-none transition-all"
+                label={
+                  <span className="flex items-center justify-between w-full">
+                    Placa
+                    {settings.platePrefix && (
+                      <span className="text-xs text-primary bg-primary-50 px-2 py-0.5 rounded">
+                        Prefijo: {settings.platePrefix}
+                      </span>
+                    )}
+                  </span>
+                }
                 placeholder="ABC123"
+                variant="flat"
+                isInvalid={!!fieldState.error}
+                errorMessage={fieldState.error?.message}
+                classNames={{
+                  input: "text-2xl font-bold uppercase tracking-wider",
+                  inputWrapper: isSpeed ? "border-2 border-primary" : "",
+                }}
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && isSpeed) {
@@ -410,16 +442,8 @@ export default function VehicleEntryFormV2() {
                   }
                 }}
               />
-              {isSpeed && (
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
-              Enter = Guardar
-            </span>
-              )}
-            </div>
-            {form.formState.errors.plate && (
-              <p className="mt-1 text-xs text-rose-600 font-medium">{form.formState.errors.plate.message}</p>
             )}
-          </div>
+          />
 
           {/* Tipo de Vehículo - Botones rápidos en modo experto */}
           <div>
@@ -452,45 +476,39 @@ export default function VehicleEntryFormV2() {
                 })}
               </div>
             ) : (
-              // Modo principiante: Select tradicional
-              <select
-                {...form.register("type")}
-                className="w-full rounded-2xl border-2 border-slate-200 bg-white px-4 py-3 text-sm focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 outline-none"
-              >
-                {Object.entries(VEHICLE_TYPE_CONFIG).map(([key, config]) => (
-                  <option key={key} value={key}>{config.icon} {config.label}</option>
-                ))}
-              </select>
+              // Modo principiante: Select
+              <Controller
+                name="type"
+                control={form.control}
+                render={({ field }) => (
+                  <Select
+                    variant="flat"
+                    selectedKeys={[field.value]}
+                    onSelectionChange={(keys) => {
+                      const selected = Array.from(keys)[0] as VehicleType;
+                      field.onChange(selected);
+                    }}
+                  >
+                    {Object.entries(VEHICLE_TYPE_CONFIG).map(([key, config]) => (
+                      <SelectItem key={key}>{config.icon} {config.label}</SelectItem>
+                    ))}
+                  </Select>
+                )}
+              />
             )}
           </div>
 
-          {/* Botón principal - Destacado en modo velocidad */}
+          {/* Botón principal */}
           <div className="pt-2">
-            <button
+            <Button
               type="submit"
-              disabled={form.formState.isSubmitting}
-              className={`
-                w-full rounded-2xl font-bold transition-all flex items-center justify-center gap-2
-                ${isSpeed 
-                  ? "bg-brand-500 hover:bg-brand-600 text-white py-5 text-lg shadow-xl shadow-brand-500/30" 
-                  : "bg-slate-900 hover:bg-slate-800 text-white py-4 text-base"}
-                disabled:opacity-50 disabled:cursor-not-allowed
-              `}
+              color={isSpeed ? "primary" : "default"}
+              size={isSpeed ? "lg" : "md"}
+              isLoading={form.formState.isSubmitting}
+              className={`w-full font-bold ${isSpeed ? "text-lg shadow-xl" : ""}`}
             >
-              {form.formState.isSubmitting ? (
-                <>
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Registrando...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {isSpeed ? "REGISTRAR INGRESO (Enter)" : "Registrar Ingreso"}
-                </>
-              )}
-            </button>
+              {form.formState.isSubmitting ? "Registrando..." : isSpeed ? "REGISTRAR INGRESO (Enter)" : "Registrar Ingreso"}
+            </Button>
           </div>
         </div>
 
@@ -522,73 +540,64 @@ export default function VehicleEntryFormV2() {
               <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-200">
                 {/* Ubicación */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Sede</label>
-                    <input
-                      {...form.register("site")}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                      placeholder="Principal"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Carril</label>
-                    <input
-                      {...form.register("lane")}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                      placeholder="1"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Caja</label>
-                    <input
-                      {...form.register("booth")}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                      placeholder="Caja 1"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Terminal</label>
-                    <input
-                      {...form.register("terminal")}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                      placeholder="T1"
-                    />
-                  </div>
+                  <Controller
+                    name="site"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input {...field} label="Sede" placeholder="Principal" variant="flat" size="sm" />
+                    )}
+                  />
+                  <Controller
+                    name="lane"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input {...field} label="Carril" placeholder="1" variant="flat" size="sm" />
+                    )}
+                  />
+                  <Controller
+                    name="booth"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input {...field} label="Caja" placeholder="Caja 1" variant="flat" size="sm" />
+                    )}
+                  />
+                  <Controller
+                    name="terminal"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input {...field} label="Terminal" placeholder="T1" variant="flat" size="sm" />
+                    )}
+                  />
                 </div>
 
                 {/* Tarifa */}
-                <div>
-                  <label className="text-xs font-medium text-slate-600">Tarifa (opcional)</label>
-                  <input
-                    {...form.register("rateId")}
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                    placeholder="ID de tarifa específica"
-                  />
-                </div>
+                <Controller
+                  name="rateId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input {...field} label="Tarifa (opcional)" placeholder="ID de tarifa específica" variant="flat" size="sm" />
+                  )}
+                />
 
-                {/* Estado del vehículo - Solo en modo principiante o si se activa */}
+                {/* Estado del vehículo */}
                 {!settings.skipConditionCheck && (
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Estado del vehículo</label>
-                    <textarea
-                      {...form.register("vehicleCondition")}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                      rows={2}
-                      placeholder="Sin novedades al ingreso"
-                    />
-                  </div>
+                  <Controller
+                    name="vehicleCondition"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input {...field} label="Estado del vehículo" placeholder="Sin novedades al ingreso" variant="flat" size="sm" />
+                    )}
+                  />
                 )}
 
                 {/* Observaciones */}
-                <div>
-                  <label className="text-xs font-medium text-slate-600">Observaciones</label>
-                  <textarea
-                    {...form.register("observations")}
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                    rows={2}
-                    placeholder="Notas adicionales"
-                  />
-                </div>
+                <Controller
+                  name="observations"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input {...field} label="Observaciones" placeholder="Notas adicionales" variant="flat" size="sm" />
+                  )}
+                />
               </div>
             )}
           </div>

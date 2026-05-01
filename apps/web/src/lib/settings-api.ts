@@ -84,7 +84,7 @@ export type SettingsPage<T> = {
 };
 
 export function apiV1Base(): string {
-  const raw = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1/operations";
+  const raw = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
   return raw.replace(/\/?operations\/?$/i, "");
 }
 

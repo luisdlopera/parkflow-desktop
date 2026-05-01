@@ -29,7 +29,7 @@ export type AuthHeaderOptions = {
 };
 
 function authBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "http://localhost:8080/api/v1/auth";
+  const raw = process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "http://localhost:6011/api/v1/auth";
   return raw.replace(/\/$/, "");
 }
 
