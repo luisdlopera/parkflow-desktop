@@ -1,14 +1,61 @@
+# =============================================================================
+# PARKFLOW INFRASTRUCTURE (Docker Compose)
+# =============================================================================
+# Este archivo define los servicios de infraestructura para desarrollo local.
+#
+# PUERTOS (según convención Parkflow):
+#   - PostgreSQL: 6021 (host) -> 5432 (container)
+#   - Redis:      6031 (host) -> 6379 (container)
+#
+# IMPORTANTE:
+#   Los puertos de host se configuran via variables de entorno:
+#   - PARKFLOW_DB_PORT (default: 6021)
+#   - PARKFLOW_REDIS_PORT (default: 6031)
+#
+#   Si un puerto está ocupado, Docker fallará con un mensaje claro.
+#   Para cambiar puertos, modifica el archivo .env en el root del proyecto.
+# =============================================================================
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: parkflow-postgres
     ports:
-      - "5432:5432"
+      - "${PARKFLOW_DB_PORT:-6021}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-parkflow}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-parkflow}
       POSTGRES_DB: ${POSTGRES_DB:-parkflow_dev}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-parkflow} -d ${POSTGRES_DB:-parkflow_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - "parkflow.service=postgres"
+      - "parkflow.port.host=${PARKFLOW_DB_PORT:-6021}"
+      - "parkflow.port.container=5432"
+
+  # Redis service (comentado hasta que sea necesario)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: parkflow-redis
+  #   ports:
+  #     - "${PARKFLOW_REDIS_PORT:-6031}:6379"
+  #   volumes:
+  #     - redisdata:/data
+  #   labels:
+  #     - "parkflow.service=redis"
+  #     - "parkflow.port.host=${PARKFLOW_REDIS_PORT:-6031}"
+  #     - "parkflow.port.container=6379"
+
 volumes:
   pgdata:
+    labels:
+      - "parkflow.volume=postgres"
+  # redisdata:
+  #   labels:
+  #     - "parkflow.volume=redis"
