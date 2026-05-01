@@ -13,15 +13,21 @@
     ]
   },
   "scripts": {
-    "dev:api": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\dev-api.ps1",
-    "dev:web": "pnpm --filter @parkflow/web dev",
+    "predev": "node scripts/check-ports.mjs",
+    "dev:api": "node scripts/dev-api.mjs",
+    "dev:web": "node scripts/dev-web.mjs",
     "dev:desktop": "pnpm --filter @parkflow/desktop dev",
     "dev:print-agent": "pnpm --filter @parkflow/print-agent dev",
     "dev": "pnpm --filter @parkflow/desktop dev",
     "build:web": "pnpm --filter @parkflow/web build",
     "build:desktop": "pnpm --filter @parkflow/desktop build",
     "lint:web": "pnpm --filter @parkflow/web lint",
-    "db:up": "docker compose -f infra/docker-compose.yml up -d",
-    "db:down": "docker compose -f infra/docker-compose.yml down"
+    "ports:check": "node scripts/check-ports.mjs",
+    "ports:config": "node -e \"import('./scripts/port-utils.mjs').then(m => m.printPortConfig())\"",
+    "db:up": "docker compose -f infra/docker-compose.yml --env-file .env up -d",
+    "db:down": "docker compose -f infra/docker-compose.yml --env-file .env down"
+  },
+  "devDependencies": {
+    "bcryptjs": "^3.0.3"
   }
 }
