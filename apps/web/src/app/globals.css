@@ -1,6 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "../lib/theme/hero.ts";
+@source "../../node_modules/@heroui/theme/dist/**/*.js";
+
+@theme inline {
+  --color-background: var(--color-ash);
+  --color-foreground: var(--color-ink);
+}
 
 :root {
   --color-ash: #fff8f1;
@@ -143,4 +148,38 @@ input:-webkit-autofill:focus {
 [data-theme="dark"] input:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0px 1000px #1e293b inset;
   -webkit-text-fill-color: #f8fafc;
+}
+
+/* HeroUI Input - Remove orange ring/border */
+[data-slot="input-wrapper"] {
+  --heroui-focus: transparent !important;
+}
+
+[data-slot="input-wrapper"] .group-data-\[focus-visible\=true\]\:ring-focus {
+  --tw-ring-color: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-slot="input-wrapper"]:focus-within,
+[data-slot="input-wrapper"][data-focus="true"] {
+  outline: none !important;
+  box-shadow: none !important;
+  --tw-ring-color: transparent !important;
+}
+
+/* Ensure proper contrast for HeroUI inputs */
+[data-slot="input"] {
+  color: var(--color-ink) !important;
+}
+
+[data-slot="input"]::placeholder {
+  color: rgba(22, 23, 23, 0.5) !important;
+}
+
+[data-theme="dark"] [data-slot="input"] {
+  color: var(--color-ink) !important;
+}
+
+[data-theme="dark"] [data-slot="input"]::placeholder {
+  color: rgba(248, 250, 252, 0.5) !important;
 }
