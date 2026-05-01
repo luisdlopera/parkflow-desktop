@@ -59,7 +59,7 @@ All errors follow a standardized format:
 - `FORBIDDEN`: Insufficient permissions (403)
 
 ## Base URL
-Local Development: `http://localhost:8080`
+Local Development: `http://localhost:6011` (fallback: `http://localhost:6012`)
 
 ## Tracing Requests
 

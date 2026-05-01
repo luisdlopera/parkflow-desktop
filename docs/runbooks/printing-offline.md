@@ -3,7 +3,7 @@
 ## Señales
 
 - **API**: `GET /actuator/health`, métricas `GET /actuator/prometheus`.
-- **Desktop**: heartbeat configurable con `PARKFLOW_API_HEALTH_URL` (por defecto `http://localhost:8080/actuator/health`).
+- **Desktop**: heartbeat configurable con `PARKFLOW_API_HEALTH_URL` (por defecto `http://localhost:6011/actuator/health` o el puerto fallback 6012).
 - **Logs**: buscar `audit print_job` y `audit sync_` en logs del API (MDC: `ticketNumber`, `printJobId`, `sessionId`).
 
 ## Incidentes comunes
