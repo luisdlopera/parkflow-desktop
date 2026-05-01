@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Button from "@/components/ui/Button";
+import { Input } from "@heroui/input";
+import { Button } from "@heroui/button";
+import { Select, SelectItem } from "@heroui/select";
 import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { vehicleEntrySchema, VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { buildApiHeaders } from "@/lib/api";
@@ -17,6 +19,15 @@ import {
 import type { VehicleType } from "@parkflow/types";
 import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
 import { SuccessToast } from "@/components/ui/Toast";
+
+// Vehicle type options for select
+const vehicleTypeOptions = [
+  { key: "CAR", label: "Carro" },
+  { key: "MOTORCYCLE", label: "Moto" },
+  { key: "VAN", label: "Van" },
+  { key: "TRUCK", label: "Camión" },
+  { key: "OTHER", label: "Otro" },
+];
 
 // #region agent log - Performance logging utility
 function writePerfLog(operation: string, durationMs: number, details?: Record<string, unknown>) {
@@ -110,7 +121,7 @@ export default function VehicleEntryForm() {
 
     try {
       const apiBase =
-        process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1/operations";
+        process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
 
       // SECURITY/DATA QUALITY: Normalize plate to uppercase for consistency
       const normalizedPlate = values.plate.trim().toUpperCase();
@@ -250,145 +261,194 @@ export default function VehicleEntryForm() {
         />
       )}
 
-      <div>
-        <label className="text-sm font-medium text-slate-700">Placa</label>
-        <input
-          {...form.register("plate")}
-          ref={(e) => {
-            // Merge refs: react-hook-form y nuestra ref de focus
-            form.register("plate").ref(e);
-            (plateInputRef as React.MutableRefObject<HTMLInputElement | null>).current = e;
-          }}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm uppercase tracking-wider font-semibold"
-          placeholder="ABC123"
-          autoFocus
-          onKeyDown={(e) => {
-            // Enter en placa mueve a tipo vehículo
-            if (e.key === "Enter") {
-              e.preventDefault();
-              document.getElementById("vehicle-type-select")?.focus();
-            }
-          }}
-        />
-        {form.formState.errors.plate && (
-          <p className="mt-1 text-xs text-rose-600">{form.formState.errors.plate.message}</p>
+      <Controller
+        name="plate"
+        control={form.control}
+        render={({ field, fieldState }) => (
+          <Input
+            {...field}
+            ref={(e: HTMLInputElement | null) => {
+              field.ref(e);
+              (plateInputRef as React.MutableRefObject<HTMLInputElement | null>).current = e;
+            }}
+            label="Placa"
+            placeholder="ABC123"
+            variant="flat"
+            isInvalid={!!fieldState.error}
+            errorMessage={fieldState.error?.message}
+            classNames={{
+              input: "uppercase tracking-wider font-semibold",
+            }}
+            autoFocus
+            onKeyDown={(e) => {
+              // Enter en placa mueve a tipo vehículo
+              if (e.key === "Enter") {
+                e.preventDefault();
+                document.getElementById("vehicle-type-select")?.focus();
+              }
+            }}
+          />
         )}
-      </div>
+      />
 
-      <div>
-        <label className="text-sm font-medium text-slate-700">Tipo</label>
-        <select
-          {...form.register("type")}
-          id="vehicle-type-select"
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-          onKeyDown={(e) => {
-            // Enter en tipo envía formulario directamente
-            if (e.key === "Enter") {
-              e.preventDefault();
-              form.handleSubmit(onSubmit)();
-            }
-          }}
-        >
-          <option value="CAR">Carro</option>
-          <option value="MOTORCYCLE">Moto</option>
-          <option value="VAN">Van</option>
-          <option value="TRUCK">Camion</option>
-          <option value="OTHER">Otro</option>
-        </select>
-      </div>
+      <Controller
+        name="type"
+        control={form.control}
+        render={({ field, fieldState }) => (
+          <Select
+            id="vehicle-type-select"
+            label="Tipo"
+            placeholder="Seleccionar tipo"
+            variant="flat"
+            selectedKeys={field.value ? [field.value] : []}
+            onSelectionChange={(keys) => {
+              const selected = Array.from(keys)[0] as string;
+              field.onChange(selected);
+            }}
+            isInvalid={!!fieldState.error}
+            errorMessage={fieldState.error?.message}
+            onKeyDown={(e) => {
+              // Enter en tipo envía formulario directamente
+              if (e.key === "Enter") {
+                e.preventDefault();
+                form.handleSubmit(onSubmit)();
+              }
+            }}
+          >
+            {vehicleTypeOptions.map((option) => (
+              <SelectItem key={option.key}>{option.label}</SelectItem>
+            ))}
+          </Select>
+        )}
+      />
 
-      <div>
-        <label className="text-sm font-medium text-slate-700">Tarifa</label>
-        <input
-          {...form.register("rateId")}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-          placeholder="Tarifa por defecto"
-        />
-      </div>
+      <Controller
+        name="rateId"
+        control={form.control}
+        render={({ field }) => (
+          <Input
+            {...field}
+            label="Tarifa"
+            placeholder="Tarifa por defecto"
+            variant="flat"
+          />
+        )}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="text-sm font-medium text-slate-700">Sede</label>
-          <input
-            {...form.register("site")}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-            placeholder="Principal"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium text-slate-700">Carril</label>
-          <input
-            {...form.register("lane")}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-            placeholder="1"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium text-slate-700">Caja</label>
-          <input
-            {...form.register("booth")}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-            placeholder="Caja 1"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium text-slate-700">Terminal</label>
-          <input
-            {...form.register("terminal")}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-            placeholder="T1"
-          />
-        </div>
+        <Controller
+          name="site"
+          control={form.control}
+          render={({ field }) => (
+            <Input
+              {...field}
+              label="Sede"
+              placeholder="Principal"
+              variant="flat"
+            />
+          )}
+        />
+        <Controller
+          name="lane"
+          control={form.control}
+          render={({ field }) => (
+            <Input
+              {...field}
+              label="Carril"
+              placeholder="1"
+              variant="flat"
+            />
+          )}
+        />
+        <Controller
+          name="booth"
+          control={form.control}
+          render={({ field }) => (
+            <Input
+              {...field}
+              label="Caja"
+              placeholder="Caja 1"
+              variant="flat"
+            />
+          )}
+        />
+        <Controller
+          name="terminal"
+          control={form.control}
+          render={({ field }) => (
+            <Input
+              {...field}
+              label="Terminal"
+              placeholder="T1"
+              variant="flat"
+            />
+          )}
+        />
       </div>
 
-      <div>
-        <label className="text-sm font-medium text-slate-700">Estado del vehiculo</label>
-        <textarea
-          {...form.register("vehicleCondition")}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-          rows={3}
-          placeholder="Sin rayones, casco en baul"
-        />
-        {form.formState.errors.vehicleCondition && (
-          <p className="mt-1 text-xs text-rose-600">{form.formState.errors.vehicleCondition.message}</p>
+      <Controller
+        name="vehicleCondition"
+        control={form.control}
+        render={({ field, fieldState }) => (
+          <Input
+            {...field}
+            label="Estado del vehículo"
+            placeholder="Sin novedades al ingreso"
+            variant="flat"
+            isInvalid={!!fieldState.error}
+            errorMessage={fieldState.error?.message}
+          />
         )}
-      </div>
+      />
 
-      <div>
-        <label className="text-sm font-medium text-slate-700">Checklist (separado por comas)</label>
-        <input
-          {...form.register("conditionChecklist")}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-          placeholder="luces ok, espejo derecho ok"
-        />
-      </div>
+      <Controller
+        name="conditionChecklist"
+        control={form.control}
+        render={({ field }) => (
+          <Input
+            {...field}
+            label="Checklist (separado por comas)"
+            placeholder="luces ok, espejo derecho ok"
+            variant="flat"
+          />
+        )}
+      />
 
-      <div>
-        <label className="text-sm font-medium text-slate-700">Fotos (URLs separadas por comas)</label>
-        <input
-          {...form.register("conditionPhotoUrls")}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-          placeholder="https://.../foto1.jpg,https://.../foto2.jpg"
-        />
-      </div>
+      <Controller
+        name="conditionPhotoUrls"
+        control={form.control}
+        render={({ field }) => (
+          <Input
+            {...field}
+            label="Fotos (URLs separadas por comas)"
+            placeholder="https://.../foto1.jpg,https://.../foto2.jpg"
+            variant="flat"
+          />
+        )}
+      />
 
-      <div>
-        <label className="text-sm font-medium text-slate-700">Observaciones</label>
-        <textarea
-          {...form.register("observations")}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-          rows={2}
-          placeholder="Notas adicionales"
-        />
-      </div>
+      <Controller
+        name="observations"
+        control={form.control}
+        render={({ field }) => (
+          <Input
+            {...field}
+            label="Observaciones"
+            placeholder="Notas adicionales"
+            variant="flat"
+          />
+        )}
+      />
 
       <div className="pt-2">
         <Button
           type="submit"
-          disabled={form.formState.isSubmitting}
-          label={form.formState.isSubmitting ? "Registrando..." : "Registrar ingreso"}
-          tone="primary"
-        />
+          color="primary"
+          isLoading={form.formState.isSubmitting}
+          className="w-full"
+        >
+          {form.formState.isSubmitting ? "Registrando..." : "Registrar ingreso"}
+        </Button>
       </div>
 
       {message ? <p className="text-sm text-emerald-700">{message}</p> : null}

@@ -8,7 +8,7 @@ const UUID_RE =
 
 function parkflowApiV1Root(): string {
   const operations =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ?? "http://localhost:8080/api/v1/operations";
+    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ?? "http://localhost:6011/api/v1/operations";
   if (operations.includes("/operations")) {
     return operations.replace(/\/operations\/?$/, "");
   }
