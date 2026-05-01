@@ -1,4 +1,5 @@
-/** @type {import('next').NextConfig} */
+import type { NextConfig } from "next";
+
 const isWindows = process.platform === "win32";
 
 // SECURITY: Content Security Policy headers
@@ -13,7 +14,7 @@ const cspHeader = `
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'none';
-  connect-src 'self' http://localhost:8080 http://127.0.0.1:8080 http://localhost:3000 http://127.0.0.1:3000;
+  connect-src 'self' http://localhost:6011 http://127.0.0.1:6011 http://localhost:6012 http://127.0.0.1:6012 http://localhost:6001 http://127.0.0.1:6001 http://localhost:6002 http://127.0.0.1:6002;
   upgrade-insecure-requests;
 `.replace(/\s+/g, ' ').trim();
 
@@ -40,10 +41,10 @@ const securityHeaders = [
   },
 ];
 
-const nextConfig = {
+const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: isWindows ? undefined : "standalone",
-  transpilePackages: ["@parkflow/types", "@parkflow/print-core"],
+  transpilePackages: ["@parkflow/types", "@parkflow/print-core", "@heroui/*"],
   // SECURITY: Add security headers
   async headers() {
     return [
