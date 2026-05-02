@@ -252,7 +252,7 @@ export default function VehicleEntryForm() {
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="surface space-y-4 rounded-2xl p-6">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="surface space-y-4 rounded-2xl p-4 sm:p-6">
       {/* Success Toast */}
       {showSuccess && (
         <SuccessToast 
@@ -335,7 +335,7 @@ export default function VehicleEntryForm() {
         )}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
         <Controller
           name="site"
           control={form.control}

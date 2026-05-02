@@ -49,14 +49,14 @@ export default function VehiculosActivosPage() {
   }, [loadRows]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
         <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">
           Control diario
         </p>
-        <h1 className="text-3xl font-semibold text-slate-900">Vehiculos activos</h1>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">Vehiculos activos</h1>
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm text-slate-600">
           {loading ? "Cargando..." : `${rows.length} vehiculos activos`}
         </p>
@@ -74,17 +74,19 @@ export default function VehiculosActivosPage() {
 
       <DataTable
         columns={[
-          { key: "ticketNumber", label: "Ticket" },
-          { key: "plate", label: "Placa" },
-          { key: "vehicleType", label: "Tipo" },
-          { key: "duration", label: "Tiempo" },
+          { key: "plate", label: "Placa", priority: "high" },
+          { key: "ticketNumber", label: "Ticket", priority: "medium" },
+          { key: "vehicleType", label: "Tipo", priority: "high" },
+          { key: "duration", label: "Tiempo", priority: "medium" },
           {
             key: "rateName",
             label: "Tarifa",
+            priority: "low",
             render: (row) => row.rateName ?? "Sin tarifa"
           }
         ]}
         rows={rows}
+        emptyMessage="No hay vehículos activos."
       />
     </div>
   );

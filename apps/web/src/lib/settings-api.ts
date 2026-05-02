@@ -91,9 +91,34 @@ export function apiV1Base(): string {
 async function parseError(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as { error?: string };
-    return body.error ?? `HTTP ${response.status}`;
+    const msg = body.error ?? "";
+
+    // Mensajes específicos para errores comunes
+    if (response.status === 401) {
+      return msg || "Sesión expirada. Por favor inicie sesión nuevamente.";
+    }
+    if (response.status === 403) {
+      return msg || "No tiene permisos para realizar esta operación. Contacte al administrador.";
+    }
+    if (response.status === 404) {
+      return msg || "Recurso no encontrado.";
+    }
+    if (response.status === 409) {
+      return msg || "Conflicto: el recurso ya existe o hay una operación en curso.";
+    }
+    if (response.status >= 500) {
+      return msg || "Error del servidor. Intente nuevamente más tarde.";
+    }
+
+    return msg || `Error HTTP ${response.status}`;
   } catch {
-    return `HTTP ${response.status}`;
+    if (response.status === 403) {
+      return "No tiene permisos para realizar esta operación.";
+    }
+    if (response.status === 401) {
+      return "Sesión expirada. Por favor inicie sesión nuevamente.";
+    }
+    return `Error HTTP ${response.status}`;
   }
 }
 
@@ -292,3 +317,71 @@ export async function resetParameters(site?: string, auditReason?: string): Prom
   if (!res.ok) throw new Error(await parseError(res));
   return (await res.json()) as ParkingParametersPayload;
 }
+
+// #region Sites (Sedes) Management
+export type SiteRow = {
+  id: string;
+  code: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  timeZone: string;
+  active: boolean;
+  maxCapacity: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SiteCreatePayload = {
+  code: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  timeZone?: string;
+  maxCapacity?: number;
+};
+
+export async function fetchSites(params?: { active?: boolean | null }): Promise<SiteRow[]> {
+  const u = new URL(`${apiV1Base()}/settings/sites`);
+  if (params?.active !== undefined && params.active !== null) {
+    u.searchParams.set("active", String(params.active));
+  }
+  const res = await fetch(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+  if (!res.ok) throw new Error(await parseError(res));
+  return (await res.json()) as SiteRow[];
+}
+
+export async function createSite(payload: SiteCreatePayload, auditReason?: string): Promise<SiteRow> {
+  const res = await fetch(`${apiV1Base()}/settings/sites`, {
+    method: "POST",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(await parseError(res));
+  return (await res.json()) as SiteRow;
+}
+
+export async function updateSite(
+  id: string,
+  payload: Partial<SiteCreatePayload>,
+  auditReason?: string
+): Promise<SiteRow> {
+  const res = await fetch(`${apiV1Base()}/settings/sites/${id}`, {
+    method: "PATCH",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(await parseError(res));
+  return (await res.json()) as SiteRow;
+}
+
+export async function patchSiteStatus(id: string, active: boolean, auditReason?: string): Promise<SiteRow> {
+  const res = await fetch(`${apiV1Base()}/settings/sites/${id}/status`, {
+    method: "PATCH",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify({ active })
+  });
+  if (!res.ok) throw new Error(await parseError(res));
+  return (await res.json()) as SiteRow;
+}
+// #endregion

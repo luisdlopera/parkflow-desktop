@@ -45,9 +45,10 @@ export default function LocalPrintAgentStatus() {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-900">
-      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-      Sin agente local: la impresion usara Tauri o cola offline. Instala el Print Agent.
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-900 border border-amber-200 shadow-sm">
+      <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+      <span className="font-medium">Sin agente local</span>
+      <span className="hidden sm:inline text-amber-700">- Usando Tauri o cola offline</span>
     </span>
   );
 }
