@@ -53,3 +53,21 @@ app:
 parkflow:
   jwt:
     secret: ${PARKFLOW_JWT_SECRET_BASE64:tu_clave_secreta_en_base64_aqui}
+  licensing:
+    # Claves RSA para firma de licencias (Base64 encoded)
+    private-key: ${PARKFLOW_LICENSE_PRIVATE_KEY:}
+    public-key: ${PARKFLOW_LICENSE_PUBLIC_KEY:}
+    # Modo: development (hash simple) o production (RSA)
+    mode: ${PARKFLOW_LICENSE_MODE:development}
+    # Período de gracia en días después de expiración
+    grace-period-days: ${PARKFLOW_LICENSE_GRACE_PERIOD_DAYS:7}
+    # Duración de período de prueba
+    trial-days: ${PARKFLOW_LICENSE_TRIAL_DAYS:14}
+    # Intervalo de heartbeat en minutos
+    heartbeat-interval-minutes: ${PARKFLOW_LICENSE_HEARTBEAT_INTERVAL_MINUTES:30}
+    # Umbral para considerar dispositivo offline (minutos)
+    heartbeat-offline-threshold-minutes: ${PARKFLOW_LICENSE_HEARTBEAT_OFFLINE_THRESHOLD_MINUTES:60}
+    # Límites por defecto para nuevas empresas
+    default-max-devices: ${PARKFLOW_LICENSE_DEFAULT_MAX_DEVICES:1}
+    default-max-locations: ${PARKFLOW_LICENSE_DEFAULT_MAX_LOCATIONS:1}
+    default-max-users: ${PARKFLOW_LICENSE_DEFAULT_MAX_USERS:5}
