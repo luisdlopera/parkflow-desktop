@@ -2,6 +2,7 @@ node_modules
 .next
 dist
 .env
+.env.local
 **/.gradle
 **/build
 **/target
@@ -11,3 +12,18 @@ src-tauri/target
 src-tauri/gen
 apps/desktop/src-tauri/target
 apps/desktop/src-tauri/gen
+
+# Licensing Keys (Security - NEVER COMMIT)
+infra/keys/
+*.pem
+*.key
+license_private*
+license_public*
+
+# Generated license files
+*.license
+license.json
+
+# Debug logs
+debug-*.log
+*.log
