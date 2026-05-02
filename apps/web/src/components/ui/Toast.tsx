@@ -71,11 +71,11 @@ export function Toast({ message, type = "info", duration = 3000, onClose }: Toas
   return (
     <div
       className={`
-        fixed top-4 right-4 z-50 flex items-center gap-3 
+        fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-50 flex items-center gap-3 
         ${styles.bg} text-white 
         px-4 py-3 rounded-xl shadow-2xl
         transform transition-all duration-300 ease-out
-        ${isVisible && !isLeaving ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"}
+        ${isVisible && !isLeaving ? "translate-y-0 sm:translate-x-0 opacity-100" : "-translate-y-full sm:translate-x-full opacity-0"}
       `}
       role="alert"
       aria-live="polite"
