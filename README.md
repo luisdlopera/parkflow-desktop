@@ -307,3 +307,64 @@ Ver `docs/architecture/auth-hybrid-v1.md` para el diseño completo y `docs/runbo
 Variables nuevas relevantes:
 - API: `PARKFLOW_JWT_SECRET_BASE64`, `PARKFLOW_ACCESS_TOKEN_TTL_MINUTES`, `PARKFLOW_REFRESH_TOKEN_TTL_DAYS`, `PARKFLOW_OFFLINE_LEASE_HOURS`
 - Web/Desktop: `NEXT_PUBLIC_AUTH_BASE_URL`, `NEXT_PUBLIC_DEVICE_ID`, `NEXT_PUBLIC_DEVICE_NAME`, `NEXT_PUBLIC_DEVICE_PLATFORM`, `NEXT_PUBLIC_DEVICE_FINGERPRINT`
+
+---
+
+## Sistema de Licenciamiento Comercial (Nuevo 🎉)
+
+ParkFlow incluye un sistema completo de licenciamiento para modelos de negocio SaaS híbrido offline/cloud.
+
+### Características
+
+- **4 Planes Comerciales**: LOCAL (offline), SYNC (cloud), PRO (multi-sede), ENTERPRISE
+- **Licencias Offline**: Validación local con fingerprint de hardware
+- **Heartbeat**: Comunicación periódica desktop-backend para comandos remotos
+- **Anti-Tampering**: Detección de manipulación de fecha del sistema
+- **Panel Super Admin**: Gestión de empresas, licencias y dispositivos
+
+### Documentación del Sistema de Licencias
+
+- **[Guía de Desarrollo](README-DEV.md)** - Setup completo para desarrolladores
+- **[Arquitectura de Licensing](docs/LICENSING_ARCHITECTURE.md)** - Detalles técnicos
+- **[Setup Rápido](docs/QUICK_SETUP.md)** - Instrucciones de instalación
+
+### Scripts de Licenciamiento
+
+```bash
+# Verificar instalación del sistema de licencias
+pnpm verify:install
+
+# Generar claves RSA (solo para producción)
+pnpm license:keys:generate
+
+# Setup automático de desarrollo
+pnpm setup:dev
+
+# Migrar base de datos (incluye tablas de licencias)
+pnpm db:migrate
+```
+
+### URLs del Panel Admin
+
+- **Panel Super Admin**: http://localhost:6001/admin/companies
+- **Activación de Licencia**: Configuración > Licencia en el desktop
+
+### Modo Desarrollo vs Producción
+
+| Aspecto | Desarrollo | Producción |
+|---------|-----------|------------|
+| Firma de licencias | SHA-256 hash simple | RSA 2048-bit |
+| Claves requeridas | No | Sí (PARKFLOW_LICENSE_PRIVATE_KEY) |
+| Heartbeat | Cada 30 min | Cada 30 min |
+| Anti-tampering | Activo | Activo |
+
+### Licencias en Desarrollo (Un Solo Equipo)
+
+Para probar con un solo equipo:
+
+1. La migración V2 ya crea una empresa de prueba automáticamente
+2. El desktop genera fingerprint único de tu hardware
+3. Usar la API para generar licencia con ese fingerprint
+4. Pegar licenseKey y signature en el desktop
+
+Ver [README-DEV.md](README-DEV.md#desarrollo-de-licencias-un-solo-equipo) para instrucciones detalladas.
