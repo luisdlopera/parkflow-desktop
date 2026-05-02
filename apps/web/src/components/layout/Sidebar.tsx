@@ -22,7 +22,7 @@ export default function Sidebar() {
   return (
     <aside className="h-screen border-r border-slate-200/70 bg-white/60 px-4 py-6 backdrop-blur flex flex-col">
       <div className="flex items-center gap-3 px-2">
-        <div className="h-12 w-12 rounded-2xl bg-brand-500 text-white grid place-content-center font-bold text-xl shadow-lg shadow-brand-500/30">
+        <div className="h-12 w-12 rounded-2xl bg-orange-500 text-white grid place-content-center font-bold text-xl shadow-lg shadow-orange-500/30">
           P
         </div>
         <div>
@@ -49,7 +49,7 @@ export default function Sidebar() {
               className={`
                 flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all
                 ${active
-                  ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
+                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}
               `}
             >
