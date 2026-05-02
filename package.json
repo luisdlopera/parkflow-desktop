@@ -21,11 +21,22 @@
     "dev": "pnpm --filter @parkflow/desktop dev",
     "build:web": "pnpm --filter @parkflow/web build",
     "build:desktop": "pnpm --filter @parkflow/desktop build",
+    "build:api": "node scripts/gradle.mjs build",
+    "build:all": "pnpm build:api && pnpm build:web && pnpm build:desktop",
+    "test:api": "node scripts/gradle.mjs test",
+    "test:web": "pnpm --filter @parkflow/web test",
+    "test": "pnpm test:api && pnpm test:web",
     "lint:web": "pnpm --filter @parkflow/web lint",
+    "lint": "pnpm lint:web",
+    "setup:dev": "node scripts/setup-dev.mjs",
+    "verify:install": "node scripts/verify-install.mjs",
     "ports:check": "node scripts/check-ports.mjs",
     "ports:config": "node -e \"import('./scripts/port-utils.mjs').then(m => m.printPortConfig())\"",
     "db:up": "docker compose -f infra/docker-compose.yml --env-file .env up -d",
-    "db:down": "docker compose -f infra/docker-compose.yml --env-file .env down"
+    "db:down": "docker compose -f infra/docker-compose.yml --env-file .env down",
+    "db:migrate": "node scripts/gradle.mjs flywayMigrate",
+    "db:info": "node scripts/gradle.mjs flywayInfo",
+    "license:keys:generate": "powershell -ExecutionPolicy Bypass -File infra/scripts/generate-license-keys.ps1"
   },
   "devDependencies": {
     "bcryptjs": "^3.0.3"
