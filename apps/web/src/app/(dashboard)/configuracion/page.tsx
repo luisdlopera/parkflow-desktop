@@ -1,6 +1,14 @@
 "use client";
 
 import Button from "@/components/ui/Button";
+import { Input } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
+import { Pagination } from "@heroui/pagination";
+import { Switch } from "@heroui/switch";
+import { Chip } from "@heroui/chip";
+import { Tabs, Tab } from "@heroui/tabs";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Textarea } from "@heroui/input";
 import DataTable from "@/components/ui/DataTable";
 import {
   createUser,
@@ -29,7 +37,7 @@ import type { UserRole } from "@/modules/users/types";
 import type { VehicleType } from "@/modules/parking/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type TabKey = "rates" | "users" | "parameters";
+type TabKey = "rates" | "users" | "parameters" | "interface";
 
 const VEHICLE_TYPES: VehicleType[] = ["CAR", "MOTORCYCLE", "TRUCK", "VAN", "OTHER"];
 const RATE_TYPES: RateType[] = ["HOURLY", "DAILY", "FLAT"];
@@ -94,6 +102,25 @@ export default function ConfiguracionPage() {
   const [auditReason, setAuditReason] = useState("");
   const [perm, setPerm] = useState<Record<string, boolean>>({});
 
+  // Configuración de interfaz (persistida en localStorage)
+  const [uiSettings, setUiSettings] = useState({
+    showSystemStatus: true,
+    showKeyboardShortcuts: true
+  });
+
+  useEffect(() => {
+    const saved = localStorage.getItem("parkflow_ui_settings");
+    if (saved) {
+      setUiSettings(JSON.parse(saved));
+    }
+  }, []);
+
+  const updateUiSetting = (key: keyof typeof uiSettings, value: boolean) => {
+    const updated = { ...uiSettings, [key]: value };
+    setUiSettings(updated);
+    localStorage.setItem("parkflow_ui_settings", JSON.stringify(updated));
+  };
+
   const refreshPerms = useCallback(async () => {
     const checks: Permission[] = [
       "tarifas:leer",
@@ -140,41 +167,67 @@ export default function ConfiguracionPage() {
         text="Politica offline-first: la edicion de tarifas, usuarios y parametros debe hacerse en linea; el cliente offline prioriza operacion de caja y sincronizacion (no encola cambios administrativos)."
       />
 
-      <label className="block max-w-2xl text-xs font-semibold text-slate-600">
-        Motivo de auditoria (opcional, hasta 500 caracteres; se envia al servidor en cambios sensibles)
-        <textarea
-          className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-normal text-slate-800"
-          rows={2}
-          maxLength={500}
-          value={auditReason}
-          onChange={(e) => setAuditReason(e.target.value)}
-          placeholder="Ej. Ajuste acordado con administracion..."
-        />
-      </label>
+      <Textarea
+        label="Motivo de auditoría"
+        description="Opcional, hasta 500 caracteres. Se envía al servidor en cambios sensibles."
+        maxLength={500}
+        value={auditReason}
+        onChange={(e) => setAuditReason(e.target.value)}
+        placeholder="Ej. Ajuste acordado con administración..."
+        variant="flat"
+        className="max-w-2xl"
+      />
 
-      <div className="flex flex-wrap gap-2 border-b border-slate-200/80 pb-3">
-        {(
-          [
-            ["rates", "Tarifas", can.ratesRead],
-            ["users", "Usuarios", can.usersRead],
-            ["parameters", "Parametros", can.cfgRead]
-          ] as const
-        ).map(([key, label, ok]) => (
-          <button
-            key={key}
-            type="button"
-            disabled={!ok}
-            onClick={() => setTab(key)}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-              tab === key
-                ? "bg-amber-600 text-white"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        selectedKey={tab}
+        onSelectionChange={(key) => setTab(key as TabKey)}
+        aria-label="Configuración"
+        color="warning"
+        variant="underlined"
+        classNames={{
+          tab: "px-4 py-2",
+          tabList: "gap-2"
+        }}
+      >
+        <Tab
+          key="rates"
+          title={
+            <div className="flex items-center gap-2">
+              <span>Tarifas</span>
+              {!can.ratesRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
+            </div>
+          }
+          isDisabled={!can.ratesRead}
+        />
+        <Tab
+          key="users"
+          title={
+            <div className="flex items-center gap-2">
+              <span>Usuarios</span>
+              {!can.usersRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
+            </div>
+          }
+          isDisabled={!can.usersRead}
+        />
+        <Tab
+          key="parameters"
+          title={
+            <div className="flex items-center gap-2">
+              <span>Parámetros</span>
+              {!can.cfgRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
+            </div>
+          }
+          isDisabled={!can.cfgRead}
+        />
+        <Tab
+          key="interface"
+          title={
+            <div className="flex items-center gap-2">
+              <span>Interfaz</span>
+            </div>
+          }
+        />
+      </Tabs>
 
       {tab === "rates" && can.ratesRead ? (
         <RatesSection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
@@ -196,6 +249,79 @@ export default function ConfiguracionPage() {
       {tab === "parameters" && !can.cfgRead ? (
         <p className="text-sm text-slate-600">No tiene permiso para ver parametros.</p>
       ) : null}
+
+      {tab === "interface" && (
+        <InterfaceSection
+          settings={uiSettings}
+          onUpdate={updateUiSetting}
+        />
+      )}
+    </div>
+  );
+}
+
+function InterfaceSection({
+  settings,
+  onUpdate
+}: {
+  settings: { showSystemStatus: boolean; showKeyboardShortcuts: boolean };
+  onUpdate: (key: "showSystemStatus" | "showKeyboardShortcuts", value: boolean) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-slate-900">Personalización del Sidebar</h2>
+        </CardHeader>
+        <CardBody className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-slate-800">Mostrar estado del sistema</p>
+              <p className="text-sm text-slate-500">
+                Muestra el indicador "Sistema operativo" en el sidebar con el punto verde de estado.
+              </p>
+            </div>
+            <Switch
+              isSelected={settings.showSystemStatus}
+              onValueChange={(checked) => onUpdate("showSystemStatus", checked)}
+              size="lg"
+              color="warning"
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-slate-800">Mostrar atajos de teclado</p>
+              <p className="text-sm text-slate-500">
+                Muestra la sección de atajos de teclado (F1, F2, F3, F4, Esc) en la parte inferior del sidebar.
+              </p>
+            </div>
+            <Switch
+              isSelected={settings.showKeyboardShortcuts}
+              onValueChange={(checked) => onUpdate("showKeyboardShortcuts", checked)}
+              size="lg"
+              color="warning"
+            />
+          </div>
+        </CardBody>
+      </Card>
+
+      <Card className="bg-amber-50/50 border-amber-200">
+        <CardBody>
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="font-medium text-amber-800">Configuración local</p>
+              <p className="text-sm text-amber-700">
+                Estas preferencias se guardan solo en tu navegador y no afectan a otros usuarios.
+                Se aplican inmediatamente sin necesidad de recargar la página.
+              </p>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
     </div>
   );
 }

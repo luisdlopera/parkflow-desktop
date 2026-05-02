@@ -105,7 +105,7 @@ export default function DashboardPage() {
     <div className="space-y-10">
       <section className="space-y-2">
         <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Panel principal</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Vision general del parqueadero</h1>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">Vision general del parqueadero</h1>
         {summaryError ? (
           <p className="text-sm text-amber-800">{summaryError}</p>
         ) : null}
@@ -125,31 +125,29 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-4">
+      <section className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi) => (
           <KpiCard key={kpi.title} {...kpi} />
         ))}
       </section>
 
       <section className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h2 className="text-xl font-semibold text-slate-900">Movimientos activos</h2>
           <Badge label="En vivo (API)" tone="success" />
         </div>
         {sessionsError ? <p className="text-sm text-amber-800">{sessionsError}</p> : null}
         <DataTable
           columns={[
-            { key: "plate", label: "Placa" },
-            { key: "type", label: "Tipo" },
-            { key: "started", label: "Ingreso" },
-            { key: "status", label: "Estado" },
-            { key: "amount", label: "Acumulado" }
+            { key: "plate", label: "Placa", priority: "high" },
+            { key: "type", label: "Tipo", priority: "high" },
+            { key: "started", label: "Ingreso", priority: "medium" },
+            { key: "status", label: "Estado", priority: "medium" },
+            { key: "amount", label: "Acumulado", priority: "high" }
           ]}
           rows={sessions}
+          emptyMessage="No hay vehiculos activos o aun no hay datos."
         />
-        {sessions.length === 0 && !sessionsError ? (
-          <p className="text-sm text-slate-500">No hay vehiculos activos o aun no hay datos.</p>
-        ) : null}
       </section>
     </div>
   );

@@ -12,14 +12,15 @@ type Props = {
 export default function TicketReceiptPreview({ lines, paperWidthMm, title = "Vista previa del tiquete" }: Props) {
   const ch = lineWidthChars(paperWidthMm);
   return (
-    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 overflow-x-auto">
       <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{title}</p>
       <pre
-        className="mt-2 overflow-x-auto whitespace-pre text-xs leading-relaxed text-slate-900"
+        className="mt-2 whitespace-pre text-xs leading-relaxed text-slate-900"
         style={{
           fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
           width: `${ch}ch`,
-          maxWidth: "100%"
+          maxWidth: "100%",
+          minWidth: "min(100%, 32ch)"
         }}
       >
         {lines.join("\n")}
