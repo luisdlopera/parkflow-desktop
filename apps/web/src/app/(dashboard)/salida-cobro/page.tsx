@@ -369,15 +369,15 @@ export default function SalidaCobroPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
         <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">
           Salida y cobro
         </p>
-        <h1 className="text-3xl font-semibold text-slate-900">Finalizar servicio</h1>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">Finalizar servicio</h1>
       </div>
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="surface rounded-2xl p-6 lg:col-span-2">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
+        <div className="surface rounded-2xl p-4 sm:p-6 lg:col-span-2">
           <h2 className="text-lg font-semibold text-slate-900">Busqueda</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="relative">
@@ -498,7 +498,7 @@ export default function SalidaCobroPage() {
             <TicketReceiptPreview lines={previewLines} paperWidthMm={resolvePaperWidthMm()} />
           ) : null}
         </div>
-        <div className="surface rounded-2xl p-6">
+        <div className="surface rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Acciones</h2>
           <p className="mt-2 text-sm text-slate-600">
             {active 
@@ -521,7 +521,7 @@ export default function SalidaCobroPage() {
               `}
             >
               <div className={`
-                w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg
+                w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
                 ${active && !processing ? "bg-white/20" : "bg-slate-300"}
               `}>
                 1
@@ -548,7 +548,7 @@ export default function SalidaCobroPage() {
               `}
             >
               <div className={`
-                w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg
+                w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
                 ${active && !processing ? "bg-white/20" : "bg-slate-300"}
               `}>
                 2

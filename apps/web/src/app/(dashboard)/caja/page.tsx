@@ -398,10 +398,10 @@ export default function CajaPage() {
   const closed = session?.status === "CLOSED";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
         <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Caja</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Cierre de caja</h1>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">Cierre de caja</h1>
         {outboxCount > 0 ? (
           <p className="mt-2 text-sm text-amber-800">
             {outboxCount} movimiento(s) pendiente(s) de sincronizar (cola local).
@@ -424,7 +424,7 @@ export default function CajaPage() {
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
         <label className="surface flex flex-col gap-1 rounded-2xl p-4">
           <span className="text-xs font-medium text-slate-500">Sede</span>
           <input
@@ -464,8 +464,8 @@ export default function CajaPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="surface rounded-2xl p-6">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
+        <div className="surface rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Estado actual</h2>
           {loading ? (
             <p className="mt-4 text-sm text-slate-600">Cargando...</p>
@@ -494,7 +494,7 @@ export default function CajaPage() {
           )}
         </div>
 
-        <div className="surface rounded-2xl p-6">
+        <div className="surface rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Abrir caja</h2>
           <p className="mt-2 text-sm text-slate-600">Requiere permiso de apertura y terminal configurado.</p>
           <label className="mt-4 block text-sm">
@@ -518,9 +518,9 @@ export default function CajaPage() {
       </div>
 
       {session?.status === "OPEN" ? (
-        <div className="surface rounded-2xl p-6">
+        <div className="surface rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Movimientos</h2>
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-wrap gap-2 sm:gap-3">
             <select
               className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
               value={filterType}
@@ -595,7 +595,7 @@ export default function CajaPage() {
           </div>
 
           <h3 className="mt-8 text-base font-semibold text-slate-900">Ingreso / egreso manual</h3>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div className="mt-3 grid gap-3 grid-cols-1 sm:grid-cols-2">
             <select
               className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
               value={manualType}
@@ -635,8 +635,8 @@ export default function CajaPage() {
               disabled={!canMove}
             />
           </div>
-          <div className="mt-3 flex max-w-2xl flex-col gap-3 sm:flex-row">
-            <div className="min-w-[200px] flex-1">
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+            <div className="min-w-0 sm:min-w-[200px] flex-1">
               <Button
                 label="Registrar movimiento"
                 tone="primary"
@@ -644,7 +644,7 @@ export default function CajaPage() {
                 onClick={() => void onAddManual()}
               />
             </div>
-            <div className="min-w-[200px] flex-1">
+            <div className="min-w-0 sm:min-w-[200px] flex-1">
               <Button
                 label="Imprimir ultimo movimiento"
                 tone="ghost"
@@ -657,12 +657,12 @@ export default function CajaPage() {
       ) : null}
 
       {session?.status === "OPEN" && canClose ? (
-        <div className="surface rounded-2xl p-6">
+        <div className="surface rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Arqueo</h2>
           <p className="mt-2 text-sm text-slate-600">
             Si hay diferencia respecto al esperado, las observaciones son obligatorias.
           </p>
-          <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <input
               className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
               placeholder="Efectivo contado"
@@ -697,11 +697,11 @@ export default function CajaPage() {
               onChange={(e) => setCountNotes(e.target.value)}
             />
           </label>
-          <div className="mt-3 flex max-w-2xl flex-col gap-3 sm:flex-row">
-            <div className="min-w-[200px] flex-1">
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+            <div className="min-w-0 sm:min-w-[200px] flex-1">
               <Button label="Guardar arqueo" tone="primary" disabled={busy} onClick={() => void onCount()} />
             </div>
-            <div className="min-w-[200px] flex-1">
+            <div className="min-w-0 sm:min-w-[200px] flex-1">
               <Button
                 label="Imprimir comprobante de arqueo"
                 tone="ghost"
@@ -721,17 +721,19 @@ export default function CajaPage() {
               onChange={(e) => setCloseNotes(e.target.value)}
             />
           </label>
-          <div className="mt-4 flex max-w-xl flex-col gap-3 sm:flex-row">
-            <Button label="Cerrar caja" tone="ghost" disabled={busy} onClick={() => void onClose()} />
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <div className="min-w-0 sm:min-w-[200px] flex-1 sm:flex-initial">
+              <Button label="Cerrar caja" tone="ghost" disabled={busy} onClick={() => void onClose()} />
+            </div>
           </div>
         </div>
       ) : null}
 
       {closed && session ? (
-        <div className="surface rounded-2xl p-6">
+        <div className="surface rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Caja cerrada</h2>
           <p className="mt-2 text-sm text-slate-600">Imprima el comprobante de cierre para archivo.</p>
-          <div className="mt-4 max-w-md">
+          <div className="mt-4 w-full sm:max-w-md">
             <Button label="Imprimir cierre" tone="primary" disabled={busy} onClick={() => void onPrintClosing()} />
           </div>
         </div>

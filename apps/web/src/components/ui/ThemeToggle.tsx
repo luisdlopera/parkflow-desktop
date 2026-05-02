@@ -11,8 +11,8 @@ export function ThemeToggle() {
         onClick={() => setTheme("auto")}
         className={`
           p-2 rounded-lg transition-colors
-          ${theme === "auto" 
-            ? "bg-brand-500 text-white" 
+          ${theme === "auto"
+            ? "bg-orange-500 text-white shadow-md"
             : "bg-slate-100 text-slate-600 hover:bg-slate-200"}
         `}
         title="Automático (6pm-6am)"
@@ -22,13 +22,13 @@ export function ThemeToggle() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </button>
-      
+
       <button
         onClick={() => setTheme("light")}
         className={`
           p-2 rounded-lg transition-colors
-          ${theme === "light" 
-            ? "bg-brand-500 text-white" 
+          ${theme === "light"
+            ? "bg-orange-500 text-white shadow-md"
             : "bg-slate-100 text-slate-600 hover:bg-slate-200"}
         `}
         title="Modo claro"
@@ -38,13 +38,13 @@ export function ThemeToggle() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
         </svg>
       </button>
-      
+
       <button
         onClick={() => setTheme("dark")}
         className={`
           p-2 rounded-lg transition-colors
-          ${theme === "dark" 
-            ? "bg-brand-500 text-white" 
+          ${theme === "dark"
+            ? "bg-orange-500 text-white shadow-md"
             : "bg-slate-100 text-slate-600 hover:bg-slate-200"}
         `}
         title="Modo oscuro"

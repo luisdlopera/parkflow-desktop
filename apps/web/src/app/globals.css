@@ -112,6 +112,22 @@ body {
   outline-offset: 2px;
 }
 
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+select:focus,
+select:focus-visible {
+  outline: 0 !important;
+  outline-color: transparent !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
@@ -151,20 +167,38 @@ input:-webkit-autofill:focus {
 }
 
 /* HeroUI Input - Remove orange ring/border */
-[data-slot="input-wrapper"] {
-  --heroui-focus: transparent !important;
-}
-
-[data-slot="input-wrapper"] .group-data-\[focus-visible\=true\]\:ring-focus {
+.group[data-focus="true"] [data-slot="input-wrapper"],
+.group[data-focus-visible="true"] [data-slot="input-wrapper"],
+[data-slot="input-wrapper"][data-focus="true"],
+[data-slot="input-wrapper"][data-focus-visible="true"],
+[data-slot="input-wrapper"][class*="ring-focus"],
+[data-slot="input-wrapper"][class*="ring-offset"],
+[data-slot="input-wrapper"][class*="outline-"],
+[data-slot="input"][class*="outline-"] {
   --tw-ring-color: transparent !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
   box-shadow: none !important;
+  outline: 0 !important;
+  outline-color: transparent !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
 }
 
 [data-slot="input-wrapper"]:focus-within,
+[data-slot="input-wrapper"]:focus,
+[data-slot="input-wrapper"]:focus-visible,
+[data-slot="input"]:focus,
+[data-slot="input"]:focus-visible,
 [data-slot="input-wrapper"][data-focus="true"] {
-  outline: none !important;
+  outline: 0 !important;
+  outline-color: transparent !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
   box-shadow: none !important;
   --tw-ring-color: transparent !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
 /* Ensure proper contrast for HeroUI inputs */

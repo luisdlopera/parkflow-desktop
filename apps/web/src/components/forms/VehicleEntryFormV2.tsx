@@ -316,18 +316,21 @@ export default function VehicleEntryFormV2() {
         onDismiss={() => setShowRecovery(false)}
       />
 
-      {/* Header con stats y modo */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      {/* Header con stats y modo - Responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        {/* Stats - en móvil se muestran en fila, en desktop también */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="bg-brand-50 rounded-xl px-3 py-2">
-            <span className="text-xs text-brand-600 font-medium">Hoy: {stats.today}</span>
+            <span className="text-xs text-brand-600 font-medium whitespace-nowrap">Hoy: {stats.today}</span>
           </div>
           <div className="bg-slate-100 rounded-xl px-3 py-2">
-            <span className="text-xs text-slate-600 font-medium">Sesión: {stats.session}</span>
+            <span className="text-xs text-slate-600 font-medium whitespace-nowrap">Sesión: {stats.session}</span>
           </div>
         </div>
+
+        {/* Selector de modo - ocupa todo el ancho en móvil */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500">Modo:</span>
+          <span className="text-xs text-slate-500 whitespace-nowrap">Modo:</span>
           <Select
             size="sm"
             variant="flat"
@@ -336,7 +339,7 @@ export default function VehicleEntryFormV2() {
               const selected = Array.from(keys)[0] as OperatorMode;
               setSettings(s => ({ ...s, mode: selected }));
             }}
-            className="w-32"
+            className="w-28 sm:w-32"
             classNames={{
               trigger: "min-h-0 h-8",
             }}
@@ -350,6 +353,7 @@ export default function VehicleEntryFormV2() {
             size="sm"
             variant="flat"
             onPress={() => setShowSettings(!showSettings)}
+            className="flex-shrink-0"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -449,8 +453,8 @@ export default function VehicleEntryFormV2() {
           <div>
             <label className="text-sm font-semibold text-slate-700 mb-2 block">Tipo de Vehículo</label>
             {isExpert ? (
-              // Modo experto: Botones grandes
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              // Modo experto: Botones grandes - responsive grid
+              <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2">
                 {(Object.keys(VEHICLE_TYPE_CONFIG) as VehicleType[]).map((type, index) => {
                   const config = VEHICLE_TYPE_CONFIG[type];
                   const isSelected = form.watch("type") === type;
@@ -460,15 +464,15 @@ export default function VehicleEntryFormV2() {
                       type="button"
                       onClick={() => form.setValue("type", type)}
                       className={`
-                        relative rounded-xl p-3 text-center transition-all
-                        ${isSelected 
-                          ? `${config.color} text-white shadow-lg scale-105` 
+                        relative rounded-xl p-2 sm:p-3 text-center transition-all
+                        ${isSelected
+                          ? `${config.color} text-white shadow-lg scale-105`
                           : "bg-slate-100 hover:bg-slate-200 text-slate-600"}
                       `}
                     >
-                      <div className="text-2xl mb-1">{config.icon}</div>
+                      <div className="text-xl sm:text-2xl mb-1">{config.icon}</div>
                       <div className="text-xs font-medium">{config.label}</div>
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold text-slate-400 shadow">
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 shadow">
                         {index + 1}
                       </div>
                     </button>
