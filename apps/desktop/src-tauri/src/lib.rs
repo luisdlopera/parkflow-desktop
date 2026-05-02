@@ -1,7 +1,9 @@
 mod escpos;
 mod printer;
 mod printer_profile;
+mod licensing;
 
+use licensing::LicenseState;
 use keyring::Entry as KeyringEntry;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -1130,11 +1132,15 @@ pub fn run() {
   let connection = init_local_db().expect("failed to initialize local sqlite");
   start_offline_worker(db_path);
 
+  // Initialize licensing state
+  let license_state = LicenseState::new().expect("failed to initialize licensing");
+
   tauri::Builder::default()
     .manage(AppState {
       // PERFORMANCE: Mutex blocks all access
       db: Mutex::new(connection),
     })
+    .manage(license_state)
     .invoke_handler(tauri::generate_handler![
       ping,
       queue_print_job,
@@ -1156,7 +1162,16 @@ pub fn run() {
       auth_upsert_offline_lease,
       auth_get_offline_lease,
       print_escpos_ticket,
-      printer_health_esc_pos
+      printer_health_esc_pos,
+      // Licensing commands
+      licensing::save_license,
+      licensing::load_license,
+      licensing::validate_license_offline,
+      licensing::get_device_fingerprint,
+      licensing::check_tamper_status,
+      licensing::process_heartbeat_response,
+      licensing::clear_license,
+      licensing::get_license_status
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

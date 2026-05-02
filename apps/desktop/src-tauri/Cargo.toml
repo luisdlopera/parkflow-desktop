@@ -24,3 +24,9 @@ keyring = "3.6"
 uuid = { version = "1.10", features = ["v4", "serde"] }
 # Cross-platform directory paths for application data storage
 dirs = "5.0"
+# Cryptographic libraries for licensing
+sha2 = "0.10"
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+rsa = { version = "0.9", features = ["pem"] }
+rand = "0.8"
