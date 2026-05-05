@@ -2,7 +2,6 @@ package com.parkflow.config;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,7 +28,7 @@ public class RateLimitConfig {
    */
   public Bucket resolveLoginBucket(String key) {
     return loginBuckets.computeIfAbsent(key, k -> Bucket.builder()
-        .addLimit(Bandwidth.classic(10, Refill.intervally(10, Duration.ofMinutes(1))))
+        .addLimit(Bandwidth.builder().capacity(10).refillIntervally(10, Duration.ofMinutes(1)).build())
         .build());
   }
 
@@ -39,7 +38,7 @@ public class RateLimitConfig {
    */
   public Bucket resolveOperationBucket(String key) {
     return operationBuckets.computeIfAbsent(key, k -> Bucket.builder()
-        .addLimit(Bandwidth.classic(100, Refill.intervally(100, Duration.ofMinutes(1))))
+        .addLimit(Bandwidth.builder().capacity(100).refillIntervally(100, Duration.ofMinutes(1)).build())
         .build());
   }
 
@@ -49,7 +48,7 @@ public class RateLimitConfig {
    */
   public Bucket resolveGeneralBucket(String key) {
     return generalBuckets.computeIfAbsent(key, k -> Bucket.builder()
-        .addLimit(Bandwidth.classic(200, Refill.intervally(200, Duration.ofMinutes(1))))
+        .addLimit(Bandwidth.builder().capacity(200).refillIntervally(200, Duration.ofMinutes(1)).build())
         .build());
   }
 
