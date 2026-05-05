@@ -200,8 +200,9 @@ curl http://localhost:6011/actuator/health
 ### 4. Credenciales válidas para login
 | Usuario | Email | Contraseña | Rol |
 |---------|-------|------------|-----|
-| Admin | `admin@parkflow.local` | **Qwert.12345** | ADMIN |
+| Super Admin | `admin@parkflow.local` | **Qwert.12345** | SUPER_ADMIN |
 | Cajero | `cashier@parkflow.local` | **Qwert.12345** | CAJERO |
+| Admin Operativo | `operador@parkflow.local` | **Qwert.12345** | ADMIN |
 
 **Requisitos de contraseña:**
 - Mínimo 8 caracteres
