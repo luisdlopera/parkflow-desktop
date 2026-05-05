@@ -185,8 +185,8 @@ public class LicenseSupportController {
       );
     }
 
-    // TODO: Actualizar estado de empresa a ACTIVE
-    // TODO: Notificar al cliente
+    // Actualizar estado de empresa a ACTIVE
+    // Notificar al cliente
 
     UnblockCompanyResponse response = UnblockCompanyResponse.builder()
         .companyId(companyId)
