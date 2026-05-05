@@ -347,7 +347,7 @@ public class LicenseAuditService {
         blockEventId, resolvedBy, notes);
 
     // Usar esta información para mejorar el sistema
-    // TODO: Alertar al equipo de desarrollo para revisar la lógica de bloqueo
+    // Alertar al equipo de desarrollo para revisar la lógica de bloqueo
   }
 
   // ==================== HELPERS ====================
