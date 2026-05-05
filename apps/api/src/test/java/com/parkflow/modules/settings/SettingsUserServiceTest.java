@@ -61,7 +61,8 @@ class SettingsUserServiceTest {
         .thenReturn(Optional.of(new AppUser()));
 
     UserCreateRequest req =
-        new UserCreateRequest("A", "a@test.com", null, null, UserRole.CAJERO, null, null, "password123");
+        new UserCreateRequest("A", "a@test.com", null, null, UserRole.CAJERO, null, null,
+            false, false, false, false, "password123");
 
     assertThatThrownBy(() -> service.create(req))
         .isInstanceOf(OperationException.class)
@@ -85,7 +86,8 @@ class SettingsUserServiceTest {
 
     UserCreateRequest req =
         new UserCreateRequest(
-            "New", "new@test.com", null, null, UserRole.CAJERO, null, null, "password123");
+            "New", "new@test.com", null, null, UserRole.CAJERO, null, null,
+            false, false, false, false, "password123");
 
     service.create(req);
   }
