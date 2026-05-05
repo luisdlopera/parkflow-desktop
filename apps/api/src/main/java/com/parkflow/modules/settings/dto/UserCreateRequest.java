@@ -14,4 +14,8 @@ public record UserCreateRequest(
     @NotNull UserRole role,
     @Size(max = 80) String site,
     @Size(max = 80) String terminal,
+    boolean canVoidTickets,
+    boolean canReprintTickets,
+    boolean canCloseCash,
+    boolean requirePasswordChange,
     @NotBlank @Size(min = 8, max = 120) String initialPassword) {}
