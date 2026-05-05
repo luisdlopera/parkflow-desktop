@@ -46,14 +46,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       UUID userId = UUID.fromString(claims.getSubject());
       String email = claims.get("email", String.class);
       String role = claims.get("role", String.class);
-      var permissions = claims.get("permissions", List.class);
+      List<?> permissions = claims.get("permissions", List.class);
 
       Collection<GrantedAuthority> authorities =
           permissions == null
               ? List.of()
-              : (Collection<GrantedAuthority>)
-                  permissions.stream()
-                      .map(value -> new SimpleGrantedAuthority(String.valueOf(value)))
+              : permissions.stream()
+                      .map(value -> (GrantedAuthority) new SimpleGrantedAuthority(String.valueOf(value)))
                       .toList();
 
       AuthPrincipal principal = new AuthPrincipal(userId, email, role, authorities);
