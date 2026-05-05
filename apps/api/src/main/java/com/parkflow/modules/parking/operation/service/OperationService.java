@@ -479,7 +479,7 @@ public class OperationService {
     return new ReceiptResponse(
         session.getTicketNumber(),
         plate,
-        session.getVehicle().getType().name(),
+        session.getVehicle().getType(),
             session.getSite(),
             session.getLane(),
             session.getBooth(),
@@ -527,7 +527,7 @@ public class OperationService {
     return 1;
   }
 
-  private Rate resolveRate(UUID rateId, VehicleType vehicleType, String site, OffsetDateTime at) {
+  private Rate resolveRate(UUID rateId, String vehicleType, String site, OffsetDateTime at) {
     if (rateId != null) {
       Rate r =
           rateRepository
@@ -557,11 +557,6 @@ public class OperationService {
                 "No existe tarifa activa y aplicable ahora para este tipo de vehiculo y sede"));
   }
 
-  private java.util.Optional<Rate> pickFirstApplicable(List<Rate> rates, OffsetDateTime at) {
-    return rates.stream()
-        .filter(r -> RateApplicability.isApplicable(r, at, DEFAULT_OPERATION_ZONE))
-        .findFirst();
-  }
 
   private ParkingSession findActiveSession(String ticketNumber, String plate) {
     if (ticketNumber != null && !ticketNumber.isBlank()

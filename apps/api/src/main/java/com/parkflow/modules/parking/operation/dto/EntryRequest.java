@@ -1,6 +1,5 @@
 package com.parkflow.modules.parking.operation.dto;
 
-import com.parkflow.modules.parking.operation.domain.VehicleType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -12,7 +11,7 @@ import java.util.UUID;
 public record EntryRequest(
     @Size(max = 200) String idempotencyKey,
     @NotBlank @Size(min = 3, max = 20) @Pattern(regexp = "^[A-Z0-9-]+$", message = "Plate must be alphanumeric") String plate,
-    @NotNull VehicleType type,
+    @NotNull String type,
     UUID rateId,
     @NotNull UUID operatorUserId,
     OffsetDateTime entryAt,
@@ -25,3 +24,4 @@ public record EntryRequest(
     @Size(max = 200) String vehicleCondition,
     List<@Size(max = 100) String> conditionChecklist,
     List<@Size(max = 500) String> conditionPhotoUrls) {}
+

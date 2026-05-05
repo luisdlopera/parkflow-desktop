@@ -18,9 +18,8 @@ public class Vehicle {
   @Column(nullable = false, unique = true)
   private String plate;
 
-  @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private VehicleType type;
+  private String type;
 
   @Column(nullable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();
