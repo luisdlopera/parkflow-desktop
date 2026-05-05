@@ -71,6 +71,10 @@ public class SettingsUserService {
     user.setSite(trimToNull(req.site()));
     user.setTerminal(trimToNull(req.terminal()));
     user.setRole(req.role());
+    user.setCanVoidTickets(req.canVoidTickets());
+    user.setCanReprintTickets(req.canReprintTickets());
+    user.setCanCloseCash(req.canCloseCash());
+    user.setRequirePasswordChange(req.requirePasswordChange());
     user.setPasswordHash(passwordHashService.encodePassword(req.initialPassword()));
     user.setPasswordChangedAt(OffsetDateTime.now());
     user.setActive(true);
@@ -137,6 +141,18 @@ public class SettingsUserService {
     }
     if (req.role() != null) {
       user.setRole(req.role());
+    }
+    if (req.canVoidTickets() != null) {
+      user.setCanVoidTickets(req.canVoidTickets());
+    }
+    if (req.canReprintTickets() != null) {
+      user.setCanReprintTickets(req.canReprintTickets());
+    }
+    if (req.canCloseCash() != null) {
+      user.setCanCloseCash(req.canCloseCash());
+    }
+    if (req.requirePasswordChange() != null) {
+      user.setRequirePasswordChange(req.requirePasswordChange());
     }
     user.setUpdatedAt(OffsetDateTime.now());
 
@@ -225,6 +241,10 @@ public class SettingsUserService {
         u.getSite(),
         u.getTerminal(),
         u.isActive(),
+        u.isCanVoidTickets(),
+        u.isCanReprintTickets(),
+        u.isCanCloseCash(),
+        u.isRequirePasswordChange(),
         u.getLastAccessAt(),
         u.getCreatedAt(),
         u.getUpdatedAt());
