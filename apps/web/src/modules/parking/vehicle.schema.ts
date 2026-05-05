@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const vehicleEntrySchema = z.object({
   plate: z.string().min(5, "Placa obligatoria"),
-  type: z.enum(["CAR", "MOTORCYCLE", "VAN", "TRUCK", "OTHER"]),
+  type: z.string().min(1, "Tipo de vehículo obligatorio"),
   rateId: z.string().optional().default(""),
   site: z.string().optional().default(""),
   lane: z.string().optional().default(""),
