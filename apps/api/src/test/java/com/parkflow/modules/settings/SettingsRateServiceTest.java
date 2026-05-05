@@ -10,8 +10,9 @@ import static org.mockito.Mockito.when;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateType;
 import com.parkflow.modules.parking.operation.domain.RoundingMode;
-import com.parkflow.modules.parking.operation.domain.VehicleType;
+import com.parkflow.modules.settings.domain.MasterVehicleType;
 import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.settings.dto.RateUpsertRequest;
@@ -33,25 +34,31 @@ import org.springframework.http.HttpStatus;
 class SettingsRateServiceTest {
 
   @Mock private RateRepository rateRepository;
+  @Mock private com.parkflow.modules.settings.repository.MasterVehicleTypeRepository vehicleTypeRepository;
   @Mock private ParkingSessionRepository parkingSessionRepository;
   @Mock private SettingsAuditService settingsAuditService;
+  @Mock private ParkingSiteRepository parkingSiteRepository;
 
   private SettingsRateService service;
 
   @BeforeEach
   void setUp() {
-    service = new SettingsRateService(rateRepository, parkingSessionRepository, settingsAuditService);
+    service = new SettingsRateService(rateRepository, parkingSessionRepository, settingsAuditService, vehicleTypeRepository, parkingSiteRepository);
   }
 
   @Test
   void createPersistsWhenNoConflict() {
-    when(rateRepository.findActiveForConflictCheck(eq("DEFAULT"), eq(VehicleType.CAR), any(UUID.class)))
+    when(rateRepository.findActiveForConflictCheck(eq("DEFAULT"), eq("CAR"), any(UUID.class)))
         .thenReturn(List.of());
+    MasterVehicleType carType = new MasterVehicleType();
+    carType.setCode("CAR");
+    carType.setName("Carro");
+    when(vehicleTypeRepository.findByCode("CAR")).thenReturn(java.util.Optional.of(carType));
     Rate saved = new Rate();
     saved.setId(UUID.randomUUID());
     saved.setName("Tarifa OK");
     saved.setSite("DEFAULT");
-    saved.setVehicleType(VehicleType.CAR);
+    saved.setVehicleType("CAR");
     saved.setRateType(RateType.HOURLY);
     saved.setAmount(new java.math.BigDecimal("1000.00"));
     saved.setActive(true);
@@ -60,7 +67,7 @@ class SettingsRateServiceTest {
     RateUpsertRequest req =
         new RateUpsertRequest(
             "Tarifa OK",
-            VehicleType.CAR,
+            "CAR",
             RateType.HOURLY,
             new BigDecimal("1000.00"),
             5,
@@ -70,6 +77,14 @@ class SettingsRateServiceTest {
             BigDecimal.ZERO,
             true,
             "DEFAULT",
+            null,
+            BigDecimal.ZERO,
+            0,
+            BigDecimal.ZERO,
+            0,
+            null,
+            false,
+            false,
             null,
             null,
             null,
@@ -85,7 +100,7 @@ class SettingsRateServiceTest {
     RateUpsertRequest req =
         new RateUpsertRequest(
             "X",
-            VehicleType.CAR,
+            "CAR",
             RateType.HOURLY,
             new BigDecimal("1000.00"),
             0,
@@ -95,6 +110,14 @@ class SettingsRateServiceTest {
             BigDecimal.ZERO,
             true,
             "DEFAULT",
+            null,
+            BigDecimal.ZERO,
+            0,
+            BigDecimal.ZERO,
+            0,
+            null,
+            false,
+            false,
             null,
             null,
             OffsetDateTime.parse("2026-05-01T00:00:00Z"),
@@ -108,23 +131,27 @@ class SettingsRateServiceTest {
 
   @Test
   void createRejectsOverlappingActiveWindows() {
+    MasterVehicleType carType = new MasterVehicleType();
+    carType.setCode("CAR");
+    carType.setName("Carro");
+    when(vehicleTypeRepository.findByCode("CAR")).thenReturn(java.util.Optional.of(carType));
     Rate existing = new Rate();
     existing.setId(UUID.randomUUID());
     existing.setSite("DEFAULT");
-    existing.setVehicleType(VehicleType.CAR);
+    existing.setVehicleType("CAR");
     existing.setRateType(RateType.HOURLY);
     existing.setActive(true);
     existing.setWindowStart(LocalTime.of(8, 0));
     existing.setWindowEnd(LocalTime.of(12, 0));
 
     when(rateRepository.findActiveForConflictCheck(
-            eq("DEFAULT"), eq(VehicleType.CAR), any(UUID.class)))
+            eq("DEFAULT"), eq("CAR"), any(UUID.class)))
         .thenReturn(List.of(existing));
 
     RateUpsertRequest req =
         new RateUpsertRequest(
             "Tarifa 2",
-            VehicleType.CAR,
+            "CAR",
             RateType.HOURLY,
             new BigDecimal("5000.00"),
             0,
@@ -134,6 +161,14 @@ class SettingsRateServiceTest {
             BigDecimal.ZERO,
             true,
             "DEFAULT",
+            null,
+            BigDecimal.ZERO,
+            0,
+            BigDecimal.ZERO,
+            0,
+            null,
+            false,
+            false,
             LocalTime.of(9, 0),
             LocalTime.of(13, 0),
             null,
@@ -145,3 +180,5 @@ class SettingsRateServiceTest {
             ex -> assertThat(((OperationException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT));
   }
 }
+
+
