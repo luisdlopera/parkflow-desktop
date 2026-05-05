@@ -14,6 +14,10 @@ public record UserAdminResponse(
     String site,
     String terminal,
     boolean active,
+    boolean canVoidTickets,
+    boolean canReprintTickets,
+    boolean canCloseCash,
+    boolean requirePasswordChange,
     OffsetDateTime lastAccessAt,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt) {}
