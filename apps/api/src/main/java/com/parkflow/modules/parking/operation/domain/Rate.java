@@ -1,9 +1,12 @@
 package com.parkflow.modules.parking.operation.domain;
 
 import jakarta.persistence.*;
+import com.parkflow.modules.configuration.entity.ParkingSite;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,8 +23,7 @@ public class Rate {
   @Column(nullable = false)
   private String name;
 
-  @Enumerated(EnumType.STRING)
-  private VehicleType vehicleType;
+  private String vehicleType;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
@@ -41,6 +43,34 @@ public class Rate {
 
   @Column(nullable = false)
   private String site = "DEFAULT";
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "site_id")
+  private ParkingSite siteRef;
+
+  @Column(nullable = false, precision = 10, scale = 2)
+  private BigDecimal baseValue = BigDecimal.ZERO;
+
+  @Column(nullable = false)
+  private int baseMinutes = 0;
+
+  @Column(nullable = false, precision = 10, scale = 2)
+  private BigDecimal additionalValue = BigDecimal.ZERO;
+
+  @Column(nullable = false)
+  private int additionalMinutes = 0;
+
+  @Column(precision = 10, scale = 2)
+  private BigDecimal maxDailyValue;
+
+  @Column(nullable = false)
+  private boolean appliesNight = false;
+
+  @Column(nullable = false)
+  private boolean appliesHoliday = false;
+
+  @OneToMany(mappedBy = "rate", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  private List<com.parkflow.modules.configuration.entity.RateFraction> fractions = new ArrayList<>();
 
   private LocalTime windowStart;
 
@@ -65,4 +95,9 @@ public class Rate {
 
   @Column(nullable = false)
   private OffsetDateTime updatedAt = OffsetDateTime.now();
+
+  @PreUpdate
+  public void preUpdate() {
+    this.updatedAt = OffsetDateTime.now();
+  }
 }

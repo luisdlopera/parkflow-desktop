@@ -44,8 +44,25 @@ public class AppUser {
   private boolean isActive = true;
 
   @Column(nullable = false)
+  private boolean canVoidTickets = false;
+
+  @Column(nullable = false)
+  private boolean canReprintTickets = false;
+
+  @Column(nullable = false)
+  private boolean canCloseCash = false;
+
+  @Column(nullable = false)
+  private boolean requirePasswordChange = false;
+
+  @Column(nullable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();
 
   @Column(nullable = false)
   private OffsetDateTime updatedAt = OffsetDateTime.now();
+
+  @PreUpdate
+  public void preUpdate() {
+    this.updatedAt = OffsetDateTime.now();
+  }
 }
