@@ -1,0 +1,38 @@
+package com.parkflow.modules.common.exception;
+
+import lombok.Getter;
+
+/**
+ * Standardized error codes for the ParkFlow system.
+ * These codes are stable and used by the frontend to provide localized, context-aware messages.
+ */
+@Getter
+public enum ErrorCode {
+    // Auth Errors
+    AUTH_INVALID_CREDENTIALS("AUTH_INVALID_CREDENTIALS"),
+    AUTH_SESSION_EXPIRED("AUTH_SESSION_EXPIRED"),
+    ACCESS_DENIED("ACCESS_DENIED"),
+    
+    // Business Errors
+    COMPANY_NOT_FOUND("COMPANY_NOT_FOUND"),
+    COMPANY_NAME_REQUIRED("COMPANY_NAME_REQUIRED"),
+    COMPANY_ALREADY_EXISTS("COMPANY_ALREADY_EXISTS"),
+    LICENSE_EXPIRED("LICENSE_EXPIRED"),
+    LICENSE_DISABLED("LICENSE_DISABLED"),
+    PARKING_RATE_NOT_FOUND("PARKING_RATE_NOT_FOUND"),
+    VEHICLE_PLATE_REQUIRED("VEHICLE_PLATE_REQUIRED"),
+    TICKET_NOT_FOUND("TICKET_NOT_FOUND"),
+    PRINT_AGENT_UNAVAILABLE("PRINT_AGENT_UNAVAILABLE"),
+    
+    // System Errors
+    VALIDATION_ERROR("VALIDATION_ERROR"),
+    RESOURCE_NOT_FOUND("RESOURCE_NOT_FOUND"),
+    DATABASE_CONSTRAINT_ERROR("DATABASE_CONSTRAINT_ERROR"),
+    INTERNAL_ERROR("INTERNAL_ERROR");
+
+    private final String code;
+
+    ErrorCode(String code) {
+        this.code = code;
+    }
+}
