@@ -1,6 +1,8 @@
 package com.parkflow.modules.settings.service;
 
 import com.parkflow.modules.auth.entity.AuthAuditAction;
+import com.parkflow.modules.configuration.entity.ParkingSite;
+import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
@@ -9,6 +11,7 @@ import com.parkflow.modules.settings.dto.RateResponse;
 import com.parkflow.modules.settings.dto.RateStatusRequest;
 import com.parkflow.modules.settings.dto.RateUpsertRequest;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,6 +30,8 @@ public class SettingsRateService {
   private final RateRepository rateRepository;
   private final ParkingSessionRepository parkingSessionRepository;
   private final SettingsAuditService settingsAuditService;
+  private final com.parkflow.modules.settings.repository.MasterVehicleTypeRepository vehicleTypeRepository;
+  private final ParkingSiteRepository parkingSiteRepository;
 
   @Transactional(readOnly = true)
   public SettingsPageResponse<RateResponse> list(
@@ -135,6 +140,12 @@ public class SettingsRateService {
 
   private void applyBusinessRules(Rate rate, UUID excludeId) {
     validateSchedule(rate);
+    
+    if (rate.getVehicleType() != null) {
+      vehicleTypeRepository.findByCode(rate.getVehicleType())
+          .orElseThrow(() -> new OperationException(HttpStatus.BAD_REQUEST, "El tipo de vehículo no existe en los maestros"));
+    }
+
     if (!rate.isActive()) {
       return;
     }
@@ -193,6 +204,18 @@ public class SettingsRateService {
     target.setLostTicketSurcharge(req.lostTicketSurcharge());
     target.setActive(req.active());
     target.setSite(req.site().trim());
+    if (req.siteId() != null) {
+      ParkingSite site = parkingSiteRepository.findById(req.siteId())
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sede no encontrada"));
+      target.setSiteRef(site);
+    }
+    target.setBaseValue(req.baseValue() != null ? req.baseValue() : BigDecimal.ZERO);
+    target.setBaseMinutes(req.baseMinutes());
+    target.setAdditionalValue(req.additionalValue() != null ? req.additionalValue() : BigDecimal.ZERO);
+    target.setAdditionalMinutes(req.additionalMinutes());
+    target.setMaxDailyValue(req.maxDailyValue());
+    target.setAppliesNight(req.appliesNight());
+    target.setAppliesHoliday(req.appliesHoliday());
     target.setWindowStart(req.windowStart());
     target.setWindowEnd(req.windowEnd());
     target.setScheduledActiveFrom(req.scheduledActiveFrom());
@@ -215,6 +238,14 @@ public class SettingsRateService {
         r.getLostTicketSurcharge(),
         r.isActive(),
         r.getSite(),
+        r.getSiteRef() != null ? r.getSiteRef().getId() : null,
+        r.getBaseValue(),
+        r.getBaseMinutes(),
+        r.getAdditionalValue(),
+        r.getAdditionalMinutes(),
+        r.getMaxDailyValue(),
+        r.isAppliesNight(),
+        r.isAppliesHoliday(),
         r.getWindowStart(),
         r.getWindowEnd(),
         r.getScheduledActiveFrom(),
@@ -226,7 +257,7 @@ public class SettingsRateService {
   private Map<String, Object> snapshot(Rate r) {
     Map<String, Object> m = new LinkedHashMap<>();
     m.put("name", r.getName());
-    m.put("vehicleType", r.getVehicleType() != null ? r.getVehicleType().name() : null);
+    m.put("vehicleType", r.getVehicleType() != null ? r.getVehicleType() : null);
     m.put("rateType", r.getRateType().name());
     m.put("amount", r.getAmount());
     m.put("active", r.isActive());
