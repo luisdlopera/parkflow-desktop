@@ -22,7 +22,6 @@ import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.domain.SessionSyncStatus;
 import com.parkflow.modules.parking.operation.domain.UserRole;
 import com.parkflow.modules.parking.operation.domain.Vehicle;
-import com.parkflow.modules.parking.operation.domain.VehicleType;
 import com.parkflow.modules.parking.operation.dto.EntryRequest;
 import com.parkflow.modules.parking.operation.dto.LostTicketRequest;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
@@ -46,7 +45,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -101,7 +100,7 @@ class OperationServiceInventoryTest {
         new EntryRequest(
             null,
             "abc123",
-            VehicleType.CAR,
+            "CAR",
             null,
             UUID.randomUUID(),
             null,
@@ -150,7 +149,7 @@ class OperationServiceInventoryTest {
         new EntryRequest(
             key,
             "xyz789",
-            VehicleType.CAR,
+            "CAR",
             null,
             UUID.randomUUID(),
             null,
@@ -184,7 +183,7 @@ class OperationServiceInventoryTest {
         new EntryRequest(
             key,
             "abc123",
-            VehicleType.CAR,
+            "CAR",
             null,
             UUID.randomUUID(),
             null,
@@ -277,7 +276,7 @@ class OperationServiceInventoryTest {
     Vehicle vehicle = new Vehicle();
     vehicle.setId(UUID.randomUUID());
     vehicle.setPlate(plate);
-    vehicle.setType(VehicleType.CAR);
+    vehicle.setType("CAR");
     session.setVehicle(vehicle);
     AppUser operator = new AppUser();
     operator.setId(UUID.randomUUID());
@@ -294,7 +293,7 @@ class OperationServiceInventoryTest {
     r.setName("Hora carro");
     r.setRateType(RateType.HOURLY);
     r.setAmount(new BigDecimal("4000.00"));
-    r.setVehicleType(VehicleType.CAR);
+    r.setVehicleType("CAR");
     r.setRoundingMode(RoundingMode.UP);
     r.setLostTicketSurcharge(new BigDecimal("8000.00"));
     r.setActive(true);
