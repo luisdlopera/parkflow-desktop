@@ -1,7 +1,6 @@
 package com.parkflow.modules.parking.operation.repository;
 
 import com.parkflow.modules.parking.operation.domain.Rate;
-import com.parkflow.modules.parking.operation.domain.VehicleType;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -12,21 +11,21 @@ import org.springframework.data.repository.query.Param;
 
 public interface RateRepository extends JpaRepository<Rate, UUID> {
   java.util.List<Rate> findAllByIsActiveTrueAndSiteAndVehicleTypeOrderByCreatedAtAsc(
-      String site, VehicleType vehicleType);
+      String site, String vehicleType);
 
   java.util.List<Rate> findAllByIsActiveTrueAndSiteAndVehicleTypeIsNullOrderByCreatedAtAsc(
       String site);
 
-  java.util.List<Rate> findAllByIsActiveTrueAndVehicleTypeOrderByCreatedAtAsc(VehicleType vehicleType);
+  java.util.List<Rate> findAllByIsActiveTrueAndVehicleTypeOrderByCreatedAtAsc(String vehicleType);
 
   java.util.List<Rate> findAllByIsActiveTrueAndVehicleTypeIsNullOrderByCreatedAtAsc();
 
-  Optional<Rate> findFirstByIsActiveTrueAndVehicleTypeOrderByCreatedAtAsc(VehicleType vehicleType);
+  Optional<Rate> findFirstByIsActiveTrueAndVehicleTypeOrderByCreatedAtAsc(String vehicleType);
 
   Optional<Rate> findFirstByIsActiveTrueAndVehicleTypeIsNullOrderByCreatedAtAsc();
 
   Optional<Rate> findFirstByIsActiveTrueAndSiteAndVehicleTypeOrderByCreatedAtAsc(
-      String site, VehicleType vehicleType);
+      String site, String vehicleType);
 
   Optional<Rate> findFirstByIsActiveTrueAndSiteAndVehicleTypeIsNullOrderByCreatedAtAsc(String site);
 
@@ -44,7 +43,7 @@ public interface RateRepository extends JpaRepository<Rate, UUID> {
           + "AND (r.vehicleType IS NULL OR :vehicleType IS NULL OR r.vehicleType = :vehicleType)")
   java.util.List<Rate> findActiveForConflictCheck(
       @Param("site") String site,
-      @Param("vehicleType") VehicleType vehicleType,
+      @Param("vehicleType") String vehicleType,
       @Param("excludeId") UUID excludeId);
 
   /**
@@ -68,5 +67,5 @@ public interface RateRepository extends JpaRepository<Rate, UUID> {
       """, nativeQuery = true)
   Optional<Rate> findFirstApplicableRate(
       @Param("site") String site, 
-      @Param("vehicleType") VehicleType vehicleType);
+      @Param("vehicleType") String vehicleType);
 }
