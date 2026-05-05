@@ -124,7 +124,7 @@ export default function VehicleEntryForm() {
         process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
 
       // SECURITY/DATA QUALITY: Normalize plate to uppercase for consistency
-      const normalizedPlate = values.plate.trim().toUpperCase();
+      const normalizedPlate = values.plate.trim().toUpperCase().replace(/\s+/g, '');
       
       const response = await fetch(`${apiBase}/entries`, {
         method: "POST",
@@ -151,11 +151,38 @@ export default function VehicleEntryForm() {
         })
       });
 
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        // HTTP error from server - this is NOT a network/offline issue
-        setError(payload.error ?? `Error del servidor (${response.status})`);
+        // Build a fake response object to pass to normalizeApiError 
+        // since we already read the body
+        const fakeResponse = new Response(JSON.stringify(payload), {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers
+        });
+        
+        // Dynamic import to avoid missing imports at the top
+        const { normalizeApiError } = await import("@/lib/errors/normalize-api-error");
+        const { getUserErrorMessage } = await import("@/lib/errors/get-user-error-message");
+        
+        const apiError = await normalizeApiError(fakeResponse);
+        const userError = getUserErrorMessage(apiError, "tickets.create");
+        
+        let errorText = userError.description;
+        if (apiError.code === "VALIDATION_ERROR" && apiError.details) {
+          // Si el backend manda los errores de validación, mostramos el primero
+          if (Array.isArray(apiError.details) && apiError.details.length > 0) {
+             errorText = apiError.details[0].message || userError.description;
+          } else if (typeof apiError.details === "object" && !Array.isArray(apiError.details)) {
+             const details = apiError.details as Record<string, any>;
+             const firstKey = Object.keys(details)[0];
+             if (firstKey) errorText = `${firstKey}: ${details[firstKey]}`;
+          }
+        }
+        
+        setError(errorText);
+        playError();
         return;
       }
 
@@ -316,7 +343,7 @@ export default function VehicleEntryForm() {
             }}
           >
             {vehicleTypeOptions.map((option) => (
-              <SelectItem key={option.key}>{option.label}</SelectItem>
+              <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
             ))}
           </Select>
         )}
