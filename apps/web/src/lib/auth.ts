@@ -245,3 +245,8 @@ export async function currentUser(): Promise<AuthUser | null> {
   const session = await loadSession();
   return session?.user ?? null;
 }
+
+/** Licensing / SaaS administration UI at `/admin/*` (SUPER_ADMIN only). */
+export function canAccessSuperAdminPortal(user: AuthUser | null): boolean {
+  return user?.role === "SUPER_ADMIN";
+}
