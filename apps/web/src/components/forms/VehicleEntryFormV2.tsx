@@ -23,6 +23,7 @@ import { useToast } from "@/lib/toast/ToastContext";
 import { useAutoSave } from "@/lib/hooks/useAutoSave";
 import { CrashRecoveryDialog } from "@/components/ui/CrashRecoveryDialog";
 import type { VehicleType } from "@parkflow/types";
+import { fetchMasterVehicleTypes, type MasterVehicleTypeRow } from "@/lib/settings-api";
 
 // #region agent log - Performance logging utility
 function writePerfLog(operation: string, durationMs: number, details?: Record<string, unknown>) {
@@ -50,7 +51,7 @@ interface OperatorSettings {
   platePrefix: string;
 }
 
-const VEHICLE_TYPE_CONFIG: Record<VehicleType, { label: string; color: string; icon: string }> = {
+const VEHICLE_TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
   CAR: { label: "Carro", color: "bg-blue-500", icon: "🚗" },
   MOTORCYCLE: { label: "Moto", color: "bg-emerald-500", icon: "🏍️" },
   VAN: { label: "Van", color: "bg-purple-500", icon: "🚐" },
@@ -70,6 +71,8 @@ export default function VehicleEntryFormV2() {
   const [previewLines, setPreviewLines] = useState<string[] | null>(null);
   const [stats, setStats] = useState({ today: 0, session: 0 });
   const [showRecovery, setShowRecovery] = useState(false);
+  const [vehicleTypes, setVehicleTypes] = useState<MasterVehicleTypeRow[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
   const submitLock = useRef(false);
   const plateInputRef = useRef<HTMLInputElement>(null);
   const { playSuccess, playError } = useOperationSounds();
@@ -94,6 +97,18 @@ export default function VehicleEntryFormV2() {
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
+  useEffect(() => {
+    fetchMasterVehicleTypes()
+      .then(types => {
+        setVehicleTypes(types);
+        setLoadingTypes(false);
+      })
+      .catch(err => {
+        console.error("Error fetching vehicle types:", err);
+        setLoadingTypes(false);
+      });
+  }, []);
 
   const form = useForm<VehicleEntryFormValues>({
     resolver: zodResolver(vehicleEntrySchema),
@@ -181,7 +196,7 @@ export default function VehicleEntryFormV2() {
 
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
-      const normalizedPlate = values.plate.trim().toUpperCase();
+      const normalizedPlate = values.plate.trim().toUpperCase().replace(/\s+/g, '');
 
       const response = await fetch(`${apiBase}/entries`, {
         method: "POST",
@@ -204,10 +219,37 @@ export default function VehicleEntryFormV2() {
         })
       });
 
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setError(payload.error ?? `Error del servidor (${response.status})`);
+        // Build a fake response object to pass to normalizeApiError 
+        // since we already read the body
+        const fakeResponse = new Response(JSON.stringify(payload), {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers
+        });
+        
+        // Dynamic import to avoid missing imports at the top
+        const { normalizeApiError } = await import("@/lib/errors/normalize-api-error");
+        const { getUserErrorMessage } = await import("@/lib/errors/get-user-error-message");
+        
+        const apiError = await normalizeApiError(fakeResponse);
+        const userError = getUserErrorMessage(apiError, "tickets.create");
+        
+        let errorText = userError.description;
+        if (apiError.code === "VALIDATION_ERROR" && apiError.details) {
+          // Si el backend manda los errores de validación, mostramos el primero
+          if (Array.isArray(apiError.details) && apiError.details.length > 0) {
+             errorText = apiError.details[0].message || userError.description;
+          } else if (typeof apiError.details === "object" && !Array.isArray(apiError.details)) {
+             const details = apiError.details as Record<string, any>;
+             const firstKey = Object.keys(details)[0];
+             if (firstKey) errorText = `${firstKey}: ${details[firstKey]}`;
+          }
+        }
+        
+        setError(errorText);
         playError();
         return;
       }
@@ -334,6 +376,7 @@ export default function VehicleEntryFormV2() {
           <Select
             size="sm"
             variant="flat"
+            aria-label="Modo de operación"
             selectedKeys={[settings.mode]}
             onSelectionChange={(keys) => {
               const selected = Array.from(keys)[0] as OperatorMode;
@@ -345,13 +388,14 @@ export default function VehicleEntryFormV2() {
             }}
           >
             {modeOptions.map((option) => (
-              <SelectItem key={option.key}>{option.label}</SelectItem>
+              <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
             ))}
           </Select>
           <Button
             isIconOnly
             size="sm"
             variant="flat"
+            aria-label="Configuración de operador"
             onPress={() => setShowSettings(!showSettings)}
             className="flex-shrink-0"
           >
@@ -389,6 +433,7 @@ export default function VehicleEntryFormV2() {
               <Select
                 size="sm"
                 variant="flat"
+                aria-label="Tipo de vehículo por defecto"
                 selectedKeys={[settings.defaultVehicleType]}
                 onSelectionChange={(keys) => {
                   const selected = Array.from(keys)[0] as VehicleType;
@@ -397,7 +442,7 @@ export default function VehicleEntryFormV2() {
                 className="w-40"
               >
                 {Object.entries(VEHICLE_TYPE_CONFIG).map(([key, config]) => (
-                  <SelectItem key={key}>{config.icon} {config.label}</SelectItem>
+                  <SelectItem key={key} textValue={config.label}>{config.icon} {config.label}</SelectItem>
                 ))}
               </Select>
             </div>
@@ -449,20 +494,22 @@ export default function VehicleEntryFormV2() {
             )}
           />
 
-          {/* Tipo de Vehículo - Botones rápidos en modo experto */}
+          {/* Tipo de Vehículo */}
           <div>
             <label className="text-sm font-semibold text-slate-700 mb-2 block">Tipo de Vehículo</label>
-            {isExpert ? (
+            {loadingTypes ? (
+              <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />
+            ) : isExpert ? (
               // Modo experto: Botones grandes - responsive grid
               <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2">
-                {(Object.keys(VEHICLE_TYPE_CONFIG) as VehicleType[]).map((type, index) => {
-                  const config = VEHICLE_TYPE_CONFIG[type];
-                  const isSelected = form.watch("type") === type;
+                {vehicleTypes.map((t, index) => {
+                  const config = VEHICLE_TYPE_CONFIG[t.code] || { label: t.name, color: "bg-slate-400", icon: "🚗" };
+                  const isSelected = form.watch("type") === t.code;
                   return (
                     <button
-                      key={type}
+                      key={t.code}
                       type="button"
-                      onClick={() => form.setValue("type", type)}
+                      onClick={() => form.setValue("type", t.code)}
                       className={`
                         relative rounded-xl p-2 sm:p-3 text-center transition-all
                         ${isSelected
@@ -487,15 +534,21 @@ export default function VehicleEntryFormV2() {
                 render={({ field }) => (
                   <Select
                     variant="flat"
+                    aria-label="Tipo de vehículo"
                     selectedKeys={[field.value]}
                     onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] as VehicleType;
+                      const selected = Array.from(keys)[0] as string;
                       field.onChange(selected);
                     }}
                   >
-                    {Object.entries(VEHICLE_TYPE_CONFIG).map(([key, config]) => (
-                      <SelectItem key={key}>{config.icon} {config.label}</SelectItem>
-                    ))}
+                    {vehicleTypes.map((t) => {
+                      const config = VEHICLE_TYPE_CONFIG[t.code] || { label: t.name, icon: "🚗" };
+                      return (
+                        <SelectItem key={t.code} textValue={config.label}>
+                          {config.icon} {config.label}
+                        </SelectItem>
+                      );
+                    })}
                   </Select>
                 )}
               />
