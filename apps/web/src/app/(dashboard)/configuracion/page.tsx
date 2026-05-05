@@ -37,7 +37,7 @@ import type { UserRole } from "@/modules/users/types";
 import type { VehicleType } from "@/modules/parking/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type TabKey = "rates" | "users" | "parameters" | "interface";
+type TabKey = "rates" | "users" | "parameters" | "interface" | "masters";
 
 const VEHICLE_TYPES: VehicleType[] = ["CAR", "MOTORCYCLE", "TRUCK", "VAN", "OTHER"];
 const RATE_TYPES: RateType[] = ["HOURLY", "DAILY", "FLAT"];
@@ -102,7 +102,7 @@ export default function ConfiguracionPage() {
   const [auditReason, setAuditReason] = useState("");
   const [perm, setPerm] = useState<Record<string, boolean>>({});
 
-  // Configuración de interfaz (persistida en localStorage)
+  // ConfiguraciÃ³n de interfaz (persistida en localStorage)
   const [uiSettings, setUiSettings] = useState({
     showSystemStatus: true,
     showKeyboardShortcuts: true
@@ -168,12 +168,12 @@ export default function ConfiguracionPage() {
       />
 
       <Textarea
-        label="Motivo de auditoría"
-        description="Opcional, hasta 500 caracteres. Se envía al servidor en cambios sensibles."
+        label="Motivo de auditorÃ­a"
+        description="Opcional, hasta 500 caracteres. Se envÃ­a al servidor en cambios sensibles."
         maxLength={500}
         value={auditReason}
         onChange={(e) => setAuditReason(e.target.value)}
-        placeholder="Ej. Ajuste acordado con administración..."
+        placeholder="Ej. Ajuste acordado con administraciÃ³n..."
         variant="flat"
         className="max-w-2xl"
       />
@@ -181,7 +181,7 @@ export default function ConfiguracionPage() {
       <Tabs
         selectedKey={tab}
         onSelectionChange={(key) => setTab(key as TabKey)}
-        aria-label="Configuración"
+        aria-label="ConfiguraciÃ³n"
         color="warning"
         variant="underlined"
         classNames={{
@@ -213,7 +213,7 @@ export default function ConfiguracionPage() {
           key="parameters"
           title={
             <div className="flex items-center gap-2">
-              <span>Parámetros</span>
+              <span>ParÃ¡metros</span>
               {!can.cfgRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
             </div>
           }
@@ -224,6 +224,14 @@ export default function ConfiguracionPage() {
           title={
             <div className="flex items-center gap-2">
               <span>Interfaz</span>
+            </div>
+          }
+        />
+        <Tab
+          key="masters"
+          title={
+            <div className="flex items-center gap-2">
+              <span>Maestros</span>
             </div>
           }
         />
@@ -256,6 +264,10 @@ export default function ConfiguracionPage() {
           onUpdate={updateUiSetting}
         />
       )}
+
+      {tab === "masters" && (
+        <MastersSection onNotify={setNotice} />
+      )}
     </div>
   );
 }
@@ -271,7 +283,7 @@ function InterfaceSection({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold text-slate-900">Personalización del Sidebar</h2>
+          <h2 className="text-lg font-semibold text-slate-900">PersonalizaciÃ³n del Sidebar</h2>
         </CardHeader>
         <CardBody className="space-y-6">
           <div className="flex items-center justify-between">
@@ -293,7 +305,7 @@ function InterfaceSection({
             <div>
               <p className="font-medium text-slate-800">Mostrar atajos de teclado</p>
               <p className="text-sm text-slate-500">
-                Muestra la sección de atajos de teclado (F1, F2, F3, F4, Esc) en la parte inferior del sidebar.
+                Muestra la secciÃ³n de atajos de teclado (F1, F2, F3, F4, Esc) en la parte inferior del sidebar.
               </p>
             </div>
             <Switch
@@ -313,10 +325,10 @@ function InterfaceSection({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p className="font-medium text-amber-800">Configuración local</p>
+              <p className="font-medium text-amber-800">ConfiguraciÃ³n local</p>
               <p className="text-sm text-amber-700">
                 Estas preferencias se guardan solo en tu navegador y no afectan a otros usuarios.
-                Se aplican inmediatamente sin necesidad de recargar la página.
+                Se aplican inmediatamente sin necesidad de recargar la pÃ¡gina.
               </p>
             </div>
           </div>
@@ -473,7 +485,7 @@ function RatesSection({
             <span className="text-slate-500">Nombre:</span> {rateDetail.name}
           </p>
           <p>
-            <span className="text-slate-500">Sede:</span> {rateDetail.site} ·{" "}
+            <span className="text-slate-500">Sede:</span> {rateDetail.site} Â·{" "}
             <span className="text-slate-500">Estado:</span> {rateDetail.active ? "Activa" : "Inactiva"}
           </p>
           <p>
@@ -481,8 +493,8 @@ function RatesSection({
             {rateDetail.vehicleType ?? "Cualquiera"}
           </p>
           <p>
-            <span className="text-slate-500">Valor:</span> {Number(rateDetail.amount).toFixed(2)} ·{" "}
-            <span className="text-slate-500">Fraccion:</span> {rateDetail.fractionMinutes} min ·{" "}
+            <span className="text-slate-500">Valor:</span> {Number(rateDetail.amount).toFixed(2)} Â·{" "}
+            <span className="text-slate-500">Fraccion:</span> {rateDetail.fractionMinutes} min Â·{" "}
             <span className="text-slate-500">Redondeo:</span> {rateDetail.roundingMode}
           </p>
           <p>
@@ -492,17 +504,17 @@ function RatesSection({
           <p>
             <span className="text-slate-500">Franja:</span>{" "}
             {rateDetail.windowStart && rateDetail.windowEnd
-              ? `${rateDetail.windowStart.slice(0, 5)} – ${rateDetail.windowEnd.slice(0, 5)}`
+              ? `${rateDetail.windowStart.slice(0, 5)} â€“ ${rateDetail.windowEnd.slice(0, 5)}`
               : "24h"}
           </p>
           <p>
             <span className="text-slate-500">Vigencia programada:</span>{" "}
             {rateDetail.scheduledActiveFrom || rateDetail.scheduledActiveTo
-              ? `${rateDetail.scheduledActiveFrom ?? "—"} → ${rateDetail.scheduledActiveTo ?? "—"}`
+              ? `${rateDetail.scheduledActiveFrom ?? "â€”"} â†’ ${rateDetail.scheduledActiveTo ?? "â€”"}`
               : "Sin programar"}
           </p>
           <p className="text-xs text-slate-500">
-            Creada {rateDetail.createdAt} · Actualizada {rateDetail.updatedAt}
+            Creada {rateDetail.createdAt} Â· Actualizada {rateDetail.updatedAt}
           </p>
         </div>
       ) : null}
@@ -684,6 +696,10 @@ function RateForm({
   onSaved: () => Promise<void>;
   onError: (msg: string) => void;
 }) {
+  const [vehicleTypes, setVehicleTypes] = useState<{code: string; name: string}[]>([]);
+  useEffect(() => {
+    import("@/lib/settings-api").then(api => api.fetchMasterVehicleTypes().then(setVehicleTypes).catch(() => {}));
+  }, []);
   const isEdit = Boolean((initial as RateRow).id);
   const [name, setName] = useState(initial.name);
   const [vehicleType, setVehicleType] = useState<string>(initial.vehicleType ?? "");
@@ -730,16 +746,16 @@ function RateForm({
           />
         </label>
         <label className="text-xs font-semibold text-slate-600">
-          Tipo vehiculo (vacío = todos)
+          Tipo vehiculo (vacÃ­o = todos)
           <select
             className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
             value={vehicleType}
             onChange={(e) => setVehicleType(e.target.value)}
           >
             <option value="">(Todos)</option>
-            {VEHICLE_TYPES.map((v) => (
-              <option key={v} value={v}>
-                {v}
+            {vehicleTypes.map((v) => (
+              <option key={v.code} value={v.code}>
+                {v.name} ({v.code})
               </option>
             ))}
           </select>
@@ -1024,23 +1040,23 @@ function UsersSection({
             <span className="text-slate-500">Correo:</span> {userDetail.email}
           </p>
           <p>
-            <span className="text-slate-500">Rol:</span> {userDetail.role} ·{" "}
+            <span className="text-slate-500">Rol:</span> {userDetail.role} Â·{" "}
             <span className="text-slate-500">Estado:</span> {userDetail.active ? "Activo" : "Inactivo"}
           </p>
           <p>
-            <span className="text-slate-500">Documento:</span> {userDetail.document ?? "—"} ·{" "}
-            <span className="text-slate-500">Telefono:</span> {userDetail.phone ?? "—"}
+            <span className="text-slate-500">Documento:</span> {userDetail.document ?? "â€”"} Â·{" "}
+            <span className="text-slate-500">Telefono:</span> {userDetail.phone ?? "â€”"}
           </p>
           <p>
-            <span className="text-slate-500">Sede / terminal:</span> {userDetail.site ?? "—"} /{" "}
-            {userDetail.terminal ?? "—"}
+            <span className="text-slate-500">Sede / terminal:</span> {userDetail.site ?? "â€”"} /{" "}
+            {userDetail.terminal ?? "â€”"}
           </p>
           <p>
             <span className="text-slate-500">Ultimo acceso:</span>{" "}
-            {userDetail.lastAccessAt ? userDetail.lastAccessAt : "—"}
+            {userDetail.lastAccessAt ? userDetail.lastAccessAt : "â€”"}
           </p>
           <p className="text-xs text-slate-500">
-            Creado {userDetail.createdAt} · Actualizado {userDetail.updatedAt}
+            Creado {userDetail.createdAt} Â· Actualizado {userDetail.updatedAt}
           </p>
         </div>
       ) : null}
@@ -1751,5 +1767,105 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
       />
     </label>
+  );
+}
+function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void; }) {
+  const [rows, setRows] = useState<import("@/lib/settings-api").MasterVehicleTypeRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState<import("@/lib/settings-api").MasterVehicleTypeRow | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ code: "", name: "" });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { fetchMasterVehicleTypes } = await import("@/lib/settings-api");
+      setRows(await fetchMasterVehicleTypes());
+    } catch (e) {
+      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error cargando maestros" });
+    } finally {
+      setLoading(false);
+    }
+  }, [onNotify]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center surface rounded-2xl p-4">
+        <h2 className="text-lg font-semibold text-slate-900">Tipos de Vehículo</h2>
+        <button
+          type="button"
+          className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white"
+          onClick={() => { setCreating(true); setEditing(null); setForm({ code: "", name: "" }); }}
+        >
+          Nuevo tipo
+        </button>
+      </div>
+
+      <DataTable
+        columns={[
+          { key: "code", label: "Código" },
+          { key: "name", label: "Nombre" },
+          { key: "isActive", label: "Activo", render: (r) => r.isActive ? "Sí" : "No" },
+          { key: "id", label: "", render: (r) => (
+            <button
+              type="button"
+              className="text-xs font-semibold text-amber-800"
+              onClick={() => { setEditing(r as any); setCreating(false); setForm({ code: r.code, name: r.name }); }}
+            >
+              Editar
+            </button>
+          ) }
+        ]}
+        rows={rows as any[]}
+      />
+
+      {(creating || editing) ? (
+        <div className="surface rounded-2xl p-6">
+          <h3 className="text-lg font-semibold text-slate-900">{creating ? "Nuevo tipo" : "Editar tipo"}</h3>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <label className="text-xs font-semibold text-slate-600">
+              Código (ej. CAR)
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm uppercase"
+                value={form.code}
+                onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                disabled={!!editing}
+              />
+            </label>
+            <label className="text-xs font-semibold text-slate-600">
+              Nombre (ej. Carro)
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </label>
+          </div>
+          <div className="mt-6 flex justify-end gap-3">
+            <button type="button" className="text-sm font-semibold text-slate-600" onClick={() => { setCreating(false); setEditing(null); }}>Cancelar</button>
+            <button
+              type="button"
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
+              onClick={async () => {
+                try {
+                  const { saveMasterVehicleType } = await import("@/lib/settings-api");
+                  await saveMasterVehicleType(form, editing?.id);
+                  onNotify({ kind: "ok", text: "Tipo guardado exitosamente" });
+                  setCreating(false);
+                  setEditing(null);
+                  load();
+                } catch(e) {
+                  onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error" });
+                }
+              }}
+            >
+              Guardar
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
