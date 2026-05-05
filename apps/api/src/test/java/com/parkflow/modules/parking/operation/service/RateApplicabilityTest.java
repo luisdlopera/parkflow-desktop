@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateType;
 import com.parkflow.modules.parking.operation.domain.RoundingMode;
-import com.parkflow.modules.parking.operation.domain.VehicleType;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -66,9 +65,10 @@ class RateApplicabilityTest {
     r.setName("T");
     r.setSite("DEFAULT");
     r.setRateType(RateType.HOURLY);
-    r.setVehicleType(VehicleType.CAR);
+    r.setVehicleType("CAR");
     r.setAmount(new BigDecimal("1000.00"));
     r.setRoundingMode(RoundingMode.UP);
     return r;
   }
 }
+
