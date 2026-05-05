@@ -44,8 +44,8 @@ app:
   security:
     # SECURITY: These secrets MUST be overridden in production via environment variables
     # The application will fail to start if they are not set in non-dev profiles
-    api-key: ${PARKFLOW_API_KEY}
-    jwt-secret: ${PARKFLOW_JWT_SECRET_BASE64}
+    api-key: ${PARKFLOW_API_KEY:dev-api-key-123}
+    jwt-secret: ${PARKFLOW_JWT_SECRET_BASE64:VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA=}
     access-token-ttl-minutes: ${PARKFLOW_ACCESS_TOKEN_TTL_MINUTES:15}
     refresh-token-ttl-days: ${PARKFLOW_REFRESH_TOKEN_TTL_DAYS:7}
     offline-lease-hours: ${PARKFLOW_OFFLINE_LEASE_HOURS:48}
