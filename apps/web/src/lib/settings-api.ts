@@ -13,7 +13,7 @@ export type RoundingMode = "UP" | "DOWN" | "NEAREST";
 export type RateRow = {
   id: string;
   name: string;
-  vehicleType: VehicleType | null;
+  vehicleType: string | null;
   rateType: RateType;
   amount: number;
   graceMinutes: number;
@@ -88,48 +88,28 @@ export function apiV1Base(): string {
   return raw.replace(/\/?operations\/?$/i, "");
 }
 
-async function parseError(response: Response): Promise<string> {
+import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
+
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   try {
-    const body = (await response.json()) as { error?: string };
-    const msg = body.error ?? "";
-
-    // Mensajes específicos para errores comunes
-    if (response.status === 401) {
-      return msg || "Sesión expirada. Por favor inicie sesión nuevamente.";
-    }
-    if (response.status === 403) {
-      return msg || "No tiene permisos para realizar esta operación. Contacte al administrador.";
-    }
-    if (response.status === 404) {
-      return msg || "Recurso no encontrado.";
-    }
-    if (response.status === 409) {
-      return msg || "Conflicto: el recurso ya existe o hay una operación en curso.";
-    }
-    if (response.status >= 500) {
-      return msg || "Error del servidor. Intente nuevamente más tarde.";
-    }
-
-    return msg || `Error HTTP ${response.status}`;
-  } catch {
-    if (response.status === 403) {
-      return "No tiene permisos para realizar esta operación.";
-    }
-    if (response.status === 401) {
-      return "Sesión expirada. Por favor inicie sesión nuevamente.";
-    }
-    return `Error HTTP ${response.status}`;
+    const res = await fetch(url, options);
+    if (!res.ok) throw await normalizeApiError(res);
+    if (res.status === 204) return {} as T;
+    return (await res.json()) as T;
+  } catch (error) {
+    if (error instanceof Error && error.name === "ApiError") throw error;
+    throw handleNetworkError(error);
   }
 }
 
+
 export async function fetchRateById(id: string): Promise<RateRow> {
-  const res = await fetch(`${apiV1Base()}/settings/rates/${id}`, {
+  return apiFetch<RateRow>(`${apiV1Base()}/settings/rates/${id}`, {
     cache: "no-store",
     headers: await buildApiHeaders()
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as RateRow;
 }
+
 
 export async function fetchRates(params: {
   site?: string;
@@ -146,10 +126,9 @@ export async function fetchRates(params: {
   }
   u.searchParams.set("page", String(params.page ?? 0));
   u.searchParams.set("size", String(params.size ?? 20));
-  const res = await fetch(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as SettingsPage<RateRow>;
+  return apiFetch<SettingsPage<RateRow>>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
 }
+
 
 export async function saveRate(
   payload: Record<string, unknown>,
@@ -157,45 +136,42 @@ export async function saveRate(
   auditReason?: string
 ): Promise<RateRow> {
   const path = id ? `${apiV1Base()}/settings/rates/${id}` : `${apiV1Base()}/settings/rates`;
-  const res = await fetch(path, {
+  return apiFetch<RateRow>(path, {
     method: id ? "PATCH" : "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as RateRow;
 }
+
 
 export async function patchRateStatus(
   id: string,
   active: boolean,
   auditReason?: string
 ): Promise<RateRow> {
-  const res = await fetch(`${apiV1Base()}/settings/rates/${id}/status`, {
+  return apiFetch<RateRow>(`${apiV1Base()}/settings/rates/${id}/status`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify({ active })
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as RateRow;
 }
 
+
 export async function deleteRate(id: string, auditReason?: string): Promise<void> {
-  const res = await fetch(`${apiV1Base()}/settings/rates/${id}`, {
+  return apiFetch<void>(`${apiV1Base()}/settings/rates/${id}`, {
     method: "DELETE",
     headers: await buildApiHeaders(hdr(auditReason))
   });
-  if (!res.ok) throw new Error(await parseError(res));
 }
 
+
 export async function fetchUserById(id: string): Promise<UserAdminRow> {
-  const res = await fetch(`${apiV1Base()}/settings/users/${id}`, {
+  return apiFetch<UserAdminRow>(`${apiV1Base()}/settings/users/${id}`, {
     cache: "no-store",
     headers: await buildApiHeaders()
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as UserAdminRow;
 }
+
 
 export async function fetchUsers(params: {
   q?: string;
@@ -210,86 +186,80 @@ export async function fetchUsers(params: {
   }
   u.searchParams.set("page", String(params.page ?? 0));
   u.searchParams.set("size", String(params.size ?? 20));
-  const res = await fetch(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as SettingsPage<UserAdminRow>;
+  return apiFetch<SettingsPage<UserAdminRow>>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
 }
+
 
 export async function createUser(
   payload: Record<string, unknown>,
   auditReason?: string
 ): Promise<UserAdminRow> {
-  const res = await fetch(`${apiV1Base()}/settings/users`, {
+  return apiFetch<UserAdminRow>(`${apiV1Base()}/settings/users`, {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as UserAdminRow;
 }
+
 
 export async function patchUser(
   id: string,
   payload: Record<string, unknown>,
   auditReason?: string
 ): Promise<UserAdminRow> {
-  const res = await fetch(`${apiV1Base()}/settings/users/${id}`, {
+  return apiFetch<UserAdminRow>(`${apiV1Base()}/settings/users/${id}`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as UserAdminRow;
 }
+
 
 export async function patchUserStatus(
   id: string,
   active: boolean,
   auditReason?: string
 ): Promise<UserAdminRow> {
-  const res = await fetch(`${apiV1Base()}/settings/users/${id}/status`, {
+  return apiFetch<UserAdminRow>(`${apiV1Base()}/settings/users/${id}/status`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify({ active })
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as UserAdminRow;
 }
+
 
 export async function resetUserPassword(
   id: string,
   newPassword: string,
   auditReason?: string
 ): Promise<void> {
-  const res = await fetch(`${apiV1Base()}/settings/users/${id}/reset-password`, {
+  return apiFetch<void>(`${apiV1Base()}/settings/users/${id}/reset-password`, {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify({ newPassword })
   });
-  if (!res.ok) throw new Error(await parseError(res));
 }
+
 
 export async function fetchParameters(site?: string): Promise<ParkingParametersPayload> {
   const u = new URL(`${apiV1Base()}/settings/parameters`);
   if (site) u.searchParams.set("site", site);
-  const res = await fetch(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as ParkingParametersPayload;
+  return apiFetch<ParkingParametersPayload>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
 }
+
 
 export type ParametersValidateResult = { ok: boolean; errors: string[] };
 
 export async function validateParameters(
   body: ParkingParametersPayload
 ): Promise<ParametersValidateResult> {
-  const res = await fetch(`${apiV1Base()}/settings/parameters/validate`, {
+  return apiFetch<ParametersValidateResult>(`${apiV1Base()}/settings/parameters/validate`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(body)
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as ParametersValidateResult;
 }
+
 
 export async function putParameters(
   body: ParkingParametersPayload,
@@ -298,25 +268,23 @@ export async function putParameters(
 ): Promise<ParkingParametersPayload> {
   const u = new URL(`${apiV1Base()}/settings/parameters`);
   if (site) u.searchParams.set("site", site);
-  const res = await fetch(u.toString(), {
+  return apiFetch<ParkingParametersPayload>(u.toString(), {
     method: "PUT",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify(body)
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as ParkingParametersPayload;
 }
+
 
 export async function resetParameters(site?: string, auditReason?: string): Promise<ParkingParametersPayload> {
   const u = new URL(`${apiV1Base()}/settings/parameters/reset`);
   if (site) u.searchParams.set("site", site);
-  const res = await fetch(u.toString(), {
+  return apiFetch<ParkingParametersPayload>(u.toString(), {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason))
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as ParkingParametersPayload;
 }
+
 
 // #region Sites (Sedes) Management
 export type SiteRow = {
@@ -346,42 +314,299 @@ export async function fetchSites(params?: { active?: boolean | null }): Promise<
   if (params?.active !== undefined && params.active !== null) {
     u.searchParams.set("active", String(params.active));
   }
-  const res = await fetch(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as SiteRow[];
+  return apiFetch<SiteRow[]>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
 }
 
+
 export async function createSite(payload: SiteCreatePayload, auditReason?: string): Promise<SiteRow> {
-  const res = await fetch(`${apiV1Base()}/settings/sites`, {
+  return apiFetch<SiteRow>(`${apiV1Base()}/settings/sites`, {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as SiteRow;
 }
+
 
 export async function updateSite(
   id: string,
   payload: Partial<SiteCreatePayload>,
   auditReason?: string
 ): Promise<SiteRow> {
-  const res = await fetch(`${apiV1Base()}/settings/sites/${id}`, {
+  return apiFetch<SiteRow>(`${apiV1Base()}/settings/sites/${id}`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as SiteRow;
 }
 
+
 export async function patchSiteStatus(id: string, active: boolean, auditReason?: string): Promise<SiteRow> {
-  const res = await fetch(`${apiV1Base()}/settings/sites/${id}/status`, {
+  return apiFetch<SiteRow>(`${apiV1Base()}/settings/sites/${id}/status`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify({ active })
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return (await res.json()) as SiteRow;
 }
+
+// #endregion
+
+export type MasterVehicleTypeRow = {
+  id: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+};
+
+export async function fetchMasterVehicleTypes(auditReason?: string): Promise<MasterVehicleTypeRow[]> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/operations", "/settings") ?? "http://localhost:6011/api/v1/settings";
+  const res = await fetch(`${baseUrl}/vehicle-types`, {
+    headers: await buildApiHeaders(hdr(auditReason)),
+    cache: "no-store"
+  });
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => null);
+    throw new Error(`Error obteniendo tipos de vehiculo (${res.status}): ${errorBody || res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function saveMasterVehicleType(data: { code: string; name: string; requiresPlate?: boolean; requiresPhoto?: boolean; displayOrder?: number; }, id?: string, auditReason?: string): Promise<MasterVehicleTypeRow> {
+  const method = id ? "PUT" : "POST";
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/operations", "/configuration") ?? "http://localhost:6011/api/v1/configuration";
+  const url = id 
+    ? `${baseUrl}/vehicle-types/${id}`
+    : `${baseUrl}/vehicle-types`;
+  
+  const res = await fetch(url, {
+    method,
+    headers: { ...(await buildApiHeaders(hdr(auditReason))), "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => null);
+    throw new Error(`Error guardando tipo de vehiculo (${res.status}): ${errorBody || res.statusText}`);
+  }
+  return res.json();
+}
+
+// #region Configuration API (new endpoints)
+
+function cfgBase(): string {
+  const raw = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
+  return raw.replace(/\/?operations\/?$/i, "/configuration");
+}
+
+import type { ParkingSiteRow, PaymentMethodRow, PrinterRow, OperationalParameterRow, RateFractionRow, CashRegisterRow } from "@/modules/settings/types";
+
+// Parking Sites
+export async function fetchConfigurationSites(params: {
+  companyId?: string;
+  q?: string;
+  active?: boolean | null;
+  page?: number;
+  size?: number;
+}): Promise<SettingsPage<ParkingSiteRow>> {
+  const u = new URL(`${cfgBase()}/parking-sites`);
+  if (params.companyId) u.searchParams.set("companyId", params.companyId);
+  if (params.q) u.searchParams.set("q", params.q);
+  if (params.active !== undefined && params.active !== null) u.searchParams.set("active", String(params.active));
+  u.searchParams.set("page", String(params.page ?? 0));
+  u.searchParams.set("size", String(params.size ?? 20));
+  return apiFetch<SettingsPage<ParkingSiteRow>>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+}
+
+export async function createConfigurationSite(payload: Record<string, unknown>, companyId: string, auditReason?: string): Promise<ParkingSiteRow> {
+  const u = new URL(`${cfgBase()}/parking-sites`);
+  u.searchParams.set("companyId", companyId);
+  return apiFetch<ParkingSiteRow>(u.toString(), {
+    method: "POST",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function updateConfigurationSite(id: string, payload: Record<string, unknown>, auditReason?: string): Promise<ParkingSiteRow> {
+  return apiFetch<ParkingSiteRow>(`${cfgBase()}/parking-sites/${id}`, {
+    method: "PUT",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function patchConfigurationSiteStatus(id: string, active: boolean, auditReason?: string): Promise<ParkingSiteRow> {
+  return apiFetch<ParkingSiteRow>(`${cfgBase()}/parking-sites/${id}/status?active=${active}`, {
+    method: "PATCH",
+    headers: await buildApiHeaders(hdr(auditReason))
+  });
+}
+
+// Payment Methods
+export async function fetchConfigurationPaymentMethods(params: {
+  q?: string;
+  active?: boolean | null;
+  page?: number;
+  size?: number;
+}): Promise<SettingsPage<PaymentMethodRow>> {
+  const u = new URL(`${cfgBase()}/payment-methods`);
+  if (params.q) u.searchParams.set("q", params.q);
+  if (params.active !== undefined && params.active !== null) u.searchParams.set("active", String(params.active));
+  u.searchParams.set("page", String(params.page ?? 0));
+  u.searchParams.set("size", String(params.size ?? 20));
+  return apiFetch<SettingsPage<PaymentMethodRow>>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+}
+
+export async function createConfigurationPaymentMethod(payload: Record<string, unknown>, auditReason?: string): Promise<PaymentMethodRow> {
+  return apiFetch<PaymentMethodRow>(`${cfgBase()}/payment-methods`, {
+    method: "POST",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function updateConfigurationPaymentMethod(id: string, payload: Record<string, unknown>, auditReason?: string): Promise<PaymentMethodRow> {
+  return apiFetch<PaymentMethodRow>(`${cfgBase()}/payment-methods/${id}`, {
+    method: "PUT",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function patchConfigurationPaymentMethodStatus(id: string, active: boolean, auditReason?: string): Promise<PaymentMethodRow> {
+  return apiFetch<PaymentMethodRow>(`${cfgBase()}/payment-methods/${id}/status?active=${active}`, {
+    method: "PATCH",
+    headers: await buildApiHeaders(hdr(auditReason))
+  });
+}
+
+// Printers
+export async function fetchConfigurationPrinters(params: {
+  siteId?: string;
+  q?: string;
+  active?: boolean | null;
+  page?: number;
+  size?: number;
+}): Promise<SettingsPage<PrinterRow>> {
+  const u = new URL(`${cfgBase()}/printers`);
+  if (params.siteId) u.searchParams.set("siteId", params.siteId);
+  if (params.q) u.searchParams.set("q", params.q);
+  if (params.active !== undefined && params.active !== null) u.searchParams.set("active", String(params.active));
+  u.searchParams.set("page", String(params.page ?? 0));
+  u.searchParams.set("size", String(params.size ?? 20));
+  return apiFetch<SettingsPage<PrinterRow>>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+}
+
+export async function createConfigurationPrinter(payload: Record<string, unknown>, siteId: string, auditReason?: string): Promise<PrinterRow> {
+  const u = new URL(`${cfgBase()}/printers`);
+  u.searchParams.set("siteId", siteId);
+  return apiFetch<PrinterRow>(u.toString(), {
+    method: "POST",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function updateConfigurationPrinter(id: string, payload: Record<string, unknown>, auditReason?: string): Promise<PrinterRow> {
+  return apiFetch<PrinterRow>(`${cfgBase()}/printers/${id}`, {
+    method: "PUT",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function patchConfigurationPrinterStatus(id: string, active: boolean, auditReason?: string): Promise<PrinterRow> {
+  return apiFetch<PrinterRow>(`${cfgBase()}/printers/${id}/status?active=${active}`, {
+    method: "PATCH",
+    headers: await buildApiHeaders(hdr(auditReason))
+  });
+}
+
+// Operational Parameters
+export async function fetchConfigurationOperationalParameters(siteId: string): Promise<OperationalParameterRow> {
+  const u = new URL(`${cfgBase()}/operational-parameters`);
+  u.searchParams.set("siteId", siteId);
+  return apiFetch<OperationalParameterRow>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+}
+
+export async function putConfigurationOperationalParameters(siteId: string, payload: Record<string, unknown>, auditReason?: string): Promise<OperationalParameterRow> {
+  const u = new URL(`${cfgBase()}/operational-parameters`);
+  u.searchParams.set("siteId", siteId);
+  return apiFetch<OperationalParameterRow>(u.toString(), {
+    method: "PUT",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+// Rate Fractions
+export async function fetchConfigurationRateFractions(rateId: string): Promise<RateFractionRow[]> {
+  const u = new URL(`${cfgBase()}/rate-fractions`);
+  u.searchParams.set("rateId", rateId);
+  return apiFetch<RateFractionRow[]>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+}
+
+export async function createConfigurationRateFraction(rateId: string, payload: Record<string, unknown>, auditReason?: string): Promise<RateFractionRow> {
+  const u = new URL(`${cfgBase()}/rate-fractions`);
+  u.searchParams.set("rateId", rateId);
+  return apiFetch<RateFractionRow>(u.toString(), {
+    method: "POST",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function updateConfigurationRateFraction(id: string, payload: Record<string, unknown>, auditReason?: string): Promise<RateFractionRow> {
+  return apiFetch<RateFractionRow>(`${cfgBase()}/rate-fractions/${id}`, {
+    method: "PUT",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function deleteConfigurationRateFraction(id: string, auditReason?: string): Promise<void> {
+  return apiFetch<void>(`${cfgBase()}/rate-fractions/${id}`, {
+    method: "DELETE",
+    headers: await buildApiHeaders(hdr(auditReason))
+  });
+}
+
+// Cash Registers
+export async function fetchConfigurationCashRegisters(params: {
+  siteId?: string;
+  q?: string;
+  active?: boolean | null;
+  page?: number;
+  size?: number;
+}): Promise<SettingsPage<CashRegisterRow>> {
+  const u = new URL(`${cfgBase()}/cash-registers`);
+  if (params.siteId) u.searchParams.set("siteId", params.siteId);
+  if (params.q) u.searchParams.set("q", params.q);
+  if (params.active !== undefined && params.active !== null) u.searchParams.set("active", String(params.active));
+  u.searchParams.set("page", String(params.page ?? 0));
+  u.searchParams.set("size", String(params.size ?? 20));
+  return apiFetch<SettingsPage<CashRegisterRow>>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+}
+
+export async function createConfigurationCashRegister(payload: Record<string, unknown>, auditReason?: string): Promise<CashRegisterRow> {
+  return apiFetch<CashRegisterRow>(`${cfgBase()}/cash-registers`, {
+    method: "POST",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function updateConfigurationCashRegister(id: string, payload: Record<string, unknown>, auditReason?: string): Promise<CashRegisterRow> {
+  return apiFetch<CashRegisterRow>(`${cfgBase()}/cash-registers/${id}`, {
+    method: "PUT",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function patchConfigurationCashRegisterStatus(id: string, active: boolean, auditReason?: string): Promise<CashRegisterRow> {
+  return apiFetch<CashRegisterRow>(`${cfgBase()}/cash-registers/${id}/status?active=${active}`, {
+    method: "PATCH",
+    headers: await buildApiHeaders(hdr(auditReason))
+  });
+}
+
 // #endregion
