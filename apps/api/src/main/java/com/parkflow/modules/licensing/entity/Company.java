@@ -150,6 +150,31 @@ public class Company {
   private String customerMessage;
 
   /**
+   * Razón social / nombre legal.
+   */
+  @Column(length = 200)
+  private String legalName;
+
+  /**
+   * Modo de operación principal: OFFLINE, ONLINE, MIXED.
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private OperationMode operationMode = OperationMode.OFFLINE;
+
+  /**
+   * Indica si permite sincronización de datos.
+   */
+  @Column(nullable = false)
+  private Boolean allowSync = true;
+
+  /**
+   * Observaciones internas de configuración.
+   */
+  @Column(columnDefinition = "TEXT")
+  private String observations;
+
+  /**
    * Fecha de último pago recibido.
    */
   private OffsetDateTime lastPaymentAt;
@@ -213,5 +238,9 @@ public class Company {
     return status == CompanyStatus.ACTIVE
         || status == CompanyStatus.TRIAL
         || (status == CompanyStatus.PAST_DUE && isInGracePeriod());
+  }
+
+  public enum OperationMode {
+    OFFLINE, ONLINE, MIXED
   }
 }
