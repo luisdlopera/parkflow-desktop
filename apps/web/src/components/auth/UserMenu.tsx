@@ -10,8 +10,9 @@ import {
   DropdownItem,
   DropdownSection
 } from "@heroui/dropdown";
-import { clearSession, currentUser } from "@/lib/auth";
+import { clearSession, currentUser, canAccessSuperAdminPortal } from "@/lib/auth";
 import type { AuthUser } from "@parkflow/types";
+import { Shield } from "lucide-react";
 
 export function UserMenu() {
   const router = useRouter();
@@ -86,6 +87,7 @@ export function UserMenu() {
         <DropdownSection title={user.email} showDivider>
           <DropdownItem
             key="profile"
+            textValue="Mi perfil"
             description="Ver y editar tu perfil"
             startContent={
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,6 +100,7 @@ export function UserMenu() {
           </DropdownItem>
           <DropdownItem
             key="settings"
+            textValue="Configuración"
             description="Configuración del sistema"
             startContent={
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,10 +112,22 @@ export function UserMenu() {
           >
             Configuración
           </DropdownItem>
+          {user && canAccessSuperAdminPortal(user) ? (
+            <DropdownItem
+              key="admin"
+              textValue="Panel Super Admin"
+              description="Empresas, licencias y dispositivos"
+              startContent={<Shield className="w-4 h-4 shrink-0" aria-hidden />}
+              onPress={() => router.push("/admin")}
+            >
+              Panel Super Admin
+            </DropdownItem>
+          ) : null}
         </DropdownSection>
         <DropdownSection>
           <DropdownItem
             key="logout"
+            textValue={isLoading ? "Cerrando sesión..." : "Cerrar sesión"}
             color="danger"
             description="Cerrar sesión actual"
             startContent={
