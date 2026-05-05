@@ -1,4 +1,5 @@
 import { authHeaders } from "@/lib/auth";
+import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import type {
   HeartbeatRequest,
   HeartbeatResponse,
@@ -16,21 +17,34 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v
 
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const headers = await authHeaders();
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      ...headers,
-      ...options?.headers,
-    },
-  });
+  
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers: {
+        ...headers,
+        ...options?.headers,
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`API Error: ${response.status} - ${error}`);
+    if (!response.ok) {
+      throw await normalizeApiError(response);
+    }
+
+    // Handle 204 No Content
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    return response.json();
+  } catch (error) {
+    if (error instanceof Error && error.name === "ApiError") {
+      throw error;
+    }
+    throw handleNetworkError(error);
   }
-
-  return response.json();
 }
+
 
 // ==================== HEARTBEAT ====================
 
