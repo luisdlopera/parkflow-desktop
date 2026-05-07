@@ -2,6 +2,8 @@
 
 import { buildApiHeaders } from "@/lib/api";
 import type { CreatePrintJobRequest, PrintDocumentType, TicketDocument } from "@parkflow/types";
+import { createPrintJobRequestSchema } from "@/lib/validation/contracts";
+import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -44,7 +46,7 @@ export async function syncCreatePrintJobAfterPhysicalPrint(input: {
     return;
   }
 
-  const body: CreatePrintJobRequest = {
+  const body: CreatePrintJobRequest = validatePayloadOrThrow(createPrintJobRequestSchema, {
     sessionId: input.sessionId,
     operatorUserId: input.operatorUserId,
     documentType: input.documentType,
@@ -52,7 +54,7 @@ export async function syncCreatePrintJobAfterPhysicalPrint(input: {
     payloadHash: await sha256Hex(JSON.stringify(input.ticket)),
     ticketSnapshotJson: JSON.stringify(input.ticket),
     terminalId: input.terminalId ?? undefined
-  };
+  });
 
   try {
     const url = `${parkflowApiV1Root()}/print-jobs`;

@@ -2,6 +2,14 @@
 
 import { buildApiHeaders } from "@/lib/api";
 import { apiV1Base } from "@/lib/settings-api";
+import {
+  cashCloseRequestSchema,
+  cashCountRequestSchema,
+  cashMovementRequestSchema,
+  cashOpenRequestSchema,
+  cashVoidMovementRequestSchema
+} from "@/lib/validation/contracts";
+import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 
 async function parseError(response: Response): Promise<string> {
   try {
@@ -113,10 +121,11 @@ export async function cashOpen(body: {
   openIdempotencyKey?: string | null;
   notes?: string | null;
 }): Promise<CashSessionDto> {
+  const validatedBody = validatePayloadOrThrow(cashOpenRequestSchema, body);
   const res = await fetch(`${apiV1Base()}/cash/open`, {
     method: "POST",
     headers: await buildApiHeaders(),
-    body: JSON.stringify(body)
+    body: JSON.stringify(validatedBody)
   });
   if (!res.ok) {
     throw new Error(await parseError(res));
@@ -175,12 +184,13 @@ export async function cashAddMovement(
   },
   options?: { offline?: boolean }
 ): Promise<CashMovementDto> {
+  const validatedBody = validatePayloadOrThrow(cashMovementRequestSchema, body);
   const res = await fetch(`${apiV1Base()}/cash/sessions/${sessionId}/movements`, {
     method: "POST",
     headers: await buildApiHeaders({
       offline: Boolean(options?.offline)
     }),
-    body: JSON.stringify(body)
+    body: JSON.stringify(validatedBody)
   });
   if (!res.ok) {
     throw new Error(await parseError(res));
@@ -194,12 +204,16 @@ export async function cashVoidMovement(
   reason: string,
   idempotencyKey?: string | null
 ): Promise<CashMovementDto> {
+  const validatedBody = validatePayloadOrThrow(cashVoidMovementRequestSchema, {
+    reason,
+    idempotencyKey: idempotencyKey ?? undefined
+  });
   const res = await fetch(
     `${apiV1Base()}/cash/sessions/${sessionId}/movements/${movementId}/void`,
     {
       method: "POST",
       headers: await buildApiHeaders({ auditReason: reason }),
-      body: JSON.stringify({ reason, idempotencyKey: idempotencyKey ?? undefined })
+      body: JSON.stringify(validatedBody)
     }
   );
   if (!res.ok) {
@@ -218,10 +232,11 @@ export async function cashCount(
     observations?: string | null;
   }
 ): Promise<CashSessionDto> {
+  const validatedBody = validatePayloadOrThrow(cashCountRequestSchema, body);
   const res = await fetch(`${apiV1Base()}/cash/sessions/${sessionId}/count`, {
     method: "POST",
     headers: await buildApiHeaders(),
-    body: JSON.stringify(body)
+    body: JSON.stringify(validatedBody)
   });
   if (!res.ok) {
     throw new Error(await parseError(res));
@@ -233,10 +248,11 @@ export async function cashClose(
   sessionId: string,
   body: { closingNotes?: string | null; closeIdempotencyKey?: string | null }
 ): Promise<CashSessionDto> {
+  const validatedBody = validatePayloadOrThrow(cashCloseRequestSchema, body);
   const res = await fetch(`${apiV1Base()}/cash/sessions/${sessionId}/close`, {
     method: "POST",
     headers: await buildApiHeaders(),
-    body: JSON.stringify(body)
+    body: JSON.stringify(validatedBody)
   });
   if (!res.ok) {
     throw new Error(await parseError(res));

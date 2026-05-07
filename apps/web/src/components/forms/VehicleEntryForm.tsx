@@ -19,6 +19,9 @@ import {
 import type { VehicleType } from "@parkflow/types";
 import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
 import { SuccessToast } from "@/components/ui/Toast";
+import { currentUser } from "@/lib/auth";
+import { operationEntryRequestSchema } from "@/lib/validation/contracts";
+import { validatePayloadOrThrow, toUserMessageFromClientValidation } from "@/lib/validation/request-guard";
 
 // Vehicle type options for select
 const vehicleTypeOptions = [
@@ -120,19 +123,26 @@ export default function VehicleEntryForm() {
     setPreviewLines(null);
 
     try {
+      const user = await currentUser();
+      if (!user?.id) {
+        setError("Sesion requerida para registrar ingresos");
+        playError();
+        return;
+      }
+
       const apiBase =
         process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
 
       // SECURITY/DATA QUALITY: Normalize plate to uppercase for consistency
       const normalizedPlate = values.plate.trim().toUpperCase().replace(/\s+/g, '');
       
-      const response = await fetch(`${apiBase}/entries`, {
-        method: "POST",
-        headers: await buildApiHeaders(),
-        body: JSON.stringify({
+      const requestBody = validatePayloadOrThrow(
+        operationEntryRequestSchema,
+        {
           idempotencyKey: newIdempotencyKey(),
+          operatorUserId: user.id,
           ...values,
-          plate: normalizedPlate,  // Normalized plate
+          plate: normalizedPlate,
           rateId: values.rateId?.trim() ? values.rateId.trim() : null,
           site: values.site?.trim() || null,
           lane: values.lane?.trim() || null,
@@ -148,7 +158,14 @@ export default function VehicleEntryForm() {
             .split(",")
             .map((item) => item.trim())
             .filter(Boolean)
-        })
+        },
+        "Corrige los campos del ingreso antes de enviar"
+      );
+
+      const response = await fetch(`${apiBase}/entries`, {
+        method: "POST",
+        headers: await buildApiHeaders(),
+        body: JSON.stringify(requestBody)
       });
 
       const payload = await response.json().catch(() => ({}));
@@ -251,6 +268,13 @@ export default function VehicleEntryForm() {
       // Re-focus para siguiente operación
       focusPlate();
     } catch (err) {
+      const validationMessage = toUserMessageFromClientValidation(err);
+      if (validationMessage) {
+        setError(validationMessage);
+        playError();
+        return;
+      }
+
       // Feedback sonoro de error
       playError();
       

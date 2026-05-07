@@ -8,6 +8,8 @@ import type {
   Permission,
   SessionInfo
 } from "@parkflow/types";
+import { authLoginRequestSchema, authRefreshRequestSchema } from "@/lib/validation/contracts";
+import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 
 const STORAGE_KEY = "parkflow.auth.session";
 
@@ -20,6 +22,7 @@ type StoredSession = {
 };
 
 let memorySession: StoredSession | null = null;
+let redirectInProgress = false;
 
 export type AuthHeaderOptions = {
   /** Optional note stored in server audit metadata for sensitive settings changes. */
@@ -113,14 +116,28 @@ export async function clearSession(): Promise<void> {
   writeBrowserStorage(null);
 }
 
+export async function logoutAndRedirectToLogin(reason = "expired"): Promise<void> {
+  await clearSession();
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (redirectInProgress) {
+    return;
+  }
+  redirectInProgress = true;
+  const next = encodeURIComponent(window.location.pathname + window.location.search);
+  window.location.replace(`/login?reason=${encodeURIComponent(reason)}&next=${next}`);
+}
+
 export async function login(request: LoginRequest): Promise<StoredSession> {
+  const validatedRequest = validatePayloadOrThrow(authLoginRequestSchema, request);
   const response = await fetch(`${authBaseUrl()}/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "X-API-Key": operationsApiKey()
     },
-    body: JSON.stringify(request)
+    body: JSON.stringify(validatedRequest)
   });
 
   const payload = (await response.json()) as LoginResponse;
@@ -152,14 +169,14 @@ export async function refreshIfNeeded(current: StoredSession): Promise<StoredSes
       "Content-Type": "application/json",
       "X-API-Key": operationsApiKey()
     },
-    body: JSON.stringify({
+    body: JSON.stringify(validatePayloadOrThrow(authRefreshRequestSchema, {
       refreshToken: current.refreshToken,
       deviceId: current.session.deviceId
-    })
+    }))
   });
 
   if (!response.ok) {
-    await clearSession();
+    await logoutAndRedirectToLogin("expired");
     throw new Error("No se pudo refrescar la sesion");
   }
 
@@ -249,4 +266,14 @@ export async function currentUser(): Promise<AuthUser | null> {
 /** Licensing / SaaS administration UI at `/admin/*` (SUPER_ADMIN only). */
 export function canAccessSuperAdminPortal(user: AuthUser | null): boolean {
   return user?.role === "SUPER_ADMIN";
+}
+
+export async function handleAuthFailureStatus(status: number): Promise<void> {
+  if (status === 401) {
+    await logoutAndRedirectToLogin("expired");
+    return;
+  }
+  if (status === 403 && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("parkflow:forbidden"));
+  }
 }

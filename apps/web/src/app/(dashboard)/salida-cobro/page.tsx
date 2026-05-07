@@ -19,6 +19,13 @@ import type { VehicleType } from "@parkflow/types";
 import { useExitShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
 import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
 import { useToast } from "@/lib/toast/ToastContext";
+import { currentUser } from "@/lib/auth";
+import {
+  operationExitRequestSchema,
+  operationLostTicketRequestSchema,
+  operationReprintRequestSchema
+} from "@/lib/validation/contracts";
+import { toUserMessageFromClientValidation, validatePayloadOrThrow } from "@/lib/validation/request-guard";
 
 type ActiveLookup = {
   sessionId: string;
@@ -145,23 +152,32 @@ export default function SalidaCobroPage() {
     setMessage("");
 
     try {
+      const user = await currentUser();
+      if (!user?.id) {
+        setError("Sesion requerida para registrar salida");
+        return;
+      }
+
+      const requestBody = validatePayloadOrThrow(operationExitRequestSchema, {
+        idempotencyKey: newIdempotencyKey(),
+        ticketNumber: active.receipt.ticketNumber,
+        operatorUserId: user.id,
+        paymentMethod,
+        vehicleCondition,
+        conditionChecklist: conditionChecklist
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        conditionPhotoUrls: conditionPhotoUrls
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      });
+
       const response = await fetch(`${apiBase}/exits`, {
         method: "POST",
         headers: await buildApiHeaders(),
-        body: JSON.stringify({
-          idempotencyKey: newIdempotencyKey(),
-          ticketNumber: active.receipt.ticketNumber,
-          paymentMethod,
-          vehicleCondition,
-          conditionChecklist: conditionChecklist
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean),
-          conditionPhotoUrls: conditionPhotoUrls
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean)
-        })
+        body: JSON.stringify(requestBody)
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -209,7 +225,14 @@ export default function SalidaCobroPage() {
       setTimeout(() => {
         ticketInputRef.current?.focus();
       }, 100);
-    } catch {
+    } catch (err) {
+      const validationMessage = toUserMessageFromClientValidation(err);
+      if (validationMessage) {
+        setError(validationMessage);
+        toastError(validationMessage);
+        playError();
+        return;
+      }
       const queued = await queueOfflineOperation("EXIT_RECORDED", {
         ticketNumber: active.receipt.ticketNumber,
         paymentMethod,
@@ -249,14 +272,23 @@ export default function SalidaCobroPage() {
     setError("");
     setMessage("");
     try {
+      const user = await currentUser();
+      if (!user?.id) {
+        setError("Sesion requerida para reimprimir");
+        return;
+      }
+
+      const requestBody = validatePayloadOrThrow(operationReprintRequestSchema, {
+        idempotencyKey: newIdempotencyKey(),
+        ticketNumber: active.receipt.ticketNumber,
+        operatorUserId: user.id,
+        reason: reprintReason
+      });
+
       const response = await fetch(`${apiBase}/tickets/reprint`, {
         method: "POST",
         headers: await buildApiHeaders(),
-        body: JSON.stringify({
-          idempotencyKey: newIdempotencyKey(),
-          ticketNumber: active.receipt.ticketNumber,
-          reason: reprintReason
-        })
+        body: JSON.stringify(requestBody)
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -279,7 +311,13 @@ export default function SalidaCobroPage() {
         `Ticket reimpreso (${payload.receipt.ticketNumber})${printWarning ? `. ${printWarning}` : ""}`
       );
       setActive(payload);
-    } catch {
+    } catch (err) {
+      const validationMessage = toUserMessageFromClientValidation(err);
+      if (validationMessage) {
+        setError(validationMessage);
+        playError();
+        return;
+      }
       const queued = await queueOfflineOperation("TICKET_REPRINTED", {
         ticketNumber: active.receipt.ticketNumber,
         reason: reprintReason,
@@ -311,15 +349,25 @@ export default function SalidaCobroPage() {
     setError("");
     setMessage("");
     try {
+      const user = await currentUser();
+      if (!user?.id) {
+        setError("Sesion requerida para procesar ticket perdido");
+        playError();
+        return;
+      }
+
+      const requestBody = validatePayloadOrThrow(operationLostTicketRequestSchema, {
+        idempotencyKey: newIdempotencyKey(),
+        ticketNumber: active.receipt.ticketNumber,
+        operatorUserId: user.id,
+        reason: lostReason,
+        paymentMethod: "CASH"
+      });
+
       const response = await fetch(`${apiBase}/tickets/lost`, {
         method: "POST",
         headers: await buildApiHeaders(),
-        body: JSON.stringify({
-          idempotencyKey: newIdempotencyKey(),
-          ticketNumber: active.receipt.ticketNumber,
-          reason: lostReason,
-          paymentMethod: "CASH"
-        })
+        body: JSON.stringify(requestBody)
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -348,7 +396,13 @@ export default function SalidaCobroPage() {
       setTimeout(() => {
         ticketInputRef.current?.focus();
       }, 100);
-    } catch {
+    } catch (err) {
+      const validationMessage = toUserMessageFromClientValidation(err);
+      if (validationMessage) {
+        setError(validationMessage);
+        playError();
+        return;
+      }
       const queued = await queueOfflineOperation("LOST_TICKET", {
         ticketNumber: active.receipt.ticketNumber,
         reason: lostReason,
