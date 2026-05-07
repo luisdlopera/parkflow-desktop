@@ -48,10 +48,10 @@ class CorrelationIdIntegrationTest {
     void shouldIncludeCorrelationIdInErrorResponse() throws Exception {
         String providedCorrelationId = "error-test-correlation-id";
 
-        // Access a protected endpoint without auth to trigger 403 which should include correlation ID
+        // Access a protected endpoint without auth to trigger 401 which should include correlation ID
         mockMvc.perform(get("/api/v1/auth/me")
                         .header(CorrelationIdFilter.CORRELATION_ID_HEADER, providedCorrelationId))
-                .andExpect(status().isForbidden())
+                .andExpect(status().isUnauthorized())
                 .andExpect(header().string(CorrelationIdFilter.CORRELATION_ID_HEADER, providedCorrelationId));
     }
 
@@ -62,7 +62,7 @@ class CorrelationIdIntegrationTest {
         mockMvc.perform(post("/api/v1/operations/entries")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().isForbidden())
+                .andExpect(status().isUnauthorized())
                 .andExpect(header().exists(CorrelationIdFilter.CORRELATION_ID_HEADER));
     }
 
