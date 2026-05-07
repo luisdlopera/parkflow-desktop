@@ -30,24 +30,15 @@ public class SupervisorService {
     ZoneId z = siteZone != null ? siteZone : ZoneId.of("America/Bogota");
     ZonedDateTime startOfDay = ZonedDateTime.now(z).toLocalDate().atStartOfDay(z);
     OffsetDateTime dayStart = startOfDay.toOffsetDateTime();
+    OffsetDateTime nextDayStart = startOfDay.plusDays(1).toOffsetDateTime();
     OffsetDateTime now = OffsetDateTime.now();
 
-    long active = parkingSessionRepository.countByStatus(SessionStatus.ACTIVE);
-    long entries =
-        sessionEventRepository.countByTypeAndCreatedAtFrom(
-            SessionEventType.ENTRY_RECORDED, dayStart);
-    long exits =
-        sessionEventRepository.countByTypeAndCreatedAtFrom(
-            SessionEventType.EXIT_RECORDED, dayStart);
-    long reprints =
-        sessionEventRepository.countByTypeAndCreatedAtFrom(
-            SessionEventType.TICKET_REPRINTED, dayStart);
-    long lost =
-        sessionEventRepository.countByTypeAndCreatedAtFrom(
-            SessionEventType.LOST_TICKET_MARKED, dayStart);
-    long printFailed =
-        printJobRepository.countByStatusInAndCreatedAtAfter(
-            EnumSet.of(PrintJobStatus.FAILED), dayStart);
+    long active = parkingSessionRepository.countActive();
+    long entries = parkingSessionRepository.countEntriesInPeriod(dayStart, nextDayStart);
+    long exits = parkingSessionRepository.countExitsInPeriod(dayStart, nextDayStart);
+    long reprints = parkingSessionRepository.countReprintsInPeriod(dayStart, nextDayStart);
+    long lost = parkingSessionRepository.countLostTicketsInPeriod(dayStart, nextDayStart);
+    long printFailed = parkingSessionRepository.countPrintFailedInPeriod(dayStart, nextDayStart);
     long deadLetter =
         printJobRepository.countByStatusInAndCreatedAtAfter(
             EnumSet.of(PrintJobStatus.DEAD_LETTER), dayStart);
