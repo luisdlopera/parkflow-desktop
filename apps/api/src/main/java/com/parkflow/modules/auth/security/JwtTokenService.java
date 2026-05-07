@@ -18,24 +18,29 @@ public class JwtTokenService {
   private final SecretKey key;
   private final Duration accessTtl;
   private final Duration refreshTtl;
+  private final long allowedClockSkewSeconds;
 
   public JwtTokenService(
       @Value("${app.security.jwt-secret}") String jwtSecret,
       @Value("${app.security.access-token-ttl-minutes:15}") long accessTokenTtlMinutes,
-      @Value("${app.security.refresh-token-ttl-days:7}") long refreshTokenTtlDays) {
+      @Value("${app.security.refresh-token-ttl-days:7}") long refreshTokenTtlDays,
+      @Value("${app.security.jwt-clock-skew-seconds:30}") long clockSkewSeconds) {
     byte[] bytes = Decoders.BASE64.decode(jwtSecret);
     this.key = Keys.hmacShaKeyFor(bytes);
     this.accessTtl = Duration.ofMinutes(Math.max(5, accessTokenTtlMinutes));
     this.refreshTtl = Duration.ofDays(Math.max(1, refreshTokenTtlDays));
+    this.allowedClockSkewSeconds = Math.max(0, clockSkewSeconds);
   }
 
-  public String createAccessToken(UUID userId, String email, Map<String, Object> extraClaims) {
+  public String createAccessToken(
+      UUID userId, UUID sessionId, String email, Map<String, Object> extraClaims) {
     OffsetDateTime now = OffsetDateTime.now();
     OffsetDateTime exp = now.plus(accessTtl);
     return Jwts.builder()
         .subject(userId.toString())
         .issuedAt(Date.from(now.toInstant()))
         .expiration(Date.from(exp.toInstant()))
+        .claim("sid", sessionId.toString())
         .claim("email", email)
         .claims(extraClaims)
         .signWith(key)
@@ -57,7 +62,12 @@ public class JwtTokenService {
   }
 
   public Claims parse(String token) {
-    return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+    return Jwts.parser()
+        .clockSkewSeconds(allowedClockSkewSeconds)
+        .verifyWith(key)
+        .build()
+        .parseSignedClaims(token)
+        .getPayload();
   }
 
   public Duration accessTtl() {

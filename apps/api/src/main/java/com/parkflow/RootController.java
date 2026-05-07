@@ -21,4 +21,9 @@ public class RootController {
         "metrics",
         "/actuator/prometheus");
   }
+
+  @GetMapping("/api/v1/health")
+  public Map<String, String> health() {
+    return Map.of("status", "UP");
+  }
 }

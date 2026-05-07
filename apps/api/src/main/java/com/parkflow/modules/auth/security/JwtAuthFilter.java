@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import com.parkflow.modules.auth.repository.AuthSessionRepository;
+import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,9 +22,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
   private final JwtTokenService jwtTokenService;
+  private final AuthSessionRepository authSessionRepository;
+  private final AppUserRepository appUserRepository;
 
-  public JwtAuthFilter(JwtTokenService jwtTokenService) {
+  public JwtAuthFilter(
+      JwtTokenService jwtTokenService,
+      AuthSessionRepository authSessionRepository,
+      AppUserRepository appUserRepository) {
     this.jwtTokenService = jwtTokenService;
+    this.authSessionRepository = authSessionRepository;
+    this.appUserRepository = appUserRepository;
   }
 
   @Override
@@ -44,6 +53,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       }
 
       UUID userId = UUID.fromString(claims.getSubject());
+      String sessionIdClaim = claims.get("sid", String.class);
+      if (sessionIdClaim == null || sessionIdClaim.isBlank()) {
+        SecurityContextHolder.clearContext();
+        filterChain.doFilter(request, response);
+        return;
+      }
+      UUID sessionId = UUID.fromString(sessionIdClaim);
+      var session = authSessionRepository.findByIdAndActiveTrue(sessionId).orElse(null);
+      if (session == null || !session.getUser().getId().equals(userId)) {
+        SecurityContextHolder.clearContext();
+        filterChain.doFilter(request, response);
+        return;
+      }
+      var user = appUserRepository.findById(userId).orElse(null);
+      if (user == null || !user.isActive()) {
+        SecurityContextHolder.clearContext();
+        filterChain.doFilter(request, response);
+        return;
+      }
+
       String email = claims.get("email", String.class);
       String role = claims.get("role", String.class);
       List<?> permissions = claims.get("permissions", List.class);

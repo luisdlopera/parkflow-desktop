@@ -108,7 +108,7 @@ public class AuthService {
 
     String accessToken =
         jwtTokenService.createAccessToken(
-            user.getId(), user.getEmail(), RolePermissions.claims(user.getRole()));
+            user.getId(), session.getId(), user.getEmail(), RolePermissions.claims(user.getRole()));
 
     authAuditService.log(
         AuthAuditAction.LOGIN_SUCCESS,
@@ -131,17 +131,28 @@ public class AuthService {
   public LoginResponse refresh(RefreshRequest request) {
     Claims claims = jwtTokenService.parse(request.refreshToken());
     if (!"refresh".equals(claims.get("typ", String.class))) {
-      throw new OperationException(HttpStatus.UNAUTHORIZED, "Refresh token invalido");
+      throw new OperationException(
+          HttpStatus.UNAUTHORIZED,
+          "AUTH_UNAUTHORIZED",
+          "Tu sesion expiro. Inicia sesion nuevamente.");
     }
 
     String refreshJti = claims.get("jti", String.class);
     AuthSession current =
         authSessionRepository
             .findByRefreshJtiAndActiveTrue(refreshJti)
-            .orElseThrow(() -> new OperationException(HttpStatus.UNAUTHORIZED, "Sesion no encontrada"));
+            .orElseThrow(
+                () ->
+                    new OperationException(
+                        HttpStatus.UNAUTHORIZED,
+                        "AUTH_UNAUTHORIZED",
+                        "Tu sesion expiro. Inicia sesion nuevamente."));
 
     if (!current.getDevice().getDeviceId().equals(request.deviceId())) {
-      throw new OperationException(HttpStatus.UNAUTHORIZED, "Device mismatch");
+      throw new OperationException(
+          HttpStatus.UNAUTHORIZED,
+          "AUTH_UNAUTHORIZED",
+          "Tu sesion expiro. Inicia sesion nuevamente.");
     }
 
     String incomingHash = passwordHashService.sha256(request.refreshToken());
@@ -149,7 +160,10 @@ public class AuthService {
       current.setActive(false);
       current.setRevokedAt(OffsetDateTime.now());
       authSessionRepository.save(current);
-      throw new OperationException(HttpStatus.UNAUTHORIZED, "Refresh token revocado");
+      throw new OperationException(
+          HttpStatus.UNAUTHORIZED,
+          "AUTH_UNAUTHORIZED",
+          "Tu sesion expiro. Inicia sesion nuevamente.");
     }
 
     current.setActive(false);
@@ -179,7 +193,7 @@ public class AuthService {
 
     String accessToken =
         jwtTokenService.createAccessToken(
-            user.getId(), user.getEmail(), RolePermissions.claims(user.getRole()));
+            user.getId(), rotated.getId(), user.getEmail(), RolePermissions.claims(user.getRole()));
 
     authAuditService.log(
         AuthAuditAction.REFRESH,
@@ -344,7 +358,8 @@ public class AuthService {
         null,
         "DENY_INVALID_CREDENTIALS",
         Map.of("email", email, "deviceId", deviceId));
-    return new OperationException(HttpStatus.UNAUTHORIZED, "Credenciales invalidas");
+    return new OperationException(
+        HttpStatus.UNAUTHORIZED, "AUTH_INVALID_CREDENTIALS", "Credenciales invalidas");
   }
 
   private AuthorizedDevice upsertDevice(LoginRequest request) {
