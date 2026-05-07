@@ -29,4 +29,6 @@ public interface CashSessionRepository extends JpaRepository<CashSession, UUID> 
       @Param("site") String site,
       @Param("terminal") String terminal,
       @Param("status") CashSessionStatus status);
+
+  long countByStatus(CashSessionStatus status);
 }
