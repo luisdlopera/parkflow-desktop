@@ -13,4 +13,6 @@ public interface SyncEventRepository extends JpaRepository<SyncEvent, UUID> {
   List<SyncEvent> findByCreatedAtAfterOrderByCreatedAtAsc(OffsetDateTime createdAt);
 
   long countBySyncedAtIsNull();
+
+  Optional<SyncEvent> findTopBySyncedAtIsNotNullOrderBySyncedAtDesc();
 }

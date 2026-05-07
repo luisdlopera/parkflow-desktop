@@ -42,8 +42,8 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().status()).isEqualTo(400);
-        assertThat(response.getBody().code()).isEqualTo("INVALID_PLATE");
-        assertThat(response.getBody().message()).isEqualTo("Plate number is invalid");
+        assertThat(response.getBody().errorCode()).isEqualTo("INVALID_PLATE");
+        assertThat(response.getBody().userMessage()).isEqualTo("Plate number is invalid");
         assertThat(response.getBody().path()).isEqualTo("/api/v1/test");
         assertThat(response.getBody().correlationId()).isEqualTo("test-corr-id");
         assertThat(response.getBody().timestamp()).isNotNull();
@@ -60,7 +60,7 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().status()).isEqualTo(404);
-        assertThat(response.getBody().code()).isEqualTo("OPERATION_ERROR");
+        assertThat(response.getBody().errorCode()).isEqualTo("OPERATION_ERROR");
     }
 
     @Test
@@ -81,7 +81,7 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().status()).isEqualTo(400);
-        assertThat(response.getBody().code()).isEqualTo("VALIDATION_ERROR");
+        assertThat(response.getBody().errorCode()).isEqualTo("VALIDATION_ERROR");
         assertThat(response.getBody().details()).isNotNull();
         assertThat(response.getBody().details()).containsKeys("plate", "vehicleType");
     }
@@ -97,22 +97,22 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().status()).isEqualTo(500);
-        assertThat(response.getBody().code()).isEqualTo("INTERNAL_ERROR");
-        assertThat(response.getBody().message()).isEqualTo("An unexpected error occurred");
+        assertThat(response.getBody().errorCode()).isEqualTo("INTERNAL_ERROR");
+        assertThat(response.getBody().userMessage()).isEqualTo("Ocurrio un error inesperado. Intenta nuevamente.");
     }
 
     @Test
     @DisplayName("Should handle illegal argument exceptions")
     void shouldHandleIllegalArgumentExceptions() {
         MDC.put("correlationId", "test-corr-id-5");
-        IllegalArgumentException ex = new IllegalArgumentException("Invalid parameter value");
+        IllegalArgumentException ex = new IllegalArgumentException("La solicitud no es valida.");
 
         ResponseEntity<ErrorResponse> response = handler.handleIllegalArgument(ex, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().status()).isEqualTo(400);
-        assertThat(response.getBody().code()).isEqualTo("INVALID_ARGUMENT");
-        assertThat(response.getBody().message()).isEqualTo("Invalid parameter value");
+        assertThat(response.getBody().errorCode()).isEqualTo("INVALID_ARGUMENT");
+        assertThat(response.getBody().userMessage()).isEqualTo("La solicitud no es valida.");
     }
 }
