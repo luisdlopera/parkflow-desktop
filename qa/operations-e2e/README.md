@@ -227,3 +227,41 @@ Tarifa seeded carro:
 - El endpoint GET /tickets/{ticketNumber} no expone lista de session_event ni condition reports; para auditoria fina sigue siendo necesario consultar base de datos.
 - No hay autenticacion HTTP activa en este modulo, el control es por operatorUserId/rol en dominio. Para QA de seguridad real falta integrar auth.
 - En evidencia de fotos se guardan URLs declaradas por cliente; falta storage/upload validado si se requiere cadena de custodia fuerte.
+
+## 9) Ejecucion automatica local (CI-parity)
+
+1. Exportar secretos y variables (sin hardcodear en archivos):
+
+```bash
+export DB_URL="jdbc:postgresql://localhost:5432/parkflow"
+export DB_USERNAME="parkflow"
+export DB_PASSWORD="parkflow"
+export PARKFLOW_API_KEY="<api-key-segura>"
+export PARKFLOW_JWT_SECRET_BASE64="<jwt-secret-base64>"
+export PARKFLOW_SEED_ADMIN_PASSWORD="<admin-password>"
+export PARKFLOW_SEED_CASHIER_PASSWORD="<cashier-password>"
+```
+
+2. Levantar Postgres y Redis (ejemplo con Docker):
+
+```bash
+docker run --rm -d --name pf-pg -e POSTGRES_USER=parkflow -e POSTGRES_PASSWORD=parkflow -e POSTGRES_DB=parkflow -p 5432:5432 postgres:16
+docker run --rm -d --name pf-redis -p 6379:6379 redis:7
+```
+
+3. Iniciar API (Flyway corre automaticamente al arrancar):
+
+```bash
+SPRING_PROFILES_ACTIVE=dev ./apps/api/gradlew -p apps/api bootRun
+```
+
+4. En otra terminal, ejecutar suite E2E critica:
+
+```bash
+PARKFLOW_API_KEY="$PARKFLOW_API_KEY" \
+PARKFLOW_SEED_ADMIN_PASSWORD="$PARKFLOW_SEED_ADMIN_PASSWORD" \
+PARKFLOW_SEED_CASHIER_PASSWORD="$PARKFLOW_SEED_CASHIER_PASSWORD" \
+qa/operations-e2e/curl/run-critical-e2e.sh
+```
+
+Si cualquier flujo falla, el script termina con codigo distinto de cero y en CI el job falla.
