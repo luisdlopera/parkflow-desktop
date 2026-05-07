@@ -13,7 +13,8 @@ export class ApiError extends Error {
     public readonly message: string,
     public readonly path?: string,
     public readonly correlationId?: string,
-    public readonly details?: ApiErrorDetail[] | Record<string, any>
+    public readonly details?: ApiErrorDetail[] | Record<string, any>,
+    public readonly developerMessage?: string
   ) {
     super(message);
     this.name = "ApiError";
