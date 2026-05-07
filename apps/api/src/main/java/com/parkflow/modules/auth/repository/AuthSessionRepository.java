@@ -9,6 +9,8 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AuthSessionRepository extends JpaRepository<AuthSession, UUID> {
+  Optional<AuthSession> findByIdAndActiveTrue(UUID id);
+
   Optional<AuthSession> findByRefreshJtiAndActiveTrue(String refreshJti);
 
   Optional<AuthSession> findByRefreshTokenHashAndActiveTrue(String refreshTokenHash);
