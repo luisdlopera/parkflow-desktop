@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
-import { login } from "@/lib/auth";
+import { currentUser, loadSession, login } from "@/lib/auth";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
@@ -33,6 +33,13 @@ export default function LoginPage() {
       const next = params.get("next") ?? "/";
       setNextPath(next);
     }
+    void (async () => {
+      const session = await loadSession();
+      const user = await currentUser();
+      if (session && user) {
+        router.replace(nextPath);
+      }
+    })();
 
     void (async () => {
       if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
@@ -46,16 +53,25 @@ export default function LoginPage() {
         setDeviceId(fallbackDeviceId);
       }
     })();
-  }, []);
+  }, [nextPath, router]);
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
     setError(null);
     try {
+      const formData = new FormData(event.currentTarget as HTMLFormElement);
+      const emailValue = String(formData.get("email") ?? email).trim();
+      const passwordValue = String(formData.get("password") ?? password);
+      if (!passwordValue) {
+        setError("Credenciales: Debes ingresar la contrasena.");
+        setLoading(false);
+        return;
+      }
+
       await login({
-        email,
-        password,
+        email: emailValue,
+        password: passwordValue,
         deviceId,
         deviceName,
         platform,
@@ -85,6 +101,7 @@ export default function LoginPage() {
         <div className="space-y-4">
           <Input
             label="Email"
+            name="email"
             type="email"
             placeholder="ejemplo@parkflow.com"
             value={email}
@@ -99,6 +116,7 @@ export default function LoginPage() {
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
             value={password}
+            name="password"
             onValueChange={setPassword}
             variant="bordered"
             autoComplete="current-password"

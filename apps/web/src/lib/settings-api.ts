@@ -1,4 +1,24 @@
 import { buildApiHeaders, type AuthHeaderOptions } from "@/lib/api";
+import {
+  cashRegisterSchema,
+  operationalParameterSchema,
+  parkingSiteSchema,
+  paymentMethodSchema,
+  printerSchema,
+  rateFractionSchema,
+  vehicleTypeSchema
+} from "@/modules/settings/schemas";
+import {
+  settingsLegacySiteSchema,
+  settingsParametersSchema,
+  settingsPasswordResetSchema,
+  settingsRateStatusSchema,
+  settingsRateUpsertSchema,
+  settingsUserCreateSchema,
+  settingsUserPatchSchema,
+  settingsUserStatusSchema
+} from "@/lib/validation/contracts";
+import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 
 function hdr(auditReason?: string): AuthHeaderOptions | undefined {
   const t = auditReason?.trim();
@@ -136,10 +156,11 @@ export async function saveRate(
   auditReason?: string
 ): Promise<RateRow> {
   const path = id ? `${apiV1Base()}/settings/rates/${id}` : `${apiV1Base()}/settings/rates`;
+  const validatedBody = validatePayloadOrThrow(settingsRateUpsertSchema, payload);
   return apiFetch<RateRow>(path, {
     method: id ? "PATCH" : "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -149,10 +170,11 @@ export async function patchRateStatus(
   active: boolean,
   auditReason?: string
 ): Promise<RateRow> {
+  const validatedBody = validatePayloadOrThrow(settingsRateStatusSchema, { active });
   return apiFetch<RateRow>(`${apiV1Base()}/settings/rates/${id}/status`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify({ active })
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -194,10 +216,11 @@ export async function createUser(
   payload: Record<string, unknown>,
   auditReason?: string
 ): Promise<UserAdminRow> {
+  const validatedBody = validatePayloadOrThrow(settingsUserCreateSchema, payload);
   return apiFetch<UserAdminRow>(`${apiV1Base()}/settings/users`, {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -207,10 +230,11 @@ export async function patchUser(
   payload: Record<string, unknown>,
   auditReason?: string
 ): Promise<UserAdminRow> {
+  const validatedBody = validatePayloadOrThrow(settingsUserPatchSchema, payload);
   return apiFetch<UserAdminRow>(`${apiV1Base()}/settings/users/${id}`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -220,10 +244,11 @@ export async function patchUserStatus(
   active: boolean,
   auditReason?: string
 ): Promise<UserAdminRow> {
+  const validatedBody = validatePayloadOrThrow(settingsUserStatusSchema, { active });
   return apiFetch<UserAdminRow>(`${apiV1Base()}/settings/users/${id}/status`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify({ active })
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -233,10 +258,11 @@ export async function resetUserPassword(
   newPassword: string,
   auditReason?: string
 ): Promise<void> {
+  const validatedBody = validatePayloadOrThrow(settingsPasswordResetSchema, { newPassword });
   return apiFetch<void>(`${apiV1Base()}/settings/users/${id}/reset-password`, {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify({ newPassword })
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -253,10 +279,11 @@ export type ParametersValidateResult = { ok: boolean; errors: string[] };
 export async function validateParameters(
   body: ParkingParametersPayload
 ): Promise<ParametersValidateResult> {
+  const validatedBody = validatePayloadOrThrow(settingsParametersSchema, body);
   return apiFetch<ParametersValidateResult>(`${apiV1Base()}/settings/parameters/validate`, {
     method: "POST",
     headers: await buildApiHeaders(),
-    body: JSON.stringify(body)
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -266,12 +293,13 @@ export async function putParameters(
   site?: string,
   auditReason?: string
 ): Promise<ParkingParametersPayload> {
+  const validatedBody = validatePayloadOrThrow(settingsParametersSchema, body);
   const u = new URL(`${apiV1Base()}/settings/parameters`);
   if (site) u.searchParams.set("site", site);
   return apiFetch<ParkingParametersPayload>(u.toString(), {
     method: "PUT",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(body)
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -319,10 +347,11 @@ export async function fetchSites(params?: { active?: boolean | null }): Promise<
 
 
 export async function createSite(payload: SiteCreatePayload, auditReason?: string): Promise<SiteRow> {
+  const validatedBody = validatePayloadOrThrow(settingsLegacySiteSchema, payload);
   return apiFetch<SiteRow>(`${apiV1Base()}/settings/sites`, {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -332,19 +361,21 @@ export async function updateSite(
   payload: Partial<SiteCreatePayload>,
   auditReason?: string
 ): Promise<SiteRow> {
+  const validatedBody = validatePayloadOrThrow(settingsLegacySiteSchema.partial(), payload);
   return apiFetch<SiteRow>(`${apiV1Base()}/settings/sites/${id}`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
 
 export async function patchSiteStatus(id: string, active: boolean, auditReason?: string): Promise<SiteRow> {
+  const validatedBody = validatePayloadOrThrow(settingsRateStatusSchema, { active });
   return apiFetch<SiteRow>(`${apiV1Base()}/settings/sites/${id}/status`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify({ active })
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -361,16 +392,18 @@ export async function fetchMasterVehicleTypes(auditReason?: string): Promise<Mas
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/operations", "/settings") ?? "http://localhost:6011/api/v1/settings";
   const res = await fetch(`${baseUrl}/vehicle-types`, {
     headers: await buildApiHeaders(hdr(auditReason)),
-    cache: "no-store"
+    cache: "no-store",
+    credentials: "include"
   });
   if (!res.ok) {
     const errorBody = await res.text().catch(() => null);
-    throw new Error(`Error obteniendo tipos de vehiculo (${res.status}): ${errorBody || res.statusText}`);
+    throw new Error(`Error obteniendo tipos de vehículo (${res.status}): ${errorBody || res.statusText}`);
   }
   return res.json();
 }
 
 export async function saveMasterVehicleType(data: { code: string; name: string; requiresPlate?: boolean; requiresPhoto?: boolean; displayOrder?: number; }, id?: string, auditReason?: string): Promise<MasterVehicleTypeRow> {
+  const validatedBody = validatePayloadOrThrow(vehicleTypeSchema, data);
   const method = id ? "PUT" : "POST";
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/operations", "/configuration") ?? "http://localhost:6011/api/v1/configuration";
   const url = id 
@@ -380,7 +413,7 @@ export async function saveMasterVehicleType(data: { code: string; name: string; 
   const res = await fetch(url, {
     method,
     headers: { ...(await buildApiHeaders(hdr(auditReason))), "Content-Type": "application/json" },
-    body: JSON.stringify(data)
+    body: JSON.stringify(validatedBody)
   });
   if (!res.ok) {
     const errorBody = await res.text().catch(() => null);
@@ -416,20 +449,22 @@ export async function fetchConfigurationSites(params: {
 }
 
 export async function createConfigurationSite(payload: Record<string, unknown>, companyId: string, auditReason?: string): Promise<ParkingSiteRow> {
+  const validatedBody = validatePayloadOrThrow(parkingSiteSchema, payload);
   const u = new URL(`${cfgBase()}/parking-sites`);
   u.searchParams.set("companyId", companyId);
   return apiFetch<ParkingSiteRow>(u.toString(), {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
 export async function updateConfigurationSite(id: string, payload: Record<string, unknown>, auditReason?: string): Promise<ParkingSiteRow> {
+  const validatedBody = validatePayloadOrThrow(parkingSiteSchema.partial(), payload);
   return apiFetch<ParkingSiteRow>(`${cfgBase()}/parking-sites/${id}`, {
     method: "PUT",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -456,18 +491,20 @@ export async function fetchConfigurationPaymentMethods(params: {
 }
 
 export async function createConfigurationPaymentMethod(payload: Record<string, unknown>, auditReason?: string): Promise<PaymentMethodRow> {
+  const validatedBody = validatePayloadOrThrow(paymentMethodSchema, payload);
   return apiFetch<PaymentMethodRow>(`${cfgBase()}/payment-methods`, {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
 export async function updateConfigurationPaymentMethod(id: string, payload: Record<string, unknown>, auditReason?: string): Promise<PaymentMethodRow> {
+  const validatedBody = validatePayloadOrThrow(paymentMethodSchema.partial(), payload);
   return apiFetch<PaymentMethodRow>(`${cfgBase()}/payment-methods/${id}`, {
     method: "PUT",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -496,20 +533,22 @@ export async function fetchConfigurationPrinters(params: {
 }
 
 export async function createConfigurationPrinter(payload: Record<string, unknown>, siteId: string, auditReason?: string): Promise<PrinterRow> {
+  const validatedBody = validatePayloadOrThrow(printerSchema, payload);
   const u = new URL(`${cfgBase()}/printers`);
   u.searchParams.set("siteId", siteId);
   return apiFetch<PrinterRow>(u.toString(), {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
 export async function updateConfigurationPrinter(id: string, payload: Record<string, unknown>, auditReason?: string): Promise<PrinterRow> {
+  const validatedBody = validatePayloadOrThrow(printerSchema.partial(), payload);
   return apiFetch<PrinterRow>(`${cfgBase()}/printers/${id}`, {
     method: "PUT",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -528,12 +567,13 @@ export async function fetchConfigurationOperationalParameters(siteId: string): P
 }
 
 export async function putConfigurationOperationalParameters(siteId: string, payload: Record<string, unknown>, auditReason?: string): Promise<OperationalParameterRow> {
+  const validatedBody = validatePayloadOrThrow(operationalParameterSchema, payload);
   const u = new URL(`${cfgBase()}/operational-parameters`);
   u.searchParams.set("siteId", siteId);
   return apiFetch<OperationalParameterRow>(u.toString(), {
     method: "PUT",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -545,20 +585,22 @@ export async function fetchConfigurationRateFractions(rateId: string): Promise<R
 }
 
 export async function createConfigurationRateFraction(rateId: string, payload: Record<string, unknown>, auditReason?: string): Promise<RateFractionRow> {
+  const validatedBody = validatePayloadOrThrow(rateFractionSchema, payload);
   const u = new URL(`${cfgBase()}/rate-fractions`);
   u.searchParams.set("rateId", rateId);
   return apiFetch<RateFractionRow>(u.toString(), {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
 export async function updateConfigurationRateFraction(id: string, payload: Record<string, unknown>, auditReason?: string): Promise<RateFractionRow> {
+  const validatedBody = validatePayloadOrThrow(rateFractionSchema, payload);
   return apiFetch<RateFractionRow>(`${cfgBase()}/rate-fractions/${id}`, {
     method: "PUT",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
@@ -587,18 +629,20 @@ export async function fetchConfigurationCashRegisters(params: {
 }
 
 export async function createConfigurationCashRegister(payload: Record<string, unknown>, auditReason?: string): Promise<CashRegisterRow> {
+  const validatedBody = validatePayloadOrThrow(cashRegisterSchema, payload);
   return apiFetch<CashRegisterRow>(`${cfgBase()}/cash-registers`, {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 
 export async function updateConfigurationCashRegister(id: string, payload: Record<string, unknown>, auditReason?: string): Promise<CashRegisterRow> {
+  const validatedBody = validatePayloadOrThrow(cashRegisterSchema.partial(), payload);
   return apiFetch<CashRegisterRow>(`${cfgBase()}/cash-registers/${id}`, {
     method: "PUT",
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(payload)
+    body: JSON.stringify(validatedBody)
   });
 }
 

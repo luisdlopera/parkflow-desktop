@@ -1,5 +1,14 @@
 import { authHeaders } from "@/lib/auth";
 import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
+import {
+  licensingCreateCompanyRequestSchema,
+  licensingGenerateLicenseRequestSchema,
+  licensingHeartbeatRequestSchema,
+  licensingRemoteCommandRequestSchema,
+  licensingUpdateCompanyRequestSchema,
+  licensingValidateRequestSchema
+} from "@/lib/validation/contracts";
+import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type {
   HeartbeatRequest,
   HeartbeatResponse,
@@ -49,9 +58,10 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
 // ==================== HEARTBEAT ====================
 
 export async function sendHeartbeat(request: HeartbeatRequest): Promise<HeartbeatResponse> {
+  const validatedRequest = validatePayloadOrThrow(licensingHeartbeatRequestSchema, request);
   return apiFetch<HeartbeatResponse>("/licensing/heartbeat", {
     method: "POST",
-    body: JSON.stringify(request),
+    body: JSON.stringify(validatedRequest),
   });
 }
 
@@ -60,9 +70,10 @@ export async function sendHeartbeat(request: HeartbeatRequest): Promise<Heartbea
 export async function validateLicense(
   request: LicenseValidationRequest
 ): Promise<LicenseValidationResponse> {
+  const validatedRequest = validatePayloadOrThrow(licensingValidateRequestSchema, request);
   return apiFetch<LicenseValidationResponse>("/licensing/validate", {
     method: "POST",
-    body: JSON.stringify(request),
+    body: JSON.stringify(validatedRequest),
   });
 }
 
@@ -77,9 +88,10 @@ export async function getCompany(companyId: string): Promise<Company> {
 }
 
 export async function createCompany(request: CreateCompanyRequest): Promise<Company> {
+  const validatedRequest = validatePayloadOrThrow(licensingCreateCompanyRequestSchema, request);
   return apiFetch<Company>("/licensing/companies", {
     method: "POST",
-    body: JSON.stringify(request),
+    body: JSON.stringify(validatedRequest),
   });
 }
 
@@ -87,9 +99,10 @@ export async function updateCompany(
   companyId: string,
   request: UpdateCompanyRequest
 ): Promise<Company> {
+  const validatedRequest = validatePayloadOrThrow(licensingUpdateCompanyRequestSchema, request);
   return apiFetch<Company>(`/licensing/companies/${companyId}`, {
     method: "PUT",
-    body: JSON.stringify(request),
+    body: JSON.stringify(validatedRequest),
   });
 }
 
@@ -98,9 +111,10 @@ export async function updateCompany(
 export async function generateLicense(
   request: GenerateLicenseRequest
 ): Promise<GenerateLicenseResponse> {
+  const validatedRequest = validatePayloadOrThrow(licensingGenerateLicenseRequestSchema, request);
   return apiFetch<GenerateLicenseResponse>("/licensing/licenses/generate", {
     method: "POST",
-    body: JSON.stringify(request),
+    body: JSON.stringify(validatedRequest),
   });
 }
 
@@ -121,13 +135,14 @@ export async function sendRemoteCommand(
   payload?: string,
   reason?: string
 ): Promise<void> {
+  const validatedRequest = validatePayloadOrThrow(licensingRemoteCommandRequestSchema, {
+    deviceId,
+    command,
+    payload,
+    reason,
+  });
   return apiFetch<void>("/licensing/commands/send", {
     method: "POST",
-    body: JSON.stringify({
-      deviceId,
-      command,
-      payload,
-      reason,
-    }),
+    body: JSON.stringify(validatedRequest),
   });
 }
