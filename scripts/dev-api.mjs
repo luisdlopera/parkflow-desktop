@@ -165,7 +165,7 @@ async function main() {
     console.log('');
 
     // Start Gradle bootRun
-    const gradlew = join(apiDir, 'gradlew.bat');
+    const gradlew = process.platform === 'win32' ? join(apiDir, 'gradlew.bat') : join(apiDir, 'gradlew');
     const gradle = spawn(
       gradlew,
       ['bootRun', `--args=--server.port=${port}`],
@@ -173,7 +173,7 @@ async function main() {
         cwd: apiDir,
         env,
         stdio: 'inherit',
-        shell: true,
+        shell: process.platform === 'win32', // Safe: Windows needs shell but no unsafe args are passed
       }
     );
 
