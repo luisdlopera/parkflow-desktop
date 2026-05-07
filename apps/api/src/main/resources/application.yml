@@ -53,7 +53,7 @@ app:
     swagger-public: ${PARKFLOW_SWAGGER_PUBLIC:true}
     offline-lease-hours: ${PARKFLOW_OFFLINE_LEASE_HOURS:48}
     seed-admin-email: ${PARKFLOW_SEED_ADMIN_EMAIL:admin@parkflow.local}
-    seed-admin-password: ${PARKFLOW_SEED_ADMIN_PASSWORD:REPLACE_WITH_ADMIN_PASSWORD}
+    seed-admin-password: ${PARKFLOW_SEED_ADMIN_PASSWORD:Qwert.12345}
 
 parkflow:
   jwt:
