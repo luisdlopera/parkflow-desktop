@@ -4,8 +4,9 @@ import com.parkflow.modules.common.dto.ErrorResponse;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import static com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY;
  * All exceptions are converted to a consistent ErrorResponse format
  * with correlation IDs for traceability.
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -33,6 +35,7 @@ public class GlobalExceptionHandler {
             ex.getStatus().value(),
             ex.getCode() != null ? ex.getCode() : "OPERATION_ERROR",
             ex.getMessage(),
+            ex.getClass().getSimpleName() + ": " + ex.getMessage(),
             request.getRequestURI(),
             correlationId
         );
@@ -46,7 +49,7 @@ public class GlobalExceptionHandler {
         
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
         
-        Map<String, Object> details = new HashMap<>();
+        Map<String, Object> details = new LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(error -> 
             details.put(error.getField(), error.getDefaultMessage())
         );
@@ -54,7 +57,8 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse(
             HttpStatus.BAD_REQUEST.value(),
             "VALIDATION_ERROR",
-            "Validation failed",
+            "Revisa los datos ingresados.",
+            ex.getMessage(),
             request.getRequestURI(),
             correlationId,
             details
@@ -68,7 +72,7 @@ public class GlobalExceptionHandler {
             ConstraintViolationException ex, HttpServletRequest request) {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
-        Map<String, Object> details = new HashMap<>();
+        Map<String, Object> details = new LinkedHashMap<>();
         ex.getConstraintViolations().forEach(violation -> {
             String key = violation.getPropertyPath() != null
                 ? violation.getPropertyPath().toString()
@@ -79,7 +83,8 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse(
             HttpStatus.BAD_REQUEST.value(),
             "VALIDATION_ERROR",
-            "Validation failed",
+            "Revisa los datos ingresados.",
+            ex.getMessage(),
             request.getRequestURI(),
             correlationId,
             details
@@ -94,15 +99,13 @@ public class GlobalExceptionHandler {
         
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
         
-        // Log the full exception with correlation ID
-        System.err.printf("[CorrelationId: %s] Unhandled exception: %s%n", 
-            correlationId, ex.getMessage());
-        ex.printStackTrace();
+        log.error("Unhandled exception [correlationId={}]", correlationId, ex);
 
         ErrorResponse error = new ErrorResponse(
             HttpStatus.INTERNAL_SERVER_ERROR.value(),
             "INTERNAL_ERROR",
-            "An unexpected error occurred",
+            "Ocurrio un error inesperado. Intenta nuevamente.",
+            ex.getClass().getName() + ": " + ex.getMessage(),
             request.getRequestURI(),
             correlationId
         );
@@ -119,6 +122,7 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse(
             HttpStatus.BAD_REQUEST.value(),
             "INVALID_ARGUMENT",
+            "La solicitud no es valida.",
             ex.getMessage(),
             request.getRequestURI(),
             correlationId

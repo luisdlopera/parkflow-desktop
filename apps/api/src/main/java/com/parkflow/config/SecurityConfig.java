@@ -121,7 +121,7 @@ public class SecurityConfig {
     String correlationId = org.slf4j.MDC.get(com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
     response.setStatus(status);
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-    ErrorResponse payload = new ErrorResponse(status, code, message, path, correlationId);
+    ErrorResponse payload = new ErrorResponse(status, code, message, status == 401 ? "AuthenticationException" : "AccessDeniedException", path, correlationId);
     objectMapper.writeValue(response.getWriter(), payload);
   }
 
