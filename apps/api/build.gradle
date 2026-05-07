@@ -3,6 +3,7 @@ plugins {
   id 'org.springframework.boot' version '3.3.3'
   id 'io.spring.dependency-management' version '1.1.6'
   id 'org.flywaydb.flyway' version '10.10.0'
+  id 'jacoco'
 }
 
 group = 'com.parkflow'
@@ -50,11 +51,22 @@ dependencies {
   testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 
   testImplementation 'org.springframework.boot:spring-boot-starter-test'
-  testImplementation 'com.h2database:h2'
+  testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+  testImplementation 'org.testcontainers:junit-jupiter'
+  testImplementation 'org.testcontainers:postgresql'
+  testImplementation 'org.springframework.security:spring-security-test'
 }
 
 tasks.test {
   useJUnitPlatform()
+}
+
+jacocoTestReport {
+  dependsOn test
+  reports {
+    xml.required = true
+    html.required = true
+  }
 }
 
 flyway {
@@ -63,3 +75,4 @@ flyway {
   password = 'parkflow'
   driver = 'org.postgresql.Driver'
 }
+
