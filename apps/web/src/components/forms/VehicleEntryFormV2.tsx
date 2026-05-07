@@ -24,6 +24,9 @@ import { useAutoSave } from "@/lib/hooks/useAutoSave";
 import { CrashRecoveryDialog } from "@/components/ui/CrashRecoveryDialog";
 import type { VehicleType } from "@parkflow/types";
 import { fetchMasterVehicleTypes, type MasterVehicleTypeRow } from "@/lib/settings-api";
+import { currentUser } from "@/lib/auth";
+import { operationEntryRequestSchema } from "@/lib/validation/contracts";
+import { validatePayloadOrThrow, toUserMessageFromClientValidation } from "@/lib/validation/request-guard";
 
 // #region agent log - Performance logging utility
 function writePerfLog(operation: string, durationMs: number, details?: Record<string, unknown>) {
@@ -98,18 +101,6 @@ export default function VehicleEntryFormV2() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  useEffect(() => {
-    fetchMasterVehicleTypes()
-      .then(types => {
-        setVehicleTypes(types);
-        setLoadingTypes(false);
-      })
-      .catch(err => {
-        console.error("Error fetching vehicle types:", err);
-        setLoadingTypes(false);
-      });
-  }, []);
-
   const form = useForm<VehicleEntryFormValues>({
     resolver: zodResolver(vehicleEntrySchema),
     defaultValues: {
@@ -135,6 +126,43 @@ export default function VehicleEntryFormV2() {
     interval: 2000,
     enabled: formValues.plate.length > 0
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchMasterVehicleTypes()
+      .then(types => {
+        if (cancelled) return;
+        if (types.length === 0) {
+          console.warn("No vehicle types returned from backend");
+          setVehicleTypes([]);
+          setLoadingTypes(false);
+          return;
+        }
+        setVehicleTypes(types);
+        const typeCodes = types.map(t => t.code);
+        const currentType = form.getValues("type");
+        if (!typeCodes.includes(currentType)) {
+          const firstType = types[0].code;
+          console.warn(`Current/default type ${currentType} not found, falling back to ${firstType}`);
+          form.setValue("type", firstType, { shouldValidate: true });
+        }
+        setLoadingTypes(false);
+      })
+      .catch(err => {
+        if (cancelled) return;
+        console.error("Error fetching vehicle types:", err);
+        const fallbackTypes = [
+          { id: "fallback-car", code: "CAR", name: "Carro", isActive: true },
+          { id: "fallback-moto", code: "MOTORCYCLE", name: "Moto", isActive: true },
+          { id: "fallback-van", code: "VAN", name: "Van", isActive: true },
+          { id: "fallback-truck", code: "TRUCK", name: "Camión", isActive: true },
+          { id: "fallback-other", code: "OTHER", name: "Otro", isActive: true },
+        ];
+        setVehicleTypes(fallbackTypes);
+        setLoadingTypes(false);
+      });
+    return () => { cancelled = true; };
+  }, [settings.defaultVehicleType, form]);
 
   // Persistir settings
   useEffect(() => {
@@ -195,14 +223,21 @@ export default function VehicleEntryFormV2() {
     clearAutoSave();
 
     try {
+      const user = await currentUser();
+      if (!user?.id) {
+        setError("Sesion requerida para registrar ingresos");
+        playError();
+        return;
+      }
+
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
       const normalizedPlate = values.plate.trim().toUpperCase().replace(/\s+/g, '');
 
-      const response = await fetch(`${apiBase}/entries`, {
-        method: "POST",
-        headers: await buildApiHeaders(),
-        body: JSON.stringify({
+      const requestBody = validatePayloadOrThrow(
+        operationEntryRequestSchema,
+        {
           idempotencyKey: newIdempotencyKey(),
+          operatorUserId: user.id,
           ...values,
           plate: normalizedPlate,
           rateId: values.rateId?.trim() ? values.rateId.trim() : null,
@@ -211,12 +246,19 @@ export default function VehicleEntryFormV2() {
           booth: values.booth?.trim() || null,
           terminal: values.terminal?.trim() || null,
           observations: values.observations?.trim() || null,
-          vehicleCondition: settings.skipConditionCheck && !values.vehicleCondition?.trim() 
-            ? "Sin novedades" 
+          vehicleCondition: settings.skipConditionCheck && !values.vehicleCondition?.trim()
+            ? "Sin novedades"
             : values.vehicleCondition.trim(),
           conditionChecklist: values.conditionChecklist.split(",").map(i => i.trim()).filter(Boolean),
           conditionPhotoUrls: values.conditionPhotoUrls.split(",").map(i => i.trim()).filter(Boolean)
-        })
+        },
+        "Corrige los campos del ingreso antes de enviar"
+      );
+
+      const response = await fetch(`${apiBase}/entries`, {
+        method: "POST",
+        headers: await buildApiHeaders(),
+        body: JSON.stringify(requestBody)
       });
 
       const payload = await response.json().catch(() => ({}));
@@ -312,6 +354,12 @@ export default function VehicleEntryFormV2() {
 
       focusPlate();
     } catch (err) {
+      const validationMessage = toUserMessageFromClientValidation(err);
+      if (validationMessage) {
+        setError(validationMessage);
+        playError();
+        return;
+      }
       playError();
       if (isNetworkError(err)) {
         const queued = await queueOfflineOperation("ENTRY_RECORDED", {
@@ -434,10 +482,12 @@ export default function VehicleEntryFormV2() {
                 size="sm"
                 variant="flat"
                 aria-label="Tipo de vehículo por defecto"
-                selectedKeys={[settings.defaultVehicleType]}
+                selectedKeys={Object.keys(VEHICLE_TYPE_CONFIG).includes(settings.defaultVehicleType) ? [settings.defaultVehicleType] : []}
                 onSelectionChange={(keys) => {
                   const selected = Array.from(keys)[0] as VehicleType;
-                  setSettings(s => ({ ...s, defaultVehicleType: selected }));
+                  if (selected) {
+                    setSettings(s => ({ ...s, defaultVehicleType: selected }));
+                  }
                 }}
                 className="w-40"
               >
@@ -531,27 +581,37 @@ export default function VehicleEntryFormV2() {
               <Controller
                 name="type"
                 control={form.control}
-                render={({ field }) => (
-                  <Select
-                    variant="flat"
-                    aria-label="Tipo de vehículo"
-                    selectedKeys={[field.value]}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] as string;
-                      field.onChange(selected);
-                    }}
-                  >
-                    {vehicleTypes.map((t) => {
-                      const config = VEHICLE_TYPE_CONFIG[t.code] || { label: t.name, icon: "🚗" };
-                      return (
-                        <SelectItem key={t.code} textValue={config.label}>
-                          {config.icon} {config.label}
-                        </SelectItem>
-                      );
-                    })}
-                  </Select>
-                )}
+                render={({ field }) => {
+                  const validKeys = vehicleTypes.map(t => t.code);
+                  const selectedKey = validKeys.includes(field.value) ? field.value : undefined;
+                  return (
+                    <Select
+                      variant="flat"
+                      aria-label="Tipo de vehículo"
+                      selectedKeys={selectedKey ? [selectedKey] : []}
+                      isDisabled={vehicleTypes.length === 0 || loadingTypes}
+                      onSelectionChange={(keys) => {
+                        const selected = Array.from(keys)[0] as string;
+                        field.onChange(selected);
+                      }}
+                    >
+                      {vehicleTypes.map((t) => {
+                        const config = VEHICLE_TYPE_CONFIG[t.code] || { label: t.name, icon: "🚗" };
+                        return (
+                          <SelectItem key={t.code} textValue={config.label}>
+                            {config.icon} {config.label}
+                          </SelectItem>
+                        );
+                      })}
+                    </Select>
+                  );
+                }}
               />
+            )}
+            {vehicleTypes.length === 0 && !loadingTypes && (
+              <div className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-2">
+                No hay tipos de vehículo disponibles. Verifique la conexión con el servidor.
+              </div>
             )}
           </div>
 

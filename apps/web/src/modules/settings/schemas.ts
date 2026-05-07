@@ -7,8 +7,8 @@ export const parkingSiteSchema = z.object({
   city: z.string().max(100).optional().or(z.literal("")),
   phone: z.string().max(50).optional().or(z.literal("")),
   managerName: z.string().max(150).optional().or(z.literal("")),
-  timezone: z.string().default("America/Bogota"),
-  currency: z.string().default("COP"),
+  timezone: z.string().min(1).max(50).default("America/Bogota"),
+  currency: z.string().min(1).max(10).default("COP"),
   isActive: z.boolean().default(true),
 });
 
