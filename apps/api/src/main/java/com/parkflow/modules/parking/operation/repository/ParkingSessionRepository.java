@@ -59,4 +59,25 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("SELECT s FROM ParkingSession s JOIN FETCH s.vehicle v WHERE s.ticketNumber = :ticket")
   Optional<ParkingSession> findByTicketNumberForUpdate(@Param("ticket") String ticket);
+
+  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.status = 'ACTIVE'")
+  long countActive();
+
+  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE DATE(s.entryAt) = CURRENT_DATE")
+  long countEntriesSinceMidnight();
+
+  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE DATE(s.exitAt) = CURRENT_DATE AND s.status = 'COMPLETED'")
+  long countExitsSinceMidnight();
+
+  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE DATE(s.createdAt) = CURRENT_DATE AND s.reprintCount > 0")
+  long countReprintsSinceMidnight();
+
+  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE DATE(s.createdAt) = CURRENT_DATE AND s.status = 'LOST'")
+  long countLostTicketsSinceMidnight();
+
+  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE DATE(s.createdAt) = CURRENT_DATE AND s.printStatus = 'FAILED'")
+  long countPrintFailedSinceMidnight();
+
+  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.syncStatus = 'PENDING'")
+  long countSyncPending();
 }
