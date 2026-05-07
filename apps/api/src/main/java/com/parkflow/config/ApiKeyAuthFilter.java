@@ -5,7 +5,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -19,9 +22,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * or rely on JWT authentication. This is a defense-in-depth design.
  */
 public class ApiKeyAuthFilter extends OncePerRequestFilter {
+  private static final Logger log = LoggerFactory.getLogger(ApiKeyAuthFilter.class);
   private static final String API_KEY_HEADER = "X-API-Key";
   private static final List<String> PUBLIC_PATH_PREFIXES =
-      List.of("/actuator/health", "/actuator/info", "/swagger-ui/", "/v3/api-docs/");
+      List.of("/actuator/health", "/actuator/info", "/swagger-ui/", "/v3/api-docs/", "/api/v1/settings/vehicle-types");
   // Routes that explicitly require API key authentication
   private static final List<String> API_KEY_REQUIRED_PATHS =
       List.of("/api/v1/internal/", "/api/v1/webhook/");
@@ -55,10 +59,9 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     if (incomingApiKey == null || incomingApiKey.isBlank()) {
       if (apiKeyRequired) {
         // SECURITY: Reject if API key is required but not provided
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "ApiKey");
-        response.setContentType("application/json");
-        response.getWriter().write("{\"error\":\"API key required\"}");
+        log.warn("SECURITY: Rejecting request to {} - API key required but not provided (client IP: {})",
+            path, request.getRemoteAddr());
+        writeUnauthorized(response, path, "API key required");
         return;
       }
       // Pass through to JWT filter for non-API-key routes
@@ -67,10 +70,9 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     }
 
     if (!incomingApiKey.equals(expectedApiKey)) {
-      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "ApiKey");
-      response.setContentType("application/json");
-      response.getWriter().write("{\"error\":\"Invalid API key\"}");
+      log.warn("SECURITY: Rejecting request to {} - Invalid API key provided (client IP: {})",
+          path, request.getRemoteAddr());
+      writeUnauthorized(response, path, "Invalid API key");
       return;
     }
 
@@ -79,5 +81,15 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             "api-key-client", null, AuthorityUtils.createAuthorityList("ROLE_API_CLIENT"));
     SecurityContextHolder.getContext().setAuthentication(auth);
     filterChain.doFilter(request, response);
+  }
+
+  private void writeUnauthorized(HttpServletResponse response, String path, String reason) throws IOException {
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "ApiKey");
+    response.setContentType("application/json");
+    response.getWriter().write(
+        "{\"timestamp\":\"" + Instant.now()
+            + "\",\"status\":401,\"code\":\"AUTH_UNAUTHORIZED\",\"message\":\"Tu sesion expiro. Inicia sesion nuevamente.\",\"path\":\""
+            + path + "\",\"details\":{\"reason\":\"" + reason + "\"}}");
   }
 }
