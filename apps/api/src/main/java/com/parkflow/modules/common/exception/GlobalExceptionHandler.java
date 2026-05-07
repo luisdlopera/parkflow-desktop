@@ -2,6 +2,7 @@ package com.parkflow.modules.common.exception;
 
 import com.parkflow.modules.common.dto.ErrorResponse;
 import com.parkflow.modules.parking.operation.exception.OperationException;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,6 +50,31 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors().forEach(error -> 
             details.put(error.getField(), error.getDefaultMessage())
         );
+
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.BAD_REQUEST.value(),
+            "VALIDATION_ERROR",
+            "Validation failed",
+            request.getRequestURI(),
+            correlationId,
+            details
+        );
+
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolationException(
+            ConstraintViolationException ex, HttpServletRequest request) {
+
+        String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
+        Map<String, Object> details = new HashMap<>();
+        ex.getConstraintViolations().forEach(violation -> {
+            String key = violation.getPropertyPath() != null
+                ? violation.getPropertyPath().toString()
+                : "request";
+            details.put(key, violation.getMessage());
+        });
 
         ErrorResponse error = new ErrorResponse(
             HttpStatus.BAD_REQUEST.value(),
