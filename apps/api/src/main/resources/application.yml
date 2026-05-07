@@ -16,7 +16,7 @@ spring:
     password: ${POSTGRES_PASSWORD:parkflow}
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     open-in-view: false
     properties:
       hibernate:
@@ -24,6 +24,7 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+    repair-on-migrate: true # Auto-repair checksums on startup
 
 management:
   endpoints:
@@ -48,7 +49,11 @@ app:
     jwt-secret: ${PARKFLOW_JWT_SECRET_BASE64:VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA=}
     access-token-ttl-minutes: ${PARKFLOW_ACCESS_TOKEN_TTL_MINUTES:15}
     refresh-token-ttl-days: ${PARKFLOW_REFRESH_TOKEN_TTL_DAYS:7}
+    jwt-clock-skew-seconds: ${PARKFLOW_JWT_CLOCK_SKEW_SECONDS:30}
+    swagger-public: ${PARKFLOW_SWAGGER_PUBLIC:true}
     offline-lease-hours: ${PARKFLOW_OFFLINE_LEASE_HOURS:48}
+    seed-admin-email: ${PARKFLOW_SEED_ADMIN_EMAIL:admin@parkflow.local}
+    seed-admin-password: ${PARKFLOW_SEED_ADMIN_PASSWORD:Qwert.12345}
 
 parkflow:
   jwt:
