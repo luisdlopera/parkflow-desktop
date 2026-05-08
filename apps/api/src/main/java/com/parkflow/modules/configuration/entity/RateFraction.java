@@ -28,7 +28,7 @@ public class RateFraction {
   @Column(nullable = false)
   private int toMinute;
 
-  @Column(nullable = false, precision = 10, scale = 2)
+  @Column(name = "fraction_value", nullable = false, precision = 10, scale = 2)
   private BigDecimal value;
 
   @Column(nullable = false)
