@@ -67,17 +67,14 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
   @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.entryAt >= :start AND s.entryAt < :end")
   long countEntriesInPeriod(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
 
-  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.exitAt >= :start AND s.exitAt < :end AND s.status = 'COMPLETED'")
+  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.exitAt >= :start AND s.exitAt < :end AND s.status = 'CLOSED'")
   long countExitsInPeriod(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
 
   @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.createdAt >= :start AND s.createdAt < :end AND s.reprintCount > 0")
   long countReprintsInPeriod(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
 
-  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.createdAt >= :start AND s.createdAt < :end AND s.status = 'LOST'")
+  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.createdAt >= :start AND s.createdAt < :end AND s.status = 'LOST_TICKET'")
   long countLostTicketsInPeriod(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
-
-  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.createdAt >= :start AND s.createdAt < :end AND s.printStatus = 'FAILED'")
-  long countPrintFailedInPeriod(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
 
   @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.syncStatus = 'PENDING'")
   long countSyncPending();

@@ -27,7 +27,7 @@ public class ParkingParameters {
   private String siteCode = "DEFAULT";
 
   @JdbcTypeCode(SqlTypes.JSON)
-  @Column(nullable = false, columnDefinition = "jsonb")
+  @Column(nullable = false)
   private ParkingParametersData data;
 
   @Column(nullable = false)

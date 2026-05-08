@@ -125,7 +125,7 @@ public class OperationService {
     saveVehicleCondition(
         session,
         ConditionStage.ENTRY,
-        request.vehicleCondition(),
+      request.observations(),
         request.conditionChecklist(),
         request.conditionPhotoUrls(),
         operator);
@@ -212,7 +212,7 @@ public class OperationService {
     saveVehicleCondition(
         session,
         ConditionStage.EXIT,
-        request.vehicleCondition(),
+      request.observations(),
         request.conditionChecklist(),
         request.conditionPhotoUrls(),
         operator);
