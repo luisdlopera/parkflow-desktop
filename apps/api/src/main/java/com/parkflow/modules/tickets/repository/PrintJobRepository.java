@@ -24,6 +24,9 @@ public interface PrintJobRepository extends JpaRepository<PrintJob, UUID> {
 
   long countByStatusInAndCreatedAtAfter(Collection<PrintJobStatus> statuses, OffsetDateTime from);
 
+  long countByStatusInAndCreatedAtBetween(
+      Collection<PrintJobStatus> statuses, OffsetDateTime start, OffsetDateTime end);
+
   List<PrintJob> findTop10ByStatusInOrderByUpdatedAtDesc(Collection<PrintJobStatus> statuses);
 
   Optional<PrintJob> findTopByStatusOrderByUpdatedAtDesc(PrintJobStatus status);

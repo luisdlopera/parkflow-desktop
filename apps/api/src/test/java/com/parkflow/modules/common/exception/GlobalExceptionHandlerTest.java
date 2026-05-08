@@ -7,10 +7,12 @@ import static org.mockito.Mockito.when;
 import com.parkflow.modules.common.dto.ErrorResponse;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import jakarta.servlet.http.HttpServletRequest;
+import java.lang.reflect.Method;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -74,7 +76,7 @@ class GlobalExceptionHandlerTest {
         bindingResult.addError(new FieldError("target", "plate", "Plate cannot be blank"));
         bindingResult.addError(new FieldError("target", "vehicleType", "Invalid vehicle type"));
         
-        MethodArgumentNotValidException ex = new MethodArgumentNotValidException(null, bindingResult);
+        MethodArgumentNotValidException ex = new MethodArgumentNotValidException(validationMethodParameter(), bindingResult);
 
         ResponseEntity<ErrorResponse> response = handler.handleValidationException(ex, request);
 
@@ -85,6 +87,20 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().details()).isNotNull();
         assertThat(response.getBody().details()).containsKeys("plate", "vehicleType");
     }
+
+    private MethodParameter validationMethodParameter() {
+        try {
+            Method method = GlobalExceptionHandlerTest.class.getDeclaredMethod("sampleValidationTarget", SampleValidationTarget.class);
+            return new MethodParameter(method, 0);
+        } catch (NoSuchMethodException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+    @SuppressWarnings("unused")
+    private void sampleValidationTarget(SampleValidationTarget target) {}
+
+    private static final class SampleValidationTarget {}
 
     @Test
     @DisplayName("Should handle generic exceptions with internal error code")

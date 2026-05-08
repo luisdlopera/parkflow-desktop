@@ -294,6 +294,39 @@ rustup show
 rustup target add x86_64-pc-windows-msvc
 ```
 
+### Error: "cannot find symbol" en compilación Java (Gradle cache corruption)
+
+**Síntomas:**
+```
+Compilation failed; see the compiler error output for details.
+error: cannot find symbol
+  symbol:   variable dayStart
+  location: class SupervisorService
+```
+
+**Solución - Limpiar caché incremental:**
+
+```bash
+# Opción 1: Script rápido (recomendado)
+pnpm api:clean
+
+# Opción 2: Manual
+cd apps/api
+./gradlew clean --quiet
+./gradlew compileJava
+
+# Opción 3: Revalidar todo
+pnpm validate
+```
+
+**Causa raíz:**
+El compilador incremental de Gradle mantiene bytecode compilado antiguo cuando hay cambios en los archivos fuente. Ocurre típicamente después de refactorings o merges conflictivos.
+
+**Prevención:**
+- Ejecutar `pnpm api:clean` después de cambios significativos en el repositorio
+- Si usas CI/CD, ejecutar builds sin cache: `./gradlew build --no-build-cache`
+- Hacer commit de cambios antes de cambiar de rama
+
 ## Estructura de Proyecto
 
 ```

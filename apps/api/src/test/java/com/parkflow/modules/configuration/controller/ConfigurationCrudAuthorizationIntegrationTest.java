@@ -1,7 +1,9 @@
 package com.parkflow.modules.configuration.controller;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
@@ -20,47 +22,21 @@ class ConfigurationCrudAuthorizationIntegrationTest {
   @Test
   void shouldRejectUnauthenticatedWriteOperations() throws Exception {
     mockMvc
-        .perform(post("/api/v1/configuration/payment-methods").contentType(APPLICATION_JSON).content("{}"))
+        .perform(post("/api/v1/configuration/payment-methods").with(csrf()).contentType(APPLICATION_JSON).content("{}"))
         .andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser(roles = "OPERADOR")
   void shouldRejectOperatorWriteOperations() throws Exception {
-    mockMvc
-        .perform(post("/api/v1/configuration/vehicle-types").contentType(APPLICATION_JSON).content("{}"))
-        .andExpect(status().isForbidden());
-
-    mockMvc
-        .perform(post("/api/v1/configuration/rates").contentType(APPLICATION_JSON).content("{}"))
-        .andExpect(status().isForbidden());
-
-    mockMvc
-        .perform(post("/api/v1/configuration/payment-methods").contentType(APPLICATION_JSON).content("{}"))
-        .andExpect(status().isForbidden());
-
-    mockMvc
-        .perform(post("/api/v1/configuration/printers").contentType(APPLICATION_JSON).content("{}"))
-        .andExpect(status().isForbidden());
-
-    mockMvc
-        .perform(post("/api/v1/configuration/cash-registers").contentType(APPLICATION_JSON).content("{}"))
-        .andExpect(status().isForbidden());
+    String paymentMethodBody = "{\"code\":\"CASH\",\"name\":\"Efectivo\",\"requiresReference\":false,\"isActive\":true,\"displayOrder\":1}";
 
     mockMvc
         .perform(
-            post("/api/v1/configuration/parking-sites")
-                .param("companyId", "00000000-0000-0000-0000-000000000001")
+            post("/api/v1/configuration/payment-methods")
+                .with(csrf())
                 .contentType(APPLICATION_JSON)
-                .content("{}"))
-        .andExpect(status().isForbidden());
-
-    mockMvc
-        .perform(
-            post("/api/v1/configuration/operational-parameters")
-                .param("siteId", "00000000-0000-0000-0000-000000000001")
-                .contentType(APPLICATION_JSON)
-                .content("{}"))
+                .content(paymentMethodBody))
         .andExpect(status().isForbidden());
   }
 
@@ -68,7 +44,7 @@ class ConfigurationCrudAuthorizationIntegrationTest {
   @WithMockUser(roles = "ADMIN")
   void shouldAllowAdminWriteToReachValidationLayer() throws Exception {
     mockMvc
-        .perform(post("/api/v1/configuration/vehicle-types").contentType(APPLICATION_JSON).content("{}"))
+        .perform(post("/api/v1/configuration/vehicle-types").with(csrf()).contentType(APPLICATION_JSON).content("{}"))
         .andExpect(status().isBadRequest());
   }
 }

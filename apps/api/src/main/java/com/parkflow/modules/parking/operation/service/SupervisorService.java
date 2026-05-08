@@ -38,7 +38,9 @@ public class SupervisorService {
     long exits = parkingSessionRepository.countExitsInPeriod(dayStart, nextDayStart);
     long reprints = parkingSessionRepository.countReprintsInPeriod(dayStart, nextDayStart);
     long lost = parkingSessionRepository.countLostTicketsInPeriod(dayStart, nextDayStart);
-    long printFailed = parkingSessionRepository.countPrintFailedInPeriod(dayStart, nextDayStart);
+    long printFailed =
+      printJobRepository.countByStatusInAndCreatedAtBetween(
+        EnumSet.of(PrintJobStatus.FAILED), dayStart, nextDayStart);
     long deadLetter =
         printJobRepository.countByStatusInAndCreatedAtAfter(
             EnumSet.of(PrintJobStatus.DEAD_LETTER), dayStart);
