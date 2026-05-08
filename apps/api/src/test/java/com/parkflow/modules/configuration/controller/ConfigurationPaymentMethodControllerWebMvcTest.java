@@ -5,8 +5,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import java.time.Duration;
+import com.parkflow.config.RateLimitConfig;
+import com.parkflow.modules.auth.repository.AuthSessionRepository;
+import com.parkflow.modules.auth.security.JwtTokenService;
+import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
 import com.parkflow.modules.configuration.dto.PaymentMethodResponse;
 import com.parkflow.modules.configuration.service.PaymentMethodService;
@@ -33,6 +41,20 @@ class ConfigurationPaymentMethodControllerWebMvcTest {
   @Autowired private ObjectMapper objectMapper;
 
   @MockBean private PaymentMethodService paymentMethodService;
+  @MockBean private RateLimitConfig rateLimitConfig;
+  @MockBean private JwtTokenService jwtTokenService;
+  @MockBean private AuthSessionRepository authSessionRepository;
+  @MockBean private AppUserRepository appUserRepository;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setUpRateLimitMocks() {
+    Bucket bucket = Bucket.builder()
+        .addLimit(Bandwidth.builder().capacity(1000).refillIntervally(1000, Duration.ofMinutes(1)).build())
+        .build();
+    Mockito.when(rateLimitConfig.resolveGeneralBucket(Mockito.any())).thenReturn(bucket);
+    Mockito.when(rateLimitConfig.resolveLoginBucket(Mockito.any())).thenReturn(bucket);
+    Mockito.when(rateLimitConfig.resolveOperationBucket(Mockito.any())).thenReturn(bucket);
+  }
 
   @Test
   @WithMockUser(roles = "ADMIN")
@@ -48,6 +70,7 @@ class ConfigurationPaymentMethodControllerWebMvcTest {
     mockMvc
         .perform(
             post("/api/v1/configuration/payment-methods")
+            .with(csrf())
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())

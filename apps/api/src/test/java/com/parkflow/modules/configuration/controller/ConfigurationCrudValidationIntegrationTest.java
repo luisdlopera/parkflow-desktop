@@ -3,6 +3,7 @@ package com.parkflow.modules.configuration.controller;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.DisplayName;
@@ -46,7 +47,10 @@ class ConfigurationCrudValidationIntegrationTest {
   @WithMockUser(roles = "ADMIN")
   void printersShouldRejectInvalidPayload() throws Exception {
     mockMvc
-        .perform(post("/api/v1/configuration/printers").contentType(APPLICATION_JSON).content("{}"))
+    .perform(post("/api/v1/configuration/printers")
+        .param("siteId", "00000000-0000-0000-0000-000000000001")
+        .contentType(APPLICATION_JSON)
+        .content("{}"))
         .andExpect(status().isBadRequest());
   }
 
@@ -78,10 +82,10 @@ class ConfigurationCrudValidationIntegrationTest {
   void operationalParametersShouldRejectInvalidPayload() throws Exception {
     mockMvc
         .perform(
-            post("/api/v1/configuration/operational-parameters")
-                .param("siteId", "00000000-0000-0000-0000-000000000001")
-                .contentType(APPLICATION_JSON)
-                .content("{}"))
+        put("/api/v1/configuration/operational-parameters")
+          .param("siteId", "00000000-0000-0000-0000-000000000001")
+          .contentType(APPLICATION_JSON)
+          .content("{}"))
         .andExpect(status().isBadRequest());
   }
 
