@@ -37,7 +37,13 @@ function writePerfLog(operation: string, durationMs: number, details?: Record<st
     message: "performance",
     data: { operation, durationMs, ...details }
   };
-  const logs = JSON.parse(localStorage.getItem("perf_logs_0dd35a") || "[]");
+  let logs: unknown[] = [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem("perf_logs_0dd35a") || "[]");
+    logs = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    localStorage.removeItem("perf_logs_0dd35a");
+  }
   logs.push(logEntry);
   localStorage.setItem("perf_logs_0dd35a", JSON.stringify(logs.slice(-100)));
   console.log("[PERF_METRIC]", logEntry);
@@ -86,7 +92,11 @@ export default function VehicleEntryFormV2() {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("parkflow_operator_settings");
       if (saved) {
-        return JSON.parse(saved);
+        try {
+          return JSON.parse(saved);
+        } catch {
+          localStorage.removeItem("parkflow_operator_settings");
+        }
       }
     }
     return {
@@ -511,6 +521,7 @@ export default function VehicleEntryFormV2() {
             render={({ field, fieldState }) => (
               <Input
                 {...field}
+                data-testid="plate"
                 ref={(e: HTMLInputElement | null) => {
                   field.ref(e);
                   (plateInputRef as React.MutableRefObject<HTMLInputElement | null>).current = e;
@@ -588,6 +599,7 @@ export default function VehicleEntryFormV2() {
                     <Select
                       variant="flat"
                       aria-label="Tipo de vehículo"
+                      data-testid="vehicle-type"
                       selectedKeys={selectedKey ? [selectedKey] : []}
                       isDisabled={vehicleTypes.length === 0 || loadingTypes}
                       onSelectionChange={(keys) => {
@@ -623,6 +635,7 @@ export default function VehicleEntryFormV2() {
               size={isSpeed ? "lg" : "md"}
               isLoading={form.formState.isSubmitting}
               className={`w-full font-bold ${isSpeed ? "text-lg shadow-xl" : ""}`}
+              data-testid="register-entry"
             >
               {form.formState.isSubmitting ? "Registrando..." : isSpeed ? "REGISTRAR INGRESO (Enter)" : "Registrar Ingreso"}
             </Button>

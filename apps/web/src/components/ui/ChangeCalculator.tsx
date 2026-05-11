@@ -26,7 +26,11 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("parkflow_change_counts");
       if (saved) {
-        return JSON.parse(saved);
+        try {
+          return JSON.parse(saved);
+        } catch {
+          localStorage.removeItem("parkflow_change_counts");
+        }
       }
     }
     return {};
