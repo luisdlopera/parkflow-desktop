@@ -44,6 +44,8 @@
     "license:keys:generate": "powershell -ExecutionPolicy Bypass -File infra/scripts/generate-license-keys.ps1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
+    "@playwright/test": "^1.59.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
