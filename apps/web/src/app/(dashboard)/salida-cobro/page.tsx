@@ -764,70 +764,61 @@ export default function SalidaCobroPage() {
       <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="surface rounded-2xl p-4 sm:p-6 lg:col-span-2">
           <h2 className="text-lg font-semibold text-slate-900">Busqueda</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Input
-              ref={ticketInputRef}
-              label="Número de ticket"
-              variant="flat"
-              value={ticketNumber}
-              onValueChange={setTicketNumber}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  lookup();
-                }
-              }}
-              endContent={
-                <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
-                  Enter
-                </span>
-              }
-            />
-            <Input
-              label="Placa"
-              variant="flat"
-              value={plate}
-              onValueChange={(val) => setPlate(val.toUpperCase())}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  lookup();
-                }
-              }}
-              endContent={
-                <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
-                  Placa
-                </span>
-              }
-            />
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="relative">
+              <input
+                ref={ticketInputRef}
+                data-testid="ticket-number"
+                value={ticketNumber}
+                onChange={(event) => setTicketNumber(event.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    lookup();
+                  }
+                }}
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                placeholder="Numero de ticket"
+                autoFocus
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
+                Enter
+              </span>
+            </div>
+            <div className="relative">
+              <input
+                value={plate}
+                data-testid="plate"
+                onChange={(event) => setPlate(event.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    lookup();
+                  }
+                }}
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium uppercase focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                placeholder="Placa (ABC123)"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
+                Placa
+              </span>
+            </div>
           </div>
-          <div className="mt-4">
-            <Input
-              label="Código de convenio (opcional)"
-              placeholder="CONV-123"
-              variant="flat"
-              value={agreementCode}
-              onValueChange={setAgreementCode}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  lookup();
-                }
-              }}
-              classNames={{
-                input: "uppercase font-mono",
-              }}
-            />
-          </div>
-          <div className="mt-4">
-            <Button
-              color="primary"
-              className="font-bold w-full sm:w-auto"
-              onPress={lookup}
-              isLoading={searching}
-              isDisabled={processing}
-              startContent={
-                !searching && (
+          <div className="mt-3">
+            <button
+              type="button"
+              data-testid="search-session"
+              onClick={lookup}
+              disabled={searching || processing}
+              className="w-full sm:w-auto rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white px-6 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+            >
+              {searching ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Buscando...
+                </>
+              ) : (
+                <>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
@@ -957,21 +948,60 @@ export default function SalidaCobroPage() {
             Salida rápida: F2 abre esta pantalla; Ctrl+Enter ejecuta la búsqueda; con sesión activa use 1 (efectivo) o 2 (tarjeta débito).
           </p>
 
-          <div className="mt-4">
-            <Select
-              label="Medio de pago"
-              variant="flat"
-              selectedKeys={[selectedPaymentMethod]}
-              onSelectionChange={(keys) => {
-                const next = Array.from(keys)[0] as PaymentMethodCode | undefined;
-                if (next) setSelectedPaymentMethod(next);
-              }}
-              isDisabled={!active || searching || processing}
+          {/* Botones de cobro grandes */}
+          <div className="mt-4 space-y-3">
+            <button
+              type="button"
+              data-testid="payment-cash"
+              disabled={!active || searching || processing}
+              onClick={() => processExit("CASH")}
+              className={`
+                w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
+                flex items-center gap-3
+                ${active && !processing
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30" 
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"}
+              `}
             >
-              {PAYMENT_METHODS.map((method) => (
-                <SelectItem key={method.code}>{method.label}</SelectItem>
-              ))}
-            </Select>
+              <div className={`
+                w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
+                ${active && !processing ? "bg-white/20" : "bg-slate-300"}
+              `}>
+                1
+              </div>
+              <div className="flex-1">
+                <div className="text-lg">Efectivo</div>
+                <div className="text-xs opacity-80 font-normal">Tecla 1</div>
+              </div>
+              {processing && (
+                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              data-testid="payment-card"
+              disabled={!active || searching || processing}
+              onClick={() => processExit("CARD")}
+              className={`
+                w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
+                flex items-center gap-3
+                ${active && !processing
+                  ? "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30" 
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"}
+              `}
+            >
+              <div className={`
+                w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
+                ${active && !processing ? "bg-white/20" : "bg-slate-300"}
+              `}>
+                2
+              </div>
+              <div className="flex-1">
+                <div className="text-lg">Tarjeta</div>
+                <div className="text-xs opacity-80 font-normal">Tecla 2</div>
+              </div>
+            </button>
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-2">
@@ -1130,46 +1160,36 @@ export default function SalidaCobroPage() {
           )}
 
           {/* Acciones secundarias */}
-          <div className="mt-8 pt-6 border-t border-slate-200 space-y-6">
-            <div className="space-y-3">
-              <Input
-                label="Motivo reimpresión"
-                variant="flat"
-                size="sm"
-                value={reprintReason}
-                onValueChange={setReprintReason}
-              />
-              <Button
-                fullWidth
-                variant="flat"
-                color="primary"
-                className="font-semibold"
-                isDisabled={!active || searching || processing}
-                onPress={reprintTicket}
-              >
-                Reimprimir ticket
-              </Button>
-            </div>
+          <div className="mt-6 pt-4 border-t border-slate-200 space-y-3">
+            <input
+              value={reprintReason}
+              onChange={(event) => setReprintReason(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              placeholder="Motivo reimpresion"
+            />
+            <Button
+              type="button"
+              disabled={!active || searching || processing}
+              onClick={reprintTicket}
+              label="Reimprimir ticket"
+              tone="ghost"
+              data-testid="reprint-ticket"
+            />
             
-            <div className="space-y-3">
-              <Input
-                label="Motivo ticket perdido"
-                variant="flat"
-                size="sm"
-                value={lostReason}
-                onValueChange={setLostReason}
-              />
-              <Button
-                fullWidth
-                variant="flat"
-                color="primary"
-                className="font-semibold"
-                isDisabled={!active || searching || processing}
-                onPress={lostTicket}
-              >
-                Procesar ticket perdido
-              </Button>
-            </div>
+            <input
+              value={lostReason}
+              onChange={(event) => setLostReason(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              placeholder="Motivo ticket perdido"
+            />
+            <Button
+              type="button"
+              disabled={!active || searching || processing}
+              onClick={lostTicket}
+              label="Procesar ticket perdido"
+              tone="ghost"
+              data-testid="lost-ticket"
+            />
           </div>
         </div>
       </div>
