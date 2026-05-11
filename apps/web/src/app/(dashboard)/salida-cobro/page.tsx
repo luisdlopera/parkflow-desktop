@@ -437,6 +437,7 @@ export default function SalidaCobroPage() {
             <div className="relative">
               <input
                 ref={ticketInputRef}
+                data-testid="ticket-number"
                 value={ticketNumber}
                 onChange={(event) => setTicketNumber(event.target.value)}
                 onKeyDown={(e) => {
@@ -456,6 +457,7 @@ export default function SalidaCobroPage() {
             <div className="relative">
               <input
                 value={plate}
+                data-testid="plate"
                 onChange={(event) => setPlate(event.target.value.toUpperCase())}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -474,6 +476,7 @@ export default function SalidaCobroPage() {
           <div className="mt-3">
             <button
               type="button"
+              data-testid="search-session"
               onClick={lookup}
               disabled={searching || processing}
               className="w-full sm:w-auto rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white px-6 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2"
@@ -564,6 +567,7 @@ export default function SalidaCobroPage() {
           <div className="mt-4 space-y-3">
             <button
               type="button"
+              data-testid="payment-cash"
               disabled={!active || searching || processing}
               onClick={() => processExit("CASH")}
               className={`
@@ -591,6 +595,7 @@ export default function SalidaCobroPage() {
 
             <button
               type="button"
+              data-testid="payment-card"
               disabled={!active || searching || processing}
               onClick={() => processExit("CARD")}
               className={`
@@ -637,6 +642,7 @@ export default function SalidaCobroPage() {
               onClick={reprintTicket}
               label="Reimprimir ticket"
               tone="ghost"
+              data-testid="reprint-ticket"
             />
             
             <input
@@ -651,6 +657,7 @@ export default function SalidaCobroPage() {
               onClick={lostTicket}
               label="Procesar ticket perdido"
               tone="ghost"
+              data-testid="lost-ticket"
             />
           </div>
         </div>

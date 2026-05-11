@@ -475,6 +475,7 @@ export default function CajaPage() {
             <div className="mt-4 space-y-2 text-sm">
               <div className="flex items-center gap-2">
                 <Badge
+                  data-testid="cash-status"
                   label={session.status === "OPEN" ? "Caja abierta" : "Caja cerrada"}
                   tone={session.status === "OPEN" ? "success" : "neutral"}
                 />
@@ -500,6 +501,7 @@ export default function CajaPage() {
           <label className="mt-4 block text-sm">
             <span className="text-slate-600">Monto inicial</span>
             <input
+              data-testid="initial-amount"
               className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
               value={openAmount}
               onChange={(e) => setOpenAmount(e.target.value)}
@@ -508,6 +510,7 @@ export default function CajaPage() {
           </label>
           <div className="mt-4">
             <Button
+              data-testid="open-cash"
               label={busy ? "Procesando..." : "Abrir caja"}
               tone="primary"
               disabled={busy || !!session || !canOpen}
@@ -723,7 +726,7 @@ export default function CajaPage() {
           </label>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <div className="min-w-0 sm:min-w-[200px] flex-1 sm:flex-initial">
-              <Button label="Cerrar caja" tone="ghost" disabled={busy} onClick={() => void onClose()} />
+              <Button data-testid="confirm-close" label="Cerrar caja" tone="ghost" disabled={busy} onClick={() => void onClose()} />
             </div>
           </div>
         </div>
