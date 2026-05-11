@@ -15,6 +15,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         {/* Mobile menu button */}
         <button
           onClick={onMenuClick}
+          data-testid="mobile-menu"
           className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
           aria-label="Abrir menú"
         >
