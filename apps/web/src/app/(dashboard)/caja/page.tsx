@@ -663,43 +663,27 @@ export default function CajaPage() {
           )}
         </div>
 
-        <div className="surface rounded-2xl p-4 sm:p-6 flex flex-col justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Abrir caja</h2>
-            <p className="mt-2 text-sm text-slate-600">Requiere permiso de apertura y terminal configurado.</p>
-            <div className="mt-4">
-              <Input
-                label="Monto inicial"
-                variant="flat"
-                type="number"
-                value={openAmount}
-                onValueChange={setOpenAmount}
-                isDisabled={busy || !!session}
-              />
-            </div>
-            <div className="mt-3">
-              <Textarea
-                label="Observaciones de apertura"
-                placeholder="Ej. efectivo inicial verificado..."
-                variant="flat"
-                value={openNotes}
-                onValueChange={setOpenNotes}
-                minRows={2}
-                isDisabled={busy || !!session}
-              />
-            </div>
-          </div>
-          <div className="mt-6">
+        <div className="surface rounded-2xl p-4 sm:p-6">
+          <h2 className="text-lg font-semibold text-slate-900">Abrir caja</h2>
+          <p className="mt-2 text-sm text-slate-600">Requiere permiso de apertura y terminal configurado.</p>
+          <label className="mt-4 block text-sm">
+            <span className="text-slate-600">Monto inicial</span>
+            <input
+              data-testid="initial-amount"
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+              value={openAmount}
+              onChange={(e) => setOpenAmount(e.target.value)}
+              disabled={busy || !!session}
+            />
+          </label>
+          <div className="mt-4">
             <Button
-              className="w-full font-bold"
-              color="primary"
-              size="lg"
-              isDisabled={busy || !!session || !canOpen}
-              isLoading={busy}
-              onPress={() => void onOpen()}
-            >
-              Abrir caja
-            </Button>
+              data-testid="open-cash"
+              label={busy ? "Procesando..." : "Abrir caja"}
+              tone="primary"
+              disabled={busy || !!session || !canOpen}
+              onClick={() => void onOpen()}
+            />
           </div>
         </div>
       </div>
@@ -958,36 +942,11 @@ export default function CajaPage() {
               value={closeNotes}
               onValueChange={setCloseNotes}
             />
-          </div>
-          <div className="mt-4">
-            <Input
-              label="Testigo / responsable firma (opcional)"
-              placeholder="Nombre legible..."
-              variant="flat"
-              value={closingWitness}
-              onValueChange={setClosingWitness}
-            />
-          </div>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button 
-              color="danger" 
-              variant="flat" 
-              className="flex-1 font-bold"
-              isDisabled={busy} 
-              isLoading={busy}
-              onPress={() => void onClose()}
-            >
-              Cerrar caja (Fin turno)
-            </Button>
-            <Button
-              color="primary"
-              variant="flat"
-              className="flex-1 font-bold"
-              isDisabled={busy || !session.countedAt}
-              onPress={() => setShowShiftChangeModal(true)}
-            >
-              Cambio de turno
-            </Button>
+          </label>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <div className="min-w-0 sm:min-w-[200px] flex-1 sm:flex-initial">
+              <Button data-testid="confirm-close" label="Cerrar caja" tone="ghost" disabled={busy} onClick={() => void onClose()} />
+            </div>
           </div>
         </div>
       ) : null}

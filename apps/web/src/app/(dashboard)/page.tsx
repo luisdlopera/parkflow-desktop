@@ -155,18 +155,25 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-10" data-testid="dashboard-root">
-      <section className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Panel principal</p>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">Visión general</h1>
-          {summaryError ? (
-            <p className="text-sm text-amber-800 font-medium">{summaryError}</p>
-          ) : null}
-          <p className="text-xs text-slate-500 font-medium">
-            {summary
-              ? `Sync pendiente: ${summary.syncQueuePending} · Impresión fallida: ${summary.printFailedSinceMidnight} · Dead letter: ${summary.printDeadLetterSinceMidnight} · Tickets perdidos: ${summary.lostTicketSinceMidnight}`
-              : null}
-          </p>
+      <section className="space-y-2" data-testid="summary-loaded">
+        <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Panel principal</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">Vision general del parqueadero</h1>
+        {summaryError ? (
+          <p className="text-sm text-amber-800">{summaryError}</p>
+        ) : null}
+        <p className="text-xs text-slate-500">
+          {summary
+            ? `Sync pendiente: ${summary.syncQueuePending} · Impresion fallida: ${summary.printFailedSinceMidnight} · Dead letter: ${summary.printDeadLetterSinceMidnight} · Tickets perdidos: ${summary.lostTicketSinceMidnight}`
+            : null}
+        </p>
+        <div>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            Actualizar
+          </button>
         </div>
         <Button
           variant="flat"
