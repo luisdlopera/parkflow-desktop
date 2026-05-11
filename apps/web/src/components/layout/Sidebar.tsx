@@ -24,6 +24,19 @@ interface UISettings {
   showKeyboardShortcuts: boolean;
 }
 
+function readUiSettings(): UISettings | null {
+  const saved = localStorage.getItem("parkflow_ui_settings");
+  if (!saved) {
+    return null;
+  }
+  try {
+    return JSON.parse(saved) as UISettings;
+  } catch {
+    localStorage.removeItem("parkflow_ui_settings");
+    return null;
+  }
+}
+
 export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname();
   useParkingShortcuts();
@@ -34,18 +47,18 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem("parkflow_ui_settings");
+    const saved = readUiSettings();
     if (saved) {
-      setUiSettings(JSON.parse(saved));
+      setUiSettings(saved);
     }
   }, []);
 
   // Escuchar cambios en localStorage
   useEffect(() => {
     const handleStorageChange = () => {
-      const saved = localStorage.getItem("parkflow_ui_settings");
+      const saved = readUiSettings();
       if (saved) {
-        setUiSettings(JSON.parse(saved));
+        setUiSettings(saved);
       }
     };
 
@@ -54,7 +67,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   }, []);
 
   return (
-    <aside className={`
+    <aside data-testid="desktop-sidebar" className={`
       hidden md:flex h-screen border-r border-slate-200/70 bg-white/60 backdrop-blur
       flex-col transition-all duration-300 ease-in-out
       ${collapsed ? "w-[72px] px-2" : "w-[260px] px-4"}
