@@ -134,8 +134,8 @@ export default function DashboardPage() {
       ];
 
   return (
-    <div className="space-y-10">
-      <section className="space-y-2">
+    <div className="space-y-10" data-testid="dashboard-root">
+      <section className="space-y-2" data-testid="summary-loaded">
         <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Panel principal</p>
         <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">Vision general del parqueadero</h1>
         {summaryError ? (
