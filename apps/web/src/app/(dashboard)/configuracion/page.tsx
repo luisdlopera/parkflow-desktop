@@ -111,7 +111,11 @@ export default function ConfiguracionPage() {
   useEffect(() => {
     const saved = localStorage.getItem("parkflow_ui_settings");
     if (saved) {
-      setUiSettings(JSON.parse(saved));
+      try {
+        setUiSettings(JSON.parse(saved));
+      } catch {
+        localStorage.removeItem("parkflow_ui_settings");
+      }
     }
   }, []);
 
