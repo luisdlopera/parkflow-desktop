@@ -4,6 +4,7 @@ type ButtonProps = {
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
   onClick?: () => void;
+  [key: string]: unknown;
 };
 
 const toneStyles = {
@@ -16,13 +17,15 @@ export default function Button({
   tone = "primary",
   type = "button",
   disabled = false,
-  onClick
+  onClick,
+  ...rest
 }: ButtonProps) {
   return (
     <button
       type={type}
       disabled={disabled}
       onClick={onClick}
+      {...rest}
       className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${toneStyles[tone]}`}
     >
       {label}

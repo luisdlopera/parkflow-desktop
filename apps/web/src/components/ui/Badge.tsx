@@ -1,6 +1,7 @@
 type BadgeProps = {
   label: string;
   tone?: "success" | "warning" | "neutral";
+  [key: string]: unknown;
 };
 
 const toneStyles = {
@@ -9,9 +10,9 @@ const toneStyles = {
   neutral: "bg-slate-100 text-slate-700"
 };
 
-export default function Badge({ label, tone = "neutral" }: BadgeProps) {
+export default function Badge({ label, tone = "neutral", ...rest }: BadgeProps) {
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${toneStyles[tone]}`}>
+    <span {...rest} className={`rounded-full px-3 py-1 text-xs font-semibold ${toneStyles[tone]}`}>
       {label}
     </span>
   );
