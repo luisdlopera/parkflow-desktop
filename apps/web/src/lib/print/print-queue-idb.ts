@@ -96,6 +96,11 @@ export async function pickNextJob(): Promise<Row | null> {
   return ready[0] ?? null;
 }
 
+export async function getJobById(id: string): Promise<Row | null> {
+  const db = await getDb();
+  return ((await db.get(STORE, id)) as Row | undefined) ?? null;
+}
+
 export async function markJobDone(id: string): Promise<void> {
   const db = await getDb();
   await db.delete(STORE, id);
