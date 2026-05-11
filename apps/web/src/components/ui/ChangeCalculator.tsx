@@ -50,7 +50,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
       const saved = localStorage.getItem("parkflow_change_counts");
       if (saved) {
         try {
-          return JSON.parse(saved) as Record<number, number>;
+          return JSON.parse(saved);
         } catch {
           localStorage.removeItem("parkflow_change_counts");
         }
