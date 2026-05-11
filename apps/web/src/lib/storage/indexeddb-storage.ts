@@ -12,6 +12,7 @@ import {
 } from "../cash/cash-outbox-idb";
 import {
   enqueueLocalPrint,
+  getJobById,
   pickNextJob,
   markJobDone,
   markJobRetryOrDead,
@@ -142,8 +143,8 @@ export class IndexedDBStorage implements StorageBackend {
   }
 
   async printMarkRetryOrDead(id: string, error: string): Promise<void> {
-    const row = await pickNextJob();
-    if (row && row.id === id) {
+    const row = await getJobById(id);
+    if (row) {
       await markJobRetryOrDead(row, error);
     }
   }
