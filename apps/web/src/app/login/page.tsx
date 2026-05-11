@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Input } from "@heroui/input";
-import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { currentUser, loadSession, login } from "@/lib/auth";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
@@ -63,6 +61,11 @@ export default function LoginPage() {
       const formData = new FormData(event.currentTarget as HTMLFormElement);
       const emailValue = String(formData.get("email") ?? email).trim();
       const passwordValue = String(formData.get("password") ?? password);
+      if (!emailValue) {
+        setError("Username is required");
+        setLoading(false);
+        return;
+      }
       if (!passwordValue) {
         setError("Credenciales: Debes ingresar la contrasena.");
         setLoading(false);
@@ -96,42 +99,53 @@ export default function LoginPage() {
           <p className="text-default-500 text-sm mt-2">Ingresa tus credenciales para continuar</p>
         </div>
 
-        <FormErrorSummary message={error || undefined} />
+        <FormErrorSummary
+          message={error || undefined}
+          testId={error === "Username is required" ? "username-error" : "error-message"}
+        />
 
         <div className="space-y-4">
-          <Input
-            label="Email"
-            name="email"
-            type="email"
-            placeholder="ejemplo@parkflow.com"
-            value={email}
-            onValueChange={setEmail}
-            variant="bordered"
-            autoComplete="username"
-            startContent={<Mail size={18} className="text-default-400" />}
-          />
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-slate-700">Email</span>
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
+              <Mail size={18} className="text-default-400" />
+              <input
+                data-testid="username"
+                name="email"
+                type="email"
+                placeholder="ejemplo@parkflow.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                className="w-full bg-transparent outline-none"
+              />
+            </div>
+          </label>
 
-          <Input
-            label="Contraseña"
-            type={showPassword ? "text" : "password"}
-            placeholder="••••••••"
-            value={password}
-            name="password"
-            onValueChange={setPassword}
-            variant="bordered"
-            autoComplete="current-password"
-            startContent={<Lock size={18} className="text-default-400" />}
-            endContent={
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-slate-700">Contraseña</span>
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
+              <Lock size={18} className="text-default-400" />
+              <input
+                data-testid="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                name="password"
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                className="w-full bg-transparent outline-none"
+              />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="text-slate-400 hover:text-slate-600 focus:outline-none"
-                tabIndex={-1}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
-            }
-          />
+            </div>
+          </label>
         </div>
 
         <div className="flex items-center justify-between">
@@ -141,15 +155,14 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <Button
+        <button
+          data-testid="login-button"
           type="submit"
-          color="primary"
-          size="lg"
-          isLoading={loading}
-          className="w-full font-bold shadow-lg"
+          className="w-full rounded-xl bg-slate-900 px-4 py-3 font-bold text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={loading}
         >
           {loading ? "Validando..." : "Entrar al Sistema"}
-        </Button>
+        </button>
         
         <p className="text-center text-xs text-default-400 pt-2">
           &copy; 2026 ParkFlow Operations. v2.0
