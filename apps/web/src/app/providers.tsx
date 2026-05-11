@@ -34,7 +34,9 @@ function GlobalAuthEffects() {
     const nativeFetch = window.fetch.bind(window);
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       const response = await nativeFetch(input, init);
-      if (response.status === 401 || response.status === 403) {
+      const requestUrl = typeof input === "string" || input instanceof URL ? String(input) : input.url;
+      const isLoginRequest = requestUrl.includes("/api/v1/auth/login");
+      if (!isLoginRequest && (response.status === 401 || response.status === 403)) {
         await handleAuthFailureStatus(response.status);
       }
       return response;
