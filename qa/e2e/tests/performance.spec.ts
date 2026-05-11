@@ -11,5 +11,5 @@ test('performance - dashboard load time', async ({ page }) => {
 
   const loadTime = Date.now() - startTime
 
-  expect(loadTime).toBeLessThan(5000) // < 5s in CI
+  expect(loadTime).toBeLessThan(2000) // < 2s
 })
