@@ -17,7 +17,7 @@ class FakeSocket {
     return this
   }
 
-  destroy(): void { /* Mock destroy method */ }
+  destroy(): void {}
 
   once(event: string, handler: (...args: unknown[]) => void): this {
     if (event === 'data') {
