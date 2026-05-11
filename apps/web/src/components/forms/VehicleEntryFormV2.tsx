@@ -821,34 +821,76 @@ export default function VehicleEntryFormV2() {
               />
             )}
           />
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="flat" type="button" onPress={handleQuickLookup}>
-              Buscar placa activa
-            </Button>
-            <Controller
-              name="noPlate"
-              control={form.control}
-              render={({ field }) => (
-                <Checkbox
-                  size="sm"
-                  isSelected={field.value}
-                  isDisabled={!requiresPlate}
-                  onValueChange={(checked) => {
-                    field.onChange(checked);
-                    if (checked) {
-                      form.setValue("plate", "", { shouldValidate: true });
-                      if (!requiresPlate && !form.getValues("noPlateReason")?.trim()) {
-                        form.setValue("noPlateReason", "Tipo de vehículo no requiere placa", { shouldValidate: true });
-                      }
-                    }
-                  }}
-                >
-                  Sin placa
-                </Checkbox>
-              )}
-            />
-            {activeLookup && (
-              <span className="text-xs font-medium text-slate-600">{activeLookup}</span>
+
+          {/* Tipo de Vehículo */}
+          <div>
+            <label className="text-sm font-semibold text-slate-700 mb-2 block">Tipo de Vehículo</label>
+            {loadingTypes ? (
+              <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />
+            ) : isExpert ? (
+              // Modo experto: Botones grandes - responsive grid
+              <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2">
+                {vehicleTypes.map((t, index) => {
+                  const config = VEHICLE_TYPE_CONFIG[t.code] || { label: t.name, color: "bg-slate-400", icon: "🚗" };
+                  const isSelected = form.watch("type") === t.code;
+                  return (
+                    <button
+                      key={t.code}
+                      type="button"
+                      onClick={() => form.setValue("type", t.code)}
+                      className={`
+                        relative rounded-xl p-2 sm:p-3 text-center transition-all
+                        ${isSelected
+                          ? `${config.color} text-white shadow-lg scale-105`
+                          : "bg-slate-100 hover:bg-slate-200 text-slate-600"}
+                      `}
+                    >
+                      <div className="text-xl sm:text-2xl mb-1">{config.icon}</div>
+                      <div className="text-xs font-medium">{config.label}</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 shadow">
+                        {index + 1}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              // Modo principiante: Select
+              <Controller
+                name="type"
+                control={form.control}
+                render={({ field }) => {
+                  const validKeys = vehicleTypes.map(t => t.code);
+                  const selectedKey = validKeys.includes(field.value) ? field.value : undefined;
+                  return (
+                    <Select
+                      variant="flat"
+                      aria-label="Tipo de vehículo"
+                      data-testid="vehicle-type"
+                      selectedKeys={selectedKey ? [selectedKey] : []}
+                      isDisabled={vehicleTypes.length === 0 || loadingTypes}
+                      onSelectionChange={(keys) => {
+                        const selected = Array.from(keys)[0] as string;
+                        field.onChange(selected);
+                      }}
+                    >
+                      {vehicleTypes.map((t) => {
+                        const config = VEHICLE_TYPE_CONFIG[t.code] || { label: t.name, icon: "🚗" };
+                        return (
+                          <SelectItem key={t.code} textValue={config.label}>
+                            {config.icon} {config.label}
+                          </SelectItem>
+                        );
+                      })}
+                    </Select>
+                  );
+                }}
+              />
+            )}
+            {vehicleTypes.length === 0 && !loadingTypes && (
+              <div className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-2">
+                No hay tipos de vehículo disponibles. Verifique la conexión con el servidor.
+              </div>
             )}
           </div>
 
