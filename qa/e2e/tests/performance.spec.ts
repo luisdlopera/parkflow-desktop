@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test'
+import { loginAsAdmin } from './helpers'
 
 test('performance - dashboard load time', async ({ page }) => {
   const startTime = Date.now()
 
-  await page.goto('/dashboard')
+  await loginAsAdmin(page)
 
   await page.waitForSelector('[data-testid="summary-loaded"]')
 
