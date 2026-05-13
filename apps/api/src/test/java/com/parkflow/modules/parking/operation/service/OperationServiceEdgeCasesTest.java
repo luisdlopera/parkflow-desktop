@@ -16,6 +16,7 @@ import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.repository.PaymentRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.parking.operation.repository.SessionEventRepository;
 import com.parkflow.modules.parking.operation.repository.TicketCounterRepository;
 import com.parkflow.modules.parking.operation.repository.VehicleConditionReportRepository;
 import com.parkflow.modules.parking.operation.repository.VehicleRepository;
@@ -71,6 +72,18 @@ class OperationServiceEdgeCasesTest {
   @Mock private com.parkflow.modules.configuration.service.PrepaidService prepaidService;
   @Mock private com.parkflow.modules.configuration.repository.OperationalParameterRepository operationalParameterRepository;
   @Mock private com.parkflow.modules.audit.service.AuditService globalAuditService;
+
+  @Mock
+  private PaymentRepository paymentRepository;
+
+  @Mock
+  private TicketCounterRepository ticketCounterRepository;
+
+  @Mock
+  private VehicleConditionReportRepository vehicleConditionReportRepository;
+
+  @Mock
+  private SessionEventRepository sessionEventRepository;
 
   @InjectMocks
   private OperationService operationService;
