@@ -13,10 +13,8 @@ import org.springframework.data.repository.query.Param;
 public interface RateRepository extends JpaRepository<Rate, UUID> {
 
   @Query(
-      "SELECT r FROM Rate r WHERE (:site IS NULL OR r.site = :site OR r.site IS NULL) "
-          + "AND (:q IS NULL OR :q = '' OR LOWER(r.name) LIKE LOWER(CONCAT('%', :q, '%'))) "
-          + "AND (:active IS NULL OR r.isActive = :active) "
-          + "AND (:category IS NULL OR :category = '' OR r.category = com.parkflow.modules.parking.operation.domain.RateCategory.valueOf(:category))")
+      "SELECT r FROM Rate r WHERE (:site IS NULL OR r.site = :site OR r.site IS NULL) AND (:q IS NULL OR :q = '' OR LOWER(r.name) LIKE LOWER(CONCAT('%', :q, '%'))) "
+          + "AND (:active IS NULL OR r.isActive = :active)")
   Page<Rate> search(
       @Param("site") String site,
       @Param("q") String q,
