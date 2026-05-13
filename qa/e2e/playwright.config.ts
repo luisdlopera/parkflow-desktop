@@ -3,11 +3,11 @@ import { defineConfig, devices } from '@playwright/test'
 export default defineConfig({
   testDir: './tests',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:6001',
   },
   webServer: {
-    command: 'pnpm --filter @parkflow/web dev',
-    url: 'http://localhost:3000',
+    command: 'pnpm dev:web',
+    url: 'http://localhost:6001',
     reuseExistingServer: true,
   },
   retries: process.env.CI ? 2 : 0,

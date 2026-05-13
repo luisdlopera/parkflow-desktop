@@ -1,3 +1,10 @@
 packages:
   - "apps/*"
   - "packages/*"
+allowBuilds:
+  '@heroui/shared-utils': true
+  '@serialport/bindings-cpp': true
+  esbuild: true
+  msw: true
+  sharp: true
+  unrs-resolver: true
