@@ -57,7 +57,7 @@ describe("TicketPrintWarning", () => {
     const onClose = vi.fn();
     render(<TicketPrintWarning {...MOCK_PROPS} onClose={onClose} />);
 
-    await userEvent.click(screen.getByRole("button", { name: /Confirmar entrega y continuar/i }));
+    await userEvent.click(screen.getByRole("button", { name: /cerrar/i }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

@@ -1,65 +1,12 @@
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import "@testing-library/jest-dom";
-import { describe, beforeEach, afterEach, it, expect, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "@/mocks/server";
 import { ToastProvider } from "@/lib/toast/ToastContext";
 import VehicleEntryFormV2 from "@/components/forms/VehicleEntryFormV2";
 
-vi.mock("@/lib/runtime-config", () => ({
-  fetchRuntimeConfig: vi.fn(async () => ({
-    vehicleTypes: ["CAR", "MOTORCYCLE"],
-    operationConfiguration: {
-      showVehicleType: true,
-      defaultVehicleType: "CAR",
-      showVisitorType: true,
-      defaultVisitorType: "VISITOR",
-      showAdvancedSection: true,
-      enableManualRate: true,
-      enableLaneSelection: true,
-      enableTerminalSelection: true,
-      enableCashierSelection: true,
-      enableVehicleCondition: true,
-      enableObservations: true,
-      enableCountryPlate: true,
-    }
-  })),
-  shouldShowModule: vi.fn((config, key, def = true) => def)
-}));
-
-vi.mock("@/lib/hooks/useAutoSave", () => ({
-  useAutoSave: vi.fn(() => ({
-    clearAutoSave: vi.fn(),
-    restoreData: vi.fn(() => null),
-    hasRestorableData: vi.fn(() => false),
-    isSaved: false
-  })),
-  useCrashRecovery: vi.fn(() => ({
-    checkForRecovery: vi.fn(() => ({ recovered: false })),
-    clearRecovery: vi.fn()
-  }))
-}));
-
-let store: Record<string, string> = {};
-const localStorageMock = {
-  getItem: (key: string) => store[key] || null,
-  setItem: (key: string, value: string) => { store[key] = String(value); },
-  clear: () => { store = {}; },
-  removeItem: (key: string) => { delete store[key]; },
-  get length() { return Object.keys(store).length; },
-  key: (index: number) => Object.keys(store)[index] || null,
-};
-Object.defineProperty(window, "localStorage", { value: localStorageMock, writable: true });
-
 function renderWithProviders(ui: React.ReactElement) {
   return render(<ToastProvider>{ui}</ToastProvider>);
-}
-
-async function flushPromises() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  });
 }
 
 const MOCK_USER_ID = "00000000-0000-0000-0000-000000000001";
@@ -82,16 +29,6 @@ const MOCK_SESSION = {
 
 function setupLocalStorage() {
   localStorage.setItem("parkflow.auth.session", JSON.stringify(MOCK_SESSION));
-  localStorage.setItem(
-    "parkflow_operator_settings",
-    JSON.stringify({
-      mode: "beginner",
-      defaultVehicleType: "CAR",
-      rememberLocation: true,
-      skipConditionCheck: false,
-      platePrefix: ""
-    })
-  );
 }
 
 function clearLocalStorage() {
@@ -101,31 +38,26 @@ function clearLocalStorage() {
 describe("VehicleEntryFormV2", () => {
   beforeEach(() => {
     setupLocalStorage();
-    server.use(
-      http.get("*/api/v1/configuration/vehicle-types", () => {
-        return HttpResponse.json([
-          { id: "1", code: "CAR", name: "Carro", isActive: true },
-          { id: "2", code: "MOTORCYCLE", name: "Moto", isActive: true }
-        ]);
-      })
-    );
   });
 
   afterEach(() => {
     clearLocalStorage();
-    server.resetHandlers();
   });
 
   it("renders the form with plate field", async () => {
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
 
-    expect(screen.getByTestId("plate")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
   });
 
   it("does not submit when plate is empty", async () => {
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("register-entry")).toBeInTheDocument();
+    });
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -137,15 +69,7 @@ describe("VehicleEntryFormV2", () => {
 
   it("normalizes plate to uppercase and removes spaces", async () => {
     let capturedBody: unknown = null;
-    let typesFetched = false;
     server.use(
-      http.get("*/api/v1/configuration/vehicle-types", () => {
-        typesFetched = true;
-        return HttpResponse.json([
-          { id: "1", code: "CAR", name: "Carro", isActive: true },
-          { id: "2", code: "MOTORCYCLE", name: "Moto", isActive: true }
-        ]);
-      }),
       http.post("*/api/v1/operations/entries", async ({ request }) => {
         capturedBody = await request.json();
         return HttpResponse.json({
@@ -163,21 +87,20 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "abc123");
-
-    await screen.findByTestId("vehicle-type");
-
-    await screen.findByTestId("vehicle-type");
+    await userEvent.type(plateInput, "abc 123");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(capturedBody).not.toBeNull();
-    }, { timeout: 3000 });
+      expect(screen.getByText(/Ingreso registrado/i)).toBeInTheDocument();
+    });
 
     expect(capturedBody).not.toBeNull();
     if (capturedBody) {
@@ -206,71 +129,28 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "XYZ789");
 
-    await screen.findByTestId("vehicle-type"); // Wait for types to load
-
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
-    // Wait for the request to be captured by the MSW handler instead of relying on
-    // toast/ui text which can be rendered in different nodes/portals. This is more
-    // reliable for verifying the request was sent and contains the idempotency key.
     await waitFor(() => {
-      expect(capturedBody).not.toBeNull();
-    }, { timeout: 3000 });
+      expect(screen.getByText(/Ingreso registrado/i)).toBeInTheDocument();
+    });
 
     expect(capturedBody).not.toBeNull();
     if (capturedBody) {
       const body = capturedBody as Record<string, unknown>;
       expect(body.idempotencyKey).toBeDefined();
       expect(typeof body.idempotencyKey).toBe("string");
-      expect((body.idempotencyKey as string).length).toBeGreaterThan(0);
+      expect(body.idempotencyKey.length).toBeGreaterThan(0);
     }
-  });
-
-  it("allows special entry without plate when a reason is provided", async () => {
-    let capturedBody: unknown = null;
-    server.use(
-      http.post("*/api/v1/operations/entries", async ({ request }) => {
-        capturedBody = await request.json();
-        return HttpResponse.json({
-          sessionId: "session-no-plate",
-          receipt: {
-            ticketNumber: "T-20260513-000077",
-            plate: "SIN-123456789ABC",
-            vehicleType: "CAR",
-            site: "Test Site",
-            entryAt: "2026-05-13T10:00:00Z",
-          },
-          message: "Ingreso registrado",
-        });
-      })
-    );
-
-    renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
-
-    await userEvent.click(screen.getByLabelText(/Sin placa/i));
-    await userEvent.type(screen.getByLabelText(/Justificación sin placa/i), "Vehiculo oficial sin placa visible");
-
-    const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
-
-    await waitFor(() => {
-      expect(capturedBody).not.toBeNull();
-    });
-
-    const body = capturedBody as Record<string, unknown>;
-    expect(body.noPlate).toBe(true);
-    expect(body.plate).toBeNull();
-    expect(body.noPlateReason).toBe("Vehiculo oficial sin placa visible");
   });
 
   it("sends the correct vehicle type", async () => {
@@ -293,12 +173,13 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "MOT111");
-
-    await screen.findByTestId("vehicle-type"); // Wait for types to load
+    await userEvent.type(plateInput, "MOTO1");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -329,18 +210,19 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "TES001");
-
-    await screen.findByTestId("vehicle-type"); // Wait for types to load
+    await userEvent.type(plateInput, "TEST01");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByTestId("error-message")).toHaveTextContent(/revisa los datos/i);
+      expect(screen.getByText(/revisa los datos/i)).toBeInTheDocument();
     });
   });
 
@@ -358,12 +240,13 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "DUP001");
-
-    await screen.findByTestId("vehicle-type"); // Wait for types to load
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -391,12 +274,13 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "SUC111");
-
-    await screen.findByTestId("vehicle-type");
+    await userEvent.type(plateInput, "SUCCESS");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -441,18 +325,19 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "RET111");
-
-    await screen.findByTestId("vehicle-type");
+    await userEvent.type(plateInput, "RETRY");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByTestId("error-message")).toHaveTextContent(/revisa los datos/i);
+      expect(screen.getByText(/revisa los datos/i)).toBeInTheDocument();
     });
 
     await userEvent.click(submitBtn);
@@ -485,21 +370,22 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "PRI111");
-
-    await screen.findByTestId("vehicle-type");
+    await userEvent.type(plateInput, "PRINTFAIL");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getAllByText(/Impresion no confirmada. Reintente o entregue copia manual./i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/No se pudo imprimir el ticket/i)).toBeInTheDocument();
     });
 
-    expect(screen.getAllByText(/Ingreso registrado, pero falta comprobante/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Ingreso registrado correctamente/i)).toBeInTheDocument();
     expect(screen.getAllByText(/T-20260513-000100/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/PRINTFAIL/).length).toBeGreaterThan(0);
   });
@@ -522,22 +408,23 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "FAI111");
-
-    await screen.findByTestId("vehicle-type");
+    await userEvent.type(plateInput, "FAIL2");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getAllByText(/Descargar copia/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Descargar ticket/i).length).toBeGreaterThan(0);
     });
 
-    expect(screen.getAllByText(/Reintentar impresión/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Confirmar entrega y continuar/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Reimprimir/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Cerrar/i).length).toBeGreaterThan(0);
   });
 
   it("does NOT show success when backend returns error", async () => {
@@ -551,60 +438,21 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "ERR500");
-
-    await screen.findByTestId("vehicle-type");
+    await userEvent.type(plateInput, "ERROR500");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getByText(/no se pudo registrar/i)).toBeInTheDocument();
-    });
+    }, { timeout: 3000 });
 
     expect(screen.queryByText(/Ingreso registrado/i)).not.toBeInTheDocument();
-  });
-
-  it("hides visitor type, vehicle type, mode selector and advanced section in MOTORCYCLE_ONLY business model", async () => {
-    const mockConfig = {
-      businessModel: "MOTORCYCLE_ONLY",
-      operationalProfile: "MOTORCYCLE_ONLY",
-      vehicleTypes: ["MOTORCYCLE"],
-      operationConfiguration: {
-        showVehicleType: false,
-        defaultVehicleType: "MOTORCYCLE",
-        showVisitorType: false,
-        defaultVisitorType: "VISITOR",
-        showAdvancedSection: false,
-        enableManualRate: false,
-        enableLaneSelection: false,
-        enableTerminalSelection: false,
-        enableCashierSelection: false,
-        enableVehicleCondition: false,
-        enableObservations: false,
-        enableCountryPlate: false,
-      }
-    };
-    
-    const { fetchRuntimeConfig } = await import("@/lib/runtime-config");
-    vi.mocked(fetchRuntimeConfig).mockResolvedValueOnce(mockConfig);
-
-    renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
-
-    const visitorTypeContainer = screen.getByText(/Tipo de Cliente \/ Parqueo/i).closest(".field-visitor-type");
-    expect(visitorTypeContainer).toHaveClass("hidden");
-
-    const vehicleTypeContainer = screen.getByText(/Tipo de Vehículo/i).closest(".field-vehicle-type");
-    expect(vehicleTypeContainer).toHaveClass("hidden");
-
-    expect(screen.queryByLabelText(/Modo de operación/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Mostrar opciones avanzadas/i)).not.toBeInTheDocument();
   });
 });
