@@ -12,7 +12,11 @@ import com.parkflow.modules.parking.operation.dto.EntryRequest;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.parking.operation.repository.PaymentRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.parking.operation.repository.SessionEventRepository;
+import com.parkflow.modules.parking.operation.repository.TicketCounterRepository;
+import com.parkflow.modules.parking.operation.repository.VehicleConditionReportRepository;
 import com.parkflow.modules.parking.operation.repository.VehicleRepository;
 import com.parkflow.modules.tickets.service.PrintJobService;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -52,6 +56,18 @@ class OperationServiceEdgeCasesTest {
 
   @Mock
   private MeterRegistry meterRegistry;
+
+  @Mock
+  private PaymentRepository paymentRepository;
+
+  @Mock
+  private TicketCounterRepository ticketCounterRepository;
+
+  @Mock
+  private VehicleConditionReportRepository vehicleConditionReportRepository;
+
+  @Mock
+  private SessionEventRepository sessionEventRepository;
 
   @InjectMocks
   private OperationService operationService;
