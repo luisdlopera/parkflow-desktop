@@ -30,7 +30,7 @@ public interface RateRepository extends JpaRepository<Rate, UUID> {
   Optional<Rate> findFirstByIsActiveTrueAndSiteAndVehicleTypeIsNullOrderByCreatedAtAsc(String site);
 
   @Query(
-      "SELECT r FROM Rate r WHERE r.site = :site AND (:q IS NULL OR :q = '' OR LOWER(r.name) LIKE LOWER(CONCAT('%', :q, '%'))) "
+      "SELECT r FROM Rate r WHERE (:site IS NULL OR r.site = :site OR r.site IS NULL) AND (:q IS NULL OR :q = '' OR LOWER(r.name) LIKE LOWER(CONCAT('%', :q, '%'))) "
           + "AND (:active IS NULL OR r.isActive = :active)")
   Page<Rate> search(
       @Param("site") String site,
@@ -51,7 +51,7 @@ public interface RateRepository extends JpaRepository<Rate, UUID> {
    * Uses numeric priority: 1=site+type, 2=site+null, 3=null+type, 4=null+null
    */
   @Query(value = """
-      SELECT * FROM rates r
+      SELECT * FROM rate r
       WHERE r.is_active = true
         AND (r.site = :site OR r.site IS NULL)
         AND (r.vehicle_type = :vehicleType OR r.vehicle_type IS NULL)
