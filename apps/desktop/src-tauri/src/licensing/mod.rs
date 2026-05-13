@@ -5,6 +5,7 @@ pub mod tamper;
 pub mod types;
 
 use std::sync::Mutex;
+use std::path::PathBuf;
 use tauri::State;
 use types::*;
 use storage::LicenseStorage;
@@ -20,10 +21,18 @@ pub struct LicenseState {
 
 impl LicenseState {
   pub fn new() -> Result<Self, String> {
+    Self::new_in_dir(
+      dirs::data_local_dir()
+        .ok_or("Failed to get local data directory")?
+        .join("com.parkflow.desktop"),
+    )
+  }
+
+  pub fn new_in_dir(data_dir: PathBuf) -> Result<Self, String> {
     Ok(LicenseState {
-      storage: Mutex::new(LicenseStorage::new()?),
+      storage: Mutex::new(LicenseStorage::new_in_dir(data_dir.clone())?),
       validator: LicenseValidator::new(),
-      tamper_detector: TamperDetector::new()?,
+      tamper_detector: TamperDetector::new_in_dir(data_dir)?,
     })
   }
 }
