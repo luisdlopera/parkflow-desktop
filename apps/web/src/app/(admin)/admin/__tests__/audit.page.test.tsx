@@ -40,8 +40,7 @@ describe("AuditPage", () => {
     render(<AuditPage />);
 
     await waitFor(() => {
-      // accept one or more matching items rendered
-      expect(screen.getAllByText(/Empresa cread/i).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText("Empresa Creada")).toBeDefined();
     });
   });
 });

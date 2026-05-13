@@ -67,7 +67,6 @@ async function resolveJavaHome() {
   const javaBinName = process.platform === 'win32' ? 'java.exe' : 'java';
 
   async function isUsableJavaHome(home) {
-    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
     const javaExe = join(home, 'bin', javaBinName);
     try {
       await execAsync(`"${javaExe}" -version`, { windowsHide: true });

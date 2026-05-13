@@ -37,7 +37,7 @@ describe("TauriPrintClient", () => {
       client.print({
         idempotencyKey: "idem-1",
         documentType: "ENTRY",
-        ticket: { ticketId: "ticket-1" } as import("@parkflow/types").TicketDocument,
+        ticket: { id: "ticket-1" },
         clientOrigin: "http://localhost",
         operatorUserId: "user-1",
         terminalId: "TERM-1",
