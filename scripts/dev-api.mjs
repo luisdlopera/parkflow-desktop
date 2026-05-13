@@ -64,30 +64,51 @@ function loadEnvFile(envPath) {
 }
 
 async function resolveJavaHome() {
-  // Check JAVA_HOME first
-  if (process.env.JAVA_HOME) {
-    const javaExe = join(process.env.JAVA_HOME, 'bin', 'java.exe');
+  const javaBinName = process.platform === 'win32' ? 'java.exe' : 'java';
+
+  async function isUsableJavaHome(home) {
+    const javaExe = join(home, 'bin', javaBinName);
     try {
       await execAsync(`"${javaExe}" -version`, { windowsHide: true });
-      return process.env.JAVA_HOME;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Check JAVA_HOME first
+  if (process.env.JAVA_HOME && await isUsableJavaHome(process.env.JAVA_HOME)) {
+    return process.env.JAVA_HOME;
+  }
+
+  if (process.platform === 'darwin') {
+    try {
+      const { stdout } = await execAsync('/usr/libexec/java_home -v 21', { windowsHide: true });
+      const candidate = stdout.trim();
+      if (candidate && await isUsableJavaHome(candidate)) {
+        return candidate;
+      }
     } catch {
       // Continue to search
     }
   }
 
-  // Common Windows paths
-  const candidates = [
-    'C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.10.7-hotspot',
-    'C:\\Program Files\\Java\\jdk-21',
-  ];
+  // Common platform-specific paths
+  const candidates = process.platform === 'win32'
+    ? [
+        'C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.10.7-hotspot',
+        'C:\\Program Files\\Java\\jdk-21',
+      ]
+    : [
+        '/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home',
+        '/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home',
+        '/Library/Java/JavaVirtualMachines/openjdk-21.jdk/Contents/Home',
+        '/usr/lib/jvm/java-21-openjdk',
+      ];
 
   for (const candidate of candidates) {
-    const javaExe = join(candidate, 'bin', 'java.exe');
-    try {
-      await execAsync(`"${javaExe}" -version`, { windowsHide: true });
+    if (await isUsableJavaHome(candidate)) {
       return candidate;
-    } catch {
-      // Try next
     }
   }
 
@@ -105,12 +126,8 @@ async function resolveJavaHome() {
       );
       const match = stdout.trim();
       if (match) {
-        const javaExe = join(match, 'bin', 'java.exe');
-        try {
-          await execAsync(`"${javaExe}" -version`, { windowsHide: true });
+        if (await isUsableJavaHome(match)) {
           return match;
-        } catch {
-          // Try next pattern
         }
       }
     } catch {

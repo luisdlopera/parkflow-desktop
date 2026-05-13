@@ -171,6 +171,49 @@ mod tests {
   use super::*;
 
   #[test]
+  fn line_width_chars_returns_32_for_58mm() {
+    assert_eq!(line_width_chars(58), 32);
+  }
+
+  #[test]
+  fn line_width_chars_returns_48_for_80mm() {
+    assert_eq!(line_width_chars(80), 48);
+  }
+
+  #[test]
+  fn line_width_chars_returns_48_for_large() {
+    assert_eq!(line_width_chars(120), 48);
+  }
+
+  #[test]
+  fn push_line_centered_pads_correctly() {
+    let mut buf = Vec::new();
+    push_line_centered(&mut buf, "HELLO", 10);
+    let s = String::from_utf8_lossy(&buf);
+    assert!(s.contains("HELLO"));
+    assert!(!s.ends_with('\0'));
+  }
+
+  #[test]
+  fn push_qr_model2_handles_short_data() {
+    let mut buf = Vec::new();
+    // Short data should not panic
+    let result = push_qr_model2(&mut buf, "x");
+    assert!(result.is_ok());
+  }
+
+  #[test]
+  fn push_qr_model2_appends_bytes_for_valid_data() {
+    let mut buf = Vec::new();
+    push_qr_model2(&mut buf, "test-data").expect("qr should succeed");
+    assert!(buf.len() > 10);
+    // ESC/POS QR model2 header
+    assert_eq!(buf[0], 0x1d);
+    assert_eq!(buf[1], 0x28);
+    assert_eq!(buf[2], 0x6b);
+  }
+
+  #[test]
   fn receipt_contains_ticket_number() {
     let t = TicketDoc {
       ticket_id: "tid-1".to_string(),

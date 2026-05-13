@@ -12,12 +12,15 @@ pub struct TamperDetector {
 
 impl TamperDetector {
   pub fn new() -> Result<Self, String> {
-    let data_dir = dirs::data_local_dir()
-      .ok_or("Failed to get local data directory")?
-      .join("com.parkflow.desktop");
+    Self::new_in_dir(
+      dirs::data_local_dir()
+        .ok_or("Failed to get local data directory")?
+        .join("com.parkflow.desktop"),
+    )
+  }
 
-    std::fs::create_dir_all(&data_dir)
-      .map_err(|e| format!("Failed to create data directory: {}", e))?;
+  pub fn new_in_dir(data_dir: PathBuf) -> Result<Self, String> {
+    std::fs::create_dir_all(&data_dir).map_err(|e| format!("Failed to create data directory: {}", e))?;
 
     Ok(TamperDetector { data_dir })
   }
@@ -179,5 +182,71 @@ impl Default for TimestampRecord {
       consecutive_rollbacks: 0,
       last_check: 0,
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::{TamperDetector, TimestampRecord};
+  use serial_test::serial;
+  use std::env;
+  use std::path::PathBuf;
+
+  fn with_temp_home<T>(f: impl FnOnce(&PathBuf) -> T) -> T {
+    let temp_dir = tempfile::tempdir().expect("temp dir");
+    let previous_home = env::var("HOME").ok();
+    let home = temp_dir.path().to_path_buf();
+
+    env::set_var("HOME", temp_dir.path());
+    let result = f(&home);
+
+    if let Some(home) = previous_home {
+      env::set_var("HOME", home);
+    } else {
+      env::remove_var("HOME");
+    }
+
+    result
+  }
+
+  fn tamper_file(home: &PathBuf) -> PathBuf {
+    home.join("Library/Application Support/com.parkflow.desktop/license_timestamps.dat")
+  }
+
+  #[test]
+  #[serial]
+  fn records_and_validates_time_integrity() {
+    with_temp_home(|home| {
+      let detector = TamperDetector::new().expect("detector");
+      detector.record_valid_timestamp().expect("record");
+
+      let status = detector.check_time_integrity().expect("check");
+      assert!(!status.suspicious);
+      assert_eq!(status.violation_count, 0);
+      assert!(tamper_file(home).exists());
+    });
+  }
+
+  #[test]
+  #[serial]
+  fn detects_time_rollback() {
+    with_temp_home(|home| {
+      let detector = TamperDetector::new().expect("detector");
+      detector.record_valid_timestamp().expect("record");
+
+      let path = tamper_file(home);
+      let future_ts = chrono::Utc::now().timestamp() + 3_600;
+      let record = TimestampRecord {
+        timestamps: vec![future_ts],
+        violation_count: 0,
+        consecutive_rollbacks: 0,
+        last_check: future_ts,
+      };
+      std::fs::write(&path, serde_json::to_string(&record).expect("serialize")).expect("write");
+
+      let status = detector.check_time_integrity().expect("check");
+      assert!(status.suspicious);
+      assert!(status.violation_count >= 1);
+    });
   }
 }

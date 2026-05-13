@@ -286,6 +286,21 @@ fn get_disk_identifier() -> Result<String, String> {
   }
 }
 
+#[cfg(test)]
+mod tests {
+  use super::get_device_fingerprint;
+
+  #[test]
+  fn generates_stable_fingerprint_format() {
+    let first = get_device_fingerprint().expect("fingerprint should be generated");
+    let second = get_device_fingerprint().expect("fingerprint should be generated");
+
+    assert!(first.starts_with("fp-"));
+    assert_eq!(first, second);
+    assert!(first.len() > 16);
+  }
+}
+
 fn get_motherboard_id() -> Result<String, String> {
   #[cfg(target_os = "windows")]
   {

@@ -11,12 +11,15 @@ pub struct LicenseStorage {
 
 impl LicenseStorage {
   pub fn new() -> Result<Self, String> {
-    let data_dir = dirs::data_local_dir()
-      .ok_or("Failed to get local data directory")?
-      .join("com.parkflow.desktop");
+    Self::new_in_dir(
+      dirs::data_local_dir()
+        .ok_or("Failed to get local data directory")?
+        .join("com.parkflow.desktop"),
+    )
+  }
 
-    std::fs::create_dir_all(&data_dir)
-      .map_err(|e| format!("Failed to create data directory: {}", e))?;
+  pub fn new_in_dir(data_dir: PathBuf) -> Result<Self, String> {
+    std::fs::create_dir_all(&data_dir).map_err(|e| format!("Failed to create data directory: {}", e))?;
 
     Ok(LicenseStorage { data_dir })
   }
@@ -113,5 +116,66 @@ impl LicenseStorage {
   /// Obtener ruta de almacenamiento (para depuración)
   pub fn get_storage_path(&self) -> PathBuf {
     self.data_dir.join(LICENSE_FILE)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::{LicenseInfo, LicenseStorage};
+  use serial_test::serial;
+  use std::env;
+
+  fn with_temp_home<T>(f: impl FnOnce() -> T) -> T {
+    let temp_dir = tempfile::tempdir().expect("temp dir");
+    let previous_home = env::var("HOME").ok();
+
+    env::set_var("HOME", temp_dir.path());
+    let result = f();
+
+    if let Some(home) = previous_home {
+      env::set_var("HOME", home);
+    } else {
+      env::remove_var("HOME");
+    }
+
+    result
+  }
+
+  fn sample_license() -> LicenseInfo {
+    LicenseInfo {
+      company_id: "company-1".to_string(),
+      company_name: "ParkFlow SA".to_string(),
+      device_fingerprint: "fp-123".to_string(),
+      license_key: "license-abc".to_string(),
+      plan: "PRO".to_string(),
+      status: "ACTIVE".to_string(),
+      expires_at: "2026-06-12T00:00:00Z".to_string(),
+      grace_until: Some("2026-06-19T00:00:00Z".to_string()),
+      enabled_modules: vec!["CLOUD_SYNC".to_string()],
+      signature: "signature".to_string(),
+      public_key: "".to_string(),
+      installed_at: "2026-05-12T00:00:00Z".to_string(),
+      last_validated_at: Some("2026-05-12T01:00:00Z".to_string()),
+    }
+  }
+
+  #[test]
+  #[serial]
+  fn saves_loads_and_clears_license() {
+    with_temp_home(|| {
+      let storage = LicenseStorage::new().expect("storage");
+      let license = sample_license();
+
+      storage.save_license(&license).expect("save");
+
+      let loaded = storage.load_license().expect("load").expect("license present");
+      assert_eq!(loaded.company_id, license.company_id);
+      assert_eq!(loaded.license_key, license.license_key);
+      assert!(storage.has_license());
+
+      storage.clear_license().expect("clear");
+      assert!(!storage.has_license());
+      assert!(storage.load_license().expect("reload").is_none());
+    });
   }
 }

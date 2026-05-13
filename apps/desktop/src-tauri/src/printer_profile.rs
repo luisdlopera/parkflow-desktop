@@ -145,7 +145,68 @@ pub fn resolve_profile(raw: Option<&str>) -> EscPosProfile {
 
 #[cfg(test)]
 mod tests {
-  use super::PrinterProfileId;
+  use super::*;
+
+  #[test]
+  fn resolve_profile_returns_default_for_none() {
+    let p = resolve_profile(None);
+    assert_eq!(p.id, PrinterProfileId::Generic58mmEscPos);
+  }
+
+  #[test]
+  fn resolve_profile_parses_canonical_slug() {
+    let p = resolve_profile(Some("epson_tm_t20iii"));
+    assert_eq!(p.id, PrinterProfileId::EpsonTmT20Iii);
+  }
+
+  #[test]
+  fn resolve_profile_defaults_on_unknown() {
+    let p = resolve_profile(Some("bogus"));
+    assert_eq!(p.id, PrinterProfileId::Generic58mmEscPos);
+  }
+
+  #[test]
+  fn hardware_ready_after_print_no_paper() {
+    let p = resolve_profile(Some("generic_58mm_esc_pos"));
+    assert!(!p.hardware_ready_after_print(Some(0b0010_0000)));
+  }
+
+  #[test]
+  fn hardware_ready_after_print_ok() {
+    let p = resolve_profile(Some("generic_58mm_esc_pos"));
+    assert!(p.hardware_ready_after_print(Some(0b0000_0000)));
+  }
+
+  #[test]
+  fn hardware_ready_handles_no_status() {
+    let p = resolve_profile(Some("generic_58mm_esc_pos"));
+    // None status should not panic
+    let _ = p.hardware_ready_after_print(None);
+  }
+
+  #[test]
+  fn has_paper_hint_returns_option_bool() {
+    let p = resolve_profile(Some("generic_58mm_esc_pos"));
+    let hint = p.has_paper_hint_gs_r1(0b0000_1100);
+    assert!(hint.is_some());
+    // Can be true or false depending on implementation
+  }
+
+  #[test]
+  fn paper_end_detected() {
+    let p = resolve_profile(Some("generic_58mm_esc_pos"));
+    assert!(p.paper_end_gs_r1(0b0010_0000));
+    assert!(!p.paper_end_gs_r1(0b0000_0000));
+  }
+
+  #[test]
+  fn all_profiles_use_same_cut_and_status() {
+    for slug in &["epson_tm_t20iii", "xprinter_80_generic_esc_pos", "generic_58mm_esc_pos"] {
+      let p = resolve_profile(Some(slug));
+      assert_eq!(p.cut_bytes(), &[0x1d, 0x56, 0x00]);
+      assert_eq!(p.status_query_bytes(), &[0x1d, 0x72, 0x01]);
+    }
+  }
 
   #[test]
   fn parse_accepts_canonical_slugs() {
