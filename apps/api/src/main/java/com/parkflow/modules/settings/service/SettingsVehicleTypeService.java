@@ -10,26 +10,27 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class SettingsVehicleTypeService {
     private final MasterVehicleTypeRepository repository;
 
     public SettingsVehicleTypeService(MasterVehicleTypeRepository repository) {
-        this.repository = repository;
+        this.repository = Objects.requireNonNull(repository, "repository");
     }
 
     @Transactional(readOnly = true)
     public List<VehicleTypeResponse> listAll() {
         return repository.findAllByOrderByCreatedAtAsc().stream()
-            .map(t -> new VehicleTypeResponse(t.getId(), t.getCode(), t.getName(), t.isActive(), t.isRequiresPlate(), t.isRequiresPhoto(), t.getDisplayOrder(), t.getCreatedAt(), t.getUpdatedAt()))
-            .collect(Collectors.toList());
+            .map(this::toResponse)
+            .toList();
     }
 
     @Transactional
     public VehicleTypeResponse create(VehicleTypeRequest req) {
+        Objects.requireNonNull(req, "req");
         if (repository.findByCode(req.code()).isPresent()) {
             throw new OperationException(HttpStatus.CONFLICT, "Ya existe un tipo de vehículo con este código");
         }
@@ -45,6 +46,8 @@ public class SettingsVehicleTypeService {
 
     @Transactional
     public VehicleTypeResponse update(UUID id, VehicleTypeRequest req) {
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(req, "req");
         MasterVehicleType type = repository.findById(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tipo no encontrado"));
         
@@ -65,9 +68,32 @@ public class SettingsVehicleTypeService {
     }
 
     @Transactional
+    public void patchStatus(UUID id, boolean active) {
+        Objects.requireNonNull(id, "id");
+        MasterVehicleType type = repository.findById(id)
+            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tipo no encontrado"));
+        type.setActive(active);
+        type.setUpdatedAt(java.time.OffsetDateTime.now());
+        repository.save(type);
+    }
+
+    @Transactional
     public void delete(UUID id) {
         MasterVehicleType type = repository.findById(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tipo no encontrado"));
         repository.delete(type);
+    }
+
+    private VehicleTypeResponse toResponse(MasterVehicleType type) {
+        return new VehicleTypeResponse(
+            type.getId(),
+            type.getCode(),
+            type.getName(),
+            type.isActive(),
+            type.isRequiresPlate(),
+            type.isRequiresPhoto(),
+            type.getDisplayOrder(),
+            type.getCreatedAt(),
+            type.getUpdatedAt());
     }
 }
