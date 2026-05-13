@@ -13,7 +13,6 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,6 @@ public class SyncService implements SyncUseCase {
   @Override
   public SyncEventResponse push(SyncPushRequest request) {
     Objects.requireNonNull(request, "request");
-    UUID companyId = SecurityUtils.requireCompanyId();
     return syncEventRepository
         .findByIdempotencyKeyAndCompanyId(request.idempotencyKey(), companyId)
         .map(this::toResponse)
@@ -43,7 +41,6 @@ public class SyncService implements SyncUseCase {
 
   @Transactional(readOnly = true)
   public List<SyncEventResponse> pull(@Nullable OffsetDateTime after, int limit) {
-    UUID companyId = SecurityUtils.requireCompanyId();
     OffsetDateTime filter = after != null ? after : OffsetDateTime.parse("1970-01-01T00:00:00Z");
     return syncEventRepository.findByCompanyIdAndCreatedAtAfterOrderByCreatedAtAsc(companyId, filter).stream()
         .limit(Math.max(1, Math.min(limit, 500)))
@@ -80,14 +77,13 @@ public class SyncService implements SyncUseCase {
     return out;
   }
 
-  private SyncEventResponse create(SyncPushRequest request, UUID companyId) {
+  private SyncEventResponse create(SyncPushRequest request) {
     Objects.requireNonNull(request, "request");
     String idempotencyKey = Objects.requireNonNull(request.idempotencyKey(), "idempotencyKey");
     String eventType = Objects.requireNonNull(request.eventType(), "eventType");
     String aggregateId = Objects.requireNonNull(request.aggregateId(), "aggregateId");
     String payloadJson = Objects.requireNonNull(request.payloadJson(), "payloadJson");
     SyncEvent event = new SyncEvent();
-    event.setCompanyId(companyId);
     event.setIdempotencyKey(idempotencyKey);
     event.setEventType(eventType);
     event.setAggregateId(aggregateId);

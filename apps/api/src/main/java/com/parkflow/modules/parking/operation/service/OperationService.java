@@ -1,5 +1,6 @@
 package com.parkflow.modules.parking.operation.service;
 
+import com.parkflow.modules.common.debug.AgentDebugNdjson;
 import com.parkflow.modules.cash.domain.CashMovementType;
 import com.parkflow.modules.cash.service.CashService;
 import com.parkflow.modules.configuration.entity.OperationalParameter;
@@ -24,6 +25,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -66,12 +68,23 @@ public class OperationService {
     String rawPlate = request.plate();
     String vehicleType = request.type();
     String site = request.site();
-    String countryCode = normalizeCountryCode(request.countryCode());
-    EntryMode entryMode = request.entryMode() != null ? request.entryMode() : EntryMode.VISITOR;
-    boolean noPlateEntry = Boolean.TRUE.equals(request.noPlate());
 
     log.info("registerEntry: plate={} type={} site={} lane={} booth={} terminal={} idempotencyKey={}",
         rawPlate, vehicleType, site, request.lane(), request.booth(), request.terminal(), idempotencyKey);
+
+    // #region agent log
+    AgentDebugNdjson.line(
+        "H5",
+        "OperationService.java:registerEntry:start",
+        "service invoked",
+        Map.of(
+            "vehicleType",
+            vehicleType != null ? vehicleType : "null",
+            "siteProvided",
+            site != null && !site.isBlank(),
+            "hasRateId",
+            request.rateId() != null));
+    // #endregion
 
     Optional<OperationResultResponse> replay =
         tryReplay(idempotencyKey, IdempotentOperationType.ENTRY);
@@ -80,37 +93,17 @@ public class OperationService {
       return replay.get();
     }
 
-    String normalizedPlate;
-    if (noPlateEntry) {
-      if (isBlank(request.noPlateReason())) {
-        throw new OperationException(
-            HttpStatus.BAD_REQUEST, "El ingreso sin placa requiere una justificacion");
-      }
-      normalizedPlate = generateNoPlateIdentifier();
-    } else {
-      com.parkflow.modules.parking.operation.validation.PlateValidationResult validationResult =
-          plateValidator.validatePlate(countryCode, vehicleType, rawPlate);
-
-      if (!validationResult.isValid()) {
-        log.warn("registerEntry: invalid plate format '{}' for type '{}': {}", rawPlate, vehicleType, validationResult.errorMessage());
-        throw new OperationException(HttpStatus.BAD_REQUEST, validationResult.errorMessage());
-      }
-      normalizedPlate = validationResult.normalizedPlate();
-    }
-
+    String normalizedPlate = rawPlate.trim().toUpperCase(Locale.ROOT);
     log.info("registerEntry: plate normalized from '{}' to '{}'", rawPlate, normalizedPlate);
 
-    // SECURITY: Use pessimistic lock to prevent concurrent entries for same plate
-    if (!noPlateEntry) {
-      parkingSessionRepository
-          .findActiveByPlateForUpdate(SessionStatus.ACTIVE, normalizedPlate)
-          .ifPresent(
-              session -> {
-                log.warn("registerEntry: active session exists for plate={}", normalizedPlate);
-                throw new OperationException(
-                    HttpStatus.CONFLICT, "El vehiculo ya tiene una sesion activa");
-              });
-    }
+    parkingSessionRepository
+        .findByStatusAndVehicle_Plate(SessionStatus.ACTIVE, normalizedPlate)
+        .ifPresent(
+            session -> {
+              log.warn("registerEntry: active session exists for plate={}", normalizedPlate);
+              throw new OperationException(
+                  HttpStatus.CONFLICT, "El vehiculo ya tiene una sesion activa");
+            });
 
     AppUser operator = findRequiredOperator(request.operatorUserId());
     log.info("registerEntry: operator found id={} name={}", operator.getId(), operator.getName());
@@ -136,23 +129,22 @@ public class OperationService {
     log.info("registerEntry: vehicle saved id={} plate={} type={}", vehicle.getId(), normalizedPlate, vehicleType);
 
     OffsetDateTime entryAt = request.entryAt() != null ? request.entryAt() : OffsetDateTime.now();
-    
-    // Check for monthly contract at entry to set proper mode
-    LocalDate entryDate = entryAt.toLocalDate();
-    boolean isMonthly = monthlyContractRepository
-        .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-            normalizedPlate, entryDate, entryDate).isPresent();
-    
-    if (isMonthly) {
-        entryMode = EntryMode.SUBSCRIBER;
-    }
-
     log.info("registerEntry: resolving rate type={} site={} entryAt={}", vehicleType, site, entryAt);
     Rate rate = resolveRate(request.rateId(), vehicleType, site, entryAt);
     log.info("registerEntry: rate resolved id={} name={} amount={} type={} vehicleType={}", 
         rate.getId(), rate.getName(), rate.getAmount(), rate.getRateType(), rate.getVehicleType());
 
-    assertParkingCapacityAvailable(site);
+    // #region agent log
+    AgentDebugNdjson.line(
+        "H1",
+        "OperationService.java:registerEntry:rateResolved",
+        "applicable rate found",
+        Map.of(
+            "rateId",
+            rate.getId().toString(),
+            "rateVehicleType",
+            rate.getVehicleType() != null ? rate.getVehicleType() : "null"));
+    // #endregion
 
     ParkingSession session = new ParkingSession();
     session.setTicketNumber(nextTicketNumber(entryAt.toLocalDate()));
@@ -187,6 +179,18 @@ public class OperationService {
     }
     log.info("registerEntry: session created id={} ticket={}", session.getId(), session.getTicketNumber());
 
+    // #region agent log
+    AgentDebugNdjson.line(
+        "H2",
+        "OperationService.java:registerEntry:sessionSaved",
+        "parking session persisted",
+        Map.of(
+            "sessionId",
+            session.getId().toString(),
+            "ticketNumber",
+            session.getTicketNumber()));
+    // #endregion
+
     saveVehicleCondition(
         session,
         ConditionStage.ENTRY,
@@ -195,7 +199,24 @@ public class OperationService {
         request.conditionPhotoUrls(),
         operator);
 
-    auditService.recordEvent(session, SessionEventType.ENTRY_RECORDED, operator, "Ingreso registrado");
+    // #region agent log
+    AgentDebugNdjson.line(
+        "H3",
+        "OperationService.java:registerEntry:afterConditionReport",
+        "vehicle condition report saved",
+        Map.ofEntries(
+            Map.entry(
+                "checklistSize",
+                request.conditionChecklist() != null ? request.conditionChecklist().size() : 0),
+            Map.entry(
+                "photoUrlsSize",
+                request.conditionPhotoUrls() != null ? request.conditionPhotoUrls().size() : 0),
+            Map.entry(
+                "hasVehicleConditionText",
+                request.vehicleCondition() != null && !request.vehicleCondition().isBlank())));
+    // #endregion
+
+    createEvent(session, SessionEventType.ENTRY_RECORDED, operator, "entry");
     // RELIABILITY: Print job is best-effort; don't fail the operation if printing fails
     try {
       operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.ENTRY, "entry");

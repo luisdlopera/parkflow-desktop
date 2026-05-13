@@ -1,5 +1,6 @@
 package com.parkflow.modules.common.exception;
 
+import com.parkflow.modules.common.debug.AgentDebugNdjson;
 import com.parkflow.modules.common.dto.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -213,6 +214,18 @@ public class GlobalExceptionHandler {
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
         
         log.error("Unhandled exception [correlationId={}]", correlationId, ex);
+
+        // #region agent log
+        AgentDebugNdjson.line(
+            "H6",
+            "GlobalExceptionHandler.java:handleGenericException",
+            "unhandled exception mapped to INTERNAL_ERROR 500",
+            Map.ofEntries(
+                Map.entry("uri", request.getRequestURI() != null ? request.getRequestURI() : ""),
+                Map.entry(
+                    "exception",
+                    ex.getClass().getSimpleName())));
+        // #endregion
 
         ErrorResponse error = new ErrorResponse(
             HttpStatus.INTERNAL_SERVER_ERROR.value(),

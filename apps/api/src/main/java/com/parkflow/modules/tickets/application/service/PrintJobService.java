@@ -47,7 +47,7 @@ public class PrintJobService implements TicketPrintUseCase {
         request.idempotencyKey(), request.sessionId(), request.documentType());
     try {
       return printJobRepository
-          .findByIdempotencyKeyAndCompanyId(request.idempotencyKey(), TenantContext.getTenantId())
+          .findByIdempotencyKey(request.idempotencyKey())
           .map(this::toResponse)
           .orElseGet(() -> createNew(request));
     } catch (OperationException ex) {
