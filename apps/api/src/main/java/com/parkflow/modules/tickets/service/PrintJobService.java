@@ -18,12 +18,14 @@ import com.parkflow.modules.tickets.repository.PrintJobRepository;
 import java.time.OffsetDateTime;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,10 +41,22 @@ public class PrintJobService {
 
   @Transactional
   public PrintJobResponse create(CreatePrintJobRequest request) {
-    return printJobRepository
-        .findByIdempotencyKey(request.idempotencyKey())
-        .map(this::toResponse)
-        .orElseGet(() -> createNew(request));
+    Objects.requireNonNull(request, "request");
+    log.info("PrintJobService.create: idempotencyKey={} sessionId={} documentType={}",
+        request.idempotencyKey(), request.sessionId(), request.documentType());
+    try {
+      return printJobRepository
+          .findByIdempotencyKey(request.idempotencyKey())
+          .map(this::toResponse)
+          .orElseGet(() -> createNew(request));
+    } catch (OperationException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      log.error("PrintJobService.create: unexpected error for idempotencyKey={}: {}",
+          request.idempotencyKey(), ex.getMessage(), ex);
+      throw new OperationException(HttpStatus.INTERNAL_SERVER_ERROR,
+          "Error al registrar trabajo de impresion: " + ex.getMessage());
+    }
   }
 
   @Transactional
@@ -166,7 +180,7 @@ public class PrintJobService {
   }
 
   private void registerAttempt(
-      PrintJob job, String attemptKey, PrintJobStatus status, String errorMessage) {
+      PrintJob job, String attemptKey, PrintJobStatus status, @Nullable String errorMessage) {
     PrintAttempt attempt = new PrintAttempt();
     attempt.setPrintJob(job);
     attempt.setAttemptKey(attemptKey);
@@ -177,10 +191,17 @@ public class PrintJobService {
   }
 
   private void auditTransition(PrintJob job, String action, String attemptKey, String toStatus) {
-    MDC.put("ticketNumber", job.getSession().getTicketNumber());
-    MDC.put("sessionId", job.getSession().getId().toString());
-    MDC.put("printJobId", job.getId().toString());
+    PrintJob currentJob = Objects.requireNonNull(job, "job");
+    var session = Objects.requireNonNull(currentJob.getSession(), "session");
+    String ticketNumber = Objects.requireNonNull(session.getTicketNumber(), "ticketNumber");
+    String sessionId = Objects.requireNonNull(session.getId(), "sessionId").toString();
+    String printJobId = Objects.requireNonNull(currentJob.getId(), "printJobId").toString();
+
+    String correlationId = MDC.get(com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
     try {
+      MDC.put("ticketNumber", ticketNumber);
+      MDC.put("sessionId", sessionId);
+      MDC.put("printJobId", printJobId);
       log.info(
           "audit print_job action={} attemptKey={} toStatus={} terminalId={} documentType={}",
           action,
@@ -190,6 +211,9 @@ public class PrintJobService {
           job.getDocumentType());
     } finally {
       MDC.clear();
+      if (correlationId != null) {
+        MDC.put(com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY, correlationId);
+      }
     }
   }
 

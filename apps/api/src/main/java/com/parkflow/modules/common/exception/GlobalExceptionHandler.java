@@ -1,5 +1,6 @@
 package com.parkflow.modules.common.exception;
 
+import com.parkflow.modules.common.debug.AgentDebugNdjson;
 import com.parkflow.modules.common.dto.ErrorResponse;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import jakarta.validation.ConstraintViolationException;
@@ -8,6 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -113,6 +116,69 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex, HttpServletRequest request) {
+
+        String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
+        String message = ex.getMostSpecificCause() != null
+            ? ex.getMostSpecificCause().getMessage()
+            : ex.getMessage();
+
+        log.warn("Data integrity violation [correlationId={}]: {}", correlationId, message);
+
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.CONFLICT.value(),
+            "DATABASE_CONSTRAINT_ERROR",
+            "La operacion no pudo completarse por un conflicto de datos. Verifique que el recurso no este duplicado.",
+            message,
+            request.getRequestURI(),
+            correlationId
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(
+            IllegalStateException ex, HttpServletRequest request) {
+
+        String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
+
+        log.warn("Illegal state [correlationId={}]: {}", correlationId, ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.BAD_REQUEST.value(),
+            "INVALID_STATE",
+            ex.getMessage(),
+            ex.getClass().getName() + ": " + ex.getMessage(),
+            request.getRequestURI(),
+            correlationId
+        );
+
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(InvalidDataAccessResourceUsageException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidDataAccess(
+            InvalidDataAccessResourceUsageException ex, HttpServletRequest request) {
+
+        String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
+
+        log.error("Database query error [correlationId={}]: {}", correlationId, ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.INTERNAL_SERVER_ERROR.value(),
+            "DATABASE_QUERY_ERROR",
+            "Error interno de base de datos. Contacta al administrador.",
+            ex.getClass().getName() + ": " + ex.getMessage(),
+            request.getRequestURI(),
+            correlationId
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex, HttpServletRequest request) {
@@ -120,6 +186,18 @@ public class GlobalExceptionHandler {
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
         
         log.error("Unhandled exception [correlationId={}]", correlationId, ex);
+
+        // #region agent log
+        AgentDebugNdjson.line(
+            "H6",
+            "GlobalExceptionHandler.java:handleGenericException",
+            "unhandled exception mapped to INTERNAL_ERROR 500",
+            Map.ofEntries(
+                Map.entry("uri", request.getRequestURI() != null ? request.getRequestURI() : ""),
+                Map.entry(
+                    "exception",
+                    ex.getClass().getSimpleName())));
+        // #endregion
 
         ErrorResponse error = new ErrorResponse(
             HttpStatus.INTERNAL_SERVER_ERROR.value(),
