@@ -1,6 +1,7 @@
 "use client";
 
 import { buildApiHeaders } from "@/lib/api";
+import { hasPermission } from "@/lib/auth";
 import type { CreatePrintJobRequest, PrintDocumentType, TicketDocument } from "@parkflow/types";
 import { createPrintJobRequestSchema } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
@@ -43,6 +44,10 @@ export async function syncCreatePrintJobAfterPhysicalPrint(input: {
     return;
   }
   if (!UUID_RE.test(input.sessionId) || !UUID_RE.test(input.operatorUserId)) {
+    return;
+  }
+  // Only sync print jobs if the user has the tickets:imprimir permission
+  if (!await hasPermission("tickets:imprimir" as any)) {
     return;
   }
 
