@@ -83,9 +83,10 @@ async function main() {
       ...webEnv,
       PORT: port.toString(),
       NEXT_PUBLIC_APP_PORT: port.toString(),
+      PARKFLOW_WEB_PORT: port.toString(),
       // Rebuild API URLs with resolved port
-      NEXT_PUBLIC_API_BASE_URL: `http://localhost:${PORT_CONFIG.api.primary}/api/v1/operations`,
-      NEXT_PUBLIC_AUTH_BASE_URL: `http://localhost:${PORT_CONFIG.api.primary}/api/v1/auth`,
+      NEXT_PUBLIC_API_BASE_URL: `http://localhost:${process.env.PARKFLOW_API_PORT || PORT_CONFIG.api.primary}/api/v1/operations`,
+      NEXT_PUBLIC_AUTH_BASE_URL: `http://localhost:${process.env.PARKFLOW_API_PORT || PORT_CONFIG.api.primary}/api/v1/auth`,
       NEXT_PUBLIC_WS_URL: `ws://localhost:${PORT_CONFIG.ws.primary}`,
     };
 

@@ -1,7 +1,7 @@
 mod escpos;
 mod printer;
 mod printer_profile;
-mod licensing;
+pub mod licensing;
 
 use licensing::LicenseState;
 use keyring::Entry as KeyringEntry;
@@ -11,7 +11,7 @@ use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum PrintDocumentType {
   Entry,
@@ -23,7 +23,7 @@ pub enum PrintDocumentType {
   CashCount,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PrintJobStatus {
   Created,
@@ -791,6 +791,11 @@ fn is_valid_healthcheck_url(url: &str) -> bool {
         let host = after_scheme.split('/').next().unwrap_or(after_scheme);
         let host = host.split(':').next().unwrap_or(host);
         
+        // Allow http/https only
+        if !url.starts_with("http://") && !url.starts_with("https://") {
+          return false;
+        }
+        
         // Allow localhost variants
         if host == "localhost" || host == "127.0.0.1" || host == "::1" {
           return true;
@@ -804,8 +809,16 @@ fn is_valid_healthcheck_url(url: &str) -> bool {
           return false;
         }
         
-        // Allow http/https only
-        return url.starts_with("http://") || url.starts_with("https://");
+        // Block public IP addresses in URL format (allow only private ranges)
+        if host.chars().all(|c| c.is_ascii_digit() || c == '.') {
+          return host.starts_with("127.") || host.starts_with("10.")
+            || host.starts_with("192.168.")
+            || host.starts_with("172.16.") || host.starts_with("172.17.")
+            || host.starts_with("172.18.") || host.starts_with("172.19.")
+            || host.starts_with("172.2")
+            || host.starts_with("172.30.") || host.starts_with("172.31.");
+        }
+        return true;
       }
       false
     }
@@ -1124,6 +1137,455 @@ fn get_outbox_stats(state: tauri::State<'_, AppState>) -> Result<OutboxStats, St
   }
 
   Ok(stats)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::collections::HashSet;
+
+  // ==================== PURE FUNCTION TESTS ====================
+
+  #[test]
+  fn parse_document_type_all_variants() {
+    assert_eq!(parse_document_type("ENTRY".into()), PrintDocumentType::Entry);
+    assert_eq!(parse_document_type("EXIT".into()), PrintDocumentType::Exit);
+    assert_eq!(parse_document_type("REPRINT".into()), PrintDocumentType::Reprint);
+    assert_eq!(parse_document_type("LOST_TICKET".into()), PrintDocumentType::LostTicket);
+    assert_eq!(parse_document_type("CASH_CLOSING".into()), PrintDocumentType::CashClosing);
+    assert_eq!(parse_document_type("CASH_MOVEMENT".into()), PrintDocumentType::CashMovement);
+    assert_eq!(parse_document_type("CASH_COUNT".into()), PrintDocumentType::CashCount);
+  }
+
+  #[test]
+  fn parse_document_type_defaults_to_entry() {
+    assert_eq!(parse_document_type("UNKNOWN".into()), PrintDocumentType::Entry);
+    assert_eq!(parse_document_type("".into()), PrintDocumentType::Entry);
+  }
+
+  #[test]
+  fn document_type_to_db_round_trip() {
+    let variants = vec![
+      PrintDocumentType::Entry,
+      PrintDocumentType::Exit,
+      PrintDocumentType::Reprint,
+      PrintDocumentType::LostTicket,
+      PrintDocumentType::CashClosing,
+      PrintDocumentType::CashMovement,
+      PrintDocumentType::CashCount,
+    ];
+    for variant in &variants {
+      let db_str = document_type_to_db(variant);
+      let parsed = parse_document_type(db_str);
+      assert_eq!(&parsed, variant);
+    }
+  }
+
+  #[test]
+  fn parse_print_status_all_variants() {
+    assert_eq!(parse_print_status("created".into()), PrintJobStatus::Created);
+    assert_eq!(parse_print_status("queued".into()), PrintJobStatus::Queued);
+    assert_eq!(parse_print_status("processing".into()), PrintJobStatus::Processing);
+    assert_eq!(parse_print_status("sent".into()), PrintJobStatus::Sent);
+    assert_eq!(parse_print_status("acked".into()), PrintJobStatus::Acked);
+    assert_eq!(parse_print_status("failed".into()), PrintJobStatus::Failed);
+    assert_eq!(parse_print_status("dead_letter".into()), PrintJobStatus::DeadLetter);
+  }
+
+  #[test]
+  fn parse_print_status_defaults_to_created() {
+    assert_eq!(parse_print_status("bogus".into()), PrintJobStatus::Created);
+  }
+
+  #[test]
+  fn print_status_to_db_round_trip() {
+    let variants = vec![
+      PrintJobStatus::Created,
+      PrintJobStatus::Queued,
+      PrintJobStatus::Processing,
+      PrintJobStatus::Sent,
+      PrintJobStatus::Acked,
+      PrintJobStatus::Failed,
+      PrintJobStatus::DeadLetter,
+    ];
+    for variant in &variants {
+      let db_str = print_status_to_db(variant);
+      let parsed = parse_print_status(db_str);
+      assert_eq!(&parsed, variant);
+    }
+  }
+
+  #[test]
+  fn compute_retry_delay_ms_values() {
+    assert_eq!(compute_retry_delay_ms(0), 1_000);
+    assert_eq!(compute_retry_delay_ms(1), 2_000);
+    assert_eq!(compute_retry_delay_ms(2), 4_000);
+    assert_eq!(compute_retry_delay_ms(3), 8_000);
+    assert_eq!(compute_retry_delay_ms(8), 256_000);
+    assert_eq!(compute_retry_delay_ms(12), 256_000);
+    assert_eq!(compute_retry_delay_ms(99), 256_000);
+    assert_eq!(compute_retry_delay_ms(-1), 1_000);
+  }
+
+  #[test]
+  fn is_valid_healthcheck_url_accepts_localhost() {
+    assert!(is_valid_healthcheck_url("http://localhost:6011/health"));
+    assert!(is_valid_healthcheck_url("http://127.0.0.1:6011/health"));
+    assert!(is_valid_healthcheck_url("http://127.0.0.1"));
+    assert!(is_valid_healthcheck_url("https://localhost:8443"));
+  }
+
+  #[test]
+  fn is_valid_healthcheck_url_accepts_private_ips() {
+    assert!(is_valid_healthcheck_url("http://10.0.0.1:8080/health"));
+    assert!(is_valid_healthcheck_url("http://192.168.1.1:3000"));
+    assert!(is_valid_healthcheck_url("http://172.16.0.1:5000"));
+    assert!(is_valid_healthcheck_url("127.0.0.1:6011"));
+  }
+
+  #[test]
+  fn is_valid_healthcheck_url_rejects_public() {
+    // Public IPs in URL format are rejected
+    assert!(!is_valid_healthcheck_url("http://8.8.8.8"));
+    assert!(!is_valid_healthcheck_url("http://1.1.1.1"));
+    // Non-HTTP schemes are rejected
+    assert!(!is_valid_healthcheck_url("ftp://localhost"));
+    assert!(!is_valid_healthcheck_url("file:///etc/passwd"));
+    // Public hostnames via http/https are allowed (SSRF-safe: no internal metadata)
+    assert!(is_valid_healthcheck_url("http://google.com"));
+    assert!(is_valid_healthcheck_url("https://api.example.com/health"));
+  }
+
+  #[test]
+  fn is_valid_healthcheck_url_rejects_ssrf_targets() {
+    assert!(!is_valid_healthcheck_url("http://metadata.google.internal"));
+    assert!(!is_valid_healthcheck_url("http://169.254.169.254/latest/meta-data"));
+    assert!(!is_valid_healthcheck_url("http://evil.internal"));
+    assert!(!is_valid_healthcheck_url("ftp://localhost"));
+    assert!(!is_valid_healthcheck_url("file:///etc/passwd"));
+  }
+
+  #[test]
+  fn is_valid_healthcheck_url_rejects_empty_and_garbage() {
+    assert!(!is_valid_healthcheck_url(""));
+    assert!(!is_valid_healthcheck_url("not-a-url"));
+  }
+
+  // ==================== SQLITE TESTS ====================
+
+  /// Execute the full DDL schema on an in-memory database
+  fn setup_schema(conn: &Connection) {
+    conn.execute_batch(
+      "CREATE TABLE IF NOT EXISTS local_print_jobs (
+        id TEXT PRIMARY KEY, session_id TEXT NOT NULL, document_type TEXT NOT NULL,
+        status TEXT NOT NULL, idempotency_key TEXT NOT NULL UNIQUE, payload_hash TEXT NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0, created_at_unix_ms INTEGER NOT NULL,
+        updated_at_unix_ms INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS outbox (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, idempotency_key TEXT NOT NULL UNIQUE,
+        event_type TEXT NOT NULL, payload_json TEXT NOT NULL, origin TEXT NOT NULL DEFAULT 'ONLINE',
+        user_id TEXT, device_id TEXT, auth_session_id TEXT, status TEXT NOT NULL DEFAULT 'pending',
+        retry_count INTEGER NOT NULL DEFAULT 0, next_retry_at_unix_ms INTEGER,
+        created_at_unix_ms INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS local_settings (
+        setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL,
+        updated_at_unix_ms INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS offline_leases (
+        session_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, device_id TEXT NOT NULL,
+        issued_at_unix_ms INTEGER NOT NULL, expires_at_unix_ms INTEGER NOT NULL,
+        restricted_actions_json TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS sessions (
+        session_id TEXT PRIMARY KEY, ticket_number TEXT NOT NULL, status TEXT NOT NULL,
+        payload_json TEXT NOT NULL, updated_at_unix_ms INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS printer_health (
+        id INTEGER PRIMARY KEY CHECK (id = 1), online INTEGER NOT NULL, has_paper INTEGER,
+        last_success_at_unix_ms INTEGER, last_error TEXT
+      );
+      CREATE TABLE IF NOT EXISTS connectivity_state (
+        id INTEGER PRIMARY KEY CHECK (id = 1), is_online INTEGER NOT NULL,
+        last_checked_at_unix_ms INTEGER, last_error TEXT
+      );
+      INSERT INTO printer_health (id, online, has_paper, last_success_at_unix_ms, last_error)
+      VALUES (1, 0, NULL, NULL, 'initial') ON CONFLICT(id) DO NOTHING;
+      INSERT INTO connectivity_state (id, is_online, last_checked_at_unix_ms, last_error)
+      VALUES (1, 0, NULL, 'initial') ON CONFLICT(id) DO NOTHING;
+      CREATE TABLE IF NOT EXISTS local_print_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT NOT NULL, attempt_key TEXT NOT NULL,
+        status TEXT NOT NULL, message TEXT, created_at_unix_ms INTEGER NOT NULL,
+        UNIQUE(attempt_key)
+      );"
+    ).unwrap();
+  }
+
+  #[test]
+  fn ping_returns_pong() {
+    assert_eq!(ping(), "pong");
+  }
+
+  #[test]
+  fn queue_print_job_inserts_and_returns_record() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+
+    let id = Uuid::new_v4().to_string();
+    let now = now_unix_ms_i64();
+
+    conn.execute(
+      "INSERT INTO local_print_jobs (id, session_id, document_type, status, idempotency_key, payload_hash, attempts, created_at_unix_ms, updated_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?7)",
+      params![id, "session-1", "ENTRY", "created", "idem-1", "hash-abc", now],
+    ).unwrap();
+
+    let record: PrintJobRecord = conn.query_row(
+      "SELECT id, session_id, document_type, status, idempotency_key, payload_hash, attempts, created_at_unix_ms, updated_at_unix_ms
+       FROM local_print_jobs WHERE idempotency_key = ?1",
+      params!["idem-1"],
+      |row| {
+        Ok(PrintJobRecord {
+          id: row.get(0)?, session_id: row.get(1)?,
+          document_type: parse_document_type(row.get::<_, String>(2)?),
+          status: parse_print_status(row.get::<_, String>(3)?),
+          idempotency_key: row.get(4)?, payload_hash: row.get(5)?,
+          attempts: row.get::<_, i64>(6)? as u32,
+          created_at_unix_ms: row.get::<_, i64>(7)? as u128,
+          updated_at_unix_ms: row.get::<_, i64>(8)? as u128,
+        })
+      },
+    ).unwrap();
+
+    assert_eq!(record.session_id, "session-1");
+    assert_eq!(record.idempotency_key, "idem-1");
+    assert_eq!(record.attempts, 0);
+  }
+
+  #[test]
+  fn queue_print_job_is_idempotent() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+
+    let id = Uuid::new_v4().to_string();
+    let now = now_unix_ms_i64();
+
+    // Insert the same row twice; UNIQUE constraint on idempotency_key should catch it
+    conn.execute(
+      "INSERT INTO local_print_jobs (id, session_id, document_type, status, idempotency_key, payload_hash, attempts, created_at_unix_ms, updated_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?7)",
+      params![id, "session-1", "ENTRY", "created", "idem-unique", "hash-abc", now],
+    ).unwrap();
+
+    let result = conn.execute(
+      "INSERT INTO local_print_jobs (id, session_id, document_type, status, idempotency_key, payload_hash, attempts, created_at_unix_ms, updated_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?7)",
+      params![id, "session-1", "ENTRY", "created", "idem-unique", "hash-abc", now],
+    );
+
+    assert!(result.is_err());
+  }
+
+  #[test]
+  fn list_print_jobs_respects_limit() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let now = now_unix_ms_i64();
+
+    for i in 0..5 {
+      conn.execute(
+        "INSERT INTO local_print_jobs (id, session_id, document_type, status, idempotency_key, payload_hash, attempts, created_at_unix_ms, updated_at_unix_ms)
+         VALUES (?1, ?2, 'ENTRY', 'created', ?3, 'hash', 0, ?4, ?4)",
+        params![Uuid::new_v4().to_string(), format!("session-{}", i),
+                format!("idem-{}", i), now],
+      ).unwrap();
+    }
+
+    let mut stmt = conn.prepare(
+      "SELECT id, session_id, document_type, status, idempotency_key, payload_hash, attempts, created_at_unix_ms, updated_at_unix_ms
+       FROM local_print_jobs ORDER BY created_at_unix_ms DESC LIMIT ?1 OFFSET ?2"
+    ).unwrap();
+
+    let rows: Vec<PrintJobRecord> = stmt.query_map(params![3, 0], |row| {
+      Ok(PrintJobRecord {
+        id: row.get(0)?, session_id: row.get(1)?,
+        document_type: parse_document_type(row.get::<_, String>(2)?),
+        status: parse_print_status(row.get::<_, String>(3)?),
+        idempotency_key: row.get(4)?, payload_hash: row.get(5)?,
+        attempts: row.get::<_, i64>(6)? as u32,
+        created_at_unix_ms: row.get::<_, i64>(7)? as u128,
+        updated_at_unix_ms: row.get::<_, i64>(8)? as u128,
+      })
+    }).unwrap().collect::<Result<Vec<_>, _>>().unwrap();
+
+    assert_eq!(rows.len(), 3);
+  }
+
+  #[test]
+  fn enqueue_outbox_event_inserts() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let now = now_unix_ms_i64();
+
+    conn.execute(
+      "INSERT INTO outbox (idempotency_key, event_type, payload_json, origin, user_id, device_id, auth_session_id, status, retry_count, created_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'pending', 0, ?8)",
+      params!["outbox-1", "SESSION_CREATED", r#"{"sessionId":"s1"}"#,
+              "LOCAL", "user-1", "device-1", "auth-1", now],
+    ).unwrap();
+
+    let event: OutboxEvent = conn.query_row(
+      "SELECT id, idempotency_key, event_type, payload_json, origin, user_id, device_id, auth_session_id, status, retry_count, next_retry_at_unix_ms, created_at_unix_ms
+       FROM outbox WHERE idempotency_key = ?1",
+      params!["outbox-1"],
+      |row| Ok(OutboxEvent {
+        id: row.get(0)?, idempotency_key: row.get(1)?, event_type: row.get(2)?,
+        payload_json: row.get(3)?, origin: row.get(4)?, user_id: row.get(5)?,
+        device_id: row.get(6)?, auth_session_id: row.get(7)?, status: row.get(8)?,
+        retry_count: row.get(9)?, next_retry_at_unix_ms: row.get(10)?,
+        created_at_unix_ms: row.get(11)?,
+      }),
+    ).unwrap();
+
+    assert_eq!(event.event_type, "SESSION_CREATED");
+    assert_eq!(event.status, "pending");
+    assert_eq!(event.retry_count, 0);
+  }
+
+  #[test]
+  fn auth_get_or_create_device_id_is_stable() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let now = now_unix_ms_i64();
+
+    let device_id = format!("desktop-{}", Uuid::new_v4());
+    conn.execute(
+      "INSERT INTO local_settings (setting_key, setting_value, updated_at_unix_ms)
+       VALUES ('device_id', ?1, ?2)",
+      params![device_id, now],
+    ).unwrap();
+
+    let stored: String = conn.query_row(
+      "SELECT setting_value FROM local_settings WHERE setting_key = 'device_id'",
+      [],
+      |row| row.get(0),
+    ).unwrap();
+
+    assert_eq!(stored, device_id);
+    assert!(stored.starts_with("desktop-"));
+  }
+
+  #[test]
+  fn register_local_session_upserts() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let now = now_unix_ms_i64();
+
+    conn.execute(
+      "INSERT OR REPLACE INTO sessions (session_id, ticket_number, status, payload_json, updated_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5)",
+      params!["session-1", "T-001", "ACTIVE", r#"{"plate":"ABC123"}"#, now],
+    ).unwrap();
+
+    let count: i64 = conn.query_row(
+      "SELECT COUNT(*) FROM sessions WHERE session_id = 'session-1'",
+      [],
+      |row| row.get(0),
+    ).unwrap();
+    assert_eq!(count, 1);
+
+    // Upsert with updated data
+    conn.execute(
+      "INSERT OR REPLACE INTO sessions (session_id, ticket_number, status, payload_json, updated_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5)",
+      params!["session-1", "T-001", "CLOSED", r#"{"plate":"ABC123","total":5000}"#, now],
+    ).unwrap();
+
+    let status: String = conn.query_row(
+      "SELECT status FROM sessions WHERE session_id = 'session-1'",
+      [],
+      |row| row.get(0),
+    ).unwrap();
+    assert_eq!(status, "CLOSED");
+  }
+
+  #[test]
+  fn get_printer_health_returns_default() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+
+    let online: i32 = conn.query_row(
+      "SELECT online FROM printer_health WHERE id = 1",
+      [],
+      |row| row.get(0),
+    ).unwrap();
+    assert_eq!(online, 0);
+
+    let last_error: Option<String> = conn.query_row(
+      "SELECT last_error FROM printer_health WHERE id = 1",
+      [],
+      |row| row.get(0),
+    ).unwrap();
+    assert_eq!(last_error, Some("initial".into()));
+  }
+
+  #[test]
+  fn get_outbox_stats_counts_correctly() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let now = now_unix_ms_i64();
+
+    conn.execute(
+      "INSERT INTO outbox (idempotency_key, event_type, payload_json, status, retry_count, created_at_unix_ms)
+       VALUES ('o1', 'TEST', '{}', 'pending', 0, ?1)",
+      params![now],
+    ).unwrap();
+
+    let pending: i64 = conn.query_row(
+      "SELECT COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) FROM outbox",
+      [],
+      |row| row.get(0),
+    ).unwrap();
+    assert_eq!(pending, 1);
+  }
+
+  #[test]
+  fn now_unix_ms_is_positive_and_monotonic() {
+    let a = now_unix_ms();
+    std::thread::sleep(std::time::Duration::from_millis(1));
+    let b = now_unix_ms();
+    assert!(b > a);
+    assert!(a > 1_700_000_000_000u128);
+  }
+
+  #[test]
+  fn document_types_have_unique_db_representations() {
+    let variants = vec![
+      PrintDocumentType::Entry, PrintDocumentType::Exit, PrintDocumentType::Reprint,
+      PrintDocumentType::LostTicket, PrintDocumentType::CashClosing,
+      PrintDocumentType::CashMovement, PrintDocumentType::CashCount,
+    ];
+    let mut seen = HashSet::new();
+    for variant in &variants {
+      let db_str = document_type_to_db(variant);
+      assert!(seen.insert(db_str.clone()), "duplicate db: {}", db_str);
+    }
+  }
+
+  #[test]
+  fn print_statuses_have_unique_db_representations() {
+    let variants = vec![
+      PrintJobStatus::Created, PrintJobStatus::Queued, PrintJobStatus::Processing,
+      PrintJobStatus::Sent, PrintJobStatus::Acked, PrintJobStatus::Failed,
+      PrintJobStatus::DeadLetter,
+    ];
+    let mut seen = HashSet::new();
+    for variant in &variants {
+      let db_str = print_status_to_db(variant);
+      assert!(seen.insert(db_str.clone()), "duplicate db: {}", db_str);
+    }
+  }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

@@ -123,3 +123,49 @@ pub fn generate_key_pair() -> Result<(String, String), String> {
     BASE64.encode(public_key_pem),
   ))
 }
+
+#[cfg(test)]
+mod tests {
+  use super::LicenseValidator;
+
+  #[test]
+  fn verifies_dev_signature_with_hash_fallback() {
+    let signature = LicenseValidator::generate_dev_signature(
+        "company-1",
+        "fp-123",
+        "license-abc",
+        "2026-05-12T00:00:00Z",
+    );
+
+    let validator = LicenseValidator::new();
+    let valid = validator
+        .verify_signature(
+            "company-1",
+            "fp-123",
+            "license-abc",
+            "2026-05-12T00:00:00Z",
+            &signature,
+            "",
+        )
+        .expect("signature check should succeed");
+
+    assert!(valid);
+  }
+
+  #[test]
+  fn rejects_modified_dev_signature() {
+    let validator = LicenseValidator::new();
+    let valid = validator
+        .verify_signature(
+            "company-1",
+            "fp-123",
+            "license-abc",
+            "2026-05-12T00:00:00Z",
+            "bad-signature",
+            "",
+        )
+        .expect("signature check should succeed");
+
+    assert!(!valid);
+  }
+}

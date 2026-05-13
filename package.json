@@ -8,14 +8,20 @@
   ],
   "pnpm": {
     "onlyBuiltDependencies": [
+      "@heroui/shared-utils",
       "serialport",
-      "@serialport/bindings-cpp"
+      "@serialport/bindings-cpp",
+      "esbuild",
+      "msw",
+      "sharp",
+      "unrs-resolver"
     ]
   },
   "scripts": {
     "predev": "node scripts/check-ports.mjs",
     "dev:api": "node scripts/dev-api.mjs",
     "dev:web": "node scripts/dev-web.mjs",
+    "dev:all": "node scripts/dev-all.mjs",
     "dev:desktop": "pnpm --filter @parkflow/desktop dev",
     "dev:print-agent": "pnpm --filter @parkflow/print-agent dev",
     "dev": "pnpm --filter @parkflow/desktop dev",
@@ -25,11 +31,13 @@
     "build:all": "pnpm build:api && pnpm build:web && pnpm build:desktop",
     "test:api": "node scripts/gradle.mjs test",
     "test:web": "pnpm --filter @parkflow/web test",
-    "test": "pnpm test:api && pnpm test:web",
+    "test:desktop": "pnpm --filter @parkflow/desktop test",
+    "test:desktop:e2e": "pnpm --filter @parkflow/desktop test:e2e",
+    "test": "pnpm test:api && pnpm test:web && pnpm test:desktop",
     "api:clean": "node scripts/gradle.mjs clean --quiet",
     "api:build": "node scripts/gradle.mjs build --no-build-cache",
     "api:test": "node scripts/gradle.mjs test",
-    "validate": "pnpm api:clean && pnpm api:build && pnpm api:test && pnpm test:web && pnpm build:web",
+    "validate": "pnpm api:clean && pnpm api:build && pnpm api:test && pnpm test:web && pnpm test:desktop && pnpm build:web",
     "lint:web": "pnpm --filter @parkflow/web lint",
     "lint": "pnpm lint:web",
     "setup:dev": "node scripts/setup-dev.mjs",
