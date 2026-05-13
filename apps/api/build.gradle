@@ -111,7 +111,6 @@ jacocoTestCoverageVerification {
 }
 
 check.dependsOn jacocoTestCoverageVerification
-check.dependsOn jacocoTestReport
 
 flyway {
   configurations = ['flywayMigration']
@@ -119,13 +118,4 @@ flyway {
   user = 'parkflow'
   password = 'parkflow'
   driver = 'org.postgresql.Driver'
-}
-
-sonar {
-  properties {
-    property 'sonar.projectKey', 'luisdlopera_parkflow-desktop'
-    property 'sonar.organization', 'luisdlopera'
-    property 'sonar.host.url', 'https://sonarcloud.io'
-    property 'sonar.coverage.jacoco.xmlReportPaths', 'build/reports/jacoco/test/jacocoTestReport.xml'
-  }
 }
