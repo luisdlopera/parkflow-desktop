@@ -18,7 +18,7 @@ import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
-import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;
+import com.parkflow.modules.settings.repository.MasterVehicleTypeRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
