@@ -2177,7 +2177,7 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
   const [editing, setEditing] = useState<import("@/lib/settings-api").MasterVehicleTypeRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [form, setForm] = useState<VehicleTypeFormState>(defaultVehicleTypeForm);
+  const [form, setForm] = useState({ code: "", name: "" });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -2192,6 +2192,20 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
   }, [onNotify]);
 
   useEffect(() => { load().catch(console.error); }, [load]);
+
+  const toggleActive = useCallback(async (id: string, current: boolean) => {
+    setTogglingId(id);
+    try {
+      const { patchVehicleTypeStatus } = await import("@/lib/settings-api");
+      await patchVehicleTypeStatus(id, !current);
+      setRows(prev => prev.map(r => r.id === id ? { ...r, isActive: !current } : r));
+      onNotify({ kind: "ok", text: current ? "Tipo desactivado" : "Tipo activado" });
+    } catch (e) {
+      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error cambiando estado" });
+    } finally {
+      setTogglingId(null);
+    }
+  }, [onNotify]);
 
   const toggleActive = useCallback(async (id: string, current: boolean) => {
     setTogglingId(id);
@@ -2238,32 +2252,12 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
           { key: "code", label: "Código" },
           { key: "name", label: "Nombre" },
           {
-            key: "displayOrder",
-            label: "Orden",
-            render: (r) => r.displayOrder ?? 0
-          },
-          {
-            key: "requiresPlate",
-            label: "Placa",
-            render: (r) => r.requiresPlate ? "Requerida" : "Opcional"
-          },
-          {
-            key: "hasOwnRate",
-            label: "Tarifa",
-            render: (r) => r.hasOwnRate ? "Propia" : "Compartida"
-          },
-          {
-            key: "quickAccess",
-            label: "Rápido",
-            render: (r) => r.quickAccess ? "Sí" : "No"
-          },
-          {
             key: "isActive",
             label: "Activo",
             render: (r) => (
               <Switch
                 isSelected={r.isActive}
-                isDisabled={togglingId === r.id || !canEdit}
+                isDisabled={togglingId === r.id}
                 size="sm"
                 color={r.isActive ? "success" : "danger"}
                 onValueChange={() => toggleActive(r.id, r.isActive)}
