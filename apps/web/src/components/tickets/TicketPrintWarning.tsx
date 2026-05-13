@@ -11,13 +11,6 @@ type Props = {
   onReprint: () => void;
   onClose: () => void;
   reprintLoading?: boolean;
-  title?: string;
-  subtitle?: string;
-  confirmLabel?: string;
-  downloadLabel?: string;
-  reprintLabel?: string;
-  showDownload?: boolean;
-  showReprint?: boolean;
 };
 
 export default function TicketPrintWarning({
@@ -27,21 +20,8 @@ export default function TicketPrintWarning({
   onDownload,
   onReprint,
   onClose,
-  reprintLoading,
-  title,
-  subtitle,
-  confirmLabel,
-  downloadLabel,
-  reprintLabel,
-  showDownload = true,
-  showReprint = true
+  reprintLoading
 }: Props) {
-  const resolvedTitle = title ?? "Ingreso registrado correctamente";
-  const resolvedSubtitle = subtitle ?? "No se pudo imprimir el ticket";
-  const resolvedConfirmLabel = confirmLabel ?? "Confirmar entrega y continuar";
-  const resolvedDownloadLabel = downloadLabel ?? "Descargar ticket";
-  const resolvedReprintLabel = reprintLabel ?? "Reimprimir";
-
   return (
     <Card className="border-2 border-amber-300 bg-amber-50/80 shadow-lg">
       <CardHeader className="flex items-center gap-3 pb-2">
@@ -51,8 +31,8 @@ export default function TicketPrintWarning({
           </svg>
         </div>
         <div>
-          <h3 className="text-base font-semibold text-emerald-800">{resolvedTitle}</h3>
-          <p className="text-sm text-amber-700">{resolvedSubtitle}</p>
+          <h3 className="text-base font-semibold text-emerald-800">Ingreso registrado correctamente</h3>
+          <p className="text-sm text-amber-700">No se pudo imprimir el ticket</p>
         </div>
       </CardHeader>
 
@@ -73,46 +53,42 @@ export default function TicketPrintWarning({
       </CardBody>
 
       <CardFooter className="flex flex-wrap gap-2 border-t border-amber-200 pt-3">
-        {showDownload ? (
-          <Button
-            size="sm"
-            variant="flat"
-            color="warning"
-            onPress={onDownload}
-            startContent={
+        <Button
+          size="sm"
+          variant="flat"
+          color="warning"
+          onPress={onDownload}
+          startContent={
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" />
+            </svg>
+          }
+        >
+          Descargar ticket
+        </Button>
+        <Button
+          size="sm"
+          variant="flat"
+          color="primary"
+          onPress={onReprint}
+          isLoading={reprintLoading}
+          startContent={
+            !reprintLoading ? (
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-            }
-          >
-            {resolvedDownloadLabel}
-          </Button>
-        ) : null}
-        {showReprint ? (
-          <Button
-            size="sm"
-            variant="flat"
-            color="primary"
-            onPress={onReprint}
-            isLoading={reprintLoading}
-            startContent={
-              !reprintLoading ? (
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              ) : null
-            }
-          >
-            {resolvedReprintLabel}
-          </Button>
-        ) : null}
+            ) : null
+          }
+        >
+          Reimprimir
+        </Button>
         <Button
           size="sm"
           variant="light"
           color="default"
           onPress={onClose}
         >
-          {resolvedConfirmLabel}
+          Cerrar
         </Button>
       </CardFooter>
     </Card>
