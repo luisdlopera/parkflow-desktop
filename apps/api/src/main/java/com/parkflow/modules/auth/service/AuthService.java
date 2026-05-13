@@ -18,6 +18,7 @@ import io.jsonwebtoken.Claims;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -214,7 +215,7 @@ public class AuthService {
 
   @Transactional
   public void logout(LogoutRequest request) {
-    UUID sessionId = UUID.fromString(request.sessionId());
+    UUID sessionId = Objects.requireNonNull(UUID.fromString(request.sessionId()));
     AuthSession session =
         authSessionRepository
             .findById(sessionId)

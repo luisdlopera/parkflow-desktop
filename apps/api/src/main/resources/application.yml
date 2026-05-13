@@ -16,7 +16,7 @@ spring:
     password: ${POSTGRES_PASSWORD:parkflow}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
     properties:
       hibernate:

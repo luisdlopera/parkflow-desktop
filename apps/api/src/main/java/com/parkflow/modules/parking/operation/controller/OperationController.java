@@ -1,11 +1,13 @@
 package com.parkflow.modules.parking.operation.controller;
 
+import com.parkflow.modules.common.debug.AgentDebugNdjson;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.parking.operation.service.OperationService;
 import com.parkflow.modules.parking.operation.service.SupervisorService;
 import jakarta.validation.Valid;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +39,21 @@ public class OperationController {
   @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize("hasAuthority('tickets:emitir')")
   public OperationResultResponse registerEntry(@Valid @RequestBody EntryRequest request) {
+    // #region agent log
+    AgentDebugNdjson.line(
+        "H1",
+        "OperationController.java:registerEntry",
+        "entry HTTP body accepted (validated)",
+        Map.ofEntries(
+            Map.entry("type", request.type() != null ? request.type() : "null"),
+            Map.entry(
+                "sitePresent", request.site() != null && !request.site().isBlank()),
+            Map.entry("plateLen", request.plate() != null ? request.plate().length() : 0),
+            Map.entry("rateIdPresent", request.rateId() != null),
+            Map.entry(
+                "idempotencyPresent",
+                request.idempotencyKey() != null && !request.idempotencyKey().isBlank())));
+    // #endregion
     return operationService.registerEntry(request);
   }
 

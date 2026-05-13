@@ -1,3 +1,13 @@
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath 'org.flywaydb:flyway-database-postgresql:10.10.0'
+  }
+}
+
 plugins {
   id 'java'
   id 'org.springframework.boot' version '3.3.3'
@@ -21,6 +31,10 @@ repositories {
   mavenCentral()
 }
 
+configurations {
+  flywayMigration
+}
+
 dependencies {
   implementation 'org.springframework.boot:spring-boot-starter-web'
   implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -36,9 +50,14 @@ dependencies {
   implementation 'org.flywaydb:flyway-database-postgresql'
   runtimeOnly 'org.postgresql:postgresql'
   runtimeOnly 'com.h2database:h2'
+  flywayMigration 'org.postgresql:postgresql'
+  flywayMigration 'org.flywaydb:flyway-database-postgresql'
 
   implementation 'org.mapstruct:mapstruct:1.5.5.Final'
   annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+
+  // Makes Spring nullability annotations fully resolvable during compilation/IDE analysis.
+  compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
   // SECURITY: Rate limiting to prevent brute force and DoS
   implementation 'com.bucket4j:bucket4j_jdk17-core:8.17.0'
@@ -69,10 +88,32 @@ jacocoTestReport {
   }
 }
 
+jacocoTestCoverageVerification {
+  dependsOn test
+  violationRules {
+    rule {
+      limit {
+        minimum = 0.50
+        counter = 'LINE'
+      }
+      limit {
+        minimum = 0.25
+        counter = 'BRANCH'
+      }
+      limit {
+        minimum = 0.50
+        counter = 'CLASS'
+      }
+    }
+  }
+}
+
+check.dependsOn jacocoTestCoverageVerification
+
 flyway {
+  configurations = ['flywayMigration']
   url = 'jdbc:postgresql://localhost:6021/parkflow_dev'
   user = 'parkflow'
   password = 'parkflow'
   driver = 'org.postgresql.Driver'
 }
-

@@ -12,6 +12,7 @@ import java.util.UUID;
 import com.parkflow.modules.auth.repository.AuthSessionRepository;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import org.springframework.http.HttpHeaders;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -34,9 +35,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     this.appUserRepository = appUserRepository;
   }
 
+  @SuppressWarnings("null")
   @Override
   protected void doFilterInternal(
-      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+      @NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
       throws ServletException, IOException {
     String auth = request.getHeader(HttpHeaders.AUTHORIZATION);
     if (auth == null || !auth.startsWith("Bearer ")) {

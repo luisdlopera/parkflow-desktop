@@ -13,7 +13,7 @@ public record EntryRequest(
     @NotBlank @Size(min = 3, max = 20) @Pattern(regexp = "^[A-Z0-9-]+$", message = "Plate must be alphanumeric") String plate,
     @NotNull String type,
     UUID rateId,
-    @NotNull UUID operatorUserId,
+    UUID operatorUserId,
     OffsetDateTime entryAt,
     @Size(max = 100) String site,
     @Size(max = 50) String lane,
