@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR from "swr";
 import { invoke } from "@tauri-apps/api/core";
+import { currentUser } from "@/lib/auth";
 import type {
   DesktopLicenseStatus,
   HeartbeatResponse,
@@ -312,8 +313,23 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
  * Hook para listar todas las empresas (Super Admin)
  */
 export function useCompanies() {
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    currentUser().then((user) => {
+      if (!mounted) return;
+      if (user?.role === "SUPER_ADMIN" || user?.role === "ADMIN") {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
+
   const { data, error, isLoading, mutate } = useSWR<Company[]>(
-    "/api/v1/licensing/companies",
+    isAdmin ? "/api/v1/licensing/companies" : null,
     async () => {
       const companies = await listCompanies();
       return companies;
@@ -324,9 +340,9 @@ export function useCompanies() {
   );
 
   return {
-    data,
+    data: data || [],
     error,
-    isLoading,
+    isLoading: isLoading || isAdmin === null,
     mutate,
   };
 }
