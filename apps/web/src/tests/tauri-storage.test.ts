@@ -37,8 +37,6 @@ describe("TauriStorage", () => {
         userId: "user-1",
         deviceId: "device-1",
         authSessionId: "session-1",
-        status: "pending",
-        retryCount: 0,
       })
     ).resolves.toBe("42");
   });

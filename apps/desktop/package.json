@@ -7,7 +7,7 @@
     "dev": "tauri dev",
     "build": "tauri build",
     "test:unit": "cargo test --manifest-path src-tauri/Cargo.toml --lib",
-    "test:integration": "cargo test --manifest-path src-tauri/Cargo.toml --test licensing_persistence --test local_first_tests",
+    "test:integration": "cargo test --manifest-path src-tauri/Cargo.toml --test licensing_persistence",
     "test:e2e": "pnpm exec playwright test --config playwright.config.ts",
     "test": "pnpm test:unit && pnpm test:integration"
   },

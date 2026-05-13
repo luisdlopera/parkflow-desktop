@@ -17,7 +17,7 @@ describe("CrashRecoveryDialog", () => {
     const onRestore = vi.fn();
     const onDismiss = vi.fn();
     vi.mocked(useCrashRecovery).mockReturnValue({
-      checkForRecovery: vi.fn(() => ({ recovered: true, data: { ticket: "123" }, timestamp: new Date("2026-05-12T10:00:00Z") })) as any,
+      checkForRecovery: vi.fn(() => ({ recovered: true, data: { ticket: "123" }, timestamp: new Date("2026-05-12T10:00:00Z") })),
       clearRecovery: vi.fn(),
     });
 
@@ -33,7 +33,7 @@ describe("CrashRecoveryDialog", () => {
     const onDismiss = vi.fn();
     const clearRecovery = vi.fn();
     vi.mocked(useCrashRecovery).mockReturnValue({
-      checkForRecovery: vi.fn(() => ({ recovered: true, data: { ticket: "123" }, timestamp: new Date("2026-05-12T10:00:00Z") })) as any,
+      checkForRecovery: vi.fn(() => ({ recovered: true, data: { ticket: "123" }, timestamp: new Date("2026-05-12T10:00:00Z") })),
       clearRecovery,
     });
 
