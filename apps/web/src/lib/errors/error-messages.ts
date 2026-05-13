@@ -70,6 +70,14 @@ export const CONTEXT_ERROR_MESSAGES: Record<string, Record<string, Partial<UserF
       title: "Placa requerida",
       description: "Debes ingresar una placa válida para registrar el ingreso.",
     },
+    [ErrorCode.VALIDATION_ERROR]: {
+      title: "Datos inválidos",
+      description: "Revisa los datos ingresados. Verifica la placa, tipo de vehículo y estado.",
+    },
+    [ErrorCode.OPERATION_ERROR]: {
+      title: "Error en la operación",
+      description: "No se pudo registrar el ingreso. Verifica los datos e intenta nuevamente.",
+    },
     fallback: {
       title: "No se pudo registrar el ingreso",
       description: "La operación no se completó. Verifica el estado del sistema.",
