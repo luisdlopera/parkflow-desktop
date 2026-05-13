@@ -135,7 +135,7 @@ export default function VehicleEntryFormV2() {
     }
   }, []);
   const plateInputRef = useRef<HTMLInputElement>(null);
-  const idempotencyKeyRef = useRef("");
+  const idempotencyKeyRef = useRef(newIdempotencyKey());
   const { playSuccess, playError } = useOperationSounds();
   const { success: toastSuccess, error: toastError } = useToast();
 
@@ -377,32 +377,6 @@ export default function VehicleEntryFormV2() {
     setPrintWarning(null);
   }, []);
 
-  const handleQuickLookup = useCallback(async () => {
-    const plate = normalizePlate(form.getValues("plate"));
-    if (!plate) {
-      setActiveLookup("Ingresa una placa para buscar.");
-      return;
-    }
-    try {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
-      const response = await fetch(`${apiBase}/sessions/active?plate=${encodeURIComponent(plate)}`, {
-        headers: await buildApiHeaders()
-      });
-      if (response.status === 404) {
-        setActiveLookup("Sin ingreso activo.");
-        return;
-      }
-      if (!response.ok) {
-        setActiveLookup("No se pudo consultar la placa.");
-        return;
-      }
-      const payload = await response.json();
-      setActiveLookup(`Activa: ${payload.receipt?.ticketNumber ?? "ticket sin número"}`);
-    } catch {
-      setActiveLookup("Consulta no disponible sin conexión.");
-    }
-  }, [form]);
-
   function isNetworkError(error: unknown): boolean {
     if (error instanceof TypeError) return true;
     if (error instanceof Error) {
@@ -456,7 +430,7 @@ export default function VehicleEntryFormV2() {
       const requestBody = validatePayloadOrThrow(
         operationEntryRequestSchema,
         {
-          idempotencyKey,
+          idempotencyKey: idempotencyKeyRef.current,
           operatorUserId: user.id,
           ...values,
           type: resolvedType,
@@ -490,11 +464,36 @@ export default function VehicleEntryFormV2() {
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        // Build a fake response object to pass to normalizeApiError 
+        // since we already read the body
+        const fakeResponse = new Response(JSON.stringify(payload), {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers
+        });
+        
+        // Dynamic import to avoid missing imports at the top
+        const { normalizeApiError } = await import("@/lib/errors/normalize-api-error");
+        const { getUserErrorMessage } = await import("@/lib/errors/get-user-error-message");
+        
         if (response.status === 409) {
-          if (payload?.code === "PARKING_FULL") {
-            setError("No hay celdas disponibles para este negocio.");
-          } else {
-            setError("Este vehículo ya tiene una entrada activa.");
+          setError("Este vehículo ya tiene una entrada activa.");
+          playError();
+          return;
+        }
+
+        const apiError = await normalizeApiError(fakeResponse);
+        const userError = getUserErrorMessage(apiError, "tickets.create");
+        
+        let errorText = userError.description;
+        if (apiError.code === "VALIDATION_ERROR" && apiError.details) {
+          // Si el backend manda los errores de validación, mostramos el primero
+          if (Array.isArray(apiError.details) && apiError.details.length > 0) {
+             errorText = apiError.details[0].message || userError.description;
+          } else if (typeof apiError.details === "object" && !Array.isArray(apiError.details)) {
+             const details = apiError.details as Record<string, any>;
+             const firstKey = Object.keys(details)[0];
+             if (firstKey) errorText = `${firstKey}: ${details[firstKey]}`;
           }
           playError();
           return;
@@ -537,16 +536,14 @@ export default function VehicleEntryFormV2() {
           : "No se pudo imprimir";
       }
 
-      const plateLabel = payload?.receipt?.plate?.startsWith("NP-") ? "SIN PLACA" : payload?.receipt?.plate;
       if (printWarning) {
         setPrintWarning({
           ticketNumber: payload.receipt.ticketNumber,
-          plate: plateLabel,
+          plate: payload.receipt.plate,
           previewLines: generatedPreviewLines
         });
       } else {
-        const spaceMsg = payload?.receipt?.parkingSpaceCode ? ` · Celda: ${payload.receipt.parkingSpaceCode}` : "";
-        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${spaceMsg}`, 5000);
+        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}`, 5000);
       }
       
       playSuccess();
@@ -649,18 +646,16 @@ export default function VehicleEntryFormV2() {
   return (
     <div className="space-y-4">
       {/* Crash Recovery Dialog */}
-      {!disableRecovery && (
-        <CrashRecoveryDialog
-          formKey="entry_form"
-          onRestore={(data) => {
-            const recovered = data as VehicleEntryFormValues;
-            form.reset(recovered);
-            toastSuccess("Datos recuperados correctamente");
-            setShowRecovery(true);
-          }}
-          onDismiss={() => setShowRecovery(false)}
-        />
-      )}
+      <CrashRecoveryDialog
+        formKey="entry_form"
+        onRestore={(data) => {
+          const recovered = data as VehicleEntryFormValues;
+          form.reset(recovered);
+          toastSuccess("Datos recuperados correctamente");
+          setShowRecovery(true);
+        }}
+        onDismiss={() => setShowRecovery(false)}
+      />
 
       {/* Print Warning */}
       {printWarning && (
@@ -672,11 +667,6 @@ export default function VehicleEntryFormV2() {
           onReprint={handleReprint}
           onClose={handleClosePrintWarning}
           reprintLoading={reprintLoading}
-          title="Ingreso registrado, pero falta comprobante"
-          subtitle="Impresion no confirmada. Reintente o entregue copia manual."
-          confirmLabel="Confirmar entrega y continuar"
-          downloadLabel="Descargar copia"
-          reprintLabel="Reintentar impresión"
         />
       )}
 
