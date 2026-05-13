@@ -24,7 +24,8 @@ class PrintJobIntegrationTest extends BaseIntegrationTest {
                 "operatorUserId": "%s",
                 "site": "Test Site",
                 "terminal": "TERM1",
-                "observations": "Ingreso para impresion"
+                "observations": "Ingreso para impresion",
+                "vehicleCondition": "Sin novedades"
             }
             """.formatted(rateId, adminUserId);
 
@@ -71,7 +72,8 @@ class PrintJobIntegrationTest extends BaseIntegrationTest {
                 "operatorUserId": "%s",
                 "site": "Test Site",
                 "terminal": "TERM1",
-                "observations": "Ingreso para consulta de impresion"
+                "observations": "Ingreso para consulta de impresion",
+                "vehicleCondition": "Sin novedades"
             }
             """.formatted(rateId, adminUserId);
 
