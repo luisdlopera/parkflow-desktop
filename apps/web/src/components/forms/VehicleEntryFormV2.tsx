@@ -9,6 +9,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { Checkbox } from "@heroui/checkbox";
 import { Card, CardBody } from "@heroui/card";
 import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
+import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
 import { vehicleEntrySchema, VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { buildApiHeaders } from "@/lib/api";
 import { newIdempotencyKey } from "@/lib/idempotency";
@@ -18,6 +19,7 @@ import {
   printReceiptIfTauri,
   resolvePaperWidthMm
 } from "@/lib/tauri-print";
+import { downloadTicketAsHtml } from "@/lib/print/ticket-download";
 import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
 import { useToast } from "@/lib/toast/ToastContext";
 import { useAutoSave } from "@/lib/hooks/useAutoSave";
@@ -25,7 +27,7 @@ import { CrashRecoveryDialog } from "@/components/ui/CrashRecoveryDialog";
 import type { VehicleType } from "@parkflow/types";
 import { fetchMasterVehicleTypes, type MasterVehicleTypeRow } from "@/lib/settings-api";
 import { currentUser } from "@/lib/auth";
-import { operationEntryRequestSchema } from "@/lib/validation/contracts";
+import { operationEntryRequestSchema, operationReprintRequestSchema } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow, toUserMessageFromClientValidation } from "@/lib/validation/request-guard";
 
 // #region agent log - Performance logging utility
@@ -84,6 +86,7 @@ export default function VehicleEntryFormV2() {
   const [loadingTypes, setLoadingTypes] = useState(true);
   const submitLock = useRef(false);
   const plateInputRef = useRef<HTMLInputElement>(null);
+  const idempotencyKeyRef = useRef(newIdempotencyKey());
   const { playSuccess, playError } = useOperationSounds();
   const { success: toastSuccess, error: toastError } = useToast();
 
@@ -110,6 +113,12 @@ export default function VehicleEntryFormV2() {
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [printWarning, setPrintWarning] = useState<{
+    ticketNumber: string;
+    plate: string;
+    previewLines: string[];
+  } | null>(null);
+  const [reprintLoading, setReprintLoading] = useState(false);
 
   const form = useForm<VehicleEntryFormValues>({
     resolver: zodResolver(vehicleEntrySchema),
@@ -211,6 +220,49 @@ export default function VehicleEntryFormV2() {
     setStats({ today, session });
   }, []);
 
+  const handleDownloadTicket = useCallback(() => {
+    if (!printWarning) return;
+    downloadTicketAsHtml(printWarning.previewLines, printWarning.ticketNumber, printWarning.plate);
+  }, [printWarning]);
+
+  const handleReprint = useCallback(async () => {
+    if (!printWarning) return;
+    setReprintLoading(true);
+    try {
+      const user = await currentUser();
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
+      const body = validatePayloadOrThrow(
+        operationReprintRequestSchema,
+        {
+          idempotencyKey: newIdempotencyKey(),
+          ticketNumber: printWarning.ticketNumber,
+          operatorUserId: user?.id ?? "00000000-0000-0000-0000-000000000003",
+          reason: "Reimpresion por fallo de impresora en ingreso"
+        },
+        "Datos de reimpresion invalidos"
+      );
+      const response = await fetch(`${apiBase}/tickets/reprint`, {
+        method: "POST",
+        headers: await buildApiHeaders(),
+        body: JSON.stringify(body)
+      });
+      if (!response.ok) {
+        const text = await response.text().catch(() => null);
+        throw new Error(text || `Error ${response.status}`);
+      }
+      toastSuccess("Solicitud de reimpresion enviada", 3000);
+      setPrintWarning(null);
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : "Error al reimprimir");
+    } finally {
+      setReprintLoading(false);
+    }
+  }, [printWarning, toastSuccess, toastError]);
+
+  const handleClosePrintWarning = useCallback(() => {
+    setPrintWarning(null);
+  }, []);
+
   function isNetworkError(error: unknown): boolean {
     if (error instanceof TypeError) return true;
     if (error instanceof Error) {
@@ -246,7 +298,7 @@ export default function VehicleEntryFormV2() {
       const requestBody = validatePayloadOrThrow(
         operationEntryRequestSchema,
         {
-          idempotencyKey: newIdempotencyKey(),
+          idempotencyKey: idempotencyKeyRef.current,
           operatorUserId: user.id,
           ...values,
           plate: normalizedPlate,
@@ -286,6 +338,12 @@ export default function VehicleEntryFormV2() {
         const { normalizeApiError } = await import("@/lib/errors/normalize-api-error");
         const { getUserErrorMessage } = await import("@/lib/errors/get-user-error-message");
         
+        if (response.status === 409) {
+          setError("Este vehículo ya tiene una entrada activa.");
+          playError();
+          return;
+        }
+
         const apiError = await normalizeApiError(fakeResponse);
         const userError = getUserErrorMessage(apiError, "tickets.create");
         
@@ -319,7 +377,8 @@ export default function VehicleEntryFormV2() {
           entryAt: payload.receipt.entryAt ?? null
         }
       };
-      setPreviewLines(buildTicketPreviewForOperation(printPayload, "ENTRY"));
+      const generatedPreviewLines = buildTicketPreviewForOperation(printPayload, "ENTRY");
+      setPreviewLines(generatedPreviewLines);
 
       let printWarning: string | null = null;
       try {
@@ -330,11 +389,15 @@ export default function VehicleEntryFormV2() {
           : "No se pudo imprimir";
       }
 
-      // Toast de éxito global
-      toastSuccess(
-        `Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${printWarning ? `. ${printWarning}` : ""}`,
-        5000
-      );
+      if (printWarning) {
+        setPrintWarning({
+          ticketNumber: payload.receipt.ticketNumber,
+          plate: payload.receipt.plate,
+          previewLines: generatedPreviewLines
+        });
+      } else {
+        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}`, 5000);
+      }
       
       playSuccess();
       incrementStats();
@@ -346,6 +409,9 @@ export default function VehicleEntryFormV2() {
         hasPrintWarning: !!printWarning,
         mode: settings.mode
       });
+
+      // Rotar idempotencyKey para el proximo ingreso
+      idempotencyKeyRef.current = newIdempotencyKey();
 
       // Reset form manteniendo configuración
       form.reset({
@@ -407,7 +473,6 @@ export default function VehicleEntryFormV2() {
       <CrashRecoveryDialog
         formKey="entry_form"
         onRestore={(data) => {
-          // Type assertion para los datos recuperados
           const recovered = data as VehicleEntryFormValues;
           form.reset(recovered);
           toastSuccess("Datos recuperados correctamente");
@@ -415,6 +480,19 @@ export default function VehicleEntryFormV2() {
         }}
         onDismiss={() => setShowRecovery(false)}
       />
+
+      {/* Print Warning */}
+      {printWarning && (
+        <TicketPrintWarning
+          ticketNumber={printWarning.ticketNumber}
+          plate={printWarning.plate}
+          previewLines={printWarning.previewLines}
+          onDownload={handleDownloadTicket}
+          onReprint={handleReprint}
+          onClose={handleClosePrintWarning}
+          reprintLoading={reprintLoading}
+        />
+      )}
 
       {/* Header con stats y modo - Responsive */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
