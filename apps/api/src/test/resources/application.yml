@@ -20,6 +20,7 @@ app:
     # Test CORS - updated to match new port convention
     allowed-origins: http://localhost:6001,http://localhost:6002
   security:
+    password-encoder-strength: 4
     api-key: test-api-key-12345
     jwt-secret: dGVzdC1zZWNyZXQta2V5LWZvci10ZXN0aW5nLXB1cnBvc2VzLTEyMw==
     access-token-ttl-minutes: 15

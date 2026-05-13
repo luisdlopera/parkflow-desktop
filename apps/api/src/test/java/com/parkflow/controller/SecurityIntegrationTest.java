@@ -27,7 +27,7 @@ class SecurityIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(post("/api/v1/operations/entries")
                 .header("Authorization", "Bearer " + getAuthToken())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"idempotencyKey\":\"sec-entry-001\",\"plate\":\"ABC123\",\"type\":\"CAR\",\"rateId\":\"" + rateId + "\",\"operatorUserId\":\"" + adminUserId + "\",\"site\":\"Test Site\",\"terminal\":\"TERM1\",\"observations\":\"" + xssInput + "\"}"))
+                .content("{\"idempotencyKey\":\"sec-entry-001\",\"plate\":\"ABC123\",\"type\":\"CAR\",\"rateId\":\"" + rateId + "\",\"operatorUserId\":\"" + adminUserId + "\",\"site\":\"Test Site\",\"terminal\":\"TERM1\",\"observations\":\"" + xssInput + "\",\"vehicleCondition\":\"Sin novedades\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.receipt.ticketNumber").exists())
                 .andExpect(content().string(not(containsString("<script>"))));
