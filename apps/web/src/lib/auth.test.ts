@@ -1,5 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { server } from "../mocks/server";
 
 const authBase = "http://localhost:6011/api/v1/auth";
@@ -49,6 +50,7 @@ async function importAuth() {
 
 beforeEach(() => {
   window.localStorage.clear();
+  clearMocks();
 });
 
 describe("auth client", () => {
@@ -202,5 +204,44 @@ describe("auth client", () => {
 
     await expect(loadSession()).resolves.toBeNull();
     expect(window.localStorage.getItem("parkflow.auth.session")).toBeNull();
+  });
+
+  it("persists and restores sessions through Tauri IPC when available", async () => {
+    const { saveSession } = await importAuth();
+    const response = sampleLoginResponse();
+    let storedPayload = "";
+
+    mockIPC((cmd, args) => {
+      if (cmd === "auth_store_session") {
+        storedPayload = String(args?.payloadJson ?? "");
+        return null;
+      }
+      if (cmd === "auth_load_session") {
+        return JSON.parse(storedPayload);
+      }
+      if (cmd === "auth_clear_session") {
+        storedPayload = "";
+        return null;
+      }
+    });
+
+    await saveSession({
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+      user: response.user,
+      session: response.session,
+      offlineLease: response.offlineLease,
+    });
+
+    vi.resetModules();
+    const { loadSession: loadSessionFresh, clearSession: clearSessionFresh } = await importAuth();
+
+    await expect(loadSessionFresh()).resolves.toMatchObject({
+      accessToken: response.accessToken,
+      user: response.user,
+    });
+
+    await clearSessionFresh();
+    expect(storedPayload).toBe("");
   });
 });

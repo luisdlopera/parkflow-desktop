@@ -17,7 +17,8 @@ const bodyFont = Instrument_Sans({
 
 export const metadata: Metadata = {
   title: "Parkflow Desktop",
-  description: "Parking management desktop app - Offline first"
+  description: "Parking management desktop app - Offline first",
+  icons: { icon: "/favicon.svg" }
 };
 
 export default function RootLayout({
