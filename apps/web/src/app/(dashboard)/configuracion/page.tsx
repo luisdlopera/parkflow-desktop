@@ -1778,6 +1778,7 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<import("@/lib/settings-api").MasterVehicleTypeRow | null>(null);
   const [creating, setCreating] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [form, setForm] = useState({ code: "", name: "" });
 
   const load = useCallback(async () => {
@@ -1793,6 +1794,20 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
   }, [onNotify]);
 
   useEffect(() => { void load(); }, [load]);
+
+  const toggleActive = useCallback(async (id: string, current: boolean) => {
+    setTogglingId(id);
+    try {
+      const { patchVehicleTypeStatus } = await import("@/lib/settings-api");
+      await patchVehicleTypeStatus(id, !current);
+      setRows(prev => prev.map(r => r.id === id ? { ...r, isActive: !current } : r));
+      onNotify({ kind: "ok", text: current ? "Tipo desactivado" : "Tipo activado" });
+    } catch (e) {
+      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error cambiando estado" });
+    } finally {
+      setTogglingId(null);
+    }
+  }, [onNotify]);
 
   return (
     <div className="space-y-4">
@@ -1811,7 +1826,20 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
         columns={[
           { key: "code", label: "Código" },
           { key: "name", label: "Nombre" },
-          { key: "isActive", label: "Activo", render: (r) => r.isActive ? "Sí" : "No" },
+          {
+            key: "isActive",
+            label: "Activo",
+            render: (r) => (
+              <Switch
+                isSelected={r.isActive}
+                isDisabled={togglingId === r.id}
+                size="sm"
+                color={r.isActive ? "success" : "danger"}
+                onValueChange={() => toggleActive(r.id, r.isActive)}
+                aria-label={r.isActive ? "Desactivar tipo" : "Activar tipo"}
+              />
+            )
+          },
           { key: "id", label: "", render: (r) => (
             <button
               type="button"
