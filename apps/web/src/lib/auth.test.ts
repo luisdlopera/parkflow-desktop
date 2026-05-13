@@ -217,7 +217,7 @@ describe("auth client", () => {
 
     mockIPC((cmd, args) => {
       if (cmd === "auth_store_session") {
-        storedPayload = String((args as any)?.payloadJson ?? "");
+        storedPayload = String(args?.payloadJson ?? "");
         return null;
       }
       if (cmd === "auth_load_session") {

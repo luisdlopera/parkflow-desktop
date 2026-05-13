@@ -7,6 +7,17 @@ export default defineConfig({
       allow: [path.resolve(__dirname, '../..')],
     },
   },
+  coverage: {
+    provider: 'v8',
+    reporter: ['text', 'lcov', 'html'],
+    reportsDirectory: './coverage',
+    thresholds: {
+      statements: 60,
+      branches: 40,
+      functions: 50,
+      lines: 60,
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,
