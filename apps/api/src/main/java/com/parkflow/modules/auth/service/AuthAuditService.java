@@ -8,6 +8,7 @@ import com.parkflow.modules.auth.repository.AuthAuditLogRepository;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,8 +19,8 @@ public class AuthAuditService {
 
   public void log(
       AuthAuditAction action,
-      AppUser user,
-      AuthorizedDevice device,
+      @Nullable AppUser user,
+      @Nullable AuthorizedDevice device,
       String outcome,
       Map<String, Object> metadata) {
     AuthAuditLog row = new AuthAuditLog();
