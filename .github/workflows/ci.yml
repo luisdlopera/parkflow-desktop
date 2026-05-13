@@ -29,6 +29,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @parkflow/web lint
       - run: pnpm --filter @parkflow/web test
+      - run: pnpm --filter @parkflow/web test:coverage
 
   unit_tests:
     name: Unit tests (API)
@@ -43,8 +44,8 @@ jobs:
       - uses: gradle/gradle-build-action@v3
         with:
           gradle-version: 8.8
-      - name: Run API unit tests
-        run: gradle -p apps/api test
+      - name: Run API unit tests + coverage verification
+        run: gradle -p apps/api check
 
   integration_regression:
     name: Integration + regression checks
@@ -64,14 +65,59 @@ jobs:
       - name: Run full API build (includes tests and packaging)
         run: gradle -p apps/api build
 
-  desktop:
-    name: Desktop (cargo test)
+  desktop_tests:
+    name: Desktop tests (Rust + integration)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test
-        working-directory: apps/desktop/src-tauri
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @parkflow/desktop test:unit
+      - run: pnpm --filter @parkflow/desktop test:integration
+
+  desktop_e2e:
+    name: Desktop E2E (Playwright)
+    runs-on: ubuntu-latest
+    needs: [desktop_tests]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm --filter @parkflow/desktop test:e2e
+
+  e2e_cross_browser:
+    name: E2E cross-browser (Playwright)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers (all)
+        run: pnpm exec playwright install --with-deps firefox webkit chromium
+      - name: Run full cross-browser E2E suite
+        run: pnpm exec playwright test --config qa/e2e/playwright.config.ts
 
   e2e-critical:
     name: E2E critical flows (API)
