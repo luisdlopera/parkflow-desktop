@@ -45,4 +45,13 @@ public class ConfigurationVehicleTypeController {
     settingsVehicleTypeService.delete(id);
     return ResponseEntity.noContent().build();
   }
+
+  @PatchMapping("/{id}/status")
+  @PreAuthorize("hasAuthority('configuracion:editar')")
+  public ResponseEntity<Void> patchStatus(
+      @PathVariable UUID id,
+      @RequestParam boolean active) {
+    settingsVehicleTypeService.patchStatus(id, active);
+    return ResponseEntity.ok().build();
+  }
 }
