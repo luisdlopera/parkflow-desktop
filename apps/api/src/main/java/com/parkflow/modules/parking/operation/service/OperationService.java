@@ -1,5 +1,6 @@
 package com.parkflow.modules.parking.operation.service;
 
+import com.parkflow.modules.common.debug.AgentDebugNdjson;
 import com.parkflow.modules.cash.domain.CashMovementType;
 import com.parkflow.modules.cash.service.CashService;
 import com.parkflow.modules.parking.operation.domain.*;
@@ -21,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -56,30 +58,56 @@ public class OperationService {
 
   @Transactional
   public OperationResultResponse registerEntry(EntryRequest request) {
+    String idempotencyKey = request.idempotencyKey();
+    String rawPlate = request.plate();
+    String vehicleType = request.type();
+    String site = request.site();
+
+    log.info("registerEntry: plate={} type={} site={} lane={} booth={} terminal={} idempotencyKey={}",
+        rawPlate, vehicleType, site, request.lane(), request.booth(), request.terminal(), idempotencyKey);
+
+    // #region agent log
+    AgentDebugNdjson.line(
+        "H5",
+        "OperationService.java:registerEntry:start",
+        "service invoked",
+        Map.of(
+            "vehicleType",
+            vehicleType != null ? vehicleType : "null",
+            "siteProvided",
+            site != null && !site.isBlank(),
+            "hasRateId",
+            request.rateId() != null));
+    // #endregion
+
     Optional<OperationResultResponse> replay =
-        tryReplay(request.idempotencyKey(), IdempotentOperationType.ENTRY);
+        tryReplay(idempotencyKey, IdempotentOperationType.ENTRY);
     if (replay.isPresent()) {
+      log.info("registerEntry: idempotent replay for key={}", idempotencyKey);
       return replay.get();
     }
 
-    String normalizedPlate = request.plate().trim().toUpperCase(Locale.ROOT);
+    String normalizedPlate = rawPlate.trim().toUpperCase(Locale.ROOT);
+    log.info("registerEntry: plate normalized from '{}' to '{}'", rawPlate, normalizedPlate);
 
     parkingSessionRepository
         .findByStatusAndVehicle_Plate(SessionStatus.ACTIVE, normalizedPlate)
         .ifPresent(
             session -> {
+              log.warn("registerEntry: active session exists for plate={}", normalizedPlate);
               throw new OperationException(
                   HttpStatus.CONFLICT, "El vehiculo ya tiene una sesion activa");
             });
 
     AppUser operator = findRequiredOperator(request.operatorUserId());
+    log.info("registerEntry: operator found id={} name={}", operator.getId(), operator.getName());
 
     Vehicle vehicle =
         vehicleRepository
             .findByPlate(normalizedPlate)
             .map(
                 found -> {
-                  found.setType(request.type());
+                  found.setType(vehicleType);
                   found.setUpdatedAt(OffsetDateTime.now());
                   return found;
                 })
@@ -87,13 +115,29 @@ public class OperationService {
                 () -> {
                   Vehicle created = new Vehicle();
                   created.setPlate(normalizedPlate);
-                  created.setType(request.type());
+                  created.setType(vehicleType);
                   return created;
                 });
     vehicle = vehicleRepository.save(vehicle);
+    log.info("registerEntry: vehicle saved id={} plate={} type={}", vehicle.getId(), normalizedPlate, vehicleType);
 
     OffsetDateTime entryAt = request.entryAt() != null ? request.entryAt() : OffsetDateTime.now();
-    Rate rate = resolveRate(request.rateId(), request.type(), request.site(), entryAt);
+    log.info("registerEntry: resolving rate type={} site={} entryAt={}", vehicleType, site, entryAt);
+    Rate rate = resolveRate(request.rateId(), vehicleType, site, entryAt);
+    log.info("registerEntry: rate resolved id={} name={} amount={} type={} vehicleType={}", 
+        rate.getId(), rate.getName(), rate.getAmount(), rate.getRateType(), rate.getVehicleType());
+
+    // #region agent log
+    AgentDebugNdjson.line(
+        "H1",
+        "OperationService.java:registerEntry:rateResolved",
+        "applicable rate found",
+        Map.of(
+            "rateId",
+            rate.getId().toString(),
+            "rateVehicleType",
+            rate.getVehicleType() != null ? rate.getVehicleType() : "null"));
+    // #endregion
 
     ParkingSession session = new ParkingSession();
     session.setTicketNumber(nextTicketNumber(entryAt.toLocalDate()));
@@ -102,7 +146,7 @@ public class OperationService {
     session.setRate(rate);
     session.setEntryOperator(operator);
     session.setEntryAt(entryAt);
-    session.setSite(request.site());
+    session.setSite(site);
     session.setLane(request.lane());
     session.setBooth(request.booth());
     session.setTerminal(request.terminal());
@@ -113,7 +157,7 @@ public class OperationService {
       session = parkingSessionRepository.save(session);
     } catch (DataIntegrityViolationException ex) {
       Optional<OperationResultResponse> lateReplay =
-          tryReplay(request.idempotencyKey(), IdempotentOperationType.ENTRY);
+          tryReplay(idempotencyKey, IdempotentOperationType.ENTRY);
       if (lateReplay.isPresent()) {
         return lateReplay.get();
       }
@@ -121,14 +165,44 @@ public class OperationService {
           HttpStatus.CONFLICT,
           "Vehiculo con ingreso activo, conflicto concurrente o placa duplicada en cola");
     }
+    log.info("registerEntry: session created id={} ticket={}", session.getId(), session.getTicketNumber());
+
+    // #region agent log
+    AgentDebugNdjson.line(
+        "H2",
+        "OperationService.java:registerEntry:sessionSaved",
+        "parking session persisted",
+        Map.of(
+            "sessionId",
+            session.getId().toString(),
+            "ticketNumber",
+            session.getTicketNumber()));
+    // #endregion
 
     saveVehicleCondition(
         session,
         ConditionStage.ENTRY,
-      request.observations(),
+        request.vehicleCondition(),
         request.conditionChecklist(),
         request.conditionPhotoUrls(),
         operator);
+
+    // #region agent log
+    AgentDebugNdjson.line(
+        "H3",
+        "OperationService.java:registerEntry:afterConditionReport",
+        "vehicle condition report saved",
+        Map.ofEntries(
+            Map.entry(
+                "checklistSize",
+                request.conditionChecklist() != null ? request.conditionChecklist().size() : 0),
+            Map.entry(
+                "photoUrlsSize",
+                request.conditionPhotoUrls() != null ? request.conditionPhotoUrls().size() : 0),
+            Map.entry(
+                "hasVehicleConditionText",
+                request.vehicleCondition() != null && !request.vehicleCondition().isBlank())));
+    // #endregion
 
     createEvent(session, SessionEventType.ENTRY_RECORDED, operator, "entry");
     // RELIABILITY: Print job is best-effort; don't fail the operation if printing fails
@@ -137,11 +211,11 @@ public class OperationService {
     } catch (Exception printError) {
       log.warn("RELIABILITY: Print job creation failed for session={}, but operation completed. Error: {}",
           session.getId(), printError.getMessage());
-      // Continue - print job can be retried later
     }
-    safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.ENTRY, session);
+    safeRecordIdempotency(idempotencyKey, IdempotentOperationType.ENTRY, session);
     meterRegistry.counter("parkflow.operations", "operation", "entry").increment();
-    log.info("audit op=entry sessionId={} ticket={}", session.getId(), session.getTicketNumber());
+    log.info("audit op=entry sessionId={} ticket={} plate={} operator={}",
+        session.getId(), session.getTicketNumber(), normalizedPlate, operator.getName());
 
     return new OperationResultResponse(
         session.getId().toString(),
@@ -212,7 +286,7 @@ public class OperationService {
     saveVehicleCondition(
         session,
         ConditionStage.EXIT,
-      request.observations(),
+        request.vehicleCondition(),
         request.conditionChecklist(),
         request.conditionPhotoUrls(),
         operator);
@@ -662,8 +736,9 @@ public class OperationService {
       if (isCriticalOperation) {
         log.error("RELIABILITY: Critical operation {} completed without idempotency key for session {}",
             type, session.getId());
-        throw new IllegalStateException(
-            "Critical operation must have idempotency key: " + type);
+        throw new OperationException(
+            HttpStatus.BAD_REQUEST,
+            "La operacion requiere una clave de idempotencia: " + type);
       }
       // Non-critical operations can proceed without idempotency (e.g., reprint)
       log.warn("RELIABILITY: Operation {} has no idempotency key for session {}",
@@ -769,6 +844,8 @@ public class OperationService {
       List<String> checklist,
       List<String> photoUrls,
       AppUser operator) {
+    log.debug("saveVehicleCondition: session={} stage={} observations='{}' checklist={} photoUrls={}",
+        session.getId(), stage, observations, checklist, photoUrls);
     if (isBlank(observations) && isEmpty(checklist) && isEmpty(photoUrls)) {
       throw new OperationException(
           HttpStatus.BAD_REQUEST,

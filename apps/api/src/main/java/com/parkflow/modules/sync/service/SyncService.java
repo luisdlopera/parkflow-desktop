@@ -11,10 +11,12 @@ import com.parkflow.modules.sync.repository.SyncEventRepository;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class SyncService {
 
   @Transactional
   public SyncEventResponse push(SyncPushRequest request) {
+    Objects.requireNonNull(request, "request");
     return syncEventRepository
         .findByIdempotencyKey(request.idempotencyKey())
         .map(this::toResponse)
@@ -35,7 +38,7 @@ public class SyncService {
   }
 
   @Transactional(readOnly = true)
-  public List<SyncEventResponse> pull(OffsetDateTime after, int limit) {
+  public List<SyncEventResponse> pull(@Nullable OffsetDateTime after, int limit) {
     OffsetDateTime filter = after != null ? after : OffsetDateTime.parse("1970-01-01T00:00:00Z");
     return syncEventRepository.findByCreatedAtAfterOrderByCreatedAtAsc(filter).stream()
         .limit(Math.max(1, Math.min(limit, 500)))
@@ -45,6 +48,7 @@ public class SyncService {
 
   @Transactional
   public List<SyncEventResponse> reconcile(SyncReconcileRequest request) {
+    Objects.requireNonNull(request, "request");
     OffsetDateTime now = OffsetDateTime.now();
     List<SyncEventResponse> out = new ArrayList<>();
     for (var id : request.eventIds()) {
@@ -70,11 +74,16 @@ public class SyncService {
   }
 
   private SyncEventResponse create(SyncPushRequest request) {
+    Objects.requireNonNull(request, "request");
+    String idempotencyKey = Objects.requireNonNull(request.idempotencyKey(), "idempotencyKey");
+    String eventType = Objects.requireNonNull(request.eventType(), "eventType");
+    String aggregateId = Objects.requireNonNull(request.aggregateId(), "aggregateId");
+    String payloadJson = Objects.requireNonNull(request.payloadJson(), "payloadJson");
     SyncEvent event = new SyncEvent();
-    event.setIdempotencyKey(request.idempotencyKey());
-    event.setEventType(request.eventType());
-    event.setAggregateId(request.aggregateId());
-    event.setPayloadJson(request.payloadJson());
+    event.setIdempotencyKey(idempotencyKey);
+    event.setEventType(eventType);
+    event.setAggregateId(aggregateId);
+    event.setPayloadJson(payloadJson);
     event.setUserId(request.userId());
     event.setDeviceId(request.deviceId());
     event.setSessionId(request.sessionId());
@@ -82,12 +91,12 @@ public class SyncService {
     event.setDirection(SyncDirection.PUSH);
     event.setCreatedAt(OffsetDateTime.now());
     var saved = syncEventRepository.save(event);
-    MDC.put("aggregateId", request.aggregateId());
+    MDC.put("aggregateId", aggregateId);
     try {
       log.info(
           "audit sync_push idempotencyKey={} eventType={}",
-          request.idempotencyKey(),
-          request.eventType());
+          idempotencyKey,
+          eventType);
     } finally {
       MDC.clear();
     }
