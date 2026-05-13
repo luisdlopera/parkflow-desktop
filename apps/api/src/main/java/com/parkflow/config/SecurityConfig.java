@@ -41,6 +41,9 @@ public class SecurityConfig {
   @Value("${app.security.swagger-public:true}")
   private boolean swaggerPublic;
 
+  @Value("${app.security.password-encoder-strength:12}")
+  private int passwordEncoderStrength;
+
   private final JwtAuthFilter jwtAuthFilter;
   private final ObjectMapper objectMapper;
 
@@ -127,7 +130,7 @@ public class SecurityConfig {
 
   @Bean
   PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder(12);
+    return new BCryptPasswordEncoder(passwordEncoderStrength);
   }
 
   @Bean

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.RequestBuilder;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -76,7 +77,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
 
         mockMvc.perform(get("/api/v1/auth/me")
-                .header(HttpHeaders.AUTHORIZATION, bearer(login.get("accessToken").asText())))
+                .header(HttpHeaders.AUTHORIZATION, bearer(login.path("accessToken").asText())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(adminUserId.toString()))
                 .andExpect(jsonPath("$.email").value("admin@example.com"))
@@ -86,13 +87,13 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     @Test
     void refresh_ShouldRotateRefreshToken_AndRejectReusedToken() throws Exception {
         JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
-        String originalRefreshToken = login.get("refreshToken").asText();
-        String sessionId = login.get("session").get("sessionId").asText();
+        String originalRefreshToken = login.path("refreshToken").asText();
+        String sessionId = login.path("session").path("sessionId").asText();
 
         JsonNode rotated = refresh(originalRefreshToken, DEVICE_ID);
 
         mockMvc.perform(get("/api/v1/auth/me")
-                .header(HttpHeaders.AUTHORIZATION, bearer(rotated.get("accessToken").asText())))
+                .header(HttpHeaders.AUTHORIZATION, bearer(rotated.path("accessToken").asText())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("admin@example.com"));
 
@@ -104,7 +105,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         expectSessionInactive(sessionId);
         org.junit.jupiter.api.Assertions.assertNotEquals(
                 originalRefreshToken,
-                rotated.get("refreshToken").asText());
+                rotated.path("refreshToken").asText());
     }
 
     @Test
@@ -113,15 +114,15 @@ class AuthIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(post("/api/v1/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(refreshJson(login.get("refreshToken").asText(), "other-device")))
+                .content(refreshJson(login.path("refreshToken").asText(), "other-device")))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void logout_ShouldDeactivateSession_AndRejectAccessTokenAfterLogout() throws Exception {
         JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
-        String accessToken = login.get("accessToken").asText();
-        String sessionId = login.get("session").get("sessionId").asText();
+        String accessToken = login.path("accessToken").asText();
+        String sessionId = login.path("session").path("sessionId").asText();
 
         mockMvc.perform(post("/api/v1/auth/logout")
                 .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
@@ -131,7 +132,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                       "sessionId": "%s",
                       "refreshToken": "%s"
                     }
-                    """.formatted(sessionId, login.get("refreshToken").asText())))
+                    """.formatted(sessionId, login.path("refreshToken").asText())))
                 .andExpect(status().isNoContent());
 
         expectSessionInactive(sessionId);
@@ -143,7 +144,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     @Test
     void changePassword_ShouldValidateCurrentPasswordStrengthAndRevokeSessions() throws Exception {
         JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
-        String accessToken = login.get("accessToken").asText();
+        String accessToken = login.path("accessToken").asText();
 
         mockMvc.perform(post("/api/v1/auth/change-password")
                 .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
@@ -190,7 +191,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     @Test
     void devices_ShouldRevokeAndAuthorizeDevice_WhenUserHasPermissions() throws Exception {
         JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
-        String accessToken = login.get("accessToken").asText();
+        String accessToken = login.path("accessToken").asText();
 
         mockMvc.perform(get("/api/v1/auth/devices")
                 .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
@@ -228,23 +229,23 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
 
         mockMvc.perform(get("/api/v1/auth/devices")
-                .header(HttpHeaders.AUTHORIZATION, bearer(login.get("accessToken").asText())))
+                .header(HttpHeaders.AUTHORIZATION, bearer(login.path("accessToken").asText())))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/api/v1/auth/devices/revoke")
-                .header(HttpHeaders.AUTHORIZATION, bearer(login.get("accessToken").asText()))
+                .header(HttpHeaders.AUTHORIZATION, bearer(login.path("accessToken").asText()))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(deviceDecisionJson(DEVICE_ID, "not allowed")))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(get("/api/v1/auth/me")
-                .header(HttpHeaders.AUTHORIZATION, bearer(login.get("accessToken").asText())))
+                .header(HttpHeaders.AUTHORIZATION, bearer(login.path("accessToken").asText())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.permissions", not(hasItem("devices:autorizar"))))
                 .andExpect(jsonPath("$.permissions", not(hasItem("devices:revocar"))));
     }
 
-    private org.springframework.test.web.servlet.RequestBuilder loginRequest(String email, String password, String deviceId) {
+    private RequestBuilder loginRequest(String email, String password, String deviceId) {
         return post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""

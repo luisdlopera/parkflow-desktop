@@ -20,6 +20,8 @@ import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
 import com.parkflow.modules.settings.repository.MasterVehicleTypeRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -33,6 +35,21 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+/**
+ * Base class for API integration tests.
+ *
+ * Uses H2 in-memory database (configured in src/test/resources/application.yml)
+ * instead of Testcontainers/PostgreSQL. This provides fast, self-contained tests
+ * that do not require Docker.
+ *
+ * The test `application.yml` configures H2 with `create-drop` DDL strategy and
+ * Flyway disabled. All entities use JPA field access which is compatible with H2.
+ * The H2Dialect is configured for proper SQL generation.
+ *
+ * If PostgreSQL-specific validation is needed, Testcontainers dependencies are
+ * available in build.gradle (spring-boot-testcontainers, testcontainers:postgresql).
+ * See docs/TEST_ANALYSIS_2026-05-07.md for guidance on switching to Testcontainers.
+ */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -49,6 +66,9 @@ public abstract class BaseIntegrationTest {
 
     @Autowired
     protected MockMvc mockMvc;
+
+    @Autowired
+    protected ObjectMapper objectMapper;
 
     @Autowired
     protected JdbcTemplate jdbcTemplate;
@@ -197,9 +217,11 @@ public abstract class BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(loginRequest))
                 .andReturn();
-        String response = result.getResponse().getContentAsString();
-        int start = response.indexOf("\"accessToken\":\"") + 15;
-        int end = response.indexOf("\"", start);
-        return response.substring(start, end);
+        JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
+        String accessToken = response.path("accessToken").asText(null);
+        if (accessToken == null || accessToken.isBlank()) {
+            throw new IllegalStateException("Login response did not include accessToken");
+        }
+        return accessToken;
     }
 }

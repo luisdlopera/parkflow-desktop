@@ -13,6 +13,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.core.MethodParameter;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -130,5 +132,53 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().status()).isEqualTo(400);
         assertThat(response.getBody().errorCode()).isEqualTo("INVALID_ARGUMENT");
         assertThat(response.getBody().userMessage()).isEqualTo("La solicitud no es valida.");
+    }
+
+    @Test
+    @DisplayName("Should handle DataIntegrityViolationException with 409")
+    void shouldHandleDataIntegrityViolationException() {
+        MDC.put("correlationId", "test-corr-id-6");
+        DataIntegrityViolationException ex = new DataIntegrityViolationException("Duplicate key");
+
+        ResponseEntity<ErrorResponse> response = handler.handleDataIntegrityViolation(ex, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().status()).isEqualTo(409);
+        assertThat(response.getBody().errorCode()).isEqualTo("DATABASE_CONSTRAINT_ERROR");
+        assertThat(response.getBody().correlationId()).isEqualTo("test-corr-id-6");
+    }
+
+    @Test
+    @DisplayName("Should handle IllegalStateException with 400")
+    void shouldHandleIllegalStateException() {
+        MDC.put("correlationId", "test-corr-id-7");
+        IllegalStateException ex = new IllegalStateException("Invalid state");
+
+        ResponseEntity<ErrorResponse> response = handler.handleIllegalState(ex, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().status()).isEqualTo(400);
+        assertThat(response.getBody().errorCode()).isEqualTo("INVALID_STATE");
+        assertThat(response.getBody().userMessage()).isEqualTo("Invalid state");
+        assertThat(response.getBody().correlationId()).isEqualTo("test-corr-id-7");
+    }
+
+    @Test
+    @DisplayName("Should handle InvalidDataAccessResourceUsageException with 500 and clear message")
+    void shouldHandleInvalidDataAccessResourceUsageException() {
+        MDC.put("correlationId", "test-corr-id-8");
+        InvalidDataAccessResourceUsageException ex =
+            new InvalidDataAccessResourceUsageException("relation \"rates\" does not exist");
+
+        ResponseEntity<ErrorResponse> response = handler.handleInvalidDataAccess(ex, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().status()).isEqualTo(500);
+        assertThat(response.getBody().errorCode()).isEqualTo("DATABASE_QUERY_ERROR");
+        assertThat(response.getBody().userMessage()).isEqualTo("Error interno de base de datos. Contacta al administrador.");
+        assertThat(response.getBody().correlationId()).isEqualTo("test-corr-id-8");
     }
 }
