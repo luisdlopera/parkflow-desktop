@@ -4,14 +4,16 @@ import com.parkflow.modules.sync.dto.SyncEventResponse;
 import com.parkflow.modules.sync.dto.SyncPushRequest;
 import com.parkflow.modules.sync.dto.SyncReconcileRequest;
 import com.parkflow.modules.auth.entity.AuthAuditAction;
-import com.parkflow.modules.auth.service.AuthAuditService;
+import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.sync.entity.SyncDirection;
+import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.sync.entity.SyncEvent;
 import com.parkflow.modules.sync.repository.SyncEventRepository;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,16 +33,18 @@ public class SyncService {
   @Transactional
   public SyncEventResponse push(SyncPushRequest request) {
     Objects.requireNonNull(request, "request");
+    UUID companyId = SecurityUtils.requireCompanyId();
     return syncEventRepository
-        .findByIdempotencyKey(request.idempotencyKey())
+        .findByIdempotencyKeyAndCompanyId(request.idempotencyKey(), companyId)
         .map(this::toResponse)
-        .orElseGet(() -> create(request));
+        .orElseGet(() -> create(request, companyId));
   }
 
   @Transactional(readOnly = true)
   public List<SyncEventResponse> pull(@Nullable OffsetDateTime after, int limit) {
+    UUID companyId = SecurityUtils.requireCompanyId();
     OffsetDateTime filter = after != null ? after : OffsetDateTime.parse("1970-01-01T00:00:00Z");
-    return syncEventRepository.findByCreatedAtAfterOrderByCreatedAtAsc(filter).stream()
+    return syncEventRepository.findByCompanyIdAndCreatedAtAfterOrderByCreatedAtAsc(companyId, filter).stream()
         .limit(Math.max(1, Math.min(limit, 500)))
         .map(this::toResponse)
         .toList();
@@ -51,9 +55,11 @@ public class SyncService {
     Objects.requireNonNull(request, "request");
     OffsetDateTime now = OffsetDateTime.now();
     List<SyncEventResponse> out = new ArrayList<>();
+    UUID companyId = SecurityUtils.requireCompanyId();
     for (var id : request.eventIds()) {
       syncEventRepository
           .findById(id)
+          .filter(e -> companyId.equals(e.getCompanyId()))
           .ifPresent(
               event -> {
                 event.setSyncedAt(now);
@@ -73,13 +79,14 @@ public class SyncService {
     return out;
   }
 
-  private SyncEventResponse create(SyncPushRequest request) {
+  private SyncEventResponse create(SyncPushRequest request, UUID companyId) {
     Objects.requireNonNull(request, "request");
     String idempotencyKey = Objects.requireNonNull(request.idempotencyKey(), "idempotencyKey");
     String eventType = Objects.requireNonNull(request.eventType(), "eventType");
     String aggregateId = Objects.requireNonNull(request.aggregateId(), "aggregateId");
     String payloadJson = Objects.requireNonNull(request.payloadJson(), "payloadJson");
     SyncEvent event = new SyncEvent();
+    event.setCompanyId(companyId);
     event.setIdempotencyKey(idempotencyKey);
     event.setEventType(eventType);
     event.setAggregateId(aggregateId);
