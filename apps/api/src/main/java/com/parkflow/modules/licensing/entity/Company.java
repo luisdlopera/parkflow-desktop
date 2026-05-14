@@ -168,6 +168,9 @@ public class Company {
   @Column(nullable = false)
   private Boolean allowSync = true;
 
+  @Column(nullable = false)
+  private Boolean onboardingCompleted = false;
+
   /**
    * Observaciones internas de configuración.
    */

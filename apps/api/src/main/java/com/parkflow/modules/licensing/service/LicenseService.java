@@ -626,6 +626,7 @@ public class LicenseService {
         .maxUsers(company.getMaxUsers())
         .offlineModeAllowed(company.getOfflineModeAllowed())
         .offlineLeaseHours(company.getOfflineLeaseHours())
+        .onboardingCompleted(company.getOnboardingCompleted())
         .modules(modules)
         .devices(devices)
         .createdAt(company.getCreatedAt())

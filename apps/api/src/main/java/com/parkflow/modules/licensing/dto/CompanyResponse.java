@@ -49,6 +49,8 @@ public class CompanyResponse {
 
   private Integer offlineLeaseHours;
 
+  private Boolean onboardingCompleted;
+
   private List<CompanyModuleResponse> modules;
 
   private List<LicensedDeviceResponse> devices;
