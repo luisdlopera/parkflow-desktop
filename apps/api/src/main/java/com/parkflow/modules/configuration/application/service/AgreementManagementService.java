@@ -27,7 +27,8 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AgreementManagementService implements AgreementUseCase {
+@Slf4j
+public class AgreementService {
 
   private final AgreementRepository repo;
   private final ParkingSiteRepository siteRepository;

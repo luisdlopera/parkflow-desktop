@@ -26,8 +26,8 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class SettingsUserService implements UserManagementUseCase {
-  private final AppUserPort appUserRepository;
+public class SettingsUserService {
+  private final AppUserRepository appUserRepository;
   private final PasswordHashService passwordHashService;
   private final SettingsAuditService settingsAuditService;
   private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;

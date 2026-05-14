@@ -2,7 +2,6 @@ package com.parkflow.modules.parking.operation.repository;
 
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateCategory;
-import com.parkflow.modules.auth.security.TenantContext;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -23,7 +22,6 @@ public interface RateRepository extends JpaRepository<Rate, UUID> {
       @Param("q") String q,
       @Param("active") Boolean active,
       @Param("category") RateCategory category,
-      @Param("cid") UUID companyId,
       Pageable pageable);
 
   default Page<Rate> search(String site, String q, Boolean active, RateCategory category, Pageable pageable) {

@@ -23,8 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ParkingParametersService implements ParkingParametersUseCase {
-  private final ParkingParametersPort parkingParametersRepository;
+public class ParkingParametersService {
+  private final ParkingParametersRepository parkingParametersRepository;
   private final SettingsAuditService settingsAuditService;
   private final ObjectMapper objectMapper;
   private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;

@@ -31,9 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class SettingsRateService implements RateManagementUseCase {
-  private final RatePort ratePort;
-  private final ParkingSessionPort parkingSessionPort;
+public class SettingsRateService {
+  private final RateRepository rateRepository;
+  private final ParkingSessionRepository parkingSessionRepository;
   private final SettingsAuditService settingsAuditService;
   private final com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort vehicleTypeRepository;
   private final ParkingSitePort parkingSiteRepository;
@@ -49,8 +49,7 @@ public class SettingsRateService implements RateManagementUseCase {
       String site, String q, Boolean active, String category, Pageable pageable) {
     String s = site == null || site.isBlank() ? "DEFAULT" : site.trim();
     RateCategory parsedCategory = parseCategory(category);
-    UUID companyId = SecurityUtils.requireCompanyId();
-    Page<Rate> page = ratePort.search(s, normalizeQuery(q), active, parsedCategory, companyId, pageable);
+    Page<Rate> page = rateRepository.search(s, normalizeQuery(q), active, parsedCategory, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 

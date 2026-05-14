@@ -30,7 +30,8 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PrepaidManagementService implements PrepaidUseCase {
+@Slf4j
+public class PrepaidService {
 
   private final PrepaidPackageRepository packageRepo;
   private final PrepaidBalanceRepository balanceRepo;
