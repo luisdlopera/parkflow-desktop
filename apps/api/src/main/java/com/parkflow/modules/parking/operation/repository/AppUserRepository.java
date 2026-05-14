@@ -11,20 +11,23 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AppUserRepository extends JpaRepository<AppUser, UUID> {
-  Optional<AppUser> findByEmail(String email);
+  @Query("SELECT u FROM AppUser u WHERE LOWER(u.email) = LOWER(:email)")
+  Optional<AppUser> findGlobalByEmail(@Param("email") String email);
 
-  Optional<AppUser> findByEmailIgnoreCase(String email);
+  Optional<AppUser> findByEmailAndCompanyId(String email, UUID companyId);
 
-  long countByRoleAndIsActiveTrue(UserRole role);
+  Optional<AppUser> findByEmailIgnoreCaseAndCompanyId(String email, UUID companyId);
+
+  long countByRoleAndCompanyIdAndIsActiveTrue(UserRole role, UUID companyId);
 
   @Query(
-      "SELECT u FROM AppUser u WHERE (:q IS NULL OR :q = '' OR LOWER(u.name) LIKE LOWER(CONCAT('%', :q, '%')) "
+      "SELECT u FROM AppUser u WHERE u.companyId = :cid AND (:q IS NULL OR :q = '' OR LOWER(u.name) LIKE LOWER(CONCAT('%', :q, '%')) "
           + "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(COALESCE(u.document, '')) LIKE LOWER(CONCAT('%', :q, '%'))) "
           + "AND (:active IS NULL OR u.isActive = :active)")
   Page<AppUser> search(
-      @Param("q") String q, @Param("active") Boolean active, Pageable pageable);
+      @Param("q") String q, @Param("active") Boolean active, @Param("cid") UUID companyId, Pageable pageable);
 
-  boolean existsByDocumentIgnoreCaseAndIdNot(String document, UUID id);
+  boolean existsByDocumentIgnoreCaseAndCompanyIdAndIdNot(String document, UUID companyId, UUID id);
 
-  boolean existsByDocumentIgnoreCase(String document);
+  boolean existsByDocumentIgnoreCaseAndCompanyId(String document, UUID companyId);
 }

@@ -1,8 +1,9 @@
 package com.parkflow.modules.auth;
 
 import com.parkflow.modules.auth.dto.*;
-import com.parkflow.modules.auth.service.AuthService;
-import com.parkflow.modules.auth.service.PasswordResetService;
+import com.parkflow.modules.auth.application.port.in.AuthenticationUseCase;
+import com.parkflow.modules.auth.application.port.in.DeviceManagementUseCase;
+import com.parkflow.modules.auth.application.port.in.PasswordResetUseCase;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -13,58 +14,63 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
-  private final AuthService authService;
-  private final PasswordResetService passwordResetService;
+  private final AuthenticationUseCase authenticationUseCase;
+  private final DeviceManagementUseCase deviceManagementUseCase;
+  private final PasswordResetUseCase passwordResetUseCase;
 
-  public AuthController(AuthService authService, PasswordResetService passwordResetService) {
-    this.authService = authService;
-    this.passwordResetService = passwordResetService;
+  public AuthController(
+      AuthenticationUseCase authenticationUseCase,
+      DeviceManagementUseCase deviceManagementUseCase,
+      PasswordResetUseCase passwordResetUseCase) {
+    this.authenticationUseCase = authenticationUseCase;
+    this.deviceManagementUseCase = deviceManagementUseCase;
+    this.passwordResetUseCase = passwordResetUseCase;
   }
 
   @PostMapping("/login")
   @ResponseStatus(HttpStatus.OK)
   public LoginResponse login(@Valid @RequestBody LoginRequest request) {
-    return authService.login(request);
+    return authenticationUseCase.login(request);
   }
 
   @PostMapping("/refresh")
   public LoginResponse refresh(@Valid @RequestBody RefreshRequest request) {
-    return authService.refresh(request);
+    return authenticationUseCase.refresh(request);
   }
 
   @PostMapping("/logout")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void logout(@Valid @RequestBody LogoutRequest request) {
-    authService.logout(request);
+    authenticationUseCase.logout(request);
   }
 
   @GetMapping("/me")
   public AuthUserResponse me() {
-    return authService.me();
+    return authenticationUseCase.me();
   }
 
   @PostMapping("/change-password")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-    authService.changePassword(request);
+    authenticationUseCase.changePassword(request);
   }
 
   @GetMapping("/devices")
   @PreAuthorize("hasAuthority('devices:autorizar')")
   public List<DeviceInfoResponse> devices() {
-    return authService.listDevices();
+    return deviceManagementUseCase.listDevices();
   }
 
   @PostMapping("/devices/revoke")
   @PreAuthorize("hasAuthority('devices:revocar')")
   public DeviceInfoResponse revoke(@Valid @RequestBody DeviceDecisionRequest request) {
-    return authService.revokeDevice(request);
+    return deviceManagementUseCase.revokeDevice(request);
   }
 
   @PostMapping("/devices/authorize")
   @PreAuthorize("hasAuthority('devices:autorizar')")
   public DeviceInfoResponse authorize(@Valid @RequestBody DeviceDecisionRequest request) {
-    return authService.authorizeDevice(request);
+    return deviceManagementUseCase.authorizeDevice(request);
   }
 
   /**
@@ -76,7 +82,7 @@ public class AuthController {
   public void requestPasswordReset(@Valid @RequestBody PasswordResetRequest request,
                                    HttpServletRequest httpRequest) {
     String ipAddress = getClientIp(httpRequest);
-    passwordResetService.requestReset(new PasswordResetRequest(
+    passwordResetUseCase.requestReset(new PasswordResetRequest(
         request.email(), request.deviceId(), ipAddress));
   }
 
@@ -86,7 +92,7 @@ public class AuthController {
   @PostMapping("/password-reset/confirm")
   @ResponseStatus(HttpStatus.OK)
   public void confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmRequest request) {
-    passwordResetService.confirmReset(request);
+    passwordResetUseCase.confirmReset(request);
   }
 
   private String getClientIp(HttpServletRequest request) {

@@ -9,7 +9,7 @@ type ButtonProps = {
 
 const toneStyles = {
   primary: "bg-brand-500 text-white hover:bg-brand-600",
-  ghost: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+  ghost: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-neutral-800 dark:bg-zinc-900 dark:text-neutral-200 dark:hover:bg-neutral-700/50"
 };
 
 export default function Button({

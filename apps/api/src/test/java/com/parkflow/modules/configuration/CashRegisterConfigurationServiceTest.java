@@ -14,7 +14,7 @@ import com.parkflow.modules.configuration.entity.ParkingSite;
 import com.parkflow.modules.configuration.entity.Printer;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.configuration.repository.PrinterRepository;
-import com.parkflow.modules.configuration.service.CashRegisterConfigurationService;
+import com.parkflow.modules.configuration.application.service.CashRegisterManagementService;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
@@ -37,11 +37,11 @@ class CashRegisterConfigurationServiceTest {
   @Mock private PrinterRepository printerRepository;
   @Mock private AppUserRepository appUserRepository;
 
-  private CashRegisterConfigurationService service;
+  private CashRegisterManagementService service;
 
   @BeforeEach
   void setUp() {
-    service = new CashRegisterConfigurationService(cashRegisterRepository, parkingSiteRepository, printerRepository, appUserRepository);
+    service = new CashRegisterManagementService(cashRegisterRepository, parkingSiteRepository, printerRepository, appUserRepository);
   }
 
   @Test

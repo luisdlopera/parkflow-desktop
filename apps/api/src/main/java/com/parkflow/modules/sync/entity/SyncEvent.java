@@ -15,6 +15,9 @@ public class SyncEvent {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
+  @Column(name = "company_id")
+  private UUID companyId;
+
   @Column(nullable = false, unique = true)
   private String idempotencyKey;
 

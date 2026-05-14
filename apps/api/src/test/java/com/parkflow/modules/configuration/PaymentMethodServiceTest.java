@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
 import com.parkflow.modules.configuration.entity.PaymentMethod;
 import com.parkflow.modules.configuration.repository.PaymentMethodRepository;
-import com.parkflow.modules.configuration.service.PaymentMethodService;
+import com.parkflow.modules.configuration.application.service.PaymentMethodManagementService;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import java.util.List;
 import java.util.Optional;
@@ -29,11 +29,11 @@ class PaymentMethodServiceTest {
 
   @Mock private PaymentMethodRepository paymentMethodRepository;
 
-  private PaymentMethodService service;
+  private PaymentMethodManagementService service;
 
   @BeforeEach
   void setUp() {
-    service = new PaymentMethodService(paymentMethodRepository);
+    service = new PaymentMethodManagementService(paymentMethodRepository);
   }
 
   @Test

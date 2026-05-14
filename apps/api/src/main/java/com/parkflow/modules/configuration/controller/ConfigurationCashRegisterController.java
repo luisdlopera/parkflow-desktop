@@ -1,8 +1,8 @@
 package com.parkflow.modules.configuration.controller;
 
+import com.parkflow.modules.configuration.application.port.in.CashRegisterUseCase;
 import com.parkflow.modules.configuration.dto.CashRegisterRequest;
 import com.parkflow.modules.configuration.dto.CashRegisterResponse;
-import com.parkflow.modules.configuration.service.CashRegisterConfigurationService;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ConfigurationCashRegisterController {
 
-  private final CashRegisterConfigurationService cashRegisterConfigurationService;
+  private final CashRegisterUseCase cashRegisterUseCase;
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
@@ -27,19 +27,19 @@ public class ConfigurationCashRegisterController {
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,
       Pageable pageable) {
-    return ResponseEntity.ok(cashRegisterConfigurationService.list(siteId, q, active, pageable));
+    return ResponseEntity.ok(cashRegisterUseCase.list(siteId, q, active, pageable));
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
   public ResponseEntity<CashRegisterResponse> get(@PathVariable UUID id) {
-    return ResponseEntity.ok(cashRegisterConfigurationService.get(id));
+    return ResponseEntity.ok(cashRegisterUseCase.get(id));
   }
 
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<CashRegisterResponse> create(@Valid @RequestBody CashRegisterRequest req) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(cashRegisterConfigurationService.create(req));
+    return ResponseEntity.status(HttpStatus.CREATED).body(cashRegisterUseCase.create(req));
   }
 
   @PutMapping("/{id}")
@@ -47,7 +47,7 @@ public class ConfigurationCashRegisterController {
   public ResponseEntity<CashRegisterResponse> update(
       @PathVariable UUID id,
       @Valid @RequestBody CashRegisterRequest req) {
-    return ResponseEntity.ok(cashRegisterConfigurationService.update(id, req));
+    return ResponseEntity.ok(cashRegisterUseCase.update(id, req));
   }
 
   @PatchMapping("/{id}/status")
@@ -55,6 +55,6 @@ public class ConfigurationCashRegisterController {
   public ResponseEntity<CashRegisterResponse> patchStatus(
       @PathVariable UUID id,
       @RequestParam boolean active) {
-    return ResponseEntity.ok(cashRegisterConfigurationService.patchStatus(id, active));
+    return ResponseEntity.ok(cashRegisterUseCase.patchStatus(id, active));
   }
 }

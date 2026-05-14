@@ -40,7 +40,7 @@ export function CrashRecoveryDialog({ formKey, onRestore, onDismiss }: CrashReco
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200 dark:bg-gray-800 dark:shadow-lg">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200 dark:bg-zinc-900 dark:shadow-lg">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
             <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,15 +49,15 @@ export function CrashRecoveryDialog({ formKey, onRestore, onDismiss }: CrashReco
           </div>
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Recuperar datos</h3>
-            <p className="text-sm text-slate-500 dark:text-gray-300">Se detectó información no guardada</p>
+            <p className="text-sm text-slate-500 dark:text-neutral-300">Se detectó información no guardada</p>
           </div>
         </div>
 
-        <div className="bg-slate-50 rounded-xl p-4 mb-4 dark:bg-gray-700">
+        <div className="bg-slate-50 rounded-xl p-4 mb-4 dark:bg-neutral-800">
           <p className="text-sm text-slate-600">
             Se encontraron datos de una sesión anterior que no se completó:
           </p>
-          <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-gray-200">
+          <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-neutral-200">
             <li className="flex items-center gap-2">
               <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

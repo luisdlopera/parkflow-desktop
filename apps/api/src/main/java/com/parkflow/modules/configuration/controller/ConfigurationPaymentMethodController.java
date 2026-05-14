@@ -1,8 +1,8 @@
 package com.parkflow.modules.configuration.controller;
 
+import com.parkflow.modules.configuration.application.port.in.PaymentMethodUseCase;
 import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
 import com.parkflow.modules.configuration.dto.PaymentMethodResponse;
-import com.parkflow.modules.configuration.service.PaymentMethodService;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ConfigurationPaymentMethodController {
 
-  private final PaymentMethodService paymentMethodService;
+  private final PaymentMethodUseCase paymentMethodUseCase;
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
@@ -26,19 +26,19 @@ public class ConfigurationPaymentMethodController {
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,
       Pageable pageable) {
-    return ResponseEntity.ok(paymentMethodService.list(q, active, pageable));
+    return ResponseEntity.ok(paymentMethodUseCase.list(q, active, pageable));
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
   public ResponseEntity<PaymentMethodResponse> get(@PathVariable UUID id) {
-    return ResponseEntity.ok(paymentMethodService.get(id));
+    return ResponseEntity.ok(paymentMethodUseCase.get(id));
   }
 
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<PaymentMethodResponse> create(@Valid @RequestBody PaymentMethodRequest req) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(paymentMethodService.create(req));
+    return ResponseEntity.status(HttpStatus.CREATED).body(paymentMethodUseCase.create(req));
   }
 
   @PutMapping("/{id}")
@@ -46,7 +46,7 @@ public class ConfigurationPaymentMethodController {
   public ResponseEntity<PaymentMethodResponse> update(
       @PathVariable UUID id,
       @Valid @RequestBody PaymentMethodRequest req) {
-    return ResponseEntity.ok(paymentMethodService.update(id, req));
+    return ResponseEntity.ok(paymentMethodUseCase.update(id, req));
   }
 
   @PatchMapping("/{id}/status")
@@ -54,6 +54,6 @@ public class ConfigurationPaymentMethodController {
   public ResponseEntity<PaymentMethodResponse> patchStatus(
       @PathVariable UUID id,
       @RequestParam boolean active) {
-    return ResponseEntity.ok(paymentMethodService.patchStatus(id, active));
+    return ResponseEntity.ok(paymentMethodUseCase.patchStatus(id, active));
   }
 }

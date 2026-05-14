@@ -7,10 +7,12 @@ import com.parkflow.modules.parking.operation.dto.OperationalHealthResponse;
 import com.parkflow.modules.sync.repository.SyncEventRepository;
 import com.parkflow.modules.tickets.entity.PrintJobStatus;
 import com.parkflow.modules.tickets.repository.PrintJobRepository;
+import com.parkflow.modules.auth.security.SecurityUtils;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,14 +27,15 @@ public class OperationalHealthService {
 
   @Transactional(readOnly = true)
   public OperationalHealthResponse getOperationalHealth() {
-    long outboxPending = syncEventRepository.countBySyncedAtIsNull();
+    UUID companyId = SecurityUtils.requireCompanyId();
+    long outboxPending = syncEventRepository.countByCompanyIdAndSyncedAtIsNull(companyId);
     long failedEvents =
         printJobRepository
-            .findTop10ByStatusInOrderByUpdatedAtDesc(EnumSet.of(PrintJobStatus.FAILED))
+            .findTop10ByCompanyIdAndStatusInOrderByUpdatedAtDesc(companyId, EnumSet.of(PrintJobStatus.FAILED))
             .size();
     long deadLetter =
         printJobRepository
-            .findTop10ByStatusInOrderByUpdatedAtDesc(EnumSet.of(PrintJobStatus.DEAD_LETTER))
+            .findTop10ByCompanyIdAndStatusInOrderByUpdatedAtDesc(companyId, EnumSet.of(PrintJobStatus.DEAD_LETTER))
             .size();
 
     OffsetDateTime lastHeartbeat =
@@ -43,7 +46,7 @@ public class OperationalHealthService {
             .orElse(null);
 
     OffsetDateTime lastSync =
-        syncEventRepository.findTopBySyncedAtIsNotNullOrderBySyncedAtDesc()
+        syncEventRepository.findTopByCompanyIdAndSyncedAtIsNotNullOrderBySyncedAtDesc(companyId)
             .map(s -> s.getSyncedAt())
             .orElse(null);
 
@@ -65,7 +68,7 @@ public class OperationalHealthService {
 
     var recentErrors =
         printJobRepository
-            .findTop10ByStatusInOrderByUpdatedAtDesc(EnumSet.of(PrintJobStatus.FAILED, PrintJobStatus.DEAD_LETTER))
+            .findTop10ByCompanyIdAndStatusInOrderByUpdatedAtDesc(companyId, EnumSet.of(PrintJobStatus.FAILED, PrintJobStatus.DEAD_LETTER))
             .stream()
             .map(
                 p ->
