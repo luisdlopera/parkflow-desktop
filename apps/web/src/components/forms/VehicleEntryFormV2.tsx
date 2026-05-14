@@ -51,7 +51,6 @@ function writePerfLog(operation: string, durationMs: number, details?: Record<st
   }
   logs.push(logEntry);
   localStorage.setItem("perf_logs_0dd35a", JSON.stringify(logs.slice(-100)));
-  console.log("[PERF_METRIC]", logEntry);
 }
 // #endregion
 

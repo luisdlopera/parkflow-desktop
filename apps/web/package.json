@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "NODE_OPTIONS='--localstorage-file=.vitest-localstorage' vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
