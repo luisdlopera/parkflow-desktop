@@ -68,7 +68,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
   return (
     <aside data-testid="desktop-sidebar" className={`
-      hidden md:flex h-screen border-r border-slate-200/70 bg-white/60 backdrop-blur
+      hidden md:flex h-screen border-r border-slate-200/70 bg-white/60 dark:bg-gray-900/60 dark:border-gray-700/70 backdrop-blur
       flex-col transition-all duration-300 ease-in-out
       ${collapsed ? "w-[72px] px-2" : "w-[260px] px-4"}
     `}>
@@ -160,7 +160,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                 flex items-center rounded-xl font-medium transition-all
                 ${active
                   ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}
+                  : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
                 ${collapsed 
                   ? "justify-center p-3" 
                   : "justify-between px-3 py-3 text-sm gap-3"}
@@ -178,7 +178,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                   inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded flex-shrink-0
                   ${active 
                     ? "bg-white/20 text-white" 
-                    : "bg-slate-200 text-slate-500"}
+                    : "bg-slate-200 text-slate-500 dark:bg-gray-700 dark:text-gray-200"}
                 `}>
                   {item.shortcut}
                 </kbd>
@@ -191,16 +191,16 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       {/* Help tip - condicional según configuración */}
       {!collapsed && uiSettings.showKeyboardShortcuts && (
         <div className="mt-auto pt-6 px-2">
-          <div className="rounded-xl bg-slate-100/80 p-3 text-xs text-slate-600">
-            <p className="font-semibold mb-1">Atajos de teclado:</p>
-            <div className="space-y-1 text-slate-500">
-              <p><kbd className="font-mono bg-white px-1 rounded">F1</kbd> Nuevo ingreso</p>
-              <p><kbd className="font-mono bg-white px-1 rounded">F2</kbd> Salida/cobro</p>
-              <p><kbd className="font-mono bg-white px-1 rounded">F3</kbd> Vehículos</p>
-              <p><kbd className="font-mono bg-white px-1 rounded">F4</kbd> Caja</p>
-              <p><kbd className="font-mono bg-white px-1 rounded">Esc</kbd> Dashboard</p>
-            </div>
-          </div>
+              <div className="rounded-xl bg-slate-100/80 p-3 text-xs text-slate-600 dark:bg-gray-800 dark:text-gray-300">
+             <p className="font-semibold mb-1">Atajos de teclado:</p>
+             <div className="space-y-1 text-slate-500 dark:text-gray-300">
+               <p><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1 rounded">F1</kbd> Nuevo ingreso</p>
+               <p><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1 rounded">F2</kbd> Salida/cobro</p>
+               <p><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1 rounded">F3</kbd> Vehículos</p>
+               <p><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1 rounded">F4</kbd> Caja</p>
+               <p><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1 rounded">Esc</kbd> Dashboard</p>
+             </div>
+           </div>
         </div>
       )}
     </aside>
