@@ -13,6 +13,7 @@ import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MonthlyContractService {
 
   private final MonthlyContractRepository repo;
@@ -53,7 +55,7 @@ public class MonthlyContractService {
             objectMapper.writeValueAsString(req),
             "Monthly contract created: " + mc.getId());
     } catch (Exception e) {
-        // ignore
+        log.warn("No se pudo registrar auditoria global al crear mensualidad {}", mc.getId(), e);
     }
     return toResponse(mc);
   }
@@ -63,7 +65,11 @@ public class MonthlyContractService {
     validateDates(req);
     MonthlyContract mc = findOrThrow(id);
     String before = "";
-    try { before = objectMapper.writeValueAsString(toResponse(mc)); } catch(Exception e) {}
+    try {
+      before = objectMapper.writeValueAsString(toResponse(mc));
+    } catch (Exception e) {
+      log.warn("No se pudo serializar estado previo de mensualidad {}", id, e);
+    }
     fromRequest(req, mc);
     mc = repo.save(mc);
     try {
@@ -73,7 +79,7 @@ public class MonthlyContractService {
             objectMapper.writeValueAsString(toResponse(mc)),
             "Monthly contract updated: " + id);
     } catch (Exception e) {
-        // ignore
+        log.warn("No se pudo registrar auditoria global al actualizar mensualidad {}", id, e);
     }
     return toResponse(mc);
   }

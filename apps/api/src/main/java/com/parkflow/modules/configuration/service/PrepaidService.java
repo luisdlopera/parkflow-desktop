@@ -16,6 +16,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PrepaidService {
 
   private final PrepaidPackageRepository packageRepo;
@@ -59,7 +61,7 @@ public class PrepaidService {
             objectMapper.writeValueAsString(req),
             "Prepaid package created: " + pkg.getId());
     } catch (Exception e) {
-        // ignore
+        log.warn("No se pudo registrar auditoria global al crear paquete prepago {}", pkg.getId(), e);
     }
     return toPackageResponse(pkg);
   }
@@ -68,7 +70,11 @@ public class PrepaidService {
   public PrepaidPackageResponse updatePackage(UUID id, PrepaidPackageRequest req) {
     PrepaidPackage pkg = findPackageOrThrow(id);
     String before = "";
-    try { before = objectMapper.writeValueAsString(toPackageResponse(pkg)); } catch(Exception e) {}
+    try {
+      before = objectMapper.writeValueAsString(toPackageResponse(pkg));
+    } catch (Exception e) {
+      log.warn("No se pudo serializar estado previo de paquete prepago {}", id, e);
+    }
     fromPackageRequest(req, pkg);
     pkg = packageRepo.save(pkg);
     try {
@@ -78,7 +84,7 @@ public class PrepaidService {
             objectMapper.writeValueAsString(toPackageResponse(pkg)),
             "Prepaid package updated: " + id);
     } catch (Exception e) {
-        // ignore
+        log.warn("No se pudo registrar auditoria global al actualizar paquete prepago {}", id, e);
     }
     return toPackageResponse(pkg);
   }

@@ -14,12 +14,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ParkingParametersService {
   private final ParkingParametersRepository parkingParametersRepository;
   private final SettingsAuditService settingsAuditService;
@@ -73,7 +75,7 @@ public class ParkingParametersService {
             objectMapper.writeValueAsString(row.getData()),
             "Parameters updated for site: " + site);
     } catch (Exception e) {
-        // ignore
+        log.warn("No se pudo registrar auditoria global al actualizar parametros del sitio {}", site, e);
     }
 
     return row.getData();
@@ -115,7 +117,7 @@ public class ParkingParametersService {
             objectMapper.writeValueAsString(def),
             "Parameters reset for site: " + site);
     } catch (Exception e) {
-        // ignore
+        log.warn("No se pudo registrar auditoria global al resetear parametros del sitio {}", site, e);
     }
     return def;
   }

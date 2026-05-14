@@ -13,6 +13,7 @@ import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AgreementService {
 
   private final AgreementRepository repo;
@@ -65,7 +67,7 @@ public class AgreementService {
             objectMapper.writeValueAsString(req),
             "Agreement created: " + a.getId());
     } catch (Exception e) {
-        // ignore
+        log.warn("No se pudo registrar auditoria global al crear convenio {}", a.getId(), e);
     }
     return toResponse(a);
   }
@@ -74,7 +76,11 @@ public class AgreementService {
   public AgreementResponse update(UUID id, AgreementRequest req) {
     Agreement a = findOrThrow(id);
     String before = "";
-    try { before = objectMapper.writeValueAsString(toResponse(a)); } catch(Exception e) {}
+    try {
+      before = objectMapper.writeValueAsString(toResponse(a));
+    } catch (Exception e) {
+      log.warn("No se pudo serializar estado previo de convenio {}", id, e);
+    }
     
     if (repo.existsByCodeAndIdNot(req.code(), id)) {
       throw new OperationException(HttpStatus.CONFLICT,
@@ -90,7 +96,7 @@ public class AgreementService {
             objectMapper.writeValueAsString(toResponse(a)),
             "Agreement updated: " + id);
     } catch (Exception e) {
-        // ignore
+        log.warn("No se pudo registrar auditoria global al actualizar convenio {}", id, e);
     }
     return toResponse(a);
   }

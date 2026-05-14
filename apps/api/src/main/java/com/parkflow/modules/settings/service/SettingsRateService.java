@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SettingsRateService {
   private final RateRepository rateRepository;
   private final ParkingSessionRepository parkingSessionRepository;
@@ -44,8 +46,20 @@ public class SettingsRateService {
   public SettingsPageResponse<RateResponse> list(
       String site, String q, Boolean active, String category, Pageable pageable) {
     String s = site == null || site.isBlank() ? "DEFAULT" : site.trim();
-    Page<Rate> page = rateRepository.search(s, normalizeQuery(q), active, category, pageable);
+    RateCategory parsedCategory = parseCategory(category);
+    Page<Rate> page = rateRepository.search(s, normalizeQuery(q), active, parsedCategory, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
+  }
+
+  private RateCategory parseCategory(String category) {
+    if (category == null || category.isBlank()) {
+      return null;
+    }
+    try {
+      return RateCategory.valueOf(category.trim().toUpperCase());
+    } catch (IllegalArgumentException ex) {
+      throw new OperationException(HttpStatus.BAD_REQUEST, "Categoria de tarifa invalida");
+    }
   }
 
   @Transactional(readOnly = true)
@@ -83,7 +97,7 @@ public class SettingsRateService {
             objectMapper.writeValueAsString(req),
             "Rate created: " + rate.getId());
     } catch (Exception e) {
-        // ignore
+        log.warn("No se pudo registrar auditoria global de creacion de tarifa {}", rate.getId(), e);
     }
     return toResponse(rate);
   }
@@ -115,7 +129,7 @@ public class SettingsRateService {
             objectMapper.writeValueAsString(snapshot(updated)),
             "Rate updated: " + id);
     } catch (Exception e) {
-        // ignore
+        log.warn("No se pudo registrar auditoria global de actualizacion de tarifa {}", id, e);
     }
     return toResponse(updated);
   }
