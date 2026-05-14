@@ -15,14 +15,14 @@ import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.tickets.dto.CreatePrintJobRequest;
 import com.parkflow.modules.tickets.dto.UpdatePrintJobStatusRequest;
-import com.parkflow.modules.tickets.domain.PrintDocumentType;
-import com.parkflow.modules.tickets.domain.PrintJob;
-import com.parkflow.modules.tickets.domain.PrintJobStatus;
-import com.parkflow.modules.tickets.domain.repository.PrintAttemptPort;
-import com.parkflow.modules.tickets.domain.repository.PrintJobPort;
+import com.parkflow.modules.tickets.entity.PrintDocumentType;
+import com.parkflow.modules.tickets.entity.PrintJob;
+import com.parkflow.modules.tickets.entity.PrintJobStatus;
+import com.parkflow.modules.tickets.repository.PrintAttemptRepository;
+import com.parkflow.modules.tickets.repository.PrintJobRepository;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.parking.operation.domain.UserRole;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -59,11 +59,10 @@ class PrintJobServiceTest {
     companyId = UUID.randomUUID();
     sessionId = UUID.randomUUID();
     operatorId = UUID.randomUUID();
-    session = ParkingSession.builder()
-        .id(sessionId)
-        .ticketNumber("T-A-000001")
-        .companyId(companyId)
-        .build();
+    session = new ParkingSession();
+    session.setId(sessionId);
+    session.setTicketNumber("T-A-000001");
+    session.setCompanyId(companyId);
     operator = new AppUser();
     operator.setId(operatorId);
     operator.setCompanyId(companyId);
@@ -139,7 +138,7 @@ class PrintJobServiceTest {
     job.setCompanyId(companyId);
     job.setAttempts(0);
     when(printAttemptRepository.findByAttemptKey(attemptKey))
-        .thenReturn(Optional.of(new com.parkflow.modules.tickets.domain.PrintAttempt()));
+        .thenReturn(Optional.of(new com.parkflow.modules.tickets.entity.PrintAttempt()));
     when(printJobRepository.findByIdAndCompanyId(eq(jobId), any())).thenReturn(Optional.of(job));
 
     var res =

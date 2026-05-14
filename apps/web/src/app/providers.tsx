@@ -59,16 +59,6 @@ function GlobalAuthEffects() {
     };
 
     const wrapped = async (input: RequestInfo | URL, init?: RequestInit) => {
-      try {
-        const { handleLocalFirstFetch } = await import("@/lib/local-first/fetch-interceptor");
-        const localResponse = await handleLocalFirstFetch(input, init);
-        if (localResponse) {
-          return localResponse;
-        }
-      } catch (err) {
-        console.error("LocalFirst Interceptor load error:", err);
-      }
-
       const nativeFetch = window.__parkflowNativeFetch ?? window.fetch.bind(window);
       const response = await nativeFetch(input, init);
       const requestUrl = typeof input === "string" || input instanceof URL ? String(input) : input.url;

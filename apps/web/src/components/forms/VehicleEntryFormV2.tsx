@@ -171,8 +171,8 @@ export default function VehicleEntryFormV2() {
   const [showRecovery, setShowRecovery] = useState(false);
   const [vehicleTypes, setVehicleTypes] = useState<MasterVehicleTypeRow[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
+  const [activeLookup, setActiveLookup] = useState<string | null>(null);
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
-  const [loadingConfig, setLoadingConfig] = useState(true);
   const submitLock = useRef(false);
   const [occupancy, setOccupancy] = useState<{ availableSpaces: number; activeSpaces: number } | null>(null);
 
@@ -267,23 +267,8 @@ export default function VehicleEntryFormV2() {
   });
 
   useEffect(() => {
-    fetchRuntimeConfig()
-      .then(setRuntimeConfig)
-      .catch(() => setRuntimeConfig(null))
-      .finally(() => setLoadingConfig(false));
+    fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
   }, []);
-
-  useEffect(() => {
-    if (runtimeConfig?.operationConfiguration) {
-      const { defaultVehicleType, defaultVisitorType } = runtimeConfig.operationConfiguration;
-      if (defaultVehicleType && form.getValues("type") !== defaultVehicleType) {
-        form.setValue("type", defaultVehicleType, { shouldValidate: true });
-      }
-      if (defaultVisitorType && form.getValues("entryMode") !== defaultVisitorType) {
-        form.setValue("entryMode", defaultVisitorType as "VISITOR" | "AGREEMENT" | "SUBSCRIBER" | "EMPLOYEE", { shouldValidate: true });
-      }
-    }
-  }, [runtimeConfig, form]);
 
   useEffect(() => {
     let cancelled = false;
@@ -337,9 +322,7 @@ export default function VehicleEntryFormV2() {
 
   const selectedVehicleType = vehicleTypes.find((type) => type.code === selectedTypeCode);
   const requiresPlate = selectedVehicleType?.requiresPlate ?? true;
-  const configuredSites = useMemo(() => {
-    return Array.isArray(runtimeConfig?.sites) ? runtimeConfig.sites : [];
-  }, [runtimeConfig]);
+  const configuredSites = Array.isArray(runtimeConfig?.sites) ? runtimeConfig.sites : [];
   const hasMultipleSites = configuredSites.length > 1;
 
   useEffect(() => {
@@ -1109,7 +1092,7 @@ export default function VehicleEntryFormV2() {
                             if (selected) field.onChange(selected);
                           }}
                         >
-                          {configuredSites.map((site: any) => {
+                          {configuredSites.map((site) => {
                             const key = String(site.code ?? site.name ?? "PRINCIPAL");
                             return <SelectItem key={key}>{String(site.name ?? site.code ?? key)}</SelectItem>;
                           })}
@@ -1117,33 +1100,27 @@ export default function VehicleEntryFormV2() {
                       )}
                     />
                   ) : null}
-                  {runtimeConfig?.operationConfiguration?.enableLaneSelection !== false && (
-                    <Controller
-                      name="lane"
-                      control={form.control}
-                      render={({ field }) => (
-                        <Input {...field} label="Carril" placeholder="1" variant="flat" size="sm" />
-                      )}
-                    />
-                  )}
-                  {runtimeConfig?.operationConfiguration?.enableCashierSelection !== false && (
-                    <Controller
-                      name="booth"
-                      control={form.control}
-                      render={({ field }) => (
-                        <Input {...field} label="Caja" placeholder="Caja 1" variant="flat" size="sm" />
-                      )}
-                    />
-                  )}
-                  {runtimeConfig?.operationConfiguration?.enableTerminalSelection !== false && (
-                    <Controller
-                      name="terminal"
-                      control={form.control}
-                      render={({ field }) => (
-                        <Input {...field} label="Terminal" placeholder="T1" variant="flat" size="sm" />
-                      )}
-                    />
-                  )}
+                  <Controller
+                    name="lane"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input {...field} label="Carril" placeholder="1" variant="flat" size="sm" />
+                    )}
+                  />
+                  <Controller
+                    name="booth"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input {...field} label="Caja" placeholder="Caja 1" variant="flat" size="sm" />
+                    )}
+                  />
+                  <Controller
+                    name="terminal"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input {...field} label="Terminal" placeholder="T1" variant="flat" size="sm" />
+                    )}
+                  />
                 </div>
 
                 {/* Tarifa */}

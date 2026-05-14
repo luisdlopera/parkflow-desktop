@@ -163,10 +163,10 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
           {step === 4 && <Switch isSelected={Boolean(stepData.enabled)} onValueChange={(v) => setStepData({ ...stepData, enabled: v })}>¿Manejas caja por operador?</Switch>}
           {step === 5 && <Switch isSelected={Boolean(stepData.enabled)} onValueChange={(v) => setStepData({ ...stepData, enabled: v })}>¿Trabajan por turnos?</Switch>}
           {step === 6 && (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {OPTIONS.payments.map((item) => (
-                  <div key={item}>
-                    <Checkbox
+            <div className="grid gap-2 sm:grid-cols-2">
+              {OPTIONS.payments.map((item) => (
+                <div key={item}>
+                  <Checkbox
                     isDisabled={!allowedPayments.includes(item)}
                     isSelected={Array.isArray(stepData.paymentMethods) && (stepData.paymentMethods as string[]).includes(item)}
                     onValueChange={(checked) => {
@@ -177,10 +177,10 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
                   >
                     {item}
                   </Checkbox>
-                   {!allowedPayments.includes(item) && <p className="text-xs text-warning-700">Disponible en plan superior.</p>}
-                  </div>
-                ))}
-              </div>
+                  {!allowedPayments.includes(item) && <p className="text-xs text-warning">Disponible en plan superior.</p>}
+                </div>
+              ))}
+            </div>
           )}
           {step === 7 && <Switch isSelected={Boolean(stepData.allowReprint)} onValueChange={(v) => setStepData({ ...stepData, allowReprint: v })}>Permitir reimpresión</Switch>}
           {step === 8 && <Switch isSelected={Boolean(stepData.enabled)} onValueChange={(v) => setStepData({ ...stepData, enabled: v })}>¿Manejas clientes frecuentes o mensualidades?</Switch>}

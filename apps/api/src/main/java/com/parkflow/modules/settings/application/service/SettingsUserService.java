@@ -35,7 +35,7 @@ public class SettingsUserService implements UserManagementUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public SettingsPageResponse<UserAdminResponse> list(String q, Boolean active, UserRole role, Pageable pageable) {
+  public SettingsPageResponse<UserAdminResponse> list(String q, Boolean active, Pageable pageable) {
     UUID companyId = SecurityUtils.requireCompanyId();
     Page<AppUser> page = appUserRepository.search(q, active, companyId, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
@@ -200,7 +200,16 @@ public class SettingsUserService implements UserManagementUseCase {
     return toResponse(user);
   }
 
-  @Override
+  private void assertNotDemoteLastSuperAdmin(AppUser user, UserRole newRole) {
+    if (user.getRole() == UserRole.SUPER_ADMIN && newRole != UserRole.SUPER_ADMIN) {
+      long activeSupers = appUserRepository.countByRoleAndCompanyIdAndIsActiveTrue(UserRole.SUPER_ADMIN, user.getCompanyId());
+      if (user.isActive() && activeSupers <= 1) {
+        throw new OperationException(
+            HttpStatus.CONFLICT, "No puede cambiar el rol del unico super administrador activo");
+      }
+    }
+  }
+
   @Transactional
   public UserAdminResponse patchStatus(UUID id, UserStatusRequest req) {
     UUID companyId = SecurityUtils.requireCompanyId();

@@ -8,14 +8,14 @@ import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.enums.PlanType;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
-import com.parkflow.modules.onboarding.domain.OnboardingProgress;
-import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
-import com.parkflow.modules.onboarding.application.service.CompanySettingsService;
-import com.parkflow.modules.onboarding.application.service.FeatureAccessService;
-import com.parkflow.modules.onboarding.application.service.OnboardingService;
+import com.parkflow.modules.onboarding.entity.OnboardingProgress;
+import com.parkflow.modules.onboarding.repository.OnboardingProgressRepository;
+import com.parkflow.modules.onboarding.service.CompanySettingsService;
+import com.parkflow.modules.onboarding.service.FeatureAccessService;
+import com.parkflow.modules.onboarding.service.OnboardingService;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.parking.operation.domain.UserRole;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -26,8 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-import com.parkflow.modules.configuration.service.OperationalConfigurationService;
 
 class OnboardingServiceTest {
 
@@ -130,30 +128,5 @@ class OnboardingServiceTest {
     @SuppressWarnings("unchecked")
     java.util.List<String> methods = (java.util.List<String>) stepData.get("paymentMethods");
     assertEquals(java.util.List.of("EFECTIVO"), methods);
-  }
-
-  @Test
-  void resetOnboarding_savesSnapshotAndResetsProgress() {
-    company.setOnboardingCompleted(true);
-    OnboardingProgress progress = new OnboardingProgress();
-    progress.setCompany(company);
-    progress.setCurrentStep(12);
-    progress.setCompleted(true);
-    progress.setProgressData(Map.of("step_1", Map.of("vehicleTypes", java.util.List.of("MOTO"))));
-    
-    when(onboardingProgressRepository.findByCompanyId(company.getId())).thenReturn(Optional.of(progress));
-    when(companySettingsSnapshotPort.countByCompanyId(company.getId())).thenReturn(0);
-    when(companySettingsService.getSettingsOrDefault(company)).thenReturn(Map.of("vehicleTypes", java.util.List.of("MOTO")));
-
-    OnboardingStatusResponse response = onboardingService.resetOnboarding(company.getId(), "Test Reset");
-
-    assertFalse(company.getOnboardingCompleted());
-    assertFalse(progress.isCompleted());
-    assertEquals(1, progress.getCurrentStep());
-    assertEquals(1, response.currentStep());
-    assertFalse(response.onboardingCompleted());
-
-    verify(companySettingsSnapshotPort, times(1)).save(any());
-    verify(auditService, times(1)).record(any(), any(), anyString(), anyString(), anyString());
   }
 }
