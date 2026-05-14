@@ -1,6 +1,7 @@
 package com.parkflow.modules.parking.operation.repository;
 
 import com.parkflow.modules.parking.operation.domain.Rate;
+import com.parkflow.modules.parking.operation.domain.RateCategory;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -33,12 +34,12 @@ public interface RateRepository extends JpaRepository<Rate, UUID> {
       "SELECT r FROM Rate r WHERE (:site IS NULL OR r.site = :site OR r.site IS NULL) "
           + "AND (:q IS NULL OR :q = '' OR LOWER(r.name) LIKE LOWER(CONCAT('%', :q, '%'))) "
           + "AND (:active IS NULL OR r.isActive = :active) "
-          + "AND (:category IS NULL OR :category = '' OR r.category = com.parkflow.modules.parking.operation.domain.RateCategory.valueOf(:category))")
+          + "AND (:category IS NULL OR r.category = :category)")
   Page<Rate> search(
       @Param("site") String site,
       @Param("q") String q,
       @Param("active") Boolean active,
-      @Param("category") String category,
+      @Param("category") RateCategory category,
       Pageable pageable);
 
   @Query(
