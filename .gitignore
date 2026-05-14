@@ -1,7 +1,23 @@
 .env
-.env.*
-apps/web/.env.local
-apps/desktop/.env.local
+.env.local
+**/.gradle
+**/build
+**/target
+**/*.tsbuildinfo
+apps/api/target
+src-tauri/target
+src-tauri/gen
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen
+coverage
+test-results
+apps/web/coverage
+apps/desktop/test-results
+*.test.ts.snap
+*.test.tsx.snap
+.vitest-localstorage
+
+# Licensing Keys (Security - NEVER COMMIT)
 infra/keys/
 *.key
 *.pem
