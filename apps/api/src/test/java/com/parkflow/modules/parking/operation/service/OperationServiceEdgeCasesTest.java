@@ -92,7 +92,7 @@ class OperationServiceEdgeCasesTest {
         appUserRepository, vehicleRepository, rateRepository, parkingSiteRepository,
         parkingSessionRepository, ticketCounterRepository, vehicleConditionReportRepository,
         operationIdempotencyRepository, auditService, operationPrintService,
-        plateValidator, monthlyContractRepository, objectMapper, meterRegistry, globalAuditService
+        plateValidator, monthlyContractRepository, objectMapper, meterRegistry
     );
 
     TenantContext.setTenantId(companyId);

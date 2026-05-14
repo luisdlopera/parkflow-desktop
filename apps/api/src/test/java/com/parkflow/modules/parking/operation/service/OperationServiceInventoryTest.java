@@ -104,13 +104,12 @@ class OperationServiceInventoryTest {
         parkingSessionRepository, ticketCounterRepository, vehicleConditionReportRepository,
         operationIdempotencyRepository, auditService, operationPrintService,
         new com.parkflow.modules.parking.operation.validation.PlateValidator(),
-        monthlyContractRepository, objectMapper, meterRegistry, globalAuditService
+        monthlyContractRepository, objectMapper, meterRegistry
     );
 
     service =
         new OperationService(
             appUserRepository,
-            rateRepository,
             parkingSiteRepository,
             operationalParameterRepository,
             parkingSessionRepository,

@@ -12,7 +12,6 @@ import com.parkflow.modules.auth.security.JwtTokenService;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.RolePermissions;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;

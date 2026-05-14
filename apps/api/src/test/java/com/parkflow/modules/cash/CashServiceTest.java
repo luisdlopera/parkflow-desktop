@@ -63,7 +63,6 @@ class CashServiceTest {
 
   private CashSessionManagementService sessionService;
   private CashMovementManagementService movementService;
-  private CashConfigurationManagementService configService;
 
   @BeforeEach
   void setUp() {
@@ -80,11 +79,7 @@ class CashServiceTest {
         authAuditService, cashPolicyResolver
     );
     
-    configService = new CashConfigurationManagementService(
-        cashRegisterRepository, cashSessionRepository, appUserRepository,
-        cashPolicyResolver, parkingParametersService, sessionService,
-        authAuditService, cashDomainAuditService
-    );
+    
 
     lenient().when(cashPolicyResolver.requireOpenForPayment(any())).thenReturn(true);
     UUID actorId = UUID.randomUUID();

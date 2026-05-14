@@ -1,6 +1,5 @@
 package com.parkflow.modules.parking.operation.application.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.audit.service.AuditService;
 import com.parkflow.modules.auth.security.SecurityUtils;
@@ -16,7 +15,6 @@ import com.parkflow.modules.parking.operation.service.OperationPrintService;
 import com.parkflow.modules.parking.operation.validation.PlateValidator;
 import com.parkflow.modules.tickets.entity.PrintDocumentType;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -51,7 +48,6 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private final MonthlyContractRepository monthlyContractRepository;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
-  private final AuditService globalAuditService;
 
   @Override
   @Transactional

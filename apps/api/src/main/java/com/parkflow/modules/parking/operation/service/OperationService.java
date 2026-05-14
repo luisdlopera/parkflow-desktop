@@ -37,11 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class OperationService {
   private static final Logger log = LoggerFactory.getLogger(OperationService.class);
   private static final int LOST_TICKET_ENTRY_DRIFT_MAX_MINUTES = 240;
-  /** Zona operativa por defecto para interpretar franjas horarias de tarifa (alineado con parametros). */
-  private static final ZoneId DEFAULT_OPERATION_ZONE = ZoneId.of("America/Bogota");
-
   private final AppUserRepository appUserRepository;
-  private final RateRepository rateRepository;
   private final ParkingSiteRepository parkingSiteRepository;
   private final OperationalParameterRepository operationalParameterRepository;
   private final ParkingSessionRepository parkingSessionRepository;
@@ -441,10 +437,6 @@ public class OperationService {
       return 3;
     }
     return 1;
-  }
-
-  private String generateNoPlateIdentifier() {
-    return "SIN-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase(Locale.ROOT);
   }
 
   private Optional<OperationalParameter> resolveOperationalParameter(ParkingSession session) {
