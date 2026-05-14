@@ -2,21 +2,23 @@ package com.parkflow.modules.auth.application.service;
 
 import com.parkflow.modules.auth.application.port.in.AuthenticationUseCase;
 import com.parkflow.modules.auth.dto.*;
-import com.parkflow.modules.auth.domain.AuthAuditAction;
-import com.parkflow.modules.auth.domain.AuthSession;
-import com.parkflow.modules.auth.domain.AuthorizedDevice;
-import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
-import com.parkflow.modules.auth.domain.repository.AuthorizedDevicePort;
+import com.parkflow.modules.auth.entity.AuthAuditAction;
+import com.parkflow.modules.auth.entity.AuthPermission;
+import com.parkflow.modules.auth.entity.AuthSession;
+import com.parkflow.modules.auth.entity.AuthorizedDevice;
+import com.parkflow.modules.auth.repository.AuthSessionRepository;
+import com.parkflow.modules.auth.repository.AuthorizedDeviceRepository;
 import com.parkflow.modules.auth.security.JwtTokenService;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.RolePermissions;
 import com.parkflow.modules.auth.security.SecurityUtils;
+import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import io.jsonwebtoken.Claims;
 import java.time.OffsetDateTime;
-
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -24,11 +26,9 @@ import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -37,14 +37,13 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
   private static final Pattern PASSWORD_PATTERN = Pattern.compile(
       "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!.])(?=\\S+$).{8,}$");
 
-  private final AppUserPort appUserRepository;
-  private final AuthorizedDevicePort authorizedDevicePort;
-  private final AuthSessionPort authSessionPort;
+  private final AppUserRepository appUserRepository;
+  private final AuthorizedDeviceRepository authorizedDeviceRepository;
+  private final AuthSessionRepository authSessionRepository;
   private final JwtTokenService jwtTokenService;
   private final PasswordHashService passwordHashService;
   private final AuthAuditService authAuditService;
-  private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
-  private final AuthenticationResponseAssembler responseAssembler;
+  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
 
   @Value("${app.security.offline-lease-hours:48}")
   private int defaultOfflineLeaseHours;
@@ -106,11 +105,11 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
     session.setRefreshExpiresAt(OffsetDateTime.now().plus(jwtTokenService.refreshTtl()));
     session.setAccessExpiresAt(OffsetDateTime.now().plus(jwtTokenService.accessTtl()));
     session.setRefreshTokenHash("pending");
-    session = authSessionPort.save(session);
+    session = authSessionRepository.save(session);
 
     String refreshToken = jwtTokenService.createRefreshToken(user.getId(), session.getId(), session.getRefreshJti());
     session.setRefreshTokenHash(passwordHashService.sha256(refreshToken));
-    session = authSessionPort.save(session);
+    session = authSessionRepository.save(session);
 
     String accessToken =
         jwtTokenService.createAccessToken(
@@ -134,10 +133,10 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
         accessToken,
         refreshToken,
         "Bearer",
-        responseAssembler.toUser(user),
-        responseAssembler.toSession(session),
-        responseAssembler.toDevice(device),
-        responseAssembler.offlineLease(session, request.offlineRequestedHours(), defaultOfflineLeaseHours));
+        toUser(user),
+        toSession(session),
+        toDevice(device),
+        offlineLease(session, request.offlineRequestedHours()));
   }
 
   @Override
@@ -153,7 +152,7 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
 
     String refreshJti = claims.get("jti", String.class);
     AuthSession current =
-        authSessionPort
+        authSessionRepository
             .findByRefreshJtiAndActiveTrue(refreshJti)
             .orElseThrow(
                 () ->
@@ -173,7 +172,7 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
     if (!incomingHash.equals(current.getRefreshTokenHash())) {
       current.setActive(false);
       current.setRevokedAt(OffsetDateTime.now());
-      authSessionPort.save(current);
+      authSessionRepository.save(current);
       throw new OperationException(
           HttpStatus.UNAUTHORIZED,
           "AUTH_UNAUTHORIZED",
@@ -182,7 +181,7 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
 
     current.setActive(false);
     current.setRevokedAt(OffsetDateTime.now());
-    authSessionPort.save(current);
+    authSessionRepository.save(current);
 
     AppUser user = current.getUser();
     AuthorizedDevice device = current.getDevice();
@@ -197,13 +196,13 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
     rotated.setRefreshExpiresAt(OffsetDateTime.now().plus(jwtTokenService.refreshTtl()));
     rotated.setAccessExpiresAt(OffsetDateTime.now().plus(jwtTokenService.accessTtl()));
     rotated.setRefreshTokenHash("pending");
-    rotated = authSessionPort.save(rotated);
+    rotated = authSessionRepository.save(rotated);
 
     String refreshToken =
         jwtTokenService.createRefreshToken(user.getId(), rotated.getId(), rotated.getRefreshJti());
     rotated.setRefreshTokenHash(passwordHashService.sha256(refreshToken));
     rotated.setLastSeenAt(OffsetDateTime.now());
-    rotated = authSessionPort.save(rotated);
+    rotated = authSessionRepository.save(rotated);
 
     String accessToken =
         jwtTokenService.createAccessToken(
@@ -220,10 +219,10 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
         accessToken,
         refreshToken,
         "Bearer",
-        responseAssembler.toUser(user),
-        responseAssembler.toSession(rotated),
-        responseAssembler.toDevice(device),
-        responseAssembler.offlineLease(rotated, null, defaultOfflineLeaseHours));
+        toUser(user),
+        toSession(rotated),
+        toDevice(device),
+        offlineLease(rotated, defaultOfflineLeaseHours));
   }
 
   @Override
@@ -231,13 +230,13 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
   public void logout(LogoutRequest request) {
     UUID sessionId = Objects.requireNonNull(UUID.fromString(request.sessionId()));
     AuthSession session =
-        authSessionPort
+        authSessionRepository
             .findById(sessionId)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion no encontrada"));
 
     session.setActive(false);
     session.setRevokedAt(OffsetDateTime.now());
-    authSessionPort.save(session);
+    authSessionRepository.save(session);
 
     authAuditService.log(
         AuthAuditAction.LOGOUT,
@@ -262,7 +261,7 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
         appUserRepository
             .findById(userId)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-    return responseAssembler.toUser(user);
+    return toUser(user);
   }
 
   @Override
@@ -288,10 +287,10 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
     appUserRepository.save(user);
 
     int sessionsRevoked = 0;
-    for (AuthSession session : authSessionPort.findByUserAndActiveTrue(user)) {
+    for (AuthSession session : authSessionRepository.findByUserAndActiveTrue(user)) {
       session.setActive(false);
       session.setRevokedAt(OffsetDateTime.now());
-      authSessionPort.save(session);
+      authSessionRepository.save(session);
       sessionsRevoked++;
     }
 
@@ -310,48 +309,6 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
       throw new OperationException(HttpStatus.BAD_REQUEST,
           "La contraseña debe contener al menos: una mayúscula, una minúscula, un número y un carácter especial (@#$%^&+=!.))");
     }
-  }
-
-  private AppUser requireCurrentUser() {
-    UUID userId = SecurityUtils.requireUserId();
-    return appUserRepository
-        .findById(userId)
-        .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-  }
-
-  private ProfileResponse toProfile(AppUser user) {
-    return new ProfileResponse(
-        user.getId(),
-        user.getName(),
-        user.getEmail(),
-        user.getDocument(),
-        user.getPhone(),
-        user.getRole(),
-        user.getSite(),
-        user.getTerminal(),
-        user.isActive(),
-        user.isCanVoidTickets(),
-        user.isCanReprintTickets(),
-        user.isCanCloseCash(),
-        user.isRequirePasswordChange(),
-        user.getLastAccessAt(),
-        user.getPasswordChangedAt(),
-        user.getCreatedAt(),
-        user.getUpdatedAt());
-  }
-
-  private String normalizeDocument(String document) {
-    if (!StringUtils.hasText(document)) {
-      return null;
-    }
-    return document.trim();
-  }
-
-  private String trimToNull(String value) {
-    if (!StringUtils.hasText(value)) {
-      return null;
-    }
-    return value.trim();
   }
 
   private String maskEmail(String email) {
@@ -382,7 +339,7 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
 
   private AuthorizedDevice upsertDevice(LoginRequest request) {
     AuthorizedDevice device =
-        authorizedDevicePort.findByDeviceId(request.deviceId()).orElseGet(AuthorizedDevice::new);
+        authorizedDeviceRepository.findByDeviceId(request.deviceId()).orElseGet(AuthorizedDevice::new);
     device.setDeviceId(request.deviceId());
     device.setDisplayName(request.deviceName());
     device.setPlatform(request.platform());
@@ -391,7 +348,61 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
     if (device.getId() == null) {
       device.setAuthorized(true);
     }
-    return authorizedDevicePort.save(device);
+    return authorizedDeviceRepository.save(device);
   }
 
+  private AuthUserResponse toUser(AppUser user) {
+    List<String> permissions =
+        RolePermissions.permissionsFor(user.getRole()).stream().map(AuthPermission::authority).toList();
+    return new AuthUserResponse(
+        user.getId(),
+        user.getName(),
+        user.getEmail(),
+        user.getRole().name(),
+        permissions,
+        user.isActive(),
+        user.getPasswordChangedAt());
+  }
+
+  private SessionInfoResponse toSession(AuthSession session) {
+    return new SessionInfoResponse(
+        session.getId(),
+        session.getUser().getId(),
+        session.getDevice().getDeviceId(),
+        session.getCreatedAt(),
+        session.getAccessExpiresAt(),
+        session.getRefreshExpiresAt(),
+        session.getLastSeenAt());
+  }
+
+  private DeviceInfoResponse toDevice(AuthorizedDevice device) {
+    return new DeviceInfoResponse(
+        device.getId(),
+        device.getDeviceId(),
+        device.getDisplayName(),
+        device.getPlatform(),
+        device.getFingerprint(),
+        device.isAuthorized(),
+        device.getRevokedAt(),
+        device.getLastSeenAt());
+  }
+
+  private OfflineLeaseResponse offlineLease(AuthSession session, Integer requestedHours) {
+    int hours = requestedHours != null ? Math.max(1, Math.min(requestedHours, 72)) : defaultOfflineLeaseHours;
+    OffsetDateTime expires = OffsetDateTime.now().plusHours(hours);
+    List<String> restricted =
+        List.of(
+            "usuarios:editar",
+            "tarifas:editar",
+            "configuracion:editar",
+            "reportes:leer");
+    return new OfflineLeaseResponse(
+        session.getId(),
+        session.getUser().getId(),
+        session.getDevice().getDeviceId(),
+        OffsetDateTime.now(),
+        expires,
+        hours,
+        restricted);
+  }
 }

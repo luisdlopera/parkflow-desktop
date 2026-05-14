@@ -1,24 +1,23 @@
 package com.parkflow.modules.cash.application.service;
 
-import com.parkflow.modules.auth.domain.AuthAuditAction;
+import com.parkflow.modules.auth.entity.AuthAuditAction;
 import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
 import com.parkflow.modules.cash.domain.*;
 import com.parkflow.modules.cash.dto.CashMovementRequest;
 import com.parkflow.modules.cash.dto.CashMovementResponse;
 import com.parkflow.modules.cash.dto.VoidMovementRequest;
-import com.parkflow.modules.cash.domain.repository.CashMovementPort;
-import com.parkflow.modules.cash.domain.repository.CashRegisterPort;
-import com.parkflow.modules.cash.domain.repository.CashSessionPort;
+import com.parkflow.modules.cash.repository.CashMovementRepository;
+import com.parkflow.modules.cash.repository.CashRegisterRepository;
+import com.parkflow.modules.cash.repository.CashSessionRepository;
 import com.parkflow.modules.cash.service.CashDomainAuditService;
 import com.parkflow.modules.cash.service.CashPolicyResolver;
 import com.parkflow.modules.cash.support.CashHttpContext;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.parking.operation.domain.*;
-import com.parkflow.modules.cash.domain.exception.CashSessionException;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
-import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -39,15 +38,14 @@ public class CashMovementManagementService implements CashMovementUseCase {
 
     private static final BigDecimal MAX_CASHIER_ADJUST = new BigDecimal("500000.00");
 
-    private final CashMovementPort cashMovementPort;
-    private final CashSessionPort cashSessionPort;
-    private final CashRegisterPort cashRegisterPort;
-    private final AppUserPort appUserPort;
-    private final ParkingSessionPort parkingSessionPort;
+    private final CashMovementRepository cashMovementRepository;
+    private final CashSessionRepository cashSessionRepository;
+    private final CashRegisterRepository cashRegisterRepository;
+    private final AppUserRepository appUserRepository;
+    private final ParkingSessionRepository parkingSessionRepository;
     private final CashDomainAuditService cashDomainAuditService;
     private final AuthAuditService authAuditService;
     private final CashPolicyResolver cashPolicyResolver;
-    private final CashMovementResponseMapper responseMapper;
 
     @Override
     @Transactional
@@ -55,7 +53,7 @@ public class CashMovementManagementService implements CashMovementUseCase {
         CashSession session = requireOpenSession(sessionId);
         if (request.type() == CashMovementType.PARKING_PAYMENT
             || request.type() == CashMovementType.VOID_OFFSET) {
-            throw new CashSessionException(HttpStatus.BAD_REQUEST, "Tipo de movimiento no permitido en API");
+            throw new OperationException(HttpStatus.BAD_REQUEST, "Tipo de movimiento no permitido en API");
         }
         if ((request.type() == CashMovementType.DISCOUNT
                 || request.type() == CashMovementType.MANUAL_EXPENSE
@@ -63,14 +61,14 @@ public class CashMovementManagementService implements CashMovementUseCase {
                 || request.type() == CashMovementType.CUSTOMER_REFUND
                 || request.type() == CashMovementType.ADJUSTMENT)
             && !StringUtils.hasText(request.reason())) {
-            throw new CashSessionException(HttpStatus.BAD_REQUEST, "Motivo obligatorio para este movimiento");
+            throw new OperationException(HttpStatus.BAD_REQUEST, "Motivo obligatorio para este movimiento");
         }
         if (request.type() == CashMovementType.ADJUSTMENT) {
             UserRole role = SecurityUtils.requireUserRole();
             if (request.amount().compareTo(MAX_CASHIER_ADJUST) > 0
                 && role != UserRole.ADMIN
                 && role != UserRole.SUPER_ADMIN) {
-                throw new CashSessionException(
+                throw new OperationException(
                     HttpStatus.FORBIDDEN, "Ajuste elevado: requiere perfil administrador");
             }
         }
@@ -80,29 +78,29 @@ public class CashMovementManagementService implements CashMovementUseCase {
                 cashPolicyResolver.offlineMaxManualMovement(session.getCashRegister().getSite());
             if (offlineCappedMovement(request.type())
                 && request.amount().compareTo(max) > 0) {
-                throw new CashSessionException(
+                throw new OperationException(
                     HttpStatus.FORBIDDEN,
                     "Monto supera tope para movimientos manuales en modo offline (" + max + ")");
             }
         }
 
         if (StringUtils.hasText(request.idempotencyKey())) {
-            Optional<CashMovement> ex = cashMovementPort.findByIdempotencyKey(request.idempotencyKey().trim());
+            Optional<CashMovement> ex = cashMovementRepository.findByIdempotencyKey(request.idempotencyKey().trim());
             if (ex.isPresent()) {
                 if (!ex.get().getCashSession().getId().equals(sessionId)) {
-                    throw new CashSessionException(HttpStatus.CONFLICT, "Idempotency key ya usada en otra sesion");
+                    throw new OperationException(HttpStatus.CONFLICT, "Idempotency key ya usada en otra sesion");
                 }
-                return responseMapper.toMovementResponse(ex.get());
+                return toMovementResponse(ex.get());
             }
         }
 
         AppUser actor =
-            appUserPort
+            appUserRepository
                 .findById(SecurityUtils.requireUserId())
-                .orElseThrow(() -> new CashSessionException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
+                .orElseThrow(() -> new OperationException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
 
         if (request.type() == CashMovementType.REPRINT_FEE && !StringUtils.hasText(request.reason())) {
-            throw new CashSessionException(HttpStatus.BAD_REQUEST, "Motivo obligatorio para cobro de reimpresion");
+            throw new OperationException(HttpStatus.BAD_REQUEST, "Motivo obligatorio para cobro de reimpresion");
         }
 
         CashMovement m = new CashMovement();
@@ -120,25 +118,25 @@ public class CashMovementManagementService implements CashMovementUseCase {
         }
         if (request.parkingSessionId() != null) {
             ParkingSession ps =
-                parkingSessionPort
+                parkingSessionRepository
                     .findById(request.parkingSessionId())
-                    .orElseThrow(() -> new CashSessionException(HttpStatus.NOT_FOUND, "Sesion no encontrada"));
+                    .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion no encontrada"));
             m.setParkingSession(ps);
         }
         try {
-            m = cashMovementPort.save(m);
+            m = cashMovementRepository.save(m);
         } catch (DataIntegrityViolationException ex) {
-            throw new CashSessionException(HttpStatus.CONFLICT, "Movimiento duplicado o conflicto de concurrencia");
+            throw new OperationException(HttpStatus.CONFLICT, "Movimiento duplicado o conflicto de concurrencia");
         }
 
-        Map<String, Object> meta = responseMapper.baseMeta(session);
+        Map<String, Object> meta = baseMeta(session);
         meta.put("movementId", m.getId().toString());
         meta.put("movementType", m.getMovementType().name());
         authAudit(AuthAuditAction.CASH_MOVEMENT_POST, actor, "posted", meta);
         cashDomainAuditService.log(
             session, m, "MOVEMENT_POST", null, m.getAmount().toPlainString(), m.getReason(), meta);
 
-        return responseMapper.toMovementResponse(m);
+        return toMovementResponse(m);
     }
 
     @Override
@@ -146,39 +144,39 @@ public class CashMovementManagementService implements CashMovementUseCase {
     public CashMovementResponse voidMovement(UUID sessionId, UUID movementId, VoidMovementRequest request) {
         CashSession session = requireOpenSession(sessionId);
         CashMovement m =
-            cashMovementPort
+            cashMovementRepository
                 .findById(movementId)
-                .orElseThrow(() -> new CashSessionException(HttpStatus.NOT_FOUND, "Movimiento no encontrado"));
+                .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Movimiento no encontrado"));
         if (!m.getCashSession().getId().equals(sessionId)) {
-            throw new CashSessionException(HttpStatus.BAD_REQUEST, "Movimiento no pertenece a la sesion");
+            throw new OperationException(HttpStatus.BAD_REQUEST, "Movimiento no pertenece a la sesion");
         }
         if (m.getStatus() == CashMovementStatus.VOIDED) {
-            return responseMapper.toMovementResponse(m);
+            return toMovementResponse(m);
         }
         if (m.getMovementType() == CashMovementType.VOID_OFFSET) {
-            throw new CashSessionException(HttpStatus.BAD_REQUEST, "No se puede anular un movimiento de contrapartida");
+            throw new OperationException(HttpStatus.BAD_REQUEST, "No se puede anular un movimiento de contrapartida");
         }
 
         if (StringUtils.hasText(request.idempotencyKey())) {
             String vk = "void:" + movementId + ":" + request.idempotencyKey().trim();
-            Optional<CashMovement> existing = cashMovementPort.findByIdempotencyKey(vk);
+            Optional<CashMovement> existing = cashMovementRepository.findByIdempotencyKey(vk);
             if (existing.isPresent()) {
                 m.setStatus(CashMovementStatus.VOIDED);
-                return responseMapper.toMovementResponse(m);
+                return toMovementResponse(m);
             }
         }
 
         AppUser actor =
-            appUserPort
+            appUserRepository
                 .findById(SecurityUtils.requireUserId())
-                .orElseThrow(() -> new CashSessionException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
+                .orElseThrow(() -> new OperationException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
 
         OffsetDateTime now = OffsetDateTime.now();
         m.setStatus(CashMovementStatus.VOIDED);
         m.setVoidedAt(now);
         m.setVoidReason(request.reason());
         m.setVoidedBy(actor);
-        cashMovementPort.save(m);
+        cashMovementRepository.save(m);
 
         CashMovement offset = new CashMovement();
         offset.setCashSession(session);
@@ -192,9 +190,9 @@ public class CashMovementManagementService implements CashMovementUseCase {
         if (StringUtils.hasText(request.idempotencyKey())) {
             offset.setIdempotencyKey("void:" + movementId + ":" + request.idempotencyKey().trim());
         }
-        cashMovementPort.save(offset);
+        cashMovementRepository.save(offset);
 
-        Map<String, Object> meta = responseMapper.baseMeta(session);
+        Map<String, Object> meta = baseMeta(session);
         meta.put("voidedMovementId", m.getId().toString());
         meta.put("offsetId", offset.getId().toString());
         authAudit(AuthAuditAction.CASH_MOVEMENT_VOID, actor, "voided", meta);
@@ -207,15 +205,15 @@ public class CashMovementManagementService implements CashMovementUseCase {
             request.reason(),
             meta);
 
-        return responseMapper.toMovementResponse(m);
+        return toMovementResponse(m);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<CashMovementResponse> listMovements(UUID sessionId) {
         requireSession(sessionId);
-        return cashMovementPort.findByCashSession_IdOrderByCreatedAtDesc(sessionId).stream()
-            .map(responseMapper::toMovementResponse)
+        return cashMovementRepository.findByCashSession_IdOrderByCreatedAtDesc(sessionId).stream()
+            .map(this::toMovementResponse)
             .toList();
     }
 
@@ -228,17 +226,17 @@ public class CashMovementManagementService implements CashMovementUseCase {
         String site = normalizeSite(parkingSession.getSite());
         String terminal = resolveTerminal(parkingSession);
         CashRegister reg =
-            cashRegisterPort
+            cashRegisterRepository
                 .findBySiteAndTerminal(site, terminal)
                 .orElseThrow(
                     () ->
-                        new CashSessionException(
+                        new OperationException(
                             HttpStatus.CONFLICT, "Debe abrir caja en este terminal antes de cobrar"));
-        cashSessionPort
+        cashSessionRepository
             .findByRegisterAndStatus(reg.getId(), CashSessionStatus.OPEN)
             .orElseThrow(
                 () ->
-                    new CashSessionException(
+                    new OperationException(
                         HttpStatus.CONFLICT, "Debe abrir caja para registrar cobros de parqueo"));
     }
 
@@ -268,7 +266,7 @@ public class CashMovementManagementService implements CashMovementUseCase {
         CashMovementType movementType) {
         try {
             recordParkingLedgerStrict(parkingSession, payment, operator, idempotencyKey, movementType);
-        } catch (CashSessionException ex) {
+        } catch (OperationException ex) {
             if (ex.getStatus() == HttpStatus.CONFLICT) {
                 return;
             }
@@ -285,19 +283,19 @@ public class CashMovementManagementService implements CashMovementUseCase {
         String site = normalizeSite(parkingSession.getSite());
         String terminal = resolveTerminal(parkingSession);
         CashRegister reg =
-            cashRegisterPort
+            cashRegisterRepository
                 .findBySiteAndTerminal(site, terminal)
-                .orElseThrow(() -> new CashSessionException(HttpStatus.CONFLICT, "Caja no configurada"));
+                .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "Caja no configurada"));
         CashSession cashSession =
-            cashSessionPort
+            cashSessionRepository
                 .findByRegisterAndStatus(reg.getId(), CashSessionStatus.OPEN)
-                .orElseThrow(() -> new CashSessionException(HttpStatus.CONFLICT, "No hay caja abierta"));
+                .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "No hay caja abierta"));
 
         String key =
             StringUtils.hasText(idempotencyKey)
                 ? "parkpay:" + idempotencyKey.trim()
                 : "parkpay:sess:" + parkingSession.getId();
-        if (cashMovementPort.findByIdempotencyKey(key).isPresent()) {
+        if (cashMovementRepository.findByIdempotencyKey(key).isPresent()) {
             return;
         }
 
@@ -311,12 +309,12 @@ public class CashMovementManagementService implements CashMovementUseCase {
         m.setTerminal(terminal);
         m.setIdempotencyKey(key);
         try {
-            cashMovementPort.save(m);
+            cashMovementRepository.save(m);
         } catch (DataIntegrityViolationException ex) {
-            throw new CashSessionException(HttpStatus.CONFLICT, "Cobro ya registrado en caja para este ticket");
+            throw new OperationException(HttpStatus.CONFLICT, "Cobro ya registrado en caja para este ticket");
         }
 
-        Map<String, Object> meta = responseMapper.baseMeta(cashSession);
+        Map<String, Object> meta = baseMeta(cashSession);
         meta.put("parkingSessionId", parkingSession.getId().toString());
         cashDomainAuditService.log(
             cashSession,
@@ -344,7 +342,7 @@ public class CashMovementManagementService implements CashMovementUseCase {
         return CashHttpContext.currentTerminal()
             .orElseThrow(
                 () ->
-                    new CashSessionException(
+                    new OperationException(
                         HttpStatus.BAD_REQUEST,
                         "Defina terminal en la sesion de parqueo o envie header X-Parkflow-Terminal"));
     }
@@ -367,20 +365,49 @@ public class CashMovementManagementService implements CashMovementUseCase {
     }
 
     private CashSession requireSession(UUID id) {
-        return cashSessionPort
+        return cashSessionRepository
             .findById(id)
-            .orElseThrow(() -> new CashSessionException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
+            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
     }
 
     private CashSession requireOpenSession(UUID id) {
         CashSession s = requireSession(id);
         if (s.getStatus() != CashSessionStatus.OPEN) {
-            throw new CashSessionException(HttpStatus.CONFLICT, "La sesion de caja ya esta cerrada");
+            throw new OperationException(HttpStatus.CONFLICT, "La sesion de caja ya esta cerrada");
         }
         return s;
     }
 
+    private Map<String, Object> baseMeta(CashSession s) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("sessionId", s.getId().toString());
+        m.put("register", s.getCashRegister().getSite() + "/" + s.getCashRegister().getTerminal());
+        return m;
+    }
+
     private void authAudit(AuthAuditAction action, AppUser user, String detail, Map<String, Object> meta) {
         authAuditService.log(action, user, null, detail, meta);
+    }
+
+    private CashMovementResponse toMovementResponse(CashMovement m) {
+        return new CashMovementResponse(
+            m.getId(),
+            m.getCashSession().getId(),
+            m.getMovementType().name(),
+            m.getPaymentMethod().name(),
+            m.getAmount(),
+            m.getParkingSession() != null ? m.getParkingSession().getId() : null,
+            m.getReason(),
+            m.getMetadata(),
+            m.getStatus().name(),
+            m.getVoidedAt(),
+            m.getVoidReason(),
+            m.getVoidedBy() != null ? m.getVoidedBy().getId() : null,
+            m.getExternalReference(),
+            m.getCreatedBy() != null ? m.getCreatedBy().getId() : null,
+            m.getCreatedBy() != null ? m.getCreatedBy().getName() : null,
+            m.getCreatedAt(),
+            m.getTerminal(),
+            m.getIdempotencyKey());
     }
 }
