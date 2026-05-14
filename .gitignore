@@ -1,3 +1,6 @@
+node_modules
+.next
+dist
 .env
 .env.local
 **/.gradle
@@ -15,35 +18,21 @@ apps/web/coverage
 apps/desktop/test-results
 *.test.ts.snap
 *.test.tsx.snap
-.vitest-localstorage
 
 # Licensing Keys (Security - NEVER COMMIT)
 infra/keys/
-*.key
 *.pem
-*.p12
-secrets/
-dist/
-node_modules/
-target/
-/.idea
-.vscode
-/.DS_Store
+*.key
+license_private*
+license_public*
 
-# Build artifacts
-build/
-bin/
-.gradle/
-.next/
-out/
-tsconfig.tsbuildinfo
-coverage/
+# Generated license files
+*.license
+license.json
 
-# Logs
+# Debug logs
+debug-*.log
 *.log
-logs/
 
 # IntelliJ build output
 apps/api/bin/
-out
-.next
