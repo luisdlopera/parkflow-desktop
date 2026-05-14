@@ -35,9 +35,9 @@ public class SettingsRateService {
   private final RateRepository rateRepository;
   private final ParkingSessionRepository parkingSessionRepository;
   private final SettingsAuditService settingsAuditService;
-  private final com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort vehicleTypeRepository;
-  private final ParkingSitePort parkingSiteRepository;
-  private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
+  private final com.parkflow.modules.settings.repository.MasterVehicleTypeRepository vehicleTypeRepository;
+  private final ParkingSiteRepository parkingSiteRepository;
+  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   // =========================================================================
@@ -48,8 +48,7 @@ public class SettingsRateService {
   public SettingsPageResponse<RateResponse> list(
       String site, String q, Boolean active, String category, Pageable pageable) {
     String s = site == null || site.isBlank() ? "DEFAULT" : site.trim();
-    RateCategory parsedCategory = parseCategory(category);
-    Page<Rate> page = rateRepository.search(s, normalizeQuery(q), active, parsedCategory, pageable);
+    Page<Rate> page = rateRepository.search(s, normalizeQuery(q), active, category, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 
@@ -99,7 +98,7 @@ public class SettingsRateService {
             objectMapper.writeValueAsString(req),
             "Rate created: " + rate.getId());
     } catch (Exception e) {
-        log.warn("No se pudo registrar auditoria global de creacion de tarifa {}", rate.getId(), e);
+        // ignore
     }
     return toResponse(rate);
   }
@@ -131,7 +130,7 @@ public class SettingsRateService {
             objectMapper.writeValueAsString(snapshot(updated)),
             "Rate updated: " + id);
     } catch (Exception e) {
-        log.warn("No se pudo registrar auditoria global de actualizacion de tarifa {}", id, e);
+        // ignore
     }
     return toResponse(updated);
   }
@@ -174,7 +173,7 @@ public class SettingsRateService {
     }
     rate.setActive(false);
     rate.setUpdatedAt(OffsetDateTime.now());
-    ratePort.save(rate);
+    rateRepository.save(rate);
     settingsAuditService.log(
         AuthAuditAction.SETTINGS_RATE_DELETE,
         "OK",

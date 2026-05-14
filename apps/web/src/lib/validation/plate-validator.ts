@@ -29,21 +29,6 @@ export interface PlateValidationResult {
   errorMessage?: string;
 }
 
-export function inferVehicleType(countryCode: string | undefined | null, plate: string): string | null {
-  const normalized = normalizePlate(plate);
-  if (!normalized) return null;
-
-  const targetCountry = (countryCode || "CO").toUpperCase();
-  const matches = plateRules
-    .filter((r) => r.enabled && r.countryCode.toUpperCase() === targetCountry && r.pattern.test(normalized))
-    .map((r) => r.vehicleType.toUpperCase());
-
-  if (matches.length === 0) return null;
-  if (matches.includes("MOTORCYCLE")) return "MOTORCYCLE";
-  if (matches.includes("CAR")) return "CAR";
-  return matches[0] ?? null;
-}
-
 const translateVehicleType = (type: string) => {
   switch (type.toUpperCase()) {
     case 'CAR': return 'carro';
@@ -81,16 +66,11 @@ export function validatePlate(countryCode: string | undefined | null, vehicleTyp
     return { isValid: true, normalizedPlate: normalized };
   }
 
-  // Buscar todas las reglas que coincidan cruzadas y seleccionar la más "específica".
-  // Esto evita que reglas muy permisivas (ej: BICYCLE) ganen sobre reglas más concretas (ej: MOTORCYCLE).
-  const crossMatches = plateRules.filter(r => r.enabled && r.countryCode.toUpperCase() === targetCountry && r.vehicleType.toUpperCase() !== targetType && r.pattern.test(normalized));
+  const crossMatch = plateRules.find(r => r.enabled && r.countryCode.toUpperCase() === targetCountry && r.vehicleType.toUpperCase() !== targetType && r.pattern.test(normalized));
 
   let errorMessage = `${activeRule.errorMessage} (Ej: ${activeRule.example}).`;
-  if (crossMatches.length > 0) {
-    // Heurística simple de especificidad: longitud de la fuente del regex. Patrones más largos suelen ser más específicos.
-    crossMatches.sort((a, b) => b.pattern.source.length - a.pattern.source.length);
-    const best = crossMatches[0];
-    errorMessage += ` Parece que ingresaste una placa de ${translateVehicleType(best.vehicleType)}.`;
+  if (crossMatch) {
+    errorMessage += ` Parece que ingresaste una placa de ${translateVehicleType(crossMatch.vehicleType)}.`;
   }
 
   return { isValid: false, normalizedPlate: normalized, errorMessage };

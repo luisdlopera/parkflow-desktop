@@ -17,9 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class PrinterManagementService implements PrinterUseCase {
@@ -29,7 +26,8 @@ public class PrinterManagementService implements PrinterUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public SettingsPageResponse<PrinterResponse> list(UUID siteId, String q, Boolean active, Pageable pageable) {
+  public SettingsPageResponse<PrinterResponse> list(
+      UUID siteId, String q, Boolean active, Pageable pageable) {
     Page<Printer> page = printerRepository.search(siteId, normalizeQuery(q), active, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }

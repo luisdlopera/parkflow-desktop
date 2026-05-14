@@ -17,7 +17,7 @@ import com.parkflow.modules.configuration.repository.PrinterRepository;
 import com.parkflow.modules.configuration.application.service.CashRegisterManagementService;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

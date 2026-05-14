@@ -18,7 +18,9 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
   
   // -- Primitive methods (require explicit companyId) --
 
-  long countByStatusAndCompanyId(SessionStatus status, UUID companyId);
+  long countByStatusAndSite(SessionStatus status, String site);
+
+  long countByRate_Id(UUID rateId);
 
   long countByStatusAndSiteAndCompanyId(SessionStatus status, String site, UUID companyId);
 

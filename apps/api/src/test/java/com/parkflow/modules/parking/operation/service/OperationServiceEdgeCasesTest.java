@@ -19,8 +19,6 @@ import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.parking.operation.repository.TicketCounterRepository;
 import com.parkflow.modules.parking.operation.repository.VehicleConditionReportRepository;
 import com.parkflow.modules.parking.operation.repository.VehicleRepository;
-import com.parkflow.modules.auth.security.AuthPrincipal;
-import com.parkflow.modules.auth.security.TenantContext;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Optional;
 import java.util.UUID;
@@ -42,6 +40,11 @@ import com.parkflow.modules.parking.operation.repository.OperationIdempotencyRep
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import com.parkflow.modules.parking.operation.repository.OperationIdempotencyRepository;
+
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class OperationServiceEdgeCasesTest {
@@ -57,7 +60,7 @@ class OperationServiceEdgeCasesTest {
   @Mock private OperationIdempotencyRepository operationIdempotencyRepository;
   @Mock private OperationAuditService auditService;
   @Mock private OperationPrintService operationPrintService;
-  @Mock private CashMovementUseCase cashMovementUseCase;
+  @Mock private CashService cashService;
   @Mock private PricingCalculator pricingCalculator;
   @Mock private ObjectMapper objectMapper;
   @Mock private MeterRegistry meterRegistry;
@@ -65,11 +68,9 @@ class OperationServiceEdgeCasesTest {
   @Mock private com.parkflow.modules.configuration.repository.MonthlyContractRepository monthlyContractRepository;
   @Mock private com.parkflow.modules.configuration.repository.PrepaidBalanceRepository prepaidBalanceRepository;
   @Mock private com.parkflow.modules.configuration.repository.AgreementRepository agreementRepository;
-  @Mock private com.parkflow.modules.configuration.application.port.in.PrepaidUseCase prepaidUseCase;
+  @Mock private com.parkflow.modules.configuration.service.PrepaidService prepaidService;
   @Mock private com.parkflow.modules.configuration.repository.OperationalParameterRepository operationalParameterRepository;
   @Mock private com.parkflow.modules.audit.service.AuditService globalAuditService;
-
-  private RegisterEntryService registerEntryService;
 
   @InjectMocks
   private OperationService operationService;
@@ -116,7 +117,7 @@ class OperationServiceEdgeCasesTest {
     Mockito.when(appUserRepository.findById(Mockito.any())).thenReturn(Optional.of(operator));
     Mockito.when(vehicleRepository.findByPlateAndCompanyId(Mockito.anyString(), Mockito.eq(companyId))).thenReturn(Optional.empty());
     Mockito.when(vehicleRepository.save(Mockito.any(Vehicle.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    Mockito.when(rateRepository.findFirstApplicableRate(Mockito.anyString(), Mockito.any(), Mockito.any())).thenReturn(Optional.empty());
+    Mockito.when(rateRepository.findFirstApplicableRate(Mockito.anyString(), Mockito.any())).thenReturn(Optional.empty());
     Mockito.when(plateValidator.validatePlate(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn(com.parkflow.modules.parking.operation.validation.PlateValidationResult.valid("ABC123"));
 
     Throwable throwable = catchThrowable(() -> registerEntryService.execute(request));

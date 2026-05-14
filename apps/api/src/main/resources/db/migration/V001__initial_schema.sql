@@ -756,8 +756,21 @@ ALTER TABLE companies
 ALTER TABLE app_user
   ADD COLUMN IF NOT EXISTS company_id UUID;
 
-ALTER TABLE parking_sites
-  ADD COLUMN IF NOT EXISTS max_capacity INT NOT NULL DEFAULT 0;
+-- Payment methods
+INSERT INTO payment_methods (code, name, requires_reference, display_order) VALUES
+    ('CASH', 'Efectivo', FALSE, 1),
+    ('DEBIT_CARD', 'Tarjeta débito', TRUE, 2),
+    ('CREDIT_CARD', 'Tarjeta crédito', TRUE, 3),
+    ('QR', 'QR', TRUE, 4),
+    ('NEQUI', 'Nequi', TRUE, 5),
+    ('DAVIPLATA', 'Daviplata', TRUE, 6),
+    ('TRANSFER', 'Transferencia', TRUE, 7),
+    ('AGREEMENT', 'Convenio', TRUE, 8),
+    ('INTERNAL_CREDIT', 'Crédito interno', TRUE, 9),
+    ('MIXED', 'Mixto', TRUE, 10),
+    ('CARD', 'Datáfono / tarjeta legacy', TRUE, 11),
+    ('OTHER', 'Otro', TRUE, 12)
+ON CONFLICT (code) DO NOTHING;
 
 ALTER TABLE parking_session
   ALTER COLUMN plate TYPE VARCHAR(20),

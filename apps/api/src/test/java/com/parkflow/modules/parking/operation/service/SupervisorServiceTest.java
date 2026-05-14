@@ -4,17 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.parkflow.modules.auth.security.AuthPrincipal;
-import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.parking.operation.domain.UserRole;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.repository.SessionEventRepository;
 import com.parkflow.modules.sync.repository.SyncEventRepository;
 import com.parkflow.modules.tickets.repository.PrintJobRepository;
 import java.time.ZoneId;
-import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

@@ -21,9 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class CashRegisterManagementService implements CashRegisterUseCase {
@@ -35,7 +32,8 @@ public class CashRegisterManagementService implements CashRegisterUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public SettingsPageResponse<CashRegisterResponse> list(UUID siteId, String q, Boolean active, Pageable pageable) {
+  public SettingsPageResponse<CashRegisterResponse> list(
+      UUID siteId, String q, Boolean active, Pageable pageable) {
     Page<CashRegister> page = cashRegisterRepository.search(siteId, normalizeQuery(q), active, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }

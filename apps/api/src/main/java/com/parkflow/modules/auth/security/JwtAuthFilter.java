@@ -35,6 +35,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     this.appUserRepository = appUserRepository;
   }
 
+
   @Override
   protected void doFilterInternal(
       @NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
@@ -87,9 +88,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       List<?> permissions = claims.get("permissions", List.class);
 
       List<GrantedAuthority> authorities = new ArrayList<>();
+      // Add role as ROLE_<role> so @PreAuthorize("hasAnyRole(...)") works
       if (role != null && !role.isBlank()) {
         authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
       }
+      // Add fine-grained permissions as authorities
       if (permissions != null) {
         permissions.stream()
             .map(value -> (GrantedAuthority) new SimpleGrantedAuthority(String.valueOf(value)))

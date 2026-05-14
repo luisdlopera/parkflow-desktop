@@ -1,12 +1,11 @@
 package com.parkflow.modules.cash.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
-import com.parkflow.modules.cash.domain.repository.CashSessionPort;
+import com.parkflow.modules.cash.repository.CashSessionRepository;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
-import com.parkflow.modules.settings.application.service.ParkingParametersService;
+import com.parkflow.modules.settings.service.ParkingParametersService;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -29,19 +28,19 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class CashClosingOutboundNotifier {
 
-  private final CashSessionPort cashSessionPort;
+  private final CashSessionRepository cashSessionRepository;
   private final ParkingParametersService parkingParametersService;
-  private final CashSessionUseCase cashSessionUseCase;
+  private final CashService cashService;
   private final ObjectMapper objectMapper;
 
   public CashClosingOutboundNotifier(
-      CashSessionPort cashSessionPort,
+      CashSessionRepository cashSessionRepository,
       ParkingParametersService parkingParametersService,
-      @Lazy CashSessionUseCase cashSessionUseCase,
+      @Lazy CashService cashService,
       ObjectMapper objectMapper) {
-    this.cashSessionPort = cashSessionPort;
+    this.cashSessionRepository = cashSessionRepository;
     this.parkingParametersService = parkingParametersService;
-    this.cashSessionUseCase = cashSessionUseCase;
+    this.cashService = cashService;
     this.objectMapper = objectMapper;
   }
 
@@ -86,12 +85,12 @@ public class CashClosingOutboundNotifier {
     }
     try {
       CashSession sess =
-          cashSessionPort.fetchForClosingWebhook(cashSessionId).orElse(null);
+          cashSessionRepository.fetchForClosingWebhook(cashSessionId).orElse(null);
       if (sess == null) {
         log.warn("webhook PSC: sesion {} no encontrada", cashSessionId);
         return;
       }
-      CashSummaryResponse summary = cashSessionUseCase.getSummary(sess.getId());
+      CashSummaryResponse summary = cashService.summary(sess.getId());
       Map<String, Object> body = closingPayload(sess, summary, parkingParamSiteLabel);
       byte[] json = objectMapper.writeValueAsBytes(body);
 
@@ -175,7 +174,7 @@ public class CashClosingOutboundNotifier {
         mapDecimalValues(sum.totalsByMovementType()));
     try {
       m.put("issuedAtUtc", java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toString());
-    } catch (Exception ignored) {
+    } catch (@SuppressWarnings("unused") Exception ignored) {
       //
     }
     return m;

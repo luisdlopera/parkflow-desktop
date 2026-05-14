@@ -31,7 +31,4 @@ public record ReceiptResponse(
     EntryMode entryMode,
     boolean monthlySession,
     String agreementCode,
-    Integer prepaidMinutes,
-    java.util.UUID parkingSpaceId,
-    String parkingSpaceCode,
-    String parkingSpaceLabel) {}
+    Integer prepaidMinutes) {}

@@ -37,8 +37,7 @@ public class SecurityPropertiesValidator {
                 log.error("CRITICAL: Default API Key detected in non-development profile!");
                 throw new IllegalStateException("Production environment must override app.security.api-key");
             }
-            // Don't hardcode actual secrets in source. Compare against a placeholder instead.
-            if ("REPLACE_WITH_BASE64_JWT_SECRET".equals(jwtSecret)) {
+            if ("***REMOVED***=".equals(jwtSecret)) {
                 log.error("CRITICAL: Default JWT Secret detected in non-development profile!");
                 throw new IllegalStateException("Production environment must override app.security.jwt-secret");
             }
