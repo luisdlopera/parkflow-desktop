@@ -167,6 +167,7 @@ public abstract class BaseIntegrationTest {
         rate.setRoundingMode(RoundingMode.UP);
         rate.setLostTicketSurcharge(BigDecimal.ZERO);
         rate.setActive(true);
+        rate.setCompanyId(companyId);
         rate = rateRepository.save(rate);
         rateId = rate.getId();
 
@@ -181,6 +182,7 @@ public abstract class BaseIntegrationTest {
         admin.setRole(UserRole.ADMIN);
         admin.setPasswordHash(passwordHashService.encodePassword("admin123"));
         admin.setActive(true);
+        admin.setCompanyId(companyId);
         admin.setCanVoidTickets(true);
         admin.setCanReprintTickets(true);
         admin.setCanCloseCash(true);

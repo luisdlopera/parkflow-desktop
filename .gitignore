@@ -37,3 +37,5 @@ debug-*.log
 
 # IntelliJ build output
 apps/api/bin/
+out
+.next

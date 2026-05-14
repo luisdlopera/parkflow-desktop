@@ -23,6 +23,7 @@ export type OfflineEventOrigin = "ONLINE" | "OFFLINE_PENDING_SYNC";
 
 export interface AuthUser {
   id: string;
+  companyId: string;
   name: string;
   email: string;
   role: AuthRole;
