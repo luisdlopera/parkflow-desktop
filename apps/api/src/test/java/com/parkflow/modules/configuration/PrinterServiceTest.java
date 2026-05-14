@@ -14,7 +14,7 @@ import com.parkflow.modules.configuration.entity.Printer.PrinterConnection;
 import com.parkflow.modules.configuration.entity.Printer.PrinterType;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.configuration.repository.PrinterRepository;
-import com.parkflow.modules.configuration.service.PrinterService;
+import com.parkflow.modules.configuration.application.service.PrinterManagementService;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import java.util.List;
 import java.util.Optional;
@@ -33,11 +33,11 @@ class PrinterServiceTest {
   @Mock private PrinterRepository printerRepository;
   @Mock private ParkingSiteRepository parkingSiteRepository;
 
-  private PrinterService service;
+  private PrinterManagementService service;
 
   @BeforeEach
   void setUp() {
-    service = new PrinterService(printerRepository, parkingSiteRepository);
+    service = new PrinterManagementService(printerRepository, parkingSiteRepository);
   }
 
   @Test

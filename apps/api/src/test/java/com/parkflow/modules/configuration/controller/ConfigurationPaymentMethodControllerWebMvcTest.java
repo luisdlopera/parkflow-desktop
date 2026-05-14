@@ -17,7 +17,7 @@ import com.parkflow.modules.auth.security.JwtTokenService;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
 import com.parkflow.modules.configuration.dto.PaymentMethodResponse;
-import com.parkflow.modules.configuration.service.PaymentMethodService;
+import com.parkflow.modules.configuration.application.port.in.PaymentMethodUseCase;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -40,7 +40,7 @@ class ConfigurationPaymentMethodControllerWebMvcTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
 
-  @MockBean private PaymentMethodService paymentMethodService;
+  @MockBean private PaymentMethodUseCase paymentMethodUseCase;
   @MockBean private RateLimitConfig rateLimitConfig;
   @MockBean private JwtTokenService jwtTokenService;
   @MockBean private AuthSessionRepository authSessionRepository;
@@ -63,7 +63,7 @@ class ConfigurationPaymentMethodControllerWebMvcTest {
         new PaymentMethodResponse(
             UUID.randomUUID(), "CASH", "Efectivo", false, true, 1, OffsetDateTime.now(), OffsetDateTime.now());
 
-    Mockito.when(paymentMethodService.create(Mockito.any())).thenReturn(response);
+    Mockito.when(paymentMethodUseCase.create(Mockito.any())).thenReturn(response);
 
     PaymentMethodRequest request = new PaymentMethodRequest("CASH", "Efectivo", false, true, 1);
 
@@ -88,7 +88,7 @@ class ConfigurationPaymentMethodControllerWebMvcTest {
     SettingsPageResponse<PaymentMethodResponse> page =
         SettingsPageResponse.of(new PageImpl<>(List.of(response), PageRequest.of(0, 20), 1));
 
-    Mockito.when(paymentMethodService.list(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(page);
+    Mockito.when(paymentMethodUseCase.list(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(page);
 
     mockMvc
         .perform(get("/api/v1/configuration/payment-methods"))

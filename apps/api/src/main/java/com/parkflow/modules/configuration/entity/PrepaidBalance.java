@@ -19,13 +19,17 @@ import lombok.Setter;
     indexes = {
       @Index(name = "idx_prepaid_balance_plate", columnList = "plate"),
       @Index(name = "idx_prepaid_balance_active", columnList = "is_active"),
-      @Index(name = "idx_prepaid_balance_expiry", columnList = "expires_at")
+      @Index(name = "idx_prepaid_balance_expiry", columnList = "expires_at"),
+      @Index(name = "idx_prepaid_balance_company", columnList = "company_id")
     })
 public class PrepaidBalance {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
+
+  @Column(name = "company_id", nullable = false)
+  private UUID companyId;
 
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "package_id", nullable = false)

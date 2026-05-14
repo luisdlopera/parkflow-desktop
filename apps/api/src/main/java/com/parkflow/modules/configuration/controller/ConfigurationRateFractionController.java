@@ -1,8 +1,8 @@
 package com.parkflow.modules.configuration.controller;
 
+import com.parkflow.modules.configuration.application.port.in.RateFractionUseCase;
 import com.parkflow.modules.configuration.dto.RateFractionRequest;
 import com.parkflow.modules.configuration.dto.RateFractionResponse;
-import com.parkflow.modules.configuration.service.RateFractionService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -17,18 +17,18 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ConfigurationRateFractionController {
 
-  private final RateFractionService rateFractionService;
+  private final RateFractionUseCase rateFractionUseCase;
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
   public ResponseEntity<List<RateFractionResponse>> listByRate(@RequestParam UUID rateId) {
-    return ResponseEntity.ok(rateFractionService.listByRate(rateId));
+    return ResponseEntity.ok(rateFractionUseCase.listByRate(rateId));
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
   public ResponseEntity<RateFractionResponse> get(@PathVariable UUID id) {
-    return ResponseEntity.ok(rateFractionService.get(id));
+    return ResponseEntity.ok(rateFractionUseCase.get(id));
   }
 
   @PostMapping
@@ -36,7 +36,7 @@ public class ConfigurationRateFractionController {
   public ResponseEntity<RateFractionResponse> create(
       @RequestParam UUID rateId,
       @Valid @RequestBody RateFractionRequest req) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(rateFractionService.create(rateId, req));
+    return ResponseEntity.status(HttpStatus.CREATED).body(rateFractionUseCase.create(rateId, req));
   }
 
   @PutMapping("/{id}")
@@ -44,13 +44,13 @@ public class ConfigurationRateFractionController {
   public ResponseEntity<RateFractionResponse> update(
       @PathVariable UUID id,
       @Valid @RequestBody RateFractionRequest req) {
-    return ResponseEntity.ok(rateFractionService.update(id, req));
+    return ResponseEntity.ok(rateFractionUseCase.update(id, req));
   }
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<Void> delete(@PathVariable UUID id) {
-    rateFractionService.delete(id);
+    rateFractionUseCase.delete(id);
     return ResponseEntity.noContent().build();
   }
 }

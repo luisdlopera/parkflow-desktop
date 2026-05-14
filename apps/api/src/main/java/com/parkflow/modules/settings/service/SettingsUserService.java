@@ -39,15 +39,18 @@ public class SettingsUserService {
 
   @Transactional(readOnly = true)
   public SettingsPageResponse<UserAdminResponse> list(String q, Boolean active, Pageable pageable) {
-    Page<AppUser> page = appUserRepository.search(q, active, pageable);
+    UUID companyId = SecurityUtils.requireCompanyId();
+    Page<AppUser> page = appUserRepository.search(q, active, companyId, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 
   @Transactional(readOnly = true)
   public UserAdminResponse get(UUID id) {
+    UUID companyId = SecurityUtils.requireCompanyId();
     AppUser user =
         appUserRepository
             .findById(id)
+            .filter(u -> u.getCompanyId().equals(companyId))
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
     return toResponse(user);
   }
@@ -58,16 +61,17 @@ public class SettingsUserService {
     assertCanAssignRole(actor, req.role());
 
     String email = req.email().trim().toLowerCase();
-    if (appUserRepository.findByEmailIgnoreCase(email).isPresent()) {
+    if (appUserRepository.findByEmailIgnoreCaseAndCompanyId(email, SecurityUtils.requireCompanyId()).isPresent()) {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe un usuario con este correo");
     }
 
     String doc = normalizeDocument(req.document());
-    if (doc != null && appUserRepository.existsByDocumentIgnoreCase(doc)) {
+    if (doc != null && appUserRepository.existsByDocumentIgnoreCaseAndCompanyId(doc, SecurityUtils.requireCompanyId())) {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe un usuario con este documento");
     }
 
     AppUser user = new AppUser();
+    user.setCompanyId(SecurityUtils.requireCompanyId());
     user.setName(req.name().trim());
     user.setEmail(email);
     user.setDocument(doc);
@@ -110,9 +114,11 @@ public class SettingsUserService {
   @Transactional
   public UserAdminResponse patch(UUID id, UserPatchRequest req) {
     UserRole actor = SecurityUtils.requireUserRole();
+    UUID companyId = SecurityUtils.requireCompanyId();
     AppUser user =
         appUserRepository
             .findById(id)
+            .filter(u -> u.getCompanyId().equals(companyId))
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
     if (req.role() != null) {
@@ -128,7 +134,7 @@ public class SettingsUserService {
     if (StringUtils.hasText(req.email())) {
       String email = req.email().trim().toLowerCase();
       appUserRepository
-          .findByEmailIgnoreCase(email)
+          .findByEmailIgnoreCaseAndCompanyId(email, companyId)
           .filter(u -> !u.getId().equals(id))
           .ifPresent(
               u -> {
@@ -138,7 +144,7 @@ public class SettingsUserService {
     }
     if (req.document() != null) {
       String doc = normalizeDocument(req.document());
-      if (doc != null && appUserRepository.existsByDocumentIgnoreCaseAndIdNot(doc, id)) {
+      if (doc != null && appUserRepository.existsByDocumentIgnoreCaseAndCompanyIdAndIdNot(doc, companyId, id)) {
         throw new OperationException(HttpStatus.CONFLICT, "Ya existe un usuario con este documento");
       }
       user.setDocument(doc);
@@ -194,7 +200,7 @@ public class SettingsUserService {
 
   private void assertNotDemoteLastSuperAdmin(AppUser user, UserRole newRole) {
     if (user.getRole() == UserRole.SUPER_ADMIN && newRole != UserRole.SUPER_ADMIN) {
-      long activeSupers = appUserRepository.countByRoleAndIsActiveTrue(UserRole.SUPER_ADMIN);
+      long activeSupers = appUserRepository.countByRoleAndCompanyIdAndIsActiveTrue(UserRole.SUPER_ADMIN, user.getCompanyId());
       if (user.isActive() && activeSupers <= 1) {
         throw new OperationException(
             HttpStatus.CONFLICT, "No puede cambiar el rol del unico super administrador activo");
@@ -204,13 +210,15 @@ public class SettingsUserService {
 
   @Transactional
   public UserAdminResponse patchStatus(UUID id, UserStatusRequest req) {
+    UUID companyId = SecurityUtils.requireCompanyId();
     AppUser user =
         appUserRepository
             .findById(id)
+            .filter(u -> u.getCompanyId().equals(companyId))
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
     if (!req.active() && user.getRole() == UserRole.SUPER_ADMIN && user.isActive()) {
-      long c = appUserRepository.countByRoleAndIsActiveTrue(UserRole.SUPER_ADMIN);
+      long c = appUserRepository.countByRoleAndCompanyIdAndIsActiveTrue(UserRole.SUPER_ADMIN, companyId);
       if (c <= 1) {
         throw new OperationException(
             HttpStatus.CONFLICT, "No puede inactivar el unico super administrador");
@@ -238,9 +246,11 @@ public class SettingsUserService {
 
   @Transactional
   public void resetPassword(UUID id, ResetPasswordRequest req) {
+    UUID companyId = SecurityUtils.requireCompanyId();
     AppUser user =
         appUserRepository
             .findById(id)
+            .filter(u -> u.getCompanyId().equals(companyId))
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
     user.setPasswordHash(passwordHashService.encodePassword(req.newPassword()));
     user.setPasswordChangedAt(OffsetDateTime.now());

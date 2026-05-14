@@ -15,33 +15,32 @@ public class AppUser {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
-  @Column(nullable = false)
-  private String name;
+  @Column(name = "company_id")
+  private UUID companyId;
 
   @Column(nullable = false, unique = true)
   private String email;
 
-  private String document;
-
-  private String phone;
-
-  private String site;
-
-  private String terminal;
-
-  private OffsetDateTime lastAccessAt;
-
-  @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private UserRole role = UserRole.CAJERO;
+  private String name;
 
   @Column(nullable = false)
   private String passwordHash;
 
-  private OffsetDateTime passwordChangedAt;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private UserRole role;
 
   @Column(nullable = false)
   private boolean isActive = true;
+
+  private String document;
+  private String phone;
+  private String site;
+  private String terminal;
+
+  private OffsetDateTime lastAccessAt;
+  private OffsetDateTime passwordChangedAt;
 
   @Column(nullable = false)
   private boolean canVoidTickets = false;

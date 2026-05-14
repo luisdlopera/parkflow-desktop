@@ -5,10 +5,12 @@ import com.parkflow.modules.parking.operation.repository.ParkingSessionRepositor
 import com.parkflow.modules.sync.repository.SyncEventRepository;
 import com.parkflow.modules.tickets.entity.PrintJobStatus;
 import com.parkflow.modules.tickets.repository.PrintJobRepository;
+import com.parkflow.modules.auth.security.SecurityUtils;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.EnumSet;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,13 +36,15 @@ public class SupervisorService {
     long exits = parkingSessionRepository.countExitsInPeriod(dayStart, nextDayStart);
     long reprints = parkingSessionRepository.countReprintsInPeriod(dayStart, nextDayStart);
     long lost = parkingSessionRepository.countLostTicketsInPeriod(dayStart, nextDayStart);
+    
+    UUID companyId = SecurityUtils.requireCompanyId();
     long printFailed =
-      printJobRepository.countByStatusInAndCreatedAtBetween(
-        EnumSet.of(PrintJobStatus.FAILED), dayStart, nextDayStart);
+      printJobRepository.countByCompanyIdAndStatusInAndCreatedAtBetween(
+        companyId, EnumSet.of(PrintJobStatus.FAILED), dayStart, nextDayStart);
     long deadLetter =
-        printJobRepository.countByStatusInAndCreatedAtAfter(
-            EnumSet.of(PrintJobStatus.DEAD_LETTER), dayStart);
-    long syncPending = syncEventRepository.countBySyncedAtIsNull();
+        printJobRepository.countByCompanyIdAndStatusInAndCreatedAtAfter(
+            companyId, EnumSet.of(PrintJobStatus.DEAD_LETTER), dayStart);
+    long syncPending = syncEventRepository.countByCompanyIdAndSyncedAtIsNull(companyId);
     return new OperationsSummaryResponse(
         active, entries, exits, reprints, lost, printFailed, deadLetter, syncPending, now);
   }

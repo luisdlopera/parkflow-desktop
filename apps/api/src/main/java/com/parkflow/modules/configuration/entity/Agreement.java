@@ -28,6 +28,9 @@ public class Agreement {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
+  
+  @Column(name = "company_id")
+  private UUID companyId;
 
   /** Código único de convenio (se usa en caja para aplicarlo). */
   @Column(nullable = false, unique = true, length = 40)

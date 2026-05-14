@@ -16,6 +16,9 @@ public class Payment {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
+  @Column(name = "company_id", nullable = false)
+  private UUID companyId;
+
   @OneToOne(optional = false)
   @JoinColumn(name = "session_id", unique = true)
   private ParkingSession session;

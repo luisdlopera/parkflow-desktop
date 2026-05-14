@@ -27,6 +27,7 @@ import { CrashRecoveryDialog } from "@/components/ui/CrashRecoveryDialog";
 import { normalizePlate } from "@/lib/validation/plate-validator";
 import type { VehicleType } from "@parkflow/types";
 import { fetchMasterVehicleTypes, type MasterVehicleTypeRow } from "@/lib/settings-api";
+import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 import { currentUser } from "@/lib/auth";
 import { operationEntryRequestSchema, operationReprintRequestSchema } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow, toUserMessageFromClientValidation } from "@/lib/validation/request-guard";
@@ -112,6 +113,7 @@ export default function VehicleEntryFormV2() {
   const [vehicleTypes, setVehicleTypes] = useState<MasterVehicleTypeRow[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [activeLookup, setActiveLookup] = useState<string | null>(null);
+  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
   const submitLock = useRef(false);
   const plateInputRef = useRef<HTMLInputElement>(null);
   const idempotencyKeyRef = useRef(newIdempotencyKey());
@@ -181,6 +183,10 @@ export default function VehicleEntryFormV2() {
   });
 
   useEffect(() => {
+    fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     fetchMasterVehicleTypes()
       .then(types => {
@@ -191,7 +197,12 @@ export default function VehicleEntryFormV2() {
           setLoadingTypes(false);
           return;
         }
-        const activeTypes = sortedActiveTypes(types);
+        const configuredCodes = Array.isArray(runtimeConfig?.vehicleTypes)
+          ? new Set((runtimeConfig?.vehicleTypes ?? []).map((v) => String(v).toUpperCase()))
+          : null;
+        const activeTypes = sortedActiveTypes(types).filter((t) =>
+          configuredCodes ? configuredCodes.has(String(t.code).toUpperCase()) : true
+        );
         setVehicleTypes(activeTypes);
         const typeCodes = activeTypes.map(t => t.code);
         const currentType = form.getValues("type");
@@ -223,10 +234,22 @@ export default function VehicleEntryFormV2() {
         setLoadingTypes(false);
       });
     return () => { cancelled = true; };
-  }, [settings.defaultVehicleType, form]);
+  }, [settings.defaultVehicleType, form, runtimeConfig?.vehicleTypes]);
 
   const selectedVehicleType = vehicleTypes.find((type) => type.code === selectedTypeCode);
   const requiresPlate = selectedVehicleType?.requiresPlate ?? true;
+  const configuredSites = Array.isArray(runtimeConfig?.sites) ? runtimeConfig.sites : [];
+  const hasMultipleSites = configuredSites.length > 1;
+
+  useEffect(() => {
+    if (configuredSites.length === 1) {
+      const single = configuredSites[0];
+      const nextSite = String(single?.code ?? single?.name ?? "PRINCIPAL");
+      if (nextSite && form.getValues("site") !== nextSite) {
+        form.setValue("site", nextSite, { shouldValidate: true });
+      }
+    }
+  }, [configuredSites, form]);
 
   useEffect(() => {
     if (requiresPlate) {
@@ -916,13 +939,29 @@ export default function VehicleEntryFormV2() {
               <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-200">
                 {/* Ubicación */}
                 <div className="grid grid-cols-2 gap-3">
-                  <Controller
-                    name="site"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input {...field} label="Sede" placeholder="Principal" variant="flat" size="sm" />
-                    )}
-                  />
+                  {hasMultipleSites ? (
+                    <Controller
+                      name="site"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Select
+                          aria-label="Sede"
+                          selectedKeys={field.value ? [field.value] : []}
+                          variant="flat"
+                          size="sm"
+                          onSelectionChange={(keys) => {
+                            const selected = Array.from(keys)[0] as string | undefined;
+                            if (selected) field.onChange(selected);
+                          }}
+                        >
+                          {configuredSites.map((site) => {
+                            const key = String(site.code ?? site.name ?? "PRINCIPAL");
+                            return <SelectItem key={key}>{String(site.name ?? site.code ?? key)}</SelectItem>;
+                          })}
+                        </Select>
+                      )}
+                    />
+                  ) : null}
                   <Controller
                     name="lane"
                     control={form.control}
