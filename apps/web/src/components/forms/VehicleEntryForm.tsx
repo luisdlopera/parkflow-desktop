@@ -43,11 +43,10 @@ function writePerfLog(operation: string, durationMs: number, details?: Record<st
     message: "performance",
     data: { operation, durationMs, ...details }
   };
-  // Write to localStorage for persistence, console for immediate visibility
+  // Write to localStorage for short-lived performance troubleshooting
   const logs = JSON.parse(localStorage.getItem("perf_logs_0dd35a") || "[]");
   logs.push(logEntry);
   localStorage.setItem("perf_logs_0dd35a", JSON.stringify(logs.slice(-100))); // Keep last 100
-  console.log("[PERF_METRIC]", logEntry);
 }
 // #endregion
 
