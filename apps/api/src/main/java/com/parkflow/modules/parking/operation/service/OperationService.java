@@ -38,6 +38,7 @@ public class OperationService {
   private static final Logger log = LoggerFactory.getLogger(OperationService.class);
   private static final int LOST_TICKET_ENTRY_DRIFT_MAX_MINUTES = 240;
   private final AppUserRepository appUserRepository;
+  private final RateRepository rateRepository;
   private final ParkingSiteRepository parkingSiteRepository;
   private final OperationalParameterRepository operationalParameterRepository;
   private final ParkingSessionRepository parkingSessionRepository;
@@ -437,6 +438,10 @@ public class OperationService {
       return 3;
     }
     return 1;
+  }
+
+  private String generateNoPlateIdentifier() {
+    return "SIN-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase(Locale.ROOT);
   }
 
   private Optional<OperationalParameter> resolveOperationalParameter(ParkingSession session) {

@@ -6,11 +6,9 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.parkflow.modules.auth.application.service.AuthAuditService;
-import com.parkflow.modules.cash.application.service.CashLedgerSummaryCalculator;
+import com.parkflow.modules.cash.application.service.CashConfigurationManagementService;
 import com.parkflow.modules.cash.application.service.CashMovementManagementService;
-import com.parkflow.modules.cash.application.service.CashMovementResponseMapper;
 import com.parkflow.modules.cash.application.service.CashSessionManagementService;
-import com.parkflow.modules.cash.application.service.CashSessionResponseMapper;
 import com.parkflow.modules.cash.domain.*;
 import com.parkflow.modules.cash.domain.exception.CashSessionException;
 import com.parkflow.modules.cash.dto.*;
@@ -66,6 +64,7 @@ class CashServiceTest {
 
   private CashSessionManagementService sessionService;
   private CashMovementManagementService movementService;
+  private CashConfigurationManagementService configService;
 
   @BeforeEach
   void setUp() {
@@ -73,17 +72,20 @@ class CashServiceTest {
         cashRegisterRepository, cashSessionRepository, cashMovementRepository,
         cashClosingReportRepository, cashAuditLogRepository, appUserRepository,
         cashDomainAuditService, authAuditService, parkingParametersService,
-        cashSequentialSupportService, cashClosingOutboundNotifier, globalAuditService,
-        new CashSessionResponseMapper(), new CashLedgerSummaryCalculator()
+        cashSequentialSupportService, cashClosingOutboundNotifier, globalAuditService
     );
     
     movementService = new CashMovementManagementService(
         cashMovementRepository, cashSessionRepository, cashRegisterRepository,
         appUserRepository, parkingSessionRepository, cashDomainAuditService,
-        authAuditService, cashPolicyResolver, new CashMovementResponseMapper()
+        authAuditService, cashPolicyResolver
     );
     
-    
+    configService = new CashConfigurationManagementService(
+        cashRegisterRepository, cashSessionRepository, appUserRepository,
+        cashPolicyResolver, parkingParametersService, sessionService,
+        authAuditService, cashDomainAuditService
+    );
 
     lenient().when(cashPolicyResolver.requireOpenForPayment(any())).thenReturn(true);
     UUID actorId = UUID.randomUUID();
@@ -134,7 +136,7 @@ class CashServiceTest {
         new OpenCashRequest("default", "T1", null, new BigDecimal("50.00"), oid, null, null);
 
     assertThatThrownBy(() -> sessionService.open(req))
-        .isInstanceOf(CashSessionException.class)
+        .isInstanceOf(OperationException.class)
         .satisfies(
             ex -> assertThat(((CashSessionException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT));
   }
@@ -147,7 +149,7 @@ class CashServiceTest {
     when(cashSessionRepository.findById(sid)).thenReturn(Optional.of(session));
 
     assertThatThrownBy(() -> sessionService.close(sid, new CashCloseRequest(null, null, null)))
-        .isInstanceOf(CashSessionException.class)
+        .isInstanceOf(OperationException.class)
         .satisfies(
             ex -> assertThat(((CashSessionException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
   }
@@ -155,10 +157,9 @@ class CashServiceTest {
   @Test
   void assertCashSkipsWhenPolicyDoesNotRequireOpen() {
     when(cashPolicyResolver.requireOpenForPayment("Sede")).thenReturn(false);
-    ParkingSession ps = ParkingSession.builder()
-        .site("Sede")
-        .terminal("T1")
-        .build();
+    ParkingSession ps = new ParkingSession();
+    ps.setSite("Sede");
+    ps.setTerminal("T1");
     movementService.assertCashOpenForParkingPayment(ps);
     verify(cashRegisterRepository, never()).findBySiteAndTerminal(any(), any());
   }
