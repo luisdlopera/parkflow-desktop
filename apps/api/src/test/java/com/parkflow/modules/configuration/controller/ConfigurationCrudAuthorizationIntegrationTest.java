@@ -3,7 +3,6 @@ package com.parkflow.modules.configuration.controller;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
@@ -39,6 +38,20 @@ class ConfigurationCrudAuthorizationIntegrationTest {
                 .with(csrf())
                 .contentType(APPLICATION_JSON)
                 .content(paymentMethodBody))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(roles = "OPERADOR")
+  void shouldRejectOperatorCashRegisterWrites() throws Exception {
+    String body = "{\"site\":\"DEFAULT\",\"siteId\":null,\"code\":\"C1\",\"name\":\"Caja 1\",\"terminal\":\"T1\",\"label\":null,\"printerId\":null,\"responsibleUserId\":null,\"active\":true}";
+
+    mockMvc
+        .perform(
+            post("/api/v1/configuration/cash-registers")
+                .with(csrf())
+                .contentType(APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isForbidden());
   }
 

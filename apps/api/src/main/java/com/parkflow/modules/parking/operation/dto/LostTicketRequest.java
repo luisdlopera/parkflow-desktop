@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record LostTicketRequest(
-    @Size(max = 200) String idempotencyKey,
+    @NotBlank @Size(max = 200) String idempotencyKey,
     String ticketNumber,
     String plate,
   @NotNull UUID operatorUserId,

@@ -215,6 +215,10 @@ export default function VehicleEntryForm() {
       );
 
       const response = await fetch(`${apiBase}/entries`, {
+        method: "POST",
+        headers: await buildApiHeaders(),
+        body: JSON.stringify(requestBody),
+      });
 
       const payload = await response.json().catch(() => ({}));
 

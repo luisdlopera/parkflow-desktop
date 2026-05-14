@@ -778,12 +778,17 @@ VALUES (
 -- Payment methods
 INSERT INTO payment_methods (code, name, requires_reference, display_order) VALUES
     ('CASH', 'Efectivo', FALSE, 1),
-    ('TRANSFER', 'Transferencia', TRUE, 2),
-    ('CARD', 'Datáfono', TRUE, 3),
-    ('NEQUI', 'Nequi', TRUE, 4),
-    ('DAVIPLATA', 'Daviplata', TRUE, 5),
-    ('COURTESY', 'Cortesía', FALSE, 6),
-    ('AGREEMENT', 'Convenio', TRUE, 7)
+    ('DEBIT_CARD', 'Tarjeta débito', TRUE, 2),
+    ('CREDIT_CARD', 'Tarjeta crédito', TRUE, 3),
+    ('QR', 'QR', TRUE, 4),
+    ('NEQUI', 'Nequi', TRUE, 5),
+    ('DAVIPLATA', 'Daviplata', TRUE, 6),
+    ('TRANSFER', 'Transferencia', TRUE, 7),
+    ('AGREEMENT', 'Convenio', TRUE, 8),
+    ('INTERNAL_CREDIT', 'Crédito interno', TRUE, 9),
+    ('MIXED', 'Mixto', TRUE, 10),
+    ('CARD', 'Datáfono / tarjeta legacy', TRUE, 11),
+    ('OTHER', 'Otro', TRUE, 12)
 ON CONFLICT (code) DO NOTHING;
 
 -- Vehicle types

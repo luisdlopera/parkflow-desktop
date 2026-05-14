@@ -9,11 +9,15 @@ export function buildCashMovementTicket(
   movement: CashMovementDto,
   parkingName: string
 ): TicketDocument {
+  const registrar =
+    movement.createdByName ?? `Usuario ${movement.createdById.slice(0, 8)}`;
   const lines = [
     `Tipo: ${movement.movementType}`,
     `Medio: ${movement.paymentMethod}`,
     `Valor: ${movement.amount}`,
     movement.reason ? `Motivo: ${movement.reason}` : "",
+    movement.terminal ? `Equipo/terminal: ${movement.terminal}` : "",
+    `Registra: ${registrar}`,
     `Sesion caja: ${session.id}`,
     `Estado: ${movement.status}`
   ].filter(Boolean);
@@ -30,7 +34,7 @@ export function buildCashMovementTicket(
     lane: null,
     booth: null,
     terminal: session.register.terminal,
-    operatorName: null,
+    operatorName: movement.createdByName ?? null,
     issuedAtIso: movement.createdAt,
     legalMessage: null,
     qrPayload: null,

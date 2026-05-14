@@ -24,11 +24,13 @@ export type CashSessionDto = {
   id: string;
   register: { id: string; site: string; terminal: string; label: string | null };
   operatorId: string;
+  operatorName?: string | null;
   status: string;
   openingAmount: number;
   openedAt: string;
   closedAt: string | null;
   closedById: string | null;
+  closedByName?: string | null;
   expectedAmount: number | null;
   countedAmount: number | null;
   differenceAmount: number | null;
@@ -38,8 +40,11 @@ export type CashSessionDto = {
   countOther: number | null;
   notes: string | null;
   closingNotes: string | null;
+  closingWitnessName?: string | null;
+  supportDocumentNumber?: string | null;
   countedAt: string | null;
   countOperatorId: string | null;
+  countOperatorName?: string | null;
 };
 
 export type CashMovementDto = {
@@ -57,6 +62,7 @@ export type CashMovementDto = {
   voidedById: string | null;
   externalReference: string | null;
   createdById: string;
+  createdByName?: string | null;
   createdAt: string;
   terminal: string | null;
   idempotencyKey: string | null;
@@ -244,9 +250,38 @@ export async function cashCount(
   return (await res.json()) as CashSessionDto;
 }
 
+export type CashAuditEntryDto = {
+  id: string;
+  action: string;
+  actorUserId: string | null;
+  actorName: string | null;
+  terminalId: string | null;
+  clientIp: string | null;
+  oldValue: string | null;
+  newValue: string | null;
+  reason: string | null;
+  metadata: string | null;
+  createdAt: string;
+};
+
+export async function cashAudit(sessionId: string): Promise<CashAuditEntryDto[]> {
+  const res = await fetch(`${apiV1Base()}/cash/sessions/${sessionId}/audit`, {
+    cache: "no-store",
+    headers: await buildApiHeaders()
+  });
+  if (!res.ok) {
+    throw new Error(await parseError(res));
+  }
+  return (await res.json()) as CashAuditEntryDto[];
+}
+
 export async function cashClose(
   sessionId: string,
-  body: { closingNotes?: string | null; closeIdempotencyKey?: string | null }
+  body: {
+    closingNotes?: string | null;
+    closingWitnessName?: string | null;
+    closeIdempotencyKey?: string | null;
+  }
 ): Promise<CashSessionDto> {
   const validatedBody = validatePayloadOrThrow(cashCloseRequestSchema, body);
   const res = await fetch(`${apiV1Base()}/cash/sessions/${sessionId}/close`, {

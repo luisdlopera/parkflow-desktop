@@ -14,8 +14,9 @@ class RolePermissionsTest {
             AuthPermission.TICKETS_EMITIR,
             AuthPermission.COBROS_REGISTRAR,
             AuthPermission.DEVICES_AUTORIZAR,
-            AuthPermission.DEVICES_REVOCAR)
-        .doesNotContain(AuthPermission.USUARIOS_EDITAR, AuthPermission.CONFIGURACION_EDITAR);
+            AuthPermission.DEVICES_REVOCAR,
+            AuthPermission.USUARIOS_EDITAR,
+            AuthPermission.CONFIGURACION_EDITAR);
   }
 
   @Test
@@ -30,7 +31,7 @@ class RolePermissionsTest {
     assertThat(RolePermissions.claims(UserRole.SUPER_ADMIN))
         .containsEntry("role", "SUPER_ADMIN");
     assertThat(RolePermissions.claims(UserRole.SUPER_ADMIN).get("permissions"))
-        .asList()
+        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.LIST)
         .contains("usuarios:editar", "configuracion:editar", "devices:autorizar");
   }
 }

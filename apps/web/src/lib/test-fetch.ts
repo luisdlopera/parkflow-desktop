@@ -1,7 +1,7 @@
 import { buildApiHeaders } from "./api";
 
 async function testFetch() {
-  const baseUrl = "http://localhost:6011/api/v1/settings";
+  const baseUrl = "http://localhost:6011/api/v1/configuration";
   try {
     const res = await fetch(`${baseUrl}/vehicle-types`, {
       headers: await buildApiHeaders(),

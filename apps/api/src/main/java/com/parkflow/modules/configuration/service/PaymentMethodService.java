@@ -24,7 +24,7 @@ public class PaymentMethodService {
 
   @Transactional(readOnly = true)
   public SettingsPageResponse<PaymentMethodResponse> list(String q, Boolean active, Pageable pageable) {
-    Page<PaymentMethod> page = paymentMethodRepository.search(q, active, pageable);
+    Page<PaymentMethod> page = paymentMethodRepository.search(normalizeQuery(q), active, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 
@@ -35,11 +35,12 @@ public class PaymentMethodService {
 
   @Transactional
   public PaymentMethodResponse create(PaymentMethodRequest req) {
-    if (paymentMethodRepository.existsByCode(req.code())) {
+    String code = req.code().trim().toUpperCase();
+    if (paymentMethodRepository.existsByCode(code)) {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe un método de pago con este código");
     }
     PaymentMethod pm = new PaymentMethod();
-    pm.setCode(req.code().trim().toUpperCase());
+    pm.setCode(code);
     pm.setName(req.name().trim());
     pm.setRequiresReference(req.requiresReference());
     pm.setActive(req.isActive());
@@ -57,10 +58,11 @@ public class PaymentMethodService {
   @Transactional
   public PaymentMethodResponse update(UUID id, PaymentMethodRequest req) {
     PaymentMethod pm = findById(id);
-    if (!pm.getCode().equalsIgnoreCase(req.code()) && paymentMethodRepository.existsByCode(req.code())) {
+    String code = req.code().trim().toUpperCase();
+    if (!pm.getCode().equalsIgnoreCase(code) && paymentMethodRepository.existsByCode(code)) {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe un método de pago con este código");
     }
-    pm.setCode(req.code().trim().toUpperCase());
+    pm.setCode(code);
     pm.setName(req.name().trim());
     pm.setRequiresReference(req.requiresReference());
     pm.setActive(req.isActive());
@@ -89,5 +91,9 @@ public class PaymentMethodService {
     return new PaymentMethodResponse(
         pm.getId(), pm.getCode(), pm.getName(), pm.isRequiresReference(),
         pm.isActive(), pm.getDisplayOrder(), pm.getCreatedAt(), pm.getUpdatedAt());
+  }
+
+  private static String normalizeQuery(String q) {
+    return q == null || q.isBlank() ? null : q.trim();
   }
 }

@@ -112,7 +112,8 @@ public class CashController {
   }
 
   @GetMapping("/sessions/{id}/audit")
-  @PreAuthorize("hasAuthority('reportes:leer')")
+  @PreAuthorize(
+      "hasAuthority('reportes:leer') or hasAuthority('cierres_caja:cerrar')")
   public List<CashAuditEntryResponse> audit(@PathVariable UUID id) {
     return cashService.auditTrail(id);
   }

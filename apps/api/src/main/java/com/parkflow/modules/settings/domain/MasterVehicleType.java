@@ -21,11 +21,23 @@ public class MasterVehicleType {
   @Column(nullable = false)
   private String name;
 
+  @Column(nullable = false, length = 40)
+  private String icon = "🚗";
+
+  @Column(nullable = false, length = 20)
+  private String color = "#2563EB";
+
   @Column(nullable = false)
   private boolean isActive = true;
 
   @Column(nullable = false)
   private boolean requiresPlate = true;
+
+  @Column(nullable = false)
+  private boolean hasOwnRate = true;
+
+  @Column(nullable = false)
+  private boolean quickAccess = true;
 
   @Column(nullable = false)
   private boolean requiresPhoto = false;

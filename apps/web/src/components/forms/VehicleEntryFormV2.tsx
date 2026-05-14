@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useRef, useState, useCallback, useEffect, type KeyboardEvent } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
@@ -24,11 +24,14 @@ import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
 import { useToast } from "@/lib/toast/ToastContext";
 import { useAutoSave } from "@/lib/hooks/useAutoSave";
 import { CrashRecoveryDialog } from "@/components/ui/CrashRecoveryDialog";
+import { normalizePlate } from "@/lib/validation/plate-validator";
 import type { VehicleType } from "@parkflow/types";
 import { fetchMasterVehicleTypes, type MasterVehicleTypeRow } from "@/lib/settings-api";
 import { currentUser } from "@/lib/auth";
 import { operationEntryRequestSchema, operationReprintRequestSchema } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow, toUserMessageFromClientValidation } from "@/lib/validation/request-guard";
+import { normalizeApiError } from "@/lib/errors/normalize-api-error";
+import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
 
 // #region agent log - Performance logging utility
 function writePerfLog(operation: string, durationMs: number, details?: Record<string, unknown>) {
@@ -65,15 +68,40 @@ interface OperatorSettings {
 const VEHICLE_TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
   CAR: { label: "Carro", color: "bg-blue-500", icon: "🚗" },
   MOTORCYCLE: { label: "Moto", color: "bg-emerald-500", icon: "🏍️" },
+  BICYCLE: { label: "Bicicleta", color: "bg-green-600", icon: "🚲" },
   VAN: { label: "Van", color: "bg-purple-500", icon: "🚐" },
   TRUCK: { label: "Camión", color: "bg-orange-500", icon: "🚛" },
+  BUS: { label: "Bus", color: "bg-yellow-600", icon: "🚌" },
+  ELECTRIC: { label: "Eléctrico", color: "bg-teal-600", icon: "⚡" },
   OTHER: { label: "Otro", color: "bg-slate-500", icon: "🚙" }
 };
+
+function sortedActiveTypes(types: MasterVehicleTypeRow[]) {
+  return types
+    .filter((type) => type.isActive)
+    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.name.localeCompare(b.name));
+}
+
+function vehicleTypeView(type: MasterVehicleTypeRow) {
+  const fallback = VEHICLE_TYPE_CONFIG[type.code] || { label: type.name, color: "bg-slate-500", icon: "🚗" };
+  return {
+    label: type.name || fallback.label,
+    icon: type.icon || fallback.icon,
+    color: type.color || ""
+  };
+}
 
 const modeOptions = [
   { key: "beginner", label: "Principiante" },
   { key: "expert", label: "Experto" },
   { key: "speed", label: "Velocidad" },
+];
+
+const entryModeOptions = [
+  { key: "VISITOR", label: "Visitante" },
+  { key: "AGREEMENT", label: "Convenio" },
+  { key: "SUBSCRIBER", label: "Abonado" },
+  { key: "EMPLOYEE", label: "Empleado" },
 ];
 
 export default function VehicleEntryFormV2() {
@@ -84,6 +112,7 @@ export default function VehicleEntryFormV2() {
   const [showRecovery, setShowRecovery] = useState(false);
   const [vehicleTypes, setVehicleTypes] = useState<MasterVehicleTypeRow[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
+  const [activeLookup, setActiveLookup] = useState<string | null>(null);
   const submitLock = useRef(false);
   const plateInputRef = useRef<HTMLInputElement>(null);
   const idempotencyKeyRef = useRef(newIdempotencyKey());
@@ -125,6 +154,10 @@ export default function VehicleEntryFormV2() {
     defaultValues: {
       plate: "",
       type: settings.defaultVehicleType,
+      countryCode: "CO",
+      entryMode: "VISITOR",
+      noPlate: false,
+      noPlateReason: "",
       rateId: "",
       site: "Principal",
       lane: "",
@@ -138,12 +171,14 @@ export default function VehicleEntryFormV2() {
   });
 
   // Auto-save form data
-  const formValues = form.watch();
+  const formValues = useWatch({ control: form.control });
+  const selectedTypeCode = useWatch({ control: form.control, name: "type" });
+  const noPlate = useWatch({ control: form.control, name: "noPlate" });
   const { clearAutoSave } = useAutoSave({
     key: "entry_form",
     data: formValues,
     interval: 2000,
-    enabled: formValues.plate.length > 0
+    enabled: Boolean(formValues.plate?.length || formValues.noPlate)
   });
 
   useEffect(() => {
@@ -157,13 +192,18 @@ export default function VehicleEntryFormV2() {
           setLoadingTypes(false);
           return;
         }
-        setVehicleTypes(types);
-        const typeCodes = types.map(t => t.code);
+        const activeTypes = sortedActiveTypes(types);
+        setVehicleTypes(activeTypes);
+        const typeCodes = activeTypes.map(t => t.code);
         const currentType = form.getValues("type");
-        if (!typeCodes.includes(currentType)) {
-          const firstType = types[0].code;
+        if (activeTypes.length === 1) {
+          form.setValue("type", activeTypes[0].code, { shouldValidate: true });
+        } else if (!typeCodes.includes(currentType)) {
+          const firstType = activeTypes[0]?.code;
           console.warn(`Current/default type ${currentType} not found, falling back to ${firstType}`);
-          form.setValue("type", firstType, { shouldValidate: true });
+          if (firstType) {
+            form.setValue("type", firstType, { shouldValidate: true });
+          }
         }
         setLoadingTypes(false);
       })
@@ -173,8 +213,11 @@ export default function VehicleEntryFormV2() {
         const fallbackTypes = [
           { id: "fallback-car", code: "CAR", name: "Carro", isActive: true },
           { id: "fallback-moto", code: "MOTORCYCLE", name: "Moto", isActive: true },
+          { id: "fallback-bicycle", code: "BICYCLE", name: "Bicicleta", isActive: true, requiresPlate: false },
           { id: "fallback-van", code: "VAN", name: "Van", isActive: true },
           { id: "fallback-truck", code: "TRUCK", name: "Camión", isActive: true },
+          { id: "fallback-bus", code: "BUS", name: "Bus", isActive: true },
+          { id: "fallback-electric", code: "ELECTRIC", name: "Eléctrico", isActive: true },
           { id: "fallback-other", code: "OTHER", name: "Otro", isActive: true },
         ];
         setVehicleTypes(fallbackTypes);
@@ -182,6 +225,20 @@ export default function VehicleEntryFormV2() {
       });
     return () => { cancelled = true; };
   }, [settings.defaultVehicleType, form]);
+
+  const selectedVehicleType = vehicleTypes.find((type) => type.code === selectedTypeCode);
+  const requiresPlate = selectedVehicleType?.requiresPlate ?? true;
+
+  useEffect(() => {
+    if (requiresPlate) {
+      return;
+    }
+    form.setValue("noPlate", true, { shouldValidate: true });
+    form.setValue("plate", "", { shouldValidate: true });
+    if (!form.getValues("noPlateReason")?.trim()) {
+      form.setValue("noPlateReason", "Tipo de vehículo no requiere placa", { shouldValidate: true });
+    }
+  }, [requiresPlate, form]);
 
   // Persistir settings
   useEffect(() => {
@@ -263,6 +320,32 @@ export default function VehicleEntryFormV2() {
     setPrintWarning(null);
   }, []);
 
+  const handleQuickLookup = useCallback(async () => {
+    const plate = normalizePlate(form.getValues("plate"));
+    if (!plate) {
+      setActiveLookup("Ingresa una placa para buscar.");
+      return;
+    }
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
+      const response = await fetch(`${apiBase}/sessions/active?plate=${encodeURIComponent(plate)}`, {
+        headers: await buildApiHeaders()
+      });
+      if (response.status === 404) {
+        setActiveLookup("Sin ingreso activo.");
+        return;
+      }
+      if (!response.ok) {
+        setActiveLookup("No se pudo consultar la placa.");
+        return;
+      }
+      const payload = await response.json();
+      setActiveLookup(`Activa: ${payload.receipt?.ticketNumber ?? "ticket sin número"}`);
+    } catch {
+      setActiveLookup("Consulta no disponible sin conexión.");
+    }
+  }, [form]);
+
   function isNetworkError(error: unknown): boolean {
     if (error instanceof TypeError) return true;
     if (error instanceof Error) {
@@ -293,7 +376,7 @@ export default function VehicleEntryFormV2() {
       }
 
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
-      const normalizedPlate = values.plate.trim().toUpperCase().replace(/\s+/g, '');
+      const normalizedPlate = values.noPlate ? null : normalizePlate(values.plate);
 
       const requestBody = validatePayloadOrThrow(
         operationEntryRequestSchema,
@@ -302,6 +385,10 @@ export default function VehicleEntryFormV2() {
           operatorUserId: user.id,
           ...values,
           plate: normalizedPlate,
+          countryCode: values.countryCode,
+          entryMode: values.entryMode,
+          noPlate: values.noPlate,
+          noPlateReason: values.noPlate ? values.noPlateReason?.trim() : null,
           rateId: values.rateId?.trim() ? values.rateId.trim() : null,
           site: values.site?.trim() || null,
           lane: values.lane?.trim() || null,
@@ -323,28 +410,17 @@ export default function VehicleEntryFormV2() {
         body: JSON.stringify(requestBody)
       });
 
+      const clonedResponse = response.clone();
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        // Build a fake response object to pass to normalizeApiError 
-        // since we already read the body
-        const fakeResponse = new Response(JSON.stringify(payload), {
-          status: response.status,
-          statusText: response.statusText,
-          headers: response.headers
-        });
-        
-        // Dynamic import to avoid missing imports at the top
-        const { normalizeApiError } = await import("@/lib/errors/normalize-api-error");
-        const { getUserErrorMessage } = await import("@/lib/errors/get-user-error-message");
-        
         if (response.status === 409) {
           setError("Este vehículo ya tiene una entrada activa.");
           playError();
           return;
         }
 
-        const apiError = await normalizeApiError(fakeResponse);
+        const apiError = await normalizeApiError(clonedResponse);
         const userError = getUserErrorMessage(apiError, "tickets.create");
         
         let errorText = userError.description;
@@ -417,6 +493,10 @@ export default function VehicleEntryFormV2() {
       form.reset({
         plate: "",
         type: settings.defaultVehicleType,
+        countryCode: values.countryCode || "CO",
+        entryMode: "VISITOR",
+        noPlate: false,
+        noPlateReason: "",
         rateId: "",
         site: settings.rememberLocation ? values.site : "Principal",
         lane: settings.rememberLocation ? values.lane : "",
@@ -448,7 +528,7 @@ export default function VehicleEntryFormV2() {
           toastSuccess("Sin internet: ingreso guardado en cola offline. Será sincronizado automáticamente.");
           incrementStats();
           playSuccess();
-          form.reset({ plate: "", type: settings.defaultVehicleType });
+          form.reset({ plate: "", type: settings.defaultVehicleType, countryCode: "CO", entryMode: "VISITOR", noPlate: false, noPlateReason: "" });
           focusPlate();
         } else {
           toastError("Sin conexión: no se pudo guardar localmente. Verifique la configuración offline.");
@@ -466,6 +546,24 @@ export default function VehicleEntryFormV2() {
 
   const isExpert = settings.mode === "expert" || settings.mode === "speed";
   const isSpeed = settings.mode === "speed";
+  const quickVehicleTypes = vehicleTypes.filter((type) => type.quickAccess !== false);
+  const visibleQuickTypes = quickVehicleTypes.length > 0 ? quickVehicleTypes : vehicleTypes;
+
+  const handleFormKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      event.preventDefault();
+      form.handleSubmit(onSubmit)();
+      return;
+    }
+    if (event.altKey && /^[1-9]$/.test(event.key)) {
+      const index = Number(event.key) - 1;
+      const selected = visibleQuickTypes[index]?.code;
+      if (selected) {
+        event.preventDefault();
+        form.setValue("type", selected, { shouldValidate: true });
+      }
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -531,6 +629,7 @@ export default function VehicleEntryFormV2() {
             isIconOnly
             size="sm"
             variant="flat"
+            color="primary"
             aria-label="Configuración de operador"
             onPress={() => setShowSettings(!showSettings)}
             className="flex-shrink-0"
@@ -570,7 +669,7 @@ export default function VehicleEntryFormV2() {
                 size="sm"
                 variant="flat"
                 aria-label="Tipo de vehículo por defecto"
-                selectedKeys={Object.keys(VEHICLE_TYPE_CONFIG).includes(settings.defaultVehicleType) ? [settings.defaultVehicleType] : []}
+                selectedKeys={vehicleTypes.some((type) => type.code === settings.defaultVehicleType) ? [settings.defaultVehicleType] : []}
                 onSelectionChange={(keys) => {
                   const selected = Array.from(keys)[0] as VehicleType;
                   if (selected) {
@@ -579,9 +678,12 @@ export default function VehicleEntryFormV2() {
                 }}
                 className="w-40"
               >
-                {Object.entries(VEHICLE_TYPE_CONFIG).map(([key, config]) => (
-                  <SelectItem key={key} textValue={config.label}>{config.icon} {config.label}</SelectItem>
-                ))}
+                {vehicleTypes.map((type) => {
+                  const config = vehicleTypeView(type);
+                  return (
+                  <SelectItem key={type.code} textValue={config.label}>{config.icon} {config.label}</SelectItem>
+                  );
+                })}
               </Select>
             </div>
           </CardBody>
@@ -589,7 +691,7 @@ export default function VehicleEntryFormV2() {
       )}
 
       {/* Formulario Principal */}
-      <form onSubmit={form.handleSubmit(onSubmit)} className="surface rounded-2xl p-6 space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown} className="surface rounded-2xl p-6 space-y-4">
         {/* Sección Principal - Siempre visible */}
         <div className="space-y-4">
           {/* Placa */}
@@ -616,6 +718,7 @@ export default function VehicleEntryFormV2() {
                 }
                 placeholder="ABC123"
                 variant="flat"
+                isDisabled={noPlate}
                 isInvalid={!!fieldState.error}
                 errorMessage={fieldState.error?.message}
                 classNames={{
@@ -632,84 +735,150 @@ export default function VehicleEntryFormV2() {
               />
             )}
           />
-
-          {/* Tipo de Vehículo */}
-          <div>
-            <label className="text-sm font-semibold text-slate-700 mb-2 block">Tipo de Vehículo</label>
-            {loadingTypes ? (
-              <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />
-            ) : isExpert ? (
-              // Modo experto: Botones grandes - responsive grid
-              <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2">
-                {vehicleTypes.map((t, index) => {
-                  const config = VEHICLE_TYPE_CONFIG[t.code] || { label: t.name, color: "bg-slate-400", icon: "🚗" };
-                  const isSelected = form.watch("type") === t.code;
-                  return (
-                    <button
-                      key={t.code}
-                      type="button"
-                      onClick={() => form.setValue("type", t.code)}
-                      className={`
-                        relative rounded-xl p-2 sm:p-3 text-center transition-all
-                        ${isSelected
-                          ? `${config.color} text-white shadow-lg scale-105`
-                          : "bg-slate-100 hover:bg-slate-200 text-slate-600"}
-                      `}
-                    >
-                      <div className="text-xl sm:text-2xl mb-1">{config.icon}</div>
-                      <div className="text-xs font-medium">{config.label}</div>
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 shadow">
-                        {index + 1}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              // Modo principiante: Select
-              <Controller
-                name="type"
-                control={form.control}
-                render={({ field }) => {
-                  const validKeys = vehicleTypes.map(t => t.code);
-                  const selectedKey = validKeys.includes(field.value) ? field.value : undefined;
-                  return (
-                    <Select
-                      variant="flat"
-                      aria-label="Tipo de vehículo"
-                      data-testid="vehicle-type"
-                      selectedKeys={selectedKey ? [selectedKey] : []}
-                      isDisabled={vehicleTypes.length === 0 || loadingTypes}
-                      onSelectionChange={(keys) => {
-                        const selected = Array.from(keys)[0] as string;
-                        field.onChange(selected);
-                      }}
-                    >
-                      {vehicleTypes.map((t) => {
-                        const config = VEHICLE_TYPE_CONFIG[t.code] || { label: t.name, icon: "🚗" };
-                        return (
-                          <SelectItem key={t.code} textValue={config.label}>
-                            {config.icon} {config.label}
-                          </SelectItem>
-                        );
-                      })}
-                    </Select>
-                  );
-                }}
-              />
-            )}
-            {vehicleTypes.length === 0 && !loadingTypes && (
-              <div className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-2">
-                No hay tipos de vehículo disponibles. Verifique la conexión con el servidor.
-              </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="flat" type="button" onPress={handleQuickLookup}>
+              Buscar placa activa
+            </Button>
+            <Controller
+              name="noPlate"
+              control={form.control}
+              render={({ field }) => (
+                <Checkbox
+                  size="sm"
+                  isSelected={field.value}
+                  isDisabled={!requiresPlate}
+                  onValueChange={(checked) => {
+                    field.onChange(checked);
+                    if (checked) {
+                      form.setValue("plate", "", { shouldValidate: true });
+                      if (!requiresPlate && !form.getValues("noPlateReason")?.trim()) {
+                        form.setValue("noPlateReason", "Tipo de vehículo no requiere placa", { shouldValidate: true });
+                      }
+                    }
+                  }}
+                >
+                  Sin placa
+                </Checkbox>
+              )}
+            />
+            {activeLookup && (
+              <span className="text-xs font-medium text-slate-600">{activeLookup}</span>
             )}
           </div>
 
+          {noPlate && (
+            <Controller
+              name="noPlateReason"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Input
+                  {...field}
+                  label="Justificación sin placa"
+                  placeholder="Caso especial autorizado"
+                  variant="flat"
+                  size="sm"
+                  isInvalid={!!fieldState.error}
+                  errorMessage={fieldState.error?.message}
+                />
+              )}
+            />
+          )}
+
+          <Controller
+            name="entryMode"
+            control={form.control}
+            render={({ field }) => (
+              <Select
+                variant="flat"
+                size="sm"
+                aria-label="Tipo de ingreso"
+                selectedKeys={[field.value]}
+                onSelectionChange={(keys) => field.onChange(Array.from(keys)[0] as string)}
+              >
+                {entryModeOptions.map((option) => (
+                  <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
+                ))}
+              </Select>
+            )}
+          />
+
+          {/* Tipo de Vehículo */}
+          <div className={vehicleTypes.length === 1 ? "hidden" : "block"}>
+            <label className="text-sm font-semibold text-slate-700 mb-2 block">Tipo de Vehículo</label>
+              {loadingTypes ? (
+                <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />
+              ) : isExpert ? (
+                // Modo experto: Botones grandes - responsive grid
+                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2">
+                  {visibleQuickTypes.map((t, index) => {
+                    const config = vehicleTypeView(t);
+                    const isSelected = selectedTypeCode === t.code;
+                    return (
+                      <button
+                        key={t.code}
+                        type="button"
+                        onClick={() => form.setValue("type", t.code)}
+                        className={`
+                          relative rounded-xl p-2 sm:p-3 text-center transition-all
+                          ${isSelected
+                            ? "text-white shadow-lg scale-105"
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-600"}
+                        `}
+                        style={isSelected && config.color ? { backgroundColor: config.color } : undefined}
+                      >
+                        <div className="text-xl sm:text-2xl mb-1">{config.icon}</div>
+                        <div className="text-xs font-medium">{config.label}</div>
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 shadow">
+                          {index + 1}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                // Modo principiante: Select
+                <Controller
+                  name="type"
+                  control={form.control}
+                  render={({ field }) => {
+                    const validKeys = vehicleTypes.map(t => t.code);
+                    const selectedKey = validKeys.includes(field.value) ? field.value : undefined;
+                    return (
+                      <Select
+                        variant="flat"
+                        aria-label="Tipo de vehículo"
+                        data-testid="vehicle-type"
+                        selectedKeys={selectedKey ? [selectedKey] : []}
+                        isDisabled={vehicleTypes.length === 0 || loadingTypes}
+                        onSelectionChange={(keys) => {
+                          const selected = Array.from(keys)[0] as string;
+                          field.onChange(selected);
+                        }}
+                      >
+                        {vehicleTypes.map((t) => {
+                          const config = vehicleTypeView(t);
+                          return (
+                            <SelectItem key={t.code} textValue={config.label}>
+                              {config.icon} {config.label}
+                            </SelectItem>
+                          );
+                        })}
+                      </Select>
+                    );
+                  }}
+                />
+              )}
+              {vehicleTypes.length === 0 && !loadingTypes && (
+                <div className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-2">
+                  No hay tipos de vehículo disponibles. Verifique la conexión con el servidor.
+                </div>
+              )}
+            </div>
           {/* Botón principal */}
           <div className="pt-2">
             <Button
               type="submit"
-              color={isSpeed ? "primary" : "default"}
+              color="primary"
               size={isSpeed ? "lg" : "md"}
               isLoading={form.formState.isSubmitting}
               className={`w-full font-bold ${isSpeed ? "text-lg shadow-xl" : ""}`}
@@ -779,6 +948,14 @@ export default function VehicleEntryFormV2() {
                 </div>
 
                 {/* Tarifa */}
+                <Controller
+                  name="countryCode"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input {...field} label="País placa" placeholder="CO" variant="flat" size="sm" maxLength={2} />
+                  )}
+                />
+
                 <Controller
                   name="rateId"
                   control={form.control}

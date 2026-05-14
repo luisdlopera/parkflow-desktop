@@ -27,6 +27,21 @@ export interface RequestContract {
   fields: Record<string, FieldContract>;
 }
 
+const PAYMENT_METHOD_VALUES = [
+  "CASH",
+  "DEBIT_CARD",
+  "CREDIT_CARD",
+  "CARD",
+  "QR",
+  "NEQUI",
+  "DAVIPLATA",
+  "TRANSFER",
+  "AGREEMENT",
+  "INTERNAL_CREDIT",
+  "OTHER",
+  "MIXED"
+];
+
 export const PARKFLOW_VALIDATION_CONTRACTS: Record<string, RequestContract> = {
   operationEntryCreate: {
     domain: "operations",
@@ -59,7 +74,7 @@ export const PARKFLOW_VALIDATION_CONTRACTS: Record<string, RequestContract> = {
         rules: [{ type: "string", min: 3, max: 20, pattern: "^[A-Z0-9-]+$" }]
       },
       operatorUserId: { rules: [{ type: "required" }, { type: "uuid" }] },
-      paymentMethod: { optional: true, rules: [{ type: "enum", values: ["CASH", "CARD", "TRANSFER", "OTHER"] }] }
+      paymentMethod: { optional: true, rules: [{ type: "enum", values: PAYMENT_METHOD_VALUES }] }
     }
   },
   operationReprint: {
@@ -82,7 +97,7 @@ export const PARKFLOW_VALIDATION_CONTRACTS: Record<string, RequestContract> = {
       ticketNumber: { optional: true, rules: [{ type: "string", min: 1, max: 50 }] },
       plate: { optional: true, rules: [{ type: "string", min: 3, max: 20, pattern: "^[A-Z0-9-]+$" }] },
       operatorUserId: { rules: [{ type: "required" }, { type: "uuid" }] },
-      paymentMethod: { optional: true, rules: [{ type: "enum", values: ["CASH", "CARD", "TRANSFER", "OTHER"] }] },
+      paymentMethod: { optional: true, rules: [{ type: "enum", values: PAYMENT_METHOD_VALUES }] },
       reason: { rules: [{ type: "required" }, { type: "string", min: 1 }] }
     }
   },
@@ -140,4 +155,3 @@ export const PARKFLOW_VALIDATION_CONTRACTS: Record<string, RequestContract> = {
     }
   }
 };
-

@@ -2,7 +2,6 @@ package com.parkflow.controller;
 
 import com.parkflow.config.BaseIntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 

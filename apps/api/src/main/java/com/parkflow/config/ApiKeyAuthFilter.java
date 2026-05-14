@@ -26,7 +26,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
   private static final Logger log = LoggerFactory.getLogger(ApiKeyAuthFilter.class);
   private static final String API_KEY_HEADER = "X-API-Key";
   private static final List<String> PUBLIC_PATH_PREFIXES =
-      List.of("/actuator/health", "/actuator/info", "/swagger-ui/", "/v3/api-docs/", "/api/v1/settings/vehicle-types");
+      List.of("/actuator/health", "/actuator/info", "/swagger-ui/", "/v3/api-docs/");
   // Routes that explicitly require API key authentication
   private static final List<String> API_KEY_REQUIRED_PATHS =
       List.of("/api/v1/internal/", "/api/v1/webhook/");

@@ -6,7 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import com.parkflow.modules.auth.repository.AuthSessionRepository;
@@ -35,7 +35,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     this.appUserRepository = appUserRepository;
   }
 
-  @SuppressWarnings("null")
+
   @Override
   protected void doFilterInternal(
       @NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
@@ -79,12 +79,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       String role = claims.get("role", String.class);
       List<?> permissions = claims.get("permissions", List.class);
 
-      Collection<GrantedAuthority> authorities =
-          permissions == null
-              ? List.of()
-              : permissions.stream()
-                      .map(value -> (GrantedAuthority) new SimpleGrantedAuthority(String.valueOf(value)))
-                      .toList();
+      List<GrantedAuthority> authorities = new ArrayList<>();
+      // Add role as ROLE_<role> so @PreAuthorize("hasAnyRole(...)") works
+      if (role != null && !role.isBlank()) {
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+      }
+      // Add fine-grained permissions as authorities
+      if (permissions != null) {
+        permissions.stream()
+            .map(value -> (GrantedAuthority) new SimpleGrantedAuthority(String.valueOf(value)))
+            .forEach(authorities::add);
+      }
 
       AuthPrincipal principal = new AuthPrincipal(userId, email, role, authorities);
       UsernamePasswordAuthenticationToken authentication =

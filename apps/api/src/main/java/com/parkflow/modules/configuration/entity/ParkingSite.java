@@ -46,6 +46,9 @@ public class ParkingSite {
   private String currency = "COP";
 
   @Column(nullable = false)
+  private int maxCapacity = 0;
+
+  @Column(nullable = false)
   private boolean isActive = true;
 
   @Column(nullable = false)

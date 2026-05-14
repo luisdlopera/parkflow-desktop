@@ -3,6 +3,8 @@ package com.parkflow.modules.parking.operation.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -11,6 +13,12 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.cash.service.CashService;
+import com.parkflow.modules.configuration.repository.AgreementRepository;
+import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
+import com.parkflow.modules.configuration.repository.OperationalParameterRepository;
+import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
+import com.parkflow.modules.configuration.repository.PrepaidBalanceRepository;
+import com.parkflow.modules.configuration.service.PrepaidService;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.IdempotentOperationType;
 import com.parkflow.modules.parking.operation.domain.OperationIdempotency;
@@ -31,11 +39,9 @@ import com.parkflow.modules.parking.operation.repository.OperationIdempotencyRep
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.repository.PaymentRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
-import com.parkflow.modules.parking.operation.repository.SessionEventRepository;
 import com.parkflow.modules.parking.operation.repository.TicketCounterRepository;
 import com.parkflow.modules.parking.operation.repository.VehicleConditionReportRepository;
 import com.parkflow.modules.parking.operation.repository.VehicleRepository;
-import com.parkflow.modules.tickets.service.PrintJobService;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigDecimal;
@@ -59,16 +65,24 @@ class OperationServiceInventoryTest {
   @Mock private AppUserRepository appUserRepository;
   @Mock private VehicleRepository vehicleRepository;
   @Mock private RateRepository rateRepository;
+  @Mock private ParkingSiteRepository parkingSiteRepository;
+  @Mock private OperationalParameterRepository operationalParameterRepository;
   @Mock private ParkingSessionRepository parkingSessionRepository;
   @Mock private PaymentRepository paymentRepository;
   @Mock private TicketCounterRepository ticketCounterRepository;
   @Mock private VehicleConditionReportRepository vehicleConditionReportRepository;
-  @Mock private SessionEventRepository sessionEventRepository;
   @Mock private OperationIdempotencyRepository operationIdempotencyRepository;
-  @Mock private PrintJobService printJobService;
+  @Mock private OperationAuditService auditService;
+  @Mock private OperationPrintService operationPrintService;
+  @Mock private PricingCalculator pricingCalculator;
   @Mock private CashService cashService;
   @Mock private MeterRegistry meterRegistry;
+  @Mock private MonthlyContractRepository monthlyContractRepository;
+  @Mock private PrepaidBalanceRepository prepaidBalanceRepository;
+  @Mock private AgreementRepository agreementRepository;
+  @Mock private PrepaidService prepaidService;
   @Mock private Counter counter;
+  @Mock private com.parkflow.modules.audit.service.AuditService globalAuditService;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -81,26 +95,43 @@ class OperationServiceInventoryTest {
             appUserRepository,
             vehicleRepository,
             rateRepository,
+            parkingSiteRepository,
+            operationalParameterRepository,
             parkingSessionRepository,
             paymentRepository,
             ticketCounterRepository,
             vehicleConditionReportRepository,
-            sessionEventRepository,
             operationIdempotencyRepository,
-            printJobService,
+            auditService,
+            operationPrintService,
             cashService,
+            pricingCalculator,
+            new com.parkflow.modules.parking.operation.validation.PlateValidator(),
+            monthlyContractRepository,
+            prepaidBalanceRepository,
+            agreementRepository,
+            prepaidService,
             objectMapper,
-            meterRegistry);
+            meterRegistry,
+            globalAuditService);
+    lenient().when(operationalParameterRepository.findBySite_Id(any())).thenReturn(Optional.empty());
     lenient().when(meterRegistry.counter(anyString(), anyString(), anyString())).thenReturn(counter);
+    lenient().when(pricingCalculator.calculate(any(), anyLong(), anyBoolean()))
+        .thenReturn(
+            new PricingCalculator.PriceBreakdown(1, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.ZERO));
   }
 
   @Test
   void registerEntry_rejectsWhenVehicleAlreadyHasActiveSession() {
     EntryRequest request =
         new EntryRequest(
-            null,
+            "idemp-key",
             "abc123",
             "CAR",
+            null,
+            null,
+            null,
+            null,
             null,
             UUID.randomUUID(),
             null,
@@ -115,7 +146,7 @@ class OperationServiceInventoryTest {
             null);
 
     ParkingSession existing = activeSession("ABC123");
-    when(parkingSessionRepository.findByStatusAndVehicle_Plate(SessionStatus.ACTIVE, "ABC123"))
+    when(parkingSessionRepository.findActiveByPlateForUpdate(SessionStatus.ACTIVE, "ABC123"))
         .thenReturn(Optional.of(existing));
 
     assertThatThrownBy(() -> service.registerEntry(request))
@@ -151,6 +182,10 @@ class OperationServiceInventoryTest {
             "xyz789",
             "CAR",
             null,
+            null,
+            null,
+            null,
+            null,
             UUID.randomUUID(),
             null,
             null,
@@ -184,6 +219,10 @@ class OperationServiceInventoryTest {
             key,
             "abc123",
             "CAR",
+            null,
+            null,
+            null,
+            null,
             null,
             UUID.randomUUID(),
             null,

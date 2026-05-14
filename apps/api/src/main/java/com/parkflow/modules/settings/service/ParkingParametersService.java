@@ -24,6 +24,7 @@ public class ParkingParametersService {
   private final ParkingParametersRepository parkingParametersRepository;
   private final SettingsAuditService settingsAuditService;
   private final ObjectMapper objectMapper;
+  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
 
   @Transactional(readOnly = true)
   public ParkingParametersData get(String siteCode) {
@@ -65,6 +66,16 @@ public class ParkingParametersService {
         "OK",
         diffMetadata(previous, row.getData()));
 
+    try {
+        globalAuditService.record(
+            com.parkflow.modules.audit.domain.AuditAction.CAMBIAR_CONFIGURACION,
+            objectMapper.writeValueAsString(previous),
+            objectMapper.writeValueAsString(row.getData()),
+            "Parameters updated for site: " + site);
+    } catch (Exception e) {
+        // ignore
+    }
+
     return row.getData();
   }
 
@@ -96,6 +107,16 @@ public class ParkingParametersService {
         AuthAuditAction.SETTINGS_PARAMETERS_RESET,
         "OK",
         diffMetadata(previous, def));
+
+    try {
+        globalAuditService.record(
+            com.parkflow.modules.audit.domain.AuditAction.CAMBIAR_CONFIGURACION,
+            objectMapper.writeValueAsString(previous),
+            objectMapper.writeValueAsString(def),
+            "Parameters reset for site: " + site);
+    } catch (Exception e) {
+        // ignore
+    }
     return def;
   }
 
@@ -140,6 +161,21 @@ public class ParkingParametersService {
     if (in.getTimeZone() != null) {
       d.setTimeZone(in.getTimeZone());
     }
+    if (in.getLogoUrl() != null) {
+      d.setLogoUrl(in.getLogoUrl());
+    }
+    if (in.getBrandColor() != null) {
+      d.setBrandColor(in.getBrandColor());
+    }
+    if (in.getTaxName() != null) {
+      d.setTaxName(in.getTaxName());
+    }
+    if (in.getTaxRatePercent() != null) {
+      d.setTaxRatePercent(in.getTaxRatePercent());
+    }
+    if (in.getPricesIncludeTax() != null) {
+      d.setPricesIncludeTax(in.getPricesIncludeTax());
+    }
     if (in.getGraceMinutesDefault() != null) {
       d.setGraceMinutesDefault(in.getGraceMinutesDefault());
     }
@@ -173,8 +209,17 @@ public class ParkingParametersService {
     if (in.getPrintTimeoutSeconds() != null) {
       d.setPrintTimeoutSeconds(in.getPrintTimeoutSeconds());
     }
+    if (in.getTicketHeaderMessage() != null) {
+      d.setTicketHeaderMessage(in.getTicketHeaderMessage());
+    }
     if (in.getTicketLegalMessage() != null) {
       d.setTicketLegalMessage(in.getTicketLegalMessage());
+    }
+    if (in.getTicketFooterMessage() != null) {
+      d.setTicketFooterMessage(in.getTicketFooterMessage());
+    }
+    if (in.getOperationRulesMessage() != null) {
+      d.setOperationRulesMessage(in.getOperationRulesMessage());
     }
     if (in.getQrConfig() != null) {
       d.setQrConfig(in.getQrConfig());
@@ -184,6 +229,54 @@ public class ParkingParametersService {
     }
     if (in.getAllowOfflineEntryExit() != null) {
       d.setAllowOfflineEntryExit(in.getAllowOfflineEntryExit());
+    }
+    if (in.getCashRequireOpenForPayment() != null) {
+      d.setCashRequireOpenForPayment(in.getCashRequireOpenForPayment());
+    }
+    if (in.getCashOfflineCloseAllowed() != null) {
+      d.setCashOfflineCloseAllowed(in.getCashOfflineCloseAllowed());
+    }
+    if (in.getCashOfflineMaxManualMovement() != null) {
+      d.setCashOfflineMaxManualMovement(in.getCashOfflineMaxManualMovement());
+    }
+    if (in.getBusinessLegalName() != null) {
+      d.setBusinessLegalName(in.getBusinessLegalName());
+    }
+    if (in.getTaxIdCheckDigit() != null) {
+      d.setTaxIdCheckDigit(in.getTaxIdCheckDigit());
+    }
+    if (in.getDianInvoicePrefix() != null) {
+      d.setDianInvoicePrefix(in.getDianInvoicePrefix());
+    }
+    if (in.getDianResolutionNumber() != null) {
+      d.setDianResolutionNumber(in.getDianResolutionNumber());
+    }
+    if (in.getDianResolutionDate() != null) {
+      d.setDianResolutionDate(in.getDianResolutionDate());
+    }
+    if (in.getDianRangeFrom() != null) {
+      d.setDianRangeFrom(in.getDianRangeFrom());
+    }
+    if (in.getDianRangeTo() != null) {
+      d.setDianRangeTo(in.getDianRangeTo());
+    }
+    if (in.getDianTechnicalKey() != null) {
+      d.setDianTechnicalKey(in.getDianTechnicalKey());
+    }
+    if (in.getCashFeSequentialEnabled() != null) {
+      d.setCashFeSequentialEnabled(in.getCashFeSequentialEnabled());
+    }
+    if (in.getCashFeSequencePerTerminal() != null) {
+      d.setCashFeSequencePerTerminal(in.getCashFeSequencePerTerminal());
+    }
+    if (in.getCashFeSequenceDigits() != null) {
+      d.setCashFeSequenceDigits(in.getCashFeSequenceDigits());
+    }
+    if (in.getCashFeOutboundWebhookUrl() != null) {
+      d.setCashFeOutboundWebhookUrl(in.getCashFeOutboundWebhookUrl());
+    }
+    if (in.getCashFeOutboundWebhookBearer() != null) {
+      d.setCashFeOutboundWebhookBearer(in.getCashFeOutboundWebhookBearer());
     }
     return d;
   }
@@ -206,6 +299,11 @@ public class ParkingParametersService {
     d.setSiteLabel("DEFAULT");
     d.setCurrency("COP");
     d.setTimeZone("America/Bogota");
+    d.setLogoUrl("");
+    d.setBrandColor("#F97316");
+    d.setTaxName("IVA");
+    d.setTaxRatePercent(java.math.BigDecimal.ZERO);
+    d.setPricesIncludeTax(true);
     d.setGraceMinutesDefault(5);
     d.setLostTicketPolicy("SURCHARGE_RATE");
     d.setAllowReprint(true);
@@ -217,7 +315,10 @@ public class ParkingParametersService {
     d.setOfflineModeEnabled(true);
     d.setSyncIntervalSeconds(120);
     d.setPrintTimeoutSeconds(30);
+    d.setTicketHeaderMessage("");
     d.setTicketLegalMessage("");
+    d.setTicketFooterMessage("");
+    d.setOperationRulesMessage("");
     d.setQrConfig("PLATE_AND_ENTRY_TIME");
     d.setManualExitAllowed(true);
     d.setAllowOfflineEntryExit(true);

@@ -7,6 +7,7 @@ public record CashAuditEntryResponse(
     UUID id,
     String action,
     UUID actorUserId,
+    String actorName,
     String terminalId,
     String clientIp,
     String oldValue,

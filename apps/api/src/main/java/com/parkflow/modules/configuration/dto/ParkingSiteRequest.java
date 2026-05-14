@@ -1,6 +1,7 @@
 package com.parkflow.modules.configuration.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
 public record ParkingSiteRequest(
@@ -12,4 +13,5 @@ public record ParkingSiteRequest(
     @Size(max = 150) String managerName,
     @NotBlank @Size(max = 50) String timezone,
     @NotBlank @Size(max = 10) String currency,
+    @Min(0) Integer maxCapacity,
     boolean isActive) {}
