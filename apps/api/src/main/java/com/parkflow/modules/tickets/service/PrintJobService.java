@@ -5,6 +5,7 @@ import com.parkflow.modules.parking.operation.domain.ParkingSession;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.tickets.dto.CreatePrintJobRequest;
 import com.parkflow.modules.tickets.dto.PrintJobResponse;
 import com.parkflow.modules.tickets.dto.RetryPrintJobRequest;
@@ -46,7 +47,7 @@ public class PrintJobService {
         request.idempotencyKey(), request.sessionId(), request.documentType());
     try {
       return printJobRepository
-          .findByIdempotencyKey(request.idempotencyKey())
+          .findByIdempotencyKeyAndCompanyId(request.idempotencyKey(), TenantContext.getTenantId())
           .map(this::toResponse)
           .orElseGet(() -> createNew(request));
     } catch (OperationException ex) {
@@ -67,7 +68,7 @@ public class PrintJobService {
 
     PrintJob job =
         printJobRepository
-            .findById(id)
+            .findByIdAndCompanyId(id, TenantContext.getTenantId())
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Print job no encontrado"));
 
     job.setStatus(request.status());
@@ -93,7 +94,7 @@ public class PrintJobService {
 
     PrintJob job =
         printJobRepository
-            .findById(id)
+            .findByIdAndCompanyId(id, TenantContext.getTenantId())
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Print job no encontrado"));
 
     if (!(job.getStatus() == PrintJobStatus.FAILED || job.getStatus() == PrintJobStatus.DEAD_LETTER)) {
@@ -114,21 +115,21 @@ public class PrintJobService {
   public PrintJobResponse get(UUID id) {
     PrintJob job =
         printJobRepository
-            .findById(id)
+            .findByIdAndCompanyId(id, TenantContext.getTenantId())
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Print job no encontrado"));
     return toResponse(job);
   }
 
   @Transactional(readOnly = true)
   public List<PrintJobResponse> listBySession(UUID sessionId) {
-    return printJobRepository.findBySession_IdOrderByCreatedAtDesc(sessionId).stream()
+    return printJobRepository.findBySession_IdAndCompanyIdOrderByCreatedAtDesc(sessionId, TenantContext.getTenantId()).stream()
         .map(this::toResponse)
         .toList();
   }
 
   @Transactional(readOnly = true)
   public List<PrintJobResponse> listByTicket(String ticketNumber) {
-    return printJobRepository.findBySession_TicketNumberOrderByCreatedAtDesc(ticketNumber).stream()
+    return printJobRepository.findBySession_TicketNumberAndCompanyIdOrderByCreatedAtDesc(ticketNumber, TenantContext.getTenantId()).stream()
         .map(this::toResponse)
         .toList();
   }
@@ -136,9 +137,10 @@ public class PrintJobService {
   private PrintJobResponse createNew(CreatePrintJobRequest request) {
     if (request.documentType() == PrintDocumentType.ENTRY) {
       boolean blocked =
-          printJobRepository.existsBySession_IdAndDocumentTypeAndStatusIn(
+          printJobRepository.existsBySession_IdAndDocumentTypeAndCompanyIdAndStatusIn(
               request.sessionId(),
               PrintDocumentType.ENTRY,
+              TenantContext.getTenantId(),
               EnumSet.of(
                   PrintJobStatus.CREATED,
                   PrintJobStatus.QUEUED,
@@ -170,6 +172,7 @@ public class PrintJobService {
     job.setPayloadHash(request.payloadHash());
     job.setTicketSnapshotJson(request.ticketSnapshotJson());
     job.setTerminalId(request.terminalId());
+    job.setCompanyId(TenantContext.getTenantId());
     job.setCreatedAt(OffsetDateTime.now());
     job.setUpdatedAt(OffsetDateTime.now());
     job = printJobRepository.save(job);

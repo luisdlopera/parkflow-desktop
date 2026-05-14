@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.operation.service;
 
 import com.parkflow.modules.cash.domain.CashMovementType;
-import com.parkflow.modules.cash.service.CashService;
+import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
 import com.parkflow.modules.configuration.entity.OperationalParameter;
 import com.parkflow.modules.configuration.repository.OperationalParameterRepository;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
@@ -11,24 +11,19 @@ import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.configuration.entity.*;
 import com.parkflow.modules.configuration.repository.*;
-import com.parkflow.modules.configuration.service.PrepaidService;
+import com.parkflow.modules.configuration.application.port.in.PrepaidUseCase;
 import com.parkflow.modules.parking.operation.repository.*;
 import com.parkflow.modules.tickets.entity.PrintDocumentType;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,285 +41,23 @@ public class OperationService {
   private static final ZoneId DEFAULT_OPERATION_ZONE = ZoneId.of("America/Bogota");
 
   private final AppUserRepository appUserRepository;
-  private final VehicleRepository vehicleRepository;
   private final RateRepository rateRepository;
   private final ParkingSiteRepository parkingSiteRepository;
   private final OperationalParameterRepository operationalParameterRepository;
   private final ParkingSessionRepository parkingSessionRepository;
   private final PaymentRepository paymentRepository;
-  private final TicketCounterRepository ticketCounterRepository;
-  private final VehicleConditionReportRepository vehicleConditionReportRepository;
   private final OperationIdempotencyRepository operationIdempotencyRepository;
   private final OperationAuditService auditService;
   private final OperationPrintService operationPrintService;
-  private final CashService cashService;
+  private final CashMovementUseCase cashMovementUseCase;
   private final PricingCalculator pricingCalculator;
-  private final com.parkflow.modules.parking.operation.validation.PlateValidator plateValidator;
   private final MonthlyContractRepository monthlyContractRepository;
   private final PrepaidBalanceRepository prepaidBalanceRepository;
   private final AgreementRepository agreementRepository;
-  private final PrepaidService prepaidService;
-  private final ObjectMapper objectMapper;
+  private final PrepaidUseCase prepaidUseCase;
   private final MeterRegistry meterRegistry;
   private final com.parkflow.modules.audit.service.AuditService globalAuditService;
-  @Transactional
-  public OperationResultResponse registerEntry(EntryRequest request) {
-    String idempotencyKey = request.idempotencyKey();
-    String rawPlate = request.plate();
-    String vehicleType = request.type();
-    String site = request.site();
-    String countryCode = normalizeCountryCode(request.countryCode());
-    EntryMode entryMode = request.entryMode() != null ? request.entryMode() : EntryMode.VISITOR;
-    boolean noPlateEntry = Boolean.TRUE.equals(request.noPlate());
 
-    log.info("registerEntry: plate={} type={} site={} lane={} booth={} terminal={} idempotencyKey={}",
-        rawPlate, vehicleType, site, request.lane(), request.booth(), request.terminal(), idempotencyKey);
-
-    Optional<OperationResultResponse> replay =
-        tryReplay(idempotencyKey, IdempotentOperationType.ENTRY);
-    if (replay.isPresent()) {
-      log.info("registerEntry: idempotent replay for key={}", idempotencyKey);
-      return replay.get();
-    }
-
-    String normalizedPlate;
-    if (noPlateEntry) {
-      if (isBlank(request.noPlateReason())) {
-        throw new OperationException(
-            HttpStatus.BAD_REQUEST, "El ingreso sin placa requiere una justificacion");
-      }
-      normalizedPlate = generateNoPlateIdentifier();
-    } else {
-      com.parkflow.modules.parking.operation.validation.PlateValidationResult validationResult =
-          plateValidator.validatePlate(countryCode, vehicleType, rawPlate);
-
-      if (!validationResult.isValid()) {
-        log.warn("registerEntry: invalid plate format '{}' for type '{}': {}", rawPlate, vehicleType, validationResult.errorMessage());
-        throw new OperationException(HttpStatus.BAD_REQUEST, validationResult.errorMessage());
-      }
-      normalizedPlate = validationResult.normalizedPlate();
-    }
-
-    log.info("registerEntry: plate normalized from '{}' to '{}'", rawPlate, normalizedPlate);
-
-    // SECURITY: Use pessimistic lock to prevent concurrent entries for same plate
-    if (!noPlateEntry) {
-      parkingSessionRepository
-          .findActiveByPlateForUpdate(SessionStatus.ACTIVE, normalizedPlate)
-          .ifPresent(
-              session -> {
-                log.warn("registerEntry: active session exists for plate={}", normalizedPlate);
-                throw new OperationException(
-                    HttpStatus.CONFLICT, "El vehiculo ya tiene una sesion activa");
-              });
-    }
-
-    AppUser operator = findRequiredOperator(request.operatorUserId());
-    log.info("registerEntry: operator found id={} name={}", operator.getId(), operator.getName());
-
-    // LOCK: Lock the vehicle record to serialize entry/exit operations for this plate
-    Vehicle vehicle =
-        vehicleRepository
-            .findByPlateIgnoreCase(normalizedPlate)
-            .map(
-                found -> {
-                  found.setType(vehicleType);
-                  found.setUpdatedAt(OffsetDateTime.now());
-                  return found;
-                })
-            .orElseGet(
-                () -> {
-                  Vehicle created = new Vehicle();
-                  created.setPlate(normalizedPlate);
-                  created.setType(vehicleType);
-                  return created;
-                });
-    vehicle = vehicleRepository.save(vehicle);
-    log.info("registerEntry: vehicle saved id={} plate={} type={}", vehicle.getId(), normalizedPlate, vehicleType);
-
-    OffsetDateTime entryAt = request.entryAt() != null ? request.entryAt() : OffsetDateTime.now();
-    
-    // Check for monthly contract at entry to set proper mode
-    LocalDate entryDate = entryAt.toLocalDate();
-    boolean isMonthly = monthlyContractRepository
-        .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-            normalizedPlate, entryDate, entryDate).isPresent();
-    
-    if (isMonthly) {
-        entryMode = EntryMode.SUBSCRIBER;
-    }
-
-    log.info("registerEntry: resolving rate type={} site={} entryAt={}", vehicleType, site, entryAt);
-    Rate rate = resolveRate(request.rateId(), vehicleType, site, entryAt);
-    log.info("registerEntry: rate resolved id={} name={} amount={} type={} vehicleType={}", 
-        rate.getId(), rate.getName(), rate.getAmount(), rate.getRateType(), rate.getVehicleType());
-
-    assertParkingCapacityAvailable(site);
-
-    ParkingSession session = new ParkingSession();
-    session.setTicketNumber(nextTicketNumber(entryAt.toLocalDate()));
-    session.setPlate(normalizedPlate);
-    session.setCountryCode(countryCode);
-    session.setEntryMode(entryMode);
-    session.setMonthlySession(isMonthly);
-    session.setNoPlate(noPlateEntry);
-    session.setNoPlateReason(noPlateEntry ? request.noPlateReason().trim() : null);
-    session.setVehicle(vehicle);
-    session.setRate(rate);
-    session.setEntryOperator(operator);
-    session.setEntryAt(entryAt);
-    session.setSite(site);
-    session.setLane(request.lane());
-    session.setBooth(request.booth());
-    session.setTerminal(request.terminal());
-    session.setEntryNotes(request.observations());
-    session.setEntryImageUrl(blankToNull(request.entryImageUrl()));
-    session.setSyncStatus(SessionSyncStatus.SYNCED);
-    try {
-      session = parkingSessionRepository.save(session);
-    } catch (DataIntegrityViolationException ex) {
-      Optional<OperationResultResponse> lateReplay =
-          tryReplay(idempotencyKey, IdempotentOperationType.ENTRY);
-      if (lateReplay.isPresent()) {
-        return lateReplay.get();
-      }
-      throw new OperationException(
-          HttpStatus.CONFLICT,
-          "Vehiculo con ingreso activo, conflicto concurrente o placa duplicada en cola");
-    }
-    log.info("registerEntry: session created id={} ticket={}", session.getId(), session.getTicketNumber());
-
-    saveVehicleCondition(
-        session,
-        ConditionStage.ENTRY,
-        request.vehicleCondition(),
-        request.conditionChecklist(),
-        request.conditionPhotoUrls(),
-        operator);
-
-    auditService.recordEvent(session, SessionEventType.ENTRY_RECORDED, operator, "Ingreso registrado");
-    // RELIABILITY: Print job is best-effort; don't fail the operation if printing fails
-    try {
-      operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.ENTRY, "entry");
-    } catch (Exception printError) {
-      log.warn("RELIABILITY: Print job creation failed for session={}, but operation completed. Error: {}",
-          session.getId(), printError.getMessage());
-    }
-    safeRecordIdempotency(idempotencyKey, IdempotentOperationType.ENTRY, session);
-    meterRegistry.counter("parkflow.operations", "operation", "entry").increment();
-    log.info("audit op=entry sessionId={} ticket={} plate={} operator={}",
-        session.getId(), session.getTicketNumber(), normalizedPlate, operator.getName());
-
-    return new OperationResultResponse(
-        session.getId().toString(),
-        toReceipt(session, 0L, "0h 0m"),
-        "Ingreso registrado",
-        null,
-        null,
-        null,
-        null,
-        null);
-  }
-
-  @Transactional
-  public OperationResultResponse registerExit(ExitRequest request) {
-    Optional<OperationResultResponse> replay =
-        tryReplay(request.idempotencyKey(), IdempotentOperationType.EXIT);
-    if (replay.isPresent()) {
-      return replay.get();
-    }
-
-    ParkingSession session = requireActiveSessionForUpdate(request.ticketNumber(), request.plate());
-    AppUser operator = findRequiredOperator(request.operatorUserId());
-
-    if (session.getStatus() != SessionStatus.ACTIVE) {
-      throw new OperationException(HttpStatus.CONFLICT, "La sesion ya esta cerrada");
-    }
-
-    assertExitPhotoIfRequired(session, request.exitImageUrl());
-
-    OffsetDateTime exitAt = request.exitAt() != null ? request.exitAt() : OffsetDateTime.now();
-    if (exitAt.isBefore(session.getEntryAt())) {
-      throw new OperationException(HttpStatus.BAD_REQUEST, "La hora de salida no puede ser menor a la de ingreso");
-    }
-    requireRate(session);
-
-    PricingCalculator.PriceBreakdown price =
-        calculateComplexPrice(session, exitAt, request.agreementCode(), false, false);
-    price = applyCourtesyPricing(session, price, false);
-
-    assertExitPaymentPolicy(session, request.paymentMethod(), price);
-
-    session.setExitAt(exitAt);
-    session.setExitOperator(operator);
-    session.setExitNotes(request.observations());
-    session.setExitImageUrl(blankToNull(request.exitImageUrl()));
-    session.setStatus(SessionStatus.CLOSED);
-    session.setSyncStatus(SessionSyncStatus.SYNCED);
-    session.setTotalAmount(price.total());
-    session.setUpdatedAt(OffsetDateTime.now());
-    session = parkingSessionRepository.save(session);
-
-    if (request.paymentMethod() != null) {
-      cashService.assertCashOpenForParkingPayment(session);
-      Payment payment = new Payment();
-      payment.setSession(session);
-      payment.setMethod(request.paymentMethod());
-      payment.setAmount(price.total());
-      payment.setPaidAt(exitAt);
-      try {
-        payment = paymentRepository.save(payment);
-      } catch (DataIntegrityViolationException ex) {
-        Optional<OperationResultResponse> late = tryReplay(request.idempotencyKey(), IdempotentOperationType.EXIT);
-        if (late.isPresent()) {
-          return late.get();
-        }
-        throw ex;
-      }
-      cashService.recordParkingPayment(
-          session, payment, operator, request.idempotencyKey(), CashMovementType.PARKING_PAYMENT);
-    }
-
-    saveVehicleCondition(
-        session,
-        ConditionStage.EXIT,
-        request.vehicleCondition(),
-        request.conditionChecklist(),
-        request.conditionPhotoUrls(),
-        operator);
-
-    detectConditionMismatch(session, operator);
-
-    auditService.recordEvent(session, SessionEventType.EXIT_RECORDED, operator, "exit");
-    
-    globalAuditService.record(
-        com.parkflow.modules.audit.domain.AuditAction.COBRAR,
-        operator,
-        null,
-        "Total: " + session.getTotalAmount(),
-        "Ticket: " + session.getTicketNumber() + ", Payment: " + request.paymentMethod());
-    // RELIABILITY: Print job is best-effort; don't fail the operation if printing fails
-    try {
-      operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.EXIT, "exit");
-    } catch (Exception printError) {
-      log.warn("RELIABILITY: Print job creation failed for session={}, but operation completed. Error: {}",
-          session.getId(), printError.getMessage());
-      // Continue - print job can be retried later, but the exit is already recorded
-    }
-    safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.EXIT, session);
-    meterRegistry.counter("parkflow.operations", "operation", "exit").increment();
-    log.info("audit op=exit sessionId={} ticket={}", session.getId(), session.getTicketNumber());
-
-    return new OperationResultResponse(
-        session.getId().toString(),
-        toReceipt(session, Duration.between(session.getEntryAt(), exitAt).toMinutes(), "0h 0m"), // will be recalculated in toReceipt
-        "Salida registrada",
-        price.subtotal(),
-        price.surcharge(),
-        price.discount(),
-        price.deductedMinutes(),
-        price.total());
-  }
 
   @Transactional
   public OperationResultResponse reprintTicket(ReprintRequest request) {
@@ -448,7 +181,7 @@ public class OperationService {
     session = parkingSessionRepository.save(session);
 
     if (request.paymentMethod() != null) {
-      cashService.assertCashOpenForParkingPayment(session);
+      cashMovementUseCase.assertCashOpenForParkingPayment(session);
       Payment payment = new Payment();
       payment.setSession(session);
       payment.setMethod(request.paymentMethod());
@@ -464,7 +197,7 @@ public class OperationService {
         }
         throw ex;
       }
-      cashService.recordParkingPayment(
+      cashMovementUseCase.recordParkingPayment(
           session, payment, operator, request.idempotencyKey(), CashMovementType.LOST_TICKET_PAYMENT);
     }
 
@@ -556,7 +289,7 @@ public class OperationService {
     OffsetDateTime now = OffsetDateTime.now();
     // PERFORMANCE: Use findActiveWithAssociations to prevent N+1 queries
     // This method JOIN FETCHes vehicle and rate associations
-    return parkingSessionRepository.findActiveWithAssociations(SessionStatus.ACTIVE).stream()
+    return parkingSessionRepository.findActiveWithAssociations(SessionStatus.ACTIVE, SecurityUtils.requireCompanyId()).stream()
         .map(
             session -> {
               DurationCalculator.DurationBreakdown duration =
@@ -626,12 +359,12 @@ public class OperationService {
     // 3. ¿Tiene Prepago?
     int deductedMinutes = 0;
     if (billableMinutes > 0 && !lostTicket) {
-        List<PrepaidBalance> balances = prepaidBalanceRepository.findActiveByPlate(session.getPlate(), exitAt);
+        List<PrepaidBalance> balances = prepaidBalanceRepository.findActiveByPlate(session.getPlate(), exitAt, session.getCompanyId());
         for (PrepaidBalance balance : balances) {
             int toDeduct = Math.min(balance.getRemainingMinutes(), (int) billableMinutes);
             if (toDeduct > 0) {
                 if (!dryRun) {
-                    prepaidService.deduct(balance.getId(), toDeduct);
+                    prepaidUseCase.deduct(balance.getId(), toDeduct);
                 }
                 billableMinutes -= toDeduct;
                 deductedMinutes += toDeduct;
@@ -708,68 +441,6 @@ public class OperationService {
       return 3;
     }
     return 1;
-  }
-
-  private Rate resolveRate(UUID rateId, String vehicleType, String site, OffsetDateTime at) {
-    if (rateId != null) {
-      Rate r =
-          rateRepository
-              .findById(rateId)
-              .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
-      if (!r.isActive()) {
-        throw new OperationException(HttpStatus.BAD_REQUEST, "La tarifa esta inactiva");
-      }
-      if (!RateApplicability.isApplicable(r, at, DEFAULT_OPERATION_ZONE)) {
-        throw new OperationException(
-            HttpStatus.BAD_REQUEST,
-            "La tarifa no aplica en la fecha/hora de ingreso (franja o vigencia programada)");
-      }
-      return r;
-    }
-
-    String resolvedSite =
-        site != null && !site.isBlank() ? site.trim() : "DEFAULT";
-
-    // PERFORMANCE: Single query instead of 4 sequential queries
-    return rateRepository
-        .findFirstApplicableRate(resolvedSite, vehicleType)
-        .filter(r -> RateApplicability.isApplicable(r, at, DEFAULT_OPERATION_ZONE))
-        .orElseThrow(
-            () -> new OperationException(
-                HttpStatus.BAD_REQUEST,
-                "No existe tarifa activa y aplicable ahora para este tipo de vehiculo y sede"));
-  }
-
-  private void assertParkingCapacityAvailable(String site) {
-    if (site == null || site.isBlank()) {
-      return;
-    }
-    parkingSiteRepository
-        .findByCodeOrNameForUpdate(site.trim())
-        .ifPresent(
-            parkingSite -> {
-              if (!parkingSite.isActive()) {
-                throw new OperationException(HttpStatus.BAD_REQUEST, "La sede esta inactiva");
-              }
-              int maxCapacity = parkingSite.getMaxCapacity();
-              if (maxCapacity <= 0) {
-                return;
-              }
-              long activeSessions =
-                  parkingSessionRepository.countByStatusAndSite(SessionStatus.ACTIVE, parkingSite.getName());
-              if (!parkingSite.getName().equalsIgnoreCase(site.trim())) {
-                activeSessions += parkingSessionRepository.countByStatusAndSite(SessionStatus.ACTIVE, site.trim());
-              }
-              if (activeSessions >= maxCapacity) {
-                throw new OperationException(HttpStatus.CONFLICT, "Parqueadero lleno para la sede");
-              }
-            });
-  }
-
-  private String normalizeCountryCode(String countryCode) {
-    return countryCode == null || countryCode.isBlank()
-        ? "CO"
-        : countryCode.trim().toUpperCase(Locale.ROOT);
   }
 
   private String generateNoPlateIdentifier() {
@@ -871,13 +542,17 @@ public class OperationService {
   }
 
   private ParkingSession requireActiveSessionForUpdate(String ticketNumber, String plate) {
+    return requireActiveSessionForUpdate(ticketNumber, plate, SecurityUtils.requireCompanyId());
+  }
+
+  private ParkingSession requireActiveSessionForUpdate(String ticketNumber, String plate, UUID companyId) {
     if (ticketNumber != null
         && !ticketNumber.isBlank()
         && plate != null
         && !plate.isBlank()) {
       ParkingSession session =
           parkingSessionRepository
-              .findActiveByTicketForUpdate(SessionStatus.ACTIVE, ticketNumber.trim())
+              .findActiveByTicketForUpdate(SessionStatus.ACTIVE, ticketNumber.trim(), companyId)
               .orElseThrow(
                   () -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
       if (!session
@@ -891,13 +566,13 @@ public class OperationService {
     }
     if (ticketNumber != null && !ticketNumber.isBlank()) {
       return parkingSessionRepository
-          .findActiveByTicketForUpdate(SessionStatus.ACTIVE, ticketNumber.trim())
+          .findActiveByTicketForUpdate(SessionStatus.ACTIVE, ticketNumber.trim(), companyId)
           .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
     }
     if (plate != null && !plate.isBlank()) {
       return parkingSessionRepository
           .findActiveByPlateForUpdate(
-              SessionStatus.ACTIVE, plate.trim().toUpperCase(Locale.ROOT))
+              SessionStatus.ACTIVE, plate.trim().toUpperCase(Locale.ROOT), companyId)
           .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
     }
     throw new OperationException(HttpStatus.BAD_REQUEST, "ticketNumber o plate es obligatorio");
@@ -1055,148 +730,11 @@ public class OperationService {
     }
     return session.getRate();
   }
-
-  private void saveVehicleCondition(
-      ParkingSession session,
-      ConditionStage stage,
-      String observations,
-      List<String> checklist,
-      List<String> photoUrls,
-      AppUser operator) {
-    log.debug("saveVehicleCondition: session={} stage={} observations='{}' checklist={} photoUrls={}",
-        session.getId(), stage, observations, checklist, photoUrls);
-    if (isBlank(observations) && isEmpty(checklist) && isEmpty(photoUrls)) {
-      throw new OperationException(
-          HttpStatus.BAD_REQUEST,
-          "Debe registrar estado del vehiculo con observaciones, checklist o fotos");
-    }
-
-    VehicleConditionReport report = new VehicleConditionReport();
-    report.setSession(session);
-    report.setStage(stage);
-    report.setObservations(blankToNull(observations));
-    report.setChecklistJson(writeJsonArray(normalizeList(checklist)));
-    report.setPhotoUrlsJson(writeJsonArray(normalizeList(photoUrls)));
-    report.setCreatedBy(operator);
-    vehicleConditionReportRepository.save(report);
-  }
-
-  private void detectConditionMismatch(ParkingSession session, AppUser operator) {
-    // PERFORMANCE: Single query fetches both reports instead of 2 separate queries
-    List<VehicleConditionReport> reports = 
-        vehicleConditionReportRepository.findEntryAndExitReports(session);
-    
-    if (reports.isEmpty()) {
-      return;
-    }
-    
-    // Find first entry (earliest) and last exit (latest) from the results
-    // Results are ordered by stage ASC, createdAt ASC
-    VehicleConditionReport entry = null;
-    VehicleConditionReport exit = null;
-    
-    for (VehicleConditionReport report : reports) {
-      if (report.getStage() == ConditionStage.ENTRY && entry == null) {
-        entry = report; // First entry is earliest due to ASC ordering
-      }
-      if (report.getStage() == ConditionStage.EXIT) {
-        exit = report; // Keep updating to get the last (latest) exit
-      }
-    }
-
-    if (entry == null || exit == null) {
-      return;
-    }
-
-    String entryObs = blankToNull(entry.getObservations());
-    String exitObs = blankToNull(exit.getObservations());
-
-    List<String> entryChecklist = readJsonArray(entry.getChecklistJson());
-    List<String> exitChecklist = readJsonArray(exit.getChecklistJson());
-
-    boolean sameObservations =
-        (entryObs == null && exitObs == null)
-            || (entryObs != null && exitObs != null && entryObs.equalsIgnoreCase(exitObs));
-    boolean sameChecklist = entryChecklist.equals(exitChecklist);
-
-    if (!sameObservations || !sameChecklist) {
-      String metadata =
-          "entryObservations="
-              + Optional.ofNullable(entryObs).orElse("-")
-              + "; exitObservations="
-              + Optional.ofNullable(exitObs).orElse("-")
-              + "; entryChecklist="
-              + String.join("|", entryChecklist)
-              + "; exitChecklist="
-              + String.join("|", exitChecklist);
-      auditService.recordEvent(session, SessionEventType.VEHICLE_CONDITION_MISMATCH, operator, metadata);
-    }
-  }
-
-  private List<String> normalizeList(List<String> values) {
-    if (values == null) {
-      return Collections.emptyList();
-    }
-    return values.stream()
-        .filter(value -> value != null && !value.isBlank())
-        .map(String::trim)
-        .collect(Collectors.toList());
-  }
-
-  private boolean isEmpty(List<String> values) {
-    return normalizeList(values).isEmpty();
-  }
-
-  private boolean isBlank(String value) {
-    return value == null || value.isBlank();
-  }
-
   private String blankToNull(String value) {
-    return isBlank(value) ? null : value.trim();
+    return value == null || value.isBlank() ? null : value.trim();
   }
 
-  private String writeJsonArray(List<String> values) {
-    try {
-      return objectMapper.writeValueAsString(values);
-    } catch (JsonProcessingException exception) {
-      throw new OperationException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo serializar evidencia");
-    }
-  }
 
-  private List<String> readJsonArray(String values) {
-    if (values == null || values.isBlank()) {
-      return Collections.emptyList();
-    }
-    try {
-      return objectMapper.readerForListOf(String.class).readValue(values);
-    } catch (JsonProcessingException exception) {
-      return Collections.emptyList();
-    }
-  }
-
-  private String nextTicketNumber(LocalDate date) {
-    String key = date.format(DateTimeFormatter.BASIC_ISO_DATE);
-    
-    // RELIABILITY: Pessimistic write lock prevents concurrent duplicates
-    TicketCounter counter =
-        ticketCounterRepository
-            .findByIdForUpdate(key)
-            .orElseGet(
-                () -> {
-                  TicketCounter created = new TicketCounter();
-                  created.setCounterKey(key);
-                  created.setLastNumber(0);
-                  return created;
-                });
-
-    counter.setLastNumber(counter.getLastNumber() + 1);
-    counter.setUpdatedAt(OffsetDateTime.now());
-    ticketCounterRepository.save(counter);
-
-    String ticketNumber = "T-" + key + "-" + String.format("%06d", counter.getLastNumber());
-    
-    return ticketNumber;
-  }
 
   @Transactional
   public OperationResultResponse voidSession(VoidRequest request) {
