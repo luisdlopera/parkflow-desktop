@@ -3,13 +3,14 @@ package com.parkflow.modules.auth.application.service;
 import com.parkflow.modules.auth.application.port.in.PasswordResetUseCase;
 import com.parkflow.modules.auth.dto.PasswordResetConfirmRequest;
 import com.parkflow.modules.auth.dto.PasswordResetRequest;
-import com.parkflow.modules.auth.domain.AuthAuditAction;
-import com.parkflow.modules.auth.domain.PasswordResetToken;
-import com.parkflow.modules.auth.domain.repository.PasswordResetTokenPort;
+import com.parkflow.modules.auth.entity.AuthAuditAction;
+import com.parkflow.modules.auth.entity.PasswordResetToken;
+import com.parkflow.modules.auth.repository.PasswordResetTokenRepository;
 import com.parkflow.modules.auth.security.PasswordHashService;
+import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.util.Base64;
@@ -33,8 +34,8 @@ public class PasswordResetManagementService implements PasswordResetUseCase {
   private static final Pattern PASSWORD_PATTERN = Pattern.compile(
       "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!.])(?=\\S+$).{8,}$");
 
-  private final PasswordResetTokenPort passwordResetTokenPort;
-  private final AppUserPort userRepository;
+  private final PasswordResetTokenRepository tokenRepository;
+  private final AppUserRepository userRepository;
   private final PasswordHashService passwordHashService;
   private final AuthAuditService authAuditService;
   private final SecureRandom secureRandom = new SecureRandom();
@@ -59,7 +60,7 @@ public class PasswordResetManagementService implements PasswordResetUseCase {
       return;
     }
 
-    long activeTokens = passwordResetTokenPort.countByUserIdAndUsedFalseAndExpiresAtAfter(
+    long activeTokens = tokenRepository.countByUserIdAndUsedFalseAndExpiresAtAfter(
         user.getId(), OffsetDateTime.now());
     if (activeTokens >= MAX_ACTIVE_TOKENS_PER_USER) {
       log.warn("AUTH: Too many password reset attempts - userId={}", user.getId());
@@ -75,7 +76,7 @@ public class PasswordResetManagementService implements PasswordResetUseCase {
     token.setUserId(user.getId());
     token.setExpiresAt(OffsetDateTime.now().plusHours(EXPIRY_HOURS));
     token.setIpAddress(request.ipAddress());
-    passwordResetTokenPort.save(token);
+    tokenRepository.save(token);
 
     log.info("AUTH: Password reset token generated - userId={}, tokenId={}", user.getId(), token.getId());
 
@@ -92,7 +93,7 @@ public class PasswordResetManagementService implements PasswordResetUseCase {
   public void confirmReset(PasswordResetConfirmRequest request) {
     String tokenHash = passwordHashService.sha256(request.token());
 
-    PasswordResetToken token = passwordResetTokenPort.findByTokenHash(tokenHash)
+    PasswordResetToken token = tokenRepository.findByTokenHash(tokenHash)
         .orElseThrow(() -> new OperationException(HttpStatus.BAD_REQUEST, "Token invalido o expirado"));
 
     if (token.isUsed()) {
@@ -116,7 +117,7 @@ public class PasswordResetManagementService implements PasswordResetUseCase {
 
     token.setUsed(true);
     token.setUsedAt(OffsetDateTime.now());
-    passwordResetTokenPort.save(token);
+    tokenRepository.save(token);
 
     log.info("AUTH: Password reset completed - userId={}", user.getId());
 
