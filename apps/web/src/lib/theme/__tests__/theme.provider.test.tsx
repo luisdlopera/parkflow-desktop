@@ -6,7 +6,6 @@ describe('ThemeProvider', () => {
   beforeEach(() => {
     localStorage.clear()
     document.documentElement.classList.remove('dark')
-    document.documentElement.removeAttribute('data-theme')
   })
 
   test('applies dark class when saved as dark', () => {
@@ -16,7 +15,7 @@ describe('ThemeProvider', () => {
         <div data-testid="child">ok</div>
       </ThemeProvider>
     )
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
   })
 
   test('respects system preference when auto', () => {

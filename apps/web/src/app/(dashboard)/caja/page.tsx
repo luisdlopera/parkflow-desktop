@@ -8,7 +8,6 @@ import {
   Textarea,
   Button,
   Switch,
-  Tooltip,
   Modal,
   ModalContent,
   ModalHeader,
@@ -228,7 +227,7 @@ export default function CajaPage() {
       setCanAudit(
         (await hasPermission("reportes:leer")) || (await hasPermission("cierres_caja:cerrar"))
       );
-    })().catch(console.error);
+    })();
   }, []);
 
   useEffect(() => {
@@ -236,7 +235,7 @@ export default function CajaPage() {
       setAuditLog([]);
       return;
     }
-    cashAudit(session.id)
+    void cashAudit(session.id)
       .then(setAuditLog)
       .catch(() => setAuditLog([]));
   }, [session?.id, canAudit]);
@@ -551,7 +550,7 @@ export default function CajaPage() {
           variant="bordered" 
           color="primary"
           className="font-semibold h-[48px]" 
-          onPress={() => { load().catch(console.error); }} 
+          onPress={() => void load()} 
           isLoading={busy}
         >
           Actualizar
@@ -584,85 +583,26 @@ export default function CajaPage() {
                   ) : null}
                 </span>
               </div>
-
-              {session?.status === "OPEN" ? (
-                <div className="flex items-center justify-between gap-1 pt-1">
-                  {[
-                    { label: "Abrir", done: true },
-                    { label: "Movimientos", done: movements.length > 0 },
-                    { label: "Arqueo", done: !!session.countedAt },
-                    { label: "Cerrar", done: false },
-                  ].map((step, i) => (
-                    <div key={step.label} className="flex items-center gap-1 flex-1">
-                      <div className="flex flex-col items-center flex-1">
-                        <div
-                          className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold ${
-                            step.done
-                              ? "bg-emerald-500 text-white"
-                              : !session.countedAt && i === 2
-                                ? "bg-blue-500 text-white"
-                                : "bg-slate-200 text-slate-400"
-                          }`}
-                        >
-                          {step.done ? "\u2713" : String(i + 1)}
-                        </div>
-                        <span className="text-[10px] text-slate-500 mt-1">{step.label}</span>
-                      </div>
-                      {i < 3 ? (
-                        <div className={`h-[2px] flex-1 self-start mt-3 ${step.done ? "bg-emerald-300" : "bg-slate-200"}`} />
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-
+              
               {summary && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
-                      Base inicial
-                      <Tooltip content="Monto en efectivo con el que se abrió la caja">
-                        <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
-                      </Tooltip>
-                    </p>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Base inicial</p>
                     <p className="text-lg font-semibold text-slate-900">${summary.openingAmount.toLocaleString()}</p>
                   </div>
                   <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
-                      Esperado (Libro)
-                      <Tooltip content="Total que debería haber según los movimientos registrados">
-                        <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
-                      </Tooltip>
-                    </p>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Esperado (Libro)</p>
                     <p className="text-lg font-semibold text-slate-900">${summary.expectedLedgerTotal.toLocaleString()}</p>
                   </div>
-                  <div className={`rounded-xl p-3 border ${summary.countedTotal != null ? "bg-blue-50 border-blue-100" : "bg-slate-50 border-slate-200 border-dashed"}`}>
-                    <p className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-blue-600" : "text-slate-400"}`}>
-                      Contado
-                      <Tooltip content="Efectivo físico contado al realizar el arqueo">
-                        <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
-                      </Tooltip>
-                    </p>
-                    {summary.countedTotal != null ? (
-                      <p className="text-lg font-semibold text-blue-900">${summary.countedTotal.toLocaleString()}</p>
-                    ) : (
-                      <p className="text-lg font-semibold text-slate-400 italic">Pendiente</p>
-                    )}
+                  <div className="rounded-xl bg-blue-50 p-3 border border-blue-100">
+                    <p className="text-[10px] uppercase tracking-wider text-blue-600">Contado</p>
+                    <p className="text-lg font-semibold text-blue-900">${(summary.countedTotal ?? 0).toLocaleString()}</p>
                   </div>
-                  <div className={`rounded-xl p-3 border ${summary.countedTotal != null ? (summary.difference === 0 ? "bg-emerald-50 border-emerald-100" : "bg-amber-50 border-amber-100") : "bg-slate-50 border-slate-200 border-dashed"}`}>
-                    <p className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-slate-500" : "text-slate-400"}`}>
-                      Diferencia
-                      <Tooltip content={summary.countedTotal != null ? `Contado − Esperado = ${summary.countedTotal.toLocaleString()} − ${summary.expectedLedgerTotal.toLocaleString()}` : "Realiza el arqueo para ver la diferencia"}>
-                        <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
-                      </Tooltip>
+                  <div className={`rounded-xl p-3 border ${summary.difference === 0 ? "bg-emerald-50 border-emerald-100" : "bg-amber-50 border-amber-100"}`}>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Diferencia</p>
+                    <p className={`text-lg font-semibold ${summary.difference === 0 ? "text-emerald-700" : "text-amber-700"}`}>
+                      ${(summary.difference ?? 0).toLocaleString()}
                     </p>
-                    {summary.countedTotal != null ? (
-                      <p className={`text-lg font-semibold ${summary.difference === 0 ? "text-emerald-700" : "text-amber-700"}`}>
-                        ${(summary.difference ?? 0).toLocaleString()}
-                      </p>
-                    ) : (
-                      <p className="text-lg font-semibold text-slate-400 italic">Pendiente</p>
-                    )}
                   </div>
                 </div>
               )}
@@ -756,7 +696,7 @@ export default function CajaPage() {
               size="lg"
               isDisabled={busy || !!session || !canOpen}
               isLoading={busy}
-              onPress={() => { onOpen().catch(console.error); }}
+              onPress={() => void onOpen()}
             >
               Abrir caja
             </Button>
@@ -852,11 +792,6 @@ export default function CajaPage() {
             ]}
             rows={filteredMovements}
           />
-          {filteredMovements.length === 0 && session?.status === "OPEN" ? (
-            <p className="mt-3 text-xs text-slate-500 text-center">
-              No hay movimientos registrados en esta sesión. Los cobros de salida y movimientos manuales aparecerán aquí.
-            </p>
-          ) : null}
 
           <h3 className="mt-8 text-base font-semibold text-slate-900">Ingreso / egreso manual</h3>
           <div className="mt-3 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 items-end">
@@ -922,7 +857,7 @@ export default function CajaPage() {
               variant="flat"
               isDisabled={busy || !canMove}
               isLoading={busy}
-              onPress={() => { onAddManual().catch(console.error); }}
+              onPress={() => void onAddManual()}
             >
               Registrar movimiento
             </Button>
@@ -931,7 +866,7 @@ export default function CajaPage() {
               variant="bordered"
               color="primary"
               isDisabled={busy || movements.length === 0}
-              onPress={() => { onPrintLastMovement().catch(console.error); }}
+              onPress={() => void onPrintLastMovement()}
             >
               Imprimir ultimo movimiento
             </Button>
@@ -995,7 +930,7 @@ export default function CajaPage() {
               variant="flat"
               isDisabled={busy} 
               isLoading={busy}
-              onPress={() => { onCount().catch(console.error); }}
+              onPress={() => void onCount()}
             >
               Guardar arqueo
             </Button>
@@ -1004,7 +939,7 @@ export default function CajaPage() {
               variant="bordered"
               color="primary"
               isDisabled={busy || !session.countedAt}
-              onPress={() => { onPrintCount().catch(console.error); }}
+              onPress={() => void onPrintCount()}
             >
               Imprimir comprobante de arqueo
             </Button>
@@ -1033,19 +968,14 @@ export default function CajaPage() {
               onValueChange={setClosingWitness}
             />
           </div>
-          {session && !session.countedAt ? (
-            <p className="mt-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 border border-amber-200">
-              ⚠ Debe realizar el arqueo (ingresar valores de conteo y guardar) antes de poder cerrar la caja.
-            </p>
-          ) : null}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Button 
               color="danger" 
               variant="flat" 
               className="flex-1 font-bold"
-              isDisabled={busy || !session?.countedAt} 
+              isDisabled={busy} 
               isLoading={busy}
-              onPress={() => { onClose().catch(console.error); }}
+              onPress={() => void onClose()}
             >
               Cerrar caja (Fin turno)
             </Button>
@@ -1072,7 +1002,7 @@ export default function CajaPage() {
               color="primary" 
               isDisabled={busy} 
               isLoading={busy}
-              onPress={() => { onPrintClosing().catch(console.error); }}
+              onPress={() => void onPrintClosing()}
             >
               Imprimir cierre
             </Button>
@@ -1099,7 +1029,7 @@ export default function CajaPage() {
             <Button variant="light" onPress={() => setShowShiftChangeModal(false)}>
               Cancelar
             </Button>
-            <Button color="primary" isLoading={busy} onPress={() => { onShiftChange().catch(console.error); }}>
+            <Button color="primary" isLoading={busy} onPress={() => void onShiftChange()}>
               Confirmar Cambio
             </Button>
           </ModalFooter>
@@ -1123,7 +1053,7 @@ export default function CajaPage() {
             <Button variant="light" color="primary" onPress={() => setVoidTarget(null)}>
               Cancelar
             </Button>
-            <Button color="danger" isLoading={busy} onPress={() => { onVoid().catch(console.error); }}>
+            <Button color="danger" isLoading={busy} onPress={() => void onVoid()}>
               Confirmar anulacion
             </Button>
           </ModalFooter>

@@ -7,13 +7,13 @@ import {
   Textarea,
   Checkbox,
   Button,
+  Switch,
   RadioGroup,
   Radio,
-  Switch,
 } from "@heroui/react";
 import { Chip } from "@heroui/chip";
 import { Tabs, Tab } from "@heroui/tabs";
-import { Card, CardBody } from "@heroui/card";
+import { Card, CardBody, CardHeader } from "@heroui/card";
 import DataTable from "@/components/ui/DataTable";
 import {
   createUser,
@@ -60,7 +60,7 @@ import {
 } from "@/lib/settings-api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type TabKey = "rates" | "users" | "parameters" | "masters" | "monthly" | "agreements" | "prepaid" | "system";
+type TabKey = "rates" | "users" | "parameters" | "interface" | "masters" | "monthly" | "agreements" | "prepaid";
 
 const VEHICLE_TYPES: VehicleType[] = ["CAR", "MOTORCYCLE", "BICYCLE", "TRUCK", "BUS", "VAN", "ELECTRIC", "OTHER"];
 const RATE_TYPES: RateType[] = ["PER_MINUTE", "HOURLY", "DAILY", "FLAT"];
@@ -147,6 +147,28 @@ export default function ConfiguracionPage() {
   const [auditReason, setAuditReason] = useState("");
   const [perm, setPerm] = useState<Record<string, boolean>>({});
 
+  // Configuración de interfaz (persistida en localStorage)
+  const [uiSettings, setUiSettings] = useState({
+    showSystemStatus: true,
+    showKeyboardShortcuts: true
+  });
+
+  useEffect(() => {
+    const saved = localStorage.getItem("parkflow_ui_settings");
+    if (saved) {
+      try {
+        setUiSettings(JSON.parse(saved));
+      } catch {
+        localStorage.removeItem("parkflow_ui_settings");
+      }
+    }
+  }, []);
+
+  const updateUiSetting = (key: keyof typeof uiSettings, value: boolean) => {
+    const updated = { ...uiSettings, [key]: value };
+    setUiSettings(updated);
+    localStorage.setItem("parkflow_ui_settings", JSON.stringify(updated));
+  };
 
   const refreshPerms = useCallback(async () => {
     const checks: Permission[] = [
@@ -250,16 +272,7 @@ export default function ConfiguracionPage() {
           isDisabled={!can.cfgRead}
         />
         <Tab key="interface" title={<div className="flex items-center gap-2"><span>Interfaz</span></div>} />
-        <Tab
-          key="masters"
-          title={
-            <div className="flex items-center gap-2">
-              <span>Maestros</span>
-              {!can.cfgRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
-            </div>
-          }
-          isDisabled={!can.cfgRead}
-        />
+        <Tab key="masters" title={<div className="flex items-center gap-2"><span>Maestros</span></div>} />
       </Tabs>
 
       {tab === "rates" && can.ratesRead ? (
@@ -503,7 +516,7 @@ function RatesSection({
             color="primary"
             size="md"
             className="font-semibold"
-            onPress={() => { load().catch(console.error); }}
+            onPress={() => void load()}
             isLoading={loading}
           >
             Actualizar
@@ -1223,7 +1236,7 @@ function UsersSection({
           color="primary"
           size="md"
           className="font-semibold"
-          onPress={() => { load().catch(console.error); }}
+          onPress={() => void load()}
           isLoading={loading}
         >
           Actualizar
@@ -1707,7 +1720,7 @@ function ParametersSection({
             color="primary"
             size="md"
             className="font-semibold"
-            onPress={() => { load().catch(console.error); }}
+            onPress={() => void load()}
             isLoading={loading}
           >
             Cargar sede
@@ -2158,13 +2171,7 @@ function vehicleTypeToForm(row: import("@/lib/settings-api").MasterVehicleTypeRo
   };
 }
 
-function MastersSection({
-  onNotify,
-  canEdit
-}: {
-  onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void;
-  canEdit: boolean;
-}) {
+function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void; }) {
   const [rows, setRows] = useState<import("@/lib/settings-api").MasterVehicleTypeRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<import("@/lib/settings-api").MasterVehicleTypeRow | null>(null);
@@ -2204,16 +2211,14 @@ function MastersSection({
     <div className="space-y-4">
       <div className="flex justify-between items-center surface rounded-2xl p-4">
         <h2 className="text-lg font-semibold text-slate-900">Tipos de Vehículo</h2>
-        {canEdit ? (
-          <Button
-            color="primary"
-            size="md"
-            className="font-semibold"
-            onPress={() => { setCreating(true); setEditing(null); setForm(defaultVehicleTypeForm); }}
-          >
-            Nuevo tipo
-          </Button>
-        ) : null}
+        <Button
+          color="primary"
+          size="md"
+          className="font-semibold"
+          onPress={() => { setCreating(true); setEditing(null); setForm(defaultVehicleTypeForm); }}
+        >
+          Nuevo tipo
+        </Button>
       </div>
 
       <DataTable
@@ -2266,24 +2271,17 @@ function MastersSection({
               />
             )
           },
-          {
-            key: "id",
-            label: "",
-            render: (r) =>
-              canEdit ? (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  color="primary"
-                  className="font-semibold"
-                  onPress={() => { setEditing(r as any); setCreating(false); setForm(vehicleTypeToForm(r)); }}
-                >
-                  Editar
-                </Button>
-              ) : (
-                ""
-              )
-          }
+          { key: "id", label: "", render: (r) => (
+            <Button
+              size="sm"
+              variant="flat"
+              color="primary"
+              className="font-semibold"
+              onPress={() => { setEditing(r as any); setCreating(false); setForm(vehicleTypeToForm(r)); }}
+            >
+              Editar
+            </Button>
+          ) }
         ]}
         rows={rows as any[]}
       />
@@ -2424,13 +2422,13 @@ function MonthlySection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
     }
   }, [plate, page, onNotify]);
 
-  useEffect(() => { load().catch(console.error); }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex gap-3 items-end">
         <Input label="Placa" variant="flat" size="sm" value={plate} onValueChange={setPlate} className="w-48" />
-        <Button color="primary" variant="bordered" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Buscar</Button>
+        <Button color="primary" variant="bordered" size="md" onPress={() => void load()} isLoading={loading}>Buscar</Button>
       </div>
       <DataTable
         columns={[
@@ -2473,13 +2471,13 @@ function AgreementsSection({ canEdit, onNotify, auditReason }: { canEdit: boolea
     }
   }, [q, page, onNotify]);
 
-  useEffect(() => { load().catch(console.error); }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex gap-3 items-end">
         <Input label="Buscar" variant="flat" size="sm" value={q} onValueChange={setQ} className="w-64" placeholder="Empresa o código..." />
-        <Button color="primary" variant="bordered" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Buscar</Button>
+        <Button color="primary" variant="bordered" size="md" onPress={() => void load()} isLoading={loading}>Buscar</Button>
       </div>
       <DataTable
         columns={[
@@ -2512,13 +2510,13 @@ function PrepaidSection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
     }
   }, [onNotify]);
 
-  useEffect(() => { load().catch(console.error); }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex justify-between items-center">
         <h2 className="text-lg font-semibold text-slate-900">Paquetes Prepagados</h2>
-        <Button color="primary" variant="bordered" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Actualizar</Button>
+        <Button color="primary" variant="bordered" size="md" onPress={() => void load()} isLoading={loading}>Actualizar</Button>
       </div>
       <DataTable
         columns={[
@@ -2530,155 +2528,6 @@ function PrepaidSection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
         ]}
         rows={rows as any[]}
       />
-    </div>
-  );
-}
-
-function SystemSection({
-  onNotify
-}: {
-  onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void;
-}) {
-  const [reason, setReason] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
-  const [currentUserObj, setCurrentUserObj] = useState<any>(null);
-  const [currentCompanyId, setCurrentCompanyId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadUserAndCompany = async () => {
-      const { currentUser } = await import("@/lib/auth");
-      const { resolveCurrentCompanyId } = await import("@/lib/current-company");
-      const u = await currentUser();
-      const c = await resolveCurrentCompanyId();
-      setCurrentUserObj(u);
-      setCurrentCompanyId(c);
-    };
-    void loadUserAndCompany();
-  }, []);
-
-  const handleReset = async () => {
-    if (!currentCompanyId) {
-      onNotify({ kind: "err", text: "No se pudo identificar la empresa actual" });
-      return;
-    }
-    if (!reason.trim()) {
-      onNotify({ kind: "err", text: "Por favor, ingresa el motivo del reinicio para la auditoría" });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { resetOnboarding } = await import("@/lib/onboarding-api");
-      await resetOnboarding(currentCompanyId, reason.trim());
-      onNotify({ kind: "ok", text: "El onboarding se ha reiniciado correctamente. Redirigiendo..." });
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-    } catch (e) {
-      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error al reiniciar el onboarding" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const isAdmin = currentUserObj?.role === "ADMIN" || currentUserObj?.role === "SUPER_ADMIN";
-
-  if (!isAdmin) {
-    return (
-      <div className="surface rounded-2xl p-6 border border-slate-200">
-        <h2 className="text-lg font-semibold text-slate-900 mb-2">Panel del Sistema</h2>
-        <p className="text-sm text-slate-600">
-          Solo los usuarios con rol de Administrador o Super Administrador tienen permisos para realizar tareas de mantenimiento del sistema.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="surface rounded-2xl p-6 border border-slate-200 space-y-4">
-        <h2 className="text-xl font-bold text-slate-955">Mantenimiento del Sistema</h2>
-        <p className="text-sm text-slate-700 max-w-3xl">
-          Administra operaciones críticas de mantenimiento para tu tenant. Estas acciones afectan la estructura operativa global y son auditadas estrictamente.
-        </p>
-      </div>
-
-      <div className="border border-rose-200 bg-rose-50/50 rounded-2xl p-6 space-y-4 max-w-3xl">
-        <div className="flex items-start gap-3">
-          <span className="text-2xl">⚠️</span>
-          <div>
-            <h3 className="text-lg font-bold text-rose-955">Acción de Alto Riesgo: Reiniciar Onboarding</h3>
-            <p className="text-sm text-rose-900/90 mt-1">
-              Esta opción permite reconfigurar todos los parámetros iniciales de tu parqueadero (tipos de vehículos, módulos activos, tarifas básicas, convenios, métodos de pago, etc.) a través del asistente paso a paso.
-            </p>
-          </div>
-        </div>
-
-        <div className="pl-9 space-y-2">
-          <h4 className="text-sm font-semibold text-rose-955">Garantías de Integridad y Operación:</h4>
-          <ul className="list-disc list-inside text-xs text-rose-900/80 space-y-1">
-            <li><strong>Cero Pérdida de Datos:</strong> Los tickets históricos, cierres de caja y contratos mensuales existentes NO se eliminarán ni modificarán.</li>
-            <li><strong>Sin Interrupciones:</strong> Las cajas registradoras activas e ingresos de vehículos actuales continuarán operando con normalidad.</li>
-            <li><strong>Historial de Versiones:</strong> Se guardará automáticamente un backup completo de tu configuración actual antes del reinicio.</li>
-          </ul>
-        </div>
-
-        <div className="pl-9 space-y-4 pt-2">
-          <Input
-            label="Motivo del reinicio"
-            placeholder="Ej. Cambio de modelo de negocio a tarifas dinámicas..."
-            variant="flat"
-            isRequired
-            value={reason}
-            onValueChange={setReason}
-            className="bg-white rounded-xl max-w-xl"
-          />
-
-          {!confirmed ? (
-            <Button
-              color="danger"
-              variant="solid"
-              size="md"
-              onPress={() => {
-                if (!reason.trim()) {
-                  onNotify({ kind: "err", text: "Por favor, ingresa el motivo del reinicio para la auditoría" });
-                  return;
-                }
-                setConfirmed(true);
-              }}
-            >
-              Iniciar Reinicio de Onboarding
-            </Button>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-xs font-bold text-rose-700 animate-pulse">
-                ¿Confirmas que deseas reiniciar el onboarding para tu empresa? Se guardará un backup y serás redirigido al asistente inicial.
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  color="danger"
-                  variant="solid"
-                  size="md"
-                  isLoading={loading}
-                  onPress={handleReset}
-                >
-                  Sí, Confirmar Reinicio
-                </Button>
-                <Button
-                  color="default"
-                  variant="bordered"
-                  size="md"
-                  isDisabled={loading}
-                  onPress={() => setConfirmed(false)}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
