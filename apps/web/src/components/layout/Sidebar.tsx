@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useParkingShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
 import { useState, useEffect } from "react";
 import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
-import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { label: "Dashboard", href: "/", shortcut: "", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
@@ -44,8 +43,6 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   useParkingShortcuts();
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
 
-  const [configExpanded, setConfigExpanded] = useState(false);
-
   const [uiSettings, setUiSettings] = useState<UISettings>({
     showSystemStatus: true,
     showKeyboardShortcuts: true
@@ -62,48 +59,8 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     if (saved) {
       setUiSettings(saved);
     }
-  }, [pathname]);
-
-  useEffect(() => {
-    const applySaved = () => {
-      const saved = readUiSettings();
-      if (saved) {
-        setUiSettings(saved);
-      }
-    };
-    applySaved();
     fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
-
-    const onSettingsChanged = (event: Event) => {
-      const detail = (event as CustomEvent<UISettings>).detail;
-      if (detail) {
-        setUiSettings(detail);
-        return;
-      }
-      applySaved();
-    };
-    window.addEventListener("parkflow-ui-settings-changed", onSettingsChanged);
-    return () => window.removeEventListener("parkflow-ui-settings-changed", onSettingsChanged);
   }, []);
-
-  const visibleSubItems = [
-    { label: "General", href: "/configuracion" },
-    { label: "Sedes", href: "/configuracion/sedes" },
-    { label: "Métodos de pago", href: "/configuracion/metodos-pago" },
-    { label: "Impresoras", href: "/configuracion/impresoras" },
-    { label: "Cajas", href: "/configuracion/cajas" },
-    { label: "Operación", href: "/configuracion/operacion" },
-    { label: "Fracciones", href: "/configuracion/fracciones" },
-  ].filter((subItem) => {
-    if (subItem.href === "/configuracion/sedes") {
-      const sites = runtimeConfig?.sites;
-      return Array.isArray(sites) ? sites.length > 1 : true;
-    }
-    if (subItem.href === "/configuracion/cajas") {
-      return shouldShowModule(runtimeConfig, "cash", true);
-    }
-    return true;
-  });
 
   const visibleItems = navItems.filter((item) => {
     if (item.href === "/caja") return shouldShowModule(runtimeConfig, "cash", true);
@@ -210,84 +167,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         ${collapsed ? "px-1" : ""}
       `}>
         {visibleItems.map((item) => {
-          const isConfig = item.href === "/configuracion";
-          const active = pathname === item.href || (isConfig && !!pathname?.startsWith("/configuracion"));
-
-          if (isConfig) {
-            return (
-              <div key={item.href} className="space-y-1">
-                <Link
-                  href={item.href}
-                  onClick={(e) => {
-                    if (!collapsed) {
-                      setConfigExpanded(!configExpanded);
-                    }
-                  }}
-                  className={`
-                    w-full flex items-center rounded-xl font-medium transition-all
-                    ${active
-                      ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
-                      : "text-slate-600 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800/35 hover:text-slate-900 dark:hover:text-white"}
-                    ${collapsed 
-                      ? "justify-center p-3" 
-                      : "justify-between px-3 py-3 text-sm gap-3"}
-                  `}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <div className="flex items-center gap-3">
-                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
-                    </svg>
-                    {!collapsed && <span className="truncate">{item.label}</span>}
-                  </div>
-                  {!collapsed && (
-                    <svg
-                      className={`w-4 h-4 ml-auto transition-transform duration-200 ${configExpanded ? "rotate-180" : ""}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  )}
-                </Link>
-
-                <AnimatePresence initial={false}>
-                  {configExpanded && !collapsed && (
-                    <motion.div
-                      initial="collapsed"
-                      animate="open"
-                      exit="collapsed"
-                      variants={{
-                        open: { opacity: 1, height: "auto", transition: { duration: 0.25, ease: "easeOut" } },
-                        collapsed: { opacity: 0, height: 0, transition: { duration: 0.2, ease: "easeIn" } }
-                      }}
-                      className="overflow-hidden pl-7 pr-1 mt-1 space-y-1 border-l-2 border-slate-200/50 dark:border-neutral-800/50 ml-5"
-                    >
-                      {visibleSubItems.map((subItem) => {
-                        const subActive = pathname === subItem.href;
-                        return (
-                          <Link
-                            key={subItem.href}
-                            href={subItem.href}
-                            className={`
-                              flex items-center rounded-lg px-3 py-2 text-xs font-semibold transition-all
-                              ${subActive
-                                ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold"
-                                : "text-slate-500 dark:text-neutral-400 hover:bg-slate-100/70 dark:hover:bg-neutral-800/20 hover:text-slate-800 dark:hover:text-neutral-200"}
-                            `}
-                          >
-                            {subItem.label}
-                          </Link>
-                        );
-                      })}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          }
-
+          const active = pathname === item.href;
           return (
             <Link
               key={item.href}

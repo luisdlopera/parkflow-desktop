@@ -132,39 +132,86 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 dark:border-neutral-700 dark:bg-neutral-900/60 overflow-hidden">
-      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200/80 dark:border-neutral-700 bg-white/60 dark:bg-neutral-900/80">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-            <Calculator className="w-5 h-5" aria-hidden />
-          </div>
-          <div className="min-w-0">
-            <h4 className="font-semibold text-slate-900 dark:text-neutral-100 text-sm truncate">
-              Calculadora de cambio
-            </h4>
-            <p className="text-xs text-slate-500 dark:text-neutral-400 truncate">
-              Cuente lo que recibe y vea el vuelto al instante
-            </p>
-          </div>
+    <div className="bg-slate-50 rounded-2xl p-4 space-y-4 dark:bg-zinc-900">
+      <div className="flex items-center justify-between">
+        <h4 className="font-semibold text-slate-800 flex items-center gap-2">
+          <svg className="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          Calculadora de cambio / vuelto
+        </h4>
+        <button
+          onClick={() => setShowCalculator(false)}
+          className="text-slate-400 hover:text-slate-600"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Resumen */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white rounded-xl p-3 text-center border border-slate-200 dark:bg-zinc-900 dark:border-neutral-800">
+          <p className="text-xs text-slate-500 uppercase">Total</p>
+          <p className="text-lg font-bold text-slate-900">
+            ${totalAmount.toLocaleString("es-CO")}
+          </p>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            aria-label="Limpiar calculadora"
-            onPress={reset}
+        <div className="bg-white rounded-xl p-3 text-center border border-slate-200 dark:bg-zinc-900 dark:border-neutral-800">
+          <p className="text-xs text-slate-500 uppercase">Recibido</p>
+          <p className={`text-lg font-bold ${receivedAmount > 0 ? "text-blue-600" : "text-slate-400"}`}>
+            ${receivedAmount.toLocaleString("es-CO")}
+          </p>
+        </div>
+        <div className={`rounded-xl p-3 text-center border-2 ${
+          change >= 0 
+            ? change > 0 
+              ? "bg-emerald-50 border-emerald-200" 
+              : "bg-slate-100 border-slate-200"
+            : "bg-rose-50 border-rose-200"
+        }`}>
+          <p className="text-xs uppercase font-medium">
+            {change > 0 ? "Cambio / vuelto" : change === 0 ? "Exacto" : "Falta"}
+          </p>
+          <p className={`text-lg font-bold ${
+            change >= 0 
+              ? change > 0 ? "text-emerald-700" : "text-slate-600"
+              : "text-rose-700"
+          }`}>
+            ${Math.abs(change).toLocaleString("es-CO")}
+          </p>
+        </div>
+      </div>
+
+      {/* Atajo: Monto exacto */}
+        <div className="flex gap-2">
+          <button
+            onClick={setExactAmount}
+            className="flex-1 py-2 px-3 bg-brand-100 hover:bg-brand-200 text-brand-700 rounded-xl text-sm font-medium transition-colors dark:bg-brand-700 dark:text-white dark:hover:bg-brand-600"
           >
-            <RotateCcw className="w-4 h-4" />
-          </Button>
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            aria-label="Ocultar calculadora"
-            onPress={() => {
-              setExpanded(false);
-              onClose?.();
+          Monto exacto (${totalAmount.toLocaleString("es-CO")})
+        </button>
+          <button
+            onClick={reset}
+            className="py-2 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-sm font-medium transition-colors dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-600"
+          >
+          Limpiar
+        </button>
+      </div>
+
+      {/* Entrada personalizada */}
+      <div className="flex gap-2">
+          <input
+            type="text"
+            value={customAmount}
+            onChange={(e) => setCustomAmount(e.target.value)}
+            placeholder="Monto recibido (ej: 50000)"
+            className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm dark:bg-zinc-900 dark:border-neutral-800 dark:text-neutral-200"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                applyCustomAmount();
+              }
             }}
           >
             <ChevronUp className="w-4 h-4" />
@@ -198,48 +245,58 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
             </p>
           </div>
           <div
-            className={`rounded-xl border-2 p-3 text-center ${
-              changeStatus === "change"
-                ? "border-emerald-500/50 bg-emerald-50 dark:bg-emerald-950/40 dark:border-emerald-500/40"
-                : changeStatus === "exact"
-                  ? "border-primary/40 bg-primary/10 dark:bg-primary/15"
-                  : changeStatus === "short"
-                    ? "border-rose-500/50 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-500/40"
-                    : "border-slate-200 bg-slate-100 dark:border-neutral-700 dark:bg-neutral-800/50"
+            key={denom.value}
+            className={`relative rounded-xl border-2 p-2 text-center transition-all ${
+              (counts[denom.value] || 0) > 0
+                ? "bg-brand-50 border-brand-200"
+                : "bg-white border-slate-200 hover:border-slate-300 dark:bg-zinc-900 dark:border-neutral-800 dark:hover:border-neutral-700"
             }`}
           >
-            <p
-              className={`text-[10px] font-semibold uppercase tracking-wide ${
-                changeStatus === "change"
-                  ? "text-emerald-700 dark:text-emerald-300"
-                  : changeStatus === "exact"
-                    ? "text-primary"
-                    : changeStatus === "short"
-                      ? "text-rose-700 dark:text-rose-300"
-                      : "text-slate-500 dark:text-neutral-400"
-              }`}
-            >
-              {changeStatus === "change"
-                ? "Vuelto"
-                : changeStatus === "exact"
-                  ? "Exacto"
-                  : changeStatus === "short"
-                    ? "Falta"
-                    : "Pendiente"}
-            </p>
-            <p
-              className={`mt-1 text-base sm:text-lg font-bold tabular-nums ${
-                changeStatus === "change"
-                  ? "text-emerald-700 dark:text-emerald-300"
-                  : changeStatus === "exact"
-                    ? "text-primary"
-                    : changeStatus === "short"
-                      ? "text-rose-700 dark:text-rose-300"
-                      : "text-slate-500 dark:text-neutral-400"
-              }`}
-            >
-              {formatCop(Math.abs(change))}
-            </p>
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <span className="text-lg">{denom.type === "bill" ? "💵" : "🪙"}</span>
+                <span className="text-xs font-semibold text-slate-700 dark:text-neutral-200">{denom.label}</span>
+              </div>
+            <div className="flex items-center justify-center gap-1">
+                <button
+                  onClick={() => decrement(denom.value)}
+                  className="w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-600 font-bold dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-600"
+                >
+                  -
+                </button>
+                <span className="w-8 text-center font-bold text-slate-800 dark:text-white">
+                  {counts[denom.value] || 0}
+                </span>
+                <button
+                  onClick={() => increment(denom.value)}
+                  className="w-6 h-6 rounded-full bg-brand-200 hover:bg-brand-300 flex items-center justify-center text-brand-700 font-bold"
+                >
+                  +
+                </button>
+              </div>
+            {(counts[denom.value] || 0) > 0 && (
+              <div className="mt-1 text-xs font-medium text-brand-700">
+                = ${(denom.value * (counts[denom.value] || 0)).toLocaleString("es-CO")}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Total desglosado */}
+      {receivedAmount > 0 && (
+        <div className="bg-white rounded-xl p-3 border border-slate-200 space-y-2 dark:bg-zinc-900 dark:border-neutral-800">
+          <p className="text-sm font-semibold text-slate-700 dark:text-neutral-200">Desglose:</p>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(counts)
+              .filter(([, count]) => count > 0)
+              .map(([value, count]) => (
+                <span
+                  key={value}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 rounded-lg text-xs"
+                >
+                  {count}x ${parseInt(value).toLocaleString("es-CO")}
+                </span>
+              ))}
           </div>
         </div>
 

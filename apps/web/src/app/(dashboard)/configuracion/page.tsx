@@ -249,21 +249,12 @@ export default function ConfiguracionPage() {
           }
           isDisabled={!can.cfgRead}
         />
+        <Tab key="interface" title={<div className="flex items-center gap-2"><span>Interfaz</span></div>} />
         <Tab
           key="masters"
           title={
             <div className="flex items-center gap-2">
               <span>Maestros</span>
-              {!can.cfgRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
-            </div>
-          }
-          isDisabled={!can.cfgRead}
-        />
-        <Tab
-          key="system"
-          title={
-            <div className="flex items-center gap-2">
-              <span>Sistema</span>
               {!can.cfgRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
             </div>
           }
@@ -318,10 +309,76 @@ export default function ConfiguracionPage() {
         <p className="text-sm text-slate-600">No tienes permisos para ver esta sección. Contacta a un administrador.</p>
       ) : null}
 
-      {tab === "system" && can.cfgRead ? <SystemSection onNotify={setNotice} /> : null}
-      {tab === "system" && !can.cfgRead ? (
+      {tab === "masters" && can.cfgRead ? <MastersSection onNotify={setNotice} canEdit={can.cfgEdit} /> : null}
+      {tab === "masters" && !can.cfgRead ? (
         <p className="text-sm text-slate-600">No tienes permisos para ver esta sección. Contacta a un administrador.</p>
       ) : null}
+    </div>
+  );
+}
+
+function InterfaceSection({
+  settings,
+  onUpdate
+}: {
+  settings: { showSystemStatus: boolean; showKeyboardShortcuts: boolean };
+  onUpdate: (key: "showSystemStatus" | "showKeyboardShortcuts", value: boolean) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-slate-900">Personalización del Sidebar</h2>
+        </CardHeader>
+        <CardBody className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-slate-800">Mostrar estado del sistema</p>
+              <p className="text-sm text-slate-500">
+                Muestra el indicador "Sistema operativo" en el sidebar con el punto verde de estado.
+              </p>
+            </div>
+            <Switch
+              isSelected={settings.showSystemStatus}
+              onValueChange={(checked) => onUpdate("showSystemStatus", checked)}
+              size="lg"
+              color="primary"
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-slate-800">Mostrar atajos de teclado</p>
+              <p className="text-sm text-slate-500">
+                Muestra la sección de atajos de teclado (F1, F2, F3, F4, Esc) en la parte inferior del sidebar.
+              </p>
+            </div>
+            <Switch
+              isSelected={settings.showKeyboardShortcuts}
+              onValueChange={(checked) => onUpdate("showKeyboardShortcuts", checked)}
+              size="lg"
+              color="primary"
+            />
+          </div>
+        </CardBody>
+      </Card>
+
+      <Card className="bg-amber-50/50 border-amber-200">
+        <CardBody>
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="font-medium text-amber-800">Configuración local</p>
+              <p className="text-sm text-amber-700">
+                Estas preferencias se guardan solo en tu navegador y no afectan a otros usuarios.
+                Se aplican inmediatamente sin necesidad de recargar la página.
+              </p>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
     </div>
   );
 }

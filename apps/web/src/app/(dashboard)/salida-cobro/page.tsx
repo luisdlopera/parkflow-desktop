@@ -247,15 +247,6 @@ export default function SalidaCobroPage() {
     fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
   }, []);
 
-  useEffect(() => {
-    if (initialTicketNumber) {
-      setTicketNumber(initialTicketNumber);
-    }
-    if (initialPlate) {
-      setPlate(initialPlate);
-    }
-  }, [initialTicketNumber, initialPlate]);
-
   // PERFORMANCE: Constant value, no need for useMemo
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
 

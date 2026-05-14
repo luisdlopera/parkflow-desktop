@@ -168,7 +168,7 @@ BEGIN
 
     -- Demo super admin account (require password change on first login)
     INSERT INTO app_user (id, company_id, name, email, role, password_hash, is_active, can_void_tickets, can_reprint_tickets, can_close_cash, require_password_change)
-    VALUES ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'Administrador', 'admin@parkflow.local', 'SUPER_ADMIN', crypt('Qwert.12345', gen_salt('bf', 12)), TRUE, TRUE, TRUE, TRUE, TRUE)
+    VALUES ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'Administrador', 'admin@parkflow.local', 'SUPER_ADMIN', '$2b$12$bU4bjxtQIMHP/us3972HTuIz.OM2128W34BtysTTH1AeqjInkGcRe', TRUE, TRUE, TRUE, TRUE, TRUE)
     ON CONFLICT (email) DO NOTHING;
 
     -- Demo operational parameters for the demo site

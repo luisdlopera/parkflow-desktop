@@ -2,7 +2,10 @@ package com.parkflow.modules.parking.operation.controller;
 
 import com.parkflow.modules.parking.operation.application.port.in.*;
 import com.parkflow.modules.parking.operation.dto.*;
-import com.parkflow.modules.parking.operation.application.service.SupervisorService;
+import com.parkflow.modules.parking.operation.application.port.in.RegisterEntryUseCase;
+import com.parkflow.modules.parking.operation.application.port.in.RegisterExitUseCase;
+import com.parkflow.modules.parking.operation.service.OperationService;
+import com.parkflow.modules.parking.operation.service.SupervisorService;
 import jakarta.validation.Valid;
 import java.time.ZoneId;
 import java.util.List;
@@ -18,12 +21,17 @@ public class OperationController {
   private final SupervisorService supervisorService;
   private final RegisterEntryUseCase registerEntryUseCase;
   private final RegisterExitUseCase registerExitUseCase;
-  private final ReprintTicketUseCase reprintTicketUseCase;
-  private final ProcessLostTicketUseCase processLostTicketUseCase;
-  private final VoidSessionUseCase voidSessionUseCase;
-  private final FindActiveSessionUseCase findActiveSessionUseCase;
-  private final GetTicketUseCase getTicketUseCase;
-  private final ListActiveSessionsUseCase listActiveSessionsUseCase;
+
+  public OperationController(
+      OperationService operationService,
+      SupervisorService supervisorService,
+      RegisterEntryUseCase registerEntryUseCase,
+      RegisterExitUseCase registerExitUseCase) {
+    this.operationService = operationService;
+    this.supervisorService = supervisorService;
+    this.registerEntryUseCase = registerEntryUseCase;
+    this.registerExitUseCase = registerExitUseCase;
+  }
 
   @GetMapping("/supervisor/summary")
   @PreAuthorize("hasAuthority('reportes:leer')")
