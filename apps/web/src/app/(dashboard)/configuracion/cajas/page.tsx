@@ -1,17 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Input,
+  Button,
+  Select,
+  SelectItem,
+  Checkbox,
+} from "@heroui/react";
 import {
   fetchConfigurationCashRegisters,
   createConfigurationCashRegister,
   updateConfigurationCashRegister,
   patchConfigurationCashRegisterStatus,
+  fetchConfigurationSites,
+  fetchConfigurationPrinters,
+  fetchUsers,
   type SettingsPage,
+  type UserAdminRow
 } from "@/lib/settings-api";
 import { cashRegisterSchema, type CashRegisterSchema } from "@/modules/settings/schemas";
-import type { CashRegisterRow } from "@/modules/settings/types";
+import type { CashRegisterRow, ParkingSiteRow, PrinterRow } from "@/modules/settings/types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/settings/FormDrawer";
@@ -35,7 +46,11 @@ const COLS: ColumnDef<CashRegisterRow>[] = [
 
 export default function CajasPage() {
   const [data, setData] = useState<SettingsPage<CashRegisterRow>>({ content: [], totalElements: 0, totalPages: 0, page: 0, size: 20 });
+  const [sites, setSites] = useState<ParkingSiteRow[]>([]);
+  const [printers, setPrinters] = useState<PrinterRow[]>([]);
+  const [users, setUsers] = useState<UserAdminRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [catalogLoading, setCatalogLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<CashRegisterRow | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +59,32 @@ export default function CajasPage() {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<CashRegisterSchema>({ resolver: zodResolver(cashRegisterSchema), defaultValues: { site: "DEFAULT", terminal: "", active: true } });
+  
+  const siteField = register("site");
+  const siteIdField = register("siteId");
+
+  useEffect(() => {
+    const loadCatalogs = async () => {
+      setCatalogLoading(true);
+      try {
+        const [sitePage, printerPage, userPage] = await Promise.all([
+          fetchConfigurationSites({ active: true, page: 0, size: 200 }),
+          fetchConfigurationPrinters({ active: true, page: 0, size: 200 }),
+          fetchUsers({ active: true, page: 0, size: 200 }),
+        ]);
+        setSites(sitePage.content ?? []);
+        setPrinters(printerPage.content ?? []);
+        setUsers(userPage.content ?? []);
+      } finally {
+        setCatalogLoading(false);
+      }
+    };
+    void loadCatalogs();
+  }, []);
 
   const load = async (q?: string) => {
     setLoading(true);
@@ -80,6 +119,11 @@ export default function CajasPage() {
     });
     setDrawerOpen(true);
   };
+
+  const siteOptions = useMemo(() => sites.map((site) => ({ value: site.id, label: `${site.code} - ${site.name}`, code: site.code })), [sites]);
+  const printerOptions = useMemo(() => printers.map((printer) => ({ value: printer.id, label: `${printer.name} (${printer.isDefault ? "Default" : "Secundaria"})` })), [printers]);
+  const userOptions = useMemo(() => users.map((user) => ({ value: user.id, label: user.name })), [users]);
+  const currentSite = watch("site");
 
   const onSubmit = async (values: CashRegisterSchema) => {
     setError(null);
@@ -119,7 +163,15 @@ export default function CajasPage() {
         emptyMessage="No hay cajas registradas"
         actions={(row) => (
           <div className="flex items-center gap-2">
-            <button onClick={() => openEdit(row)} className="text-xs text-amber-600 hover:underline">Editar</button>
+            <Button
+              size="sm"
+              variant="flat"
+              color="primary"
+              className="font-semibold"
+              onPress={() => openEdit(row)}
+            >
+              Editar
+            </Button>
             <StatusToggle active={row.active} onChange={() => toggleStatus(row)} confirmMessage="¿Cambiar estado?" />
           </div>
         )}
@@ -132,39 +184,86 @@ export default function CajasPage() {
         loading={isSubmitting}
         error={error}
       >
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Código</label>
-          <input {...register("code")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-          {errors.code && <p className="mt-1 text-xs text-red-600">{errors.code.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Nombre</label>
-          <input {...register("name")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Terminal</label>
-          <input {...register("terminal")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-          {errors.terminal && <p className="mt-1 text-xs text-red-600">{errors.terminal.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Etiqueta</label>
-          <input {...register("label")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Sede (ID)</label>
-          <input {...register("siteId")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Impresora (ID)</label>
-          <input {...register("printerId")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Responsable (ID)</label>
-          <input {...register("responsibleUserId")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" {...register("active")} className="h-4 w-4 rounded border-slate-300" />
-          <label className="text-sm text-slate-700">Activa</label>
+        <div className="space-y-4">
+          <Input
+            {...register("code")}
+            label="Código"
+            variant="flat"
+            errorMessage={errors.code?.message}
+            isInvalid={!!errors.code}
+          />
+          <Input
+            {...register("name")}
+            label="Nombre"
+            variant="flat"
+          />
+          <Input
+            {...register("terminal")}
+            label="Terminal"
+            variant="flat"
+            errorMessage={errors.terminal?.message}
+            isInvalid={!!errors.terminal}
+          />
+          <Input
+            {...register("label")}
+            label="Etiqueta"
+            variant="flat"
+          />
+          
+          <div className="space-y-1">
+            <input type="hidden" {...siteField} />
+            <Select
+              {...siteIdField}
+              label="Sede"
+              variant="flat"
+              placeholder="Sin sede vinculada"
+              isDisabled={catalogLoading}
+              onSelectionChange={(keys) => {
+                const id = Array.from(keys)[0] as string;
+                const selected = sites.find((site) => site.id === id);
+                setValue("siteId", id);
+                setValue("site", selected?.code ?? "DEFAULT");
+              }}
+              selectedKeys={watch("siteId") ? [watch("siteId") as string] : []}
+            >
+              {siteOptions.map((site) => (
+                <SelectItem key={site.value} textValue={site.label}>{site.label}</SelectItem>
+              ))}
+            </Select>
+            <p className="px-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+              Código operativo: {currentSite || "DEFAULT"}
+            </p>
+          </div>
+
+          <Select
+            {...register("printerId")}
+            label="Impresora"
+            variant="flat"
+            placeholder="Sin impresora"
+            isDisabled={catalogLoading}
+            selectedKeys={watch("printerId") ? [watch("printerId") as string] : []}
+          >
+            {printerOptions.map((printer) => (
+              <SelectItem key={printer.value} textValue={printer.label}>{printer.label}</SelectItem>
+            ))}
+          </Select>
+
+          <Select
+            {...register("responsibleUserId")}
+            label="Responsable"
+            variant="flat"
+            placeholder="Sin responsable"
+            isDisabled={catalogLoading}
+            selectedKeys={watch("responsibleUserId") ? [watch("responsibleUserId") as string] : []}
+          >
+            {userOptions.map((user) => (
+              <SelectItem key={user.value} textValue={user.label}>{user.label}</SelectItem>
+            ))}
+          </Select>
+
+          <Checkbox {...register("active")}>
+            Activa
+          </Checkbox>
         </div>
       </FormDrawer>
     </div>

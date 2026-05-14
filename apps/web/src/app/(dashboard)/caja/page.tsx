@@ -1,8 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Input,
+  Select,
+  SelectItem,
+  Textarea,
+  Button,
+  Switch,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+} from "@heroui/react";
+import DataTable from "@/components/ui/DataTable";
 import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
 import {
   cashAddMovement,
   cashClose,
@@ -15,6 +29,8 @@ import {
   cashRegisters,
   cashSummary,
   cashVoidMovement,
+  cashAudit,
+  type CashAuditEntryDto,
   type CashMovementDto,
   type CashPolicyDto,
   type CashRegisterRow,
@@ -96,6 +112,11 @@ export default function CajaPage() {
   const [outboxCount, setOutboxCount] = useState(0);
   const [policy, setPolicy] = useState<CashPolicyDto | null>(null);
   const [registerRows, setRegisterRows] = useState<CashRegisterRow[]>([]);
+  const [openNotes, setOpenNotes] = useState("");
+  const [auditLog, setAuditLog] = useState<CashAuditEntryDto[]>([]);
+  const [closingWitness, setClosingWitness] = useState("");
+  const [showShiftChangeModal, setShowShiftChangeModal] = useState(false);
+  const [nextOpenAmount, setNextOpenAmount] = useState("0");
 
   // PERFORMANCE: Constant value, no need for useMemo
   const parkingName = process.env.NEXT_PUBLIC_PARKING_NAME ?? "Parkflow";
@@ -177,6 +198,7 @@ export default function CajaPage() {
   const [canClose, setCanClose] = useState(false);
   const [canMove, setCanMove] = useState(false);
   const [canVoid, setCanVoid] = useState(false);
+  const [canAudit, setCanAudit] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -184,8 +206,21 @@ export default function CajaPage() {
       setCanClose(await hasPermission("cierres_caja:cerrar"));
       setCanMove(await hasPermission("cobros:registrar"));
       setCanVoid(await hasPermission("anulaciones:crear"));
+      setCanAudit(
+        (await hasPermission("reportes:leer")) || (await hasPermission("cierres_caja:cerrar"))
+      );
     })();
   }, []);
+
+  useEffect(() => {
+    if (!session?.id || !canAudit) {
+      setAuditLog([]);
+      return;
+    }
+    void cashAudit(session.id)
+      .then(setAuditLog)
+      .catch(() => setAuditLog([]));
+  }, [session?.id, canAudit]);
 
   const onOpen = async () => {
     const u = await currentUser();
@@ -205,9 +240,11 @@ export default function CajaPage() {
         terminal: term,
         openingAmount: Number(openAmount.replace(",", ".")) || 0,
         operatorUserId: u.id,
-        openIdempotencyKey: `open:${term}:${Date.now()}`
+        openIdempotencyKey: `open:${term}:${Date.now()}`,
+        notes: openNotes.trim() || null
       });
       setSession(s);
+      setOpenNotes("");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al abrir");
@@ -316,9 +353,11 @@ export default function CajaPage() {
     try {
       await cashClose(session.id, {
         closingNotes: closeNotes || null,
+        closingWitnessName: closingWitness.trim() || null,
         closeIdempotencyKey: `close:${session.id}:${Date.now()}`
       });
       setCloseNotes("");
+      setClosingWitness("");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al cerrar");
@@ -377,6 +416,32 @@ export default function CajaPage() {
     }
   };
 
+  const onShiftChange = async () => {
+    if (!session) return;
+    if (session.status === "OPEN" && !session.countedAt) {
+      setError("Debe realizar el arqueo antes del cambio de turno.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await cashClose(session.id, {
+        closingNotes: "Cierre por cambio de turno.",
+        closeIdempotencyKey: `shift-change-close:${session.id}:${Date.now()}`
+      });
+      setSession(null);
+      setSummary(null);
+      setMovements([]);
+      setOpenAmount(nextOpenAmount);
+      setError("Turno cerrado con éxito. Indique base para el nuevo turno.");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error en cambio de turno");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const onVoid = async () => {
     if (!session || !voidTarget || !voidReason.trim()) {
       return;
@@ -424,44 +489,50 @@ export default function CajaPage() {
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
       ) : null}
 
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-        <label className="surface flex flex-col gap-1 rounded-2xl p-4">
-          <span className="text-xs font-medium text-slate-500">Sede</span>
-          <input
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            value={site}
-            onChange={(e) => setSite(e.target.value)}
-            disabled={closed}
-          />
-        </label>
-        <label className="surface flex flex-col gap-1 rounded-2xl p-4">
-          <span className="text-xs font-medium text-slate-500">Terminal / caja</span>
-          {registerRows.length > 0 ? (
-            <select
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              value={registerRows.some((r) => r.terminal === terminal) ? terminal : ""}
-              onChange={(e) => setTerminal(e.target.value)}
-              disabled={closed}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3 items-end">
+        <Input
+          label="Sede"
+          variant="flat"
+          size="sm"
+          value={site}
+          onValueChange={setSite}
+          isDisabled={closed}
+        />
+        <div className="flex flex-col gap-2">
+          {registerRows.length > 0 && (
+            <Select
+              label="Terminal / caja"
+              variant="flat"
+              size="sm"
+              selectedKeys={registerRows.some((r) => r.terminal === terminal) ? [terminal] : []}
+              onSelectionChange={(keys) => setTerminal(Array.from(keys)[0] as string)}
+              isDisabled={closed}
             >
-              <option value="">Seleccione registro...</option>
               {registerRows.map((r) => (
-                <option key={r.id} value={r.terminal}>
+                <SelectItem key={r.terminal} textValue={r.terminal}>
                   {(r.label ?? r.terminal) + ` (${r.terminal})`}
-                </option>
+                </SelectItem>
               ))}
-            </select>
-          ) : null}
-          <input
-            className="mt-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            placeholder="O escriba terminal manual"
+            </Select>
+          )}
+          <Input
+            placeholder="Terminal manual"
+            variant="flat"
+            size="sm"
             value={terminal}
-            onChange={(e) => setTerminal(e.target.value)}
-            disabled={closed}
+            onValueChange={setTerminal}
+            isDisabled={closed}
           />
-        </label>
-        <div className="surface flex items-end rounded-2xl p-4">
-          <Button label="Actualizar" tone="ghost" onClick={() => void load()} disabled={busy} />
         </div>
+        <Button 
+          variant="bordered" 
+          color="primary"
+          className="font-semibold h-[48px]" 
+          onPress={() => void load()} 
+          isLoading={busy}
+        >
+          Actualizar
+        </Button>
       </div>
 
       <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
@@ -472,7 +543,7 @@ export default function CajaPage() {
           ) : !session ? (
             <p className="mt-4 text-sm text-slate-600">No hay caja abierta en este terminal.</p>
           ) : (
-            <div className="mt-4 space-y-2 text-sm">
+            <div className="mt-4 space-y-4 text-sm">
               <div className="flex items-center gap-2">
                 <Badge
                   data-testid="cash-status"
@@ -480,42 +551,129 @@ export default function CajaPage() {
                   tone={session.status === "OPEN" ? "success" : "neutral"}
                 />
                 <span className="text-slate-600">
-                  {new Date(session.openedAt).toLocaleString()} — Base: {session.openingAmount}
+                  {new Date(session.openedAt).toLocaleString()}
+                  {session.operatorName ? (
+                    <> — {session.operatorName}</>
+                  ) : null}
                 </span>
               </div>
-              {summary ? (
-                <div className="mt-3 rounded-xl bg-slate-50 p-3 text-slate-700">
-                  <p>Esperado (libro): {summary.expectedLedgerTotal}</p>
-                  {summary.countedTotal != null ? <p>Contado: {summary.countedTotal}</p> : null}
-                  {summary.difference != null ? <p>Diferencia: {summary.difference}</p> : null}
-                  <p className="text-xs text-slate-500">Movimientos: {summary.movementCount}</p>
+              
+              {summary && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Base inicial</p>
+                    <p className="text-lg font-semibold text-slate-900">${summary.openingAmount.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Esperado (Libro)</p>
+                    <p className="text-lg font-semibold text-slate-900">${summary.expectedLedgerTotal.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-xl bg-blue-50 p-3 border border-blue-100">
+                    <p className="text-[10px] uppercase tracking-wider text-blue-600">Contado</p>
+                    <p className="text-lg font-semibold text-blue-900">${(summary.countedTotal ?? 0).toLocaleString()}</p>
+                  </div>
+                  <div className={`rounded-xl p-3 border ${summary.difference === 0 ? "bg-emerald-50 border-emerald-100" : "bg-amber-50 border-amber-100"}`}>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Diferencia</p>
+                    <p className={`text-lg font-semibold ${summary.difference === 0 ? "text-emerald-700" : "text-amber-700"}`}>
+                      ${(summary.difference ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {summary && (
+                <div className="space-y-1 pt-2">
+                  <p className="font-semibold text-slate-800 text-xs uppercase tracking-tight">Ventas por medio de pago</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(summary.totalsByPaymentMethod).map(([method, amount]) => (
+                      <Badge 
+                        key={method} 
+                        label={`${method}: $${amount.toLocaleString()}`} 
+                        tone={method === "CASH" ? "success" : method === "TRANSFER" ? "warning" : "neutral"}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {summary && (
+                <div className="space-y-1 pt-2">
+                  <p className="font-semibold text-slate-800 text-xs uppercase tracking-tight">Resumen por tipo</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(summary.totalsByMovementType).map(([type, amount]) => (
+                      <Badge 
+                        key={type} 
+                        label={`${type.replace(/_/g, " ")}: $${amount.toLocaleString()}`} 
+                        tone={amount < 0 ? "warning" : "neutral"}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {session.notes ? (
+                <p className="mt-2 rounded-lg bg-amber-50/50 px-3 py-2 text-slate-800 italic">
+                  &quot;{session.notes}&quot;
+                </p>
+              ) : null}
+
+              {auditLog.length > 0 && canAudit ? (
+                <div className="mt-4 max-h-48 overflow-auto rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                  <p className="font-semibold text-slate-800">Pista de auditoría (resumen)</p>
+                  <ul className="mt-2 space-y-1">
+                    {auditLog.slice(0, 40).map((a) => (
+                      <li key={a.id} className="border-b border-slate-100 pb-1">
+                        <span className="text-slate-500">{new Date(a.createdAt).toLocaleString()}</span>{" "}
+                        <strong>{a.action}</strong>
+                        {a.actorName ? ` · ${a.actorName}` : ""}
+                        {a.terminalId ? ` · terminal ${a.terminalId}` : ""}
+                        {a.reason ? ` — ${a.reason}` : ""}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               ) : null}
             </div>
           )}
         </div>
 
-        <div className="surface rounded-2xl p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Abrir caja</h2>
-          <p className="mt-2 text-sm text-slate-600">Requiere permiso de apertura y terminal configurado.</p>
-          <label className="mt-4 block text-sm">
-            <span className="text-slate-600">Monto inicial</span>
-            <input
-              data-testid="initial-amount"
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
-              value={openAmount}
-              onChange={(e) => setOpenAmount(e.target.value)}
-              disabled={busy || !!session}
-            />
-          </label>
-          <div className="mt-4">
+        <div className="surface rounded-2xl p-4 sm:p-6 flex flex-col justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Abrir caja</h2>
+            <p className="mt-2 text-sm text-slate-600">Requiere permiso de apertura y terminal configurado.</p>
+            <div className="mt-4">
+              <Input
+                label="Monto inicial"
+                variant="flat"
+                type="number"
+                value={openAmount}
+                onValueChange={setOpenAmount}
+                isDisabled={busy || !!session}
+              />
+            </div>
+            <div className="mt-3">
+              <Textarea
+                label="Observaciones de apertura"
+                placeholder="Ej. efectivo inicial verificado..."
+                variant="flat"
+                value={openNotes}
+                onValueChange={setOpenNotes}
+                minRows={2}
+                isDisabled={busy || !!session}
+              />
+            </div>
+          </div>
+          <div className="mt-6">
             <Button
-              data-testid="open-cash"
-              label={busy ? "Procesando..." : "Abrir caja"}
-              tone="primary"
-              disabled={busy || !!session || !canOpen}
-              onClick={() => void onOpen()}
-            />
+              className="w-full font-bold"
+              color="primary"
+              size="lg"
+              isDisabled={busy || !!session || !canOpen}
+              isLoading={busy}
+              onPress={() => void onOpen()}
+            >
+              Abrir caja
+            </Button>
           </div>
         </div>
       </div>
@@ -523,138 +681,169 @@ export default function CajaPage() {
       {session?.status === "OPEN" ? (
         <div className="surface rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Movimientos</h2>
-          <div className="mt-4 flex flex-wrap gap-2 sm:gap-3">
-            <select
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
+          <div className="mt-4 flex flex-wrap gap-4 mb-6">
+            <Select
+              label="Filtrar por tipo"
+              variant="flat"
+              size="sm"
+              className="max-w-[200px]"
+              selectedKeys={filterType ? [filterType] : [""]}
+              onSelectionChange={(keys) => setFilterType(Array.from(keys)[0] as string)}
             >
-              <option value="">Todos los tipos</option>
-              <option value="PARKING_PAYMENT">Cobro parqueo</option>
-              <option value="MANUAL_INCOME">Ingreso manual</option>
-              <option value="MANUAL_EXPENSE">Egreso</option>
-              <option value="DISCOUNT">Descuento</option>
-              <option value="ADJUSTMENT">Ajuste</option>
-              <option value="VOID_OFFSET">Contrapartida anulacion</option>
-            </select>
-            <select
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              value={filterMethod}
-              onChange={(e) => setFilterMethod(e.target.value)}
+              <SelectItem key="">Todos los tipos</SelectItem>
+              <SelectItem key="PARKING_PAYMENT">Cobro parqueo</SelectItem>
+              <SelectItem key="MANUAL_INCOME">Ingreso manual</SelectItem>
+              <SelectItem key="MANUAL_EXPENSE">Egreso manual</SelectItem>
+              <SelectItem key="WITHDRAWAL">Retiro / Transferencia a Tesorería</SelectItem>
+              <SelectItem key="CUSTOMER_REFUND">Devolucion al cliente</SelectItem>
+              <SelectItem key="DISCOUNT">Descuento</SelectItem>
+              <SelectItem key="ADJUSTMENT">Ajuste</SelectItem>
+              <SelectItem key="LOST_TICKET_PAYMENT">Cobro ticket perdido</SelectItem>
+              <SelectItem key="REPRINT_FEE">Reimpresion cobrada</SelectItem>
+              <SelectItem key="VOID_OFFSET">Contrapartida anulacion</SelectItem>
+            </Select>
+            <Select
+              label="Filtrar por medio"
+              variant="flat"
+              size="sm"
+              className="max-w-[200px]"
+              selectedKeys={filterMethod ? [filterMethod] : [""]}
+              onSelectionChange={(keys) => setFilterMethod(Array.from(keys)[0] as string)}
             >
-              <option value="">Todos los medios</option>
-              <option value="CASH">Efectivo</option>
-              <option value="CARD">Tarjeta</option>
-              <option value="TRANSFER">Transferencia</option>
-              <option value="OTHER">Otro</option>
-              <option value="MIXED">Mixto</option>
-            </select>
+              <SelectItem key="">Todos los medios</SelectItem>
+              <SelectItem key="CASH">Efectivo</SelectItem>
+              <SelectItem key="DEBIT_CARD">Tarjeta débito</SelectItem>
+              <SelectItem key="CREDIT_CARD">Tarjeta crédito</SelectItem>
+              <SelectItem key="CARD">Tarjeta legacy</SelectItem>
+              <SelectItem key="QR">QR</SelectItem>
+              <SelectItem key="NEQUI">Nequi</SelectItem>
+              <SelectItem key="DAVIPLATA">Daviplata</SelectItem>
+              <SelectItem key="TRANSFER">Transferencia</SelectItem>
+              <SelectItem key="AGREEMENT">Convenio</SelectItem>
+              <SelectItem key="INTERNAL_CREDIT">Crédito interno</SelectItem>
+              <SelectItem key="OTHER">Otro</SelectItem>
+              <SelectItem key="MIXED">Mixto</SelectItem>
+            </Select>
           </div>
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-500">
-                  <th className="py-2 pr-3">Fecha</th>
-                  <th className="py-2 pr-3">Tipo</th>
-                  <th className="py-2 pr-3">Medio</th>
-                  <th className="py-2 pr-3">Valor</th>
-                  <th className="py-2 pr-3">Estado</th>
-                  <th className="py-2">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMovements.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-6 text-center text-slate-500">
-                      Sin movimientos con este filtro.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredMovements.map((m) => (
-                    <tr key={m.id} className="border-b border-slate-100">
-                      <td className="py-2 pr-3">{new Date(m.createdAt).toLocaleString()}</td>
-                      <td className="py-2 pr-3">{m.movementType}</td>
-                      <td className="py-2 pr-3">{m.paymentMethod}</td>
-                      <td className="py-2 pr-3">{m.amount}</td>
-                      <td className="py-2 pr-3">{m.status}</td>
-                      <td className="py-2">
-                        {m.status === "POSTED" &&
-                        m.movementType !== "VOID_OFFSET" &&
-                        canVoid ? (
-                          <button
-                            type="button"
-                            className="text-xs font-semibold text-red-700 hover:underline"
-                            onClick={() => setVoidTarget(m.id)}
-                          >
-                            Anular
-                          </button>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          
+          <DataTable<CashMovementDto>
+            columns={[
+              { 
+                key: "createdAt", 
+                label: "Fecha",
+                render: (m) => new Date(m.createdAt).toLocaleString()
+              },
+              { key: "movementType", label: "Tipo" },
+              { key: "paymentMethod", label: "Medio" },
+              { key: "amount", label: "Valor", align: "right" },
+              {
+                key: "registrar",
+                label: "Registra",
+                render: (m) => m.createdByName ?? m.createdById?.slice(0, 8)
+              },
+              {
+                key: "terminal",
+                label: "Equipo",
+                render: (m) => m.terminal ?? "—"
+              },
+              { key: "status", label: "Estado" },
+              {
+                key: "actions",
+                label: "Acciones",
+                render: (m) => (
+                  m.status === "POSTED" && m.movementType !== "VOID_OFFSET" && canVoid ? (
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="danger"
+                      onPress={() => setVoidTarget(m.id)}
+                    >
+                      Anular
+                    </Button>
+                  ) : null
+                )
+              }
+            ]}
+            rows={filteredMovements}
+          />
 
           <h3 className="mt-8 text-base font-semibold text-slate-900">Ingreso / egreso manual</h3>
-          <div className="mt-3 grid gap-3 grid-cols-1 sm:grid-cols-2">
-            <select
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              value={manualType}
-              onChange={(e) => setManualType(e.target.value)}
-              disabled={!canMove}
+          <div className="mt-3 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 items-end">
+            <Select
+              label="Tipo de movimiento"
+              variant="flat"
+              size="sm"
+              selectedKeys={[manualType]}
+              onSelectionChange={(keys) => setManualType(Array.from(keys)[0] as string)}
+              isDisabled={!canMove}
             >
-              <option value="MANUAL_INCOME">Ingreso manual</option>
-              <option value="MANUAL_EXPENSE">Egreso manual</option>
-              <option value="DISCOUNT">Descuento</option>
-              <option value="ADJUSTMENT">Ajuste autorizado</option>
-              <option value="REPRINT_FEE">Reimpresion cobrada</option>
-            </select>
-            <select
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              value={manualMethod}
-              onChange={(e) => setManualMethod(e.target.value)}
-              disabled={!canMove}
+              <SelectItem key="MANUAL_INCOME">Ingreso manual</SelectItem>
+              <SelectItem key="MANUAL_EXPENSE">Egreso manual</SelectItem>
+              <SelectItem key="WITHDRAWAL">Retiro / Transferencia a Tesorería</SelectItem>
+              <SelectItem key="CUSTOMER_REFUND">Devolucion al cliente</SelectItem>
+              <SelectItem key="DISCOUNT">Descuento</SelectItem>
+              <SelectItem key="ADJUSTMENT">Ajuste autorizado</SelectItem>
+              <SelectItem key="REPRINT_FEE">Reimpresion cobrada</SelectItem>
+            </Select>
+            <Select
+              label="Medio de pago"
+              variant="flat"
+              size="sm"
+              selectedKeys={[manualMethod]}
+              onSelectionChange={(keys) => setManualMethod(Array.from(keys)[0] as string)}
+              isDisabled={!canMove}
             >
-              <option value="CASH">Efectivo</option>
-              <option value="CARD">Tarjeta</option>
-              <option value="TRANSFER">Transferencia</option>
-              <option value="OTHER">Otro</option>
-              <option value="MIXED">Mixto</option>
-            </select>
-            <input
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Valor"
+              <SelectItem key="CASH">Efectivo</SelectItem>
+              <SelectItem key="DEBIT_CARD">Tarjeta débito</SelectItem>
+              <SelectItem key="CREDIT_CARD">Tarjeta crédito</SelectItem>
+              <SelectItem key="CARD">Tarjeta legacy</SelectItem>
+              <SelectItem key="QR">QR</SelectItem>
+              <SelectItem key="NEQUI">Nequi</SelectItem>
+              <SelectItem key="DAVIPLATA">Daviplata</SelectItem>
+              <SelectItem key="TRANSFER">Transferencia</SelectItem>
+              <SelectItem key="AGREEMENT">Convenio</SelectItem>
+              <SelectItem key="INTERNAL_CREDIT">Crédito interno</SelectItem>
+              <SelectItem key="OTHER">Otro</SelectItem>
+              <SelectItem key="MIXED">Mixto</SelectItem>
+            </Select>
+            <Input
+              label="Valor"
+              variant="flat"
+              size="sm"
+              type="number"
               value={manualAmount}
-              onChange={(e) => setManualAmount(e.target.value)}
-              disabled={!canMove}
+              onValueChange={setManualAmount}
+              isDisabled={!canMove}
             />
-            <input
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Motivo"
+            <Input
+              label="Motivo"
+              variant="flat"
+              size="sm"
               value={manualReason}
-              onChange={(e) => setManualReason(e.target.value)}
-              disabled={!canMove}
+              onValueChange={setManualReason}
+              isDisabled={!canMove}
             />
           </div>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-            <div className="min-w-0 sm:min-w-[200px] flex-1">
-              <Button
-                label="Registrar movimiento"
-                tone="primary"
-                disabled={busy || !canMove}
-                onClick={() => void onAddManual()}
-              />
-            </div>
-            <div className="min-w-0 sm:min-w-[200px] flex-1">
-              <Button
-                label="Imprimir ultimo movimiento"
-                tone="ghost"
-                disabled={busy || movements.length === 0}
-                onClick={() => void onPrintLastMovement()}
-              />
-            </div>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Button
+              className="flex-1 font-bold"
+              color="primary"
+              variant="flat"
+              isDisabled={busy || !canMove}
+              isLoading={busy}
+              onPress={() => void onAddManual()}
+            >
+              Registrar movimiento
+            </Button>
+            <Button
+              className="flex-1 font-semibold"
+              variant="bordered"
+              color="primary"
+              isDisabled={busy || movements.length === 0}
+              onPress={() => void onPrintLastMovement()}
+            >
+              Imprimir ultimo movimiento
+            </Button>
           </div>
         </div>
       ) : null}
@@ -665,69 +854,114 @@ export default function CajaPage() {
           <p className="mt-2 text-sm text-slate-600">
             Si hay diferencia respecto al esperado, las observaciones son obligatorias.
           </p>
-          <div className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            <input
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Efectivo contado"
+          <div className="mt-6 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <Input
+              label="Efectivo contado"
+              variant="flat"
+              size="sm"
+              type="number"
               value={countCash}
-              onChange={(e) => setCountCash(e.target.value)}
+              onValueChange={setCountCash}
             />
-            <input
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Tarjetas"
+            <Input
+              label="Tarjetas"
+              variant="flat"
+              size="sm"
+              type="number"
               value={countCard}
-              onChange={(e) => setCountCard(e.target.value)}
+              onValueChange={setCountCard}
             />
-            <input
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Transferencias"
+            <Input
+              label="Transferencias"
+              variant="flat"
+              size="sm"
+              type="number"
               value={countTransfer}
-              onChange={(e) => setCountTransfer(e.target.value)}
+              onValueChange={setCountTransfer}
             />
-            <input
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Otros"
+            <Input
+              label="Otros"
+              variant="flat"
+              size="sm"
+              type="number"
               value={countOther}
-              onChange={(e) => setCountOther(e.target.value)}
+              onValueChange={setCountOther}
             />
           </div>
-          <label className="mt-3 block text-sm">
-            <span className="text-slate-600">Observaciones de arqueo</span>
-            <textarea
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
-              rows={2}
+          <div className="mt-4">
+            <Textarea
+              label="Observaciones de arqueo"
+              placeholder="Describa cualquier novedad..."
+              variant="flat"
               value={countNotes}
-              onChange={(e) => setCountNotes(e.target.value)}
+              onValueChange={setCountNotes}
             />
-          </label>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-            <div className="min-w-0 sm:min-w-[200px] flex-1">
-              <Button label="Guardar arqueo" tone="primary" disabled={busy} onClick={() => void onCount()} />
-            </div>
-            <div className="min-w-0 sm:min-w-[200px] flex-1">
-              <Button
-                label="Imprimir comprobante de arqueo"
-                tone="ghost"
-                disabled={busy || !session.countedAt}
-                onClick={() => void onPrintCount()}
-              />
-            </div>
+          </div>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Button 
+              className="flex-1 font-bold" 
+              color="primary" 
+              variant="flat"
+              isDisabled={busy} 
+              isLoading={busy}
+              onPress={() => void onCount()}
+            >
+              Guardar arqueo
+            </Button>
+            <Button
+              className="flex-1 font-semibold"
+              variant="bordered"
+              color="primary"
+              isDisabled={busy || !session.countedAt}
+              onPress={() => void onPrintCount()}
+            >
+              Imprimir comprobante de arqueo
+            </Button>
           </div>
 
           <h3 className="mt-10 text-base font-semibold text-slate-900">Cierre</h3>
-          <label className="mt-3 block text-sm">
-            <span className="text-slate-600">Notas de cierre (obligatorias si hay diferencia)</span>
-            <textarea
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
-              rows={2}
+          <p className="mt-2 text-xs text-slate-500">
+            El usuario que ejecuta el cierre queda registrado en el sistema. Opcionalmente indique nombre
+            para constancia física de testigo o supervisor.
+          </p>
+          <div className="mt-4">
+            <Textarea
+              label="Notas de cierre"
+              placeholder="Obligatorias si hay diferencia..."
+              variant="flat"
               value={closeNotes}
-              onChange={(e) => setCloseNotes(e.target.value)}
+              onValueChange={setCloseNotes}
             />
-          </label>
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <div className="min-w-0 sm:min-w-[200px] flex-1 sm:flex-initial">
-              <Button data-testid="confirm-close" label="Cerrar caja" tone="ghost" disabled={busy} onClick={() => void onClose()} />
-            </div>
+          </div>
+          <div className="mt-4">
+            <Input
+              label="Testigo / responsable firma (opcional)"
+              placeholder="Nombre legible..."
+              variant="flat"
+              value={closingWitness}
+              onValueChange={setClosingWitness}
+            />
+          </div>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Button 
+              color="danger" 
+              variant="flat" 
+              className="flex-1 font-bold"
+              isDisabled={busy} 
+              isLoading={busy}
+              onPress={() => void onClose()}
+            >
+              Cerrar caja (Fin turno)
+            </Button>
+            <Button
+              color="primary"
+              variant="flat"
+              className="flex-1 font-bold"
+              isDisabled={busy || !session.countedAt}
+              onPress={() => setShowShiftChangeModal(true)}
+            >
+              Cambio de turno
+            </Button>
           </div>
         </div>
       ) : null}
@@ -736,30 +970,69 @@ export default function CajaPage() {
         <div className="surface rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Caja cerrada</h2>
           <p className="mt-2 text-sm text-slate-600">Imprima el comprobante de cierre para archivo.</p>
-          <div className="mt-4 w-full sm:max-w-md">
-            <Button label="Imprimir cierre" tone="primary" disabled={busy} onClick={() => void onPrintClosing()} />
+          <div className="mt-6 w-full sm:max-w-md">
+            <Button 
+              className="w-full font-bold" 
+              color="primary" 
+              isDisabled={busy} 
+              isLoading={busy}
+              onPress={() => void onPrintClosing()}
+            >
+              Imprimir cierre
+            </Button>
           </div>
         </div>
       ) : null}
 
-      {voidTarget ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-slate-900">Anular movimiento</h3>
-            <p className="mt-2 text-sm text-slate-600">Motivo obligatorio (auditoria).</p>
-            <textarea
-              className="mt-3 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              rows={3}
-              value={voidReason}
-              onChange={(e) => setVoidReason(e.target.value)}
+      <Modal isOpen={showShiftChangeModal} onClose={() => setShowShiftChangeModal(false)}>
+        <ModalContent>
+          <ModalHeader>Cambio de turno</ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-slate-600 mb-4">
+              Se cerrará la caja actual y se dejará lista para la apertura del siguiente operador.
+            </p>
+            <Input
+              label="Monto base para siguiente turno"
+              variant="flat"
+              type="number"
+              value={nextOpenAmount}
+              onValueChange={setNextOpenAmount}
             />
-            <div className="mt-4 flex gap-2">
-              <Button label="Cancelar" tone="ghost" onClick={() => setVoidTarget(null)} />
-              <Button label="Confirmar anulacion" tone="primary" disabled={busy} onClick={() => void onVoid()} />
-            </div>
-          </div>
-        </div>
-      ) : null}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setShowShiftChangeModal(false)}>
+              Cancelar
+            </Button>
+            <Button color="primary" isLoading={busy} onPress={() => void onShiftChange()}>
+              Confirmar Cambio
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal isOpen={!!voidTarget} onClose={() => setVoidTarget(null)}>
+        <ModalContent>
+          <ModalHeader>Anular movimiento</ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-slate-600 mb-2">Motivo obligatorio (auditoria).</p>
+            <Textarea
+              label="Motivo"
+              placeholder="Describa la razón de la anulación..."
+              variant="flat"
+              value={voidReason}
+              onValueChange={setVoidReason}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" color="primary" onPress={() => setVoidTarget(null)}>
+              Cancelar
+            </Button>
+            <Button color="danger" isLoading={busy} onPress={() => void onVoid()}>
+              Confirmar anulacion
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

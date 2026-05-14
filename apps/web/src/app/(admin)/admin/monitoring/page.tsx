@@ -495,7 +495,7 @@ export default function MonitoringPage() {
             <Button variant="flat" onPress={onResolveClose}>
               Cancelar
             </Button>
-            <Button color="warning" variant="flat" onPress={handleFalsePositive}>
+            <Button color="primary" variant="flat" onPress={handleFalsePositive}>
               Falso Positivo
             </Button>
             <Button color="success" onPress={handleResolve}>

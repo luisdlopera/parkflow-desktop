@@ -165,7 +165,7 @@ export function PrintStatusMonitor() {
 
   const dropdownContent = (
     <div
-      className="fixed w-72 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 animate-in fade-in slide-in-from-top-2 duration-200"
+      className="fixed w-72 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 animate-in fade-in slide-in-from-top-2 duration-200 dark:bg-gray-800 dark:border-gray-700"
       style={{
         top: `${dropdownPos.top}px`,
         right: `${dropdownPos.right}px`,
@@ -176,7 +176,7 @@ export function PrintStatusMonitor() {
       <h4 className="font-semibold text-slate-900 mb-3">Estado de Impresión</h4>
 
       {/* Descripción del estado actual */}
-      <div className="mb-3 p-2 bg-slate-50 rounded-lg text-xs text-slate-600">
+      <div className="mb-3 p-2 bg-slate-50 rounded-lg text-xs text-slate-600 dark:bg-gray-700 dark:text-gray-300">
         {getStatusDescription()}
       </div>
 
@@ -238,7 +238,7 @@ export function PrintStatusMonitor() {
         </div>
       )}
 
-      <div className="mt-4 pt-3 border-t border-slate-100 flex gap-2">
+        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-gray-700 flex gap-2">
         <button
           onClick={checkPrinterStatus}
           className="flex-1 py-2 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
@@ -247,7 +247,7 @@ export function PrintStatusMonitor() {
         </button>
         <button
           onClick={() => setIsExpanded(false)}
-          className="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
+          className="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
         >
           Cerrar
         </button>

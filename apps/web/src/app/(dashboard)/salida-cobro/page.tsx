@@ -1,8 +1,14 @@
 "use client";
 
-import { useMemo, useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
+import {
+  Input,
+  Button,
+  Textarea,
+  Select,
+  SelectItem,
+} from "@heroui/react";
 import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
 import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { ChangeCalculator } from "@/components/ui/ChangeCalculator";
 import { buildApiHeaders } from "@/lib/api";
@@ -29,6 +35,11 @@ import { toUserMessageFromClientValidation, validatePayloadOrThrow } from "@/lib
 
 type ActiveLookup = {
   sessionId: string;
+  subtotal?: number | string | null;
+  surcharge?: number | string | null;
+  discount?: number | string | null;
+  deductedMinutes?: number | null;
+  total?: number | string | null;
   receipt: {
     ticketNumber: string;
     plate: string;
@@ -44,8 +55,59 @@ type ActiveLookup = {
     status: string;
     lostTicket: boolean;
     reprintCount: number;
+    entryMode?: string | null;
+    monthlySession?: boolean;
+    agreementCode?: string | null;
+    prepaidMinutes?: number | null;
   };
-  total: number | null;
+};
+
+type PaymentMethodCode =
+  | "CASH"
+  | "DEBIT_CARD"
+  | "CREDIT_CARD"
+  | "CARD"
+  | "QR"
+  | "NEQUI"
+  | "DAVIPLATA"
+  | "TRANSFER"
+  | "AGREEMENT"
+  | "INTERNAL_CREDIT"
+  | "OTHER"
+  | "MIXED";
+
+type SplitPaymentRow = {
+  id: string;
+  method: Exclude<PaymentMethodCode, "MIXED">;
+  amount: string;
+};
+
+const PAYMENT_METHODS: Array<{ code: PaymentMethodCode; label: string; hint: string; tone: string }> = [
+  { code: "CASH", label: "Efectivo", hint: "Cambio / vuelto", tone: "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30" },
+  { code: "DEBIT_CARD", label: "Tarjeta débito", hint: "Datáfono débito", tone: "bg-sky-500 hover:bg-sky-600 shadow-sky-500/30" },
+  { code: "CREDIT_CARD", label: "Tarjeta crédito", hint: "Datáfono crédito", tone: "bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/30" },
+  { code: "QR", label: "QR", hint: "Código QR", tone: "bg-slate-700 hover:bg-slate-800 shadow-slate-500/30" },
+  { code: "NEQUI", label: "Nequi", hint: "Referencia requerida", tone: "bg-fuchsia-500 hover:bg-fuchsia-600 shadow-fuchsia-500/30" },
+  { code: "DAVIPLATA", label: "Daviplata", hint: "Referencia requerida", tone: "bg-rose-500 hover:bg-rose-600 shadow-rose-500/30" },
+  { code: "TRANSFER", label: "Transferencia", hint: "Banco / referencia", tone: "bg-cyan-600 hover:bg-cyan-700 shadow-cyan-500/30" },
+  { code: "AGREEMENT", label: "Convenio", hint: "Empresa aliada", tone: "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30" },
+  { code: "INTERNAL_CREDIT", label: "Crédito interno", hint: "Cartera interna", tone: "bg-violet-500 hover:bg-violet-600 shadow-violet-500/30" },
+  { code: "OTHER", label: "Otro", hint: "Caso especial", tone: "bg-zinc-500 hover:bg-zinc-600 shadow-zinc-500/30" },
+  { code: "MIXED", label: "Mixto", hint: "Pago dividido", tone: "bg-teal-600 hover:bg-teal-700 shadow-teal-500/30" },
+];
+
+const SPLIT_METHODS = PAYMENT_METHODS.filter((method) => method.code !== "MIXED") as Array<{
+  code: Exclude<PaymentMethodCode, "MIXED">;
+  label: string;
+  hint: string;
+  tone: string;
+}>;
+
+const ENTRY_MODE_LABEL: Record<string, string> = {
+  VISITOR: "Visitante",
+  AGREEMENT: "Convenio",
+  SUBSCRIBER: "Abonado",
+  EMPLOYEE: "Empleado / cortesía",
 };
 
 function operationPrintPayload(
@@ -73,6 +135,7 @@ export default function SalidaCobroPage() {
   const [conditionChecklist, setConditionChecklist] = useState("");
   const [conditionPhotoUrls, setConditionPhotoUrls] = useState("");
   const [lostReason, setLostReason] = useState("Ticket perdido");
+  const [agreementCode, setAgreementCode] = useState("");
   const [reprintReason, setReprintReason] = useState("Reimpresion solicitada por cliente");
   const [searching, setSearching] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -80,6 +143,12 @@ export default function SalidaCobroPage() {
   const [message, setMessage] = useState("");
   const [active, setActive] = useState<ActiveLookup | null>(null);
   const [previewLines, setPreviewLines] = useState<string[] | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodCode>("CASH");
+  const [splitPayments, setSplitPayments] = useState<SplitPaymentRow[]>([
+    { id: "split-1", method: "CASH", amount: "" },
+    { id: "split-2", method: "NEQUI", amount: "" }
+  ]);
+  const [cashReceived, setCashReceived] = useState("");
   const operationLock = useRef(false);
   const reprintLock = useRef(false);
   const ticketInputRef = useRef<HTMLInputElement>(null);
@@ -97,6 +166,37 @@ export default function SalidaCobroPage() {
   // PERFORMANCE: Constant value, no need for useMemo
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
 
+  const totalDue = Number(active?.total ?? active?.receipt.totalAmount ?? 0);
+  const isSplitPayment = selectedPaymentMethod === "MIXED";
+  const splitTotal = splitPayments.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  const singleCashReceived = selectedPaymentMethod === "CASH" ? Number(cashReceived) || 0 : 0;
+  const splitCashReceived = isSplitPayment
+    ? splitPayments
+        .filter((row) => row.method === "CASH")
+        .reduce((sum, row) => sum + (Number(row.amount) || 0), 0)
+    : 0;
+  const receivedForChange = selectedPaymentMethod === "CASH" ? singleCashReceived : splitCashReceived;
+  const changeDue = Math.max(0, receivedForChange - totalDue);
+  const splitRemaining = Math.max(0, totalDue - splitTotal);
+
+  const paymentLabel = useCallback((code: PaymentMethodCode) => {
+    return PAYMENT_METHODS.find((method) => method.code === code)?.label ?? code;
+  }, []);
+
+  const paymentObservation = useCallback((method: PaymentMethodCode) => {
+    if (method === "MIXED") {
+      const detail = splitPayments
+        .filter((row) => (Number(row.amount) || 0) > 0)
+        .map((row) => `${paymentLabel(row.method)} $${Number(row.amount).toLocaleString("es-CO")}`)
+        .join(" + ");
+      return `Pago dividido: ${detail}. Total recibido $${splitTotal.toLocaleString("es-CO")}.`;
+    }
+    if (method === "CASH" && singleCashReceived > 0) {
+      return `Pago en efectivo: recibido $${singleCashReceived.toLocaleString("es-CO")}; vuelto $${changeDue.toLocaleString("es-CO")}.`;
+    }
+    return null;
+  }, [changeDue, paymentLabel, singleCashReceived, splitPayments, splitTotal]);
+
   const lookup = useCallback(async () => {
     setError("");
     setMessage("");
@@ -113,6 +213,9 @@ export default function SalidaCobroPage() {
     } else {
       params.set("plate", plate.trim().toUpperCase());
     }
+    if (agreementCode.trim()) {
+      params.set("agreementCode", agreementCode.trim());
+    }
 
     setSearching(true);
     setPreviewLines(null);
@@ -128,6 +231,15 @@ export default function SalidaCobroPage() {
         return;
       }
       setActive(payload);
+      setSelectedPaymentMethod("CASH");
+      setCashReceived("");
+      setSplitPayments([
+        { id: "split-1", method: "CASH", amount: "" },
+        { id: "split-2", method: "NEQUI", amount: "" }
+      ]);
+      if (payload.receipt.agreementCode) {
+        setAgreementCode(payload.receipt.agreementCode);
+      }
       playSuccess();
     } catch {
       setError("Error de red buscando sesion");
@@ -135,11 +247,25 @@ export default function SalidaCobroPage() {
     } finally {
       setSearching(false);
     }
-  }, [ticketNumber, plate, apiBase, playSuccess, playError]);
+  }, [ticketNumber, plate, agreementCode, apiBase, playSuccess, playError]);
 
-  const processExit = useCallback(async (paymentMethod: "CASH" | "CARD") => {
+  const processExit = useCallback(async (paymentMethod: PaymentMethodCode = selectedPaymentMethod) => {
     if (!active) {
       setError("Primero busca una sesion activa");
+      return;
+    }
+    if (paymentMethod === "MIXED") {
+      if (splitPayments.filter((row) => (Number(row.amount) || 0) > 0).length < 2) {
+        setError("Para pago dividido registra al menos dos medios con valor.");
+        return;
+      }
+      if (Math.abs(splitTotal - totalDue) > 0.009) {
+        setError(`El pago dividido debe sumar $${totalDue.toLocaleString("es-CO")}. Falta $${Math.max(0, totalDue - splitTotal).toLocaleString("es-CO")}.`);
+        return;
+      }
+    }
+    if (paymentMethod === "CASH" && singleCashReceived > 0 && singleCashReceived < totalDue) {
+      setError(`El efectivo recibido es menor al total. Falta $${(totalDue - singleCashReceived).toLocaleString("es-CO")}.`);
       return;
     }
     if (operationLock.current) {
@@ -163,6 +289,7 @@ export default function SalidaCobroPage() {
         ticketNumber: active.receipt.ticketNumber,
         operatorUserId: user.id,
         paymentMethod,
+        observations: paymentObservation(paymentMethod),
         vehicleCondition,
         conditionChecklist: conditionChecklist
           .split(",")
@@ -171,7 +298,8 @@ export default function SalidaCobroPage() {
         conditionPhotoUrls: conditionPhotoUrls
           .split(",")
           .map((item) => item.trim())
-          .filter(Boolean)
+          .filter(Boolean),
+        agreementCode: agreementCode.trim() || null
       });
 
       const response = await fetch(`${apiBase}/exits`, {
@@ -220,6 +348,7 @@ export default function SalidaCobroPage() {
       setActive(null);
       setTicketNumber("");
       setPlate("");
+      setAgreementCode("");
       
       // Re-focus para siguiente operación
       setTimeout(() => {
@@ -236,6 +365,7 @@ export default function SalidaCobroPage() {
       const queued = await queueOfflineOperation("EXIT_RECORDED", {
         ticketNumber: active.receipt.ticketNumber,
         paymentMethod,
+        paymentBreakdown: paymentMethod === "MIXED" ? splitPayments : undefined,
         occurredAtIso: new Date().toISOString(),
         origin: "OFFLINE_PENDING_SYNC"
       });
@@ -252,12 +382,12 @@ export default function SalidaCobroPage() {
       setProcessing(false);
       operationLock.current = false;
     }
-  }, [active, apiBase, vehicleCondition, conditionChecklist, conditionPhotoUrls, playSuccess, playError, toastSuccess, toastError]);
+  }, [active, apiBase, selectedPaymentMethod, splitPayments, splitTotal, totalDue, singleCashReceived, paymentObservation, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, playSuccess, playError, toastSuccess, toastError]);
 
   // Keyboard shortcuts - definido después de processExit
   useExitShortcuts({
     onCashPayment: () => processExit("CASH"),
-    onCardPayment: () => processExit("CARD"),
+    onCardPayment: () => processExit("DEBIT_CARD"),
     onSearch: lookup,
     isActive: !!active && !processing
   });
@@ -433,68 +563,78 @@ export default function SalidaCobroPage() {
       <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="surface rounded-2xl p-4 sm:p-6 lg:col-span-2">
           <h2 className="text-lg font-semibold text-slate-900">Busqueda</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="relative">
-              <input
-                ref={ticketInputRef}
-                data-testid="ticket-number"
-                value={ticketNumber}
-                onChange={(event) => setTicketNumber(event.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    lookup();
-                  }
-                }}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
-                placeholder="Numero de ticket"
-                autoFocus
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
-                Enter
-              </span>
-            </div>
-            <div className="relative">
-              <input
-                value={plate}
-                data-testid="plate"
-                onChange={(event) => setPlate(event.target.value.toUpperCase())}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    lookup();
-                  }
-                }}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium uppercase focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
-                placeholder="Placa (ABC123)"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
-                Placa
-              </span>
-            </div>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Input
+              ref={ticketInputRef}
+              label="Número de ticket"
+              variant="flat"
+              value={ticketNumber}
+              onValueChange={setTicketNumber}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  lookup();
+                }
+              }}
+              endContent={
+                <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
+                  Enter
+                </span>
+              }
+            />
+            <Input
+              label="Placa"
+              variant="flat"
+              value={plate}
+              onValueChange={(val) => setPlate(val.toUpperCase())}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  lookup();
+                }
+              }}
+              endContent={
+                <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
+                  Placa
+                </span>
+              }
+            />
           </div>
-          <div className="mt-3">
-            <button
-              type="button"
-              data-testid="search-session"
-              onClick={lookup}
-              disabled={searching || processing}
-              className="w-full sm:w-auto rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white px-6 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-            >
-              {searching ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Buscando...
-                </>
-              ) : (
-                <>
+          <div className="mt-4">
+            <Input
+              label="Código de convenio (opcional)"
+              placeholder="CONV-123"
+              variant="flat"
+              value={agreementCode}
+              onValueChange={setAgreementCode}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  lookup();
+                }
+              }}
+              classNames={{
+                input: "uppercase font-mono",
+              }}
+            />
+          </div>
+          <div className="mt-4">
+            <Button
+              color="primary"
+              className="font-bold w-full sm:w-auto"
+              onPress={lookup}
+              isLoading={searching}
+              isDisabled={processing}
+              startContent={
+                !searching && (
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  Buscar sesion (Ctrl+Enter)
-                </>
-              )}
-            </button>
+                )
+              }
+            >
+              Buscar sesion (Ctrl+Enter)
+            </Button>
           </div>
 
           {active ? (
@@ -517,11 +657,55 @@ export default function SalidaCobroPage() {
                 <div className="bg-white rounded-xl p-4 mb-4 text-center border border-brand-100">
                   <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total a pagar</p>
                   <p className="text-4xl font-bold text-slate-900">
-                    ${Number(active.total ?? active.receipt.totalAmount ?? 0).toLocaleString("es-CO")}
+                    ${totalDue.toLocaleString("es-CO")}
                   </p>
                   <p className="text-sm text-slate-500 mt-1">
                     Tiempo: {active.receipt.duration} • {active.receipt.rateName ?? "Tarifa estándar"}
                   </p>
+                  {(active.receipt.entryMode && active.receipt.entryMode !== "VISITOR") ? (
+                    <p className="text-sm font-semibold text-emerald-700 mt-2">
+                      {ENTRY_MODE_LABEL[active.receipt.entryMode] ?? active.receipt.entryMode}: cobro a puerta $0 (mensualidad / cortesía)
+                    </p>
+                  ) : active.receipt.monthlySession ? (
+                    <p className="text-sm font-semibold text-emerald-700 mt-2">
+                      Mensualidad activa: cobro $0
+                    </p>
+                  ) : null}
+                  {(active.receipt.prepaidMinutes && active.receipt.prepaidMinutes > 0) ? (
+                    <p className="text-xs font-medium text-emerald-600 mt-1">
+                      Minutos prepagados aplicados: {active.receipt.prepaidMinutes} min
+                    </p>
+                  ) : null}
+                  {(() => {
+                    const sub = Number(active.subtotal ?? 0);
+                    const sur = Number(active.surcharge ?? 0);
+                    const tot = Number(active.total ?? active.receipt.totalAmount ?? 0);
+                    const reference = sub + sur;
+                    const discount = Math.max(0, reference - tot);
+                    if (reference <= 0 && discount <= 0) {
+                      return null;
+                    }
+                    return (
+                      <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-1 text-left">
+                        {sub > 0 ? (
+                          <p>Subtotal tarifa: ${sub.toLocaleString("es-CO")}</p>
+                        ) : null}
+                        {sur > 0 ? (
+                          <p>Recargos: ${sur.toLocaleString("es-CO")}</p>
+                        ) : null}
+                        {discount > 0.009 ? (
+                          <p className="text-emerald-700 font-medium">
+                            Valor no cobrado (cortesía / convenio / descuento): ${discount.toLocaleString("es-CO")}
+                          </p>
+                        ) : null}
+                        {active.receipt.agreementCode ? (
+                          <p className="text-[10px] text-slate-400 mt-1 uppercase">
+                            Convenio aplicado: {active.receipt.agreementCode}
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
@@ -536,14 +720,13 @@ export default function SalidaCobroPage() {
                 </div>
               </div>
 
-              {/* Campos de condición colapsables */}
-              <div className="mt-4 space-y-3">
-                <textarea
+              <div className="mt-4">
+                <Textarea
+                  label="Estado del vehículo"
+                  placeholder="Sin novedades a la salida..."
+                  variant="flat"
                   value={vehicleCondition}
-                  onChange={(event) => setVehicleCondition(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
-                  rows={2}
-                  placeholder="Estado del vehiculo a la salida (opcional)"
+                  onValueChange={setVehicleCondition}
                 />
               </div>
             </>
@@ -558,107 +741,227 @@ export default function SalidaCobroPage() {
         <div className="surface rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Acciones</h2>
           <p className="mt-2 text-sm text-slate-600">
-            {active 
-              ? "Presione 1 para efectivo, 2 para tarjeta, o use los botones." 
+            {active
+              ? "Seleccione el medio real de pago o use mixto para pago dividido."
               : "Busque una sesion activa para habilitar cobros."}
           </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Salida rápida: F2 abre esta pantalla; Ctrl+Enter ejecuta la búsqueda; con sesión activa use 1 (efectivo) o 2 (tarjeta débito).
+          </p>
 
-          {/* Botones de cobro grandes */}
-          <div className="mt-4 space-y-3">
-            <button
-              type="button"
-              data-testid="payment-cash"
-              disabled={!active || searching || processing}
-              onClick={() => processExit("CASH")}
-              className={`
-                w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
-                flex items-center gap-3
-                ${active && !processing
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30" 
-                  : "bg-slate-200 text-slate-400 cursor-not-allowed"}
-              `}
+          <div className="mt-4">
+            <Select
+              label="Medio de pago"
+              variant="flat"
+              selectedKeys={[selectedPaymentMethod]}
+              onSelectionChange={(keys) => {
+                const next = Array.from(keys)[0] as PaymentMethodCode | undefined;
+                if (next) setSelectedPaymentMethod(next);
+              }}
+              isDisabled={!active || searching || processing}
             >
-              <div className={`
-                w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
-                ${active && !processing ? "bg-white/20" : "bg-slate-300"}
-              `}>
-                1
-              </div>
-              <div className="flex-1">
-                <div className="text-lg">Efectivo</div>
-                <div className="text-xs opacity-80 font-normal">Tecla 1</div>
-              </div>
-              {processing && (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              )}
-            </button>
-
-            <button
-              type="button"
-              data-testid="payment-card"
-              disabled={!active || searching || processing}
-              onClick={() => processExit("CARD")}
-              className={`
-                w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
-                flex items-center gap-3
-                ${active && !processing
-                  ? "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30" 
-                  : "bg-slate-200 text-slate-400 cursor-not-allowed"}
-              `}
-            >
-              <div className={`
-                w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
-                ${active && !processing ? "bg-white/20" : "bg-slate-300"}
-              `}>
-                2
-              </div>
-              <div className="flex-1">
-                <div className="text-lg">Tarjeta</div>
-                <div className="text-xs opacity-80 font-normal">Tecla 2</div>
-              </div>
-            </button>
+              {PAYMENT_METHODS.map((method) => (
+                <SelectItem key={method.code}>{method.label}</SelectItem>
+              ))}
+            </Select>
           </div>
 
+          <div className="mt-4 grid grid-cols-1 gap-2">
+            {PAYMENT_METHODS.map((method, index) => (
+              <Button
+                key={method.code}
+                className={`min-h-14 justify-start text-left font-bold ${
+                  active && !processing
+                    ? `${method.tone} text-white shadow-md`
+                    : "bg-slate-200 text-slate-400"
+                } ${selectedPaymentMethod === method.code ? "ring-2 ring-offset-2 ring-slate-900" : ""}`}
+                isDisabled={!active || searching || processing}
+                onPress={() => setSelectedPaymentMethod(method.code)}
+              >
+                <div className={`w-8 h-8 rounded-lg flex shrink-0 items-center justify-center text-sm ${active && !processing ? "bg-white/20" : "bg-slate-300"}`}>
+                  {index < 9 ? index + 1 : "•"}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm sm:text-base leading-tight">{method.label}</div>
+                  <div className="text-[11px] opacity-85 font-normal leading-tight">{method.hint}</div>
+                </div>
+              </Button>
+            ))}
+          </div>
+
+          {active && selectedPaymentMethod === "CASH" ? (
+            <div className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50 p-3 space-y-3">
+              <Input
+                label="Recibido en efectivo"
+                variant="flat"
+                type="number"
+                value={cashReceived}
+                onValueChange={setCashReceived}
+                placeholder={String(totalDue)}
+              />
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="rounded-lg bg-white p-3 border border-emerald-100">
+                  <p className="text-xs uppercase text-slate-500">Cambio</p>
+                  <p className="text-lg font-bold text-emerald-700">${changeDue.toLocaleString("es-CO")}</p>
+                </div>
+                <div className="rounded-lg bg-white p-3 border border-emerald-100">
+                  <p className="text-xs uppercase text-slate-500">Vuelto</p>
+                  <p className="text-lg font-bold text-emerald-700">${changeDue.toLocaleString("es-CO")}</p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {active && isSplitPayment ? (
+            <div className="mt-5 rounded-xl border border-teal-100 bg-teal-50 p-3 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">Pago dividido</p>
+                  <p className="text-xs text-slate-600">
+                    Suma: ${splitTotal.toLocaleString("es-CO")} / ${totalDue.toLocaleString("es-CO")}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  onPress={() =>
+                    setSplitPayments((rows) => [
+                      ...rows,
+                      { id: `split-${Date.now()}`, method: "TRANSFER", amount: "" }
+                    ])
+                  }
+                  isDisabled={processing}
+                >
+                  Agregar
+                </Button>
+              </div>
+
+              {splitPayments.map((row) => (
+                <div key={row.id} className="grid grid-cols-[1fr_120px_auto] gap-2 items-end">
+                  <Select
+                    label="Medio"
+                    size="sm"
+                    variant="flat"
+                    selectedKeys={[row.method]}
+                    onSelectionChange={(keys) => {
+                      const next = Array.from(keys)[0] as SplitPaymentRow["method"] | undefined;
+                      if (!next) return;
+                      setSplitPayments((rows) =>
+                        rows.map((item) => (item.id === row.id ? { ...item, method: next } : item))
+                      );
+                    }}
+                  >
+                    {SPLIT_METHODS.map((method) => (
+                      <SelectItem key={method.code}>{method.label}</SelectItem>
+                    ))}
+                  </Select>
+                  <Input
+                    label="Valor"
+                    size="sm"
+                    variant="flat"
+                    type="number"
+                    value={row.amount}
+                    onValueChange={(value) =>
+                      setSplitPayments((rows) =>
+                        rows.map((item) => (item.id === row.id ? { ...item, amount: value } : item))
+                      )
+                    }
+                  />
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="danger"
+                    isDisabled={splitPayments.length <= 2}
+                    onPress={() => setSplitPayments((rows) => rows.filter((item) => item.id !== row.id))}
+                  >
+                    Quitar
+                  </Button>
+                </div>
+              ))}
+
+              <div className={`rounded-lg p-3 text-sm font-semibold ${
+                Math.abs(splitTotal - totalDue) <= 0.009
+                  ? "bg-white text-emerald-700 border border-emerald-100"
+                  : "bg-white text-amber-700 border border-amber-100"
+              }`}>
+                {Math.abs(splitTotal - totalDue) <= 0.009
+                  ? "Pago dividido completo"
+                  : `Falta por distribuir: $${splitRemaining.toLocaleString("es-CO")}`}
+              </div>
+              {splitCashReceived > totalDue ? (
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="rounded-lg bg-white p-3 border border-teal-100">
+                    <p className="text-xs uppercase text-slate-500">Cambio</p>
+                    <p className="text-lg font-bold text-emerald-700">${changeDue.toLocaleString("es-CO")}</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-3 border border-teal-100">
+                    <p className="text-xs uppercase text-slate-500">Vuelto</p>
+                    <p className="text-lg font-bold text-emerald-700">${changeDue.toLocaleString("es-CO")}</p>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <Button
+            className="mt-5 h-14 w-full font-bold bg-slate-900 text-white"
+            isDisabled={!active || searching || processing}
+            isLoading={processing}
+            onPress={() => processExit()}
+          >
+            Registrar pago y salida
+          </Button>
+
           {/* Calculadora de cambio - Solo visible cuando hay monto */}
-          {active && (
+          {active && selectedPaymentMethod === "CASH" && (
             <div className="mt-6">
               <ChangeCalculator 
-                totalAmount={Number(active.total ?? active.receipt.totalAmount ?? 0)} 
+                totalAmount={totalDue} 
               />
             </div>
           )}
 
           {/* Acciones secundarias */}
-          <div className="mt-6 pt-4 border-t border-slate-200 space-y-3">
-            <input
-              value={reprintReason}
-              onChange={(event) => setReprintReason(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Motivo reimpresion"
-            />
-            <Button
-              type="button"
-              disabled={!active || searching || processing}
-              onClick={reprintTicket}
-              label="Reimprimir ticket"
-              tone="ghost"
-              data-testid="reprint-ticket"
-            />
+          <div className="mt-8 pt-6 border-t border-slate-200 space-y-6">
+            <div className="space-y-3">
+              <Input
+                label="Motivo reimpresión"
+                variant="flat"
+                size="sm"
+                value={reprintReason}
+                onValueChange={setReprintReason}
+              />
+              <Button
+                fullWidth
+                variant="flat"
+                color="primary"
+                className="font-semibold"
+                isDisabled={!active || searching || processing}
+                onPress={reprintTicket}
+              >
+                Reimprimir ticket
+              </Button>
+            </div>
             
-            <input
-              value={lostReason}
-              onChange={(event) => setLostReason(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Motivo ticket perdido"
-            />
-            <Button
-              type="button"
-              disabled={!active || searching || processing}
-              onClick={lostTicket}
-              label="Procesar ticket perdido"
-              tone="ghost"
-              data-testid="lost-ticket"
-            />
+            <div className="space-y-3">
+              <Input
+                label="Motivo ticket perdido"
+                variant="flat"
+                size="sm"
+                value={lostReason}
+                onValueChange={setLostReason}
+              />
+              <Button
+                fullWidth
+                variant="flat"
+                color="primary"
+                className="font-semibold"
+                isDisabled={!active || searching || processing}
+                onPress={lostTicket}
+              >
+                Procesar ticket perdido
+              </Button>
+            </div>
           </div>
         </div>
       </div>
