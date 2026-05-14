@@ -43,17 +43,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: isWindows ? undefined : "standalone",
+  output: "export",
   transpilePackages: ["@parkflow/types", "@parkflow/print-core", "@heroui/*"],
-  // SECURITY: Add security headers
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: securityHeaders,
-      },
-    ];
-  },
+  // SECURITY: headers are not supported in export mode, 
+  // they should be handled by the server or Tauri CSP if needed.
 };
 
 export default nextConfig;
