@@ -1,7 +1,7 @@
 package com.parkflow.modules.settings.service;
 
 import com.parkflow.modules.auth.entity.AuthAuditAction;
-import com.parkflow.modules.auth.service.AuthAuditService;
+import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.auth.security.AuthPrincipal;

@@ -6,19 +6,23 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.parkflow.modules.parking.operation.application.service.RegisterEntryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.cash.service.CashService;
+import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
 import com.parkflow.modules.configuration.repository.AgreementRepository;
 import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
 import com.parkflow.modules.configuration.repository.OperationalParameterRepository;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.configuration.repository.PrepaidBalanceRepository;
-import com.parkflow.modules.configuration.service.PrepaidService;
+import com.parkflow.modules.auth.security.AuthPrincipal;
+import com.parkflow.modules.auth.security.TenantContext;
+import com.parkflow.modules.configuration.application.port.in.PrepaidUseCase;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.IdempotentOperationType;
 import com.parkflow.modules.parking.operation.domain.OperationIdempotency;
@@ -48,6 +52,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,6 +62,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -75,43 +83,47 @@ class OperationServiceInventoryTest {
   @Mock private OperationAuditService auditService;
   @Mock private OperationPrintService operationPrintService;
   @Mock private PricingCalculator pricingCalculator;
-  @Mock private CashService cashService;
+  @Mock private CashMovementUseCase cashMovementUseCase;
   @Mock private MeterRegistry meterRegistry;
   @Mock private MonthlyContractRepository monthlyContractRepository;
   @Mock private PrepaidBalanceRepository prepaidBalanceRepository;
   @Mock private AgreementRepository agreementRepository;
-  @Mock private PrepaidService prepaidService;
+  @Mock private PrepaidUseCase prepaidUseCase;
   @Mock private Counter counter;
   @Mock private com.parkflow.modules.audit.service.AuditService globalAuditService;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
+  private RegisterEntryService registerEntryService;
   private OperationService service;
 
   @BeforeEach
   void setUp() {
+    registerEntryService = new RegisterEntryService(
+        appUserRepository, vehicleRepository, rateRepository, parkingSiteRepository,
+        parkingSessionRepository, ticketCounterRepository, vehicleConditionReportRepository,
+        operationIdempotencyRepository, auditService, operationPrintService,
+        new com.parkflow.modules.parking.operation.validation.PlateValidator(),
+        monthlyContractRepository, objectMapper, meterRegistry, globalAuditService
+    );
+
     service =
         new OperationService(
             appUserRepository,
-            vehicleRepository,
             rateRepository,
             parkingSiteRepository,
             operationalParameterRepository,
             parkingSessionRepository,
             paymentRepository,
-            ticketCounterRepository,
-            vehicleConditionReportRepository,
             operationIdempotencyRepository,
             auditService,
             operationPrintService,
-            cashService,
+            cashMovementUseCase,
             pricingCalculator,
-            new com.parkflow.modules.parking.operation.validation.PlateValidator(),
             monthlyContractRepository,
             prepaidBalanceRepository,
             agreementRepository,
-            prepaidService,
-            objectMapper,
+            prepaidUseCase,
             meterRegistry,
             globalAuditService);
     lenient().when(operationalParameterRepository.findBySite_Id(any())).thenReturn(Optional.empty());
@@ -119,6 +131,24 @@ class OperationServiceInventoryTest {
     lenient().when(pricingCalculator.calculate(any(), anyLong(), anyBoolean()))
         .thenReturn(
             new PricingCalculator.PriceBreakdown(1, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.ZERO));
+    lenient().when(rateRepository.findFirstApplicableRate(any(), any(), any())).thenReturn(Optional.of(rate()));
+
+    UUID companyId = UUID.randomUUID();
+    AuthPrincipal principal = new AuthPrincipal(
+        UUID.randomUUID(),
+        companyId,
+        "test@test.com",
+        UserRole.ADMIN.name(),
+        java.util.List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+    SecurityContextHolder.getContext().setAuthentication(
+        new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));
+    TenantContext.setTenantId(companyId);
+  }
+
+  @AfterEach
+  void tearDown() {
+    SecurityContextHolder.clearContext();
+    TenantContext.clear();
   }
 
   @Test
@@ -146,16 +176,16 @@ class OperationServiceInventoryTest {
             null);
 
     ParkingSession existing = activeSession("ABC123");
-    when(parkingSessionRepository.findActiveByPlateForUpdate(SessionStatus.ACTIVE, "ABC123"))
+    when(parkingSessionRepository.findActiveByPlateForUpdate(eq(SessionStatus.ACTIVE), eq("ABC123"), any()))
         .thenReturn(Optional.of(existing));
 
-    assertThatThrownBy(() -> service.registerEntry(request))
+    assertThatThrownBy(() -> registerEntryService.execute(request))
         .isInstanceOf(OperationException.class)
         .satisfies(
             ex -> {
               OperationException op = (OperationException) ex;
               assertThat(op.getStatus()).isEqualTo(HttpStatus.CONFLICT);
-              assertThat(op.getMessage()).contains("sesion activa");
+              assertThat(op.getMessage()).contains("sesión activa");
             });
 
     verify(parkingSessionRepository, never()).save(any());
@@ -198,7 +228,7 @@ class OperationServiceInventoryTest {
             null,
             null);
 
-    OperationResultResponse result = service.registerEntry(request);
+    OperationResultResponse result = registerEntryService.execute(request);
 
     assertThat(result.message()).contains("idempotente");
     assertThat(result.sessionId()).isEqualTo(sessionId.toString());
@@ -236,7 +266,7 @@ class OperationServiceInventoryTest {
             null,
             null);
 
-    assertThatThrownBy(() -> service.registerEntry(request))
+    assertThatThrownBy(() -> registerEntryService.execute(request))
         .isInstanceOf(OperationException.class)
         .satisfies(
             ex ->

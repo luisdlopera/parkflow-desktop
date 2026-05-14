@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import com.parkflow.modules.auth.service.AuthAuditService;
+import com.parkflow.modules.auth.application.service.AuthAuditService;
+import com.parkflow.modules.cash.application.service.CashConfigurationManagementService;
+import com.parkflow.modules.cash.application.service.CashMovementManagementService;
+import com.parkflow.modules.cash.application.service.CashSessionManagementService;
 import com.parkflow.modules.cash.domain.*;
 import com.parkflow.modules.cash.dto.*;
 import com.parkflow.modules.cash.repository.*;
@@ -13,7 +16,6 @@ import com.parkflow.modules.cash.service.CashClosingOutboundNotifier;
 import com.parkflow.modules.cash.service.CashDomainAuditService;
 import com.parkflow.modules.cash.service.CashPolicyResolver;
 import com.parkflow.modules.cash.service.CashSequentialSupportService;
-import com.parkflow.modules.cash.service.CashService;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
@@ -59,31 +61,37 @@ class CashServiceTest {
   @Mock private CashClosingOutboundNotifier cashClosingOutboundNotifier;
   @Mock private com.parkflow.modules.audit.service.AuditService globalAuditService;
 
-  private CashService service;
+  private CashSessionManagementService sessionService;
+  private CashMovementManagementService movementService;
+  private CashConfigurationManagementService configService;
 
   @BeforeEach
   void setUp() {
-    service =
-        new CashService(
-            cashRegisterRepository,
-            cashSessionRepository,
-            cashMovementRepository,
-            cashClosingReportRepository,
-            cashAuditLogRepository,
-            appUserRepository,
-            parkingSessionRepository,
-            cashDomainAuditService,
-            authAuditService,
-            cashPolicyResolver,
-            parkingParametersService,
-            cashSequentialSupportService,
-            cashClosingOutboundNotifier,
-            globalAuditService);
+    sessionService = new CashSessionManagementService(
+        cashRegisterRepository, cashSessionRepository, cashMovementRepository,
+        cashClosingReportRepository, cashAuditLogRepository, appUserRepository,
+        cashDomainAuditService, authAuditService, parkingParametersService,
+        cashSequentialSupportService, cashClosingOutboundNotifier, globalAuditService
+    );
+    
+    movementService = new CashMovementManagementService(
+        cashMovementRepository, cashSessionRepository, cashRegisterRepository,
+        appUserRepository, parkingSessionRepository, cashDomainAuditService,
+        authAuditService, cashPolicyResolver
+    );
+    
+    configService = new CashConfigurationManagementService(
+        cashRegisterRepository, cashSessionRepository, appUserRepository,
+        cashPolicyResolver, parkingParametersService, sessionService,
+        authAuditService, cashDomainAuditService
+    );
+
     lenient().when(cashPolicyResolver.requireOpenForPayment(any())).thenReturn(true);
     UUID actorId = UUID.randomUUID();
     AuthPrincipal principal =
         new AuthPrincipal(
             actorId,
+            UUID.randomUUID(),
             "cajero@test.com",
             UserRole.CAJERO.name(),
             java.util.List.of(new SimpleGrantedAuthority("cierres_caja:abrir")));
@@ -126,7 +134,7 @@ class CashServiceTest {
     OpenCashRequest req =
         new OpenCashRequest("default", "T1", null, new BigDecimal("50.00"), oid, null, null);
 
-    assertThatThrownBy(() -> service.open(req))
+    assertThatThrownBy(() -> sessionService.open(req))
         .isInstanceOf(OperationException.class)
         .satisfies(
             ex -> assertThat(((OperationException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT));
@@ -139,7 +147,7 @@ class CashServiceTest {
     session.setCountedAt(null);
     when(cashSessionRepository.findById(sid)).thenReturn(Optional.of(session));
 
-    assertThatThrownBy(() -> service.close(sid, new CashCloseRequest(null, null, null)))
+    assertThatThrownBy(() -> sessionService.close(sid, new CashCloseRequest(null, null, null)))
         .isInstanceOf(OperationException.class)
         .satisfies(
             ex -> assertThat(((OperationException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
@@ -151,7 +159,7 @@ class CashServiceTest {
     ParkingSession ps = new ParkingSession();
     ps.setSite("Sede");
     ps.setTerminal("T1");
-    service.assertCashOpenForParkingPayment(ps);
+    movementService.assertCashOpenForParkingPayment(ps);
     verify(cashRegisterRepository, never()).findBySiteAndTerminal(any(), any());
   }
 
@@ -160,7 +168,7 @@ class CashServiceTest {
     CashSession s = baseSession(UUID.randomUUID(), CashSessionStatus.CLOSED);
     when(cashSessionRepository.findAllByOrderByOpenedAtDesc(any()))
         .thenReturn(new PageImpl<>(java.util.List.of(s), PageRequest.of(0, 20), 1));
-    Page<CashSessionResponse> page = service.listSessions(PageRequest.of(0, 20));
+    Page<CashSessionResponse> page = sessionService.listSessions(PageRequest.of(0, 20));
     assertThat(page.getContent()).hasSize(1);
   }
 
