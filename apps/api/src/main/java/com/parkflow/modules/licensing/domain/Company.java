@@ -173,13 +173,6 @@ public class Company {
   private Boolean onboardingCompleted = false;
 
   /**
-   * Perfil operacional y de UI de la empresa.
-   */
-  @Enumerated(EnumType.STRING)
-  @Column(name = "operational_profile", nullable = false, length = 30)
-  private OperationalProfile operationalProfile = OperationalProfile.MIXED;
-
-  /**
    * Observaciones internas de configuración.
    */
   @Column(columnDefinition = "TEXT")
