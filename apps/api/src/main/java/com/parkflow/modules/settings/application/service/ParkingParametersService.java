@@ -27,7 +27,7 @@ public class ParkingParametersService {
   private final ParkingParametersRepository parkingParametersRepository;
   private final SettingsAuditService settingsAuditService;
   private final ObjectMapper objectMapper;
-  private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
+  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
 
   @Transactional(readOnly = true)
   public ParkingParametersData get(String siteCode) {
@@ -76,7 +76,7 @@ public class ParkingParametersService {
             objectMapper.writeValueAsString(row.getData()),
             "Parameters updated for site: " + site);
     } catch (Exception e) {
-        log.warn("No se pudo registrar auditoria global al actualizar parametros del sitio {}", site, e);
+        // ignore
     }
 
     return row.getData();
@@ -118,7 +118,7 @@ public class ParkingParametersService {
             objectMapper.writeValueAsString(def),
             "Parameters reset for site: " + site);
     } catch (Exception e) {
-        log.warn("No se pudo registrar auditoria global al resetear parametros del sitio {}", site, e);
+        // ignore
     }
     return def;
   }

@@ -31,16 +31,13 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
   private String plate;
 
   @Column(nullable = false, length = 2)
-  @Builder.Default
   private String countryCode = "CO";
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
-  @Builder.Default
   private EntryMode entryMode = EntryMode.VISITOR;
 
   @Column(nullable = false)
-  @Builder.Default
   private boolean noPlate = false;
 
   @Column(length = 200)
@@ -97,18 +94,15 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
   @Column(precision = 10, scale = 2)
   private BigDecimal totalAmount;
 
-  @Column(precision = 10, scale = 2)
-  private BigDecimal taxAmount;
+  @Column(length = 50)
+  private String agreementCode;
 
-  @Column(precision = 10, scale = 2)
-  private BigDecimal discountAmount;
+  @Column(name = "applied_prepaid_minutes")
+  private Integer appliedPrepaidMinutes = 0;
 
-  @Column(precision = 10, scale = 2)
-  private BigDecimal netAmount;
+  @Column(name = "is_monthly_session")
+  private boolean monthlySession = false;
 
-  private String paymentMethod;
-
-  @Column(name = "site_code")
   private String site;
 
   private String lane;

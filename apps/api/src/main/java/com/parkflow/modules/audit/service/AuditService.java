@@ -1,12 +1,9 @@
 package com.parkflow.modules.audit.service;
 
-import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.audit.domain.AuditLog;
-import com.parkflow.modules.audit.domain.repository.AuditLogPort;
+import com.parkflow.modules.audit.repository.AuditLogRepository;
 import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.auth.security.AuthPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -21,9 +18,9 @@ import java.time.OffsetDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class AuditService implements AuditPort {
+public class AuditService {
 
-    private final AuditLogPort auditLogRepository;
+    private final AuditLogRepository auditLogRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(AuditAction action, AppUser user, String previousPayload, String newPayload, String metadata) {
@@ -40,17 +37,9 @@ public class AuditService implements AuditPort {
             if (auth != null && auth.getPrincipal() instanceof AppUser currentUser) {
                 log.setUser(currentUser);
                 log.setUsername(currentUser.getEmail());
-            } else if (auth != null && auth.getPrincipal() instanceof AuthPrincipal principal) {
-                log.setUsername(principal.email());
             } else {
                 log.setUsername("SYSTEM");
             }
-        }
-
-        if (TenantContext.getTenantId() != null) {
-            log.setCompanyId(TenantContext.getTenantId());
-        } else if (user != null && user.getCompanyId() != null) {
-            log.setCompanyId(user.getCompanyId());
         }
 
         HttpServletRequest request = getCurrentRequest();

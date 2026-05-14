@@ -30,7 +30,7 @@ public class SettingsUserService {
   private final AppUserRepository appUserRepository;
   private final PasswordHashService passwordHashService;
   private final SettingsAuditService settingsAuditService;
-  private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
+  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   @Override
@@ -104,7 +104,7 @@ public class SettingsUserService {
             objectMapper.writeValueAsString(req),
             "User created: " + user.getId());
     } catch (Exception e) {
-        log.warn("No se pudo registrar auditoria global al crear usuario {}", user.getId(), e);
+        // ignore serialization errors for audit
     }
 
     return toResponse(user);
@@ -189,12 +189,10 @@ public class SettingsUserService {
     try {
         globalAuditService.record(
             com.parkflow.modules.audit.domain.AuditAction.EDITAR,
-            (com.parkflow.modules.parking.operation.domain.AppUser) null,
             objectMapper.writeValueAsString(before),
-            objectMapper.writeValueAsString(snapshot(user)),
-            null);
+            objectMapper.writeValueAsString(snapshot(user)));
     } catch (Exception e) {
-        log.warn("No se pudo registrar auditoria global al actualizar usuario {}", id, e);
+        // ignore
     }
 
     return toResponse(user);

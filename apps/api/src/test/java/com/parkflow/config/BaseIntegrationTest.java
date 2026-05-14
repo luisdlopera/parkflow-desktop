@@ -1,11 +1,11 @@
 package com.parkflow.config;
 
 import com.parkflow.modules.cash.domain.CashRegister;
-import com.parkflow.modules.cash.domain.repository.CashRegisterPort;
-import com.parkflow.modules.configuration.domain.ParkingSite;
-import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
-import com.parkflow.modules.licensing.domain.Company;
-import com.parkflow.modules.licensing.domain.Company.OperationMode;
+import com.parkflow.modules.cash.repository.CashRegisterRepository;
+import com.parkflow.modules.configuration.entity.ParkingSite;
+import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
+import com.parkflow.modules.licensing.entity.Company;
+import com.parkflow.modules.licensing.entity.Company.OperationMode;
 import com.parkflow.modules.licensing.enums.CompanyStatus;
 import com.parkflow.modules.licensing.enums.PlanType;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;

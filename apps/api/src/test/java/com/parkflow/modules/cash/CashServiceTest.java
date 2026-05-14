@@ -12,17 +12,18 @@ import com.parkflow.modules.cash.application.service.CashSessionManagementServic
 import com.parkflow.modules.cash.domain.*;
 import com.parkflow.modules.cash.domain.exception.CashSessionException;
 import com.parkflow.modules.cash.dto.*;
-import com.parkflow.modules.cash.domain.repository.*;
+import com.parkflow.modules.cash.repository.*;
 import com.parkflow.modules.cash.service.CashClosingOutboundNotifier;
 import com.parkflow.modules.cash.service.CashDomainAuditService;
 import com.parkflow.modules.cash.service.CashPolicyResolver;
 import com.parkflow.modules.cash.service.CashSequentialSupportService;
+import com.parkflow.modules.cash.service.CashService;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
-import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
-import com.parkflow.modules.settings.application.service.ParkingParametersService;
+import com.parkflow.modules.settings.service.ParkingParametersService;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -68,25 +69,22 @@ class CashServiceTest {
 
   @BeforeEach
   void setUp() {
-    sessionService = new CashSessionManagementService(
-        cashRegisterRepository, cashSessionRepository, cashMovementRepository,
-        cashClosingReportRepository, cashAuditLogRepository, appUserRepository,
-        cashDomainAuditService, authAuditService, parkingParametersService,
-        cashSequentialSupportService, cashClosingOutboundNotifier, globalAuditService
-    );
-    
-    movementService = new CashMovementManagementService(
-        cashMovementRepository, cashSessionRepository, cashRegisterRepository,
-        appUserRepository, parkingSessionRepository, cashDomainAuditService,
-        authAuditService, cashPolicyResolver
-    );
-    
-    configService = new CashConfigurationManagementService(
-        cashRegisterRepository, cashSessionRepository, appUserRepository,
-        cashPolicyResolver, parkingParametersService, sessionService,
-        authAuditService, cashDomainAuditService
-    );
-
+    service =
+        new CashService(
+            cashRegisterRepository,
+            cashSessionRepository,
+            cashMovementRepository,
+            cashClosingReportRepository,
+            cashAuditLogRepository,
+            appUserRepository,
+            parkingSessionRepository,
+            cashDomainAuditService,
+            authAuditService,
+            cashPolicyResolver,
+            parkingParametersService,
+            cashSequentialSupportService,
+            cashClosingOutboundNotifier,
+            globalAuditService);
     lenient().when(cashPolicyResolver.requireOpenForPayment(any())).thenReturn(true);
     UUID actorId = UUID.randomUUID();
     AuthPrincipal principal =
@@ -148,7 +146,7 @@ class CashServiceTest {
     session.setCountedAt(null);
     when(cashSessionRepository.findById(sid)).thenReturn(Optional.of(session));
 
-    assertThatThrownBy(() -> sessionService.close(sid, new CashCloseRequest(null, null, null)))
+    assertThatThrownBy(() -> service.close(sid, new CashCloseRequest(null, null, null)))
         .isInstanceOf(OperationException.class)
         .satisfies(
             ex -> assertThat(((CashSessionException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));

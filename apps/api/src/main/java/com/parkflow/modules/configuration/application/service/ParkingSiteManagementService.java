@@ -29,7 +29,8 @@ public class ParkingSiteManagementService implements ParkingSiteUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public SettingsPageResponse<ParkingSiteResponse> list(UUID companyId, String q, Boolean active, Pageable pageable) {
+  public SettingsPageResponse<ParkingSiteResponse> list(
+      UUID companyId, String q, Boolean active, Pageable pageable) {
     Page<ParkingSite> page = parkingSiteRepository.search(companyId, normalizeQuery(q), active, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }

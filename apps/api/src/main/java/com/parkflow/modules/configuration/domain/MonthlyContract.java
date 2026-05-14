@@ -1,5 +1,6 @@
-package com.parkflow.modules.configuration.domain;
+package com.parkflow.modules.configuration.entity;
 
+import com.parkflow.modules.parking.operation.domain.Rate;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -27,9 +28,6 @@ public class MonthlyContract {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
-
-  @Column(name = "company_id")
-  private UUID companyId;
 
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "rate_id", nullable = false)

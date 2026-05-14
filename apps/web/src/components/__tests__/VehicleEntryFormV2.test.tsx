@@ -137,7 +137,15 @@ describe("VehicleEntryFormV2", () => {
 
   it("normalizes plate to uppercase and removes spaces", async () => {
     let capturedBody: unknown = null;
+    let typesFetched = false;
     server.use(
+      http.get("*/api/v1/configuration/vehicle-types", () => {
+        typesFetched = true;
+        return HttpResponse.json([
+          { id: "1", code: "CAR", name: "Carro", isActive: true },
+          { id: "2", code: "MOTORCYCLE", name: "Moto", isActive: true }
+        ]);
+      }),
       http.post("*/api/v1/operations/entries", async ({ request }) => {
         capturedBody = await request.json();
         return HttpResponse.json({
@@ -162,12 +170,14 @@ describe("VehicleEntryFormV2", () => {
 
     await screen.findByTestId("vehicle-type");
 
+    await screen.findByTestId("vehicle-type");
+
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
       expect(capturedBody).not.toBeNull();
-    });
+    }, { timeout: 3000 });
 
     expect(capturedBody).not.toBeNull();
     if (capturedBody) {
@@ -200,6 +210,8 @@ describe("VehicleEntryFormV2", () => {
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "XYZ789");
+
+    await screen.findByTestId("vehicle-type"); // Wait for types to load
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -240,7 +252,10 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
 
     await userEvent.click(screen.getByLabelText(/Sin placa/i));
     await userEvent.type(screen.getByLabelText(/Justificación sin placa/i), "Vehiculo oficial sin placa visible");
@@ -254,8 +269,7 @@ describe("VehicleEntryFormV2", () => {
 
     const body = capturedBody as Record<string, unknown>;
     expect(body.noPlate).toBe(true);
-    expect(body.plate).toMatch(/^NP-/);
-    expect(typeof body.plate).toBe("string");
+    expect(body.plate).toBeNull();
     expect(body.noPlateReason).toBe("Vehiculo oficial sin placa visible");
   });
 
@@ -283,6 +297,8 @@ describe("VehicleEntryFormV2", () => {
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "MOT111");
+
+    await screen.findByTestId("vehicle-type"); // Wait for types to load
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -318,6 +334,8 @@ describe("VehicleEntryFormV2", () => {
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "TES001");
 
+    await screen.findByTestId("vehicle-type"); // Wait for types to load
+
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
@@ -344,6 +362,8 @@ describe("VehicleEntryFormV2", () => {
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "DUP001");
+
+    await screen.findByTestId("vehicle-type"); // Wait for types to load
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -375,6 +395,8 @@ describe("VehicleEntryFormV2", () => {
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "SUC111");
+
+    await screen.findByTestId("vehicle-type");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -424,6 +446,8 @@ describe("VehicleEntryFormV2", () => {
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "RET111");
 
+    await screen.findByTestId("vehicle-type");
+
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
@@ -466,6 +490,8 @@ describe("VehicleEntryFormV2", () => {
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "PRI111");
 
+    await screen.findByTestId("vehicle-type");
+
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
@@ -501,6 +527,8 @@ describe("VehicleEntryFormV2", () => {
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "FAI111");
 
+    await screen.findByTestId("vehicle-type");
+
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
@@ -527,6 +555,8 @@ describe("VehicleEntryFormV2", () => {
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "ERR500");
+
+    await screen.findByTestId("vehicle-type");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);

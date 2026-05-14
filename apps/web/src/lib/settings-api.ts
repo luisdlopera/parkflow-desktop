@@ -372,11 +372,9 @@ export type MasterVehicleTypeRow = {
 };
 
 export async function fetchMasterVehicleTypes(auditReason?: string): Promise<MasterVehicleTypeRow[]> {
-  const headers = (await buildApiHeaders(hdr(auditReason))) as Record<string, string>;
-  headers["X-Parkflow-Auth-Toast-Silent"] = "1";
   return apiFetch<MasterVehicleTypeRow[]>(`${cfgBase()}/vehicle-types`, {
     cache: "no-store",
-    headers
+    headers: await buildApiHeaders(hdr(auditReason))
   });
 }
 

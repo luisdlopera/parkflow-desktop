@@ -1,6 +1,5 @@
 package com.parkflow.modules.parking.operation.controller;
 
-import com.parkflow.modules.parking.operation.application.port.in.*;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.parking.operation.application.port.in.RegisterEntryUseCase;
 import com.parkflow.modules.parking.operation.application.port.in.RegisterExitUseCase;
@@ -9,7 +8,6 @@ import com.parkflow.modules.parking.operation.service.SupervisorService;
 import jakarta.validation.Valid;
 import java.time.ZoneId;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -48,7 +46,7 @@ public class OperationController {
   @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize("hasAuthority('tickets:emitir')")
   public OperationResultResponse registerEntry(@Valid @RequestBody EntryRequest request) {
-    return registerEntryUseCase.execute(request);
+    return operationService.registerEntry(request);
   }
 
   @PostMapping("/exits")
@@ -75,13 +73,19 @@ public class OperationController {
     return voidSessionUseCase.execute(request);
   }
 
+  @PostMapping("/tickets/void")
+  @PreAuthorize("hasAuthority('anulaciones:crear')")
+  public OperationResultResponse voidTicket(@Valid @RequestBody VoidRequest request) {
+    return operationService.voidSession(request);
+  }
+
   @GetMapping("/sessions/active")
   @PreAuthorize("hasAuthority('tickets:emitir') or hasAuthority('cobros:registrar')")
   public OperationResultResponse active(
       @RequestParam(required = false) String ticketNumber,
       @RequestParam(required = false) String plate,
       @RequestParam(required = false) String agreementCode) {
-    return findActiveSessionUseCase.execute(ticketNumber, plate, agreementCode);
+    return operationService.findActive(ticketNumber, plate, agreementCode);
   }
 
   @GetMapping("/tickets/{ticketNumber}")

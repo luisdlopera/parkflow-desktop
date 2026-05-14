@@ -47,7 +47,6 @@ export const operationExitRequestSchema = z
     plate: z.string().min(3).max(20).regex(PLATE_RE, "Placa invalida").optional(),
     operatorUserId: z.string().uuid(),
     paymentMethod: paymentMethodSchema.optional(),
-    cashSessionId: z.string().max(80).optional().nullable(),
     agreementCode: z.string().max(50).optional().nullable(),
     observations: z.string().max(500).optional().nullable(),
     vehicleCondition: z.string().max(200).nullable().optional(),
@@ -73,7 +72,6 @@ export const operationLostTicketRequestSchema = z
     plate: z.string().min(3).max(20).regex(PLATE_RE, "Placa invalida").optional(),
     operatorUserId: z.string().uuid(),
     paymentMethod: paymentMethodSchema.optional(),
-    cashSessionId: z.string().max(80).optional().nullable(),
     reason: z.string().min(1)
   })
   .refine((v) => Boolean(v.ticketNumber?.trim() || v.plate?.trim()), {
