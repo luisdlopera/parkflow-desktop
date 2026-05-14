@@ -132,7 +132,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
   }
 
   return (
-    <div className="bg-slate-50 rounded-2xl p-4 space-y-4 dark:bg-zinc-900">
+    <div className="bg-slate-50 rounded-2xl p-4 space-y-4 dark:bg-gray-800">
       <div className="flex items-center justify-between">
         <h4 className="font-semibold text-slate-800 flex items-center gap-2">
           <svg className="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,13 +152,13 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
 
       {/* Resumen */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-xl p-3 text-center border border-slate-200 dark:bg-zinc-900 dark:border-neutral-800">
+        <div className="bg-white rounded-xl p-3 text-center border border-slate-200 dark:bg-gray-800 dark:border-gray-700">
           <p className="text-xs text-slate-500 uppercase">Total</p>
           <p className="text-lg font-bold text-slate-900">
             ${totalAmount.toLocaleString("es-CO")}
           </p>
         </div>
-        <div className="bg-white rounded-xl p-3 text-center border border-slate-200 dark:bg-zinc-900 dark:border-neutral-800">
+        <div className="bg-white rounded-xl p-3 text-center border border-slate-200 dark:bg-gray-800 dark:border-gray-700">
           <p className="text-xs text-slate-500 uppercase">Recibido</p>
           <p className={`text-lg font-bold ${receivedAmount > 0 ? "text-blue-600" : "text-slate-400"}`}>
             ${receivedAmount.toLocaleString("es-CO")}
@@ -194,7 +194,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
         </button>
           <button
             onClick={reset}
-            className="py-2 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-sm font-medium transition-colors dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-600"
+            className="py-2 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-sm font-medium transition-colors dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
           >
           Limpiar
         </button>
@@ -207,16 +207,19 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
             value={customAmount}
             onChange={(e) => setCustomAmount(e.target.value)}
             placeholder="Monto recibido (ej: 50000)"
-            className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm dark:bg-zinc-900 dark:border-neutral-800 dark:text-neutral-200"
+            className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 applyCustomAmount();
               }
             }}
-          >
-            <ChevronUp className="w-4 h-4" />
-          </Button>
-        </div>
+          />
+        <button
+          onClick={applyCustomAmount}
+          className="py-2 px-4 bg-slate-800 text-white rounded-xl text-sm font-medium hover:bg-slate-700"
+        >
+          Calcular
+        </button>
       </div>
 
       <div className="p-4 space-y-4">
@@ -249,17 +252,17 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
             className={`relative rounded-xl border-2 p-2 text-center transition-all ${
               (counts[denom.value] || 0) > 0
                 ? "bg-brand-50 border-brand-200"
-                : "bg-white border-slate-200 hover:border-slate-300 dark:bg-zinc-900 dark:border-neutral-800 dark:hover:border-neutral-700"
+                : "bg-white border-slate-200 hover:border-slate-300 dark:bg-gray-800 dark:border-gray-700 dark:hover:border-gray-600"
             }`}
           >
               <div className="flex items-center justify-center gap-1 mb-1">
                 <span className="text-lg">{denom.type === "bill" ? "💵" : "🪙"}</span>
-                <span className="text-xs font-semibold text-slate-700 dark:text-neutral-200">{denom.label}</span>
+                <span className="text-xs font-semibold text-slate-700 dark:text-gray-200">{denom.label}</span>
               </div>
             <div className="flex items-center justify-center gap-1">
                 <button
                   onClick={() => decrement(denom.value)}
-                  className="w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-600 font-bold dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-600"
+                  className="w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-600 font-bold dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                 >
                   -
                 </button>
@@ -284,8 +287,8 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
 
       {/* Total desglosado */}
       {receivedAmount > 0 && (
-        <div className="bg-white rounded-xl p-3 border border-slate-200 space-y-2 dark:bg-zinc-900 dark:border-neutral-800">
-          <p className="text-sm font-semibold text-slate-700 dark:text-neutral-200">Desglose:</p>
+        <div className="bg-white rounded-xl p-3 border border-slate-200 space-y-2 dark:bg-gray-800 dark:border-gray-700">
+          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Desglose:</p>
           <div className="flex flex-wrap gap-2">
             {Object.entries(counts)
               .filter(([, count]) => count > 0)

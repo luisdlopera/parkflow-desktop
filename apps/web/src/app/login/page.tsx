@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Checkbox, Input, Button } from "@heroui/react";
-import { currentUser, loadSession, login, saveSession } from "@/lib/auth";
+import { currentUser, loadSession, login } from "@/lib/auth";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
 import { Eye, EyeOff, Lock, Mail, User, Building, Landmark } from "lucide-react";
@@ -92,7 +92,6 @@ export default function LoginPage() {
     try {
       const emailValue = email.trim();
       const passwordValue = password;
-
       if (!emailValue) {
         setError("El correo electrónico es requerido");
         setLoading(false);
@@ -166,18 +165,12 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-lg items-center justify-center px-6 py-10">
-      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-2xl p-8 shadow-2xl border border-default-100 bg-white dark:bg-neutral-950">
+    <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
+      <form onSubmit={onSubmit} className="surface w-full space-y-8 rounded-2xl p-8 shadow-2xl border border-default-100">
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-700/80 mb-2">Parkflow</p>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
-            {isSetupMode ? "Configuración Inicial" : "¡Bienvenido!"}
-          </h1>
-          <p className="text-slate-500 text-sm mt-2">
-            {isSetupMode
-              ? "Crea tu cuenta de administrador y registra tu negocio"
-              : "Ingresa tus credenciales para continuar"}
-          </p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">¡Bienvenido!</h1>
+          <p className="text-slate-500 text-sm mt-2">Ingresa tus credenciales para continuar</p>
         </div>
 
         <FormErrorSummary
@@ -185,25 +178,7 @@ export default function LoginPage() {
           testId={error === "El correo electrónico es requerido" ? "username-error" : "error-message"}
         />
 
-        <div className="space-y-4">
-          {isSetupMode && (
-            <div className="space-y-4 border-b border-default-100 pb-4 mb-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Datos del Administrador</p>
-              
-              <Input
-                name="adminName"
-                type="text"
-                label="Nombre Completo"
-                placeholder="Nombre del Administrador"
-                value={adminName}
-                onValueChange={setAdminName}
-                variant="flat"
-                size="md"
-                startContent={<User size={18} className="text-slate-400" />}
-              />
-            </div>
-          )}
-
+        <div className="space-y-5">
           <Input
             data-testid="username"
             name="email"
@@ -214,111 +189,51 @@ export default function LoginPage() {
             onValueChange={setEmail}
             autoComplete="username"
             variant="flat"
-            size="md"
-            startContent={<Mail size={18} className="text-slate-400" />}
+            size="lg"
+            startContent={<Mail size={20} className="text-slate-400" />}
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              data-testid="password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              label="Contraseña"
-              placeholder="••••••••"
-              value={password}
-              onValueChange={setPassword}
-              autoComplete="current-password"
-              variant="flat"
-              size="md"
-              startContent={<Lock size={18} className="text-slate-400" />}
-              endContent={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              }
-            />
-
-            {isSetupMode && (
-              <Input
-                name="confirmPassword"
-                type={showPassword ? "text" : "password"}
-                label="Confirmar Contraseña"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onValueChange={setConfirmPassword}
-                variant="flat"
-                size="md"
-                startContent={<Lock size={18} className="text-slate-400" />}
-              />
-            )}
-          </div>
-
-          {isSetupMode && (
-            <div className="space-y-4 pt-4 border-t border-default-100">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Datos de la Empresa / Parqueadero</p>
-              
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  name="companyName"
-                  type="text"
-                  label="Nombre del Parqueadero"
-                  placeholder="Mi Parqueadero Local"
-                  value={companyName}
-                  onValueChange={setCompanyName}
-                  variant="flat"
-                  size="md"
-                  startContent={<Building size={18} className="text-slate-400" />}
-                />
-
-                <Input
-                  name="companyNit"
-                  type="text"
-                  label="NIT / Registro Tributario"
-                  placeholder="900123456"
-                  value={companyNit}
-                  onValueChange={setCompanyNit}
-                  variant="flat"
-                  size="md"
-                  startContent={<Landmark size={18} className="text-slate-400" />}
-                />
-              </div>
-
-              <div className="pt-2 text-right">
-                <button
-                  type="button"
-                  onClick={loadDemoData}
-                  className="text-xs font-bold text-amber-700 hover:underline hover:text-amber-800 transition-colors"
-                >
-                  ⚡ Usar Datos Demo (Desarrollo)
-                </button>
-              </div>
-            </div>
-          )}
+          <Input
+            data-testid="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            label="Contraseña"
+            placeholder="••••••••"
+            value={password}
+            onValueChange={setPassword}
+            autoComplete="current-password"
+            variant="flat"
+            size="lg"
+            startContent={<Lock size={20} className="text-slate-400" />}
+            endContent={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            }
+          />
         </div>
 
-        {!isSetupMode && (
-          <div className="flex items-center justify-between">
-            <Checkbox size="sm" className="text-slate-600">Recordarme</Checkbox>
-            <Link href="/forgot-password" className="text-sm font-bold text-amber-700 hover:underline">
-              ¿Olvidaste tu contraseña?
-            </Link>
-          </div>
-        )}
+        <div className="flex items-center justify-between">
+          <Checkbox size="sm" className="text-slate-600">Recordarme</Checkbox>
+          <Link href="/forgot-password" className="text-sm font-bold text-amber-700 hover:underline">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
 
         <Button
           data-testid="login-button"
           type="submit"
-          color={isSetupMode ? "success" : "primary"}
+          color="primary"
           size="lg"
-          className="w-full font-bold shadow-xl text-white"
+          className="w-full font-bold shadow-xl"
           isLoading={loading}
         >
-          {isSetupMode ? "Completar Configuración Inicial" : "Entrar al Sistema"}
+          Entrar al Sistema
         </Button>
         
         <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-2">

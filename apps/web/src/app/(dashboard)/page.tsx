@@ -172,26 +172,11 @@ export default function DashboardPage() {
           variant="flat"
           color="primary"
           size="sm"
-          onPress={() => { load().catch(console.error); }}
+          onPress={() => void load()}
           className="font-semibold"
         >
           Actualizar datos
         </Button>
-      </section>
-
-      <section className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4">
-        <div className="flex items-center gap-2">
-          <PrintStatusMonitor />
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden md:block">
-            <LocalPrintAgentStatus />
-          </div>
-          <div className="hidden sm:flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-xs text-slate-600">Caja 01</span>
-          </div>
-        </div>
       </section>
 
       <section className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
@@ -230,8 +215,8 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex gap-3 mb-6">
-            <Button size="sm" variant="flat" color="primary" onPress={() => { callOperationalAction("retry-sync").catch(console.error); }}>Reintentar Sync</Button>
-            <Button size="sm" variant="flat" color="primary" onPress={() => { callOperationalAction("test-printer").catch(console.error); }}>Probar Impresora</Button>
+            <Button size="sm" variant="flat" color="primary" onPress={() => void callOperationalAction("retry-sync")}>Reintentar Sync</Button>
+            <Button size="sm" variant="flat" color="primary" onPress={() => void callOperationalAction("test-printer")}>Probar Impresora</Button>
           </div>
 
           <DataTable
@@ -243,17 +228,9 @@ export default function DashboardPage() {
       </section>
 
       <section className="space-y-6">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-slate-900">Vehículos en Patio</h2>
-            <Badge label="En vivo" tone="success" />
-          </div>
-          <div className="text-sm font-semibold text-slate-700">
-            Espacios disponibles:{" "}
-            <span className="text-emerald-700">
-              {summary ? `${summary.availableSpaces} / ${summary.totalCapacity}` : "—"}
-            </span>
-          </div>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-slate-900">Vehículos en Patio</h2>
+          <Badge label="En vivo" tone="success" />
         </div>
         {sessionsError ? <p className="text-sm text-amber-800">{sessionsError}</p> : null}
         <DataTable
