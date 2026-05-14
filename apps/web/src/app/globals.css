@@ -1,4 +1,8 @@
 @import "tailwindcss";
+
+/* Class-based dark mode (HeroUI utilities + Tailwind dark: variants) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @plugin "../lib/theme/hero.ts";
 @source "../../node_modules/@heroui/theme/dist/**/*.js";
 
@@ -15,13 +19,39 @@
   --color-moss: #c2410c;
 }
 
-/* Dark mode support */
+/* Dark mode support — neutral / zinc palette (solvy-style: black + zinc surfaces) */
 [data-theme="dark"] {
-  --color-ash: #0f172a;
-  --color-ink: #f8fafc;
-  --color-sand: #1e293b;
-  --color-ember: #fb923c;
-  --color-moss: #fdba74;
+  --color-ash: #000000;
+  --color-ink: #fafafa;
+  --color-sand: #18181b;
+  --color-ember: #f97316;
+  --color-moss: #fb923c;
+}
+
+/* Invert slate scale in dark only — text-slate-900, bg-slate-50, border-slate-*, etc. */
+@layer theme {
+  .dark,
+  [data-theme="dark"] {
+    --color-slate-50: #09090b;
+    --color-slate-100: #18181b;
+    --color-slate-200: #27272a;
+    --color-slate-300: #3f3f46;
+    --color-slate-400: #52525b;
+    --color-slate-500: #71717a;
+    --color-slate-600: #a1a1aa;
+    --color-slate-700: #d4d4d8;
+    --color-slate-800: #e4e4e7;
+    --color-slate-900: #fafafa;
+    --color-slate-950: #ffffff;
+  }
+}
+
+/* bg-white without dark: prefix — dark surfaces only */
+@layer utilities {
+  .dark .bg-white,
+  [data-theme="dark"] .bg-white {
+    background-color: #18181b;
+  }
 }
 
 * {
@@ -38,8 +68,9 @@ body {
 }
 
 [data-theme="dark"] body {
-  background: radial-gradient(1200px 600px at 10% 5%, #1e293b 0%, transparent 60%),
-    radial-gradient(900px 500px at 90% 10%, #334155 0%, transparent 55%),
+  background: linear-gradient(to bottom, transparent, rgb(0, 0, 0)),
+    radial-gradient(1200px 600px at 10% 5%, rgba(39, 39, 42, 0.35) 0%, transparent 60%),
+    radial-gradient(900px 500px at 90% 10%, rgba(63, 63, 70, 0.2) 0%, transparent 55%),
     var(--color-ash);
 }
 
@@ -56,9 +87,9 @@ body {
 }
 
 [data-theme="dark"] .surface {
-  background: rgba(30, 41, 59, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+  background: rgba(39, 39, 42, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
 }
 
 .grid-dots {
@@ -148,7 +179,11 @@ select:focus-visible {
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: rgba(71, 85, 105, 0.5);
+  background: rgba(113, 113, 122, 0.45);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(161, 161, 170, 0.55);
 }
 
 /* Input autofill styling */
@@ -162,8 +197,263 @@ input:-webkit-autofill:focus {
 [data-theme="dark"] input:-webkit-autofill,
 [data-theme="dark"] input:-webkit-autofill:hover,
 [data-theme="dark"] input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px #1e293b inset;
-  -webkit-text-fill-color: #f8fafc;
+  -webkit-box-shadow: 0 0 0px 1000px #18181b inset;
+  -webkit-text-fill-color: #fafafa;
+}
+
+/* ── HeroUI: dark mode only (html.dark / data-theme=dark) ── */
+.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+.dark [data-slot="label"],
+.dark [data-slot="description"],
+.dark [data-slot="error-message"],
+[data-theme="dark"] [data-slot="label"],
+[data-theme="dark"] [data-slot="description"],
+[data-theme="dark"] [data-slot="error-message"] {
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="input-wrapper"],
+[data-theme="dark"] [data-slot="input-wrapper"] {
+  background-color: hsl(var(--heroui-default-100)) !important;
+  border-color: hsl(var(--heroui-default-200)) !important;
+}
+
+.dark [data-slot="input-wrapper"]:hover,
+[data-theme="dark"] [data-slot="input-wrapper"]:hover {
+  background-color: hsl(var(--heroui-default-200)) !important;
+}
+
+.dark [data-slot="inner-wrapper"],
+[data-theme="dark"] [data-slot="inner-wrapper"] {
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="trigger"],
+[data-theme="dark"] [data-slot="trigger"] {
+  background-color: hsl(var(--heroui-default-100)) !important;
+  border-color: hsl(var(--heroui-default-200)) !important;
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="value"],
+.dark [data-slot="placeholder"],
+[data-theme="dark"] [data-slot="value"],
+[data-theme="dark"] [data-slot="placeholder"] {
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="selectorIcon"],
+.dark [data-slot="clear-button"],
+[data-theme="dark"] [data-slot="selectorIcon"],
+[data-theme="dark"] [data-slot="clear-button"] {
+  color: hsl(var(--heroui-default-500)) !important;
+}
+
+.dark [data-slot="popover-content"],
+.dark [data-slot="content"],
+.dark [data-slot="menu"],
+.dark [data-slot="listbox"],
+[data-theme="dark"] [data-slot="popover-content"],
+[data-theme="dark"] [data-slot="content"],
+[data-theme="dark"] [data-slot="menu"],
+[data-theme="dark"] [data-slot="listbox"] {
+  background-color: hsl(var(--heroui-content1)) !important;
+  color: hsl(var(--heroui-foreground)) !important;
+  border-color: hsl(var(--heroui-divider)) !important;
+}
+
+.dark [data-slot="listbox-item"],
+.dark [data-slot="option"],
+.dark [data-slot="menu-item"],
+[data-theme="dark"] [data-slot="listbox-item"],
+[data-theme="dark"] [data-slot="option"],
+[data-theme="dark"] [data-slot="menu-item"] {
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="listbox-item"][data-hover="true"],
+.dark [data-slot="listbox-item"][data-focus="true"],
+.dark [data-slot="option"][data-hover="true"],
+.dark [data-slot="option"][data-focus="true"],
+.dark [data-slot="menu-item"][data-hover="true"],
+.dark [data-slot="menu-item"][data-focus="true"],
+[data-theme="dark"] [data-slot="listbox-item"][data-hover="true"],
+[data-theme="dark"] [data-slot="listbox-item"][data-focus="true"],
+[data-theme="dark"] [data-slot="option"][data-hover="true"],
+[data-theme="dark"] [data-slot="option"][data-focus="true"],
+[data-theme="dark"] [data-slot="menu-item"][data-hover="true"],
+[data-theme="dark"] [data-slot="menu-item"][data-focus="true"] {
+  background-color: hsl(var(--heroui-default-100)) !important;
+}
+
+.dark [data-slot="backdrop"],
+[data-theme="dark"] [data-slot="backdrop"] {
+  background-color: hsl(var(--heroui-overlay) / 0.75) !important;
+}
+
+.dark [data-slot="wrapper"] > [data-slot="base"],
+.dark [role="dialog"][data-slot="base"],
+[data-theme="dark"] [data-slot="wrapper"] > [data-slot="base"],
+[data-theme="dark"] [role="dialog"][data-slot="base"] {
+  background-color: hsl(var(--heroui-content1)) !important;
+  color: hsl(var(--heroui-foreground)) !important;
+  border-color: hsl(var(--heroui-divider)) !important;
+}
+
+.dark [data-slot="header"],
+.dark [data-slot="body"],
+.dark [data-slot="footer"],
+[data-theme="dark"] [data-slot="header"],
+[data-theme="dark"] [data-slot="body"],
+[data-theme="dark"] [data-slot="footer"] {
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="tabList"],
+[data-theme="dark"] [data-slot="tabList"] {
+  background-color: hsl(var(--heroui-default-100)) !important;
+}
+
+.dark [data-slot="tab"][data-selected="true"],
+[data-theme="dark"] [data-slot="tab"][data-selected="true"] {
+  background-color: hsl(var(--heroui-content1)) !important;
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="tab"]:not([data-selected="true"]),
+[data-theme="dark"] [data-slot="tab"]:not([data-selected="true"]) {
+  color: hsl(var(--heroui-default-500)) !important;
+}
+
+.dark [data-slot="panel"],
+[data-theme="dark"] [data-slot="panel"] {
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="table"],
+.dark table[data-slot="table"],
+[data-theme="dark"] [data-slot="table"],
+[data-theme="dark"] table[data-slot="table"] {
+  background-color: hsl(var(--heroui-content1)) !important;
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="thead"],
+[data-theme="dark"] [data-slot="thead"] {
+  background-color: hsl(var(--heroui-default-100)) !important;
+}
+
+.dark [data-slot="th"],
+.dark [data-slot="td"],
+[data-theme="dark"] [data-slot="th"],
+[data-theme="dark"] [data-slot="td"] {
+  color: hsl(var(--heroui-foreground)) !important;
+  border-color: hsl(var(--heroui-divider)) !important;
+}
+
+.dark [data-slot="tr"][data-hover="true"],
+[data-theme="dark"] [data-slot="tr"][data-hover="true"] {
+  background-color: hsl(var(--heroui-default-100)) !important;
+}
+
+.dark [data-slot="divider"],
+[data-theme="dark"] [data-slot="divider"] {
+  background-color: hsl(var(--heroui-divider)) !important;
+}
+
+.dark [data-slot="helper-wrapper"] [data-slot="description"],
+[data-theme="dark"] [data-slot="helper-wrapper"] [data-slot="description"] {
+  color: hsl(var(--heroui-default-500)) !important;
+}
+
+.dark label[data-slot="base"],
+[data-theme="dark"] label[data-slot="base"] {
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="wrapper"] [data-slot="label"],
+[data-theme="dark"] [data-slot="wrapper"] [data-slot="label"] {
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="base"][data-slot="base"].bg-content1,
+.dark [data-slot="base"].shadow-medium,
+[data-theme="dark"] [data-slot="base"].bg-content1,
+[data-theme="dark"] [data-slot="base"].shadow-medium {
+  background-color: hsl(var(--heroui-content1)) !important;
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="cursor"],
+[data-theme="dark"] [data-slot="cursor"] {
+  background-color: hsl(var(--heroui-primary)) !important;
+}
+
+.dark [data-slot="segment"],
+[data-theme="dark"] [data-slot="segment"] {
+  background-color: hsl(var(--heroui-default-200)) !important;
+}
+
+.dark [data-slot="startContent"],
+.dark [data-slot="endContent"],
+[data-theme="dark"] [data-slot="startContent"],
+[data-theme="dark"] [data-slot="endContent"] {
+  color: hsl(var(--heroui-default-500)) !important;
+}
+
+/* Admin panel — indigo accents (dark only) */
+.dark .bg-indigo-50,
+[data-theme="dark"] .bg-indigo-50 {
+  background-color: rgba(49, 46, 129, 0.28) !important;
+}
+
+.dark .text-indigo-600,
+[data-theme="dark"] .text-indigo-600 {
+  color: #a5b4fc !important;
+}
+
+/* HeroUI Card — ensure dark surfaces inside admin/operational shells */
+.dark [data-slot="base"].shadow-small,
+.dark [data-slot="base"].shadow-medium,
+.dark [data-slot="base"].shadow-large,
+[data-theme="dark"] [data-slot="base"].shadow-small,
+[data-theme="dark"] [data-slot="base"].shadow-medium,
+[data-theme="dark"] [data-slot="base"].shadow-large {
+  background-color: hsl(var(--heroui-content1)) !important;
+  color: hsl(var(--heroui-foreground)) !important;
+}
+
+.dark [data-slot="skeleton"],
+[data-theme="dark"] [data-slot="skeleton"] {
+  background-color: hsl(var(--heroui-default-200)) !important;
+}
+
+/* Amber utility cards (config, tickets) — dark only */
+.dark .bg-amber-50,
+.dark .bg-amber-50\/50,
+.dark .bg-amber-50\/80,
+[data-theme="dark"] .bg-amber-50,
+[data-theme="dark"] .bg-amber-50\/50,
+[data-theme="dark"] .bg-amber-50\/80 {
+  background-color: rgba(120, 53, 15, 0.28) !important;
+}
+
+.dark .border-amber-200,
+.dark .border-amber-300,
+[data-theme="dark"] .border-amber-200,
+[data-theme="dark"] .border-amber-300 {
+  border-color: rgba(251, 146, 60, 0.35) !important;
+}
+
+.dark .text-amber-700,
+.dark .text-amber-700\/80,
+[data-theme="dark"] .text-amber-700,
+[data-theme="dark"] .text-amber-700\/80 {
+  color: #fdba74 !important;
 }
 
 /* HeroUI Input - Remove orange ring/border */
@@ -210,10 +500,12 @@ input:-webkit-autofill:focus {
   color: rgba(22, 23, 23, 0.5) !important;
 }
 
+.dark [data-slot="input"],
 [data-theme="dark"] [data-slot="input"] {
-  color: var(--color-ink) !important;
+  color: hsl(var(--heroui-foreground)) !important;
 }
 
+.dark [data-slot="input"]::placeholder,
 [data-theme="dark"] [data-slot="input"]::placeholder {
-  color: rgba(248, 250, 252, 0.5) !important;
+  color: hsl(var(--heroui-default-500) / 0.75) !important;
 }

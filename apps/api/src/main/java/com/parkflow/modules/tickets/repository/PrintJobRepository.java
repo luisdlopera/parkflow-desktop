@@ -11,23 +11,30 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PrintJobRepository extends JpaRepository<PrintJob, UUID> {
-  Optional<PrintJob> findByIdempotencyKey(String idempotencyKey);
+  Optional<PrintJob> findByIdAndCompanyId(UUID id, UUID companyId);
 
-  List<PrintJob> findBySession_IdOrderByCreatedAtDesc(UUID sessionId);
+  Optional<PrintJob> findByIdempotencyKeyAndCompanyId(String idempotencyKey, UUID companyId);
 
-  List<PrintJob> findBySession_TicketNumberOrderByCreatedAtDesc(String ticketNumber);
+  List<PrintJob> findBySession_IdAndCompanyIdOrderByCreatedAtDesc(UUID sessionId, UUID companyId);
 
-  List<PrintJob> findByStatusOrderByCreatedAtAsc(PrintJobStatus status);
+  List<PrintJob> findBySession_TicketNumberAndCompanyIdOrderByCreatedAtDesc(
+      String ticketNumber, UUID companyId);
 
-  boolean existsBySession_IdAndDocumentTypeAndStatusIn(
-      UUID sessionId, PrintDocumentType documentType, Collection<PrintJobStatus> statuses);
+  List<PrintJob> findByStatusAndCompanyIdOrderByCreatedAtAsc(
+      PrintJobStatus status, UUID companyId);
 
-  long countByStatusInAndCreatedAtAfter(Collection<PrintJobStatus> statuses, OffsetDateTime from);
+  boolean existsBySession_IdAndDocumentTypeAndCompanyIdAndStatusIn(
+      UUID sessionId, PrintDocumentType documentType, UUID companyId, Collection<PrintJobStatus> statuses);
 
-  long countByStatusInAndCreatedAtBetween(
-      Collection<PrintJobStatus> statuses, OffsetDateTime start, OffsetDateTime end);
+  long countByCompanyIdAndStatusInAndCreatedAtAfter(
+      UUID companyId, Collection<PrintJobStatus> statuses, OffsetDateTime from);
 
-  List<PrintJob> findTop10ByStatusInOrderByUpdatedAtDesc(Collection<PrintJobStatus> statuses);
+  long countByCompanyIdAndStatusInAndCreatedAtBetween(
+      UUID companyId, Collection<PrintJobStatus> statuses, OffsetDateTime start, OffsetDateTime end);
 
-  Optional<PrintJob> findTopByStatusOrderByUpdatedAtDesc(PrintJobStatus status);
+  List<PrintJob> findTop10ByCompanyIdAndStatusInOrderByUpdatedAtDesc(
+      UUID companyId, Collection<PrintJobStatus> statuses);
+
+  Optional<PrintJob> findTopByCompanyIdAndStatusOrderByUpdatedAtDesc(
+      UUID companyId, PrintJobStatus status);
 }

@@ -28,6 +28,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`${displayFont.variable} ${bodyFont.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('parkflow-theme');var h=new Date().getHours();var d=t==='dark'||(t!=='light'&&(h>=18||h<6));if(d){document.documentElement.classList.add('dark');document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-ash text-slate-900 antialiased">
         <ThemeProvider>
           <Providers>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useParkingShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
 import { useState, useEffect } from "react";
+import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
 
 const navItems = [
   { label: "Dashboard", href: "/", shortcut: "", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
@@ -40,6 +41,7 @@ function readUiSettings(): UISettings | null {
 export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname();
   useParkingShortcuts();
+  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
 
   const [uiSettings, setUiSettings] = useState<UISettings>({
     showSystemStatus: true,
@@ -51,7 +53,15 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     if (saved) {
       setUiSettings(saved);
     }
+    fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
   }, []);
+
+  const visibleItems = navItems.filter((item) => {
+    if (item.href === "/caja") return shouldShowModule(runtimeConfig, "cash", true);
+    if (item.href === "/configuracion") return true;
+    if (item.href === "/salida-cobro") return true;
+    return true;
+  });
 
   // Escuchar cambios en localStorage
   useEffect(() => {
@@ -68,7 +78,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
   return (
     <aside data-testid="desktop-sidebar" className={`
-      hidden md:flex h-screen border-r border-slate-200/70 bg-white/60 dark:bg-gray-900/60 dark:border-gray-700/70 backdrop-blur
+      hidden md:flex sticky top-0 z-20 h-screen border-r border-slate-200/70 bg-white/60 dark:bg-neutral-950/50 dark:border-neutral-800/70 backdrop-blur
       flex-col transition-all duration-300 ease-in-out
       ${collapsed ? "w-[72px] px-2" : "w-[260px] px-4"}
     `}>
@@ -150,7 +160,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         mt-6 space-y-1 flex-1
         ${collapsed ? "px-1" : ""}
       `}>
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const active = pathname === item.href;
           return (
             <Link
@@ -160,7 +170,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                 flex items-center rounded-xl font-medium transition-all
                 ${active
                   ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
-                  : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
+                  : "text-slate-600 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800/35 hover:text-slate-900 dark:hover:text-white"}
                 ${collapsed 
                   ? "justify-center p-3" 
                   : "justify-between px-3 py-3 text-sm gap-3"}
@@ -178,7 +188,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                   inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded flex-shrink-0
                   ${active 
                     ? "bg-white/20 text-white" 
-                    : "bg-slate-200 text-slate-500 dark:bg-gray-700 dark:text-gray-200"}
+                    : "bg-slate-200 text-slate-500 dark:bg-neutral-800 dark:text-neutral-200"}
                 `}>
                   {item.shortcut}
                 </kbd>
@@ -191,14 +201,14 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       {/* Help tip - condicional según configuración */}
       {!collapsed && uiSettings.showKeyboardShortcuts && (
         <div className="mt-auto pt-6 px-2">
-              <div className="rounded-xl bg-slate-100/80 p-3 text-xs text-slate-600 dark:bg-gray-800 dark:text-gray-300">
+              <div className="rounded-xl bg-slate-100/80 p-3 text-xs text-slate-600 dark:bg-zinc-900 dark:text-neutral-300">
              <p className="font-semibold mb-1">Atajos de teclado:</p>
-             <div className="space-y-1 text-slate-500 dark:text-gray-300">
-               <p><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1 rounded">F1</kbd> Nuevo ingreso</p>
-               <p><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1 rounded">F2</kbd> Salida/cobro</p>
-               <p><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1 rounded">F3</kbd> Vehículos</p>
-               <p><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1 rounded">F4</kbd> Caja</p>
-               <p><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1 rounded">Esc</kbd> Dashboard</p>
+             <div className="space-y-1 text-slate-500 dark:text-neutral-300">
+               <p><kbd className="font-mono bg-white/80 dark:bg-neutral-800 px-1 rounded">F1</kbd> Nuevo ingreso</p>
+               <p><kbd className="font-mono bg-white/80 dark:bg-neutral-800 px-1 rounded">F2</kbd> Salida/cobro</p>
+               <p><kbd className="font-mono bg-white/80 dark:bg-neutral-800 px-1 rounded">F3</kbd> Vehículos</p>
+               <p><kbd className="font-mono bg-white/80 dark:bg-neutral-800 px-1 rounded">F4</kbd> Caja</p>
+               <p><kbd className="font-mono bg-white/80 dark:bg-neutral-800 px-1 rounded">Esc</kbd> Dashboard</p>
              </div>
            </div>
         </div>

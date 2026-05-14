@@ -8,11 +8,11 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SyncEventRepository extends JpaRepository<SyncEvent, UUID> {
-  Optional<SyncEvent> findByIdempotencyKey(String idempotencyKey);
+  Optional<SyncEvent> findByIdempotencyKeyAndCompanyId(String idempotencyKey, UUID companyId);
 
-  List<SyncEvent> findByCreatedAtAfterOrderByCreatedAtAsc(OffsetDateTime createdAt);
+  List<SyncEvent> findByCompanyIdAndCreatedAtAfterOrderByCreatedAtAsc(UUID companyId, OffsetDateTime createdAt);
 
-  long countBySyncedAtIsNull();
+  long countByCompanyIdAndSyncedAtIsNull(UUID companyId);
 
-  Optional<SyncEvent> findTopBySyncedAtIsNotNullOrderBySyncedAtDesc();
+  Optional<SyncEvent> findTopByCompanyIdAndSyncedAtIsNotNullOrderBySyncedAtDesc(UUID companyId);
 }

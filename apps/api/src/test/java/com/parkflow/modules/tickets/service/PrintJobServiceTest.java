@@ -20,8 +20,12 @@ import com.parkflow.modules.tickets.entity.PrintJob;
 import com.parkflow.modules.tickets.entity.PrintJobStatus;
 import com.parkflow.modules.tickets.repository.PrintAttemptRepository;
 import com.parkflow.modules.tickets.repository.PrintJobRepository;
+import com.parkflow.modules.auth.security.AuthPrincipal;
+import com.parkflow.modules.auth.security.TenantContext;
+import com.parkflow.modules.parking.operation.domain.UserRole;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +34,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class PrintJobServiceTest {
@@ -41,6 +48,7 @@ class PrintJobServiceTest {
 
   @InjectMocks private PrintJobService printJobService;
 
+  private UUID companyId;
   private UUID sessionId;
   private UUID operatorId;
   private ParkingSession session;
@@ -48,13 +56,32 @@ class PrintJobServiceTest {
 
   @BeforeEach
   void setUp() {
+    companyId = UUID.randomUUID();
     sessionId = UUID.randomUUID();
     operatorId = UUID.randomUUID();
     session = new ParkingSession();
     session.setId(sessionId);
     session.setTicketNumber("T-A-000001");
+    session.setCompanyId(companyId);
     operator = new AppUser();
     operator.setId(operatorId);
+    operator.setCompanyId(companyId);
+
+    AuthPrincipal principal = new AuthPrincipal(
+        UUID.randomUUID(),
+        companyId,
+        "operator@test.com",
+        UserRole.OPERADOR.name(),
+        java.util.List.of(new SimpleGrantedAuthority("ROLE_OPERADOR")));
+    SecurityContextHolder.getContext().setAuthentication(
+        new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));
+    TenantContext.setTenantId(companyId);
+  }
+
+  @AfterEach
+  void tearDown() {
+    SecurityContextHolder.clearContext();
+    TenantContext.clear();
   }
 
   @Test
@@ -66,8 +93,9 @@ class PrintJobServiceTest {
     existing.setDocumentType(PrintDocumentType.ENTRY);
     existing.setStatus(PrintJobStatus.QUEUED);
     existing.setIdempotencyKey(key);
+    existing.setCompanyId(companyId);
     existing.setPayloadHash("abc");
-    when(printJobRepository.findByIdempotencyKey(key)).thenReturn(Optional.of(existing));
+    when(printJobRepository.findByIdempotencyKeyAndCompanyId(eq(key), any())).thenReturn(Optional.of(existing));
 
     var req =
         new CreatePrintJobRequest(
@@ -82,9 +110,9 @@ class PrintJobServiceTest {
   @Test
   void create_blocksSecondEntryWhenOneIsActiveOrAcked() {
     var key = "pj:second";
-    when(printJobRepository.findByIdempotencyKey(key)).thenReturn(Optional.empty());
-    when(printJobRepository.existsBySession_IdAndDocumentTypeAndStatusIn(
-            eq(sessionId), eq(PrintDocumentType.ENTRY), any()))
+    when(printJobRepository.findByIdempotencyKeyAndCompanyId(eq(key), any())).thenReturn(Optional.empty());
+    when(printJobRepository.existsBySession_IdAndDocumentTypeAndCompanyIdAndStatusIn(
+            eq(sessionId), eq(PrintDocumentType.ENTRY), any(), any()))
         .thenReturn(true);
 
     var req =
@@ -107,10 +135,11 @@ class PrintJobServiceTest {
     job.setStatus(PrintJobStatus.SENT);
     job.setIdempotencyKey("create-key");
     job.setPayloadHash("h");
+    job.setCompanyId(companyId);
     job.setAttempts(0);
     when(printAttemptRepository.findByAttemptKey(attemptKey))
         .thenReturn(Optional.of(new com.parkflow.modules.tickets.entity.PrintAttempt()));
-    when(printJobRepository.findById(jobId)).thenReturn(Optional.of(job));
+    when(printJobRepository.findByIdAndCompanyId(eq(jobId), any())).thenReturn(Optional.of(job));
 
     var res =
         printJobService.updateStatus(
@@ -123,7 +152,7 @@ class PrintJobServiceTest {
   @Test
   void create_persistsSnapshotAndTerminal() {
     var key = "pj:new";
-    when(printJobRepository.findByIdempotencyKey(key)).thenReturn(Optional.empty());
+    when(printJobRepository.findByIdempotencyKeyAndCompanyId(eq(key), any())).thenReturn(Optional.empty());
     when(parkingSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
     when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
     when(printJobRepository.save(any()))

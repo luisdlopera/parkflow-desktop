@@ -1,8 +1,8 @@
 package com.parkflow.modules.configuration.controller;
 
+import com.parkflow.modules.configuration.application.port.in.MonthlyContractUseCase;
 import com.parkflow.modules.configuration.dto.MonthlyContractRequest;
 import com.parkflow.modules.configuration.dto.MonthlyContractResponse;
-import com.parkflow.modules.configuration.service.MonthlyContractService;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ConfigurationMonthlyContractController {
 
-  private final MonthlyContractService service;
+  private final MonthlyContractUseCase monthlyContractUseCase;
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
@@ -27,33 +27,33 @@ public class ConfigurationMonthlyContractController {
       @RequestParam(required = false) String plate,
       @RequestParam(required = false) Boolean active,
       Pageable pageable) {
-    return ResponseEntity.ok(service.list(site, plate, active, pageable));
+    return ResponseEntity.ok(monthlyContractUseCase.list(site, plate, active, pageable));
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
   public ResponseEntity<MonthlyContractResponse> get(@PathVariable UUID id) {
-    return ResponseEntity.ok(service.get(id));
+    return ResponseEntity.ok(monthlyContractUseCase.get(id));
   }
 
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<MonthlyContractResponse> create(
       @Valid @RequestBody MonthlyContractRequest req) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(service.create(req));
+    return ResponseEntity.status(HttpStatus.CREATED).body(monthlyContractUseCase.create(req));
   }
 
   @PutMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<MonthlyContractResponse> update(
       @PathVariable UUID id, @Valid @RequestBody MonthlyContractRequest req) {
-    return ResponseEntity.ok(service.update(id, req));
+    return ResponseEntity.ok(monthlyContractUseCase.update(id, req));
   }
 
   @PatchMapping("/{id}/status")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<MonthlyContractResponse> patchStatus(
       @PathVariable UUID id, @RequestParam boolean active) {
-    return ResponseEntity.ok(service.patchStatus(id, active));
+    return ResponseEntity.ok(monthlyContractUseCase.patchStatus(id, active));
   }
 }

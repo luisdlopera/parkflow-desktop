@@ -15,7 +15,10 @@ public class Vehicle {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
-  @Column(nullable = false, unique = true, length = 20)
+  @Column(name = "company_id", nullable = false)
+  private UUID companyId;
+
+  @Column(nullable = false, length = 20)
   private String plate;
 
   @Column(nullable = false)
@@ -26,4 +29,9 @@ public class Vehicle {
 
   @Column(nullable = false)
   private OffsetDateTime updatedAt = OffsetDateTime.now();
+
+  @PreUpdate
+  public void preUpdate() {
+    this.updatedAt = OffsetDateTime.now();
+  }
 }

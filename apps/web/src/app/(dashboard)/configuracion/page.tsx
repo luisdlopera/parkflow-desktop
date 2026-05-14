@@ -272,7 +272,16 @@ export default function ConfiguracionPage() {
           isDisabled={!can.cfgRead}
         />
         <Tab key="interface" title={<div className="flex items-center gap-2"><span>Interfaz</span></div>} />
-        <Tab key="masters" title={<div className="flex items-center gap-2"><span>Maestros</span></div>} />
+        <Tab
+          key="masters"
+          title={
+            <div className="flex items-center gap-2">
+              <span>Maestros</span>
+              {!can.cfgRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
+            </div>
+          }
+          isDisabled={!can.cfgRead}
+        />
       </Tabs>
 
       {tab === "rates" && can.ratesRead ? (
@@ -324,9 +333,10 @@ export default function ConfiguracionPage() {
         />
       )}
 
-      {tab === "masters" && (
-        <MastersSection onNotify={setNotice} />
-      )}
+      {tab === "masters" && can.cfgRead ? <MastersSection onNotify={setNotice} canEdit={can.cfgEdit} /> : null}
+      {tab === "masters" && !can.cfgRead ? (
+        <p className="text-sm text-slate-600">No tienes permisos para ver esta sección. Contacta a un administrador.</p>
+      ) : null}
     </div>
   );
 }
@@ -2172,7 +2182,13 @@ function vehicleTypeToForm(row: import("@/lib/settings-api").MasterVehicleTypeRo
   };
 }
 
-function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void; }) {
+function MastersSection({
+  onNotify,
+  canEdit
+}: {
+  onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void;
+  canEdit: boolean;
+}) {
   const [rows, setRows] = useState<import("@/lib/settings-api").MasterVehicleTypeRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<import("@/lib/settings-api").MasterVehicleTypeRow | null>(null);
@@ -2212,14 +2228,16 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
     <div className="space-y-4">
       <div className="flex justify-between items-center surface rounded-2xl p-4">
         <h2 className="text-lg font-semibold text-slate-900">Tipos de Vehículo</h2>
-        <Button
-          color="primary"
-          size="md"
-          className="font-semibold"
-          onPress={() => { setCreating(true); setEditing(null); setForm(defaultVehicleTypeForm); }}
-        >
-          Nuevo tipo
-        </Button>
+        {canEdit ? (
+          <Button
+            color="primary"
+            size="md"
+            className="font-semibold"
+            onPress={() => { setCreating(true); setEditing(null); setForm(defaultVehicleTypeForm); }}
+          >
+            Nuevo tipo
+          </Button>
+        ) : null}
       </div>
 
       <DataTable
@@ -2264,7 +2282,7 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
             render: (r) => (
               <Switch
                 isSelected={r.isActive}
-                isDisabled={togglingId === r.id}
+                isDisabled={togglingId === r.id || !canEdit}
                 size="sm"
                 color={r.isActive ? "success" : "danger"}
                 onValueChange={() => toggleActive(r.id, r.isActive)}
@@ -2272,22 +2290,29 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
               />
             )
           },
-          { key: "id", label: "", render: (r) => (
-            <Button
-              size="sm"
-              variant="flat"
-              color="primary"
-              className="font-semibold"
-              onPress={() => { setEditing(r as any); setCreating(false); setForm(vehicleTypeToForm(r)); }}
-            >
-              Editar
-            </Button>
-          ) }
+          {
+            key: "id",
+            label: "",
+            render: (r) =>
+              canEdit ? (
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="primary"
+                  className="font-semibold"
+                  onPress={() => { setEditing(r as any); setCreating(false); setForm(vehicleTypeToForm(r)); }}
+                >
+                  Editar
+                </Button>
+              ) : (
+                ""
+              )
+          }
         ]}
         rows={rows as any[]}
       />
 
-      {(creating || editing) ? (
+      {(creating || editing) && canEdit ? (
         <div className="surface rounded-2xl p-6">
           <h3 className="text-lg font-semibold text-slate-900">{creating ? "Nuevo tipo" : "Editar tipo"}</h3>
           <div className="mt-4 grid gap-3 md:grid-cols-2">

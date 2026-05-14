@@ -38,13 +38,13 @@ export function FormDrawer({
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative z-10 flex h-full w-full max-w-lg flex-col bg-white shadow-2xl dark:bg-gray-900 dark:shadow-lg">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-700 px-6 py-4">
+      <div className="relative z-10 flex h-full w-full max-w-lg flex-col bg-white shadow-2xl dark:bg-neutral-950 dark:shadow-lg">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-neutral-800 px-6 py-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-gray-800 dark:text-gray-300"
+            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-neutral-800/35 dark:text-neutral-300"
           >
             ✕
           </button>

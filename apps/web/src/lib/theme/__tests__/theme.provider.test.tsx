@@ -17,6 +17,7 @@ describe('ThemeProvider', () => {
       </ThemeProvider>
     )
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
   })
 
   test('respects system preference when auto', () => {

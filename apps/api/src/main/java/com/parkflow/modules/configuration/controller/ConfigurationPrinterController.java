@@ -1,8 +1,8 @@
 package com.parkflow.modules.configuration.controller;
 
+import com.parkflow.modules.configuration.application.port.in.PrinterUseCase;
 import com.parkflow.modules.configuration.dto.PrinterRequest;
 import com.parkflow.modules.configuration.dto.PrinterResponse;
-import com.parkflow.modules.configuration.service.PrinterService;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ConfigurationPrinterController {
 
-  private final PrinterService printerService;
+  private final PrinterUseCase printerUseCase;
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
@@ -27,13 +27,13 @@ public class ConfigurationPrinterController {
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,
       Pageable pageable) {
-    return ResponseEntity.ok(printerService.list(siteId, q, active, pageable));
+    return ResponseEntity.ok(printerUseCase.list(siteId, q, active, pageable));
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
   public ResponseEntity<PrinterResponse> get(@PathVariable UUID id) {
-    return ResponseEntity.ok(printerService.get(id));
+    return ResponseEntity.ok(printerUseCase.get(id));
   }
 
   @PostMapping
@@ -41,7 +41,7 @@ public class ConfigurationPrinterController {
   public ResponseEntity<PrinterResponse> create(
       @RequestParam UUID siteId,
       @Valid @RequestBody PrinterRequest req) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(printerService.create(siteId, req));
+    return ResponseEntity.status(HttpStatus.CREATED).body(printerUseCase.create(siteId, req));
   }
 
   @PutMapping("/{id}")
@@ -49,7 +49,7 @@ public class ConfigurationPrinterController {
   public ResponseEntity<PrinterResponse> update(
       @PathVariable UUID id,
       @Valid @RequestBody PrinterRequest req) {
-    return ResponseEntity.ok(printerService.update(id, req));
+    return ResponseEntity.ok(printerUseCase.update(id, req));
   }
 
   @PatchMapping("/{id}/status")
@@ -57,6 +57,6 @@ public class ConfigurationPrinterController {
   public ResponseEntity<PrinterResponse> patchStatus(
       @PathVariable UUID id,
       @RequestParam boolean active) {
-    return ResponseEntity.ok(printerService.patchStatus(id, active));
+    return ResponseEntity.ok(printerUseCase.patchStatus(id, active));
   }
 }

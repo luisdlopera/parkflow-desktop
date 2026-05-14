@@ -1,6 +1,8 @@
 package com.parkflow.modules.parking.operation.controller;
 
 import com.parkflow.modules.parking.operation.dto.*;
+import com.parkflow.modules.parking.operation.application.port.in.RegisterEntryUseCase;
+import com.parkflow.modules.parking.operation.application.port.in.RegisterExitUseCase;
 import com.parkflow.modules.parking.operation.service.OperationService;
 import com.parkflow.modules.parking.operation.service.SupervisorService;
 import jakarta.validation.Valid;
@@ -15,11 +17,18 @@ import org.springframework.web.bind.annotation.*;
 public class OperationController {
   private final OperationService operationService;
   private final SupervisorService supervisorService;
+  private final RegisterEntryUseCase registerEntryUseCase;
+  private final RegisterExitUseCase registerExitUseCase;
 
   public OperationController(
-      OperationService operationService, SupervisorService supervisorService) {
+      OperationService operationService,
+      SupervisorService supervisorService,
+      RegisterEntryUseCase registerEntryUseCase,
+      RegisterExitUseCase registerExitUseCase) {
     this.operationService = operationService;
     this.supervisorService = supervisorService;
+    this.registerEntryUseCase = registerEntryUseCase;
+    this.registerExitUseCase = registerExitUseCase;
   }
 
   @GetMapping("/supervisor/summary")
@@ -37,13 +46,13 @@ public class OperationController {
   @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize("hasAuthority('tickets:emitir')")
   public OperationResultResponse registerEntry(@Valid @RequestBody EntryRequest request) {
-    return operationService.registerEntry(request);
+    return registerEntryUseCase.execute(request);
   }
 
   @PostMapping("/exits")
   @PreAuthorize("hasAuthority('cobros:registrar')")
   public OperationResultResponse registerExit(@Valid @RequestBody ExitRequest request) {
-    return operationService.registerExit(request);
+    return registerExitUseCase.execute(request);
   }
 
   @PostMapping("/tickets/reprint")

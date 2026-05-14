@@ -29,6 +29,9 @@ public class MonthlyContract {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
+  @Column(name = "company_id")
+  private UUID companyId;
+
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "rate_id", nullable = false)
   private Rate rate;

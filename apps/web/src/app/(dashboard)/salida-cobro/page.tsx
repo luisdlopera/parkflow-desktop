@@ -32,6 +32,7 @@ import {
   operationReprintRequestSchema
 } from "@/lib/validation/contracts";
 import { toUserMessageFromClientValidation, validatePayloadOrThrow } from "@/lib/validation/request-guard";
+import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 
 type ActiveLookup = {
   sessionId: string;
@@ -148,6 +149,7 @@ export default function SalidaCobroPage() {
     { id: "split-1", method: "CASH", amount: "" },
     { id: "split-2", method: "NEQUI", amount: "" }
   ]);
+  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
   const [cashReceived, setCashReceived] = useState("");
   const operationLock = useRef(false);
   const reprintLock = useRef(false);
@@ -161,6 +163,10 @@ export default function SalidaCobroPage() {
       ticketInputRef.current?.focus();
     }, 100);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
   }, []);
 
   // PERFORMANCE: Constant value, no need for useMemo
@@ -182,6 +188,30 @@ export default function SalidaCobroPage() {
   const paymentLabel = useCallback((code: PaymentMethodCode) => {
     return PAYMENT_METHODS.find((method) => method.code === code)?.label ?? code;
   }, []);
+
+  const allowedPayments = (() => {
+    const configured = runtimeConfig?.paymentMethods;
+    if (!Array.isArray(configured) || configured.length === 0) return PAYMENT_METHODS;
+    const map: Record<string, PaymentMethodCode> = {
+      EFECTIVO: "CASH",
+      TARJETA_DEBITO: "DEBIT_CARD",
+      TARJETA_CREDITO: "CREDIT_CARD",
+      NEQUI: "NEQUI",
+      DAVIPLATA: "DAVIPLATA",
+      TRANSFERENCIA: "TRANSFER",
+      QR: "QR",
+      CONVENIO: "AGREEMENT",
+      MIXTO: "MIXED"
+    };
+    const allowed = new Set(configured.map((value) => map[String(value).toUpperCase()]).filter(Boolean));
+    return PAYMENT_METHODS.filter((method) => allowed.has(method.code));
+  })();
+
+  useEffect(() => {
+    if (allowedPayments.length === 1 && selectedPaymentMethod !== allowedPayments[0].code) {
+      setSelectedPaymentMethod(allowedPayments[0].code);
+    }
+  }, [allowedPayments, selectedPaymentMethod]);
 
   const paymentObservation = useCallback((method: PaymentMethodCode) => {
     if (method === "MIXED") {
@@ -749,25 +779,27 @@ export default function SalidaCobroPage() {
             Salida rápida: F2 abre esta pantalla; Ctrl+Enter ejecuta la búsqueda; con sesión activa use 1 (efectivo) o 2 (tarjeta débito).
           </p>
 
-          <div className="mt-4">
-            <Select
-              label="Medio de pago"
-              variant="flat"
-              selectedKeys={[selectedPaymentMethod]}
-              onSelectionChange={(keys) => {
-                const next = Array.from(keys)[0] as PaymentMethodCode | undefined;
-                if (next) setSelectedPaymentMethod(next);
-              }}
-              isDisabled={!active || searching || processing}
-            >
-              {PAYMENT_METHODS.map((method) => (
-                <SelectItem key={method.code}>{method.label}</SelectItem>
-              ))}
-            </Select>
-          </div>
+          {allowedPayments.length > 1 ? (
+            <div className="mt-4">
+              <Select
+                label="Medio de pago"
+                variant="flat"
+                selectedKeys={[selectedPaymentMethod]}
+                onSelectionChange={(keys) => {
+                  const next = Array.from(keys)[0] as PaymentMethodCode | undefined;
+                  if (next) setSelectedPaymentMethod(next);
+                }}
+                isDisabled={!active || searching || processing}
+              >
+                {allowedPayments.map((method) => (
+                  <SelectItem key={method.code}>{method.label}</SelectItem>
+                ))}
+              </Select>
+            </div>
+          ) : null}
 
           <div className="mt-4 grid grid-cols-1 gap-2">
-            {PAYMENT_METHODS.map((method, index) => (
+            {allowedPayments.map((method, index) => (
               <Button
                 key={method.code}
                 className={`min-h-14 justify-start text-left font-bold ${

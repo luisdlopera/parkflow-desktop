@@ -1,6 +1,7 @@
 package com.parkflow.modules.cash.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
 import com.parkflow.modules.cash.repository.CashSessionRepository;
@@ -30,17 +31,17 @@ public class CashClosingOutboundNotifier {
 
   private final CashSessionRepository cashSessionRepository;
   private final ParkingParametersService parkingParametersService;
-  private final CashService cashService;
+  private final CashSessionUseCase cashSessionUseCase;
   private final ObjectMapper objectMapper;
 
   public CashClosingOutboundNotifier(
       CashSessionRepository cashSessionRepository,
       ParkingParametersService parkingParametersService,
-      @Lazy CashService cashService,
+      @Lazy CashSessionUseCase cashSessionUseCase,
       ObjectMapper objectMapper) {
     this.cashSessionRepository = cashSessionRepository;
     this.parkingParametersService = parkingParametersService;
-    this.cashService = cashService;
+    this.cashSessionUseCase = cashSessionUseCase;
     this.objectMapper = objectMapper;
   }
 
@@ -90,7 +91,7 @@ public class CashClosingOutboundNotifier {
         log.warn("webhook PSC: sesion {} no encontrada", cashSessionId);
         return;
       }
-      CashSummaryResponse summary = cashService.summary(sess.getId());
+      CashSummaryResponse summary = cashSessionUseCase.getSummary(sess.getId());
       Map<String, Object> body = closingPayload(sess, summary, parkingParamSiteLabel);
       byte[] json = objectMapper.writeValueAsBytes(body);
 

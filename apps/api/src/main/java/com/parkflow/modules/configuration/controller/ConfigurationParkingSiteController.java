@@ -1,8 +1,8 @@
 package com.parkflow.modules.configuration.controller;
 
+import com.parkflow.modules.configuration.application.port.in.ParkingSiteUseCase;
 import com.parkflow.modules.configuration.dto.ParkingSiteRequest;
 import com.parkflow.modules.configuration.dto.ParkingSiteResponse;
-import com.parkflow.modules.configuration.service.ParkingSiteService;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ConfigurationParkingSiteController {
 
-  private final ParkingSiteService parkingSiteService;
+  private final ParkingSiteUseCase parkingSiteUseCase;
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
@@ -27,13 +27,13 @@ public class ConfigurationParkingSiteController {
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,
       Pageable pageable) {
-    return ResponseEntity.ok(parkingSiteService.list(companyId, q, active, pageable));
+    return ResponseEntity.ok(parkingSiteUseCase.list(companyId, q, active, pageable));
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
   public ResponseEntity<ParkingSiteResponse> get(@PathVariable UUID id) {
-    return ResponseEntity.ok(parkingSiteService.get(id));
+    return ResponseEntity.ok(parkingSiteUseCase.get(id));
   }
 
   @PostMapping
@@ -41,7 +41,7 @@ public class ConfigurationParkingSiteController {
   public ResponseEntity<ParkingSiteResponse> create(
       @RequestParam UUID companyId,
       @Valid @RequestBody ParkingSiteRequest req) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(parkingSiteService.create(companyId, req));
+    return ResponseEntity.status(HttpStatus.CREATED).body(parkingSiteUseCase.create(companyId, req));
   }
 
   @PutMapping("/{id}")
@@ -49,7 +49,7 @@ public class ConfigurationParkingSiteController {
   public ResponseEntity<ParkingSiteResponse> update(
       @PathVariable UUID id,
       @Valid @RequestBody ParkingSiteRequest req) {
-    return ResponseEntity.ok(parkingSiteService.update(id, req));
+    return ResponseEntity.ok(parkingSiteUseCase.update(id, req));
   }
 
   @PatchMapping("/{id}/status")
@@ -57,6 +57,6 @@ public class ConfigurationParkingSiteController {
   public ResponseEntity<ParkingSiteResponse> patchStatus(
       @PathVariable UUID id,
       @RequestParam boolean active) {
-    return ResponseEntity.ok(parkingSiteService.patchStatus(id, active));
+    return ResponseEntity.ok(parkingSiteUseCase.patchStatus(id, active));
   }
 }

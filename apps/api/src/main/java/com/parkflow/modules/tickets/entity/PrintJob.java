@@ -17,6 +17,9 @@ public class PrintJob {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
+  @Column(name = "company_id", nullable = false)
+  private UUID companyId;
+
   @ManyToOne(optional = false)
   @JoinColumn(name = "session_id")
   private ParkingSession session;

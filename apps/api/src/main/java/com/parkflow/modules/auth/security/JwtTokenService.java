@@ -33,16 +33,17 @@ public class JwtTokenService {
   }
 
   public String createAccessToken(
-      UUID userId, UUID sessionId, String email, Map<String, Object> extraClaims) {
+      UUID userId, UUID companyId, UUID sessionId, String email, Map<String, Object> claims) {
     OffsetDateTime now = OffsetDateTime.now();
     OffsetDateTime exp = now.plus(accessTtl);
     return Jwts.builder()
         .subject(userId.toString())
         .issuedAt(Date.from(now.toInstant()))
         .expiration(Date.from(exp.toInstant()))
+        .claim("cid", companyId.toString())
         .claim("sid", sessionId.toString())
         .claim("email", email)
-        .claims(extraClaims)
+        .claims(claims)
         .signWith(key)
         .compact();
   }

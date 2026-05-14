@@ -20,6 +20,15 @@ public final class SecurityUtils {
     return principal.userId();
   }
 
+  @NonNull
+  public static UUID requireCompanyId() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !(auth.getPrincipal() instanceof AuthPrincipal principal)) {
+      throw new OperationException(HttpStatus.UNAUTHORIZED, "No hay sesion de usuario");
+    }
+    return principal.companyId();
+  }
+
   public static UserRole requireUserRole() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     if (auth == null || !(auth.getPrincipal() instanceof AuthPrincipal principal)) {

@@ -10,7 +10,7 @@ import com.parkflow.modules.configuration.entity.OperationalParameter;
 import com.parkflow.modules.configuration.entity.ParkingSite;
 import com.parkflow.modules.configuration.repository.OperationalParameterRepository;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.configuration.service.OperationalParameterService;
+import com.parkflow.modules.configuration.application.service.OperationalParameterManagementService;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,11 +26,11 @@ class OperationalParameterServiceTest {
   @Mock private OperationalParameterRepository operationalParameterRepository;
   @Mock private ParkingSiteRepository parkingSiteRepository;
 
-  private OperationalParameterService service;
+  private OperationalParameterManagementService service;
 
   @BeforeEach
   void setUp() {
-    service = new OperationalParameterService(operationalParameterRepository, parkingSiteRepository);
+    service = new OperationalParameterManagementService(operationalParameterRepository, parkingSiteRepository);
   }
 
   @Test

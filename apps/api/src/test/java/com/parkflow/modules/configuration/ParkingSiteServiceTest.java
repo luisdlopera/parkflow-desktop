@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 import com.parkflow.modules.configuration.dto.ParkingSiteRequest;
 import com.parkflow.modules.configuration.entity.ParkingSite;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.configuration.service.ParkingSiteService;
+import com.parkflow.modules.configuration.application.service.ParkingSiteManagementService;
 import com.parkflow.modules.licensing.entity.Company;
 import com.parkflow.modules.licensing.repository.CompanyRepository;
 import com.parkflow.modules.parking.operation.exception.OperationException;
@@ -31,11 +31,11 @@ class ParkingSiteServiceTest {
   @Mock private ParkingSiteRepository parkingSiteRepository;
   @Mock private CompanyRepository companyRepository;
 
-  private ParkingSiteService service;
+  private ParkingSiteManagementService service;
 
   @BeforeEach
   void setUp() {
-    service = new ParkingSiteService(parkingSiteRepository, companyRepository);
+    service = new ParkingSiteManagementService(parkingSiteRepository, companyRepository);
   }
 
   @Test

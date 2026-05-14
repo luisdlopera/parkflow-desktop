@@ -102,9 +102,17 @@ public class ParkingSession {
 
   private String terminal;
 
+  @Column(name = "company_id")
+  private UUID companyId;
+
   @Column(nullable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();
 
   @Column(nullable = false)
   private OffsetDateTime updatedAt = OffsetDateTime.now();
+
+  @PreUpdate
+  public void preUpdate() {
+    this.updatedAt = OffsetDateTime.now();
+  }
 }

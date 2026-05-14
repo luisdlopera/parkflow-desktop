@@ -9,7 +9,7 @@ export function ThemeToggle() {
     <div className="flex items-center gap-2">
       <button
         onClick={() => setTheme("auto")}
-        className={`p-2 rounded-lg transition-colors ${theme === "auto" ? "bg-orange-500 text-white shadow-md" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 hover:dark:bg-gray-700"}`}
+        className={`p-2 rounded-lg transition-colors ${theme === "auto" ? "bg-orange-500 text-white shadow-md" : "bg-gray-100 text-gray-700 dark:bg-zinc-900 dark:text-neutral-200 hover:dark:bg-neutral-800/45"}`}
         title="Automático"
         aria-label="Modo automático"
       >
@@ -20,7 +20,7 @@ export function ThemeToggle() {
 
       <button
         onClick={() => setTheme("light")}
-        className={`p-2 rounded-lg transition-colors ${theme === "light" ? "bg-orange-500 text-white shadow-md" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 hover:dark:bg-gray-700"}`}
+        className={`p-2 rounded-lg transition-colors ${theme === "light" ? "bg-orange-500 text-white shadow-md" : "bg-gray-100 text-gray-700 dark:bg-zinc-900 dark:text-neutral-200 hover:dark:bg-neutral-800/45"}`}
         title="Modo claro"
         aria-label="Modo claro"
       >
@@ -31,7 +31,7 @@ export function ThemeToggle() {
 
       <button
         onClick={() => setTheme("dark")}
-        className={`p-2 rounded-lg transition-colors ${theme === "dark" ? "bg-orange-500 text-white shadow-md" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 hover:dark:bg-gray-700"}`}
+        className={`p-2 rounded-lg transition-colors ${theme === "dark" ? "bg-orange-500 text-white shadow-md" : "bg-gray-100 text-gray-700 dark:bg-zinc-900 dark:text-neutral-200 hover:dark:bg-neutral-800/45"}`}
         title="Modo oscuro"
         aria-label="Modo oscuro"
       >
@@ -41,7 +41,7 @@ export function ThemeToggle() {
       </button>
 
       {isDark && (
-        <span className="ml-1 text-xs text-gray-500 dark:text-gray-300 hidden sm:inline">
+        <span className="ml-1 text-xs text-gray-500 dark:text-neutral-300 hidden sm:inline">
           Modo nocturno
         </span>
       )}

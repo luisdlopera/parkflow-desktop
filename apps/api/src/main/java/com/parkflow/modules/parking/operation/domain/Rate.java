@@ -20,6 +20,9 @@ public class Rate {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
+  @Column(name = "company_id")
+  private UUID companyId;
+
   @Column(nullable = false)
   private String name;
 

@@ -12,6 +12,21 @@ export type OnboardingStatus = {
   availableOptionsByPlan: Record<string, unknown>;
 };
 
+export type CompanyCapabilities = {
+  onboardingCompleted: boolean;
+  allowMultiLocation: boolean;
+  allowAdvancedPermissions: boolean;
+  cashEnabled: boolean;
+  shiftsEnabled: boolean;
+  clientsEnabled: boolean;
+  agreementsEnabled: boolean;
+  activeVehicleTypes: number;
+  activePaymentMethods: number;
+  activeSites: number;
+  vehicleTypes: string[];
+  paymentMethods: string[];
+};
+
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const headers = await authHeaders();
   const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -44,4 +59,8 @@ export async function skipOnboarding(companyId: string): Promise<OnboardingStatu
 
 export async function completeOnboarding(companyId: string): Promise<OnboardingStatus> {
   return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}/complete`, { method: "POST" });
+}
+
+export async function fetchCompanyCapabilities(companyId: string): Promise<CompanyCapabilities> {
+  return apiFetch<CompanyCapabilities>(`/onboarding/companies/${companyId}/capabilities`);
 }

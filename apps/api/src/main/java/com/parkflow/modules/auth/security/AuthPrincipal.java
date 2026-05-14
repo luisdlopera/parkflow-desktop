@@ -6,6 +6,7 @@ import org.springframework.security.core.GrantedAuthority;
 
 public record AuthPrincipal(
     UUID userId,
+    UUID companyId,
     String email,
     String role,
     Collection<? extends GrantedAuthority> authorities) {}

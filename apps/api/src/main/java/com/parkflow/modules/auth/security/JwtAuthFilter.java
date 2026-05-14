@@ -35,7 +35,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     this.appUserRepository = appUserRepository;
   }
 
-
   @Override
   protected void doFilterInternal(
       @NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
@@ -75,30 +74,43 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         return;
       }
 
+      String companyIdClaim = claims.get("cid", String.class);
+      if (companyIdClaim == null || companyIdClaim.isBlank()) {
+        SecurityContextHolder.clearContext();
+        filterChain.doFilter(request, response);
+        return;
+      }
+      UUID companyId = UUID.fromString(companyIdClaim);
+
       String email = claims.get("email", String.class);
       String role = claims.get("role", String.class);
       List<?> permissions = claims.get("permissions", List.class);
 
       List<GrantedAuthority> authorities = new ArrayList<>();
-      // Add role as ROLE_<role> so @PreAuthorize("hasAnyRole(...)") works
       if (role != null && !role.isBlank()) {
         authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
       }
-      // Add fine-grained permissions as authorities
       if (permissions != null) {
         permissions.stream()
             .map(value -> (GrantedAuthority) new SimpleGrantedAuthority(String.valueOf(value)))
             .forEach(authorities::add);
       }
 
-      AuthPrincipal principal = new AuthPrincipal(userId, email, role, authorities);
+      AuthPrincipal principal = new AuthPrincipal(userId, companyId, email, role, authorities);
       UsernamePasswordAuthenticationToken authentication =
           new UsernamePasswordAuthenticationToken(principal, null, authorities);
       SecurityContextHolder.getContext().setAuthentication(authentication);
+      
+      TenantContext.setTenantId(companyId);
     } catch (Exception ignored) {
       SecurityContextHolder.clearContext();
+      TenantContext.clear();
     }
 
-    filterChain.doFilter(request, response);
+    try {
+      filterChain.doFilter(request, response);
+    } finally {
+      TenantContext.clear();
+    }
   }
 }

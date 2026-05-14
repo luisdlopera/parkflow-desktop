@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 import com.parkflow.modules.configuration.dto.RateFractionRequest;
 import com.parkflow.modules.configuration.entity.RateFraction;
 import com.parkflow.modules.configuration.repository.RateFractionRepository;
-import com.parkflow.modules.configuration.service.RateFractionService;
+import com.parkflow.modules.configuration.application.service.RateFractionManagementService;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
@@ -28,11 +28,11 @@ class RateFractionServiceTest {
   @Mock private RateFractionRepository rateFractionRepository;
   @Mock private RateRepository rateRepository;
 
-  private RateFractionService service;
+  private RateFractionManagementService service;
 
   @BeforeEach
   void setUp() {
-    service = new RateFractionService(rateFractionRepository, rateRepository);
+    service = new RateFractionManagementService(rateFractionRepository, rateRepository);
   }
 
   @Test

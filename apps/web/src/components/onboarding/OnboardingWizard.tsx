@@ -35,6 +35,9 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
   const progress = useMemo(() => Math.round((step / 12) * 100), [step]);
   const canMultiSite = Boolean(status?.availableOptionsByPlan?.allowMultiLocation);
   const canAdvancedPermissions = Boolean(status?.availableOptionsByPlan?.allowAdvancedPermissions);
+  const allowedPayments = Array.isArray(status?.availableOptionsByPlan?.paymentMethods)
+    ? (status.availableOptionsByPlan.paymentMethods as string[])
+    : OPTIONS.payments;
 
   const persistStep = async (nextStep: number) => {
     if (!status) return;
@@ -89,17 +92,20 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
           {step === 6 && (
             <div className="grid gap-2 sm:grid-cols-2">
               {OPTIONS.payments.map((item) => (
-                <Checkbox
-                  key={item}
-                  isSelected={Array.isArray(stepData.paymentMethods) && (stepData.paymentMethods as string[]).includes(item)}
-                  onValueChange={(checked) => {
-                    const prev = Array.isArray(stepData.paymentMethods) ? (stepData.paymentMethods as string[]) : [];
-                    const next = checked ? [...prev, item] : prev.filter((v) => v !== item);
-                    setStepData({ ...stepData, paymentMethods: next });
-                  }}
-                >
-                  {item}
-                </Checkbox>
+                <div key={item}>
+                  <Checkbox
+                    isDisabled={!allowedPayments.includes(item)}
+                    isSelected={Array.isArray(stepData.paymentMethods) && (stepData.paymentMethods as string[]).includes(item)}
+                    onValueChange={(checked) => {
+                      const prev = Array.isArray(stepData.paymentMethods) ? (stepData.paymentMethods as string[]) : [];
+                      const next = checked ? [...prev, item] : prev.filter((v) => v !== item);
+                      setStepData({ ...stepData, paymentMethods: next });
+                    }}
+                  >
+                    {item}
+                  </Checkbox>
+                  {!allowedPayments.includes(item) && <p className="text-xs text-warning">Disponible en plan superior.</p>}
+                </div>
               ))}
             </div>
           )}
