@@ -27,7 +27,8 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class MonthlyContractManagementService implements MonthlyContractUseCase {
+@Slf4j
+public class MonthlyContractService {
 
   private final MonthlyContractRepository repo;
   private final RateRepository rateRepository;
