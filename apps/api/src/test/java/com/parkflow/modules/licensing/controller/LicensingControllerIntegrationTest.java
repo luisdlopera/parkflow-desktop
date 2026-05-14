@@ -1,19 +1,16 @@
 package com.parkflow.modules.licensing.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.licensing.entity.Company;
 import com.parkflow.modules.licensing.repository.CompanyModuleRepository;
 import com.parkflow.modules.licensing.repository.CompanyRepository;
 import com.parkflow.modules.licensing.repository.LicenseAuditLogRepository;
 import com.parkflow.modules.licensing.repository.LicenseBlockEventRepository;
 import com.parkflow.modules.licensing.repository.LicensedDeviceRepository;
-import com.parkflow.modules.licensing.service.LicenseService;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +34,6 @@ class LicensingControllerIntegrationTest {
   @Autowired private LicensedDeviceRepository deviceRepository;
   @Autowired private LicenseAuditLogRepository auditLogRepository;
   @Autowired private LicenseBlockEventRepository blockEventRepository;
-  @Autowired private LicenseService licenseService;
 
   @BeforeEach
   void clean() {

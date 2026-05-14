@@ -34,10 +34,12 @@ public final class RolePermissions {
           AuthPermission.TARIFAS_LEER,
           AuthPermission.TARIFAS_EDITAR,
           AuthPermission.USUARIOS_LEER,
+          AuthPermission.USUARIOS_EDITAR,
           AuthPermission.CIERRES_CAJA_ABRIR,
           AuthPermission.CIERRES_CAJA_CERRAR,
           AuthPermission.REPORTES_LEER,
           AuthPermission.CONFIGURACION_LEER,
+          AuthPermission.CONFIGURACION_EDITAR,
           AuthPermission.DEVICES_AUTORIZAR,
           AuthPermission.DEVICES_REVOCAR);
 

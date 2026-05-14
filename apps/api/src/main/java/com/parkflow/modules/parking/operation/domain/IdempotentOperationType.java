@@ -4,5 +4,6 @@ public enum IdempotentOperationType {
   ENTRY,
   EXIT,
   REPRINT,
-  LOST_TICKET
+  LOST_TICKET,
+  VOID
 }

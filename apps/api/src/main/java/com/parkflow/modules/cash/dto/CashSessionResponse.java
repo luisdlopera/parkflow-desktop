@@ -8,11 +8,13 @@ public record CashSessionResponse(
     UUID id,
     CashRegisterInfoResponse register,
     UUID operatorId,
+    String operatorName,
     String status,
     BigDecimal openingAmount,
     OffsetDateTime openedAt,
     OffsetDateTime closedAt,
     UUID closedById,
+    String closedByName,
     BigDecimal expectedAmount,
     BigDecimal countedAmount,
     BigDecimal differenceAmount,
@@ -22,5 +24,8 @@ public record CashSessionResponse(
     BigDecimal countOther,
     String notes,
     String closingNotes,
+    String closingWitnessName,
+    String supportDocumentNumber,
     OffsetDateTime countedAt,
-    UUID countOperatorId) {}
+    UUID countOperatorId,
+    String countOperatorName) {}

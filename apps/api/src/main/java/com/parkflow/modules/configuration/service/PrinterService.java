@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +28,7 @@ public class PrinterService {
   @Transactional(readOnly = true)
   public SettingsPageResponse<PrinterResponse> list(
       UUID siteId, String q, Boolean active, Pageable pageable) {
-    Page<Printer> page = printerRepository.search(siteId, q, active, pageable);
+    Page<Printer> page = printerRepository.search(siteId, normalizeQuery(q), active, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 
@@ -106,5 +107,9 @@ public class PrinterService {
 
   private static String trimToNull(String s) {
     return s == null || s.isBlank() ? null : s.trim();
+  }
+
+  private static String normalizeQuery(String q) {
+    return StringUtils.hasText(q) ? q.trim() : null;
   }
 }

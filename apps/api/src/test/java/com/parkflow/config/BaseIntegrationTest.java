@@ -2,7 +2,6 @@ package com.parkflow.config;
 
 import com.parkflow.modules.cash.domain.CashRegister;
 import com.parkflow.modules.cash.repository.CashRegisterRepository;
-import com.parkflow.config.RateLimitConfig;
 import com.parkflow.modules.configuration.entity.ParkingSite;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.licensing.entity.Company;

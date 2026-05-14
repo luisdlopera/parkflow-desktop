@@ -8,4 +8,6 @@ public record OperationResultResponse(
     String message,
     BigDecimal subtotal,
     BigDecimal surcharge,
+    BigDecimal discount,
+    Integer deductedMinutes,
     BigDecimal total) {}

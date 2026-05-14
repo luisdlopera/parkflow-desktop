@@ -3,6 +3,7 @@ package com.parkflow.modules.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -15,6 +16,7 @@ import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.configuration.repository.PrinterRepository;
 import com.parkflow.modules.configuration.service.PrinterService;
 import com.parkflow.modules.parking.operation.exception.OperationException;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,5 +79,16 @@ class PrinterServiceTest {
     assertThat(response.endpointOrDevice()).isEqualTo("USB0");
     assertThat(response.name()).isEqualTo("Front");
     assertThat(response.isDefault()).isTrue();
+  }
+
+  @Test
+  void listNormalizesSearchTextBeforeDelegating() {
+    UUID siteId = UUID.randomUUID();
+    when(printerRepository.search(eq(siteId), eq("Front"), eq(Boolean.TRUE), any()))
+        .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+    service.list(siteId, " Front ", true, PageRequest.of(0, 20));
+
+    verify(printerRepository).search(eq(siteId), eq("Front"), eq(Boolean.TRUE), any());
   }
 }

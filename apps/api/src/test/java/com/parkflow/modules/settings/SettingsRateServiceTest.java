@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.parkflow.modules.configuration.entity.ParkingSite;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateType;
 import com.parkflow.modules.parking.operation.domain.RoundingMode;
@@ -38,12 +39,14 @@ class SettingsRateServiceTest {
   @Mock private ParkingSessionRepository parkingSessionRepository;
   @Mock private SettingsAuditService settingsAuditService;
   @Mock private ParkingSiteRepository parkingSiteRepository;
+  @Mock private com.parkflow.modules.audit.service.AuditService globalAuditService;
+  @Mock private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   private SettingsRateService service;
 
   @BeforeEach
   void setUp() {
-    service = new SettingsRateService(rateRepository, parkingSessionRepository, settingsAuditService, vehicleTypeRepository, parkingSiteRepository);
+    service = new SettingsRateService(rateRepository, parkingSessionRepository, settingsAuditService, vehicleTypeRepository, parkingSiteRepository, globalAuditService, objectMapper);
   }
 
   @Test
@@ -68,6 +71,7 @@ class SettingsRateServiceTest {
         new RateUpsertRequest(
             "Tarifa OK",
             "CAR",
+            null,
             RateType.HOURLY,
             new BigDecimal("1000.00"),
             5,
@@ -83,8 +87,13 @@ class SettingsRateServiceTest {
             BigDecimal.ZERO,
             0,
             null,
+            null,
+            null,
             false,
+            BigDecimal.ZERO,
             false,
+            BigDecimal.ZERO,
+            null,
             null,
             null,
             null,
@@ -96,11 +105,69 @@ class SettingsRateServiceTest {
   }
 
   @Test
+  void createUsesSiteRefCodeWhenAvailable() {
+    UUID siteId = UUID.randomUUID();
+    ParkingSite site = new ParkingSite();
+    site.setId(siteId);
+    site.setCode("HQ");
+    when(parkingSiteRepository.findById(siteId)).thenReturn(java.util.Optional.of(site));
+    when(rateRepository.findActiveForConflictCheck(eq("HQ"), eq("CAR"), any(UUID.class)))
+        .thenReturn(List.of());
+    MasterVehicleType carType = new MasterVehicleType();
+    carType.setCode("CAR");
+    carType.setName("Carro");
+    when(vehicleTypeRepository.findByCode("CAR")).thenReturn(java.util.Optional.of(carType));
+    when(rateRepository.save(any(Rate.class))).thenAnswer(invocation -> {
+      Rate r = invocation.getArgument(0);
+      r.setId(UUID.randomUUID());
+      return r;
+    });
+
+    RateUpsertRequest req =
+        new RateUpsertRequest(
+            "Tarifa HQ",
+            "CAR",
+            null,
+            RateType.HOURLY,
+            new BigDecimal("1000.00"),
+            5,
+            0,
+            60,
+            RoundingMode.UP,
+            BigDecimal.ZERO,
+            true,
+            "legacy",
+            siteId,
+            BigDecimal.ZERO,
+            0,
+            BigDecimal.ZERO,
+            0,
+            null,
+            null,
+            null,
+            false,
+            BigDecimal.ZERO,
+            false,
+            BigDecimal.ZERO,
+            null,
+            null,
+            null,
+            null,
+            null);
+
+    var response = service.create(req);
+
+    assertThat(response.site()).isEqualTo("HQ");
+    assertThat(response.siteId()).isEqualTo(siteId);
+  }
+
+  @Test
   void createRejectsPartialScheduledRange() {
     RateUpsertRequest req =
         new RateUpsertRequest(
             "X",
             "CAR",
+            null,
             RateType.HOURLY,
             new BigDecimal("1000.00"),
             0,
@@ -116,8 +183,13 @@ class SettingsRateServiceTest {
             BigDecimal.ZERO,
             0,
             null,
+            null,
+            null,
             false,
+            BigDecimal.ZERO,
             false,
+            BigDecimal.ZERO,
+            null,
             null,
             null,
             OffsetDateTime.parse("2026-05-01T00:00:00Z"),
@@ -152,6 +224,7 @@ class SettingsRateServiceTest {
         new RateUpsertRequest(
             "Tarifa 2",
             "CAR",
+            null,
             RateType.HOURLY,
             new BigDecimal("5000.00"),
             0,
@@ -167,8 +240,13 @@ class SettingsRateServiceTest {
             BigDecimal.ZERO,
             0,
             null,
+            null,
+            null,
             false,
+            BigDecimal.ZERO,
             false,
+            BigDecimal.ZERO,
+            null,
             LocalTime.of(9, 0),
             LocalTime.of(13, 0),
             null,
@@ -179,6 +257,30 @@ class SettingsRateServiceTest {
         .satisfies(
             ex -> assertThat(((OperationException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT));
   }
+
+  @Test
+  void listNormalizesSearchTextBeforeDelegating() {
+    when(rateRepository.search(eq("DEFAULT"), eq("Tarifa"), eq(Boolean.TRUE), any(), any()))
+        .thenReturn(org.springframework.data.domain.Page.empty());
+
+    service.list(" DEFAULT ", " Tarifa ", true, null, org.springframework.data.domain.PageRequest.of(0, 20));
+
+    verify(rateRepository).search(eq("DEFAULT"), eq("Tarifa"), eq(Boolean.TRUE), any(), any());
+  }
+
+  @Test
+  void deleteDeactivatesInsteadOfRemoving() {
+    Rate rate = new Rate();
+    rate.setId(UUID.randomUUID());
+    rate.setName("Tarifa 1");
+    rate.setActive(true);
+    when(rateRepository.findById(rate.getId())).thenReturn(java.util.Optional.of(rate));
+    when(parkingSessionRepository.countByRate_Id(rate.getId())).thenReturn(0L);
+    when(rateRepository.save(any(Rate.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response = service.delete(rate.getId());
+
+    assertThat(response.active()).isFalse();
+    verify(rateRepository).save(any(Rate.class));
+  }
 }
-
-

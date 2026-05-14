@@ -22,7 +22,7 @@ export interface PrintStationConfig {
 /** @deprecated alias — usar `PrintStationConfig` (el nombre choca con el enum `PrinterProfile`). */
 export type PrinterProfileDescriptor = PrintStationConfig;
 
-export type VehicleType = "CAR" | "MOTORCYCLE" | "VAN" | "TRUCK" | "OTHER";
+export type VehicleType = "CAR" | "MOTORCYCLE" | "BICYCLE" | "VAN" | "TRUCK" | "BUS" | "ELECTRIC" | "OTHER";
 
 export type PrintDocumentType =
   | "ENTRY"

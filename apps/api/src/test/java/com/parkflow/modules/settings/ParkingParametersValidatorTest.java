@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.parkflow.modules.settings.dto.ParkingParametersData;
 import com.parkflow.modules.settings.service.ParkingParametersValidator;
+import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -57,6 +58,35 @@ class ParkingParametersValidatorTest {
     d.setMaxReprints(0);
     assertThat(ParkingParametersValidator.validate(d))
         .anyMatch(s -> s.toLowerCase().contains("reimpres"));
+  }
+
+  @Test
+  void rejectsInvalidBrandingAndTaxSettings() {
+    ParkingParametersData d = fullValid();
+    d.setLogoUrl("ftp://logo.png");
+    d.setBrandColor("orange");
+    d.setTaxRatePercent(new BigDecimal("101"));
+
+    assertThat(ParkingParametersValidator.validate(d))
+        .anyMatch(s -> s.toLowerCase().contains("logo"))
+        .anyMatch(s -> s.toLowerCase().contains("marca"))
+        .anyMatch(s -> s.toLowerCase().contains("impuesto"));
+  }
+
+  @Test
+  void acceptsTicketMessagesAndOperationRules() {
+    ParkingParametersData d = fullValid();
+    d.setLogoUrl("https://example.com/logo.png");
+    d.setBrandColor("#F97316");
+    d.setTaxName("IVA");
+    d.setTaxRatePercent(new BigDecimal("19"));
+    d.setPricesIncludeTax(true);
+    d.setTicketHeaderMessage("Bienvenido");
+    d.setTicketLegalMessage("Contrato de parqueadero");
+    d.setTicketFooterMessage("Gracias por su visita");
+    d.setOperationRulesMessage("Conserve su ticket.");
+
+    assertThat(ParkingParametersValidator.validate(d)).isEmpty();
   }
 
   private static ParkingParametersData fullValid() {
