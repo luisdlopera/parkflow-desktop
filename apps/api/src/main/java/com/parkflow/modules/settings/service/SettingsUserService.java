@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,7 @@ import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SettingsUserService {
   private final AppUserRepository appUserRepository;
   private final PasswordHashService passwordHashService;
@@ -99,7 +101,7 @@ public class SettingsUserService {
             objectMapper.writeValueAsString(req),
             "User created: " + user.getId());
     } catch (Exception e) {
-        // ignore serialization errors for audit
+        log.warn("No se pudo registrar auditoria global al crear usuario {}", user.getId(), e);
     }
 
     return toResponse(user);
@@ -184,7 +186,7 @@ public class SettingsUserService {
             objectMapper.writeValueAsString(before),
             objectMapper.writeValueAsString(snapshot(user)));
     } catch (Exception e) {
-        // ignore
+        log.warn("No se pudo registrar auditoria global al actualizar usuario {}", id, e);
     }
 
     return toResponse(user);
