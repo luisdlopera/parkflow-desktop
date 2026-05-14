@@ -27,9 +27,7 @@ coverage/
 *.log
 logs/
 
-# IDE and Editor
-.cursor/
-
-# OS specific
-.DS_Store
-Thumbs.db
+# IntelliJ build output
+apps/api/bin/
+out
+.next
