@@ -2,37 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button, Checkbox, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Switch } from "@heroui/react";
-import QuestionHelp from "./QuestionHelp";
 import { completeOnboarding, fetchOnboardingStatus, saveOnboardingStep, skipOnboarding, type OnboardingStatus } from "@/lib/onboarding-api";
-
-const OPERATIONAL_PROFILES = [
-  { key: "MIXED", label: "Mixto (Carros, motos, etc.)", desc: "El parqueadero acepta carros, motos y opcionalmente otros vehículos." },
-  { key: "MOTORCYCLE_ONLY", label: "Solo motos", desc: "Oculta el selector de tipo de vehículo en el ingreso y fuerza 'MOTORCYCLE'." },
-  { key: "CAR_ONLY", label: "Solo carros", desc: "Oculta el selector de tipo de vehículo en el ingreso y fuerza 'CAR'." },
-  { key: "VALET", label: "Servicio de Valet Parking", desc: "Habilita registro del estado del vehículo, inventario físico y fotos al ingresar." },
-  { key: "RESIDENTIAL", label: "Residencial", desc: "Pensado para residentes con mensualidades activas y visitas controladas." },
-  { key: "PUBLIC", label: "Público de alta rotación", desc: "Habilita tarifas manuales, selección de múltiples carriles y cajeros." },
-  { key: "ENTERPRISE", label: "Empresarial / Corporativo", desc: "Enfocado en empleados con convenios y flujos rápidos de ingreso." }
-];
 
 const STEP_TITLES = [
   "Tipos de vehículo", "Capacidad", "Tarifas", "Caja", "Turnos", "Métodos de pago",
   "Tickets", "Clientes y mensualidades", "Convenios", "Sedes", "Roles y permisos", "Auditoría"
-];
-
-const STEP_HELP_TEXTS: string[] = [
-  "Indica qué tipos de vehículos aceptas en tu parqueadero. Esta selección afectará la clasificación en caja, reportes y posibles tarifas por tipo.",
-  "Define la capacidad total de tu parqueadero. Esto se usa para controlar ingresos cuando el control de cupos está activo.",
-  "Configura el valor base de la tarifa. Puedes ajustar fracciones y políticas adicionales luego en Configuración.",
-  "Decide si manejas caja por operador. Si activas, cada operador tendrá su propio registro de cierre.",
-  "Indica si tu operación funciona con turnos para registrar entradas y salidas por horario de trabajo.",
-  "Selecciona los métodos de pago que aceptas. Algunas opciones pueden requerir un plan superior.",
-  "Configura si permites reimpresiones de tickets y controla la política de reimpresión.",
-  "Activa soporte para clientes frecuentes y mensualidades para gestionar cobros recurrentes.",
-  "Define si trabajas con convenios (descuentos o acuerdos especiales con empresas).",
-  "Activa multi-sede para gestionar varias ubicaciones desde una sola cuenta.",
-  "Configura roles y permisos avanzados para segregar responsabilidades entre usuarios.",
-  "La auditoría registra acciones críticas: cobros, anulaciones y cierres de caja. Se mantendrá activa.",
 ];
 
 const OPTIONS = {
@@ -61,9 +35,6 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
   const progress = useMemo(() => Math.round((step / 12) * 100), [step]);
   const canMultiSite = Boolean(status?.availableOptionsByPlan?.allowMultiLocation);
   const canAdvancedPermissions = Boolean(status?.availableOptionsByPlan?.allowAdvancedPermissions);
-  const allowedPayments = Array.isArray(status?.availableOptionsByPlan?.paymentMethods)
-    ? (status.availableOptionsByPlan.paymentMethods as string[])
-    : OPTIONS.payments;
 
   const persistStep = async (nextStep: number) => {
     if (!status) return;
@@ -79,28 +50,16 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
     <div className="fixed inset-0 z-[120] bg-background p-6 md:p-10 overflow-y-auto">
       <div className="mx-auto max-w-4xl">
         <p className="text-sm text-default-500">Paso {step} de 12</p>
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold">{STEP_TITLES[step - 1]}</h1>
-          {STEP_HELP_TEXTS[step - 1] && (
-            <QuestionHelp id={`step-help-${step}`} title="Más información">
-              {STEP_HELP_TEXTS[step - 1]}
-            </QuestionHelp>
-          )}
-        </div>
+        <h1 className="text-2xl font-semibold">{STEP_TITLES[step - 1]}</h1>
         <div className="mt-3 h-2 w-full rounded-full bg-default-200">
           <div className="h-2 rounded-full bg-primary" style={{ width: `${progress}%` }} />
         </div>
         <p className="mt-3 text-sm text-default-600">Configura rápido lo esencial. Podrás editar todo luego en Configuración.</p>
 
-        <div className="mt-6 rounded-xl border border-default-200 p-5 space-y-4 bg-white dark:bg-neutral-950">
+        <div className="mt-6 rounded-xl border border-default-200 p-5 space-y-4">
           {step === 1 && (
             <>
-              <div className="flex items-center gap-2">
-                <p className="text-sm">¿Qué tipos de vehículos recibe tu parqueadero?</p>
-                <QuestionHelp>
-                  Selecciona los tipos de vehículo que aceptas. Esta información se usará en la caja para clasificar ingresos, en reportes y para adaptar tarifas por tipo cuando se configure.
-                </QuestionHelp>
-              </div>
+              <p className="text-sm">¿Qué tipos de vehículos recibe tu parqueadero?</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {OPTIONS.vehicles.map((item) => (
                   <Checkbox
@@ -116,47 +75,12 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
                   </Checkbox>
                 ))}
               </div>
-
-              {String(stepData.operationalProfile ?? stepData.businessModel ?? "MIXED") !== "MOTORCYCLE_ONLY" && String(stepData.operationalProfile ?? stepData.businessModel ?? "MIXED") !== "CAR_ONLY" ? (
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-semibold text-default-700">Tipos de vehículo permitidos</label>
-                    <QuestionHelp>
-                      Selecciona los tipos de vehículo que aceptas. Esta selección afectará la clasificación en caja, reportes y posibles tarifas por tipo.
-                    </QuestionHelp>
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {OPTIONS.vehicles.map((item) => (
-                      <Checkbox
-                        key={item}
-                        isSelected={Array.isArray(stepData.vehicleTypes) && (stepData.vehicleTypes as string[]).includes(item)}
-                        onValueChange={(checked) => {
-                          const prev = Array.isArray(stepData.vehicleTypes) ? (stepData.vehicleTypes as string[]) : [];
-                          const next = checked ? [...prev, item] : prev.filter((v) => v !== item);
-                          setStepData({ ...stepData, vehicleTypes: next });
-                        }}
-                      >
-                        {item}
-                      </Checkbox>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-primary-50 dark:bg-primary-950/20 text-primary-800 dark:text-primary-400 rounded-xl p-4 text-xs border border-primary-100 dark:border-primary-900/30">
-                  ✨ <strong>Modo adaptativo automático:</strong> El tipo de vehículo se ha configurado por defecto y se auto-asignará a los ingresos. La interfaz del operador omitirá selects innecesarios para optimizar la velocidad y evitar errores de registro.
-                </div>
-              )}
-            </div>
+            </>
           )}
           {step === 2 && (
             <>
               <Input type="number" label="Capacidad total" value={String(stepData.totalCapacity ?? "")} onValueChange={(v) => setStepData({ ...stepData, totalCapacity: Number(v) || 0 })} />
-              <div className="flex items-center gap-2">
-                <Switch isSelected={Boolean(stepData.controlSlots)} onValueChange={(v) => setStepData({ ...stepData, controlSlots: v })}>¿Quieres controlar cupos?</Switch>
-                <QuestionHelp>
-                  Si activas el control de cupos, el sistema contabilizará y bloqueará ingresos cuando se alcance la capacidad definida.
-                </QuestionHelp>
-              </div>
+              <Switch isSelected={Boolean(stepData.controlSlots)} onValueChange={(v) => setStepData({ ...stepData, controlSlots: v })}>¿Quieres controlar cupos?</Switch>
             </>
           )}
           {step === 3 && <Input type="number" label="Valor base de tarifa" value={String(stepData.baseValue ?? "")} onValueChange={(v) => setStepData({ ...stepData, baseValue: Number(v) || 0, mode: "HOURLY" })} />}
@@ -165,20 +89,17 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
           {step === 6 && (
             <div className="grid gap-2 sm:grid-cols-2">
               {OPTIONS.payments.map((item) => (
-                <div key={item}>
-                  <Checkbox
-                    isDisabled={!allowedPayments.includes(item)}
-                    isSelected={Array.isArray(stepData.paymentMethods) && (stepData.paymentMethods as string[]).includes(item)}
-                    onValueChange={(checked) => {
-                      const prev = Array.isArray(stepData.paymentMethods) ? (stepData.paymentMethods as string[]) : [];
-                      const next = checked ? [...prev, item] : prev.filter((v) => v !== item);
-                      setStepData({ ...stepData, paymentMethods: next });
-                    }}
-                  >
-                    {item}
-                  </Checkbox>
-                  {!allowedPayments.includes(item) && <p className="text-xs text-warning">Disponible en plan superior.</p>}
-                </div>
+                <Checkbox
+                  key={item}
+                  isSelected={Array.isArray(stepData.paymentMethods) && (stepData.paymentMethods as string[]).includes(item)}
+                  onValueChange={(checked) => {
+                    const prev = Array.isArray(stepData.paymentMethods) ? (stepData.paymentMethods as string[]) : [];
+                    const next = checked ? [...prev, item] : prev.filter((v) => v !== item);
+                    setStepData({ ...stepData, paymentMethods: next });
+                  }}
+                >
+                  {item}
+                </Checkbox>
               ))}
             </div>
           )}
@@ -187,28 +108,14 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
           {step === 9 && <Switch isSelected={Boolean(stepData.enabled)} onValueChange={(v) => setStepData({ ...stepData, enabled: v })}>¿Tienes convenios?</Switch>}
           {step === 10 && (
             <div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <Switch isSelected={Boolean(stepData.multiSite)} isDisabled={!canMultiSite} onValueChange={(v) => setStepData({ ...stepData, multiSite: v })}>¿Varias sedes?</Switch>
-                  <QuestionHelp>
-                    Con varias sedes podrás administrar inventarios y reportes por ubicación, y permitir el movimiento entre sedes.
-                  </QuestionHelp>
-                </div>
-                {!canMultiSite && <p className="text-xs text-warning-700 mt-1">Disponible en plan superior.</p>}
-              </div>
+              <Switch isSelected={Boolean(stepData.multiSite)} isDisabled={!canMultiSite} onValueChange={(v) => setStepData({ ...stepData, multiSite: v })}>¿Varias sedes?</Switch>
+              {!canMultiSite && <p className="text-xs text-warning mt-1">Disponible en plan superior.</p>}
             </div>
           )}
           {step === 11 && (
             <div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <Switch isSelected={Boolean(stepData.advanced)} isDisabled={!canAdvancedPermissions} onValueChange={(v) => setStepData({ ...stepData, advanced: v })}>Permisos avanzados</Switch>
-                  <QuestionHelp>
-                    Los permisos avanzados permiten roles con capacidades específicas (por ejemplo, ver reportes, anular cobros, crear convenios).
-                  </QuestionHelp>
-                </div>
-                {!canAdvancedPermissions && <p className="text-xs text-warning-700 mt-1">Disponible en plan superior.</p>}
-              </div>
+              <Switch isSelected={Boolean(stepData.advanced)} isDisabled={!canAdvancedPermissions} onValueChange={(v) => setStepData({ ...stepData, advanced: v })}>Permisos avanzados</Switch>
+              {!canAdvancedPermissions && <p className="text-xs text-warning mt-1">Disponible en plan superior.</p>}
             </div>
           )}
           {step === 12 && <p className="text-sm text-default-600">Se mantendrá activa auditoría crítica: cobros, anulaciones y cierre de caja.</p>}
