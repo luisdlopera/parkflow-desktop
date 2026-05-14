@@ -7,7 +7,6 @@ import com.parkflow.modules.auth.entity.AuthAuditAction;
 import com.parkflow.modules.auth.entity.PasswordResetToken;
 import com.parkflow.modules.auth.repository.PasswordResetTokenRepository;
 import com.parkflow.modules.auth.security.PasswordHashService;
-import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
