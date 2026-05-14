@@ -108,18 +108,27 @@ class OperationServiceInventoryTest {
         parkingSessionRepository, ticketCounterRepository, vehicleConditionReportRepository,
         auditService, operationPrintService,
         new com.parkflow.modules.parking.operation.validation.PlateValidator(),
-        monthlyContractRepository, objectMapper, meterRegistry,
-        idempotencyManager, parkingValidatorService
+        monthlyContractRepository, objectMapper, meterRegistry
     );
 
-    voidSessionService = new VoidSessionService(
-        parkingSessionRepository, appUserRepository, operationIdempotencyRepository, auditService, globalAuditService);
-
-    reprintTicketService = new ReprintTicketService(
-        parkingSessionRepository, appUserRepository, operationIdempotencyRepository, auditService, operationPrintService, meterRegistry, globalAuditService);
-
-    processLostTicketService = new ProcessLostTicketService(
-        parkingSessionRepository, appUserRepository, paymentRepository, parkingSiteRepository, operationalParameterRepository, operationIdempotencyRepository, auditService, operationPrintService, complexPricingPort, cashMovementUseCase, meterRegistry, globalAuditService);
+    service =
+        new OperationService(
+            appUserRepository,
+            parkingSiteRepository,
+            operationalParameterRepository,
+            parkingSessionRepository,
+            paymentRepository,
+            operationIdempotencyRepository,
+            auditService,
+            operationPrintService,
+            cashMovementUseCase,
+            pricingCalculator,
+            monthlyContractRepository,
+            prepaidBalanceRepository,
+            agreementRepository,
+            prepaidUseCase,
+            meterRegistry,
+            globalAuditService);
     lenient().when(operationalParameterRepository.findBySite_Id(any())).thenReturn(Optional.empty());
     lenient().when(operationalConfigurationService.getOperationalProfile(any())).thenReturn(OperationalProfile.MIXED);
     lenient().when(operationalConfigurationService.resolveVehicleType(any(), anyString()))
