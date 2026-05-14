@@ -9,6 +9,7 @@ export type ParkingSiteRow = {
   managerName: string | null;
   timezone: string;
   currency: string;
+  maxCapacity: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

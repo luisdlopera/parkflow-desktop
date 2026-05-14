@@ -23,7 +23,7 @@ public class SettingsVehicleTypeService {
 
     @Transactional(readOnly = true)
     public List<VehicleTypeResponse> listAll() {
-        return repository.findAllByOrderByCreatedAtAsc().stream()
+        return repository.findAllByOrderByDisplayOrderAscNameAsc().stream()
             .map(this::toResponse)
             .toList();
     }
@@ -31,17 +31,35 @@ public class SettingsVehicleTypeService {
     @Transactional
     public VehicleTypeResponse create(VehicleTypeRequest req) {
         Objects.requireNonNull(req, "req");
-        if (repository.findByCode(req.code()).isPresent()) {
+        String code = req.code().trim().toUpperCase();
+        if (repository.findByCode(code).isPresent()) {
             throw new OperationException(HttpStatus.CONFLICT, "Ya existe un tipo de vehículo con este código");
         }
         MasterVehicleType type = new MasterVehicleType();
-        type.setCode(req.code());
-        type.setName(req.name());
+        type.setCode(code);
+        type.setName(req.name().trim());
+        applyConfig(type, req);
+        type.setUpdatedAt(java.time.OffsetDateTime.now());
+        type = repository.save(type);
+        return toResponse(type);
+    }
+
+    private void applyConfig(MasterVehicleType type, VehicleTypeRequest req) {
+        type.setIcon(normalizeIcon(req.icon(), type.getIcon()));
+        type.setColor(normalizeColor(req.color(), type.getColor()));
         type.setRequiresPlate(req.requiresPlate());
+        type.setHasOwnRate(req.hasOwnRate());
+        type.setQuickAccess(req.quickAccess());
         type.setRequiresPhoto(req.requiresPhoto());
         type.setDisplayOrder(req.displayOrder());
-        type = repository.save(type);
-        return new VehicleTypeResponse(type.getId(), type.getCode(), type.getName(), type.isActive(), type.isRequiresPlate(), type.isRequiresPhoto(), type.getDisplayOrder(), type.getCreatedAt(), type.getUpdatedAt());
+    }
+
+    private String normalizeIcon(String icon, String fallback) {
+        return icon == null || icon.isBlank() ? fallback : icon.trim();
+    }
+
+    private String normalizeColor(String color, String fallback) {
+        return color == null || color.isBlank() ? fallback : color.trim().toUpperCase();
     }
 
     @Transactional
@@ -50,21 +68,20 @@ public class SettingsVehicleTypeService {
         Objects.requireNonNull(req, "req");
         MasterVehicleType type = repository.findById(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tipo no encontrado"));
-        
-        repository.findByCode(req.code()).ifPresent(existing -> {
+
+        String code = req.code().trim().toUpperCase();
+        repository.findByCode(code).ifPresent(existing -> {
             if (!existing.getId().equals(id)) {
                 throw new OperationException(HttpStatus.CONFLICT, "Ya existe otro tipo con este código");
             }
         });
 
-        type.setCode(req.code());
-        type.setName(req.name());
-        type.setRequiresPlate(req.requiresPlate());
-        type.setRequiresPhoto(req.requiresPhoto());
-        type.setDisplayOrder(req.displayOrder());
+        type.setCode(code);
+        type.setName(req.name().trim());
+        applyConfig(type, req);
         type.setUpdatedAt(java.time.OffsetDateTime.now());
         type = repository.save(type);
-        return new VehicleTypeResponse(type.getId(), type.getCode(), type.getName(), type.isActive(), type.isRequiresPlate(), type.isRequiresPhoto(), type.getDisplayOrder(), type.getCreatedAt(), type.getUpdatedAt());
+        return toResponse(type);
     }
 
     @Transactional
@@ -81,7 +98,9 @@ public class SettingsVehicleTypeService {
     public void delete(UUID id) {
         MasterVehicleType type = repository.findById(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tipo no encontrado"));
-        repository.delete(type);
+        type.setActive(false);
+        type.setUpdatedAt(java.time.OffsetDateTime.now());
+        repository.save(type);
     }
 
     private VehicleTypeResponse toResponse(MasterVehicleType type) {
@@ -89,8 +108,12 @@ public class SettingsVehicleTypeService {
             type.getId(),
             type.getCode(),
             type.getName(),
+            type.getIcon(),
+            type.getColor(),
             type.isActive(),
             type.isRequiresPlate(),
+            type.isHasOwnRate(),
+            type.isQuickAccess(),
             type.isRequiresPhoto(),
             type.getDisplayOrder(),
             type.getCreatedAt(),

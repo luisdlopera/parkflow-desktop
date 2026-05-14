@@ -14,6 +14,7 @@ public record ParkingSiteResponse(
     String managerName,
     String timezone,
     String currency,
+    int maxCapacity,
     boolean isActive,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt) {}

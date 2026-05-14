@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 public record ReprintRequest(
-	@Size(max = 200) String idempotencyKey,
+	@NotBlank @Size(max = 200) String idempotencyKey,
 	@NotBlank String ticketNumber,
 	@NotNull UUID operatorUserId,
 	@NotBlank String reason) {}

@@ -19,8 +19,21 @@ public class ParkingSession {
   @Column(nullable = false, unique = true)
   private String ticketNumber;
 
-  @Column(nullable = false, length = 16)
+  @Column(nullable = false, length = 20)
   private String plate;
+
+  @Column(nullable = false, length = 2)
+  private String countryCode = "CO";
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private EntryMode entryMode = EntryMode.VISITOR;
+
+  @Column(nullable = false)
+  private boolean noPlate = false;
+
+  @Column(length = 200)
+  private String noPlateReason;
 
   @ManyToOne(optional = false)
   @JoinColumn(name = "vehicle_id")
@@ -71,6 +84,15 @@ public class ParkingSession {
 
   @Column(precision = 10, scale = 2)
   private BigDecimal totalAmount;
+
+  @Column(length = 50)
+  private String agreementCode;
+
+  @Column(name = "applied_prepaid_minutes")
+  private Integer appliedPrepaidMinutes = 0;
+
+  @Column(name = "is_monthly_session")
+  private boolean monthlySession = false;
 
   private String site;
 

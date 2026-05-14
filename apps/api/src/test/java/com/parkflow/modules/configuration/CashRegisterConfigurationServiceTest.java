@@ -3,6 +3,8 @@ package com.parkflow.modules.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.cash.domain.CashRegister;
@@ -16,6 +18,7 @@ import com.parkflow.modules.configuration.service.CashRegisterConfigurationServi
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +57,21 @@ class CashRegisterConfigurationServiceTest {
   }
 
   @Test
+  void createFailsOnDuplicateSiteAndTerminal() {
+    CashRegister existing = new CashRegister();
+    existing.setId(UUID.randomUUID());
+    existing.setSite("DEFAULT");
+    existing.setTerminal("T1");
+    when(cashRegisterRepository.findBySiteAndTerminal("DEFAULT", "T1")).thenReturn(Optional.of(existing));
+
+    CashRegisterRequest req = new CashRegisterRequest("DEFAULT", null, "c1", "Caja", "T1", null, null, null, true);
+
+    assertThatThrownBy(() -> service.create(req))
+        .isInstanceOf(OperationException.class)
+        .satisfies(ex -> assertThat(((OperationException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT));
+  }
+
+  @Test
   void createNormalizesCodeAndTerminalWithLinkedEntities() {
     UUID siteId = UUID.randomUUID();
     UUID printerId = UUID.randomUUID();
@@ -67,6 +87,7 @@ class CashRegisterConfigurationServiceTest {
     user.setName("Admin");
 
     when(parkingSiteRepository.findById(siteId)).thenReturn(Optional.of(site));
+    when(cashRegisterRepository.findBySiteAndTerminal("Main", "term-1")).thenReturn(Optional.empty());
     when(printerRepository.findById(printerId)).thenReturn(Optional.of(printer));
     when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
     when(cashRegisterRepository.save(any(CashRegister.class))).thenAnswer(invocation -> {
@@ -83,5 +104,104 @@ class CashRegisterConfigurationServiceTest {
     assertThat(response.terminal()).isEqualTo("term-1");
     assertThat(response.printerId()).isEqualTo(printerId);
     assertThat(response.responsibleUserId()).isEqualTo(userId);
+  }
+
+  @Test
+  void createUsesSiteRefCodeWhenAvailable() {
+    UUID siteId = UUID.randomUUID();
+    ParkingSite site = new ParkingSite();
+    site.setId(siteId);
+    site.setCode("HQ");
+    when(parkingSiteRepository.findById(siteId)).thenReturn(Optional.of(site));
+    when(cashRegisterRepository.findBySiteAndTerminal("HQ", "T1")).thenReturn(Optional.empty());
+    when(cashRegisterRepository.save(any(CashRegister.class))).thenAnswer(invocation -> {
+      CashRegister entity = invocation.getArgument(0);
+      entity.setId(UUID.randomUUID());
+      return entity;
+    });
+
+    CashRegisterRequest req = new CashRegisterRequest("legacy", siteId, "C1", "Caja", "T1", null, null, null, true);
+
+    var response = service.create(req);
+
+    assertThat(response.site()).isEqualTo("HQ");
+    assertThat(response.siteId()).isEqualTo(siteId);
+  }
+
+  @Test
+  void listUsesSearchFilters() {
+    CashRegister entity = new CashRegister();
+    entity.setId(UUID.randomUUID());
+    entity.setSite("DEFAULT");
+    entity.setTerminal("T1");
+    entity.setActive(true);
+    when(cashRegisterRepository.search(isNull(), eq("T1"), eq(Boolean.TRUE), any()))
+        .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 20), 1));
+
+    var page = service.list(null, " T1 ", true, PageRequest.of(0, 20));
+
+    assertThat(page.content()).hasSize(1);
+    assertThat(page.content().get(0).terminal()).isEqualTo("T1");
+  }
+
+  @Test
+  void updateClearsLinkedEntitiesWhenPayloadOmitsThem() {
+    CashRegister entity = new CashRegister();
+    entity.setId(UUID.randomUUID());
+    entity.setSite("DEFAULT");
+    entity.setTerminal("T1");
+    entity.setActive(true);
+    ParkingSite currentSite = new ParkingSite();
+    currentSite.setId(UUID.randomUUID());
+    entity.setSiteRef(currentSite);
+
+    when(cashRegisterRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+    when(cashRegisterRepository.findBySiteAndTerminal("DEFAULT", "T2")).thenReturn(Optional.empty());
+    when(cashRegisterRepository.save(any(CashRegister.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    CashRegisterRequest req = new CashRegisterRequest("DEFAULT", null, "C2", "Caja 2", "T2", null, null, null, false);
+
+    var response = service.update(entity.getId(), req);
+
+    assertThat(response.siteId()).isNull();
+    assertThat(response.terminal()).isEqualTo("T2");
+    assertThat(response.active()).isFalse();
+  }
+
+  @Test
+  void updateRejectsDuplicateSiteAndTerminal() {
+    CashRegister current = new CashRegister();
+    current.setId(UUID.randomUUID());
+    current.setSite("DEFAULT");
+    current.setTerminal("T1");
+
+    CashRegister duplicate = new CashRegister();
+    duplicate.setId(UUID.randomUUID());
+    duplicate.setSite("DEFAULT");
+    duplicate.setTerminal("T2");
+
+    when(cashRegisterRepository.findById(current.getId())).thenReturn(Optional.of(current));
+    when(cashRegisterRepository.findBySiteAndTerminal("DEFAULT", "T2")).thenReturn(Optional.of(duplicate));
+
+    CashRegisterRequest req = new CashRegisterRequest("DEFAULT", null, "C2", "Caja 2", "T2", null, null, null, false);
+
+    assertThatThrownBy(() -> service.update(current.getId(), req))
+        .isInstanceOf(OperationException.class)
+        .satisfies(ex -> assertThat(((OperationException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT));
+  }
+
+  @Test
+  void patchStatusTogglesActiveFlag() {
+    CashRegister entity = new CashRegister();
+    entity.setId(UUID.randomUUID());
+    entity.setSite("DEFAULT");
+    entity.setTerminal("T1");
+    entity.setActive(true);
+    when(cashRegisterRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+    when(cashRegisterRepository.save(any(CashRegister.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response = service.patchStatus(entity.getId(), false);
+
+    assertThat(response.active()).isFalse();
   }
 }

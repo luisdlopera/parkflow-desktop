@@ -2,6 +2,7 @@ package com.parkflow.modules.parking.operation.dto;
 
 import com.parkflow.modules.parking.operation.domain.PaymentMethod;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -10,11 +11,12 @@ import java.util.List;
 import java.util.UUID;
 
 public record ExitRequest(
-    @Size(max = 200) String idempotencyKey,
+    @NotBlank @Size(max = 200) String idempotencyKey,
     @Size(max = 50) @Pattern(regexp = "^[A-Z0-9-]+$", message = "Ticket number must be alphanumeric") String ticketNumber,
     @Size(min = 3, max = 20) @Pattern(regexp = "^[A-Z0-9-]+$", message = "Plate must be alphanumeric") String plate,
     @NotNull UUID operatorUserId,
     PaymentMethod paymentMethod,
+    String agreementCode,
     OffsetDateTime exitAt,
     @Size(max = 500) String observations,
     @Size(max = 500) String exitImageUrl,

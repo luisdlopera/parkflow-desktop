@@ -4,6 +4,7 @@ import com.parkflow.modules.auth.entity.AuthAuditAction;
 import com.parkflow.modules.configuration.entity.ParkingSite;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.parking.operation.domain.Rate;
+import com.parkflow.modules.parking.operation.domain.RateCategory;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
@@ -32,12 +33,18 @@ public class SettingsRateService {
   private final SettingsAuditService settingsAuditService;
   private final com.parkflow.modules.settings.repository.MasterVehicleTypeRepository vehicleTypeRepository;
   private final ParkingSiteRepository parkingSiteRepository;
+  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
+  private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
+  // =========================================================================
+  // Queries
+  // =========================================================================
 
   @Transactional(readOnly = true)
   public SettingsPageResponse<RateResponse> list(
-      String site, String q, Boolean active, Pageable pageable) {
+      String site, String q, Boolean active, String category, Pageable pageable) {
     String s = site == null || site.isBlank() ? "DEFAULT" : site.trim();
-    Page<Rate> page = rateRepository.search(s, q, active, pageable);
+    Page<Rate> page = rateRepository.search(s, normalizeQuery(q), active, category, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 
@@ -49,6 +56,10 @@ public class SettingsRateService {
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
     return toResponse(rate);
   }
+
+  // =========================================================================
+  // Mutations
+  // =========================================================================
 
   @Transactional
   public RateResponse create(RateUpsertRequest req) {
@@ -64,6 +75,16 @@ public class SettingsRateService {
         AuthAuditAction.SETTINGS_RATE_CREATE,
         "OK",
         Map.of("rateId", rate.getId().toString(), "name", rate.getName()));
+
+    try {
+        globalAuditService.record(
+            com.parkflow.modules.audit.domain.AuditAction.CAMBIAR_TARIFA,
+            null,
+            objectMapper.writeValueAsString(req),
+            "Rate created: " + rate.getId());
+    } catch (Exception e) {
+        // ignore
+    }
     return toResponse(rate);
   }
 
@@ -86,6 +107,16 @@ public class SettingsRateService {
         AuthAuditAction.SETTINGS_RATE_UPDATE,
         "OK",
         Map.of("rateId", id.toString(), "before", before, "after", snapshot(updated)));
+
+    try {
+        globalAuditService.record(
+            com.parkflow.modules.audit.domain.AuditAction.CAMBIAR_TARIFA,
+            objectMapper.writeValueAsString(before),
+            objectMapper.writeValueAsString(snapshot(updated)),
+            "Rate updated: " + id);
+    } catch (Exception e) {
+        // ignore
+    }
     return toResponse(updated);
   }
 
@@ -104,11 +135,17 @@ public class SettingsRateService {
         AuthAuditAction.SETTINGS_RATE_STATUS,
         "OK",
         Map.of("rateId", id.toString(), "previousActive", previous, "active", rate.isActive()));
+
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.CAMBIAR_TARIFA,
+        "active=" + previous,
+        "active=" + rate.isActive(),
+        "Rate status changed: " + id);
     return toResponse(rate);
   }
 
   @Transactional
-  public void delete(UUID id) {
+  public RateResponse delete(UUID id) {
     Rate rate =
         rateRepository
             .findById(id)
@@ -119,10 +156,19 @@ public class SettingsRateService {
           HttpStatus.CONFLICT,
           "No se puede eliminar: existen sesiones asociadas; inactivela en su lugar");
     }
-    rateRepository.delete(rate);
+    rate.setActive(false);
+    rate.setUpdatedAt(OffsetDateTime.now());
+    rateRepository.save(rate);
     settingsAuditService.log(
-        AuthAuditAction.SETTINGS_RATE_DELETE, "OK", Map.of("rateId", id.toString(), "name", rate.getName()));
+        AuthAuditAction.SETTINGS_RATE_DELETE,
+        "OK",
+        Map.of("rateId", id.toString(), "name", rate.getName(), "active", false));
+    return toResponse(rate);
   }
+
+  // =========================================================================
+  // Business rules
+  // =========================================================================
 
   private void validateSchedule(Rate rate) {
     boolean hasFrom = rate.getScheduledActiveFrom() != null;
@@ -138,12 +184,27 @@ public class SettingsRateService {
     }
   }
 
+  private void validateMinMax(Rate rate) {
+    BigDecimal min = rate.getMinSessionValue();
+    BigDecimal max = rate.getMaxSessionValue();
+    if (min != null && max != null && min.compareTo(max) > 0) {
+      throw new OperationException(
+          HttpStatus.BAD_REQUEST,
+          "El valor mínimo de sesión no puede ser mayor que el valor máximo");
+    }
+  }
+
   private void applyBusinessRules(Rate rate, UUID excludeId) {
     validateSchedule(rate);
-    
+    validateMinMax(rate);
+
     if (rate.getVehicleType() != null) {
-      vehicleTypeRepository.findByCode(rate.getVehicleType())
-          .orElseThrow(() -> new OperationException(HttpStatus.BAD_REQUEST, "El tipo de vehículo no existe en los maestros"));
+      vehicleTypeRepository
+          .findByCode(rate.getVehicleType())
+          .orElseThrow(
+              () ->
+                  new OperationException(
+                      HttpStatus.BAD_REQUEST, "El tipo de vehículo no existe en los maestros"));
     }
 
     if (!rate.isActive()) {
@@ -192,9 +253,14 @@ public class SettingsRateService {
     return a.start < b.end && b.start < a.end;
   }
 
+  // =========================================================================
+  // Mapping helpers
+  // =========================================================================
+
   private Rate fromRequest(RateUpsertRequest req, Rate target) {
     target.setName(req.name().trim());
     target.setVehicleType(req.vehicleType());
+    target.setCategory(req.category() != null ? req.category() : RateCategory.STANDARD);
     target.setRateType(req.rateType());
     target.setAmount(req.amount());
     target.setGraceMinutes(req.graceMinutes());
@@ -203,19 +269,41 @@ public class SettingsRateService {
     target.setRoundingMode(req.roundingMode());
     target.setLostTicketSurcharge(req.lostTicketSurcharge());
     target.setActive(req.active());
-    target.setSite(req.site().trim());
+
+    // Sede
+    ParkingSite siteRef = null;
     if (req.siteId() != null) {
-      ParkingSite site = parkingSiteRepository.findById(req.siteId())
-          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sede no encontrada"));
-      target.setSiteRef(site);
+      siteRef =
+          parkingSiteRepository
+              .findById(req.siteId())
+              .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sede no encontrada"));
+      target.setSiteRef(siteRef);
     }
+    target.setSite(resolveSite(req.site(), siteRef));
+
+    // Estructura base + adicional
     target.setBaseValue(req.baseValue() != null ? req.baseValue() : BigDecimal.ZERO);
     target.setBaseMinutes(req.baseMinutes());
     target.setAdditionalValue(req.additionalValue() != null ? req.additionalValue() : BigDecimal.ZERO);
     target.setAdditionalMinutes(req.additionalMinutes());
+
+    // Topes
+    target.setMinSessionValue(req.minSessionValue());
+    target.setMaxSessionValue(req.maxSessionValue());
     target.setMaxDailyValue(req.maxDailyValue());
+
+    // Noche y festivos
     target.setAppliesNight(req.appliesNight());
+    target.setNightSurchargePercent(
+        req.nightSurchargePercent() != null ? req.nightSurchargePercent() : BigDecimal.ZERO);
     target.setAppliesHoliday(req.appliesHoliday());
+    target.setHolidaySurchargePercent(
+        req.holidaySurchargePercent() != null ? req.holidaySurchargePercent() : BigDecimal.ZERO);
+
+    // Días de la semana
+    target.setAppliesDaysBitmap(req.appliesDaysBitmap());
+
+    // Franja horaria y vigencia
     target.setWindowStart(req.windowStart());
     target.setWindowEnd(req.windowEnd());
     target.setScheduledActiveFrom(req.scheduledActiveFrom());
@@ -224,11 +312,26 @@ public class SettingsRateService {
     return target;
   }
 
+  private String resolveSite(String requestedSite, ParkingSite siteRef) {
+    String site = requestedSite == null || requestedSite.isBlank() ? "DEFAULT" : requestedSite.trim();
+    if (siteRef == null) {
+      return site;
+    }
+    return siteRef.getCode() != null && !siteRef.getCode().isBlank()
+        ? siteRef.getCode().trim()
+        : site;
+  }
+
+  private static String normalizeQuery(String q) {
+    return q == null || q.isBlank() ? null : q.trim();
+  }
+
   private RateResponse toResponse(Rate r) {
     return new RateResponse(
         r.getId(),
         r.getName(),
         r.getVehicleType(),
+        r.getCategory(),
         r.getRateType(),
         r.getAmount(),
         r.getGraceMinutes(),
@@ -243,9 +346,14 @@ public class SettingsRateService {
         r.getBaseMinutes(),
         r.getAdditionalValue(),
         r.getAdditionalMinutes(),
+        r.getMinSessionValue(),
+        r.getMaxSessionValue(),
         r.getMaxDailyValue(),
         r.isAppliesNight(),
+        r.getNightSurchargePercent(),
         r.isAppliesHoliday(),
+        r.getHolidaySurchargePercent(),
+        r.getAppliesDaysBitmap(),
         r.getWindowStart(),
         r.getWindowEnd(),
         r.getScheduledActiveFrom(),
@@ -257,11 +365,17 @@ public class SettingsRateService {
   private Map<String, Object> snapshot(Rate r) {
     Map<String, Object> m = new LinkedHashMap<>();
     m.put("name", r.getName());
-    m.put("vehicleType", r.getVehicleType() != null ? r.getVehicleType() : null);
+    m.put("vehicleType", r.getVehicleType());
+    m.put("category", r.getCategory() != null ? r.getCategory().name() : RateCategory.STANDARD.name());
     m.put("rateType", r.getRateType().name());
     m.put("amount", r.getAmount());
     m.put("active", r.isActive());
     m.put("site", r.getSite());
+    m.put("minSessionValue", r.getMinSessionValue());
+    m.put("maxSessionValue", r.getMaxSessionValue());
+    m.put("nightSurchargePercent", r.getNightSurchargePercent());
+    m.put("holidaySurchargePercent", r.getHolidaySurchargePercent());
+    m.put("appliesDaysBitmap", r.getAppliesDaysBitmap());
     return m;
   }
 }

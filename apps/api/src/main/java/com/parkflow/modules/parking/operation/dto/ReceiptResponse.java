@@ -1,5 +1,6 @@
 package com.parkflow.modules.parking.operation.dto;
 
+import com.parkflow.modules.parking.operation.domain.EntryMode;
 import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.domain.SessionSyncStatus;
 import java.math.BigDecimal;
@@ -26,4 +27,8 @@ public record ReceiptResponse(
     int reprintCount,
     String entryImageUrl,
     String exitImageUrl,
-    SessionSyncStatus syncStatus) {}
+    SessionSyncStatus syncStatus,
+    EntryMode entryMode,
+    boolean monthlySession,
+    String agreementCode,
+    Integer prepaidMinutes) {}

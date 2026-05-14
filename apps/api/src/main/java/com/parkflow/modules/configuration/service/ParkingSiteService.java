@@ -28,7 +28,7 @@ public class ParkingSiteService {
   @Transactional(readOnly = true)
   public SettingsPageResponse<ParkingSiteResponse> list(
       UUID companyId, String q, Boolean active, Pageable pageable) {
-    Page<ParkingSite> page = parkingSiteRepository.search(companyId, q, active, pageable);
+    Page<ParkingSite> page = parkingSiteRepository.search(companyId, normalizeQuery(q), active, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 
@@ -41,14 +41,15 @@ public class ParkingSiteService {
   public ParkingSiteResponse create(UUID companyId, ParkingSiteRequest req) {
     Company company = companyRepository.findById(companyId)
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Empresa no encontrada"));
+    String code = req.code().trim().toUpperCase();
 
-    if (parkingSiteRepository.existsByCode(req.code())) {
+    if (parkingSiteRepository.existsByCode(code)) {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe una sede con este código");
     }
 
     ParkingSite site = new ParkingSite();
     site.setCompany(company);
-    site.setCode(req.code().trim().toUpperCase());
+    site.setCode(code);
     site.setName(req.name().trim());
     site.setAddress(trimToNull(req.address()));
     site.setCity(trimToNull(req.city()));
@@ -56,6 +57,7 @@ public class ParkingSiteService {
     site.setManagerName(trimToNull(req.managerName()));
     site.setTimezone(req.timezone());
     site.setCurrency(req.currency());
+    site.setMaxCapacity(req.maxCapacity() != null ? req.maxCapacity() : 0);
     site.setActive(req.isActive());
     site.setCreatedAt(OffsetDateTime.now());
     site.setUpdatedAt(OffsetDateTime.now());
@@ -71,12 +73,13 @@ public class ParkingSiteService {
   @Transactional
   public ParkingSiteResponse update(UUID id, ParkingSiteRequest req) {
     ParkingSite site = findById(id);
+    String code = req.code().trim().toUpperCase();
 
-    if (!site.getCode().equalsIgnoreCase(req.code()) && parkingSiteRepository.existsByCode(req.code())) {
+    if (!site.getCode().equalsIgnoreCase(code) && parkingSiteRepository.existsByCode(code)) {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe una sede con este código");
     }
 
-    site.setCode(req.code().trim().toUpperCase());
+    site.setCode(code);
     site.setName(req.name().trim());
     site.setAddress(trimToNull(req.address()));
     site.setCity(trimToNull(req.city()));
@@ -84,6 +87,7 @@ public class ParkingSiteService {
     site.setManagerName(trimToNull(req.managerName()));
     site.setTimezone(req.timezone());
     site.setCurrency(req.currency());
+    site.setMaxCapacity(req.maxCapacity() != null ? req.maxCapacity() : 0);
     site.setActive(req.isActive());
 
     try {
@@ -118,6 +122,7 @@ public class ParkingSiteService {
         s.getManagerName(),
         s.getTimezone(),
         s.getCurrency(),
+        s.getMaxCapacity(),
         s.isActive(),
         s.getCreatedAt(),
         s.getUpdatedAt());
@@ -125,5 +130,9 @@ public class ParkingSiteService {
 
   private static String trimToNull(String s) {
     return s == null || s.isBlank() ? null : s.trim();
+  }
+
+  private static String normalizeQuery(String q) {
+    return q == null || q.isBlank() ? null : q.trim();
   }
 }

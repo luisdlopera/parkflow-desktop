@@ -7,5 +7,5 @@ import java.util.UUID;
 
 public interface MasterVehicleTypeRepository extends JpaRepository<MasterVehicleType, UUID> {
     Optional<MasterVehicleType> findByCode(String code);
-    java.util.List<MasterVehicleType> findAllByOrderByCreatedAtAsc();
+    java.util.List<MasterVehicleType> findAllByOrderByDisplayOrderAscNameAsc();
 }

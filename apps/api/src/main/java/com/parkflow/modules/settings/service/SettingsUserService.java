@@ -32,6 +32,8 @@ public class SettingsUserService {
   private final AppUserRepository appUserRepository;
   private final PasswordHashService passwordHashService;
   private final SettingsAuditService settingsAuditService;
+  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
+  private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   @Transactional(readOnly = true)
   public SettingsPageResponse<UserAdminResponse> list(String q, Boolean active, Pageable pageable) {
@@ -85,11 +87,20 @@ public class SettingsUserService {
     } catch (DataIntegrityViolationException ex) {
       throw new OperationException(HttpStatus.CONFLICT, "Datos duplicados (correo o documento)");
     }
-
     settingsAuditService.log(
         AuthAuditAction.SETTINGS_USER_CREATE,
         "OK",
         Map.of("userId", user.getId().toString(), "email", user.getEmail(), "role", user.getRole().name()));
+
+    try {
+        globalAuditService.record(
+            com.parkflow.modules.audit.domain.AuditAction.CREAR,
+            null,
+            objectMapper.writeValueAsString(req),
+            "User created: " + user.getId());
+    } catch (Exception e) {
+        // ignore serialization errors for audit
+    }
 
     return toResponse(user);
   }
@@ -167,6 +178,15 @@ public class SettingsUserService {
         "OK",
         Map.of("userId", id.toString(), "before", before, "after", snapshot(user)));
 
+    try {
+        globalAuditService.record(
+            com.parkflow.modules.audit.domain.AuditAction.EDITAR,
+            objectMapper.writeValueAsString(before),
+            objectMapper.writeValueAsString(snapshot(user)));
+    } catch (Exception e) {
+        // ignore
+    }
+
     return toResponse(user);
   }
 
@@ -204,6 +224,12 @@ public class SettingsUserService {
         AuthAuditAction.SETTINGS_USER_STATUS,
         "OK",
         Map.of("userId", id.toString(), "previousActive", prev, "active", user.isActive()));
+
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.ELIMINAR,
+        "active=" + prev,
+        "active=" + user.isActive(),
+        "User status changed: " + id);
 
     return toResponse(user);
   }

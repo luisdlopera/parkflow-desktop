@@ -41,6 +41,7 @@ public class AuthService {
   private final JwtTokenService jwtTokenService;
   private final PasswordHashService passwordHashService;
   private final AuthAuditService authAuditService;
+  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
 
   @Value("${app.security.offline-lease-hours:48}")
   private int defaultOfflineLeaseHours;
@@ -117,6 +118,13 @@ public class AuthService {
         device,
         "OK",
         Map.of("sessionId", session.getId().toString()));
+
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.LOGIN,
+        user,
+        null,
+        "Login success",
+        "Session ID: " + session.getId());
 
     return new LoginResponse(
         accessToken,
@@ -231,6 +239,13 @@ public class AuthService {
         session.getDevice(),
         "OK",
         Map.of("sessionId", request.sessionId()));
+
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.LOGOUT,
+        session.getUser(),
+        "Session active",
+        "Session revoked",
+        "Session ID: " + request.sessionId());
   }
 
   @Transactional(readOnly = true)

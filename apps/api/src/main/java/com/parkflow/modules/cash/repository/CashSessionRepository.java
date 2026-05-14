@@ -24,6 +24,10 @@ public interface CashSessionRepository extends JpaRepository<CashSession, UUID> 
   Page<CashSession> findAllByOrderByOpenedAtDesc(Pageable pageable);
 
   @Query(
+      "SELECT DISTINCT s FROM CashSession s JOIN FETCH s.cashRegister LEFT JOIN FETCH s.operator LEFT JOIN FETCH s.closedBy WHERE s.id = :id")
+  Optional<CashSession> fetchForClosingWebhook(@Param("id") UUID id);
+
+  @Query(
       "SELECT s FROM CashSession s JOIN s.cashRegister r WHERE r.site = :site AND r.terminal = :terminal AND s.status = :status")
   Optional<CashSession> findOpenForSiteTerminal(
       @Param("site") String site,
