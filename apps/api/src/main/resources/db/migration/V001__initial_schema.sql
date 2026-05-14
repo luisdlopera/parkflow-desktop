@@ -1,8 +1,7 @@
 -- ============================================================================
--- V1: Initial Schema - Generated from Hibernate entity model
+-- V001: Initial schema (consolidated)
 -- ============================================================================
 
--- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ============================================================================
@@ -746,111 +745,260 @@ ALTER TABLE vehicle_condition_report
 ALTER TABLE vehicle_condition_report
     ADD CONSTRAINT vehicle_condition_report_session_id_fkey FOREIGN KEY (session_id) REFERENCES parking_session(id) ON DELETE CASCADE;
 
--- 5. Seed Data
+-- ============================================================================
+-- Consolidated evolutions (former V3..V14)
 -- ============================================================================
 
--- Default company
-INSERT INTO companies (id, name, legal_name, nit, email, status, max_devices, max_users, max_locations)
-VALUES (
-    '00000000-0000-0000-0000-000000000001',
-    'Empresa Demo',
-    'Empresa Demo S.A.S.',
-    '900123456',
-    'admin@parkflow.local',
-    'ACTIVE',
-    10,
-    50,
-    5
-) ON CONFLICT (id) DO NOTHING;
+ALTER TABLE companies
+  ADD COLUMN IF NOT EXISTS slug VARCHAR(120),
+  ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE;
 
--- Default parking site
-INSERT INTO parking_sites (id, company_id, code, name, city, timezone, currency)
-VALUES (
-    '00000000-0000-0000-0000-000000000002',
-    '00000000-0000-0000-0000-000000000001',
-    'DEFAULT',
-    'Sede Principal',
-    'Bogotá',
-    'America/Bogota',
-    'COP'
-) ON CONFLICT (id) DO NOTHING;
+ALTER TABLE app_user
+  ADD COLUMN IF NOT EXISTS company_id UUID;
 
--- Payment methods
-INSERT INTO payment_methods (code, name, requires_reference, display_order) VALUES
-    ('CASH', 'Efectivo', FALSE, 1),
-    ('DEBIT_CARD', 'Tarjeta débito', TRUE, 2),
-    ('CREDIT_CARD', 'Tarjeta crédito', TRUE, 3),
-    ('QR', 'QR', TRUE, 4),
-    ('NEQUI', 'Nequi', TRUE, 5),
-    ('DAVIPLATA', 'Daviplata', TRUE, 6),
-    ('TRANSFER', 'Transferencia', TRUE, 7),
-    ('AGREEMENT', 'Convenio', TRUE, 8),
-    ('INTERNAL_CREDIT', 'Crédito interno', TRUE, 9),
-    ('MIXED', 'Mixto', TRUE, 10),
-    ('CARD', 'Datáfono / tarjeta legacy', TRUE, 11),
-    ('OTHER', 'Otro', TRUE, 12)
-ON CONFLICT (code) DO NOTHING;
+ALTER TABLE parking_sites
+  ADD COLUMN IF NOT EXISTS max_capacity INT NOT NULL DEFAULT 0;
 
--- Vehicle types
-INSERT INTO master_vehicle_type (code, name, is_active, requires_plate, requires_photo, display_order) VALUES
-    ('CAR', 'Automóvil', TRUE, TRUE, FALSE, 1),
-    ('MOTORCYCLE', 'Motocicleta', TRUE, TRUE, TRUE, 2),
-    ('VAN', 'Camioneta', TRUE, TRUE, FALSE, 3),
-    ('TRUCK', 'Camión', TRUE, TRUE, FALSE, 4),
-    ('OTHER', 'Otro', TRUE, FALSE, FALSE, 5)
-ON CONFLICT (code) DO NOTHING;
+ALTER TABLE parking_session
+  ALTER COLUMN plate TYPE VARCHAR(20),
+  ALTER COLUMN plate DROP NOT NULL;
 
--- Default rates (one per vehicle type + comodín global, site=NULL = cualquier sede)
-INSERT INTO rate (name, vehicle_type, rate_type, amount, grace_minutes, fraction_minutes, site, max_daily_value)
-SELECT 'Tarifa Genérica Auto', 'CAR', 'HOURLY', 2000, 5, 60, NULL, 20000
-WHERE NOT EXISTS (SELECT 1 FROM rate WHERE vehicle_type = 'CAR');
+ALTER TABLE parking_session
+  ADD COLUMN IF NOT EXISTS country_code VARCHAR(2) NOT NULL DEFAULT 'CO',
+  ADD COLUMN IF NOT EXISTS entry_mode VARCHAR(20) NOT NULL DEFAULT 'VISITOR',
+  ADD COLUMN IF NOT EXISTS no_plate BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS no_plate_reason VARCHAR(200),
+  ADD COLUMN IF NOT EXISTS company_id UUID;
 
-INSERT INTO rate (name, vehicle_type, rate_type, amount, grace_minutes, fraction_minutes, site, max_daily_value)
-SELECT 'Tarifa Genérica Moto', 'MOTORCYCLE', 'HOURLY', 1000, 5, 60, NULL, 10000
-WHERE NOT EXISTS (SELECT 1 FROM rate WHERE vehicle_type = 'MOTORCYCLE');
+ALTER TABLE vehicle
+  ALTER COLUMN plate TYPE VARCHAR(20);
 
-INSERT INTO rate (name, vehicle_type, rate_type, amount, grace_minutes, fraction_minutes, site, max_daily_value)
-SELECT 'Tarifa Genérica Camioneta', 'VAN', 'HOURLY', 3000, 5, 60, NULL, 30000
-WHERE NOT EXISTS (SELECT 1 FROM rate WHERE vehicle_type = 'VAN');
+ALTER TABLE vehicle
+  ADD COLUMN IF NOT EXISTS company_id UUID,
+  ADD COLUMN IF NOT EXISTS vehicle_type_id UUID;
 
-INSERT INTO rate (name, vehicle_type, rate_type, amount, grace_minutes, fraction_minutes, site, max_daily_value)
-SELECT 'Tarifa Genérica Camión', 'TRUCK', 'HOURLY', 5000, 5, 60, NULL, 50000
-WHERE NOT EXISTS (SELECT 1 FROM rate WHERE vehicle_type = 'TRUCK');
+ALTER TABLE payment
+  ADD COLUMN IF NOT EXISTS company_id UUID;
 
-INSERT INTO rate (name, vehicle_type, rate_type, amount, grace_minutes, fraction_minutes, site, max_daily_value)
-SELECT 'Tarifa Genérica Otro', 'OTHER', 'HOURLY', 2000, 5, 60, NULL, 20000
-WHERE NOT EXISTS (SELECT 1 FROM rate WHERE vehicle_type = 'OTHER');
+ALTER TABLE cash_session
+  ADD COLUMN IF NOT EXISTS closing_witness_name VARCHAR(200),
+  ADD COLUMN IF NOT EXISTS support_document_number VARCHAR(120);
 
-INSERT INTO rate (name, vehicle_type, rate_type, amount, grace_minutes, fraction_minutes, site, max_daily_value)
-SELECT 'Tarifa Genérica (comodín)', NULL, 'HOURLY', 2000, 5, 60, NULL, 20000
-WHERE NOT EXISTS (SELECT 1 FROM rate WHERE vehicle_type IS NULL AND site IS NULL);
+ALTER TABLE master_vehicle_type
+  ADD COLUMN IF NOT EXISTS icon VARCHAR(40) NOT NULL DEFAULT '🚗',
+  ADD COLUMN IF NOT EXISTS color VARCHAR(20) NOT NULL DEFAULT '#2563EB',
+  ADD COLUMN IF NOT EXISTS has_own_rate BOOLEAN NOT NULL DEFAULT TRUE,
+  ADD COLUMN IF NOT EXISTS quick_access BOOLEAN NOT NULL DEFAULT TRUE;
 
--- Default admin user (password: Qwert.12345 - hashed with BCrypt)
-INSERT INTO app_user (id, name, email, role, password_hash, is_active, can_void_tickets, can_reprint_tickets, can_close_cash, require_password_change)
-VALUES (
-    '00000000-0000-0000-0000-000000000003',
-    'Administrador',
-    'admin@parkflow.local',
-    'SUPER_ADMIN',
-    '$2b$12$bU4bjxtQIMHP/us3972HTuIz.OM2128W34BtysTTH1AeqjInkGcRe',
-    TRUE,
-    TRUE,
-    TRUE,
-    TRUE,
-    FALSE
-) ON CONFLICT (email) DO NOTHING;
+ALTER TABLE rate
+  ALTER COLUMN site DROP NOT NULL,
+  ALTER COLUMN site SET DEFAULT NULL;
 
--- Default operational parameters
-INSERT INTO operational_parameters (site_id, allow_entry_without_printer, allow_exit_without_payment, allow_reprint, allow_void, require_photo_entry, require_photo_exit, tolerance_minutes, max_time_no_charge, offline_mode_enabled)
-VALUES (
-    '00000000-0000-0000-0000-000000000002',
-    FALSE,
-    FALSE,
-    TRUE,
-    TRUE,
-    FALSE,
-    FALSE,
-    5,
-    15,
-    TRUE
-) ON CONFLICT (site_id) DO NOTHING;
+ALTER TABLE rate
+  ADD COLUMN IF NOT EXISTS min_session_value NUMERIC(10,2),
+  ADD COLUMN IF NOT EXISTS max_session_value NUMERIC(10,2),
+  ADD COLUMN IF NOT EXISTS night_surcharge_percent NUMERIC(5,2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS holiday_surcharge_percent NUMERIC(5,2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS applies_days_bitmap SMALLINT,
+  ADD COLUMN IF NOT EXISTS category VARCHAR(20) NOT NULL DEFAULT 'STANDARD';
+
+CREATE TABLE IF NOT EXISTS monthly_contract (
+    id UUID DEFAULT gen_random_uuid() NOT NULL,
+    rate_id UUID NOT NULL,
+    plate VARCHAR(20) NOT NULL,
+    vehicle_type VARCHAR(30),
+    holder_name VARCHAR(120) NOT NULL,
+    holder_document VARCHAR(40),
+    holder_phone VARCHAR(30),
+    holder_email VARCHAR(120),
+    site VARCHAR(80) NOT NULL DEFAULT 'DEFAULT',
+    site_id UUID,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    amount NUMERIC(12,2) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    notes TEXT,
+    created_by_id UUID,
+    updated_by_id UUID,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    CONSTRAINT monthly_contract_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS agreement (
+    id UUID DEFAULT gen_random_uuid() NOT NULL,
+    code VARCHAR(40) NOT NULL,
+    company_name VARCHAR(200) NOT NULL,
+    discount_percent NUMERIC(5,2) DEFAULT 0 NOT NULL,
+    max_hours_per_day INT DEFAULT 0 NOT NULL,
+    flat_amount NUMERIC(12,2),
+    rate_id UUID,
+    site VARCHAR(80),
+    site_id UUID,
+    valid_from DATE,
+    valid_to DATE,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    CONSTRAINT agreement_pkey PRIMARY KEY (id),
+    CONSTRAINT agreement_code_key UNIQUE (code)
+);
+
+CREATE TABLE IF NOT EXISTS prepaid_package (
+    id UUID DEFAULT gen_random_uuid() NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    hours_included INT NOT NULL,
+    amount NUMERIC(12,2) NOT NULL,
+    vehicle_type VARCHAR(30),
+    site VARCHAR(80),
+    site_id UUID,
+    expires_days INT DEFAULT 30 NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    CONSTRAINT prepaid_package_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS prepaid_balance (
+    id UUID DEFAULT gen_random_uuid() NOT NULL,
+    package_id UUID NOT NULL,
+    plate VARCHAR(20) NOT NULL,
+    holder_name VARCHAR(120),
+    remaining_minutes INT NOT NULL,
+    purchased_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_by_id UUID,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    CONSTRAINT prepaid_balance_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS prepaid_deduction (
+    id UUID DEFAULT gen_random_uuid() NOT NULL,
+    balance_id UUID NOT NULL,
+    session_id UUID,
+    minutes_deducted INT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    CONSTRAINT prepaid_deduction_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS cash_fe_sequence (
+    site_code VARCHAR(80) NOT NULL,
+    terminal VARCHAR(80) NOT NULL DEFAULT '',
+    last_value BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT cash_fe_sequence_pk PRIMARY KEY (site_code, terminal)
+);
+
+CREATE TABLE IF NOT EXISTS global_audit_log (
+    id UUID PRIMARY KEY,
+    action VARCHAR(50) NOT NULL,
+    user_id UUID,
+    username VARCHAR(100),
+    ip_address VARCHAR(45),
+    device VARCHAR(255),
+    previous_payload TEXT,
+    new_payload TEXT,
+    metadata TEXT,
+    company_id UUID,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS company_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL UNIQUE,
+    settings_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS onboarding_progress (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL UNIQUE,
+    current_step INT NOT NULL DEFAULT 1,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+    skipped BOOLEAN NOT NULL DEFAULT FALSE,
+    completed_at TIMESTAMPTZ,
+    skipped_at TIMESTAMPTZ,
+    progress_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS plans (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    code VARCHAR(40) NOT NULL UNIQUE,
+    name VARCHAR(120) NOT NULL,
+    monthly_price NUMERIC(12,2) NOT NULL DEFAULT 0,
+    yearly_price NUMERIC(12,2) NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    company_id UUID NOT NULL,
+    plan_id UUID NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+    starts_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ends_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS roles (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    code VARCHAR(40) NOT NULL UNIQUE,
+    name VARCHAR(120) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS permissions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    code VARCHAR(80) NOT NULL UNIQUE,
+    description VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS role_permissions (
+    role_id UUID NOT NULL,
+    permission_id UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (role_id, permission_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_roles (
+    user_id UUID NOT NULL,
+    role_id UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, role_id)
+);
+
+ALTER TABLE monthly_contract ADD CONSTRAINT monthly_contract_rate_id_fkey FOREIGN KEY (rate_id) REFERENCES rate(id);
+ALTER TABLE monthly_contract ADD CONSTRAINT monthly_contract_site_id_fkey FOREIGN KEY (site_id) REFERENCES parking_sites(id);
+ALTER TABLE monthly_contract ADD CONSTRAINT monthly_contract_created_by_fkey FOREIGN KEY (created_by_id) REFERENCES app_user(id) ON DELETE SET NULL;
+ALTER TABLE agreement ADD CONSTRAINT agreement_rate_id_fkey FOREIGN KEY (rate_id) REFERENCES rate(id) ON DELETE SET NULL;
+ALTER TABLE agreement ADD CONSTRAINT agreement_site_id_fkey FOREIGN KEY (site_id) REFERENCES parking_sites(id) ON DELETE SET NULL;
+ALTER TABLE prepaid_package ADD CONSTRAINT prepaid_package_site_id_fkey FOREIGN KEY (site_id) REFERENCES parking_sites(id) ON DELETE SET NULL;
+ALTER TABLE prepaid_balance ADD CONSTRAINT prepaid_balance_package_id_fkey FOREIGN KEY (package_id) REFERENCES prepaid_package(id);
+ALTER TABLE prepaid_balance ADD CONSTRAINT prepaid_balance_created_by_fkey FOREIGN KEY (created_by_id) REFERENCES app_user(id) ON DELETE SET NULL;
+ALTER TABLE prepaid_deduction ADD CONSTRAINT prepaid_deduction_balance_id_fkey FOREIGN KEY (balance_id) REFERENCES prepaid_balance(id) ON DELETE CASCADE;
+ALTER TABLE prepaid_deduction ADD CONSTRAINT prepaid_deduction_session_id_fkey FOREIGN KEY (session_id) REFERENCES parking_session(id) ON DELETE SET NULL;
+ALTER TABLE company_settings ADD CONSTRAINT fk_company_settings_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
+ALTER TABLE onboarding_progress ADD CONSTRAINT fk_onboarding_progress_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
+ALTER TABLE subscriptions ADD CONSTRAINT fk_subscriptions_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
+ALTER TABLE subscriptions ADD CONSTRAINT fk_subscriptions_plan FOREIGN KEY (plan_id) REFERENCES plans(id);
+ALTER TABLE role_permissions ADD CONSTRAINT fk_role_permissions_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE;
+ALTER TABLE role_permissions ADD CONSTRAINT fk_role_permissions_permission FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE;
+ALTER TABLE user_roles ADD CONSTRAINT fk_user_roles_user FOREIGN KEY (user_id) REFERENCES app_user(id) ON DELETE CASCADE;
+ALTER TABLE user_roles ADD CONSTRAINT fk_user_roles_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE;
+ALTER TABLE app_user ADD CONSTRAINT fk_app_user_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL;
+ALTER TABLE vehicle ADD CONSTRAINT fk_vehicle_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL;
+ALTER TABLE vehicle ADD CONSTRAINT fk_vehicle_type_master FOREIGN KEY (vehicle_type_id) REFERENCES master_vehicle_type(id) ON DELETE SET NULL;
+ALTER TABLE parking_session ADD CONSTRAINT fk_parking_session_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL;
+ALTER TABLE payment ADD CONSTRAINT fk_payment_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL;
+ALTER TABLE global_audit_log ADD CONSTRAINT fk_global_audit_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL;
