@@ -1,0 +1,80 @@
+package com.parkflow.modules.onboarding;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import com.parkflow.modules.licensing.entity.Company;
+import com.parkflow.modules.licensing.enums.PlanType;
+import com.parkflow.modules.licensing.repository.CompanyRepository;
+import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
+import com.parkflow.modules.onboarding.entity.OnboardingProgress;
+import com.parkflow.modules.onboarding.repository.OnboardingProgressRepository;
+import com.parkflow.modules.onboarding.service.CompanySettingsService;
+import com.parkflow.modules.onboarding.service.FeatureAccessService;
+import com.parkflow.modules.onboarding.service.OnboardingService;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class OnboardingServiceTest {
+
+  private CompanyRepository companyRepository;
+  private OnboardingProgressRepository onboardingProgressRepository;
+  private CompanySettingsService companySettingsService;
+  private OnboardingService onboardingService;
+
+  private Company company;
+
+  @BeforeEach
+  void setup() {
+    companyRepository = mock(CompanyRepository.class);
+    onboardingProgressRepository = mock(OnboardingProgressRepository.class);
+    companySettingsService = mock(CompanySettingsService.class);
+    onboardingService = new OnboardingService(
+        companyRepository,
+        onboardingProgressRepository,
+        companySettingsService,
+        new FeatureAccessService());
+
+    company = new Company();
+    company.setId(UUID.randomUUID());
+    company.setPlan(PlanType.LOCAL);
+    company.setOnboardingCompleted(false);
+
+    when(companyRepository.findById(company.getId())).thenReturn(Optional.of(company));
+    when(onboardingProgressRepository.save(any(OnboardingProgress.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(companyRepository.save(any(Company.class))).thenAnswer(inv -> inv.getArgument(0));
+  }
+
+  @Test
+  void saveStep_persistsPartialProgress() {
+    OnboardingProgress progress = new OnboardingProgress();
+    progress.setCompany(company);
+    progress.setCurrentStep(1);
+    progress.setProgressData(new LinkedHashMap<>());
+    when(onboardingProgressRepository.findByCompanyId(company.getId())).thenReturn(Optional.of(progress));
+
+    OnboardingStatusResponse response = onboardingService.saveOnboardingStep(company.getId(), 1, Map.of("vehicleTypes", java.util.List.of("CARRO")));
+
+    assertEquals(2, response.currentStep());
+    assertTrue(response.progressData().containsKey("step_1"));
+  }
+
+  @Test
+  void skip_appliesDefaultAndCompletes() {
+    OnboardingProgress progress = new OnboardingProgress();
+    progress.setCompany(company);
+    progress.setCurrentStep(1);
+    progress.setProgressData(new LinkedHashMap<>());
+    when(onboardingProgressRepository.findByCompanyId(company.getId())).thenReturn(Optional.of(progress));
+
+    onboardingService.skipAndApplyDefaults(company.getId());
+
+    verify(companySettingsService, times(1)).upsertSettings(eq(company), anyMap());
+    assertTrue(company.getOnboardingCompleted());
+  }
+}

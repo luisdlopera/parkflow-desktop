@@ -64,6 +64,7 @@ export interface Company {
   maxUsers: number;
   offlineModeAllowed: boolean;
   offlineLeaseHours: number;
+  onboardingCompleted?: boolean;
   modules: CompanyModule[];
   devices: LicensedDevice[];
   createdAt: string;
