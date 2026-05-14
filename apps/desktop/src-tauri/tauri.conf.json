@@ -6,7 +6,7 @@
     "beforeDevCommand": "pnpm -C ../.. dev:web",
     "beforeBuildCommand": "pnpm -C ../.. build:web",
     "devUrl": "http://localhost:6001",
-    "frontendDist": "../../web/.next"
+    "frontendDist": "../../web/out"
   },
   "app": {
     "windows": [
