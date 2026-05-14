@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -45,8 +46,6 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private final MonthlyContractPort monthlyContractRepository;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
-  private final IdempotencyManager idempotencyManager;
-  private final ParkingValidatorService parkingValidatorService;
 
   @Override
   @Transactional

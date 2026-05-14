@@ -89,9 +89,8 @@ class OperationServiceEdgeCasesTest {
     registerEntryService = new RegisterEntryService(
         appUserRepository, vehicleRepository, rateRepository,
         parkingSessionRepository, ticketCounterRepository, vehicleConditionReportRepository,
-        auditService, operationPrintService,
-        plateValidator, monthlyContractRepository, objectMapper, meterRegistry,
-        idempotencyManager, parkingValidatorService
+        operationIdempotencyRepository, auditService, operationPrintService,
+        plateValidator, monthlyContractRepository, objectMapper, meterRegistry
     );
 
     TenantContext.setTenantId(companyId);
