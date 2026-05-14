@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { Input, Button } from "@heroui/react";
+import DataTable from "@/components/ui/DataTable";
 
 export type ColumnDef<T> = {
   key: keyof T | string;
   label: string;
   render?: (row: T) => React.ReactNode;
   className?: string;
+  align?: "left" | "center" | "right";
 };
 
 type DataTableSectionProps<T> = {
@@ -34,68 +37,56 @@ export function DataTableSection<T extends { id: string }>({
 }: DataTableSectionProps<T>) {
   const [q, setQ] = useState("");
 
+  const finalColumns = [
+    ...columns.map(c => ({
+      key: String(c.key),
+      label: c.label,
+      render: c.render,
+      align: c.align
+    })),
+    ...(actions ? [{
+      key: "actions",
+      label: "Acciones",
+      render: (row: T) => actions(row),
+      align: "right" as const
+    }] : [])
+  ];
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {onSearch && (
-            <input
+            <Input
               type="text"
               placeholder="Buscar..."
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              variant="flat"
+              size="sm"
+              className="max-w-xs"
               value={q}
-              onChange={(e) => { setQ(e.target.value); onSearch(e.target.value); }}
+              onValueChange={(val) => { setQ(val); onSearch(val); }}
             />
           )}
           {onCreate && (
-            <button
-              type="button"
-              onClick={onCreate}
-              className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700"
+            <Button
+              color="primary"
+              size="md"
+              className="bg-brand-500 hover:bg-brand-600 font-semibold"
+              onPress={onCreate}
             >
               {createLabel}
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
-      {loading ? (
-        <div className="rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-500">
-          Cargando...
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-500">
-          {emptyMessage}
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200">
-          <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600">
-              <tr>
-                {columns.map((c) => (
-                  <th key={String(c.key)} className={`px-4 py-3 text-left font-semibold ${c.className ?? ""}`}>
-                    {c.label}
-                  </th>
-                ))}
-                {actions && <th className="px-4 py-3" />}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50">
-                  {columns.map((c) => (
-                    <td key={String(c.key)} className={`px-4 py-3 text-slate-700 ${c.className ?? ""}`}>
-                      {c.render ? c.render(row) : String((row as any)[c.key] ?? "")}
-                    </td>
-                  ))}
-                  {actions && <td className="px-4 py-3">{actions(row)}</td>}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable<T>
+        columns={finalColumns}
+        rows={rows}
+        isLoading={loading}
+        emptyMessage={emptyMessage}
+      />
     </div>
   );
 }

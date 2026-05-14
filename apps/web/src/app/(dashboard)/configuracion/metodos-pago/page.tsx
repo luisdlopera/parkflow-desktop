@@ -12,6 +12,7 @@ import {
 } from "@/lib/settings-api";
 import { paymentMethodSchema, type PaymentMethodSchema } from "@/modules/settings/schemas";
 import type { PaymentMethodRow } from "@/modules/settings/types";
+import { Input, Button, Checkbox } from "@heroui/react";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/settings/FormDrawer";
@@ -112,7 +113,15 @@ export default function MetodosPagoPage() {
         emptyMessage="No hay métodos de pago registrados"
         actions={(row) => (
           <div className="flex items-center gap-2">
-            <button onClick={() => openEdit(row)} className="text-xs text-amber-600 hover:underline">Editar</button>
+            <Button
+              size="sm"
+              variant="flat"
+              color="primary"
+              className="font-semibold"
+              onPress={() => openEdit(row)}
+            >
+              Editar
+            </Button>
             <StatusToggle active={row.isActive} onChange={() => toggleStatus(row)} confirmMessage="¿Cambiar estado?" />
           </div>
         )}
@@ -125,27 +134,35 @@ export default function MetodosPagoPage() {
         loading={isSubmitting}
         error={error}
       >
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Código</label>
-          <input {...register("code")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="CASH" />
-          {errors.code && <p className="mt-1 text-xs text-red-600">{errors.code.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Nombre</label>
-          <input {...register("name")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-          {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Orden</label>
-          <input type="number" {...register("displayOrder", { valueAsNumber: true })} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" {...register("requiresReference")} className="h-4 w-4 rounded border-slate-300" />
-          <label className="text-sm text-slate-700">Requiere referencia</label>
-        </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" {...register("isActive")} className="h-4 w-4 rounded border-slate-300" />
-          <label className="text-sm text-slate-700">Activo</label>
+        <div className="space-y-4">
+          <Input
+            {...register("code")}
+            label="Código"
+            placeholder="CASH"
+            variant="flat"
+            errorMessage={errors.code?.message}
+            isInvalid={!!errors.code}
+          />
+          <Input
+            {...register("name")}
+            label="Nombre"
+            placeholder="Efectivo"
+            variant="flat"
+            errorMessage={errors.name?.message}
+            isInvalid={!!errors.name}
+          />
+          <Input
+            {...register("displayOrder", { valueAsNumber: true })}
+            label="Orden de visualización"
+            type="number"
+            variant="flat"
+          />
+          <Checkbox {...register("requiresReference")}>
+            Requiere referencia
+          </Checkbox>
+          <Checkbox {...register("isActive")}>
+            Activo
+          </Checkbox>
         </div>
       </FormDrawer>
     </div>

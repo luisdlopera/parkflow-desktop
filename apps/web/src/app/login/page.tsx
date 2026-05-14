@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Checkbox } from "@heroui/checkbox";
+import { Checkbox, Input, Button } from "@heroui/react";
 import { currentUser, loadSession, login } from "@/lib/auth";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
@@ -58,9 +58,8 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      const formData = new FormData(event.currentTarget as HTMLFormElement);
-      const emailValue = String(formData.get("email") ?? email).trim();
-      const passwordValue = String(formData.get("password") ?? password);
+      const emailValue = email.trim();
+      const passwordValue = password;
       if (!emailValue) {
         setError("Username is required");
         setLoading(false);
@@ -92,11 +91,11 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-2xl p-8 shadow-xl border border-default-100">
+      <form onSubmit={onSubmit} className="surface w-full space-y-8 rounded-2xl p-8 shadow-2xl border border-default-100">
         <div className="text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-1">Parkflow</p>
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-700/80 mb-2">Parkflow</p>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">¡Bienvenido!</h1>
-          <p className="text-default-500 text-sm mt-2">Ingresa tus credenciales para continuar</p>
+          <p className="text-slate-500 text-sm mt-2">Ingresa tus credenciales para continuar</p>
         </div>
 
         <FormErrorSummary
@@ -104,67 +103,65 @@ export default function LoginPage() {
           testId={error === "Username is required" ? "username-error" : "error-message"}
         />
 
-        <div className="space-y-4">
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-700">Email</span>
-            <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
-              <Mail size={18} className="text-default-400" />
-              <input
-                data-testid="username"
-                name="email"
-                type="email"
-                placeholder="ejemplo@parkflow.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="username"
-                className="w-full bg-transparent outline-none"
-              />
-            </div>
-          </label>
+        <div className="space-y-5">
+          <Input
+            data-testid="username"
+            name="email"
+            type="email"
+            label="Correo Electrónico"
+            placeholder="ejemplo@parkflow.com"
+            value={email}
+            onValueChange={setEmail}
+            autoComplete="username"
+            variant="flat"
+            size="lg"
+            startContent={<Mail size={20} className="text-slate-400" />}
+          />
 
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-700">Contraseña</span>
-            <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
-              <Lock size={18} className="text-default-400" />
-              <input
-                data-testid="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                name="password"
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                className="w-full bg-transparent outline-none"
-              />
+          <Input
+            data-testid="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            label="Contraseña"
+            placeholder="••••••••"
+            value={password}
+            onValueChange={setPassword}
+            autoComplete="current-password"
+            variant="flat"
+            size="lg"
+            startContent={<Lock size={20} className="text-slate-400" />}
+            endContent={
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-slate-400 hover:text-slate-600 focus:outline-none"
-                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                className="text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                tabIndex={-1}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
-            </div>
-          </label>
+            }
+          />
         </div>
 
         <div className="flex items-center justify-between">
-          <Checkbox size="sm" className="text-default-500">Recordarme</Checkbox>
-          <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">
+          <Checkbox size="sm" className="text-slate-600">Recordarme</Checkbox>
+          <Link href="/forgot-password" className="text-sm font-bold text-amber-700 hover:underline">
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
 
-        <button
+        <Button
           data-testid="login-button"
           type="submit"
-          className="w-full rounded-xl bg-slate-900 px-4 py-3 font-bold text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={loading}
+          color="primary"
+          size="lg"
+          className="w-full font-bold shadow-xl"
+          isLoading={loading}
         >
-          {loading ? "Validando..." : "Entrar al Sistema"}
-        </button>
+          Entrar al Sistema
+        </Button>
         
-        <p className="text-center text-xs text-default-400 pt-2">
+        <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-2">
           &copy; 2026 ParkFlow Operations. v2.0
         </p>
       </form>
