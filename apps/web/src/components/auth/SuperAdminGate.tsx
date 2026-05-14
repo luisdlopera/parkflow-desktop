@@ -14,9 +14,6 @@ export function SuperAdminGate({ children }: { children: React.ReactNode }) {
       const user = await currentUser();
       if (cancelled) return;
 
-      // Debug: Ayuda a identificar por qué ocurre la redirección
-      console.log("[SuperAdminGate] User:", user?.email, "Role:", user?.role);
-
       if (!user) {
         // Dejamos que AuthGate maneje la redirección a /login si no hay usuario
         return;

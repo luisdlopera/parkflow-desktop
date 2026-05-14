@@ -111,7 +111,7 @@ describe("VehicleEntryFormV2", () => {
     });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "abc 123");
+    await userEvent.type(plateInput, "abc123");
 
     await screen.findByTestId("vehicle-type");
 
