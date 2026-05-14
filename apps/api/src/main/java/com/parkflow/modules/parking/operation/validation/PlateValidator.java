@@ -15,9 +15,9 @@ public class PlateValidator {
         new PlateValidationRule("CO", "TRUCK", Pattern.compile("^[A-Z]{3}[0-9]{3}$"), "ABC123", "Para camión en Colombia se esperan 3 letras y 3 números", true),
         new PlateValidationRule("CO", "BUS", Pattern.compile("^[A-Z]{3}[0-9]{3}$"), "ABC123", "Para bus en Colombia se esperan 3 letras y 3 números", true),
         new PlateValidationRule("CO", "ELECTRIC", Pattern.compile("^[A-Z]{3}[0-9]{3}$"), "ABC123", "Para eléctrico en Colombia se esperan 3 letras y 3 números", true),
+        new PlateValidationRule("CO", "MOTORCYCLE", Pattern.compile("^[A-Z]{3}[0-9]{2}[A-Z]{1}$"), "ABC12A", "Para moto en Colombia se esperan 3 letras, 2 números y 1 letra", true),
         new PlateValidationRule("CO", "BICYCLE", Pattern.compile("^[A-Z0-9]{3,12}$"), "BICI001", "Para bicicleta use un identificador de 3 a 12 letras o números", true),
-        new PlateValidationRule("CO", "OTHER", Pattern.compile("^[A-Z]{3}[0-9]{3}$"), "ABC123", "Para vehículo general en Colombia se esperan 3 letras y 3 números", true),
-        new PlateValidationRule("CO", "MOTORCYCLE", Pattern.compile("^[A-Z]{3}[0-9]{2}[A-Z]{1}$"), "ABC12A", "Para moto en Colombia se esperan 3 letras, 2 números y 1 letra", true)
+        new PlateValidationRule("CO", "OTHER", Pattern.compile("^[A-Z]{3}[0-9]{3}$"), "ABC123", "Para vehículo general en Colombia se esperan 3 letras y 3 números", true)
     );
 
     /**
