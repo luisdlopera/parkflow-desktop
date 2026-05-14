@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Avatar } from "@heroui/avatar";
 import {
   Dropdown,
@@ -18,6 +18,7 @@ export function UserMenu() {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     void (async () => {
@@ -63,7 +64,7 @@ export function UserMenu() {
       <Avatar
         name="?"
         size="sm"
-        className="bg-slate-200 text-slate-500"
+        className="bg-slate-200 text-slate-500 dark:bg-neutral-800 dark:text-neutral-300"
       />
     );
   }
@@ -71,10 +72,10 @@ export function UserMenu() {
   return (
     <Dropdown placement="bottom-end">
       <DropdownTrigger>
-        <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-100 rounded-full px-2 py-1 transition-colors">
+        <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-neutral-800/35 rounded-full px-2 py-1 transition-colors">
           <div className="hidden sm:block text-right">
-            <p className="text-xs font-medium text-slate-700 leading-tight">{user.name}</p>
-            <p className="text-[10px] text-slate-500 leading-tight">{getRoleLabel(user.role)}</p>
+            <p className="text-xs font-medium text-slate-700 dark:text-neutral-200 leading-tight">{user.name}</p>
+            <p className="text-[10px] text-slate-500 dark:text-neutral-400 leading-tight">{getRoleLabel(user.role)}</p>
           </div>
           <Avatar
             name={getInitials(user.name)}
@@ -125,6 +126,23 @@ export function UserMenu() {
           ) : null}
         </DropdownSection>
         <DropdownSection>
+          {/* Si estamos en el panel admin, mostrar botón "Volver a módulo operativo" antes de logout */}
+          {user && canAccessSuperAdminPortal(user) && pathname?.startsWith("/admin") ? (
+            <DropdownItem
+              key="back-to-op"
+              textValue="Volver a módulo operativo"
+              description="Ir al panel operativo"
+              startContent={
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              }
+              onPress={() => router.push("/")}
+            >
+              Volver a módulo operativo
+            </DropdownItem>
+          ) : null}
+
           <DropdownItem
             key="logout"
             textValue={isLoading ? "Cerrando sesión..." : "Cerrar sesión"}

@@ -269,9 +269,5 @@ export function canAccessSuperAdminPortal(user: AuthUser | null): boolean {
 export async function handleAuthFailureStatus(status: number): Promise<void> {
   if (status === 401) {
     await logoutAndRedirectToLogin("expired");
-    return;
-  }
-  if (status === 403 && typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("parkflow:forbidden"));
   }
 }

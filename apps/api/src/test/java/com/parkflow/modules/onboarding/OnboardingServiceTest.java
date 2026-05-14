@@ -13,12 +13,19 @@ import com.parkflow.modules.onboarding.repository.OnboardingProgressRepository;
 import com.parkflow.modules.onboarding.service.CompanySettingsService;
 import com.parkflow.modules.onboarding.service.FeatureAccessService;
 import com.parkflow.modules.onboarding.service.OnboardingService;
+import com.parkflow.modules.auth.security.AuthPrincipal;
+import com.parkflow.modules.auth.security.TenantContext;
+import com.parkflow.modules.parking.operation.domain.UserRole;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 class OnboardingServiceTest {
 
@@ -48,6 +55,22 @@ class OnboardingServiceTest {
     when(companyRepository.findById(company.getId())).thenReturn(Optional.of(company));
     when(onboardingProgressRepository.save(any(OnboardingProgress.class))).thenAnswer(inv -> inv.getArgument(0));
     when(companyRepository.save(any(Company.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    AuthPrincipal principal = new AuthPrincipal(
+        UUID.randomUUID(),
+        company.getId(),
+        "admin@test.com",
+        UserRole.ADMIN.name(),
+        java.util.List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+    SecurityContextHolder.getContext().setAuthentication(
+        new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));
+    TenantContext.setTenantId(company.getId());
+  }
+
+  @AfterEach
+  void tearDown() {
+    SecurityContextHolder.clearContext();
+    TenantContext.clear();
   }
 
   @Test
@@ -76,5 +99,25 @@ class OnboardingServiceTest {
 
     verify(companySettingsService, times(1)).upsertSettings(eq(company), anyMap());
     assertTrue(company.getOnboardingCompleted());
+  }
+
+  @Test
+  void saveStep_filtersPaymentMethodsByPlan() {
+    OnboardingProgress progress = new OnboardingProgress();
+    progress.setCompany(company);
+    progress.setCurrentStep(1);
+    progress.setProgressData(new LinkedHashMap<>());
+    when(onboardingProgressRepository.findByCompanyId(company.getId())).thenReturn(Optional.of(progress));
+
+    OnboardingStatusResponse response = onboardingService.saveOnboardingStep(
+        company.getId(),
+        6,
+        Map.of("paymentMethods", java.util.List.of("EFECTIVO", "NEQUI", "QR")));
+
+    @SuppressWarnings("unchecked")
+    Map<String, Object> stepData = (Map<String, Object>) response.progressData().get("step_6");
+    @SuppressWarnings("unchecked")
+    java.util.List<String> methods = (java.util.List<String>) stepData.get("paymentMethods");
+    assertEquals(java.util.List.of("EFECTIVO"), methods);
   }
 }

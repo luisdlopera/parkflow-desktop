@@ -20,7 +20,7 @@ public class ConfigurationVehicleTypeController {
   private final SettingsVehicleTypeService settingsVehicleTypeService;
 
   @GetMapping
-  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
+  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR','CAJERO')")
   public ResponseEntity<List<VehicleTypeResponse>> listAll() {
     return ResponseEntity.ok(settingsVehicleTypeService.listAll());
   }

@@ -1,6 +1,7 @@
 package com.parkflow.modules.onboarding.controller;
 
 import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
+import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;
 import com.parkflow.modules.onboarding.dto.SaveOnboardingStepRequest;
 import com.parkflow.modules.onboarding.service.OnboardingService;
 import jakarta.validation.Valid;
@@ -49,5 +50,17 @@ public class OnboardingController {
   public ResponseEntity<Map<String, Boolean>> isFeatureEnabled(
       @PathVariable UUID companyId, @PathVariable String featureKey) {
     return ResponseEntity.ok(Map.of("enabled", onboardingService.isFeatureEnabled(companyId, featureKey)));
+  }
+
+  @GetMapping("/companies/{companyId}/settings")
+  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
+  public ResponseEntity<Map<String, Object>> getCompanySettings(@PathVariable UUID companyId) {
+    return ResponseEntity.ok(onboardingService.getCompanySettings(companyId));
+  }
+
+  @GetMapping("/companies/{companyId}/capabilities")
+  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
+  public ResponseEntity<CompanyCapabilitiesResponse> getCapabilities(@PathVariable UUID companyId) {
+    return ResponseEntity.ok(onboardingService.getCapabilities(companyId));
   }
 }
