@@ -9,6 +9,7 @@ export const parkingSiteSchema = z.object({
   managerName: z.string().max(150).optional().or(z.literal("")),
   timezone: z.string().min(1).max(50).default("America/Bogota"),
   currency: z.string().min(1).max(10).default("COP"),
+  maxCapacity: z.number().int().min(0).default(0),
   isActive: z.boolean().default(true),
 });
 
@@ -70,7 +71,11 @@ export const cashRegisterSchema = z.object({
 export const vehicleTypeSchema = z.object({
   code: z.string().min(1).max(20).regex(/^[A-Z0-9_]+$/, "Solo mayúsculas, números y guión bajo"),
   name: z.string().min(1).max(100),
+  icon: z.string().max(40).optional().or(z.literal("")),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Color hexadecimal, ej. #2563EB").default("#2563EB"),
   requiresPlate: z.boolean().default(true),
+  hasOwnRate: z.boolean().default(true),
+  quickAccess: z.boolean().default(true),
   requiresPhoto: z.boolean().default(false),
   displayOrder: z.number().int().min(0).default(0),
 });

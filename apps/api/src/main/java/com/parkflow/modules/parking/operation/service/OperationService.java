@@ -1,19 +1,23 @@
 package com.parkflow.modules.parking.operation.service;
 
-import com.parkflow.modules.common.debug.AgentDebugNdjson;
 import com.parkflow.modules.cash.domain.CashMovementType;
 import com.parkflow.modules.cash.service.CashService;
+import com.parkflow.modules.configuration.entity.OperationalParameter;
+import com.parkflow.modules.configuration.repository.OperationalParameterRepository;
+import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.auth.security.SecurityUtils;
+import com.parkflow.modules.configuration.entity.*;
+import com.parkflow.modules.configuration.repository.*;
+import com.parkflow.modules.configuration.service.PrepaidService;
 import com.parkflow.modules.parking.operation.repository.*;
-import com.parkflow.modules.tickets.dto.CreatePrintJobRequest;
 import com.parkflow.modules.tickets.entity.PrintDocumentType;
-import com.parkflow.modules.tickets.service.PrintJobService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -22,7 +26,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -45,40 +48,37 @@ public class OperationService {
   private final AppUserRepository appUserRepository;
   private final VehicleRepository vehicleRepository;
   private final RateRepository rateRepository;
+  private final ParkingSiteRepository parkingSiteRepository;
+  private final OperationalParameterRepository operationalParameterRepository;
   private final ParkingSessionRepository parkingSessionRepository;
   private final PaymentRepository paymentRepository;
   private final TicketCounterRepository ticketCounterRepository;
   private final VehicleConditionReportRepository vehicleConditionReportRepository;
-  private final SessionEventRepository sessionEventRepository;
   private final OperationIdempotencyRepository operationIdempotencyRepository;
-  private final PrintJobService printJobService;
+  private final OperationAuditService auditService;
+  private final OperationPrintService operationPrintService;
   private final CashService cashService;
+  private final PricingCalculator pricingCalculator;
+  private final com.parkflow.modules.parking.operation.validation.PlateValidator plateValidator;
+  private final MonthlyContractRepository monthlyContractRepository;
+  private final PrepaidBalanceRepository prepaidBalanceRepository;
+  private final AgreementRepository agreementRepository;
+  private final PrepaidService prepaidService;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
-
+  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
   @Transactional
   public OperationResultResponse registerEntry(EntryRequest request) {
     String idempotencyKey = request.idempotencyKey();
     String rawPlate = request.plate();
     String vehicleType = request.type();
     String site = request.site();
+    String countryCode = normalizeCountryCode(request.countryCode());
+    EntryMode entryMode = request.entryMode() != null ? request.entryMode() : EntryMode.VISITOR;
+    boolean noPlateEntry = Boolean.TRUE.equals(request.noPlate());
 
     log.info("registerEntry: plate={} type={} site={} lane={} booth={} terminal={} idempotencyKey={}",
         rawPlate, vehicleType, site, request.lane(), request.booth(), request.terminal(), idempotencyKey);
-
-    // #region agent log
-    AgentDebugNdjson.line(
-        "H5",
-        "OperationService.java:registerEntry:start",
-        "service invoked",
-        Map.of(
-            "vehicleType",
-            vehicleType != null ? vehicleType : "null",
-            "siteProvided",
-            site != null && !site.isBlank(),
-            "hasRateId",
-            request.rateId() != null));
-    // #endregion
 
     Optional<OperationResultResponse> replay =
         tryReplay(idempotencyKey, IdempotentOperationType.ENTRY);
@@ -87,24 +87,45 @@ public class OperationService {
       return replay.get();
     }
 
-    String normalizedPlate = rawPlate.trim().toUpperCase(Locale.ROOT);
+    String normalizedPlate;
+    if (noPlateEntry) {
+      if (isBlank(request.noPlateReason())) {
+        throw new OperationException(
+            HttpStatus.BAD_REQUEST, "El ingreso sin placa requiere una justificacion");
+      }
+      normalizedPlate = generateNoPlateIdentifier();
+    } else {
+      com.parkflow.modules.parking.operation.validation.PlateValidationResult validationResult =
+          plateValidator.validatePlate(countryCode, vehicleType, rawPlate);
+
+      if (!validationResult.isValid()) {
+        log.warn("registerEntry: invalid plate format '{}' for type '{}': {}", rawPlate, vehicleType, validationResult.errorMessage());
+        throw new OperationException(HttpStatus.BAD_REQUEST, validationResult.errorMessage());
+      }
+      normalizedPlate = validationResult.normalizedPlate();
+    }
+
     log.info("registerEntry: plate normalized from '{}' to '{}'", rawPlate, normalizedPlate);
 
-    parkingSessionRepository
-        .findByStatusAndVehicle_Plate(SessionStatus.ACTIVE, normalizedPlate)
-        .ifPresent(
-            session -> {
-              log.warn("registerEntry: active session exists for plate={}", normalizedPlate);
-              throw new OperationException(
-                  HttpStatus.CONFLICT, "El vehiculo ya tiene una sesion activa");
-            });
+    // SECURITY: Use pessimistic lock to prevent concurrent entries for same plate
+    if (!noPlateEntry) {
+      parkingSessionRepository
+          .findActiveByPlateForUpdate(SessionStatus.ACTIVE, normalizedPlate)
+          .ifPresent(
+              session -> {
+                log.warn("registerEntry: active session exists for plate={}", normalizedPlate);
+                throw new OperationException(
+                    HttpStatus.CONFLICT, "El vehiculo ya tiene una sesion activa");
+              });
+    }
 
     AppUser operator = findRequiredOperator(request.operatorUserId());
     log.info("registerEntry: operator found id={} name={}", operator.getId(), operator.getName());
 
+    // LOCK: Lock the vehicle record to serialize entry/exit operations for this plate
     Vehicle vehicle =
         vehicleRepository
-            .findByPlate(normalizedPlate)
+            .findByPlateIgnoreCase(normalizedPlate)
             .map(
                 found -> {
                   found.setType(vehicleType);
@@ -122,26 +143,32 @@ public class OperationService {
     log.info("registerEntry: vehicle saved id={} plate={} type={}", vehicle.getId(), normalizedPlate, vehicleType);
 
     OffsetDateTime entryAt = request.entryAt() != null ? request.entryAt() : OffsetDateTime.now();
+    
+    // Check for monthly contract at entry to set proper mode
+    LocalDate entryDate = entryAt.toLocalDate();
+    boolean isMonthly = monthlyContractRepository
+        .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            normalizedPlate, entryDate, entryDate).isPresent();
+    
+    if (isMonthly) {
+        entryMode = EntryMode.SUBSCRIBER;
+    }
+
     log.info("registerEntry: resolving rate type={} site={} entryAt={}", vehicleType, site, entryAt);
     Rate rate = resolveRate(request.rateId(), vehicleType, site, entryAt);
     log.info("registerEntry: rate resolved id={} name={} amount={} type={} vehicleType={}", 
         rate.getId(), rate.getName(), rate.getAmount(), rate.getRateType(), rate.getVehicleType());
 
-    // #region agent log
-    AgentDebugNdjson.line(
-        "H1",
-        "OperationService.java:registerEntry:rateResolved",
-        "applicable rate found",
-        Map.of(
-            "rateId",
-            rate.getId().toString(),
-            "rateVehicleType",
-            rate.getVehicleType() != null ? rate.getVehicleType() : "null"));
-    // #endregion
+    assertParkingCapacityAvailable(site);
 
     ParkingSession session = new ParkingSession();
     session.setTicketNumber(nextTicketNumber(entryAt.toLocalDate()));
     session.setPlate(normalizedPlate);
+    session.setCountryCode(countryCode);
+    session.setEntryMode(entryMode);
+    session.setMonthlySession(isMonthly);
+    session.setNoPlate(noPlateEntry);
+    session.setNoPlateReason(noPlateEntry ? request.noPlateReason().trim() : null);
     session.setVehicle(vehicle);
     session.setRate(rate);
     session.setEntryOperator(operator);
@@ -167,18 +194,6 @@ public class OperationService {
     }
     log.info("registerEntry: session created id={} ticket={}", session.getId(), session.getTicketNumber());
 
-    // #region agent log
-    AgentDebugNdjson.line(
-        "H2",
-        "OperationService.java:registerEntry:sessionSaved",
-        "parking session persisted",
-        Map.of(
-            "sessionId",
-            session.getId().toString(),
-            "ticketNumber",
-            session.getTicketNumber()));
-    // #endregion
-
     saveVehicleCondition(
         session,
         ConditionStage.ENTRY,
@@ -187,27 +202,10 @@ public class OperationService {
         request.conditionPhotoUrls(),
         operator);
 
-    // #region agent log
-    AgentDebugNdjson.line(
-        "H3",
-        "OperationService.java:registerEntry:afterConditionReport",
-        "vehicle condition report saved",
-        Map.ofEntries(
-            Map.entry(
-                "checklistSize",
-                request.conditionChecklist() != null ? request.conditionChecklist().size() : 0),
-            Map.entry(
-                "photoUrlsSize",
-                request.conditionPhotoUrls() != null ? request.conditionPhotoUrls().size() : 0),
-            Map.entry(
-                "hasVehicleConditionText",
-                request.vehicleCondition() != null && !request.vehicleCondition().isBlank())));
-    // #endregion
-
-    createEvent(session, SessionEventType.ENTRY_RECORDED, operator, "entry");
+    auditService.recordEvent(session, SessionEventType.ENTRY_RECORDED, operator, "Ingreso registrado");
     // RELIABILITY: Print job is best-effort; don't fail the operation if printing fails
     try {
-      enqueuePrintJob(session, operator, PrintDocumentType.ENTRY, "entry");
+      operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.ENTRY, "entry");
     } catch (Exception printError) {
       log.warn("RELIABILITY: Print job creation failed for session={}, but operation completed. Error: {}",
           session.getId(), printError.getMessage());
@@ -221,6 +219,8 @@ public class OperationService {
         session.getId().toString(),
         toReceipt(session, 0L, "0h 0m"),
         "Ingreso registrado",
+        null,
+        null,
         null,
         null,
         null);
@@ -241,17 +241,19 @@ public class OperationService {
       throw new OperationException(HttpStatus.CONFLICT, "La sesion ya esta cerrada");
     }
 
+    assertExitPhotoIfRequired(session, request.exitImageUrl());
+
     OffsetDateTime exitAt = request.exitAt() != null ? request.exitAt() : OffsetDateTime.now();
     if (exitAt.isBefore(session.getEntryAt())) {
       throw new OperationException(HttpStatus.BAD_REQUEST, "La hora de salida no puede ser menor a la de ingreso");
     }
-    Rate rate = requireRate(session);
-
-    DurationCalculator.DurationBreakdown duration =
-        DurationCalculator.calculate(session.getEntryAt(), exitAt, rate.getGraceMinutes());
+    requireRate(session);
 
     PricingCalculator.PriceBreakdown price =
-        PricingCalculator.calculate(rate, duration.billableMinutes(), false);
+        calculateComplexPrice(session, exitAt, request.agreementCode(), false, false);
+    price = applyCourtesyPricing(session, price, false);
+
+    assertExitPaymentPolicy(session, request.paymentMethod(), price);
 
     session.setExitAt(exitAt);
     session.setExitOperator(operator);
@@ -293,10 +295,17 @@ public class OperationService {
 
     detectConditionMismatch(session, operator);
 
-    createEvent(session, SessionEventType.EXIT_RECORDED, operator, "exit");
+    auditService.recordEvent(session, SessionEventType.EXIT_RECORDED, operator, "exit");
+    
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.COBRAR,
+        operator,
+        null,
+        "Total: " + session.getTotalAmount(),
+        "Ticket: " + session.getTicketNumber() + ", Payment: " + request.paymentMethod());
     // RELIABILITY: Print job is best-effort; don't fail the operation if printing fails
     try {
-      enqueuePrintJob(session, operator, PrintDocumentType.EXIT, "exit");
+      operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.EXIT, "exit");
     } catch (Exception printError) {
       log.warn("RELIABILITY: Print job creation failed for session={}, but operation completed. Error: {}",
           session.getId(), printError.getMessage());
@@ -308,10 +317,12 @@ public class OperationService {
 
     return new OperationResultResponse(
         session.getId().toString(),
-        toReceipt(session, duration.totalMinutes(), duration.human()),
+        toReceipt(session, Duration.between(session.getEntryAt(), exitAt).toMinutes(), "0h 0m"), // will be recalculated in toReceipt
         "Salida registrada",
         price.subtotal(),
         price.surcharge(),
+        price.discount(),
+        price.deductedMinutes(),
         price.total());
   }
 
@@ -348,10 +359,10 @@ public class OperationService {
     session.setUpdatedAt(OffsetDateTime.now());
     session = parkingSessionRepository.save(session);
 
-    createEvent(session, SessionEventType.TICKET_REPRINTED, operator, request.reason());
+    auditService.recordEvent(session, SessionEventType.TICKET_REPRINTED, operator, request.reason());
     // RELIABILITY: Print job is best-effort; don't fail the operation if printing fails
     try {
-      enqueuePrintJob(session, operator, PrintDocumentType.REPRINT, "reprint-" + session.getReprintCount());
+      operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.REPRINT, "reprint-" + session.getReprintCount());
     } catch (Exception printError) {
       log.warn("RELIABILITY: Print job creation failed for session={}, but operation completed. Error: {}",
           session.getId(), printError.getMessage());
@@ -361,12 +372,13 @@ public class OperationService {
     meterRegistry
         .counter("parkflow.operations", "operation", "reprint")
         .increment();
-    log.info(
-        "audit op=reprint sessionId={} ticket={} count={} reason={}",
-        session.getId(),
-        session.getTicketNumber(),
-        session.getReprintCount(),
-        request.reason());
+
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.REIMPRIMIR,
+        operator,
+        "Reprint count: " + (session.getReprintCount() - 1),
+        "Reprint count: " + session.getReprintCount(),
+        "Ticket: " + session.getTicketNumber() + ", Reason: " + request.reason());
 
     DurationCalculator.DurationBreakdown duration =
         DurationCalculator.calculate(
@@ -380,6 +392,8 @@ public class OperationService {
         "Ticket reimpreso",
         null,
         null,
+        null,
+        session.getAppliedPrepaidMinutes(),
         session.getTotalAmount());
   }
 
@@ -409,17 +423,18 @@ public class OperationService {
       }
     }
 
-    Rate rate = requireRate(session);
+    requireRate(session);
     OffsetDateTime exitAt = OffsetDateTime.now();
     if (exitAt.isBefore(session.getEntryAt())) {
       throw new OperationException(HttpStatus.BAD_REQUEST, "La hora de salida no puede ser menor a la de ingreso");
     }
 
-    DurationCalculator.DurationBreakdown duration =
-        DurationCalculator.calculate(session.getEntryAt(), exitAt, rate.getGraceMinutes());
-
     PricingCalculator.PriceBreakdown price =
-        PricingCalculator.calculate(rate, duration.billableMinutes(), true);
+        calculateComplexPrice(session, exitAt, null, true, false);
+    price = applyCourtesyPricing(session, price, true);
+
+    assertExitPhotoIfRequired(session, request.exitImageUrl());
+    assertExitPaymentPolicy(session, request.paymentMethod(), price);
 
     session.setLostTicket(true);
     session.setLostTicketReason(request.reason());
@@ -453,10 +468,10 @@ public class OperationService {
           session, payment, operator, request.idempotencyKey(), CashMovementType.LOST_TICKET_PAYMENT);
     }
 
-    createEvent(session, SessionEventType.LOST_TICKET_MARKED, operator, request.reason());
+    auditService.recordEvent(session, SessionEventType.LOST_TICKET_MARKED, operator, request.reason());
     // RELIABILITY: Print job is best-effort; don't fail the operation if printing fails
     try {
-      enqueuePrintJob(session, operator, PrintDocumentType.LOST_TICKET, "lost-ticket");
+      operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.LOST_TICKET, "lost-ticket");
     } catch (Exception printError) {
       log.warn("RELIABILITY: Print job creation failed for session={}, but operation completed. Error: {}",
           session.getId(), printError.getMessage());
@@ -466,36 +481,40 @@ public class OperationService {
     meterRegistry
         .counter("parkflow.operations", "operation", "lost_ticket")
         .increment();
-    log.info(
-        "audit op=lost_ticket sessionId={} ticket={} reason={}",
-        session.getId(),
-        session.getTicketNumber(),
-        request.reason());
+
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.COBRAR,
+        operator,
+        null,
+        "Lost ticket Total: " + session.getTotalAmount(),
+        "Ticket: " + session.getTicketNumber() + ", Reason: " + request.reason());
 
     return new OperationResultResponse(
         session.getId().toString(),
-        toReceipt(session, duration.totalMinutes(), duration.human()),
+        toReceipt(session, Duration.between(session.getEntryAt(), exitAt).toMinutes(), "0h 0m"),
         "Ticket perdido procesado",
         price.subtotal(),
         price.surcharge(),
+        price.discount(),
+        price.deductedMinutes(),
         price.total());
   }
 
   @Transactional(readOnly = true)
-  public OperationResultResponse findActive(String ticketNumber, String plate) {
+  public OperationResultResponse findActive(String ticketNumber, String plate, String agreementCode) {
     ParkingSession session = findActiveSession(ticketNumber, plate);
-    Rate rate = requireRate(session);
-    DurationCalculator.DurationBreakdown duration =
-      DurationCalculator.calculate(session.getEntryAt(), OffsetDateTime.now(), rate.getGraceMinutes());
     PricingCalculator.PriceBreakdown estimated =
-      PricingCalculator.calculate(rate, duration.billableMinutes(), false);
+        calculateComplexPrice(session, OffsetDateTime.now(), agreementCode, false, true);
+    estimated = applyCourtesyPricing(session, estimated, false);
 
     return new OperationResultResponse(
         session.getId().toString(),
-        toReceipt(session, duration.totalMinutes(), duration.human()),
+        toReceipt(session, Duration.between(session.getEntryAt(), OffsetDateTime.now()).toMinutes(), "0h 0m"),
         "Sesion activa",
       estimated.subtotal(),
       estimated.surcharge(),
+      estimated.discount(),
+      estimated.deductedMinutes(),
       estimated.total());
   }
 
@@ -514,8 +533,11 @@ public class OperationService {
         graceMinutes);
 
     PricingCalculator.PriceBreakdown estimated = null;
+    OffsetDateTime referenceExitAt = Optional.ofNullable(session.getExitAt()).orElse(OffsetDateTime.now());
+    
     if (session.getStatus() == SessionStatus.ACTIVE && session.getRate() != null) {
-      estimated = PricingCalculator.calculate(session.getRate(), duration.billableMinutes(), false);
+      estimated = calculateComplexPrice(session, referenceExitAt, null, false, true);
+      estimated = applyCourtesyPricing(session, estimated, false);
     }
 
     return new OperationResultResponse(
@@ -524,6 +546,8 @@ public class OperationService {
         "Ticket encontrado",
       estimated != null ? estimated.subtotal() : null,
       estimated != null ? estimated.surcharge() : null,
+      estimated != null ? estimated.discount() : null,
+      estimated != null ? estimated.deductedMinutes() : session.getAppliedPrepaidMinutes(),
       estimated != null ? estimated.total() : session.getTotalAmount());
   }
 
@@ -571,7 +595,92 @@ public class OperationService {
         session.getReprintCount(),
         session.getEntryImageUrl(),
         session.getExitImageUrl(),
-        session.getSyncStatus());
+        session.getSyncStatus(),
+        session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
+        session.isMonthlySession(),
+        session.getAgreementCode(),
+        session.getAppliedPrepaidMinutes());
+  }
+
+  private PricingCalculator.PriceBreakdown calculateComplexPrice(
+      ParkingSession session, OffsetDateTime exitAt, String agreementCode, boolean lostTicket, boolean dryRun) {
+    
+    // 1. Duración básica
+    Rate rate = requireRate(session);
+    DurationCalculator.DurationBreakdown duration =
+        DurationCalculator.calculate(session.getEntryAt(), exitAt, rate.getGraceMinutes());
+    
+    long billableMinutes = duration.billableMinutes();
+    
+    // 2. ¿Es Mensualidad?
+    LocalDate date = exitAt.toLocalDate();
+    boolean hasMonthly = monthlyContractRepository
+        .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            session.getPlate(), date, date).isPresent();
+    
+    if (hasMonthly) {
+        session.setMonthlySession(true);
+        return new PricingCalculator.PriceBreakdown(0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.ZERO);
+    }
+    
+    // 3. ¿Tiene Prepago?
+    int deductedMinutes = 0;
+    if (billableMinutes > 0 && !lostTicket) {
+        List<PrepaidBalance> balances = prepaidBalanceRepository.findActiveByPlate(session.getPlate(), exitAt);
+        for (PrepaidBalance balance : balances) {
+            int toDeduct = Math.min(balance.getRemainingMinutes(), (int) billableMinutes);
+            if (toDeduct > 0) {
+                if (!dryRun) {
+                    prepaidService.deduct(balance.getId(), toDeduct);
+                }
+                billableMinutes -= toDeduct;
+                deductedMinutes += toDeduct;
+            }
+            if (billableMinutes <= 0) break;
+        }
+    }
+    if (!dryRun) {
+        session.setAppliedPrepaidMinutes(deductedMinutes);
+    }
+    
+    // 4. Cálculo base con el remanente (o total si no hubo prepago)
+    PricingCalculator.PriceBreakdown basePrice = 
+        pricingCalculator.calculate(rate, Math.max(0, billableMinutes), lostTicket);
+    
+    BigDecimal subtotal = basePrice.subtotal();
+    BigDecimal surcharge = basePrice.surcharge();
+    BigDecimal discount = BigDecimal.ZERO;
+    
+    // 5. Convenio
+    String effectiveAgreement = agreementCode != null && !agreementCode.isBlank() ? agreementCode.trim() : session.getAgreementCode();
+    if (effectiveAgreement != null) {
+        Optional<Agreement> agreement = agreementRepository.findByCodeAndIsActiveTrue(effectiveAgreement);
+        if (agreement.isPresent()) {
+            Agreement a = agreement.get();
+            session.setAgreementCode(a.getCode());
+            if (a.getFlatAmount() != null) {
+                // Tarifa fija del convenio
+                subtotal = a.getFlatAmount();
+            } else if (a.getDiscountPercent() != null && a.getDiscountPercent().compareTo(BigDecimal.ZERO) > 0) {
+                // Descuento porcentual
+                discount = subtotal.multiply(a.getDiscountPercent())
+                    .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+            }
+            if (!dryRun) {
+                globalAuditService.record(
+                    com.parkflow.modules.audit.domain.AuditAction.APLICAR_DESCUENTO,
+                    null,
+                    "No discount",
+                    "Discount applied: " + discount,
+                    "Agreement: " + effectiveAgreement + ", Ticket: " + session.getTicketNumber());
+            }
+        }
+    }
+    
+    BigDecimal total = subtotal.add(surcharge).subtract(discount).max(BigDecimal.ZERO);
+    
+    return new PricingCalculator.PriceBreakdown(
+        basePrice.units(), subtotal, surcharge, discount, deductedMinutes, total);
   }
 
   private AppUser findRequiredOperator(UUID operatorUserId) {
@@ -629,6 +738,102 @@ public class OperationService {
             () -> new OperationException(
                 HttpStatus.BAD_REQUEST,
                 "No existe tarifa activa y aplicable ahora para este tipo de vehiculo y sede"));
+  }
+
+  private void assertParkingCapacityAvailable(String site) {
+    if (site == null || site.isBlank()) {
+      return;
+    }
+    parkingSiteRepository
+        .findByCodeOrNameForUpdate(site.trim())
+        .ifPresent(
+            parkingSite -> {
+              if (!parkingSite.isActive()) {
+                throw new OperationException(HttpStatus.BAD_REQUEST, "La sede esta inactiva");
+              }
+              int maxCapacity = parkingSite.getMaxCapacity();
+              if (maxCapacity <= 0) {
+                return;
+              }
+              long activeSessions =
+                  parkingSessionRepository.countByStatusAndSite(SessionStatus.ACTIVE, parkingSite.getName());
+              if (!parkingSite.getName().equalsIgnoreCase(site.trim())) {
+                activeSessions += parkingSessionRepository.countByStatusAndSite(SessionStatus.ACTIVE, site.trim());
+              }
+              if (activeSessions >= maxCapacity) {
+                throw new OperationException(HttpStatus.CONFLICT, "Parqueadero lleno para la sede");
+              }
+            });
+  }
+
+  private String normalizeCountryCode(String countryCode) {
+    return countryCode == null || countryCode.isBlank()
+        ? "CO"
+        : countryCode.trim().toUpperCase(Locale.ROOT);
+  }
+
+  private String generateNoPlateIdentifier() {
+    return "SIN-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase(Locale.ROOT);
+  }
+
+  private Optional<OperationalParameter> resolveOperationalParameter(ParkingSession session) {
+    String siteKey = session.getSite();
+    if (siteKey == null || siteKey.isBlank()) {
+      return Optional.empty();
+    }
+    return parkingSiteRepository
+        .findByCode(siteKey.trim())
+        .or(() -> parkingSiteRepository.findByNameIgnoreCase(siteKey.trim()))
+        .flatMap(site -> operationalParameterRepository.findBySite_Id(site.getId()));
+  }
+
+  private boolean isAllowExitWithoutPayment(ParkingSession session) {
+    return resolveOperationalParameter(session)
+        .map(OperationalParameter::isAllowExitWithoutPayment)
+        .orElse(false);
+  }
+
+  private boolean isRequirePhotoExit(ParkingSession session) {
+    return resolveOperationalParameter(session)
+        .map(OperationalParameter::isRequirePhotoExit)
+        .orElse(false);
+  }
+
+  private PricingCalculator.PriceBreakdown applyCourtesyPricing(
+      ParkingSession session,
+      PricingCalculator.PriceBreakdown computed,
+      boolean lostTicketSettlement) {
+    if (lostTicketSettlement) {
+      return computed;
+    }
+    EntryMode mode = session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR;
+    if (mode == EntryMode.VISITOR) {
+      return computed;
+    }
+    return new PricingCalculator.PriceBreakdown(
+        computed.units(), computed.subtotal(), computed.surcharge(), BigDecimal.ZERO, computed.deductedMinutes(), BigDecimal.ZERO);
+  }
+
+  private void assertExitPaymentPolicy(
+      ParkingSession session, com.parkflow.modules.parking.operation.domain.PaymentMethod paymentMethod, PricingCalculator.PriceBreakdown price) {
+    BigDecimal due = price.total();
+    boolean allowWaive = due.compareTo(BigDecimal.ZERO) == 0 || isAllowExitWithoutPayment(session);
+    if (!allowWaive && paymentMethod == null) {
+      throw new OperationException(
+          HttpStatus.BAD_REQUEST,
+          "Registre medio de pago. Solo puede omitir el cobro si el total es cero o si \"Salida sin pago\" esta habilitada en parametros operativos.");
+    }
+  }
+
+  private void assertExitPhotoIfRequired(ParkingSession session, String exitImageUrl) {
+    if (!isRequirePhotoExit(session)) {
+      return;
+    }
+    if (blankToNull(exitImageUrl) == null) {
+      throw new OperationException(
+          HttpStatus.BAD_REQUEST,
+          "La sede exige foto en salida; envie exitImageUrl o desactive la validacion en parametros operativos.");
+    }
   }
 
 
@@ -727,6 +932,9 @@ public class OperationService {
    */
   private void safeRecordIdempotency(
       String idempotencyKey, IdempotentOperationType type, ParkingSession session) {
+    if (idempotencyKey == null || idempotencyKey.isBlank()) {
+      throw new OperationException(HttpStatus.BAD_REQUEST, "Idempotency key is mandatory for this operation");
+    }
     // SECURITY/RELIABILITY: Critical operations must have idempotency keys
     boolean isCriticalOperation = type == IdempotentOperationType.ENTRY
         || type == IdempotentOperationType.EXIT
@@ -780,6 +988,8 @@ public class OperationService {
           "Ingreso (idempotente)",
           null,
           null,
+          null,
+          null,
           null);
       case EXIT -> {
         if (session.getStatus() != SessionStatus.CLOSED) {
@@ -796,6 +1006,11 @@ public class OperationService {
         yield materializePostPaymentResult(session, "Ticket perdido (idempotente)", true);
       }
       case REPRINT -> materializeReprintResult(session);
+      case VOID -> new OperationResultResponse(
+          session.getId().toString(),
+          toReceipt(session, 0L, "0h 0m"),
+          "Anulacion (idempotente)",
+          null, null, null, null, null);
     };
   }
 
@@ -805,13 +1020,15 @@ public class OperationService {
     OffsetDateTime exitAt =
         session.getExitAt() != null ? session.getExitAt() : OffsetDateTime.now();
     var duration = DurationCalculator.calculate(session.getEntryAt(), exitAt, rate.getGraceMinutes());
-    var price = PricingCalculator.calculate(rate, duration.billableMinutes(), lostSurcharge);
+    var price = pricingCalculator.calculate(rate, duration.billableMinutes(), lostSurcharge);
     return new OperationResultResponse(
         session.getId().toString(),
         toReceipt(session, duration.totalMinutes(), duration.human()),
         message,
         price.subtotal(),
         price.surcharge(),
+        price.discount(),
+        price.deductedMinutes(),
         price.total());
   }
 
@@ -827,6 +1044,8 @@ public class OperationService {
         "Reimpresion (idempotente)",
         null,
         null,
+        null,
+        session.getAppliedPrepaidMinutes(),
         session.getTotalAmount());
   }
 
@@ -910,7 +1129,7 @@ public class OperationService {
               + String.join("|", entryChecklist)
               + "; exitChecklist="
               + String.join("|", exitChecklist);
-      createEvent(session, SessionEventType.VEHICLE_CONDITION_MISMATCH, operator, metadata);
+      auditService.recordEvent(session, SessionEventType.VEHICLE_CONDITION_MISMATCH, operator, metadata);
     }
   }
 
@@ -979,44 +1198,42 @@ public class OperationService {
     return ticketNumber;
   }
 
-  private void createEvent(
-      ParkingSession session, SessionEventType type, AppUser actor, String metadataMessage) {
-    SessionEvent event = new SessionEvent();
-    event.setSession(session);
-    event.setType(type);
-    event.setActorUser(actor);
-    event.setMetadata(metadataMessage);
-    sessionEventRepository.save(event);
+  @Transactional
+  public OperationResultResponse voidSession(VoidRequest request) {
+    Optional<OperationResultResponse> replay =
+        tryReplay(request.idempotencyKey(), IdempotentOperationType.VOID);
+    if (replay.isPresent()) {
+      return replay.get();
+    }
+
+    ParkingSession session = requireActiveSessionForUpdate(request.ticketNumber(), request.plate());
+    AppUser operator = findRequiredOperator(request.operatorUserId());
+
+    if (operator.getRole() != UserRole.ADMIN && operator.getRole() != UserRole.SUPER_ADMIN && !operator.isCanVoidTickets()) {
+      throw new OperationException(HttpStatus.FORBIDDEN, "No tiene permisos para anular tickets");
+    }
+
+    session.setStatus(SessionStatus.CANCELED);
+    session.setExitNotes(request.reason());
+    session.setUpdatedAt(OffsetDateTime.now());
+    session = parkingSessionRepository.save(session);
+
+    auditService.recordEvent(session, SessionEventType.VOIDED, operator, request.reason());
+    
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.ANULAR,
+        operator,
+        "Status: " + SessionStatus.ACTIVE,
+        "Status: " + SessionStatus.CANCELED,
+        "Ticket: " + session.getTicketNumber() + ", Reason: " + request.reason());
+
+    safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.VOID, session);
+    
+    return new OperationResultResponse(
+        session.getId().toString(),
+        toReceipt(session, 0L, "0h 0m"),
+        "Ticket anulado",
+        null, null, null, null, null);
   }
 
-  private void enqueuePrintJob(
-      ParkingSession session, AppUser operator, PrintDocumentType documentType, String reasonSuffix) {
-    String idempotencyKey =
-        "print-"
-            + documentType.name().toLowerCase(Locale.ROOT)
-            + "-"
-            + session.getId()
-            + "-"
-            + reasonSuffix;
-
-    String payloadHash =
-        Integer.toHexString(
-            java.util.Objects.hash(
-                session.getTicketNumber(),
-                session.getEntryAt(),
-                session.getExitAt(),
-                session.getTotalAmount(),
-                session.getReprintCount(),
-                documentType));
-
-    printJobService.create(
-        new CreatePrintJobRequest(
-            session.getId(),
-            operator.getId(),
-            documentType,
-            idempotencyKey,
-            payloadHash,
-            null,
-            session.getTerminal()));
-  }
 }

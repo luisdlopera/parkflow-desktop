@@ -2,11 +2,29 @@ import { z } from "zod";
 import type { PrintDocumentType } from "@parkflow/types";
 
 const PLATE_RE = /^[A-Z0-9-]+$/;
+const paymentMethodSchema = z.enum([
+  "CASH",
+  "DEBIT_CARD",
+  "CREDIT_CARD",
+  "CARD",
+  "QR",
+  "NEQUI",
+  "DAVIPLATA",
+  "TRANSFER",
+  "AGREEMENT",
+  "INTERNAL_CREDIT",
+  "OTHER",
+  "MIXED"
+]);
 
 export const operationEntryRequestSchema = z.object({
   idempotencyKey: z.string().max(200).optional(),
-  plate: z.string().min(3).max(20).regex(PLATE_RE, "La placa solo permite A-Z, 0-9 y guion"),
+  plate: z.string().max(20).regex(PLATE_RE, "La placa solo permite A-Z, 0-9 y guion").nullable().optional(),
   type: z.string().min(1),
+  countryCode: z.string().length(2).optional(),
+  entryMode: z.enum(["VISITOR", "AGREEMENT", "SUBSCRIBER", "EMPLOYEE"]).optional(),
+  noPlate: z.boolean().optional(),
+  noPlateReason: z.string().max(200).nullable().optional(),
   operatorUserId: z.string().uuid(),
   rateId: z.string().uuid().nullable().optional(),
   site: z.string().max(100).nullable().optional(),
@@ -17,6 +35,9 @@ export const operationEntryRequestSchema = z.object({
   vehicleCondition: z.string().max(200).nullable().optional(),
   conditionChecklist: z.array(z.string().max(100)).optional(),
   conditionPhotoUrls: z.array(z.string().max(500)).optional()
+}).refine((v) => Boolean(v.noPlate) || Boolean(v.plate?.trim()), {
+  message: "Placa obligatoria salvo ingreso especial sin placa",
+  path: ["plate"]
 });
 
 export const operationExitRequestSchema = z
@@ -25,7 +46,9 @@ export const operationExitRequestSchema = z
     ticketNumber: z.string().max(50).regex(PLATE_RE, "Ticket invalido").optional(),
     plate: z.string().min(3).max(20).regex(PLATE_RE, "Placa invalida").optional(),
     operatorUserId: z.string().uuid(),
-    paymentMethod: z.enum(["CASH", "CARD", "TRANSFER", "OTHER"]).optional(),
+    paymentMethod: paymentMethodSchema.optional(),
+    agreementCode: z.string().max(50).optional().nullable(),
+    observations: z.string().max(500).optional().nullable(),
     vehicleCondition: z.string().max(200).nullable().optional(),
     conditionChecklist: z.array(z.string().max(100)).optional(),
     conditionPhotoUrls: z.array(z.string().max(500)).optional()
@@ -48,7 +71,7 @@ export const operationLostTicketRequestSchema = z
     ticketNumber: z.string().optional(),
     plate: z.string().min(3).max(20).regex(PLATE_RE, "Placa invalida").optional(),
     operatorUserId: z.string().uuid(),
-    paymentMethod: z.enum(["CASH", "CARD", "TRANSFER", "OTHER"]).optional(),
+    paymentMethod: paymentMethodSchema.optional(),
     reason: z.string().min(1)
   })
   .refine((v) => Boolean(v.ticketNumber?.trim() || v.plate?.trim()), {
@@ -92,6 +115,7 @@ export const cashCountRequestSchema = z.object({
 
 export const cashCloseRequestSchema = z.object({
   closingNotes: z.string().max(4000).nullable().optional(),
+  closingWitnessName: z.string().max(200).nullable().optional(),
   closeIdempotencyKey: z.string().max(120).nullable().optional()
 });
 
@@ -285,6 +309,11 @@ export const settingsParametersSchema = z.object({
   siteLabel: z.string().optional(),
   currency: z.string().optional(),
   timeZone: z.string().optional(),
+  logoUrl: z.string().max(500).optional(),
+  brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  taxName: z.string().max(40).optional(),
+  taxRatePercent: z.number().min(0).max(100).optional(),
+  pricesIncludeTax: z.boolean().optional(),
   graceMinutesDefault: z.number().int().min(0).optional(),
   lostTicketPolicy: z.string().optional(),
   allowReprint: z.boolean().optional(),
@@ -296,13 +325,29 @@ export const settingsParametersSchema = z.object({
   offlineModeEnabled: z.boolean().optional(),
   syncIntervalSeconds: z.number().int().min(0).optional(),
   printTimeoutSeconds: z.number().int().min(0).optional(),
-  ticketLegalMessage: z.string().optional(),
+  ticketHeaderMessage: z.string().max(500).optional(),
+  ticketLegalMessage: z.string().max(1000).optional(),
+  ticketFooterMessage: z.string().max(500).optional(),
+  operationRulesMessage: z.string().max(1200).optional(),
   qrConfig: z.string().optional(),
   manualExitAllowed: z.boolean().optional(),
   allowOfflineEntryExit: z.boolean().optional(),
   cashRequireOpenForPayment: z.boolean().optional(),
   cashOfflineCloseAllowed: z.boolean().optional(),
-  cashOfflineMaxManualMovement: z.number().min(0).optional()
+  cashOfflineMaxManualMovement: z.number().min(0).optional(),
+  businessLegalName: z.string().max(200).optional(),
+  taxIdCheckDigit: z.string().max(2).optional(),
+  dianInvoicePrefix: z.string().max(20).optional(),
+  dianResolutionNumber: z.string().max(40).optional(),
+  dianResolutionDate: z.string().max(10).optional(),
+  dianRangeFrom: z.string().max(30).optional(),
+  dianRangeTo: z.string().max(30).optional(),
+  dianTechnicalKey: z.string().max(500).optional(),
+  cashFeSequentialEnabled: z.boolean().optional(),
+  cashFeSequencePerTerminal: z.boolean().optional(),
+  cashFeSequenceDigits: z.number().int().min(6).max(13).optional(),
+  cashFeOutboundWebhookUrl: z.string().max(500).optional(),
+  cashFeOutboundWebhookBearer: z.string().max(2000).optional()
 });
 
 export const settingsLegacySiteSchema = z.object({

@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -33,13 +34,7 @@ public class CashRegisterConfigurationService {
   @Transactional(readOnly = true)
   public SettingsPageResponse<CashRegisterResponse> list(
       UUID siteId, String q, Boolean active, Pageable pageable) {
-    // Use repository search if available, otherwise filter in memory
-    Page<CashRegister> page;
-    if (siteId != null) {
-      page = cashRegisterRepository.findBySiteRef_Id(siteId, pageable);
-    } else {
-      page = cashRegisterRepository.findAll(pageable);
-    }
+    Page<CashRegister> page = cashRegisterRepository.search(siteId, normalizeQuery(q), active, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 
@@ -50,17 +45,22 @@ public class CashRegisterConfigurationService {
 
   @Transactional
   public CashRegisterResponse create(CashRegisterRequest req) {
+    String site = normalizeSite(req.site());
+    String terminal = normalizeTerminal(req.terminal());
+
     CashRegister cr = new CashRegister();
-    cr.setSite(req.site());
+    ParkingSite parkingSite = null;
     if (req.siteId() != null) {
-      ParkingSite site = parkingSiteRepository.findById(req.siteId())
+      parkingSite = parkingSiteRepository.findById(req.siteId())
           .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sede no encontrada"));
-      cr.setSiteRef(site);
+      cr.setSiteRef(parkingSite);
     }
-    cr.setCode(req.code().trim().toUpperCase());
-    cr.setName(req.name());
-    cr.setTerminal(req.terminal().trim());
-    cr.setLabel(req.label());
+    cr.setSite(resolveSite(site, parkingSite));
+    ensureUniqueCombination(cr.getSite(), terminal, null);
+    cr.setCode(normalizeCode(req.code()));
+    cr.setName(trimToNull(req.name()));
+    cr.setTerminal(terminal);
+    cr.setLabel(trimToNull(req.label()));
     if (req.printerId() != null) {
       Printer p = printerRepository.findById(req.printerId())
           .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Impresora no encontrada"));
@@ -81,16 +81,23 @@ public class CashRegisterConfigurationService {
   @Transactional
   public CashRegisterResponse update(UUID id, CashRegisterRequest req) {
     CashRegister cr = findById(id);
-    cr.setSite(req.site());
+    String site = normalizeSite(req.site());
+    String terminal = normalizeTerminal(req.terminal());
+
+    ParkingSite parkingSite = null;
     if (req.siteId() != null) {
-      ParkingSite site = parkingSiteRepository.findById(req.siteId())
+      parkingSite = parkingSiteRepository.findById(req.siteId())
           .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sede no encontrada"));
-      cr.setSiteRef(site);
+      cr.setSiteRef(parkingSite);
+    } else {
+      cr.setSiteRef(null);
     }
-    cr.setCode(req.code().trim().toUpperCase());
-    cr.setName(req.name());
-    cr.setTerminal(req.terminal().trim());
-    cr.setLabel(req.label());
+    cr.setSite(resolveSite(site, parkingSite));
+    ensureUniqueCombination(cr.getSite(), terminal, id);
+    cr.setCode(normalizeCode(req.code()));
+    cr.setName(trimToNull(req.name()));
+    cr.setTerminal(terminal);
+    cr.setLabel(trimToNull(req.label()));
     if (req.printerId() != null) {
       Printer p = printerRepository.findById(req.printerId())
           .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Impresora no encontrada"));
@@ -132,5 +139,45 @@ public class CashRegisterConfigurationService {
         cr.getResponsibleUser() != null ? cr.getResponsibleUser().getId() : null,
         cr.getResponsibleUser() != null ? cr.getResponsibleUser().getName() : null,
         cr.isActive(), cr.getCreatedAt(), cr.getUpdatedAt());
+  }
+
+  private void ensureUniqueCombination(String site, String terminal, UUID currentId) {
+    cashRegisterRepository.findBySiteAndTerminal(site, terminal).ifPresent(existing -> {
+      if (currentId == null || !currentId.equals(existing.getId())) {
+        throw new OperationException(HttpStatus.CONFLICT, "Ya existe una caja para esta sede y terminal");
+      }
+    });
+  }
+
+  private static String normalizeSite(String site) {
+    return StringUtils.hasText(site) ? site.trim() : "default";
+  }
+
+  private static String resolveSite(String fallbackSite, ParkingSite parkingSite) {
+    return parkingSite != null && StringUtils.hasText(parkingSite.getCode())
+        ? parkingSite.getCode().trim()
+        : fallbackSite;
+  }
+
+  private static String normalizeTerminal(String terminal) {
+    if (!StringUtils.hasText(terminal)) {
+      throw new OperationException(HttpStatus.BAD_REQUEST, "La terminal es obligatoria");
+    }
+    return terminal.trim();
+  }
+
+  private static String normalizeCode(String code) {
+    if (!StringUtils.hasText(code)) {
+      throw new OperationException(HttpStatus.BAD_REQUEST, "El código es obligatorio");
+    }
+    return code.trim().toUpperCase();
+  }
+
+  private static String trimToNull(String value) {
+    return StringUtils.hasText(value) ? value.trim() : null;
+  }
+
+  private static String normalizeQuery(String q) {
+    return StringUtils.hasText(q) ? q.trim() : null;
   }
 }

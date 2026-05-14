@@ -68,6 +68,10 @@ public class CashSession {
   @Column(columnDefinition = "TEXT")
   private String closingNotes;
 
+  /** Nombre de quien firma o valida físicamente el cierre (testigo/responsable adicional). */
+  @Column(length = 200)
+  private String closingWitnessName;
+
   private OffsetDateTime countedAt;
 
   @ManyToOne
@@ -79,6 +83,10 @@ public class CashSession {
 
   @Column(length = 120)
   private String closeIdempotencyKey;
+
+  /** Numero soporte PSC / consecutivo (si habilitado en parametros sede). */
+  @Column(length = 120)
+  private String supportDocumentNumber;
 
   @Column(nullable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();

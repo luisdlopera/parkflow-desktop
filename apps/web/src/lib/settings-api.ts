@@ -9,7 +9,6 @@ import {
   vehicleTypeSchema
 } from "@/modules/settings/schemas";
 import {
-  settingsLegacySiteSchema,
   settingsParametersSchema,
   settingsPasswordResetSchema,
   settingsRateStatusSchema,
@@ -29,11 +28,13 @@ import type { UserRole } from "@/modules/users/types";
 import type { VehicleType } from "@/modules/parking/types";
 
 export type RoundingMode = "UP" | "DOWN" | "NEAREST";
+export type RateCategory = "STANDARD" | "MONTHLY" | "AGREEMENT" | "PREPAID";
 
 export type RateRow = {
   id: string;
   name: string;
   vehicleType: string | null;
+  category: RateCategory;
   rateType: RateType;
   amount: number;
   graceMinutes: number;
@@ -43,8 +44,27 @@ export type RateRow = {
   lostTicketSurcharge: number;
   active: boolean;
   site: string;
+  siteId: string | null;
+  // Estructura base
+  baseValue: number;
+  baseMinutes: number;
+  additionalValue: number;
+  additionalMinutes: number;
+  // Topes
+  minSessionValue: number | null;
+  maxSessionValue: number | null;
+  maxDailyValue: number | null;
+  // Noche y festivos
+  appliesNight: boolean;
+  nightSurchargePercent: number;
+  appliesHoliday: boolean;
+  holidaySurchargePercent: number;
+  // Días de la semana (bitmap: bit0=Lun..bit6=Dom; null=todos)
+  appliesDaysBitmap: number | null;
+  // Franja horaria
   windowStart: string | null;
   windowEnd: string | null;
+  // Vigencia programada
   scheduledActiveFrom: string | null;
   scheduledActiveTo: string | null;
   createdAt: string;
@@ -74,6 +94,11 @@ export type ParkingParametersPayload = {
   siteLabel?: string;
   currency?: string;
   timeZone?: string;
+  logoUrl?: string;
+  brandColor?: string;
+  taxName?: string;
+  taxRatePercent?: number;
+  pricesIncludeTax?: boolean;
   graceMinutesDefault?: number;
   lostTicketPolicy?: string;
   allowReprint?: boolean;
@@ -85,7 +110,10 @@ export type ParkingParametersPayload = {
   offlineModeEnabled?: boolean;
   syncIntervalSeconds?: number;
   printTimeoutSeconds?: number;
+  ticketHeaderMessage?: string;
   ticketLegalMessage?: string;
+  ticketFooterMessage?: string;
+  operationRulesMessage?: string;
   qrConfig?: string;
   manualExitAllowed?: boolean;
   allowOfflineEntryExit?: boolean;
@@ -93,6 +121,19 @@ export type ParkingParametersPayload = {
   cashRequireOpenForPayment?: boolean;
   cashOfflineCloseAllowed?: boolean;
   cashOfflineMaxManualMovement?: number;
+  businessLegalName?: string;
+  taxIdCheckDigit?: string;
+  dianInvoicePrefix?: string;
+  dianResolutionNumber?: string;
+  dianResolutionDate?: string;
+  dianRangeFrom?: string;
+  dianRangeTo?: string;
+  dianTechnicalKey?: string;
+  cashFeSequentialEnabled?: boolean;
+  cashFeSequencePerTerminal?: boolean;
+  cashFeSequenceDigits?: number;
+  cashFeOutboundWebhookUrl?: string;
+  cashFeOutboundWebhookBearer?: string;
 };
 
 export type SettingsPage<T> = {
@@ -314,124 +355,48 @@ export async function resetParameters(site?: string, auditReason?: string): Prom
 }
 
 
-// #region Sites (Sedes) Management
-export type SiteRow = {
-  id: string;
-  code: string;
-  name: string;
-  address: string | null;
-  phone: string | null;
-  timeZone: string;
-  active: boolean;
-  maxCapacity: number | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type SiteCreatePayload = {
-  code: string;
-  name: string;
-  address?: string;
-  phone?: string;
-  timeZone?: string;
-  maxCapacity?: number;
-};
-
-export async function fetchSites(params?: { active?: boolean | null }): Promise<SiteRow[]> {
-  const u = new URL(`${apiV1Base()}/settings/sites`);
-  if (params?.active !== undefined && params.active !== null) {
-    u.searchParams.set("active", String(params.active));
-  }
-  return apiFetch<SiteRow[]>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
-}
-
-
-export async function createSite(payload: SiteCreatePayload, auditReason?: string): Promise<SiteRow> {
-  const validatedBody = validatePayloadOrThrow(settingsLegacySiteSchema, payload);
-  return apiFetch<SiteRow>(`${apiV1Base()}/settings/sites`, {
-    method: "POST",
-    headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(validatedBody)
-  });
-}
-
-
-export async function updateSite(
-  id: string,
-  payload: Partial<SiteCreatePayload>,
-  auditReason?: string
-): Promise<SiteRow> {
-  const validatedBody = validatePayloadOrThrow(settingsLegacySiteSchema.partial(), payload);
-  return apiFetch<SiteRow>(`${apiV1Base()}/settings/sites/${id}`, {
-    method: "PATCH",
-    headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(validatedBody)
-  });
-}
-
-
-export async function patchSiteStatus(id: string, active: boolean, auditReason?: string): Promise<SiteRow> {
-  const validatedBody = validatePayloadOrThrow(settingsRateStatusSchema, { active });
-  return apiFetch<SiteRow>(`${apiV1Base()}/settings/sites/${id}/status`, {
-    method: "PATCH",
-    headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(validatedBody)
-  });
-}
-
-// #endregion
-
 export type MasterVehicleTypeRow = {
   id: string;
   code: string;
   name: string;
+  icon?: string;
+  color?: string;
   isActive: boolean;
+  requiresPlate?: boolean;
+  hasOwnRate?: boolean;
+  quickAccess?: boolean;
+  requiresPhoto?: boolean;
+  displayOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export async function fetchMasterVehicleTypes(auditReason?: string): Promise<MasterVehicleTypeRow[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/operations", "/settings") ?? "http://localhost:6011/api/v1/settings";
-  const res = await fetch(`${baseUrl}/vehicle-types`, {
-    headers: await buildApiHeaders(hdr(auditReason)),
+  return apiFetch<MasterVehicleTypeRow[]>(`${cfgBase()}/vehicle-types`, {
     cache: "no-store",
-    credentials: "include"
+    headers: await buildApiHeaders(hdr(auditReason))
   });
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => null);
-    throw new Error(`Error obteniendo tipos de vehículo (${res.status}): ${errorBody || res.statusText}`);
-  }
-  return res.json();
 }
 
-export async function saveMasterVehicleType(data: { code: string; name: string; requiresPlate?: boolean; requiresPhoto?: boolean; displayOrder?: number; }, id?: string, auditReason?: string): Promise<MasterVehicleTypeRow> {
+export async function saveMasterVehicleType(data: { code: string; name: string; icon?: string; color?: string; requiresPlate?: boolean; hasOwnRate?: boolean; quickAccess?: boolean; requiresPhoto?: boolean; displayOrder?: number; }, id?: string, auditReason?: string): Promise<MasterVehicleTypeRow> {
   const validatedBody = validatePayloadOrThrow(vehicleTypeSchema, data);
   const method = id ? "PUT" : "POST";
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/operations", "/configuration") ?? "http://localhost:6011/api/v1/configuration";
   const url = id 
-    ? `${baseUrl}/vehicle-types/${id}`
-    : `${baseUrl}/vehicle-types`;
-  
-  const res = await fetch(url, {
+    ? `${cfgBase()}/vehicle-types/${id}`
+    : `${cfgBase()}/vehicle-types`;
+
+  return apiFetch<MasterVehicleTypeRow>(url, {
     method,
-    headers: { ...(await buildApiHeaders(hdr(auditReason))), "Content-Type": "application/json" },
+    headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify(validatedBody)
   });
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => null);
-    throw new Error(`Error guardando tipo de vehiculo (${res.status}): ${errorBody || res.statusText}`);
-  }
-  return res.json();
 }
 
 export async function patchVehicleTypeStatus(id: string, active: boolean, auditReason?: string): Promise<void> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/operations", "/configuration") ?? "http://localhost:6011/api/v1/configuration";
-  const res = await fetch(`${baseUrl}/vehicle-types/${id}/status?active=${active}`, {
+  await apiFetch<void>(`${cfgBase()}/vehicle-types/${id}/status?active=${active}`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason))
   });
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => null);
-    throw new Error(`Error cambiando estado del tipo de vehiculo (${res.status}): ${errorBody || res.statusText}`);
-  }
 }
 
 // #region Configuration API (new endpoints)
@@ -666,3 +631,229 @@ export async function patchConfigurationCashRegisterStatus(id: string, active: b
 }
 
 // #endregion
+
+// =============================================================================
+// Monthly Contracts
+// =============================================================================
+
+export type MonthlyContractRow = {
+  id: string;
+  rateId: string;
+  rateName: string | null;
+  plate: string;
+  vehicleType: string | null;
+  holderName: string;
+  holderDocument: string | null;
+  holderPhone: string | null;
+  holderEmail: string | null;
+  site: string;
+  siteId: string | null;
+  startDate: string;
+  endDate: string;
+  amount: number;
+  active: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function fetchMonthlyContracts(params: {
+  site?: string;
+  plate?: string;
+  active?: boolean | null;
+  page?: number;
+  size?: number;
+}): Promise<SettingsPage<MonthlyContractRow>> {
+  const u = new URL(`${cfgBase()}/monthly-contracts`);
+  if (params.site) u.searchParams.set("site", params.site);
+  if (params.plate) u.searchParams.set("plate", params.plate);
+  if (params.active !== undefined && params.active !== null) u.searchParams.set("active", String(params.active));
+  u.searchParams.set("page", String(params.page ?? 0));
+  u.searchParams.set("size", String(params.size ?? 20));
+  return apiFetch<SettingsPage<MonthlyContractRow>>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+}
+
+export async function saveMonthlyContract(
+  payload: Record<string, unknown>,
+  id?: string,
+  auditReason?: string
+): Promise<MonthlyContractRow> {
+  const url = id ? `${cfgBase()}/monthly-contracts/${id}` : `${cfgBase()}/monthly-contracts`;
+  return apiFetch<MonthlyContractRow>(url, {
+    method: id ? "PUT" : "POST",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function patchMonthlyContractStatus(id: string, active: boolean, auditReason?: string): Promise<MonthlyContractRow> {
+  return apiFetch<MonthlyContractRow>(`${cfgBase()}/monthly-contracts/${id}/status?active=${active}`, {
+    method: "PATCH",
+    headers: await buildApiHeaders(hdr(auditReason))
+  });
+}
+
+// =============================================================================
+// Agreements (Convenios)
+// =============================================================================
+
+export type AgreementRow = {
+  id: string;
+  code: string;
+  companyName: string;
+  discountPercent: number;
+  maxHoursPerDay: number;
+  flatAmount: number | null;
+  rateId: string | null;
+  rateName: string | null;
+  site: string | null;
+  siteId: string | null;
+  validFrom: string | null;
+  validTo: string | null;
+  active: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function fetchAgreements(params: {
+  site?: string;
+  q?: string;
+  active?: boolean | null;
+  page?: number;
+  size?: number;
+}): Promise<SettingsPage<AgreementRow>> {
+  const u = new URL(`${cfgBase()}/agreements`);
+  if (params.site) u.searchParams.set("site", params.site);
+  if (params.q) u.searchParams.set("q", params.q);
+  if (params.active !== undefined && params.active !== null) u.searchParams.set("active", String(params.active));
+  u.searchParams.set("page", String(params.page ?? 0));
+  u.searchParams.set("size", String(params.size ?? 20));
+  return apiFetch<SettingsPage<AgreementRow>>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+}
+
+export async function resolveAgreementByCode(code: string): Promise<AgreementRow> {
+  return apiFetch<AgreementRow>(`${cfgBase()}/agreements/resolve?code=${encodeURIComponent(code)}`, {
+    cache: "no-store",
+    headers: await buildApiHeaders()
+  });
+}
+
+export async function saveAgreement(
+  payload: Record<string, unknown>,
+  id?: string,
+  auditReason?: string
+): Promise<AgreementRow> {
+  const url = id ? `${cfgBase()}/agreements/${id}` : `${cfgBase()}/agreements`;
+  return apiFetch<AgreementRow>(url, {
+    method: id ? "PUT" : "POST",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function patchAgreementStatus(id: string, active: boolean, auditReason?: string): Promise<AgreementRow> {
+  return apiFetch<AgreementRow>(`${cfgBase()}/agreements/${id}/status?active=${active}`, {
+    method: "PATCH",
+    headers: await buildApiHeaders(hdr(auditReason))
+  });
+}
+
+// =============================================================================
+// Prepaid Packages & Balances
+// =============================================================================
+
+export type PrepaidPackageRow = {
+  id: string;
+  name: string;
+  hoursIncluded: number;
+  amount: number;
+  vehicleType: string | null;
+  site: string | null;
+  siteId: string | null;
+  expiresDays: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PrepaidBalanceRow = {
+  id: string;
+  packageId: string;
+  packageName: string;
+  plate: string;
+  holderName: string | null;
+  remainingMinutes: number;
+  purchasedAt: string;
+  expiresAt: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function fetchPrepaidPackages(params: {
+  site?: string;
+  q?: string;
+  active?: boolean | null;
+  page?: number;
+  size?: number;
+}): Promise<SettingsPage<PrepaidPackageRow>> {
+  const u = new URL(`${cfgBase()}/prepaid/packages`);
+  if (params.site) u.searchParams.set("site", params.site);
+  if (params.q) u.searchParams.set("q", params.q);
+  if (params.active !== undefined && params.active !== null) u.searchParams.set("active", String(params.active));
+  u.searchParams.set("page", String(params.page ?? 0));
+  u.searchParams.set("size", String(params.size ?? 20));
+  return apiFetch<SettingsPage<PrepaidPackageRow>>(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+}
+
+export async function savePrepaidPackage(
+  payload: Record<string, unknown>,
+  id?: string,
+  auditReason?: string
+): Promise<PrepaidPackageRow> {
+  const url = id ? `${cfgBase()}/prepaid/packages/${id}` : `${cfgBase()}/prepaid/packages`;
+  return apiFetch<PrepaidPackageRow>(url, {
+    method: id ? "PUT" : "POST",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function patchPrepaidPackageStatus(id: string, active: boolean, auditReason?: string): Promise<PrepaidPackageRow> {
+  return apiFetch<PrepaidPackageRow>(`${cfgBase()}/prepaid/packages/${id}/status?active=${active}`, {
+    method: "PATCH",
+    headers: await buildApiHeaders(hdr(auditReason))
+  });
+}
+
+export async function fetchPrepaidBalance(plate: string): Promise<PrepaidBalanceRow[]> {
+  return apiFetch<PrepaidBalanceRow[]>(`${cfgBase()}/prepaid/balance?plate=${encodeURIComponent(plate)}`, {
+    cache: "no-store",
+    headers: await buildApiHeaders()
+  });
+}
+
+export async function purchasePrepaidBalance(
+  packageId: string,
+  plate: string,
+  holderName?: string,
+  auditReason?: string
+): Promise<PrepaidBalanceRow> {
+  return apiFetch<PrepaidBalanceRow>(`${cfgBase()}/prepaid/balance/purchase`, {
+    method: "POST",
+    headers: await buildApiHeaders(hdr(auditReason)),
+    body: JSON.stringify({ packageId, plate, holderName })
+  });
+}
+
+export async function deductPrepaidBalance(
+  balanceId: string,
+  minutes: number,
+  auditReason?: string
+): Promise<PrepaidBalanceRow> {
+  return apiFetch<PrepaidBalanceRow>(`${cfgBase()}/prepaid/balance/${balanceId}/deduct?minutes=${minutes}`, {
+    method: "PATCH",
+    headers: await buildApiHeaders(hdr(auditReason))
+  });
+}

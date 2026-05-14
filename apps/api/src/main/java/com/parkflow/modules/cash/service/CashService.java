@@ -11,6 +11,8 @@ import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.settings.dto.ParkingParametersData;
+import com.parkflow.modules.settings.service.ParkingParametersService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -42,6 +44,10 @@ public class CashService {
   private final CashDomainAuditService cashDomainAuditService;
   private final AuthAuditService authAuditService;
   private final CashPolicyResolver cashPolicyResolver;
+  private final ParkingParametersService parkingParametersService;
+  private final CashSequentialSupportService cashSequentialSupportService;
+  private final CashClosingOutboundNotifier cashClosingOutboundNotifier;
+  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
 
   @Transactional
   public CashSessionResponse open(OpenCashRequest request) {
@@ -117,6 +123,13 @@ public class CashService {
         null,
         meta);
 
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.ABRIR_CAJA,
+        operator,
+        null,
+        "Opening amount: " + session.getOpeningAmount(),
+        "Register: " + register.getSite() + "/" + register.getTerminal());
+
     return toSessionResponse(session);
   }
 
@@ -179,6 +192,8 @@ public class CashService {
     }
     if ((request.type() == CashMovementType.DISCOUNT
             || request.type() == CashMovementType.MANUAL_EXPENSE
+            || request.type() == CashMovementType.WITHDRAWAL
+            || request.type() == CashMovementType.CUSTOMER_REFUND
             || request.type() == CashMovementType.ADJUSTMENT)
         && !StringUtils.hasText(request.reason())) {
       throw new OperationException(HttpStatus.BAD_REQUEST, "Motivo obligatorio para este movimiento");
@@ -447,8 +462,19 @@ public class CashService {
     session.setClosedAt(now);
     session.setClosedBy(closer);
     session.setClosingNotes(request.closingNotes());
+    if (StringUtils.hasText(request.closingWitnessName())) {
+      session.setClosingWitnessName(request.closingWitnessName().trim());
+    }
     if (StringUtils.hasText(request.closeIdempotencyKey())) {
       session.setCloseIdempotencyKey(request.closeIdempotencyKey().trim());
+    }
+    String groupingSite = groupingSiteForParams(session);
+    ParkingParametersData siteParamsClosing = parkingParametersService.get(groupingSite);
+    String supportDoc =
+        cashSequentialSupportService.allocateIfEnabled(
+            siteParamsClosing, groupingSite, session.getCashRegister().getTerminal());
+    if (StringUtils.hasText(supportDoc)) {
+      session.setSupportDocumentNumber(supportDoc);
     }
     session.setUpdatedAt(now);
     session = cashSessionRepository.save(session);
@@ -479,6 +505,15 @@ public class CashService {
         request.closingNotes(),
         meta);
 
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.CERRAR_CAJA,
+        closer,
+        "Expected: " + sum.expectedLedgerTotal(),
+        "Counted: " + report.getCountedTotal() + ", Diff: " + diff,
+        "Session: " + session.getId());
+
+    cashClosingOutboundNotifier.scheduleAfterCashClose(session.getId(), groupingSite);
+
     return toSessionResponse(session);
   }
 
@@ -493,13 +528,18 @@ public class CashService {
             .findById(SecurityUtils.requireUserId())
             .orElseThrow(() -> new OperationException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
     CashSummaryResponse sum = summary(sessionId);
-    List<String> lines = buildClosingPreviewLines(session, sum);
+    ParkingParametersData param = parkingParametersService.get(groupingSiteForParams(session));
+    List<String> lines = buildClosingPreviewLines(session, sum, param);
     Map<String, Object> ticket = new LinkedHashMap<>();
     ticket.put("ticketId", session.getId().toString());
     ticket.put("templateVersion", "ticket-layout-v1");
     ticket.put("paperWidthMm", 58);
     ticket.put("ticketNumber", "CIERRE-" + session.getId().toString().substring(0, 8));
-    ticket.put("parkingName", "Parkflow");
+    ticket.put(
+        "parkingName",
+        param != null && StringUtils.hasText(param.getParkingName())
+            ? param.getParkingName()
+            : "Parkflow");
     ticket.put("plate", "CAJA");
     ticket.put("vehicleType", "OTHER");
     ticket.put("site", session.getCashRegister().getSite());
@@ -510,7 +550,7 @@ public class CashService {
         "operatorName",
         session.getClosedBy() != null ? session.getClosedBy().getName() : session.getOperator().getName());
     ticket.put("issuedAtIso", OffsetDateTime.now().toString());
-    ticket.put("legalMessage", null);
+    ticket.put("legalMessage", buildClosingLegalFootnote(param));
     ticket.put("qrPayload", null);
     ticket.put("barcodePayload", session.getId().toString());
     ticket.put("copyNumber", 1);
@@ -533,6 +573,7 @@ public class CashService {
                     a.getId(),
                     a.getAction(),
                     a.getActorUser() != null ? a.getActorUser().getId() : null,
+                    a.getActorUser() != null ? a.getActorUser().getName() : null,
                     a.getTerminalId(),
                     a.getClientIp(),
                     a.getOldValue(),
@@ -659,6 +700,8 @@ public class CashService {
   private static boolean offlineCappedMovement(CashMovementType t) {
     return t == CashMovementType.MANUAL_INCOME
         || t == CashMovementType.MANUAL_EXPENSE
+        || t == CashMovementType.WITHDRAWAL
+        || t == CashMovementType.CUSTOMER_REFUND
         || t == CashMovementType.DISCOUNT
         || t == CashMovementType.ADJUSTMENT
         || t == CashMovementType.REPRINT_FEE;
@@ -717,7 +760,7 @@ public class CashService {
           LOST_TICKET_PAYMENT,
           REPRINT_FEE,
           ADJUSTMENT -> m.getAmount();
-      case MANUAL_EXPENSE, DISCOUNT -> m.getAmount().negate();
+      case MANUAL_EXPENSE, WITHDRAWAL, CUSTOMER_REFUND, DISCOUNT -> m.getAmount().negate();
       case VOID_OFFSET -> m.getAmount();
     };
   }
@@ -728,11 +771,13 @@ public class CashService {
         s.getId(),
         new CashRegisterInfoResponse(r.getId(), r.getSite(), r.getTerminal(), r.getLabel()),
         s.getOperator().getId(),
+        s.getOperator().getName(),
         s.getStatus().name(),
         s.getOpeningAmount(),
         s.getOpenedAt(),
         s.getClosedAt(),
         s.getClosedBy() != null ? s.getClosedBy().getId() : null,
+        s.getClosedBy() != null ? s.getClosedBy().getName() : null,
         s.getExpectedAmount(),
         s.getCountedAmount(),
         s.getDifferenceAmount(),
@@ -742,8 +787,11 @@ public class CashService {
         s.getCountOther(),
         s.getNotes(),
         s.getClosingNotes(),
+        s.getClosingWitnessName(),
+        s.getSupportDocumentNumber(),
         s.getCountedAt(),
-        s.getCountOperator() != null ? s.getCountOperator().getId() : null);
+        s.getCountOperator() != null ? s.getCountOperator().getId() : null,
+        s.getCountOperator() != null ? s.getCountOperator().getName() : null);
   }
 
   private CashMovementResponse toMovementResponse(CashMovement m) {
@@ -762,6 +810,7 @@ public class CashService {
         m.getVoidedBy() != null ? m.getVoidedBy().getId() : null,
         m.getExternalReference(),
         m.getCreatedBy().getId(),
+        m.getCreatedBy().getName(),
         m.getCreatedAt(),
         m.getTerminal(),
         m.getIdempotencyKey());
@@ -781,18 +830,162 @@ public class CashService {
     authAuditService.log(action, user, null, outcome, metadata);
   }
 
-  private List<String> buildClosingPreviewLines(CashSession session, CashSummaryResponse sum) {
+  private static String groupingSiteForParams(CashSession session) {
+    String s = session.getCashRegister().getSite();
+    return StringUtils.hasText(s) ? s.trim() : "DEFAULT";
+  }
+
+  private static String buildClosingLegalFootnote(ParkingParametersData p) {
+    if (p == null) {
+      return null;
+    }
+    boolean hasFe =
+        StringUtils.hasText(p.getDianResolutionNumber())
+            || StringUtils.hasText(p.getDianInvoicePrefix())
+            || StringUtils.hasText(p.getTaxId())
+            || StringUtils.hasText(p.getBusinessLegalName());
+    if (!hasFe) {
+      return "Documento soporte sin parametros FE cargados.";
+    }
+    StringBuilder sb = new StringBuilder();
+    if (StringUtils.hasText(p.getBusinessLegalName())) {
+      sb.append(p.getBusinessLegalName().trim()).append(". ");
+    }
+    if (StringUtils.hasText(p.getTaxId())) {
+      sb.append("NIT ").append(p.getTaxId().trim());
+      if (StringUtils.hasText(p.getTaxIdCheckDigit())) {
+        sb.append("-").append(p.getTaxIdCheckDigit().trim());
+      }
+      sb.append(". ");
+    }
+    sb.append(
+        "Parametros autorizacion numeracion Factura Electronica registrados;"
+            + " CUFE/XML requiere integracion PSC certificada.");
+    return sb.toString();
+  }
+
+  private static String movementLabelEs(String key) {
+    if (key == null) {
+      return "";
+    }
+    return switch (key) {
+      case "PARKING_PAYMENT" -> "Cobros parqueo";
+      case "MANUAL_INCOME" -> "Ingresos manual";
+      case "MANUAL_EXPENSE" -> "Egresos manual";
+      case "WITHDRAWAL" -> "Retiros efectivo";
+      case "CUSTOMER_REFUND" -> "Devoluciones cliente";
+      case "VOID_OFFSET" -> "Anulaciones (contrapartida)";
+      case "DISCOUNT" -> "Descuentos neto libro";
+      case "ADJUSTMENT" -> "Ajustes";
+      case "LOST_TICKET_PAYMENT" -> "Ticket perdido";
+      case "REPRINT_FEE" -> "Reimpresion cobrada";
+      default -> key;
+    };
+  }
+
+  private static String paymentLabelEs(String key) {
+    if (key == null) {
+      return "";
+    }
+    return switch (key) {
+      case "CASH" -> "Efectivo neto libro";
+      case "DEBIT_CARD" -> "Tarjeta debito neto libro";
+      case "CREDIT_CARD" -> "Tarjeta credito neto libro";
+      case "CARD" -> "Tarjetas neto libro";
+      case "QR" -> "QR neto libro";
+      case "NEQUI" -> "Nequi neto libro";
+      case "DAVIPLATA" -> "Daviplata neto libro";
+      case "TRANSFER" -> "Transferencias neto libro";
+      case "AGREEMENT" -> "Convenios neto libro";
+      case "INTERNAL_CREDIT" -> "Credito interno neto libro";
+      case "OTHER" -> "Otros neto libro";
+      case "MIXED" -> "Mixtos neto libro";
+      default -> key;
+    };
+  }
+
+  private List<String> buildClosingPreviewLines(
+      CashSession session, CashSummaryResponse sum, ParkingParametersData param) {
     List<String> lines = new ArrayList<>();
-    lines.add("CIERRE DE CAJA");
+    String headline =
+        param != null && StringUtils.hasText(param.getParkingName())
+            ? param.getParkingName().trim()
+            : "Parkflow";
+    lines.add(headline);
+    lines.add("CIERRE DE CAJA — REPORTE Z (informativo)");
     lines.add("Sede: " + session.getCashRegister().getSite());
     lines.add("Terminal: " + session.getCashRegister().getTerminal());
     lines.add("Sesion: " + session.getId());
-    lines.add("Apertura: " + sum.openingAmount());
-    lines.add("Esperado: " + sum.expectedLedgerTotal());
+    if (StringUtils.hasText(session.getSupportDocumentNumber())) {
+      lines.add("Consecutivo soporte: " + session.getSupportDocumentNumber());
+    }
+    lines.add("--- TOTALES NETO LIBRO — CLASE ---");
+    if (sum.totalsByMovementType() != null && !sum.totalsByMovementType().isEmpty()) {
+      new TreeMap<>(sum.totalsByMovementType())
+          .forEach((k, v) -> lines.add(movementLabelEs(k) + ": " + v.toPlainString()));
+    } else {
+      lines.add("(sin movimientos)");
+    }
+    lines.add("--- TOTALES NETO LIBRO — MEDIO ---");
+    if (sum.totalsByPaymentMethod() != null && !sum.totalsByPaymentMethod().isEmpty()) {
+      new TreeMap<>(sum.totalsByPaymentMethod())
+          .forEach((k, v) -> lines.add(paymentLabelEs(k) + ": " + v.toPlainString()));
+    } else {
+      lines.add("(sin medios registrados)");
+    }
+    lines.add("--- CUADRE ---");
+    lines.add("Base apertura: " + sum.openingAmount());
+    lines.add("Total esperado libro: " + sum.expectedLedgerTotal());
     lines.add("Contado: " + (session.getCountedAmount() != null ? session.getCountedAmount() : ZERO));
     lines.add("Diferencia: " + (session.getDifferenceAmount() != null ? session.getDifferenceAmount() : ZERO));
     lines.add("Cerrado: " + (session.getClosedAt() != null ? session.getClosedAt().toString() : ""));
+    if (session.getClosedBy() != null && StringUtils.hasText(session.getClosedBy().getName())) {
+      lines.add("Cierra/registra: " + session.getClosedBy().getName());
+    }
+    if (StringUtils.hasText(session.getClosingWitnessName())) {
+      lines.add("Testigo firma/responsable: " + session.getClosingWitnessName().trim());
+    }
+    lines.add("--- FACTURACION ELECTRONICA (parametros DIAN sede) ---");
+    appendFiscalLines(lines, param);
+    lines.add(
+        "Nota: CUFE/XML UBL 2.1 y envio Dian no estan automatizados;"
+            + " use proveedor PSC certificado cuando corresponda.");
     return lines;
+  }
+
+  private static void appendFiscalLines(List<String> lines, ParkingParametersData param) {
+    if (param == null) {
+      lines.add("(sin parametros de sede)");
+      return;
+    }
+    if (StringUtils.hasText(param.getBusinessLegalName())) {
+      lines.add("Razon social: " + param.getBusinessLegalName().trim());
+    }
+    if (StringUtils.hasText(param.getTaxId())) {
+      lines.add(
+          "NIT: "
+              + param.getTaxId().trim()
+              + (StringUtils.hasText(param.getTaxIdCheckDigit())
+                  ? "-" + param.getTaxIdCheckDigit().trim()
+                  : ""));
+    }
+    if (StringUtils.hasText(param.getDianInvoicePrefix())) {
+      lines.add("Prefijo numeracion FE: " + param.getDianInvoicePrefix().trim());
+    }
+    if (StringUtils.hasText(param.getDianResolutionNumber())) {
+      StringBuilder r = new StringBuilder("Resolucion No. ").append(param.getDianResolutionNumber().trim());
+      if (StringUtils.hasText(param.getDianResolutionDate())) {
+        r.append(" fecha ").append(param.getDianResolutionDate().trim());
+      }
+      lines.add(r.toString());
+    }
+    if (StringUtils.hasText(param.getDianRangeFrom()) || StringUtils.hasText(param.getDianRangeTo())) {
+      lines.add(
+          "Rango autorizado: "
+              + (StringUtils.hasText(param.getDianRangeFrom()) ? param.getDianRangeFrom().trim() : "?")
+              + " a "
+              + (StringUtils.hasText(param.getDianRangeTo()) ? param.getDianRangeTo().trim() : "?"));
+    }
   }
 
   private String mergeNotes(String existing, String extra) {

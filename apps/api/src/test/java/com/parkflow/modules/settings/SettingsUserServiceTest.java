@@ -33,12 +33,14 @@ class SettingsUserServiceTest {
   @Mock private AppUserRepository appUserRepository;
   @Mock private PasswordHashService passwordHashService;
   @Mock private SettingsAuditService settingsAuditService;
+  @Mock private com.parkflow.modules.audit.service.AuditService globalAuditService;
+  @Mock private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   private SettingsUserService service;
 
   @BeforeEach
   void setUp() {
-    service = new SettingsUserService(appUserRepository, passwordHashService, settingsAuditService);
+    service = new SettingsUserService(appUserRepository, passwordHashService, settingsAuditService, globalAuditService, objectMapper);
     UUID actorId = UUID.randomUUID();
     AuthPrincipal principal =
         new AuthPrincipal(

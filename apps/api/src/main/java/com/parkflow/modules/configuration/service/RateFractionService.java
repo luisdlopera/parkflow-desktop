@@ -7,7 +7,6 @@ import com.parkflow.modules.configuration.repository.RateFractionRepository;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -65,6 +64,7 @@ public class RateFractionService {
     f.setValue(req.value());
     f.setRoundUp(req.roundUp());
     f.setActive(req.isActive());
+    f.setUpdatedAt(OffsetDateTime.now());
     f = rateFractionRepository.save(f);
     return toResponse(f);
   }
@@ -73,6 +73,7 @@ public class RateFractionService {
   public void delete(UUID id) {
     RateFraction f = findById(id);
     f.setActive(false);
+    f.setUpdatedAt(OffsetDateTime.now());
     rateFractionRepository.save(f);
   }
 

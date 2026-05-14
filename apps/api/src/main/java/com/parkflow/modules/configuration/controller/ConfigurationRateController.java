@@ -27,8 +27,9 @@ public class ConfigurationRateController {
       @RequestParam(required = false) String site,
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,
+      @RequestParam(required = false) String category,
       Pageable pageable) {
-    return ResponseEntity.ok(settingsRateService.list(site, q, active, pageable));
+    return ResponseEntity.ok(settingsRateService.list(site, q, active, category, pageable));
   }
 
   @GetMapping("/{id}")

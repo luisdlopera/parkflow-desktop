@@ -9,13 +9,17 @@ import com.parkflow.modules.auth.service.AuthAuditService;
 import com.parkflow.modules.cash.domain.*;
 import com.parkflow.modules.cash.dto.*;
 import com.parkflow.modules.cash.repository.*;
+import com.parkflow.modules.cash.service.CashClosingOutboundNotifier;
 import com.parkflow.modules.cash.service.CashDomainAuditService;
 import com.parkflow.modules.cash.service.CashPolicyResolver;
+import com.parkflow.modules.cash.service.CashSequentialSupportService;
 import com.parkflow.modules.cash.service.CashService;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.settings.dto.ParkingParametersData;
+import com.parkflow.modules.settings.service.ParkingParametersService;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -50,6 +54,10 @@ class CashServiceTest {
   @Mock private CashDomainAuditService cashDomainAuditService;
   @Mock private AuthAuditService authAuditService;
   @Mock private CashPolicyResolver cashPolicyResolver;
+  @Mock private ParkingParametersService parkingParametersService;
+  @Mock private CashSequentialSupportService cashSequentialSupportService;
+  @Mock private CashClosingOutboundNotifier cashClosingOutboundNotifier;
+  @Mock private com.parkflow.modules.audit.service.AuditService globalAuditService;
 
   private CashService service;
 
@@ -66,7 +74,11 @@ class CashServiceTest {
             parkingSessionRepository,
             cashDomainAuditService,
             authAuditService,
-            cashPolicyResolver);
+            cashPolicyResolver,
+            parkingParametersService,
+            cashSequentialSupportService,
+            cashClosingOutboundNotifier,
+            globalAuditService);
     lenient().when(cashPolicyResolver.requireOpenForPayment(any())).thenReturn(true);
     UUID actorId = UUID.randomUUID();
     AuthPrincipal principal =
@@ -78,6 +90,14 @@ class CashServiceTest {
     SecurityContextHolder.getContext()
         .setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));
     lenient().when(appUserRepository.findById(actorId)).thenReturn(Optional.of(user(actorId, UserRole.CAJERO)));
+    lenient()
+        .when(parkingParametersService.get(any()))
+        .thenAnswer(
+            invocation -> {
+              ParkingParametersData d = new ParkingParametersData();
+              d.setParkingName("Parkflow");
+              return d;
+            });
   }
 
   @AfterEach
@@ -119,7 +139,7 @@ class CashServiceTest {
     session.setCountedAt(null);
     when(cashSessionRepository.findById(sid)).thenReturn(Optional.of(session));
 
-    assertThatThrownBy(() -> service.close(sid, new CashCloseRequest(null, null)))
+    assertThatThrownBy(() -> service.close(sid, new CashCloseRequest(null, null, null)))
         .isInstanceOf(OperationException.class)
         .satisfies(
             ex -> assertThat(((OperationException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));

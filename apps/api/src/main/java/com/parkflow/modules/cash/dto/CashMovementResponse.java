@@ -19,6 +19,7 @@ public record CashMovementResponse(
     UUID voidedById,
     String externalReference,
     UUID createdById,
+    String createdByName,
     OffsetDateTime createdAt,
     String terminal,
     String idempotencyKey) {}

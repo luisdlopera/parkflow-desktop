@@ -1,10 +1,7 @@
 package com.parkflow.modules.parking.operation.service;
 
-import com.parkflow.modules.parking.operation.domain.SessionEventType;
-import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.dto.OperationsSummaryResponse;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
-import com.parkflow.modules.parking.operation.repository.SessionEventRepository;
 import com.parkflow.modules.sync.repository.SyncEventRepository;
 import com.parkflow.modules.tickets.entity.PrintJobStatus;
 import com.parkflow.modules.tickets.repository.PrintJobRepository;
@@ -21,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class SupervisorService {
 
   private final ParkingSessionRepository parkingSessionRepository;
-  private final SessionEventRepository sessionEventRepository;
   private final PrintJobRepository printJobRepository;
   private final SyncEventRepository syncEventRepository;
 
