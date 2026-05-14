@@ -1,0 +1,77 @@
+package com.parkflow.modules.auth.application.service;
+
+import com.parkflow.modules.auth.application.port.in.DeviceManagementUseCase;
+import com.parkflow.modules.auth.dto.DeviceDecisionRequest;
+import com.parkflow.modules.auth.dto.DeviceInfoResponse;
+import com.parkflow.modules.auth.entity.AuthAuditAction;
+import com.parkflow.modules.auth.entity.AuthorizedDevice;
+import com.parkflow.modules.auth.repository.AuthorizedDeviceRepository;
+import com.parkflow.modules.parking.operation.exception.OperationException;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class DeviceManagementService implements DeviceManagementUseCase {
+
+  private final AuthorizedDeviceRepository authorizedDeviceRepository;
+  private final AuthAuditService authAuditService;
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<DeviceInfoResponse> listDevices() {
+    return authorizedDeviceRepository.findAll().stream().map(this::toDevice).toList();
+  }
+
+  @Override
+  @Transactional
+  public DeviceInfoResponse revokeDevice(DeviceDecisionRequest request) {
+    AuthorizedDevice device =
+        authorizedDeviceRepository
+            .findByDeviceId(request.deviceId())
+            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Equipo no encontrado"));
+    device.setAuthorized(false);
+    device.setRevokedAt(OffsetDateTime.now());
+    device = authorizedDeviceRepository.save(device);
+
+    authAuditService.log(
+        AuthAuditAction.DEVICE_REVOKED,
+        null,
+        device,
+        "OK",
+        Map.of("reason", request.reason() != null ? request.reason() : "Revocado por administrador"));
+
+    return toDevice(device);
+  }
+
+  @Override
+  @Transactional
+  public DeviceInfoResponse authorizeDevice(DeviceDecisionRequest request) {
+    AuthorizedDevice device =
+        authorizedDeviceRepository
+            .findByDeviceId(request.deviceId())
+            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Equipo no encontrado"));
+    device.setAuthorized(true);
+    device.setRevokedAt(null);
+    return toDevice(authorizedDeviceRepository.save(device));
+  }
+
+  private DeviceInfoResponse toDevice(AuthorizedDevice device) {
+    return new DeviceInfoResponse(
+        device.getId(),
+        device.getDeviceId(),
+        device.getDisplayName(),
+        device.getPlatform(),
+        device.getFingerprint(),
+        device.isAuthorized(),
+        device.getRevokedAt(),
+        device.getLastSeenAt());
+  }
+}
