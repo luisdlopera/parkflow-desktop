@@ -7,17 +7,6 @@ export default defineConfig({
       allow: [path.resolve(__dirname, '../..')],
     },
   },
-  coverage: {
-    provider: 'v8',
-    reporter: ['text', 'lcov', 'html'],
-    reportsDirectory: './coverage',
-    thresholds: {
-      statements: 60,
-      branches: 40,
-      functions: 50,
-      lines: 60,
-    },
-  },
   test: {
     environment: 'jsdom',
     globals: true,
@@ -25,6 +14,17 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['.next/**', 'node_modules/**', 'test-results/**'],
     pool: 'threads',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'html'],
+      reportsDirectory: './coverage',
+      thresholds: {
+        statements: 60,
+        branches: 40,
+        functions: 50,
+        lines: 60,
+      },
+    },
   },
   resolve: {
     alias: {

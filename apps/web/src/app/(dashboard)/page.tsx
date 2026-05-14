@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Button, Card, CardBody, Divider } from "@heroui/react";
 import KpiCard from "@/components/ui/KpiCard";
 import DataTable from "@/components/ui/DataTable";
 import Badge from "@/components/ui/Badge";
@@ -17,8 +18,6 @@ type Summary = {
   syncQueuePending: number;
 };
 
-
-
 type OperationalHealth = {
   overallStatus: "OK" | "WARNING" | "CRITICAL";
   apiStatus: "OK" | "WARNING" | "CRITICAL";
@@ -32,6 +31,7 @@ type OperationalHealth = {
   openCashRegisters: number;
   recentErrors: Array<{ source: string; status: string; message: string; occurredAt: string | null }>;
 };
+
 type ActiveRow = {
   plate: string;
   type: string;
@@ -133,40 +133,56 @@ export default function DashboardPage() {
         { title: "Reimpresiones hoy", value: "—", trend: "…" }
       ];
 
+  const errorColumns = [
+    { key: "source", label: "Fuente" },
+    { key: "status", label: "Estado" },
+    { key: "message", label: "Error reciente" },
+    { 
+      key: "occurredAt", 
+      label: "Fecha",
+      render: (row: any) => row.occurredAt ? new Date(row.occurredAt).toLocaleString("es-CO") : "—"
+    }
+  ];
+
   return (
     <div className="space-y-10" data-testid="dashboard-root">
-      <section className="space-y-2" data-testid="summary-loaded">
-        <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Panel principal</p>
-        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">Vision general del parqueadero</h1>
-        {summaryError ? (
-          <p className="text-sm text-amber-800">{summaryError}</p>
-        ) : null}
-        <p className="text-xs text-slate-500">
-          {summary
-            ? `Sync pendiente: ${summary.syncQueuePending} · Impresion fallida: ${summary.printFailedSinceMidnight} · Dead letter: ${summary.printDeadLetterSinceMidnight} · Tickets perdidos: ${summary.lostTicketSinceMidnight}`
-            : null}
-        </p>
-        <div>
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            Actualizar
-          </button>
+      <section className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div className="space-y-2">
+          <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Panel principal</p>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">Visión general</h1>
+          {summaryError ? (
+            <p className="text-sm text-amber-800 font-medium">{summaryError}</p>
+          ) : null}
+          <p className="text-xs text-slate-500 font-medium">
+            {summary
+              ? `Sync pendiente: ${summary.syncQueuePending} · Impresión fallida: ${summary.printFailedSinceMidnight} · Dead letter: ${summary.printDeadLetterSinceMidnight} · Tickets perdidos: ${summary.lostTicketSinceMidnight}`
+              : null}
+          </p>
         </div>
+        <Button
+          variant="flat"
+          color="primary"
+          size="sm"
+          onPress={() => void load()}
+          className="font-semibold"
+        >
+          Actualizar datos
+        </Button>
       </section>
 
-      <section className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi) => (
           <KpiCard key={kpi.title} {...kpi} />
         ))}
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold text-slate-900">Salud operacional</h2>
-        {opsMessage ? <p className="text-sm text-slate-600">{opsMessage}</p> : null}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-slate-900">Salud Operacional</h2>
+          {opsMessage ? <Badge label={opsMessage} tone="warning" /> : null}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {[
             ["Estado API", operational?.apiStatus],
             ["Estado base de datos", operational?.databaseStatus],
@@ -174,37 +190,38 @@ export default function DashboardPage() {
             ["Outbox pendiente", String(operational?.outboxPending ?? "—")],
             ["Dead-letter", String(operational?.deadLetter ?? "—")],
           ].map(([label, value]) => (
-            <div key={label} className="rounded-xl border border-slate-200 bg-white p-4">
-              <p className="text-xs text-slate-500">{label}</p>
-              <p className={`text-lg font-semibold ${tone(String(value))}`}>{value ?? "—"}</p>
+            <div key={label} className="surface rounded-2xl p-5 border border-slate-100">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">{label}</p>
+              <p className={`text-xl font-bold ${tone(String(value))}`}>{value ?? "—"}</p>
             </div>
           ))}
         </div>
-        <p className="text-sm text-slate-600">
-          Último heartbeat: {operational?.lastHeartbeat ? new Date(operational.lastHeartbeat).toLocaleString("es-CO") : "Sin datos"} · Último sync exitoso: {operational?.lastSuccessfulSync ? new Date(operational.lastSuccessfulSync).toLocaleString("es-CO") : "Sin datos"} · Cajas abiertas: {operational?.openCashRegisters ?? "—"} · Eventos fallidos: {operational?.failedEvents ?? "—"}
-        </p>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => void callOperationalAction("retry-sync")} className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Reintentar sync</button>
-          <button type="button" onClick={() => void callOperationalAction("test-printer")} className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Probar impresora</button>
-        </div>
-        <div className="rounded-xl border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left"><tr><th className="p-2">Fuente</th><th className="p-2">Estado</th><th className="p-2">Error reciente</th><th className="p-2">Fecha</th></tr></thead>
-            <tbody>
-              {(operational?.recentErrors ?? []).length === 0 ? (
-                <tr><td className="p-2" colSpan={4}>Sin errores recientes.</td></tr>
-              ) : (operational?.recentErrors ?? []).map((e, idx) => (
-                <tr key={idx} className="border-t"><td className="p-2">{e.source}</td><td className="p-2">{e.status}</td><td className="p-2">{e.message}</td><td className="p-2">{e.occurredAt ? new Date(e.occurredAt).toLocaleString("es-CO") : "—"}</td></tr>
-              ))}
-            </tbody>
-          </table>
+
+        <div className="surface rounded-2xl p-6 border border-slate-100">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600 mb-6">
+            <p><span className="text-slate-400">Heartbeat:</span> {operational?.lastHeartbeat ? new Date(operational.lastHeartbeat).toLocaleString("es-CO") : "Sin datos"}</p>
+            <p><span className="text-slate-400">Último Sync:</span> {operational?.lastSuccessfulSync ? new Date(operational.lastSuccessfulSync).toLocaleString("es-CO") : "Sin datos"}</p>
+            <p><span className="text-slate-400">Cajas:</span> {operational?.openCashRegisters ?? "—"}</p>
+            <p><span className="text-slate-400">Fallos:</span> {operational?.failedEvents ?? "—"}</p>
+          </div>
+
+          <div className="flex gap-3 mb-6">
+            <Button size="sm" variant="flat" color="primary" onPress={() => void callOperationalAction("retry-sync")}>Reintentar Sync</Button>
+            <Button size="sm" variant="flat" color="primary" onPress={() => void callOperationalAction("test-printer")}>Probar Impresora</Button>
+          </div>
+
+          <DataTable
+            columns={errorColumns}
+            rows={operational?.recentErrors ?? []}
+            emptyMessage="Sin errores recientes detectados."
+          />
         </div>
       </section>
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-xl font-semibold text-slate-900">Movimientos activos</h2>
-          <Badge label="En vivo (API)" tone="success" />
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-slate-900">Vehículos en Patio</h2>
+          <Badge label="En vivo" tone="success" />
         </div>
         {sessionsError ? <p className="text-sm text-amber-800">{sessionsError}</p> : null}
         <DataTable
@@ -213,10 +230,10 @@ export default function DashboardPage() {
             { key: "type", label: "Tipo", priority: "high" },
             { key: "started", label: "Ingreso", priority: "medium" },
             { key: "status", label: "Estado", priority: "medium" },
-            { key: "amount", label: "Acumulado", priority: "high" }
+            { key: "amount", label: "Acumulado", priority: "high", align: "right" }
           ]}
           rows={sessions}
-          emptyMessage="No hay vehiculos activos o aun no hay datos."
+          emptyMessage="No hay vehículos activos en este momento."
         />
       </section>
     </div>

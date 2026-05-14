@@ -37,7 +37,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
       <aside
         className={`
           fixed top-0 left-0 z-50 h-screen w-[280px]
-          border-r border-slate-200/70 bg-white/95 backdrop-blur-xl
+          border-r border-slate-200/70 bg-white/95 dark:bg-gray-900/95 dark:border-gray-700/70 backdrop-blur-xl
           transform transition-transform duration-300 ease-in-out
           md:hidden
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
@@ -87,7 +87,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                     flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
                     ${active
                       ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-gray-800 dark:hover:text-white"}
                   `}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,9 +97,9 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                   {item.shortcut && (
                     <kbd className={`
                       ml-auto inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded
-                      ${active 
-                        ? "bg-white/20 text-white" 
-                        : "bg-slate-200 text-slate-500"}
+                     ${active 
+                         ? "bg-white/20 text-white" 
+                         : "bg-slate-200 text-slate-500 dark:bg-gray-700 dark:text-gray-200"}
                     `}>
                       {item.shortcut}
                     </kbd>
@@ -111,23 +111,23 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
 
           {/* Help tip */}
           <div className="mt-auto pt-6 px-2">
-            <div className="rounded-xl bg-slate-100/80 p-3 text-xs text-slate-600">
+            <div className="rounded-xl bg-slate-100/80 p-3 text-xs text-slate-600 dark:bg-gray-800 dark:text-gray-300">
               <p className="font-semibold mb-2">Atajos de teclado:</p>
               <div className="space-y-1.5 text-slate-500">
                 <div className="flex items-center justify-between">
-                  <span><kbd className="font-mono bg-white px-1.5 py-0.5 rounded">F1</kbd> Nuevo ingreso</span>
+                   <span><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1.5 py-0.5 rounded">F1</kbd> Nuevo ingreso</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span><kbd className="font-mono bg-white px-1.5 py-0.5 rounded">F2</kbd> Salida/cobro</span>
+                   <span><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1.5 py-0.5 rounded">F2</kbd> Salida/cobro</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span><kbd className="font-mono bg-white px-1.5 py-0.5 rounded">F3</kbd> Vehículos</span>
+                   <span><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1.5 py-0.5 rounded">F3</kbd> Vehículos</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span><kbd className="font-mono bg-white px-1.5 py-0.5 rounded">F4</kbd> Caja</span>
+                   <span><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1.5 py-0.5 rounded">F4</kbd> Caja</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span><kbd className="font-mono bg-white px-1.5 py-0.5 rounded">Esc</kbd> Dashboard</span>
+                   <span><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1.5 py-0.5 rounded">Esc</kbd> Dashboard</span>
                 </div>
               </div>
             </div>

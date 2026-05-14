@@ -1,14 +1,19 @@
 "use client";
 
-import Button from "@/components/ui/Button";
-import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
-import { Pagination } from "@heroui/pagination";
-import { Switch } from "@heroui/switch";
+import {
+  Input,
+  Select,
+  SelectItem,
+  Textarea,
+  Checkbox,
+  Button,
+  Switch,
+  RadioGroup,
+  Radio,
+} from "@heroui/react";
 import { Chip } from "@heroui/chip";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Textarea } from "@heroui/input";
 import DataTable from "@/components/ui/DataTable";
 import {
   createUser,
@@ -35,12 +40,52 @@ import type { Permission } from "@parkflow/types";
 import type { RateType } from "@/modules/parking/types";
 import type { UserRole } from "@/modules/users/types";
 import type { VehicleType } from "@/modules/parking/types";
+import {
+  fetchMonthlyContracts,
+  saveMonthlyContract,
+  patchMonthlyContractStatus,
+  fetchAgreements,
+  saveAgreement,
+  patchAgreementStatus,
+  fetchPrepaidPackages,
+  savePrepaidPackage,
+  patchPrepaidPackageStatus,
+  fetchPrepaidBalance,
+  purchasePrepaidBalance,
+  type MonthlyContractRow,
+  type AgreementRow,
+  type PrepaidPackageRow,
+  type PrepaidBalanceRow,
+  type RateCategory
+} from "@/lib/settings-api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type TabKey = "rates" | "users" | "parameters" | "interface" | "masters";
+type TabKey = "rates" | "users" | "parameters" | "interface" | "masters" | "monthly" | "agreements" | "prepaid";
 
-const VEHICLE_TYPES: VehicleType[] = ["CAR", "MOTORCYCLE", "TRUCK", "VAN", "OTHER"];
-const RATE_TYPES: RateType[] = ["HOURLY", "DAILY", "FLAT"];
+const VEHICLE_TYPES: VehicleType[] = ["CAR", "MOTORCYCLE", "BICYCLE", "TRUCK", "BUS", "VAN", "ELECTRIC", "OTHER"];
+const RATE_TYPES: RateType[] = ["PER_MINUTE", "HOURLY", "DAILY", "FLAT"];
+const RATE_TYPE_LABELS: Record<string, string> = {
+  PER_MINUTE: "Por minuto",
+  HOURLY: "Por hora",
+  DAILY: "Diaria",
+  FLAT: "Fija"
+};
+const RATE_CATEGORIES: RateCategory[] = ["STANDARD", "MONTHLY", "AGREEMENT", "PREPAID"];
+const RATE_CATEGORY_LABELS: Record<string, string> = {
+  STANDARD: "Estándar",
+  MONTHLY: "Mensualidad",
+  AGREEMENT: "Convenio",
+  PREPAID: "Prepagado"
+};
+const DAYS_OF_WEEK = [
+  { label: "Lun", bit: 0 },
+  { label: "Mar", bit: 1 },
+  { label: "Mié", bit: 2 },
+  { label: "Jue", bit: 3 },
+  { label: "Vie", bit: 4 },
+  { label: "Sáb", bit: 5 },
+  { label: "Dom", bit: 6 }
+];
 const ROUNDING: Array<"UP" | "DOWN" | "NEAREST"> = ["UP", "DOWN", "NEAREST"];
 const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "CAJERO", "OPERADOR", "AUDITOR"];
 
@@ -102,7 +147,7 @@ export default function ConfiguracionPage() {
   const [auditReason, setAuditReason] = useState("");
   const [perm, setPerm] = useState<Record<string, boolean>>({});
 
-  // ConfiguraciÃ³n de interfaz (persistida en localStorage)
+  // Configuración de interfaz (persistida en localStorage)
   const [uiSettings, setUiSettings] = useState({
     showSystemStatus: true,
     showKeyboardShortcuts: true
@@ -172,12 +217,12 @@ export default function ConfiguracionPage() {
       />
 
       <Textarea
-        label="Motivo de auditorÃ­a"
-        description="Opcional, hasta 500 caracteres. Se envÃ­a al servidor en cambios sensibles."
+        label="Motivo de auditoría"
+        description="Opcional, hasta 500 caracteres. Se envía al servidor en cambios sensibles."
         maxLength={500}
         value={auditReason}
         onChange={(e) => setAuditReason(e.target.value)}
-        placeholder="Ej. Ajuste acordado con administraciÃ³n..."
+        placeholder="Ej. Ajuste acordado con administración..."
         variant="flat"
         className="max-w-2xl"
       />
@@ -185,12 +230,12 @@ export default function ConfiguracionPage() {
       <Tabs
         selectedKey={tab}
         onSelectionChange={(key) => setTab(key as TabKey)}
-        aria-label="ConfiguraciÃ³n"
-        color="warning"
+        aria-label="Configuración"
+        color="primary"
         variant="underlined"
         classNames={{
           tab: "px-4 py-2",
-          tabList: "gap-2"
+          tabList: "gap-2 flex-wrap"
         }}
       >
         <Tab
@@ -203,6 +248,9 @@ export default function ConfiguracionPage() {
           }
           isDisabled={!can.ratesRead}
         />
+        <Tab key="monthly" title={<span>Mensualidades</span>} isDisabled={!can.ratesRead} />
+        <Tab key="agreements" title={<span>Convenios</span>} isDisabled={!can.ratesRead} />
+        <Tab key="prepaid" title={<span>Prepagados</span>} isDisabled={!can.ratesRead} />
         <Tab
           key="users"
           title={
@@ -217,28 +265,14 @@ export default function ConfiguracionPage() {
           key="parameters"
           title={
             <div className="flex items-center gap-2">
-              <span>ParÃ¡metros</span>
+              <span>Parámetros</span>
               {!can.cfgRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
             </div>
           }
           isDisabled={!can.cfgRead}
         />
-        <Tab
-          key="interface"
-          title={
-            <div className="flex items-center gap-2">
-              <span>Interfaz</span>
-            </div>
-          }
-        />
-        <Tab
-          key="masters"
-          title={
-            <div className="flex items-center gap-2">
-              <span>Maestros</span>
-            </div>
-          }
-        />
+        <Tab key="interface" title={<div className="flex items-center gap-2"><span>Interfaz</span></div>} />
+        <Tab key="masters" title={<div className="flex items-center gap-2"><span>Maestros</span></div>} />
       </Tabs>
 
       {tab === "rates" && can.ratesRead ? (
@@ -246,6 +280,27 @@ export default function ConfiguracionPage() {
       ) : null}
       {tab === "rates" && !can.ratesRead ? (
         <p className="text-sm text-slate-600">No tiene permiso para ver tarifas.</p>
+      ) : null}
+
+      {tab === "monthly" && can.ratesRead ? (
+        <MonthlySection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
+      ) : null}
+      {tab === "monthly" && !can.ratesRead ? (
+        <p className="text-sm text-slate-600">No tiene permiso para ver mensualidades.</p>
+      ) : null}
+
+      {tab === "agreements" && can.ratesRead ? (
+        <AgreementsSection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
+      ) : null}
+      {tab === "agreements" && !can.ratesRead ? (
+        <p className="text-sm text-slate-600">No tiene permiso para ver convenios.</p>
+      ) : null}
+
+      {tab === "prepaid" && can.ratesRead ? (
+        <PrepaidSection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
+      ) : null}
+      {tab === "prepaid" && !can.ratesRead ? (
+        <p className="text-sm text-slate-600">No tiene permiso para ver prepagados.</p>
       ) : null}
 
       {tab === "users" && can.usersRead ? (
@@ -287,7 +342,7 @@ function InterfaceSection({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold text-slate-900">PersonalizaciÃ³n del Sidebar</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Personalización del Sidebar</h2>
         </CardHeader>
         <CardBody className="space-y-6">
           <div className="flex items-center justify-between">
@@ -301,7 +356,7 @@ function InterfaceSection({
               isSelected={settings.showSystemStatus}
               onValueChange={(checked) => onUpdate("showSystemStatus", checked)}
               size="lg"
-              color="warning"
+              color="primary"
             />
           </div>
 
@@ -309,14 +364,14 @@ function InterfaceSection({
             <div>
               <p className="font-medium text-slate-800">Mostrar atajos de teclado</p>
               <p className="text-sm text-slate-500">
-                Muestra la secciÃ³n de atajos de teclado (F1, F2, F3, F4, Esc) en la parte inferior del sidebar.
+                Muestra la sección de atajos de teclado (F1, F2, F3, F4, Esc) en la parte inferior del sidebar.
               </p>
             </div>
             <Switch
               isSelected={settings.showKeyboardShortcuts}
               onValueChange={(checked) => onUpdate("showKeyboardShortcuts", checked)}
               size="lg"
-              color="warning"
+              color="primary"
             />
           </div>
         </CardBody>
@@ -329,10 +384,10 @@ function InterfaceSection({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p className="font-medium text-amber-800">ConfiguraciÃ³n local</p>
+              <p className="font-medium text-amber-800">Configuración local</p>
               <p className="text-sm text-amber-700">
                 Estas preferencias se guardan solo en tu navegador y no afectan a otros usuarios.
-                Se aplican inmediatamente sin necesidad de recargar la pÃ¡gina.
+                Se aplican inmediatamente sin necesidad de recargar la página.
               </p>
             </div>
           </div>
@@ -357,6 +412,7 @@ function RatesSection({
   const [q, setQ] = useState("");
   const [site, setSite] = useState("DEFAULT");
   const [activeFilter, setActiveFilter] = useState<boolean | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [editing, setEditing] = useState<RateRow | null>(null);
@@ -411,57 +467,73 @@ function RatesSection({
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4">
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col text-xs font-semibold text-slate-600">
-            Sede
-            <input
-              className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-              value={site}
-              onChange={(e) => setSite(e.target.value)}
-            />
-          </label>
-          <label className="flex flex-col text-xs font-semibold text-slate-600">
-            Buscar
-            <input
-              className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Nombre..."
-            />
-          </label>
-          <label className="flex flex-col text-xs font-semibold text-slate-600">
-            Estado
-            <select
-              className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-              value={activeFilter === null ? "" : String(activeFilter)}
-              onChange={(e) => {
-                const v = e.target.value;
-                setActiveFilter(v === "" ? null : v === "true");
-              }}
-            >
-              <option value="">Todos</option>
-              <option value="true">Activas</option>
-              <option value="false">Inactivas</option>
-            </select>
-          </label>
-          <button
-            type="button"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
-            onClick={() => void load()}
-            disabled={loading}
+          <Input
+            label="Sede"
+            variant="flat"
+            size="sm"
+            value={site}
+            onValueChange={setSite}
+          />
+          <Input
+            label="Buscar"
+            placeholder="Nombre..."
+            variant="flat"
+            size="sm"
+            value={q}
+            onValueChange={setQ}
+          />
+          <Select
+            label="Estado"
+            variant="flat"
+            size="sm"
+            className="max-w-[120px]"
+            selectedKeys={activeFilter === null ? [""] : [String(activeFilter)]}
+            onSelectionChange={(keys) => {
+              const v = Array.from(keys)[0] as string;
+              setActiveFilter(v === "" ? null : v === "true");
+            }}
+          >
+            <SelectItem key="">Todos</SelectItem>
+            <SelectItem key="true">Activas</SelectItem>
+            <SelectItem key="false">Inactivas</SelectItem>
+          </Select>
+          <Select
+            label="Categoría"
+            variant="flat"
+            size="sm"
+            className="max-w-[140px]"
+            selectedKeys={[categoryFilter]}
+            onSelectionChange={(keys) => setCategoryFilter(Array.from(keys)[0] as string)}
+          >
+            {[
+              <SelectItem key="" textValue="Todas">Todas</SelectItem>,
+              ...RATE_CATEGORIES.map(c => (
+                <SelectItem key={c} textValue={RATE_CATEGORY_LABELS[c]}>{RATE_CATEGORY_LABELS[c]}</SelectItem>
+              ))
+            ]}
+          </Select>
+          <Button
+            variant="bordered"
+            color="primary"
+            size="md"
+            className="font-semibold"
+            onPress={() => void load()}
+            isLoading={loading}
           >
             Actualizar
-          </button>
+          </Button>
           {canEdit ? (
-            <button
-              type="button"
-              className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white"
-              onClick={() => {
+            <Button
+              color="primary"
+              size="md"
+              className="font-semibold"
+              onPress={() => {
                 setEditing(null);
                 setCreating(true);
               }}
             >
               Nueva tarifa
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>
@@ -477,13 +549,15 @@ function RatesSection({
         <div className="surface rounded-2xl p-4 text-sm text-slate-800 space-y-1">
           <div className="flex justify-between gap-2">
             <h3 className="font-semibold text-slate-900">Detalle tarifa</h3>
-            <button
-              type="button"
-              className="text-xs font-semibold text-slate-600"
-              onClick={() => setRateDetail(null)}
+            <Button
+              size="sm"
+              variant="light"
+              color="primary"
+              className="font-semibold"
+              onPress={() => setRateDetail(null)}
             >
               Cerrar
-            </button>
+            </Button>
           </div>
           <p>
             <span className="text-slate-500">Nombre:</span> {rateDetail.name}
@@ -556,10 +630,12 @@ function RatesSection({
             render: (r) =>
               canEdit ? (
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="text-xs font-semibold text-slate-700"
-                    onClick={() =>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="primary"
+                    className="font-semibold"
+                    onPress={() =>
                       void (async () => {
                         setRateDetailLoading(true);
                         setRateDetail(null);
@@ -577,21 +653,25 @@ function RatesSection({
                     }
                   >
                     Detalle
-                  </button>
-                  <button
-                    type="button"
-                    className="text-xs font-semibold text-amber-800"
-                    onClick={() => {
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="primary"
+                    className="font-semibold"
+                    onPress={() => {
                       setCreating(false);
                       setEditing(r);
                     }}
                   >
                     Editar
-                  </button>
-                  <button
-                    type="button"
-                    className="text-xs font-semibold text-slate-600"
-                    onClick={() =>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="primary"
+                    className="font-semibold"
+                    onPress={() =>
                       void (async () => {
                         try {
                           await patchRateStatus(r.id, !r.active, auditReason);
@@ -610,11 +690,13 @@ function RatesSection({
                     }
                   >
                     {r.active ? "Desactivar" : "Activar"}
-                  </button>
-                  <button
-                    type="button"
-                    className="text-xs font-semibold text-rose-700"
-                    onClick={() => {
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="danger"
+                    className="font-semibold"
+                    onPress={() => {
                       if (!confirm("Eliminar tarifa? Solo permitido si no hay sesiones asociadas.")) {
                         return;
                       }
@@ -633,7 +715,7 @@ function RatesSection({
                     }}
                   >
                     Eliminar
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 ""
@@ -643,26 +725,28 @@ function RatesSection({
         rows={rows}
       />
 
-      <div className="flex gap-2 text-xs text-slate-600">
-        <button
-          type="button"
-          disabled={page <= 0}
-          className="rounded border px-2 py-1 disabled:opacity-40"
-          onClick={() => setPage((p) => Math.max(0, p - 1))}
+      <div className="flex items-center gap-4">
+        <Button
+          size="sm"
+          variant="flat"
+          color="primary"
+          isDisabled={page <= 0}
+          onPress={() => setPage((p) => Math.max(0, p - 1))}
         >
           Anterior
-        </button>
-        <span>
-          Pagina {page + 1} / {Math.max(1, totalPages)}
+        </Button>
+        <span className="text-sm font-medium text-slate-600">
+          Pagina {page + 1} de {Math.max(1, totalPages)}
         </span>
-        <button
-          type="button"
-          disabled={page + 1 >= totalPages}
-          className="rounded border px-2 py-1 disabled:opacity-40"
-          onClick={() => setPage((p) => p + 1)}
+        <Button
+          size="sm"
+          variant="flat"
+          color="primary"
+          isDisabled={page + 1 >= totalPages}
+          onPress={() => setPage((p) => p + 1)}
         >
           Siguiente
-        </button>
+        </Button>
       </div>
 
       {(creating || editing) && canEdit ? (
@@ -706,6 +790,7 @@ function RateForm({
   }, []);
   const isEdit = Boolean((initial as RateRow).id);
   const [name, setName] = useState(initial.name);
+  const [category, setCategory] = useState<RateCategory>((initial as RateRow).category ?? "STANDARD");
   const [vehicleType, setVehicleType] = useState<string>(initial.vehicleType ?? "");
   const [rateType, setRateType] = useState<RateType>(initial.rateType ?? "HOURLY");
   const [amount, setAmount] = useState(String(initial.amount ?? 0));
@@ -716,6 +801,26 @@ function RateForm({
   const [lost, setLost] = useState(String(initial.lostTicketSurcharge ?? 0));
   const [active, setActive] = useState(initial.active ?? true);
   const [site, setSite] = useState(initial.site ?? "DEFAULT");
+  // Topes
+  const [minSession, setMinSession] = useState(String((initial as RateRow).minSessionValue ?? ""));
+  const [maxSession, setMaxSession] = useState(String((initial as RateRow).maxSessionValue ?? ""));
+  const [maxDaily, setMaxDaily] = useState(String((initial as RateRow).maxDailyValue ?? ""));
+  // Recargos
+  const [nightPct, setNightPct] = useState(String((initial as RateRow).nightSurchargePercent ?? 0));
+  const [holidayPct, setHolidayPct] = useState(String((initial as RateRow).holidaySurchargePercent ?? 0));
+  const [appliesNight, setAppliesNight] = useState((initial as RateRow).appliesNight ?? false);
+  const [appliesHoliday, setAppliesHoliday] = useState((initial as RateRow).appliesHoliday ?? false);
+  // Días de la semana
+  const initBitmap = (initial as RateRow).appliesDaysBitmap ?? null;
+  const [daysBitmap, setDaysBitmap] = useState<number | null>(initBitmap);
+  const toggleDay = (bit: number) => {
+    const current = daysBitmap ?? 0;
+    const newVal = current ^ (1 << bit);
+    // Si todos los bits están activados (127) o ninguno, usa null (todos los días)
+    setDaysBitmap(newVal === 0 || newVal === 127 ? null : newVal);
+  };
+  const isDayActive = (bit: number) => daysBitmap === null ? true : Boolean(daysBitmap & (1 << bit));
+  // Franja horaria
   const [wStart, setWStart] = useState(
     initial.windowStart ? initial.windowStart.slice(0, 5) : ""
   );
@@ -733,168 +838,290 @@ function RateForm({
         {isEdit ? "Editar tarifa" : "Nueva tarifa"}
       </h2>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <label className="text-xs font-semibold text-slate-600">
-          Nombre
-          <input
-            className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
-        <label className="text-xs font-semibold text-slate-600">
-          Sede
-          <input
-            className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-            value={site}
-            onChange={(e) => setSite(e.target.value)}
-          />
-        </label>
-        <label className="text-xs font-semibold text-slate-600">
-          Tipo vehiculo (vacÃ­o = todos)
-          <select
-            className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-            value={vehicleType}
-            onChange={(e) => setVehicleType(e.target.value)}
-          >
-            <option value="">(Todos)</option>
-            {vehicleTypes.map((v) => (
-              <option key={v.code} value={v.code}>
+        <Input label="Nombre" variant="flat" size="sm" value={name} onValueChange={setName} />
+        <Input label="Sede" variant="flat" size="sm" value={site} onValueChange={setSite} />
+        <Select
+          label="Categoría"
+          variant="flat"
+          size="sm"
+          selectedKeys={[category]}
+          onSelectionChange={(keys) => setCategory(Array.from(keys)[0] as RateCategory)}
+        >
+          {RATE_CATEGORIES.map((c) => (
+            <SelectItem key={c} textValue={RATE_CATEGORY_LABELS[c]}>
+              {RATE_CATEGORY_LABELS[c]}
+            </SelectItem>
+          ))}
+        </Select>
+        <Select
+          label="Tipo vehículo"
+          description="Vacío = todos"
+          variant="flat"
+          size="sm"
+          selectedKeys={[vehicleType]}
+          onSelectionChange={(keys) => setVehicleType(Array.from(keys)[0] as string)}
+        >
+          {[
+            <SelectItem key="" textValue="(Todos)">(Todos)</SelectItem>,
+            ...vehicleTypes.map((v) => (
+              <SelectItem key={v.code} textValue={v.name}>
                 {v.name} ({v.code})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-xs font-semibold text-slate-600">
-          Tipo tarifa
-          <select
-            className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-            value={rateType}
-            onChange={(e) => setRateType(e.target.value as RateType)}
-          >
-            {RATE_TYPES.map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-xs font-semibold text-slate-600">
-          Valor
-          <input
-            className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-            type="number"
-            step="0.01"
-            min="0"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-        </label>
-        <label className="text-xs font-semibold text-slate-600">
-          Minutos gracia / tolerancia / fraccion
-          <div className="mt-1 flex gap-2">
-            <input
-              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+              </SelectItem>
+            ))
+          ]}
+        </Select>
+        <Select
+          label="Tipo tarifa"
+          variant="flat"
+          size="sm"
+          selectedKeys={[rateType]}
+          onSelectionChange={(keys) => setRateType(Array.from(keys)[0] as RateType)}
+        >
+          {RATE_TYPES.map((v) => (
+            <SelectItem key={v} textValue={RATE_TYPE_LABELS[v] ?? v}>
+              {RATE_TYPE_LABELS[v] ?? v}
+            </SelectItem>
+          ))}
+        </Select>
+        <Input
+          label="Valor"
+          variant="flat"
+          size="sm"
+          type="number"
+          step="0.01"
+          min="0"
+          value={amount}
+          onValueChange={setAmount}
+        />
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-semibold text-slate-600">Minutos gracia / tolerancia / fraccion</p>
+          <div className="flex gap-2">
+            <Input
+              variant="flat"
+              size="sm"
               type="number"
               min="0"
+              placeholder="Gracia"
               value={grace}
-              onChange={(e) => setGrace(e.target.value)}
+              onValueChange={setGrace}
             />
-            <input
-              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+            <Input
+              variant="flat"
+              size="sm"
               type="number"
               min="0"
+              placeholder="Tolerancia"
               value={tolerance}
-              onChange={(e) => setTolerance(e.target.value)}
+              onValueChange={setTolerance}
             />
-            <input
-              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+            <Input
+              variant="flat"
+              size="sm"
               type="number"
               min="1"
+              placeholder="Fracción"
               value={fraction}
-              onChange={(e) => setFraction(e.target.value)}
+              onValueChange={setFraction}
             />
           </div>
-        </label>
-        <label className="text-xs font-semibold text-slate-600">
-          Redondeo
-          <select
-            className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-            value={rounding}
-            onChange={(e) => setRounding(e.target.value as "UP" | "DOWN" | "NEAREST")}
-          >
-            {ROUNDING.map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-xs font-semibold text-slate-600">
-          Recargo ticket perdido
-          <input
-            className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-            type="number"
-            step="0.01"
-            min="0"
-            value={lost}
-            onChange={(e) => setLost(e.target.value)}
-          />
-        </label>
-        <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+        </div>
+        <Select
+          label="Redondeo"
+          variant="flat"
+          size="sm"
+          selectedKeys={[rounding]}
+          onSelectionChange={(keys) => setRounding(Array.from(keys)[0] as "UP" | "DOWN" | "NEAREST")}
+        >
+          {ROUNDING.map((v) => (
+            <SelectItem key={v} textValue={v}>
+              {v}
+            </SelectItem>
+          ))}
+        </Select>
+        <Input
+          label="Recargo ticket perdido"
+          variant="flat"
+          size="sm"
+          type="number"
+          step="0.01"
+          min="0"
+          value={lost}
+          onValueChange={setLost}
+        />
+        <Checkbox isSelected={active} onValueChange={setActive}>
           Activa
-        </label>
-        <label className="text-xs font-semibold text-slate-600">
-          Franja (opcional) HH:MM
-          <div className="mt-1 flex gap-2">
-            <input
-              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+        </Checkbox>
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Franja (opcional) HH:MM</span>
+          <div className="flex gap-3">
+            <Input
+              variant="flat"
+              size="sm"
               placeholder="08:00"
               value={wStart}
-              onChange={(e) => setWStart(e.target.value)}
+              onValueChange={setWStart}
             />
-            <input
-              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+            <Input
+              variant="flat"
+              size="sm"
               placeholder="18:00"
               value={wEnd}
-              onChange={(e) => setWEnd(e.target.value)}
+              onValueChange={setWEnd}
             />
           </div>
-        </label>
-        <label className="text-xs font-semibold text-slate-600 md:col-span-2">
-          Vigencia programada (opcional, local). Deje ambas vacias si no aplica.
-          <div className="mt-1 flex flex-wrap gap-2">
-            <input
+        </div>
+        {/* Días de la semana */}
+        <div className="md:col-span-2 flex flex-col gap-2">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Días de la semana (vacío = todos)</span>
+          <div className="flex gap-2 flex-wrap">
+            {DAYS_OF_WEEK.map(({ label, bit }) => (
+              <button
+                key={bit}
+                type="button"
+                onClick={() => toggleDay(bit)}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                  isDayActive(bit)
+                    ? "bg-primary text-white border-primary"
+                    : "bg-transparent text-slate-600 border-slate-300 hover:border-primary"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            {daysBitmap !== null && (
+              <button
+                type="button"
+                onClick={() => setDaysBitmap(null)}
+                className="px-3 py-1 rounded-lg text-xs font-semibold border border-slate-300 text-slate-500 hover:border-rose-400 hover:text-rose-500 transition-colors"
+              >
+                Todos
+              </button>
+            )}
+          </div>
+        </div>
+        {/* Topes min/max */}
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Topes de sesión (opcional)</span>
+          <div className="flex gap-2">
+            <Input
+              variant="flat"
+              size="sm"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Mínimo"
+              value={minSession}
+              onValueChange={setMinSession}
+            />
+            <Input
+              variant="flat"
+              size="sm"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Máximo"
+              value={maxSession}
+              onValueChange={setMaxSession}
+            />
+          </div>
+        </div>
+        <Input
+          label="Máximo diario (opcional)"
+          variant="flat"
+          size="sm"
+          type="number"
+          step="0.01"
+          min="0"
+          value={maxDaily}
+          onValueChange={setMaxDaily}
+        />
+        {/* Recargos nocturno y festivo */}
+        <div className="flex flex-col gap-2">
+          <Checkbox isSelected={appliesNight} onValueChange={setAppliesNight}>
+            Aplica horario nocturno
+          </Checkbox>
+          {appliesNight && (
+            <Input
+              label="Recargo nocturno (%)"
+              variant="flat"
+              size="sm"
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              value={nightPct}
+              onValueChange={setNightPct}
+            />
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <Checkbox isSelected={appliesHoliday} onValueChange={setAppliesHoliday}>
+            Aplica festivos
+          </Checkbox>
+          {appliesHoliday && (
+            <Input
+              label="Recargo festivo (%)"
+              variant="flat"
+              size="sm"
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              value={holidayPct}
+              onValueChange={setHolidayPct}
+            />
+          )}
+        </div>
+        <div className="md:col-span-2 space-y-1">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Vigencia programada (opcional, local)</span>
+          <div className="flex flex-wrap gap-3">
+            <Input
               type="datetime-local"
-              className="min-w-[200px] flex-1 rounded-lg border border-slate-200 px-2 py-2 text-sm"
+              variant="flat"
+              size="sm"
               value={schedFrom}
-              onChange={(e) => setSchedFrom(e.target.value)}
+              onValueChange={setSchedFrom}
+              className="min-w-[200px] flex-1"
             />
-            <input
+            <Input
               type="datetime-local"
-              className="min-w-[200px] flex-1 rounded-lg border border-slate-200 px-2 py-2 text-sm"
+              variant="flat"
+              size="sm"
               value={schedTo}
-              onChange={(e) => setSchedTo(e.target.value)}
+              onValueChange={setSchedTo}
+              className="min-w-[200px] flex-1"
             />
           </div>
-        </label>
+        </div>
       </div>
-      <div className="mt-6 flex flex-wrap gap-3">
-        <div className="min-w-[140px]">
-          <Button
-            label="Guardar"
-            onClick={() =>
-              void (async () => {
-                try {
-                  const sFrom = toIsoOrNull(schedFrom);
-                  const sTo = toIsoOrNull(schedTo);
-                  if ((sFrom == null) !== (sTo == null)) {
-                    onError("Vigencia programada: complete inicio y fin, o deje ambos vacios");
-                    return;
-                  }
-                  const payload: Record<string, unknown> = {
+      <div className="mt-6 flex justify-end gap-3">
+        <Button
+          variant="light"
+          color="primary"
+          className="font-semibold"
+          onPress={onCancel}
+        >
+          Cancelar
+        </Button>
+        <Button
+          color="primary"
+          className="font-semibold"
+          onPress={() =>
+            void (async () => {
+              try {
+                const sFrom = toIsoOrNull(schedFrom);
+                const sTo = toIsoOrNull(schedTo);
+                if ((sFrom == null) !== (sTo == null)) {
+                  onError("Vigencia programada: complete inicio y fin, o deje ambos vacios");
+                  return;
+                }
+                await saveRate(
+                  {
+                    id: (initial as RateRow).id || undefined,
                     name: name.trim(),
-                    vehicleType: vehicleType ? (vehicleType as VehicleType) : null,
+                    site: site.trim(),
+                    vehicleType: vehicleType || null,
+                    category,
                     rateType,
                     amount: Number(amount),
                     graceMinutes: Number(grace),
@@ -903,28 +1130,31 @@ function RateForm({
                     roundingMode: rounding,
                     lostTicketSurcharge: Number(lost),
                     active,
-                    site: site.trim(),
+                    minSessionValue: minSession ? Number(minSession) : null,
+                    maxSessionValue: maxSession ? Number(maxSession) : null,
+                    maxDailyValue: maxDaily ? Number(maxDaily) : null,
+                    appliesNight,
+                    nightSurchargePercent: Number(nightPct) || 0,
+                    appliesHoliday,
+                    holidaySurchargePercent: Number(holidayPct) || 0,
+                    appliesDaysBitmap: daysBitmap,
                     windowStart: toHhMmSs(wStart),
                     windowEnd: toHhMmSs(wEnd),
                     scheduledActiveFrom: sFrom,
                     scheduledActiveTo: sTo
-                  };
-                  if (!payload.name) {
-                    onError("Nombre obligatorio");
-                    return;
-                  }
-                  await saveRate(payload, isEdit ? (initial as RateRow).id : undefined, auditReason);
-                  await onSaved();
-                } catch (e) {
-                  onError(e instanceof Error ? e.message : "Error al guardar");
-                }
-              })()
-            }
-          />
-        </div>
-        <div className="min-w-[140px]">
-          <Button label="Cancelar" tone="ghost" onClick={onCancel} />
-        </div>
+                  },
+                  (initial as RateRow).id || undefined,
+                  auditReason
+                );
+                await onSaved();
+              } catch (e) {
+                onError(e instanceof Error ? e.message : "Error guardando");
+              }
+            })()
+          }
+        >
+          Guardar
+        </Button>
       </div>
     </div>
   );
@@ -978,46 +1208,49 @@ function UsersSection({
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col text-xs font-semibold text-slate-600">
-          Buscar
-          <input
-            className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Nombre o correo..."
-          />
-        </label>
-        <label className="flex flex-col text-xs font-semibold text-slate-600">
-          Estado
-          <select
-            className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-            value={activeFilter === null ? "" : String(activeFilter)}
-            onChange={(e) => {
-              const v = e.target.value;
-              setActiveFilter(v === "" ? null : v === "true");
-            }}
-          >
-            <option value="">Todos</option>
-            <option value="true">Activos</option>
-            <option value="false">Inactivos</option>
-          </select>
-        </label>
-        <button
-          type="button"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
-          onClick={() => void load()}
-          disabled={loading}
+        <Input
+          label="Buscar"
+          placeholder="Nombre o correo..."
+          variant="flat"
+          size="sm"
+          value={q}
+          onValueChange={setQ}
+          className="max-w-xs"
+        />
+        <Select
+          label="Estado"
+          variant="flat"
+          size="sm"
+          className="max-w-[120px]"
+          selectedKeys={activeFilter === null ? [""] : [String(activeFilter)]}
+          onSelectionChange={(keys) => {
+            const v = Array.from(keys)[0] as string;
+            setActiveFilter(v === "" ? null : v === "true");
+          }}
+        >
+          <SelectItem key="">Todos</SelectItem>
+          <SelectItem key="true">Activos</SelectItem>
+          <SelectItem key="false">Inactivos</SelectItem>
+        </Select>
+        <Button
+          variant="bordered"
+          color="primary"
+          size="md"
+          className="font-semibold"
+          onPress={() => void load()}
+          isLoading={loading}
         >
           Actualizar
-        </button>
+        </Button>
         {canEdit ? (
-          <button
-            type="button"
-            className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white"
-            onClick={() => setShowCreate(true)}
+          <Button
+            color="primary"
+            size="md"
+            className="font-semibold"
+            onPress={() => setShowCreate(true)}
           >
             Nuevo usuario
-          </button>
+          </Button>
         ) : null}
       </div>
 
@@ -1029,13 +1262,15 @@ function UsersSection({
         <div className="surface rounded-2xl p-4 text-sm text-slate-800 space-y-1">
           <div className="flex justify-between gap-2">
             <h3 className="font-semibold text-slate-900">Detalle usuario</h3>
-            <button
-              type="button"
-              className="text-xs font-semibold text-slate-600"
-              onClick={() => setUserDetail(null)}
+            <Button
+              size="sm"
+              variant="light"
+              color="primary"
+              className="font-semibold"
+              onPress={() => setUserDetail(null)}
             >
               Cerrar
-            </button>
+            </Button>
           </div>
           <p>
             <span className="text-slate-500">Nombre:</span> {userDetail.name}
@@ -1082,10 +1317,12 @@ function UsersSection({
               const u = r;
               return (
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="text-xs font-semibold text-slate-700"
-                    onClick={() =>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="primary"
+                    className="font-semibold"
+                    onPress={() =>
                       void (async () => {
                         setUserDetailLoading(true);
                         setUserDetail(null);
@@ -1103,20 +1340,24 @@ function UsersSection({
                     }
                   >
                     Detalle
-                  </button>
+                  </Button>
                   {canEdit ? (
                     <>
-                      <button
-                        type="button"
-                        className="text-xs font-semibold text-amber-800"
-                        onClick={() => setEditing(u)}
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        color="primary"
+                        className="font-semibold"
+                        onPress={() => setEditing(u)}
                       >
                         Editar
-                      </button>
-                      <button
-                        type="button"
-                        className="text-xs font-semibold text-slate-600"
-                        onClick={() =>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        color="primary"
+                        className="font-semibold"
+                        onPress={() =>
                           void (async () => {
                             try {
                               await patchUserStatus(u.id, !u.active, auditReason);
@@ -1132,11 +1373,13 @@ function UsersSection({
                         }
                       >
                         {u.active ? "Inactivar" : "Activar"}
-                      </button>
-                      <button
-                        type="button"
-                        className="text-xs font-semibold text-slate-600"
-                        onClick={() => {
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        color="primary"
+                        className="font-semibold"
+                        onPress={() => {
                           const p = window.prompt("Nueva contrasena (min 8 caracteres)");
                           if (!p || p.length < 8) {
                             return;
@@ -1155,7 +1398,7 @@ function UsersSection({
                         }}
                       >
                         Reset clave
-                      </button>
+                      </Button>
                     </>
                   ) : null}
                 </div>
@@ -1166,26 +1409,30 @@ function UsersSection({
         rows={rows}
       />
 
-      <div className="flex gap-2 text-xs text-slate-600">
-        <button
-          type="button"
-          disabled={page <= 0}
-          className="rounded border px-2 py-1 disabled:opacity-40"
-          onClick={() => setPage((p) => Math.max(0, p - 1))}
+      <div className="flex items-center gap-4 text-xs text-slate-600">
+        <Button
+          size="sm"
+          variant="flat"
+          color="primary"
+          isDisabled={page <= 0}
+          className="font-semibold"
+          onPress={() => setPage((p) => Math.max(0, p - 1))}
         >
           Anterior
-        </button>
-        <span>
-          Pagina {page + 1} / {Math.max(1, totalPages)}
+        </Button>
+        <span className="font-medium">
+          Página {page + 1} / {Math.max(1, totalPages)}
         </span>
-        <button
-          type="button"
-          disabled={page + 1 >= totalPages}
-          className="rounded border px-2 py-1 disabled:opacity-40"
-          onClick={() => setPage((p) => p + 1)}
+        <Button
+          size="sm"
+          variant="flat"
+          color="primary"
+          isDisabled={page + 1 >= totalPages}
+          className="font-semibold"
+          onPress={() => setPage((p) => p + 1)}
         >
           Siguiente
-        </button>
+        </Button>
       </div>
 
       {showCreate && canEdit ? (
@@ -1242,66 +1489,33 @@ function UserCreatePanel({
     <div className="surface rounded-2xl p-6">
       <h2 className="text-lg font-semibold text-slate-900">Nuevo usuario</h2>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          placeholder="Nombre"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          placeholder="Correo"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <select
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          value={role}
-          onChange={(e) => setRole(e.target.value as UserRole)}
+        <Input variant="flat" size="sm" placeholder="Nombre" value={name} onValueChange={setName} />
+        <Input variant="flat" size="sm" placeholder="Correo" value={email} onValueChange={setEmail} />
+        <Select
+          label="Rol"
+          variant="flat"
+          size="sm"
+          selectedKeys={[role]}
+          onSelectionChange={(keys) => setRole(Array.from(keys)[0] as UserRole)}
         >
           {ROLES.map((r) => (
-            <option key={r} value={r}>
+            <SelectItem key={r} textValue={r}>
               {r}
-            </option>
+            </SelectItem>
           ))}
-        </select>
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          placeholder="Contrasena inicial (min 8)"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          placeholder="Documento (opcional)"
-          value={document}
-          onChange={(e) => setDocument(e.target.value)}
-        />
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          placeholder="Telefono"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-        />
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          placeholder="Sede"
-          value={site}
-          onChange={(e) => setSite(e.target.value)}
-        />
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          placeholder="Terminal / caja"
-          value={terminal}
-          onChange={(e) => setTerminal(e.target.value)}
-        />
+        </Select>
+        <Input variant="flat" size="sm" placeholder="Contrasena inicial (min 8)" type="password" value={password} onValueChange={setPassword} />
+        <Input variant="flat" size="sm" placeholder="Documento (opcional)" value={document} onValueChange={setDocument} />
+        <Input variant="flat" size="sm" placeholder="Telefono" value={phone} onValueChange={setPhone} />
+        <Input variant="flat" size="sm" placeholder="Sede" value={site} onValueChange={setSite} />
+        <Input variant="flat" size="sm" placeholder="Terminal / caja" value={terminal} onValueChange={setTerminal} />
       </div>
       <div className="mt-4 flex gap-3">
         <div className="min-w-[120px]">
           <Button
-            label="Crear"
-            onClick={() =>
+            color="primary"
+            className="font-bold w-full"
+            onPress={() =>
               void (async () => {
                 try {
                   if (!name.trim()) {
@@ -1335,10 +1549,14 @@ function UserCreatePanel({
                 }
               })()
             }
-          />
+          >
+            Crear
+          </Button>
         </div>
         <div className="min-w-[120px]">
-          <Button label="Cerrar" tone="ghost" onClick={onClose} />
+          <Button variant="light" color="primary" className="font-semibold w-full" onPress={onClose}>
+            Cerrar
+          </Button>
         </div>
       </div>
     </div>
@@ -1371,57 +1589,32 @@ function UserEditPanel({
       <h2 className="text-lg font-semibold text-slate-900">Editar usuario</h2>
       <p className="text-xs text-slate-500">{user.email}</p>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <select
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          value={role}
-          onChange={(e) => setRole(e.target.value as UserRole)}
+        <Input variant="flat" size="sm" placeholder="Nombre" value={name} onValueChange={setName} />
+        <Input variant="flat" size="sm" placeholder="Correo" value={email} onValueChange={setEmail} />
+        <Select
+          label="Rol"
+          variant="flat"
+          size="sm"
+          selectedKeys={[role]}
+          onSelectionChange={(keys) => setRole(Array.from(keys)[0] as UserRole)}
         >
           {ROLES.map((r) => (
-            <option key={r} value={r}>
+            <SelectItem key={r} textValue={r}>
               {r}
-            </option>
+            </SelectItem>
           ))}
-        </select>
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          placeholder="Documento"
-          value={document}
-          onChange={(e) => setDocument(e.target.value)}
-        />
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          placeholder="Telefono"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-        />
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          placeholder="Sede"
-          value={site}
-          onChange={(e) => setSite(e.target.value)}
-        />
-        <input
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-          placeholder="Terminal"
-          value={terminal}
-          onChange={(e) => setTerminal(e.target.value)}
-        />
+        </Select>
+        <Input variant="flat" size="sm" placeholder="Documento" value={document} onValueChange={setDocument} />
+        <Input variant="flat" size="sm" placeholder="Telefono" value={phone} onValueChange={setPhone} />
+        <Input variant="flat" size="sm" placeholder="Sede" value={site} onValueChange={setSite} />
+        <Input variant="flat" size="sm" placeholder="Terminal" value={terminal} onValueChange={setTerminal} />
       </div>
       <div className="mt-4 flex gap-3">
         <div className="min-w-[120px]">
           <Button
-            label="Guardar"
-            onClick={() =>
+            color="primary"
+            className="font-bold w-full"
+            onPress={() =>
               void (async () => {
                 try {
                   if (!name.trim() || !email.trim()) {
@@ -1447,10 +1640,14 @@ function UserEditPanel({
                 }
               })()
             }
-          />
+          >
+            Guardar
+          </Button>
         </div>
         <div className="min-w-[120px]">
-          <Button label="Cerrar" tone="ghost" onClick={onClose} />
+          <Button variant="light" color="primary" className="font-semibold w-full" onPress={onClose}>
+            Cerrar
+          </Button>
         </div>
       </div>
     </div>
@@ -1498,8 +1695,11 @@ function ParametersSection({
     return <p className="text-sm text-slate-600">Sin datos.</p>;
   }
 
-  const setField = (k: keyof ParkingParametersPayload, v: string | number | boolean) => {
+  const setField = (k: keyof ParkingParametersPayload, v: string | number | boolean | undefined) => {
     setData((d) => ({ ...(d ?? {}), [k]: v }));
+  };
+  const setOptionalNumber = (k: keyof ParkingParametersPayload, v: string) => {
+    setField(k, v.trim() === "" ? undefined : Number(v.replace(",", ".")));
   };
 
   return (
@@ -1507,27 +1707,39 @@ function ParametersSection({
       <div className="surface rounded-2xl p-6 space-y-4">
         <h2 className="text-lg font-semibold text-slate-900">Parametros del parqueadero</h2>
         <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 pb-4">
-          <label className="flex flex-col text-xs font-semibold text-slate-600">
-            Codigo de sede (persistencia)
-            <input
-              className="mt-1 rounded-lg border border-slate-200 px-2 py-2 text-sm"
-              value={paramSite}
-              onChange={(e) => setParamSite(e.target.value)}
-              placeholder="DEFAULT"
-            />
-          </label>
-          <button
-            type="button"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
-            onClick={() => void load()}
-            disabled={loading}
+          <Input
+            label="Codigo de sede (persistencia)"
+            variant="flat"
+            size="sm"
+            className="max-w-xs"
+            value={paramSite}
+            onValueChange={setParamSite}
+            placeholder="DEFAULT"
+          />
+          <Button
+            variant="bordered"
+            color="primary"
+            size="md"
+            className="font-semibold"
+            onPress={() => void load()}
+            isLoading={loading}
           >
             Cargar sede
-          </button>
+          </Button>
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Field label="Nombre comercial" value={data.parkingName ?? ""} onChange={(v) => setField("parkingName", v)} />
           <Field label="NIT" value={data.taxId ?? ""} onChange={(v) => setField("taxId", v)} />
+          <Field
+            label="DV NIT"
+            value={data.taxIdCheckDigit ?? ""}
+            onChange={(v) => setField("taxIdCheckDigit", v)}
+          />
+          <Field
+            label="Razon social (FE / tributario)"
+            value={data.businessLegalName ?? ""}
+            onChange={(v) => setField("businessLegalName", v)}
+          />
           <Field label="Direccion" value={data.address ?? ""} onChange={(v) => setField("address", v)} />
           <Field label="Telefono" value={data.phone ?? ""} onChange={(v) => setField("phone", v)} />
           <Field
@@ -1537,213 +1749,362 @@ function ParametersSection({
           />
           <Field label="Moneda" value={data.currency ?? ""} onChange={(v) => setField("currency", v)} />
           <Field label="Zona horaria" value={data.timeZone ?? ""} onChange={(v) => setField("timeZone", v)} />
+          <Field label="Logo / URL marca" value={data.logoUrl ?? ""} onChange={(v) => setField("logoUrl", v)} />
+          <Field
+            label="Color marca"
+            value={data.brandColor ?? ""}
+            onChange={(v) => setField("brandColor", v)}
+          />
+          <Field label="Impuesto" value={data.taxName ?? ""} onChange={(v) => setField("taxName", v)} />
+          <Field
+            label="Impuesto (%)"
+            value={data.taxRatePercent != null ? String(data.taxRatePercent) : ""}
+            onChange={(v) => setOptionalNumber("taxRatePercent", v)}
+          />
+          <div className="flex items-center py-2">
+            <Checkbox
+              isSelected={data.pricesIncludeTax ?? true}
+              onValueChange={(v) => setField("pricesIncludeTax", v)}
+            >
+              Tarifas incluyen impuesto
+            </Checkbox>
+          </div>
           <Field
             label="Minutos de gracia (defecto)"
             value={String(data.graceMinutesDefault ?? "")}
-            onChange={(v) => setField("graceMinutesDefault", Number(v))}
+            onChange={(v) => setOptionalNumber("graceMinutesDefault", v)}
           />
-          <label className="text-xs font-semibold text-slate-600">
-            Politica ticket perdido
-            <select
-              className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-              value={data.lostTicketPolicy ?? "SURCHARGE_RATE"}
-              onChange={(e) => setField("lostTicketPolicy", e.target.value)}
+          <Select
+            label="Politica ticket perdido"
+            variant="flat"
+            size="sm"
+            selectedKeys={[data.lostTicketPolicy ?? "SURCHARGE_RATE"]}
+            onSelectionChange={(keys) => setField("lostTicketPolicy", Array.from(keys)[0] as string)}
+          >
+            {LOST_TICKET_POLICIES.map((p) => (
+              <SelectItem key={p.value} textValue={p.label}>
+                {p.label}
+              </SelectItem>
+            ))}
+          </Select>
+
+          <div className="flex flex-col gap-4 py-2">
+            <Checkbox
+              isSelected={Boolean(data.allowReprint)}
+              onValueChange={(v) => setField("allowReprint", v)}
             >
-              {LOST_TICKET_POLICIES.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-            <input
-              type="checkbox"
-              checked={Boolean(data.allowReprint)}
-              onChange={(e) => setField("allowReprint", e.target.checked)}
-            />
-            Permitir reimpresion
-          </label>
+              Permitir reimpresion
+            </Checkbox>
+            <Checkbox
+              isSelected={Boolean(data.offlineModeEnabled)}
+              onValueChange={(v) => setField("offlineModeEnabled", v)}
+            >
+              Modo offline habilitado
+            </Checkbox>
+          </div>
+
           <Field
             label="Max reimpresiones"
             value={String(data.maxReprints ?? "")}
-            onChange={(v) => setField("maxReprints", Number(v))}
+            onChange={(v) => setOptionalNumber("maxReprints", v)}
           />
           <Field label="Prefijo ticket" value={data.ticketPrefix ?? ""} onChange={(v) => setField("ticketPrefix", v)} />
           <Field label="Formato ticket" value={data.ticketFormat ?? ""} onChange={(v) => setField("ticketFormat", v)} />
           <Field
             label="Ancho papel (mm)"
             value={String(data.defaultPaperWidthMm ?? "")}
-            onChange={(v) => setField("defaultPaperWidthMm", Number(v))}
+            onChange={(v) => setOptionalNumber("defaultPaperWidthMm", v)}
           />
           <Field
             label="Impresora por defecto"
             value={data.defaultPrinterName ?? ""}
             onChange={(v) => setField("defaultPrinterName", v)}
           />
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-            <input
-              type="checkbox"
-              checked={Boolean(data.offlineModeEnabled)}
-              onChange={(e) => setField("offlineModeEnabled", e.target.checked)}
-            />
-            Modo offline habilitado
-          </label>
+
           <Field
             label="Intervalo sync (seg)"
             value={String(data.syncIntervalSeconds ?? "")}
-            onChange={(v) => setField("syncIntervalSeconds", Number(v))}
+            onChange={(v) => setOptionalNumber("syncIntervalSeconds", v)}
           />
           <Field
             label="Timeout impresion (seg)"
             value={String(data.printTimeoutSeconds ?? "")}
-            onChange={(v) => setField("printTimeoutSeconds", Number(v))}
-          />
-          <Field
-            label="Mensaje legal ticket"
-            value={data.ticketLegalMessage ?? ""}
-            onChange={(v) => setField("ticketLegalMessage", v)}
+            onChange={(v) => setOptionalNumber("printTimeoutSeconds", v)}
           />
           <Field label="QR / codigo" value={data.qrConfig ?? ""} onChange={(v) => setField("qrConfig", v)} />
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-            <input
-              type="checkbox"
-              checked={Boolean(data.manualExitAllowed)}
-              onChange={(e) => setField("manualExitAllowed", e.target.checked)}
+
+          <div className="col-span-full grid gap-4 border-t border-slate-100 pt-6 md:grid-cols-2">
+            <Textarea
+              label="Mensaje encabezado ticket"
+              variant="flat"
+              size="sm"
+              minRows={2}
+              value={data.ticketHeaderMessage ?? ""}
+              onValueChange={(v) => setField("ticketHeaderMessage", v)}
             />
-            Salida manual permitida
-          </label>
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-            <input
-              type="checkbox"
-              checked={Boolean(data.allowOfflineEntryExit)}
-              onChange={(e) => setField("allowOfflineEntryExit", e.target.checked)}
+            <Textarea
+              label="Mensaje pie ticket"
+              variant="flat"
+              size="sm"
+              minRows={2}
+              value={data.ticketFooterMessage ?? ""}
+              onValueChange={(v) => setField("ticketFooterMessage", v)}
             />
-            Operacion offline ingreso/salida
-          </label>
-          <p className="col-span-full text-xs font-semibold text-slate-700">Politica de caja (override por sede)</p>
-          <label className="flex flex-col text-xs font-semibold text-slate-600">
-            Cobro exige caja abierta
-            <select
-              className="mt-1 rounded-lg border border-slate-200 px-2 py-2 text-sm"
-              value={
-                data.cashRequireOpenForPayment === undefined
-                  ? ""
-                  : data.cashRequireOpenForPayment
-                    ? "true"
-                    : "false"
-              }
-              onChange={(e) => {
-                const v = e.target.value;
-                setData((d) => ({
-                  ...(d ?? {}),
-                  cashRequireOpenForPayment: v === "" ? undefined : v === "true"
-                }));
-              }}
+            <Textarea
+              label="Mensaje legal ticket"
+              variant="flat"
+              size="sm"
+              minRows={3}
+              value={data.ticketLegalMessage ?? ""}
+              onValueChange={(v) => setField("ticketLegalMessage", v)}
+            />
+            <Textarea
+              label="Reglas de operacion"
+              variant="flat"
+              size="sm"
+              minRows={3}
+              value={data.operationRulesMessage ?? ""}
+              onValueChange={(v) => setField("operationRulesMessage", v)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-4 py-2">
+            <Checkbox
+              isSelected={Boolean(data.manualExitAllowed)}
+              onValueChange={(v) => setField("manualExitAllowed", v)}
             >
-              <option value="">Heredar servidor (app.cash)</option>
-              <option value="true">Si, exigir</option>
-              <option value="false">No exigir</option>
-            </select>
-          </label>
-          <label className="flex flex-col text-xs font-semibold text-slate-600">
-            Permitir cierre de caja offline (cliente)
-            <select
-              className="mt-1 rounded-lg border border-slate-200 px-2 py-2 text-sm"
-              value={
-                data.cashOfflineCloseAllowed === undefined
-                  ? ""
-                  : data.cashOfflineCloseAllowed
-                    ? "true"
-                    : "false"
-              }
-              onChange={(e) => {
-                const v = e.target.value;
-                setData((d) => ({
-                  ...(d ?? {}),
-                  cashOfflineCloseAllowed: v === "" ? undefined : v === "true"
-                }));
-              }}
+              Salida manual permitida
+            </Checkbox>
+            <Checkbox
+              isSelected={Boolean(data.allowOfflineEntryExit)}
+              onValueChange={(v) => setField("allowOfflineEntryExit", v)}
             >
-              <option value="">Heredar servidor</option>
-              <option value="true">Permitir</option>
-              <option value="false">No permitir</option>
-            </select>
-          </label>
-          <Field
-            label="Tope movimiento manual offline (COP, vacio=heredar)"
-            value={
-              data.cashOfflineMaxManualMovement != null && !Number.isNaN(data.cashOfflineMaxManualMovement)
-                ? String(data.cashOfflineMaxManualMovement)
-                : ""
-            }
-            onChange={(v) =>
-              setData((d) => ({
-                ...(d ?? {}),
-                cashOfflineMaxManualMovement:
-                  v.trim() === "" ? undefined : Number(v.replace(",", "."))
-              }))
-            }
-          />
+              Operacion offline ingreso/salida
+            </Checkbox>
+          </div>
+
+          <div className="col-span-full pt-6 border-t border-slate-100 mt-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Facturacion electronica Colombia (DIAN)
+            </p>
+            <p className="text-xs text-slate-500 mb-4 max-w-3xl leading-relaxed">
+              Estos datos aparecen en el comprobante de cierre tipo Z termico y documentacion soporte. CUFE,
+              firma XAdES y envio XML a la DIAN requieren PSC certificado; aqui solo se guardan parametros de
+              autorizacion y numeracion por sede.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <Field
+                label="Prefijo autorizado (ej. SETP)"
+                value={data.dianInvoicePrefix ?? ""}
+                onChange={(v) => setField("dianInvoicePrefix", v)}
+              />
+              <Field
+                label="No. resolucion DIAN"
+                value={data.dianResolutionNumber ?? ""}
+                onChange={(v) => setField("dianResolutionNumber", v)}
+              />
+              <Field
+                label="Fecha resolucion (YYYY-MM-DD)"
+                value={data.dianResolutionDate ?? ""}
+                onChange={(v) => setField("dianResolutionDate", v)}
+              />
+              <Field
+                label="Rango desde (consecutivo)"
+                value={data.dianRangeFrom ?? ""}
+                onChange={(v) => setField("dianRangeFrom", v)}
+              />
+              <Field
+                label="Rango hasta (consecutivo)"
+                value={data.dianRangeTo ?? ""}
+                onChange={(v) => setField("dianRangeTo", v)}
+              />
+              <div className="sm:col-span-2 lg:col-span-3">
+                <Textarea
+                  label="Clave tecnica (opcional)"
+                  variant="flat"
+                  size="sm"
+                  minRows={2}
+                  placeholder="Si su PSC solicita persistirla en sede..."
+                  value={data.dianTechnicalKey ?? ""}
+                  onValueChange={(v) => setField("dianTechnicalKey", v)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="col-span-full pt-6 border-t border-slate-100 mt-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Integracion PSC (cierre caja)
+            </p>
+            <p className="text-xs text-slate-500 mb-4 max-w-3xl leading-relaxed">
+              Consecutivos y webhook se aplican cuando se ejecuta cerrar caja (commit). El servidor envia POST
+              JSON con evento parkflow.cash.closed.v1; el PSC debe responder 2xx sin bloquear al cajero.
+            </p>
+            <div className="flex flex-wrap gap-x-10 gap-y-3 py-1">
+              <Checkbox
+                isSelected={Boolean(data.cashFeSequentialEnabled)}
+                onValueChange={(v) => setData((d) => ({ ...(d ?? {}), cashFeSequentialEnabled: v }))}
+              >
+                Consecutivo soporte al cierre
+              </Checkbox>
+              <Checkbox
+                isSelected={Boolean(data.cashFeSequencePerTerminal)}
+                onValueChange={(v) => setData((d) => ({ ...(d ?? {}), cashFeSequencePerTerminal: v }))}
+              >
+                Llave correlativa por terminal
+              </Checkbox>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
+              <Field
+                label="Digitos consecutivo (6–13)"
+                value={
+                  data.cashFeSequenceDigits != null ? String(data.cashFeSequenceDigits) : ""
+                }
+                onChange={(v) =>
+                  setData((d) => ({
+                    ...(d ?? {}),
+                    cashFeSequenceDigits: v.trim() === "" ? undefined : Number(v.replace(",", "."))
+                  }))
+                }
+              />
+              <div className="lg:col-span-2">
+                <Field
+                  label="Webhook URL PSC"
+                  value={data.cashFeOutboundWebhookUrl ?? ""}
+                  onChange={(v) => setField("cashFeOutboundWebhookUrl", v)}
+                />
+              </div>
+            </div>
+            <div className="mt-4">
+              <Textarea
+                label="Webhook Authorization (Bearer opcional)"
+                variant="flat"
+                size="sm"
+                minRows={2}
+                placeholder="Ej. Bearer eyJ..."
+                value={data.cashFeOutboundWebhookBearer ?? ""}
+                onValueChange={(v) => setField("cashFeOutboundWebhookBearer", v)}
+              />
+            </div>
+          </div>
+
+          <div className="col-span-full pt-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Politica de caja (override por sede)</p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <Select
+                label="Cobro exige caja abierta"
+                variant="flat"
+                size="sm"
+                selectedKeys={[data.cashRequireOpenForPayment === undefined ? "" : String(data.cashRequireOpenForPayment)]}
+                onSelectionChange={(keys) => {
+                  const v = Array.from(keys)[0] as string;
+                  setData((d) => ({
+                    ...(d ?? {}),
+                    cashRequireOpenForPayment: v === "" ? undefined : v === "true"
+                  }));
+                }}
+              >
+                <SelectItem key="">Heredar servidor (app.cash)</SelectItem>
+                <SelectItem key="true">Si, exigir</SelectItem>
+                <SelectItem key="false">No exigir</SelectItem>
+              </Select>
+
+              <Select
+                label="Permitir cierre de caja offline"
+                variant="flat"
+                size="sm"
+                selectedKeys={[data.cashOfflineCloseAllowed === undefined ? "" : String(data.cashOfflineCloseAllowed)]}
+                onSelectionChange={(keys) => {
+                  const v = Array.from(keys)[0] as string;
+                  setData((d) => ({
+                    ...(d ?? {}),
+                    cashOfflineCloseAllowed: v === "" ? undefined : v === "true"
+                  }));
+                }}
+              >
+                <SelectItem key="">Heredar servidor</SelectItem>
+                <SelectItem key="true">Permitir</SelectItem>
+                <SelectItem key="false">No permitir</SelectItem>
+              </Select>
+
+              <Field
+                label="Tope manual offline (COP)"
+                value={
+                  data.cashOfflineMaxManualMovement != null && !Number.isNaN(data.cashOfflineMaxManualMovement)
+                    ? String(data.cashOfflineMaxManualMovement)
+                    : ""
+                }
+                onChange={(v) =>
+                  setData((d) => ({
+                    ...(d ?? {}),
+                    cashOfflineMaxManualMovement:
+                      v.trim() === "" ? undefined : Number(v.replace(",", "."))
+                  }))
+                }
+              />
+            </div>
+          </div>
         </div>
 
         {canEdit ? (
           <div className="flex flex-wrap gap-3 pt-4">
-            <div className="min-w-[160px]">
-              <Button
-                label="Guardar parametros"
-                onClick={() =>
-                  void (async () => {
-                    try {
-                      const v = await validateParameters(data);
-                      if (!v.ok) {
-                        onNotify({
-                          kind: "err",
-                          text: v.errors.join("; ")
-                        });
-                        return;
-                      }
-                      const saved = await putParameters(
-                        data,
-                        paramSite.trim() || "DEFAULT",
-                        auditReason
-                      );
-                      setData(saved);
-                      onNotify({ kind: "ok", text: "Parametros guardados." });
-                    } catch (e) {
+            <Button
+              color="primary"
+              className="font-semibold"
+              onPress={() =>
+                void (async () => {
+                  try {
+                    const v = await validateParameters(data);
+                    if (!v.ok) {
                       onNotify({
                         kind: "err",
-                        text: e instanceof Error ? e.message : "Error al guardar"
+                        text: v.errors.join("; ")
                       });
+                      return;
                     }
-                  })()
-                }
-              />
-            </div>
-            <div className="min-w-[160px]">
-              <Button
-                label="Restaurar valores por defecto"
-                tone="ghost"
-                onClick={() => {
-                  if (!confirm("Restaurar parametros por defecto en el servidor?")) return;
-                  void (async () => {
-                    try {
-                      const saved = await resetParameters(
-                        paramSite.trim() || "DEFAULT",
-                        auditReason
-                      );
-                      setData(saved);
-                      onNotify({ kind: "ok", text: "Parametros restaurados." });
-                    } catch (e) {
-                      onNotify({
-                        kind: "err",
-                        text: e instanceof Error ? e.message : "Error"
-                      });
-                    }
-                  })();
-                }}
-              />
-            </div>
+                    const saved = await putParameters(
+                      data,
+                      paramSite.trim() || "DEFAULT",
+                      auditReason
+                    );
+                    setData(saved);
+                    onNotify({ kind: "ok", text: "Parametros guardados." });
+                  } catch (e) {
+                    onNotify({
+                      kind: "err",
+                      text: e instanceof Error ? e.message : "Error al guardar"
+                    });
+                  }
+                })()
+              }
+            >
+              Guardar parametros
+            </Button>
+            <Button
+              variant="bordered"
+              color="primary"
+              className="font-semibold"
+              onPress={() => {
+                if (!confirm("Restaurar parametros por defecto en el servidor?")) return;
+                void (async () => {
+                  try {
+                    const saved = await resetParameters(
+                      paramSite.trim() || "DEFAULT",
+                      auditReason
+                    );
+                    setData(saved);
+                    onNotify({ kind: "ok", text: "Parametros restaurados." });
+                  } catch (e) {
+                    onNotify({
+                      kind: "err",
+                      text: e instanceof Error ? e.message : "Error"
+                    });
+                  }
+                })();
+              }}
+            >
+              Restaurar valores por defecto
+            </Button>
           </div>
         ) : (
           <p className="text-xs text-slate-500">Solo lectura: no tiene permiso de edicion.</p>
@@ -1763,23 +2124,61 @@ function Field({
   onChange: (v: string) => void;
 }) {
   return (
-    <label className="text-xs font-semibold text-slate-600">
-      {label}
-      <input
-        className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </label>
+    <Input
+      label={label}
+      variant="flat"
+      size="sm"
+      value={value}
+      onValueChange={onChange}
+    />
   );
 }
+
+type VehicleTypeFormState = {
+  code: string;
+  name: string;
+  icon: string;
+  color: string;
+  requiresPlate: boolean;
+  hasOwnRate: boolean;
+  quickAccess: boolean;
+  requiresPhoto: boolean;
+  displayOrder: number;
+};
+
+const defaultVehicleTypeForm: VehicleTypeFormState = {
+  code: "",
+  name: "",
+  icon: "🚗",
+  color: "#2563EB",
+  requiresPlate: true,
+  hasOwnRate: true,
+  quickAccess: true,
+  requiresPhoto: false,
+  displayOrder: 0
+};
+
+function vehicleTypeToForm(row: import("@/lib/settings-api").MasterVehicleTypeRow): VehicleTypeFormState {
+  return {
+    code: row.code,
+    name: row.name,
+    icon: row.icon ?? "🚗",
+    color: row.color ?? "#2563EB",
+    requiresPlate: row.requiresPlate ?? true,
+    hasOwnRate: row.hasOwnRate ?? true,
+    quickAccess: row.quickAccess ?? true,
+    requiresPhoto: row.requiresPhoto ?? false,
+    displayOrder: row.displayOrder ?? 0
+  };
+}
+
 function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void; }) {
   const [rows, setRows] = useState<import("@/lib/settings-api").MasterVehicleTypeRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<import("@/lib/settings-api").MasterVehicleTypeRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ code: "", name: "" });
+  const [form, setForm] = useState<VehicleTypeFormState>(defaultVehicleTypeForm);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1813,19 +2212,52 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
     <div className="space-y-4">
       <div className="flex justify-between items-center surface rounded-2xl p-4">
         <h2 className="text-lg font-semibold text-slate-900">Tipos de Vehículo</h2>
-        <button
-          type="button"
-          className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white"
-          onClick={() => { setCreating(true); setEditing(null); setForm({ code: "", name: "" }); }}
+        <Button
+          color="primary"
+          size="md"
+          className="font-semibold"
+          onPress={() => { setCreating(true); setEditing(null); setForm(defaultVehicleTypeForm); }}
         >
           Nuevo tipo
-        </button>
+        </Button>
       </div>
 
       <DataTable
         columns={[
+          {
+            key: "icon",
+            label: "",
+            render: (r) => (
+              <span
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-lg text-white shadow-sm"
+                style={{ backgroundColor: r.color ?? "#64748B" }}
+              >
+                {r.icon ?? "🚗"}
+              </span>
+            )
+          },
           { key: "code", label: "Código" },
           { key: "name", label: "Nombre" },
+          {
+            key: "displayOrder",
+            label: "Orden",
+            render: (r) => r.displayOrder ?? 0
+          },
+          {
+            key: "requiresPlate",
+            label: "Placa",
+            render: (r) => r.requiresPlate ? "Requerida" : "Opcional"
+          },
+          {
+            key: "hasOwnRate",
+            label: "Tarifa",
+            render: (r) => r.hasOwnRate ? "Propia" : "Compartida"
+          },
+          {
+            key: "quickAccess",
+            label: "Rápido",
+            render: (r) => r.quickAccess ? "Sí" : "No"
+          },
           {
             key: "isActive",
             label: "Activo",
@@ -1841,13 +2273,15 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
             )
           },
           { key: "id", label: "", render: (r) => (
-            <button
-              type="button"
-              className="text-xs font-semibold text-amber-800"
-              onClick={() => { setEditing(r as any); setCreating(false); setForm({ code: r.code, name: r.name }); }}
+            <Button
+              size="sm"
+              variant="flat"
+              color="primary"
+              className="font-semibold"
+              onPress={() => { setEditing(r as any); setCreating(false); setForm(vehicleTypeToForm(r)); }}
             >
               Editar
-            </button>
+            </Button>
           ) }
         ]}
         rows={rows as any[]}
@@ -1857,30 +2291,96 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
         <div className="surface rounded-2xl p-6">
           <h3 className="text-lg font-semibold text-slate-900">{creating ? "Nuevo tipo" : "Editar tipo"}</h3>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <label className="text-xs font-semibold text-slate-600">
-              Código (ej. CAR)
-              <input
-                className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm uppercase"
-                value={form.code}
-                onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                disabled={!!editing}
-              />
-            </label>
-            <label className="text-xs font-semibold text-slate-600">
-              Nombre (ej. Carro)
-              <input
-                className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </label>
+            <Input
+              label="Código (ej. CAR)"
+              variant="flat"
+              size="sm"
+              classNames={{ input: "uppercase" }}
+              value={form.code}
+              onValueChange={(val) => setForm({ ...form, code: val.toUpperCase() })}
+              isDisabled={!!editing}
+            />
+            <Input
+              label="Nombre (ej. Carro)"
+              variant="flat"
+              size="sm"
+              value={form.name}
+              onValueChange={(val) => setForm({ ...form, name: val })}
+            />
+            <Input
+              label="Icono"
+              variant="flat"
+              size="sm"
+              maxLength={40}
+              value={form.icon}
+              onValueChange={(val) => setForm({ ...form, icon: val })}
+            />
+            <Input
+              label="Color"
+              variant="flat"
+              size="sm"
+              type="color"
+              value={form.color}
+              onValueChange={(val) => setForm({ ...form, color: val.toUpperCase() })}
+            />
+            <Input
+              label="Orden"
+              variant="flat"
+              size="sm"
+              type="number"
+              min={0}
+              value={String(form.displayOrder)}
+              onValueChange={(val) => setForm({ ...form, displayOrder: Number.parseInt(val || "0", 10) })}
+            />
+            <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+              <span
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-xl text-white"
+                style={{ backgroundColor: form.color || "#64748B" }}
+              >
+                {form.icon || "🚗"}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">{form.name || "Vista previa"}</p>
+                <p className="text-xs text-slate-500">{form.code || "CODIGO"}</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-4">
+            <Switch
+              isSelected={form.requiresPlate}
+              onValueChange={(val) => setForm({ ...form, requiresPlate: val })}
+              size="sm"
+            >
+              Requiere placa
+            </Switch>
+            <Switch
+              isSelected={form.hasOwnRate}
+              onValueChange={(val) => setForm({ ...form, hasOwnRate: val })}
+              size="sm"
+            >
+              Tarifa propia
+            </Switch>
+            <Switch
+              isSelected={form.quickAccess}
+              onValueChange={(val) => setForm({ ...form, quickAccess: val })}
+              size="sm"
+            >
+              Acceso rápido
+            </Switch>
+            <Switch
+              isSelected={form.requiresPhoto}
+              onValueChange={(val) => setForm({ ...form, requiresPhoto: val })}
+              size="sm"
+            >
+              Requiere foto
+            </Switch>
           </div>
           <div className="mt-6 flex justify-end gap-3">
-            <button type="button" className="text-sm font-semibold text-slate-600" onClick={() => { setCreating(false); setEditing(null); }}>Cancelar</button>
-            <button
-              type="button"
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
-              onClick={async () => {
+            <Button variant="light" color="primary" className="font-semibold" onPress={() => { setCreating(false); setEditing(null); }}>Cancelar</Button>
+            <Button
+              color="success"
+              className="font-semibold text-white"
+              onPress={async () => {
                 try {
                   const { saveMasterVehicleType } = await import("@/lib/settings-api");
                   await saveMasterVehicleType(form, editing?.id);
@@ -1894,10 +2394,141 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
               }}
             >
               Guardar
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function MonthlySection({ canEdit, onNotify, auditReason }: { canEdit: boolean; onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void; auditReason: string; }) {
+  const [rows, setRows] = useState<import("@/lib/settings-api").MonthlyContractRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [plate, setPlate] = useState("");
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { fetchMonthlyContracts } = await import("@/lib/settings-api");
+      const res = await fetchMonthlyContracts({ plate: plate || undefined, page, size: 15 });
+      setRows(res.content);
+      setTotalPages(res.totalPages);
+    } catch (e) {
+      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error cargando" });
+    } finally {
+      setLoading(false);
+    }
+  }, [plate, page, onNotify]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  return (
+    <div className="space-y-4">
+      <div className="surface rounded-2xl p-4 flex gap-3 items-end">
+        <Input label="Placa" variant="flat" size="sm" value={plate} onValueChange={setPlate} className="w-48" />
+        <Button color="primary" variant="bordered" size="md" onPress={() => void load()} isLoading={loading}>Buscar</Button>
+      </div>
+      <DataTable
+        columns={[
+          { key: "plate", label: "Placa" },
+          { key: "holderName", label: "Titular" },
+          { key: "startDate", label: "Desde" },
+          { key: "endDate", label: "Hasta" },
+          { key: "amount", label: "Valor" },
+          { key: "active", label: "Activa", render: (r) => (r.active ? "Sí" : "No") }
+        ]}
+        rows={rows as any[]}
+      />
+      <div className="flex items-center gap-4">
+        <Button size="sm" variant="flat" color="primary" isDisabled={page <= 0} onPress={() => setPage(p => Math.max(0, p - 1))}>Anterior</Button>
+        <span className="text-sm">Página {page + 1} de {Math.max(1, totalPages)}</span>
+        <Button size="sm" variant="flat" color="primary" isDisabled={page + 1 >= totalPages} onPress={() => setPage(p => p + 1)}>Siguiente</Button>
+      </div>
+    </div>
+  );
+}
+
+function AgreementsSection({ canEdit, onNotify, auditReason }: { canEdit: boolean; onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void; auditReason: string; }) {
+  const [rows, setRows] = useState<import("@/lib/settings-api").AgreementRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { fetchAgreements } = await import("@/lib/settings-api");
+      const res = await fetchAgreements({ q: q || undefined, page, size: 15 });
+      setRows(res.content);
+      setTotalPages(res.totalPages);
+    } catch (e) {
+      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error cargando" });
+    } finally {
+      setLoading(false);
+    }
+  }, [q, page, onNotify]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  return (
+    <div className="space-y-4">
+      <div className="surface rounded-2xl p-4 flex gap-3 items-end">
+        <Input label="Buscar" variant="flat" size="sm" value={q} onValueChange={setQ} className="w-64" placeholder="Empresa o código..." />
+        <Button color="primary" variant="bordered" size="md" onPress={() => void load()} isLoading={loading}>Buscar</Button>
+      </div>
+      <DataTable
+        columns={[
+          { key: "code", label: "Código" },
+          { key: "companyName", label: "Empresa" },
+          { key: "discountPercent", label: "Descuento", render: (r) => `${r.discountPercent}%` },
+          { key: "flatAmount", label: "Tarifa Fija", render: (r) => r.flatAmount ? `$${r.flatAmount}` : "-" },
+          { key: "active", label: "Activo", render: (r) => (r.active ? "Sí" : "No") }
+        ]}
+        rows={rows as any[]}
+      />
+    </div>
+  );
+}
+
+function PrepaidSection({ canEdit, onNotify, auditReason }: { canEdit: boolean; onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void; auditReason: string; }) {
+  const [rows, setRows] = useState<import("@/lib/settings-api").PrepaidPackageRow[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { fetchPrepaidPackages } = await import("@/lib/settings-api");
+      const res = await fetchPrepaidPackages({ size: 50 });
+      setRows(res.content);
+    } catch (e) {
+      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error cargando" });
+    } finally {
+      setLoading(false);
+    }
+  }, [onNotify]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  return (
+    <div className="space-y-4">
+      <div className="surface rounded-2xl p-4 flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-slate-900">Paquetes Prepagados</h2>
+        <Button color="primary" variant="bordered" size="md" onPress={() => void load()} isLoading={loading}>Actualizar</Button>
+      </div>
+      <DataTable
+        columns={[
+          { key: "name", label: "Paquete" },
+          { key: "hoursIncluded", label: "Horas" },
+          { key: "amount", label: "Precio" },
+          { key: "expiresDays", label: "Validez (días)" },
+          { key: "active", label: "Activo", render: (r) => (r.active ? "Sí" : "No") }
+        ]}
+        rows={rows as any[]}
+      />
     </div>
   );
 }

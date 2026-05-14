@@ -51,6 +51,11 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
     localStorage.setItem("parkflow_change_counts", JSON.stringify(counts));
   }, [counts]);
 
+  useEffect(() => {
+    setCounts({});
+    setCustomAmount("");
+  }, [totalAmount]);
+
   const increment = useCallback((value: number) => {
     setCounts(prev => ({
       ...prev,
@@ -124,13 +129,13 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
   }
 
   return (
-    <div className="bg-slate-50 rounded-2xl p-4 space-y-4">
+    <div className="bg-slate-50 rounded-2xl p-4 space-y-4 dark:bg-gray-800">
       <div className="flex items-center justify-between">
         <h4 className="font-semibold text-slate-800 flex items-center gap-2">
           <svg className="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
-          Calculadora de Cambio
+          Calculadora de cambio / vuelto
         </h4>
         <button
           onClick={() => setShowCalculator(false)}
@@ -144,13 +149,13 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
 
       {/* Resumen */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-xl p-3 text-center border border-slate-200">
+        <div className="bg-white rounded-xl p-3 text-center border border-slate-200 dark:bg-gray-800 dark:border-gray-700">
           <p className="text-xs text-slate-500 uppercase">Total</p>
           <p className="text-lg font-bold text-slate-900">
             ${totalAmount.toLocaleString("es-CO")}
           </p>
         </div>
-        <div className="bg-white rounded-xl p-3 text-center border border-slate-200">
+        <div className="bg-white rounded-xl p-3 text-center border border-slate-200 dark:bg-gray-800 dark:border-gray-700">
           <p className="text-xs text-slate-500 uppercase">Recibido</p>
           <p className={`text-lg font-bold ${receivedAmount > 0 ? "text-blue-600" : "text-slate-400"}`}>
             ${receivedAmount.toLocaleString("es-CO")}
@@ -164,7 +169,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
             : "bg-rose-50 border-rose-200"
         }`}>
           <p className="text-xs uppercase font-medium">
-            {change > 0 ? "Cambio" : change === 0 ? "Exacto" : "Falta"}
+            {change > 0 ? "Cambio / vuelto" : change === 0 ? "Exacto" : "Falta"}
           </p>
           <p className={`text-lg font-bold ${
             change >= 0 
@@ -177,35 +182,35 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
       </div>
 
       {/* Atajo: Monto exacto */}
-      <div className="flex gap-2">
-        <button
-          onClick={setExactAmount}
-          className="flex-1 py-2 px-3 bg-brand-100 hover:bg-brand-200 text-brand-700 rounded-xl text-sm font-medium transition-colors"
-        >
-          💵 Monto exacto (${totalAmount.toLocaleString("es-CO")})
+        <div className="flex gap-2">
+          <button
+            onClick={setExactAmount}
+            className="flex-1 py-2 px-3 bg-brand-100 hover:bg-brand-200 text-brand-700 rounded-xl text-sm font-medium transition-colors dark:bg-brand-700 dark:text-white dark:hover:bg-brand-600"
+          >
+          Monto exacto (${totalAmount.toLocaleString("es-CO")})
         </button>
-        <button
-          onClick={reset}
-          className="py-2 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-sm font-medium transition-colors"
-        >
+          <button
+            onClick={reset}
+            className="py-2 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-sm font-medium transition-colors dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+          >
           Limpiar
         </button>
       </div>
 
       {/* Entrada personalizada */}
       <div className="flex gap-2">
-        <input
-          type="text"
-          value={customAmount}
-          onChange={(e) => setCustomAmount(e.target.value)}
-          placeholder="Monto recibido (ej: 50000)"
-          className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              applyCustomAmount();
-            }
-          }}
-        />
+          <input
+            type="text"
+            value={customAmount}
+            onChange={(e) => setCustomAmount(e.target.value)}
+            placeholder="Monto recibido (ej: 50000)"
+            className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                applyCustomAmount();
+              }
+            }}
+          />
         <button
           onClick={applyCustomAmount}
           className="py-2 px-4 bg-slate-800 text-white rounded-xl text-sm font-medium hover:bg-slate-700"
@@ -222,30 +227,30 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
             className={`relative rounded-xl border-2 p-2 text-center transition-all ${
               (counts[denom.value] || 0) > 0
                 ? "bg-brand-50 border-brand-200"
-                : "bg-white border-slate-200 hover:border-slate-300"
+                : "bg-white border-slate-200 hover:border-slate-300 dark:bg-gray-800 dark:border-gray-700 dark:hover:border-gray-600"
             }`}
           >
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <span className="text-lg">{denom.type === "bill" ? "💵" : "🪙"}</span>
-              <span className="text-xs font-semibold text-slate-700">{denom.label}</span>
-            </div>
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <span className="text-lg">{denom.type === "bill" ? "💵" : "🪙"}</span>
+                <span className="text-xs font-semibold text-slate-700 dark:text-gray-200">{denom.label}</span>
+              </div>
             <div className="flex items-center justify-center gap-1">
-              <button
-                onClick={() => decrement(denom.value)}
-                className="w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-600 font-bold"
-              >
-                -
-              </button>
-              <span className="w-8 text-center font-bold text-slate-800">
-                {counts[denom.value] || 0}
-              </span>
-              <button
-                onClick={() => increment(denom.value)}
-                className="w-6 h-6 rounded-full bg-brand-200 hover:bg-brand-300 flex items-center justify-center text-brand-700 font-bold"
-              >
-                +
-              </button>
-            </div>
+                <button
+                  onClick={() => decrement(denom.value)}
+                  className="w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-600 font-bold dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                >
+                  -
+                </button>
+                <span className="w-8 text-center font-bold text-slate-800 dark:text-white">
+                  {counts[denom.value] || 0}
+                </span>
+                <button
+                  onClick={() => increment(denom.value)}
+                  className="w-6 h-6 rounded-full bg-brand-200 hover:bg-brand-300 flex items-center justify-center text-brand-700 font-bold"
+                >
+                  +
+                </button>
+              </div>
             {(counts[denom.value] || 0) > 0 && (
               <div className="mt-1 text-xs font-medium text-brand-700">
                 = ${(denom.value * (counts[denom.value] || 0)).toLocaleString("es-CO")}
@@ -257,8 +262,8 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
 
       {/* Total desglosado */}
       {receivedAmount > 0 && (
-        <div className="bg-white rounded-xl p-3 border border-slate-200 space-y-2">
-          <p className="text-sm font-semibold text-slate-700">Desglose:</p>
+        <div className="bg-white rounded-xl p-3 border border-slate-200 space-y-2 dark:bg-gray-800 dark:border-gray-700">
+          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Desglose:</p>
           <div className="flex flex-wrap gap-2">
             {Object.entries(counts)
               .filter(([, count]) => count > 0)

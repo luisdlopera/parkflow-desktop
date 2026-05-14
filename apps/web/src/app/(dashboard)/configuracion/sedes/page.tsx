@@ -1,8 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Input,
+  Button,
+  Select,
+  SelectItem,
+  Checkbox,
+  Card,
+  CardBody,
+} from "@heroui/react";
 import {
   fetchConfigurationSites,
   createConfigurationSite,
@@ -10,8 +19,10 @@ import {
   patchConfigurationSiteStatus,
   type SettingsPage,
 } from "@/lib/settings-api";
+import { listCompanies } from "@/lib/licensing/api";
 import { parkingSiteSchema, type ParkingSiteSchema } from "@/modules/settings/schemas";
 import type { ParkingSiteRow } from "@/modules/settings/types";
+import type { Company } from "@/lib/licensing/types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/settings/FormDrawer";
@@ -21,6 +32,11 @@ const SITE_COLUMNS: ColumnDef<ParkingSiteRow>[] = [
   { key: "name", label: "Nombre" },
   { key: "city", label: "Ciudad" },
   { key: "currency", label: "Moneda" },
+  {
+    key: "maxCapacity",
+    label: "Aforo",
+    render: (row) => row.maxCapacity > 0 ? row.maxCapacity : "Ilimitado",
+  },
   {
     key: "isActive",
     label: "Activo",
@@ -34,6 +50,9 @@ const SITE_COLUMNS: ColumnDef<ParkingSiteRow>[] = [
 
 export default function SedesPage() {
   const [data, setData] = useState<SettingsPage<ParkingSiteRow>>({ content: [], totalElements: 0, totalPages: 0, page: 0, size: 20 });
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companyId, setCompanyId] = useState("");
+  const [catalogLoading, setCatalogLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<ParkingSiteRow | null>(null);
@@ -44,7 +63,31 @@ export default function SedesPage() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<ParkingSiteSchema>({ resolver: zodResolver(parkingSiteSchema), defaultValues: { timezone: "America/Bogota", currency: "COP", isActive: true } });
+  } = useForm<ParkingSiteSchema>({ resolver: zodResolver(parkingSiteSchema), defaultValues: { timezone: "America/Bogota", currency: "COP", maxCapacity: 0, isActive: true } });
+  
+  const selectedCompanyLabel = useMemo(
+    () => companies.find((company) => company.id === companyId)?.name ?? "Sin empresa seleccionada",
+    [companies, companyId]
+  );
+
+  useEffect(() => {
+    const loadCatalog = async () => {
+      setCatalogLoading(true);
+      try {
+        const companyList = await listCompanies();
+        setCompanies(companyList ?? []);
+        if (companyList.length === 1) {
+          setCompanyId(companyList[0].id);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Error cargando empresas");
+      } finally {
+        setCatalogLoading(false);
+      }
+    };
+
+    void loadCatalog();
+  }, []);
 
   const load = async (q?: string) => {
     setLoading(true);
@@ -60,7 +103,7 @@ export default function SedesPage() {
 
   const openCreate = () => {
     setEditing(null);
-    reset({ code: "", name: "", address: "", city: "", phone: "", managerName: "", timezone: "America/Bogota", currency: "COP", isActive: true });
+    reset({ code: "", name: "", address: "", city: "", phone: "", managerName: "", timezone: "America/Bogota", currency: "COP", maxCapacity: 0, isActive: true });
     setDrawerOpen(true);
   };
 
@@ -75,6 +118,7 @@ export default function SedesPage() {
       managerName: row.managerName ?? "",
       timezone: row.timezone,
       currency: row.currency,
+      maxCapacity: row.maxCapacity ?? 0,
       isActive: row.isActive,
     });
     setDrawerOpen(true);
@@ -87,7 +131,11 @@ export default function SedesPage() {
       if (editing) {
         await updateConfigurationSite(editing.id, payload);
       } else {
-        await createConfigurationSite(payload, "00000000-0000-0000-0000-000000000001");
+        if (!companyId) {
+          setError("Selecciona una empresa para crear la sede");
+          return;
+        }
+        await createConfigurationSite(payload, companyId);
       }
       setDrawerOpen(false);
       await load();
@@ -108,6 +156,32 @@ export default function SedesPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
       <h1 className="text-2xl font-bold text-slate-900">Sedes / Parqueaderos</h1>
+      
+      <Card shadow="sm" className="border border-slate-200 bg-slate-50/50">
+        <CardBody className="p-4 flex flex-col sm:flex-row sm:items-end gap-4">
+          <div className="flex-1">
+            <Select
+              label="Empresa"
+              placeholder="Selecciona una empresa"
+              variant="flat"
+              selectedKeys={companyId ? [companyId] : []}
+              onSelectionChange={(keys) => setCompanyId(Array.from(keys)[0] as string)}
+              isDisabled={catalogLoading || companies.length <= 1}
+            >
+              {companies.map((company) => (
+                <SelectItem key={company.id} textValue={`${company.name} ${company.status ? `(${company.status})` : ""}`}>
+                  {`${company.name} ${company.status ? `(${company.status})` : ""}`}
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
+          <p className="text-xs text-slate-500 max-w-xs">
+            La nueva sede quedará asociada a: <span className="font-bold text-amber-700">{selectedCompanyLabel}</span>. 
+            {companies.length <= 1 && " Se ha seleccionado automáticamente."}
+          </p>
+        </CardBody>
+      </Card>
+
       <DataTableSection
         title=""
         columns={SITE_COLUMNS}
@@ -118,11 +192,20 @@ export default function SedesPage() {
         emptyMessage="No hay sedes registradas"
         actions={(row) => (
           <div className="flex items-center gap-2">
-            <button onClick={() => openEdit(row)} className="text-xs text-amber-600 hover:underline">Editar</button>
+            <Button
+              size="sm"
+              variant="flat"
+              color="primary"
+              className="font-semibold"
+              onPress={() => openEdit(row)}
+            >
+              Editar
+            </Button>
             <StatusToggle active={row.isActive} onChange={() => toggleStatus(row)} confirmMessage="¿Cambiar estado?" />
           </div>
         )}
       />
+
       <FormDrawer
         open={drawerOpen}
         title={editing ? "Editar Sede" : "Nueva Sede"}
@@ -131,43 +214,68 @@ export default function SedesPage() {
         loading={isSubmitting}
         error={error}
       >
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Código</label>
-          <input {...register("code")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-          {errors.code && <p className="mt-1 text-xs text-red-600">{errors.code.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Nombre</label>
-          <input {...register("name")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-          {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Ciudad</label>
-          <input {...register("city")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Dirección</label>
-          <input {...register("address")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Teléfono</label>
-          <input {...register("phone")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Responsable</label>
-          <input {...register("managerName")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Zona horaria</label>
-          <input {...register("timezone")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Moneda</label>
-          <input {...register("currency")} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" {...register("isActive")} className="h-4 w-4 rounded border-slate-300" />
-          <label className="text-sm text-slate-700">Activo</label>
+        <div className="space-y-4">
+          <Input
+            {...register("code")}
+            label="Código"
+            variant="flat"
+            errorMessage={errors.code?.message}
+            isInvalid={!!errors.code}
+          />
+          <Input
+            {...register("name")}
+            label="Nombre"
+            variant="flat"
+            errorMessage={errors.name?.message}
+            isInvalid={!!errors.name}
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              {...register("city")}
+              label="Ciudad"
+              variant="flat"
+            />
+            <Input
+              {...register("phone")}
+              label="Teléfono"
+              variant="flat"
+            />
+          </div>
+          <Input
+            {...register("address")}
+            label="Dirección"
+            variant="flat"
+          />
+          <Input
+            {...register("managerName")}
+            label="Responsable"
+            variant="flat"
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              {...register("timezone")}
+              label="Zona horaria"
+              variant="flat"
+            />
+            <Input
+              {...register("currency")}
+              label="Moneda"
+              variant="flat"
+            />
+          </div>
+          <Input
+            {...register("maxCapacity", { valueAsNumber: true })}
+            type="number"
+            min={0}
+            label="Aforo máximo"
+            description="0 deja la sede sin límite operativo de cupos"
+            variant="flat"
+            errorMessage={errors.maxCapacity?.message}
+            isInvalid={!!errors.maxCapacity}
+          />
+          <Checkbox {...register("isActive")}>
+            Activa
+          </Checkbox>
         </div>
       </FormDrawer>
     </div>

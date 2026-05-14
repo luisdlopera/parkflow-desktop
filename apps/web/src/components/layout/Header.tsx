@@ -9,7 +9,7 @@ interface HeaderProps {
 
 export default function Header({ onMenuClick }: HeaderProps) {
   return (
-    <header className="flex items-center justify-between border-b border-slate-200/70 bg-white/70 px-4 lg:px-8 py-4 backdrop-blur">
+    <header className="flex items-center justify-between border-b border-slate-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/70 px-4 lg:px-8 py-4 backdrop-blur">
       {/* Left side: Hamburger + Title */}
       <div className="flex items-center gap-3">
         {/* Mobile menu button */}

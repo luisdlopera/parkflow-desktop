@@ -38,13 +38,13 @@ export function FormDrawer({
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative z-10 flex h-full w-full max-w-lg flex-col bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+      <div className="relative z-10 flex h-full w-full max-w-lg flex-col bg-white shadow-2xl dark:bg-gray-900 dark:shadow-lg">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-700 px-6 py-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-gray-800 dark:text-gray-300"
           >
             ✕
           </button>
@@ -69,7 +69,7 @@ export function FormDrawer({
             type="button"
             disabled={loading}
             onClick={() => { void onSubmit(); }}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+            className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
           >
             {loading ? "Guardando..." : submitLabel}
           </button>

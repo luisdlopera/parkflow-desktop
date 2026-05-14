@@ -471,7 +471,7 @@ export default function DevicesPage() {
             )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={onDetailClose}>
+            <Button variant="flat" color="primary" onPress={onDetailClose}>
               Cerrar
             </Button>
           </ModalFooter>
@@ -495,6 +495,7 @@ export default function DevicesPage() {
               <Button
                 fullWidth
                 variant="flat"
+                color="primary"
                 startContent={<Ban className="w-4 h-4" />}
               >
                 Bloquear Sistema
@@ -502,6 +503,7 @@ export default function DevicesPage() {
               <Button
                 fullWidth
                 variant="flat"
+                color="primary"
                 startContent={<Pause className="w-4 h-4" />}
               >
                 Deshabilitar Sync
@@ -509,6 +511,7 @@ export default function DevicesPage() {
               <Button
                 fullWidth
                 variant="flat"
+                color="primary"
                 startContent={<RefreshCw className="w-4 h-4" />}
               >
                 Limpiar Caché de Licencia
@@ -516,6 +519,7 @@ export default function DevicesPage() {
               <Button
                 fullWidth
                 variant="flat"
+                color="primary"
                 startContent={<Send className="w-4 h-4" />}
               >
                 Solicitar Renovación
@@ -523,7 +527,7 @@ export default function DevicesPage() {
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={onCommandClose}>
+            <Button variant="flat" color="primary" onPress={onCommandClose}>
               Cancelar
             </Button>
           </ModalFooter>

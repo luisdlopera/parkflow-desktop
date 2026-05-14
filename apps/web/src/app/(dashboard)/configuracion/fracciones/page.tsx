@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Input, Button, Checkbox } from "@heroui/react";
 import {
   fetchConfigurationRateFractions,
   createConfigurationRateFraction,
@@ -104,16 +105,24 @@ export default function FraccionesPage() {
     <div className="mx-auto max-w-4xl space-y-6 p-6">
       <h1 className="text-2xl font-bold text-slate-900">Fracciones de Tarifa</h1>
       <div className="flex items-center gap-3">
-        <input
+        <Input
           type="text"
           placeholder="ID de tarifa"
-          className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          variant="flat"
+          size="sm"
+          className="max-w-xs"
           value={rateId}
-          onChange={(e) => setRateId(e.target.value)}
+          onValueChange={setRateId}
         />
-        <button onClick={() => { void load(); }} className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700">
+        <Button 
+          size="sm" 
+          color="primary" 
+          className="font-bold" 
+          onPress={() => { void load(); }}
+          isLoading={loading}
+        >
           Cargar
-        </button>
+        </Button>
       </div>
       <DataTableSection
         title=""
@@ -124,8 +133,24 @@ export default function FraccionesPage() {
         emptyMessage="No hay fracciones para esta tarifa"
         actions={(row) => (
           <div className="flex items-center gap-2">
-            <button onClick={() => openEdit(row)} className="text-xs text-amber-600 hover:underline">Editar</button>
-            <button onClick={() => handleDelete(row.id)} className="text-xs text-red-600 hover:underline">Eliminar</button>
+            <Button
+              size="sm"
+              variant="flat"
+              color="primary"
+              className="font-semibold"
+              onPress={() => openEdit(row)}
+            >
+              Editar
+            </Button>
+            <Button
+              size="sm"
+              variant="flat"
+              color="danger"
+              className="font-semibold"
+              onPress={() => handleDelete(row.id)}
+            >
+              Eliminar
+            </Button>
           </div>
         )}
       />
@@ -137,28 +162,38 @@ export default function FraccionesPage() {
         loading={isSubmitting}
         error={error}
       >
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Desde (minutos)</label>
-          <input type="number" {...register("fromMinute", { valueAsNumber: true })} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-          {errors.fromMinute && <p className="mt-1 text-xs text-red-600">{errors.fromMinute.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Hasta (minutos)</label>
-          <input type="number" {...register("toMinute", { valueAsNumber: true })} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-          {errors.toMinute && <p className="mt-1 text-xs text-red-600">{errors.toMinute.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Valor</label>
-          <input type="number" step="0.01" {...register("value", { valueAsNumber: true })} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-          {errors.value && <p className="mt-1 text-xs text-red-600">{errors.value.message}</p>}
-        </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" {...register("roundUp")} className="h-4 w-4 rounded border-slate-300" />
-          <label className="text-sm text-slate-700">Redondear hacia arriba</label>
-        </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" {...register("isActive")} className="h-4 w-4 rounded border-slate-300" />
-          <label className="text-sm text-slate-700">Activa</label>
+        <div className="space-y-4">
+          <Input
+            {...register("fromMinute", { valueAsNumber: true })}
+            label="Desde (minutos)"
+            type="number"
+            variant="flat"
+            errorMessage={errors.fromMinute?.message}
+            isInvalid={!!errors.fromMinute}
+          />
+          <Input
+            {...register("toMinute", { valueAsNumber: true })}
+            label="Hasta (minutos)"
+            type="number"
+            variant="flat"
+            errorMessage={errors.toMinute?.message}
+            isInvalid={!!errors.toMinute}
+          />
+          <Input
+            {...register("value", { valueAsNumber: true })}
+            label="Valor"
+            type="number"
+            step="0.01"
+            variant="flat"
+            errorMessage={errors.value?.message}
+            isInvalid={!!errors.value}
+          />
+          <Checkbox {...register("roundUp")}>
+            Redondear hacia arriba
+          </Checkbox>
+          <Checkbox {...register("isActive")}>
+            Activa
+          </Checkbox>
         </div>
       </FormDrawer>
     </div>

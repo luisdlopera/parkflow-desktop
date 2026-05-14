@@ -87,7 +87,7 @@ export function Toast({ message, type = "info", duration = 3000, onClose }: Toas
           setIsLeaving(true);
           setTimeout(() => onClose?.(), 300);
         }}
-        className="ml-2 p-1 hover:bg-white/20 rounded transition-colors"
+        className="ml-2 p-1 hover:bg-white/20 rounded transition-colors dark:hover:bg-white/10"
         aria-label="Cerrar notificacion"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

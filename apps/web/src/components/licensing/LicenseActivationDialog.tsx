@@ -13,14 +13,18 @@ import {
   Card,
   CardBody,
   Alert,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import { Steps, Step } from "@/components/ui/Steps";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useDeviceFingerprint,
   useSaveLicense,
   useDesktopLicense,
 } from "@/lib/licensing/hooks";
+import { listCompanies } from "@/lib/licensing/api";
+import type { Company } from "@/lib/licensing/types";
 import type { SaveLicenseRequest } from "@/lib/licensing/types";
 
 interface LicenseActivationDialogProps {
@@ -42,21 +46,47 @@ export function LicenseActivationDialog({
   const [step, setStep] = useState(0);
   const [licenseKey, setLicenseKey] = useState("");
   const [signature, setSignature] = useState("");
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companyId, setCompanyId] = useState("");
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
 
   const { fingerprint } = useDeviceFingerprint();
   const { saveLicense, saving, error, success } = useSaveLicense();
   const { refresh } = useDesktopLicense();
+  const selectedCompany = useMemo(
+    () => companies.find((company) => company.id === companyId) ?? null,
+    [companies, companyId]
+  );
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadCompanies = async () => {
+      setLoadingCompanies(true);
+      try {
+        const companyList = await listCompanies();
+        setCompanies(companyList);
+        if (companyList.length === 1) {
+          setCompanyId(companyList[0].id);
+        }
+      } catch {
+        setCompanies([]);
+      } finally {
+        setLoadingCompanies(false);
+      }
+    };
+
+    void loadCompanies();
+  }, [isOpen]);
 
   const handleActivate = async () => {
-    if (!fingerprint) return;
+    if (!fingerprint || !selectedCompany) return;
 
     if (method === "offline") {
-      // Para activación offline, necesitamos companyId, licenseKey y signature
-      // Esto normalmente viene de un archivo o QR proporcionado por el admin
       try {
         const licenseData: SaveLicenseRequest = {
-          companyId: "00000000-0000-0000-0000-000000000001", // Temporal - debería venir de la licencia
-          companyName: "Empresa Temporal",
+          companyId: selectedCompany.id,
+          companyName: selectedCompany.name,
           deviceFingerprint: fingerprint,
           licenseKey,
           plan: "LOCAL",
@@ -125,6 +155,19 @@ export function LicenseActivationDialog({
 
           {step === 1 && method === "offline" && (
             <div className="mt-6 space-y-4">
+              <Select
+                label="Empresa"
+                selectedKeys={companyId ? [companyId] : []}
+                onSelectionChange={(keys) => setCompanyId(Array.from(keys)[0]?.toString() ?? "")}
+                isDisabled={loadingCompanies}
+                placeholder="Selecciona una empresa"
+              >
+                {companies.map((company) => (
+                  <SelectItem key={company.id} textValue={company.name}>
+                    {company.name}
+                  </SelectItem>
+                ))}
+              </Select>
               <Input
                 label="Clave de Licencia"
                 placeholder="Ingrese la clave proporcionada"
@@ -170,8 +213,8 @@ export function LicenseActivationDialog({
             <Button
               color="success"
               onPress={handleActivate}
-              isLoading={saving}
-              isDisabled={method === "offline" && !licenseKey}
+                isLoading={saving}
+              isDisabled={method === "offline" && (!licenseKey || !companyId)}
             >
               Activar
             </Button>
