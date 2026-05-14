@@ -1,5 +1,9 @@
+node_modules
+.next
+dist
 .env
 .env.*
+.env.local
 apps/web/.env.local
 apps/desktop/.env.local
 infra/keys/
@@ -7,38 +11,34 @@ infra/keys/
 *.pem
 *.p12
 secrets/
-dist/
-node_modules/
-target/
-/.idea
-.vscode
-/.DS_Store
-
-# Build artifacts
-build/
-bin/
-.gradle/
-.next/
+**/.gradle
+**/build
+**/target
+apps/api/target
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen
+src-tauri/target
+src-tauri/gen
 apps/web/out/
 tsconfig.tsbuildinfo
 coverage/
-
-# Logs
-*.log
-logs/
-
-# IDE and Editor
-.cursor/
-
-# Security reports
-security/reports/
-*.sarif
-
-# Test results
+apps/web/coverage
 test-results/
+apps/desktop/test-results
 playwright-report/
 playwright/.cache/
-
-# OS specific
+*.test.ts.snap
+*.test.tsx.snap
+*.log
+logs/
+debug-*.log
+.gradle/
+bin/
+apps/api/bin/
+/.idea
+.vscode
+.cursor/
+security/reports/
+*.sarif
 .DS_Store
 Thumbs.db
