@@ -5,7 +5,7 @@ import com.parkflow.modules.parking.operation.application.port.in.ListActiveSess
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
-
+import com.parkflow.modules.parking.operation.application.service.DurationCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,6 @@ import java.util.List;
 public class ListActiveSessionsService implements ListActiveSessionsUseCase {
 
   private final ParkingSessionPort parkingSessionPort;
-  private final ParkingSpaceService parkingSpaceService;
 
   @Override
   @Transactional(readOnly = true)
@@ -31,16 +30,11 @@ public class ListActiveSessionsService implements ListActiveSessionsUseCase {
           DurationCalculator.DurationBreakdown dur = DurationCalculator.calculate(
               session.getEntryAt(), now,
               session.getRate() != null ? session.getRate().getGraceMinutes() : 0);
-          return toReceipt(
-              session,
-              parkingSpaceService.findAssignmentBySessionId(session.getId()),
-              dur.totalMinutes(),
-              dur.human());
+          return toReceipt(session, dur.totalMinutes(), dur.human());
         }).toList();
   }
 
-  private ReceiptResponse toReceipt(
-      ParkingSession session, ParkingSpaceAssignment assignment, long totalMinutes, String duration) {
+  private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
     return new ReceiptResponse(
         session.getTicketNumber(), session.getPlate(),
         session.getVehicle().getType(),
@@ -55,9 +49,6 @@ public class ListActiveSessionsService implements ListActiveSessionsUseCase {
         session.getReprintCount(),
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
-        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
-        assignment != null ? assignment.getParkingSpace().getId() : null,
-        assignment != null ? assignment.getParkingSpace().getCode() : null,
-        assignment != null ? assignment.getParkingSpace().getLabel() : null);
+        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes());
   }
 }

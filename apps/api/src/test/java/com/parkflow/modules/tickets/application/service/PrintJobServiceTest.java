@@ -10,8 +10,8 @@ import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
-import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.auth.domain.repository.AppUserPort;
+import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.tickets.dto.CreatePrintJobRequest;
 import com.parkflow.modules.tickets.dto.UpdatePrintJobStatusRequest;

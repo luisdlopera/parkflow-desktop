@@ -1,6 +1,7 @@
 package com.parkflow.modules.parking.operation.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.configuration.domain.OperationalParameter;
 import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
@@ -13,10 +14,10 @@ import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.parking.operation.domain.repository.*;
-import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.auth.domain.repository.AppUserPort;
-
+import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.parking.operation.application.service.DurationCalculator;
+import com.parkflow.modules.parking.operation.application.service.OperationAuditService;
+import com.parkflow.modules.parking.operation.application.service.OperationPrintService;
 import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +58,9 @@ public class RegisterExitService implements RegisterExitUseCase {
   private final ParkingSitePort parkingSiteRepository;
   private final OperationalParameterPort operationalParameterRepository;
   private final ComplexPricingPort complexPricingPort;
+  private final OperationAuditService operationAuditService;
+  private final OperationPrintService operationPrintService;
+  private final AuditPort globalAuditService;
   private final VehicleConditionReportPort vehicleConditionReportPort;
   private final OperationIdempotencyPort operationIdempotencyPort;
   private final ObjectMapper objectMapper;
@@ -84,16 +88,15 @@ public class RegisterExitService implements RegisterExitUseCase {
     assertExitPaymentPolicy(session, request.paymentMethod(), price);
     assertExitPhotoIfRequired(session, request.exitImageUrl());
 
-    session.registerExit(
-        operator,
-        exitAt,
-        price.total(),
-        request.observations(),
-        blankToNull(request.exitImageUrl())
-    );
+    session.setExitAt(exitAt);
+    session.setExitOperator(operator);
+    session.setStatus(SessionStatus.CLOSED);
+    session.setExitNotes(request.observations());
+    session.setExitImageUrl(blankToNull(request.exitImageUrl()));
+    session.setTotalAmount(price.total());
+    session.setUpdatedAt(OffsetDateTime.now());
+    session.setSyncStatus(SessionSyncStatus.PENDING);
     parkingSessionPort.save(session);
-    ParkingSpaceAssignment assignment = parkingSpaceService.findAssignmentBySessionId(session.getId());
-    parkingSpaceService.releaseSpaceBySession(session.getId());
 
     if (price.total().compareTo(BigDecimal.ZERO) > 0 && request.paymentMethod() != null) {
       Payment payment = new Payment();
@@ -109,6 +112,21 @@ public class RegisterExitService implements RegisterExitUseCase {
         request.conditionChecklist(), request.conditionPhotoUrls(), operator);
 
     detectConditionMismatch(session, operator);
+
+    operationAuditService.recordEvent(session, SessionEventType.EXIT_RECORDED, operator, "Salida registrada");
+
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.COBRAR,
+        operator,
+        "Status: ACTIVE",
+        "Status: CLOSED",
+        "Ticket: " + session.getTicketNumber() + ", Plate: " + session.getPlate());
+
+    try {
+      operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.EXIT, "exit");
+    } catch (Exception e) {
+      log.warn("Print job failed for session {}", session.getId());
+    }
 
     safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.EXIT, session);
 
@@ -156,7 +174,7 @@ public class RegisterExitService implements RegisterExitUseCase {
   private void assertExitPhotoIfRequired(ParkingSession session, String exitImageUrl) {
     if (resolveOperationalParameter(session).map(OperationalParameter::isRequirePhotoExit).orElse(false)) {
       if (isBlank(exitImageUrl)) {
-        throw new BusinessValidationException("La sede exige foto en salida");
+        throw new OperationException(HttpStatus.BAD_REQUEST, "La sede exige foto en salida");
       }
     }
   }
@@ -165,12 +183,12 @@ public class RegisterExitService implements RegisterExitUseCase {
     if (!isBlank(ticketNumber)) {
       return parkingSessionPort
           .findActiveByTicketForUpdate(SessionStatus.ACTIVE, ticketNumber.trim(), companyId)
-          .orElseThrow(() -> new EntityNotFoundException("Sesión activa", ticketNumber));
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesión activa no encontrada"));
     }
     if (!isBlank(plate)) {
       return parkingSessionPort
           .findActiveByPlateForUpdate(SessionStatus.ACTIVE, plate.trim().toUpperCase(), companyId)
-          .orElseThrow(() -> new EntityNotFoundException("Sesión activa para placa", plate));
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesión activa no encontrada"));
     }
     throw new BusinessValidationException("ticketNumber o plate es obligatorio");
   }
@@ -178,10 +196,10 @@ public class RegisterExitService implements RegisterExitUseCase {
   private AppUser findRequiredOperator(UUID userId) {
     if (userId == null) {
       return appUserPort.findGlobalByEmail("system@parkflow.local")
-          .orElseThrow(() -> new BusinessValidationException("SYSTEM_OPERATOR_MISSING", "Operador de sistema no encontrado"));
+          .orElseThrow(() -> new OperationException(HttpStatus.INTERNAL_SERVER_ERROR, "Operador de sistema no encontrado"));
     }
     return appUserPort.findById(userId)
-        .orElseThrow(() -> new EntityNotFoundException("Operador", userId.toString()));
+        .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
   }
 
   private Optional<OperationResultResponse> tryReplay(String key, IdempotentOperationType type) {
@@ -193,11 +211,7 @@ public class RegisterExitService implements RegisterExitUseCase {
               DurationCalculator.calculate(session.getEntryAt(), session.getExitAt(), 0);
           return new OperationResultResponse(
               session.getId().toString(),
-              toReceipt(
-                  session,
-                  parkingSpaceService.findAssignmentBySessionId(session.getId()),
-                  duration.totalMinutes(),
-                  duration.human()),
+              toReceipt(session, duration.totalMinutes(), duration.human()),
               "Salida (idempotente)",
               null, null, null, null, session.getTotalAmount());
         });

@@ -11,9 +11,9 @@ import com.parkflow.modules.auth.security.JwtTokenService;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.RolePermissions;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.auth.domain.repository.AppUserPort;
+import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import io.jsonwebtoken.Claims;
 import java.time.OffsetDateTime;
 
@@ -263,52 +263,6 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
             .findById(userId)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
     return responseAssembler.toUser(user);
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public ProfileResponse getProfile() {
-    return toProfile(requireCurrentUser());
-  }
-
-  @Override
-  @Transactional
-  public ProfileResponse updateProfile(UpdateProfileRequest request) {
-    AppUser user = requireCurrentUser();
-    UUID userId = user.getId();
-    UUID companyId = user.getCompanyId();
-    String email = request.email().trim().toLowerCase();
-
-    appUserRepository
-        .findByEmailIgnoreCaseAndCompanyId(email, companyId)
-        .filter(u -> !u.getId().equals(userId))
-        .ifPresent(
-            u -> {
-              throw new OperationException(HttpStatus.CONFLICT, "Ya existe un usuario con este correo");
-            });
-
-    String doc = normalizeDocument(request.document());
-    if (doc != null
-        && appUserRepository.existsByDocumentIgnoreCaseAndCompanyIdAndIdNot(doc, companyId, userId)) {
-      throw new OperationException(HttpStatus.CONFLICT, "Ya existe un usuario con este documento");
-    }
-
-    user.setName(request.name().trim());
-    user.setEmail(email);
-    user.setDocument(doc);
-    user.setPhone(trimToNull(request.phone()));
-    user.setSite(trimToNull(request.site()));
-    user.setTerminal(trimToNull(request.terminal()));
-    user.setUpdatedAt(OffsetDateTime.now());
-
-    try {
-      user = appUserRepository.save(user);
-    } catch (DataIntegrityViolationException ex) {
-      throw new OperationException(HttpStatus.CONFLICT, "Datos duplicados (correo o documento)");
-    }
-
-    log.info("AUTH: Profile updated - userId={}, email={}", user.getId(), maskEmail(user.getEmail()));
-    return toProfile(user);
   }
 
   @Override
