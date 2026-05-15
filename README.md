@@ -77,14 +77,14 @@ Credenciales por defecto:
 
    ```powershell
    # PowerShell
-   $env:PARKFLOW_JWT_SECRET_BASE64="VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA="
-   $env:PARKFLOW_API_KEY="dev-api-key-123"
+   $env:PARKFLOW_JWT_SECRET_BASE64="REPLACE_WITH_BASE64_JWT_SECRET"
+    $env:PARKFLOW_API_KEY="REPLACE_WITH_SECURE_API_KEY"
    ```
 
    O en CMD:
    ```cmd
-   set PARKFLOW_JWT_SECRET_BASE64=VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA=
-   set PARKFLOW_API_KEY=dev-api-key-123
+    set PARKFLOW_JWT_SECRET_BASE64=REPLACE_WITH_BASE64_JWT_SECRET
+    set PARKFLOW_API_KEY=REPLACE_WITH_SECURE_API_KEY
    ```
 
 ### Ejecutar en Desarrollo
@@ -186,7 +186,7 @@ docker ps | findstr parkflow-postgres
 
 ### 2. Configurar variables de entorno (PowerShell)
 ```powershell
-$env:PARKFLOW_JWT_SECRET_BASE64="VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA="
+   $env:PARKFLOW_JWT_SECRET_BASE64="REPLACE_WITH_BASE64_JWT_SECRET"
 $env:PARKFLOW_API_KEY="dev-api-key-123"
 ```
 

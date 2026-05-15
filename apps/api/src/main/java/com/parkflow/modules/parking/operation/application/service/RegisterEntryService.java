@@ -1,19 +1,18 @@
 package com.parkflow.modules.parking.operation.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.audit.service.AuditService;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
+import com.parkflow.modules.configuration.domain.repository.MonthlyContractPort;
 import com.parkflow.modules.parking.operation.application.port.in.RegisterEntryUseCase;
 import com.parkflow.modules.parking.operation.domain.*;
+import com.parkflow.modules.parking.operation.domain.repository.*;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.*;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.parking.operation.service.OperationAuditService;
-import com.parkflow.modules.parking.operation.service.OperationPrintService;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.parking.operation.application.service.OperationAuditService;
+import com.parkflow.modules.parking.operation.application.service.OperationPrintService;
 import com.parkflow.modules.parking.operation.validation.PlateValidator;
-import com.parkflow.modules.tickets.entity.PrintDocumentType;
+import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -34,18 +33,18 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RegisterEntryService implements RegisterEntryUseCase {
 
-  private final AppUserRepository appUserRepository;
-  private final VehicleRepository vehicleRepository;
-  private final RateRepository rateRepository;
-  private final ParkingSiteRepository parkingSiteRepository;
-  private final ParkingSessionRepository parkingSessionRepository;
-  private final TicketCounterRepository ticketCounterRepository;
-  private final VehicleConditionReportRepository vehicleConditionReportRepository;
-  private final OperationIdempotencyRepository operationIdempotencyRepository;
+  private final AppUserPort appUserPort;
+  private final VehiclePort vehiclePort;
+  private final RatePort ratePort;
+  private final ParkingSitePort parkingSiteRepository;
+  private final ParkingSessionPort parkingSessionPort;
+  private final TicketCounterPort ticketCounterPort;
+  private final VehicleConditionReportPort vehicleConditionReportPort;
+  private final OperationIdempotencyPort operationIdempotencyPort;
   private final OperationAuditService operationAuditService;
   private final OperationPrintService operationPrintService;
   private final PlateValidator plateValidator;
-  private final MonthlyContractRepository monthlyContractRepository;
+  private final MonthlyContractPort monthlyContractRepository;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
 
@@ -85,7 +84,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     }
 
     if (!noPlateEntry) {
-      parkingSessionRepository
+      parkingSessionPort
           .findActiveByPlateForUpdate(SessionStatus.ACTIVE, normalizedPlate, companyId)
           .ifPresent(s -> {
             throw new OperationException(HttpStatus.CONFLICT, "El vehículo ya tiene una sesión activa");
@@ -94,7 +93,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
 
     AppUser operator = findRequiredOperator(request.operatorUserId());
 
-    Vehicle vehicle = vehicleRepository.findByPlateIgnoreCaseAndCompanyId(normalizedPlate, companyId)
+    Vehicle vehicle = vehiclePort.findByPlateIgnoreCaseAndCompanyId(normalizedPlate, companyId)
         .map(v -> {
           v.setType(vehicleType);
           v.setUpdatedAt(OffsetDateTime.now());
@@ -107,12 +106,12 @@ public class RegisterEntryService implements RegisterEntryUseCase {
           v.setCompanyId(companyId);
           return v;
         });
-    vehicle = vehicleRepository.save(vehicle);
+    vehicle = vehiclePort.save(vehicle);
 
     OffsetDateTime entryAt = request.entryAt() != null ? request.entryAt() : OffsetDateTime.now();
     boolean isMonthly = monthlyContractRepository
         .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-            normalizedPlate, entryAt.toLocalDate(), entryAt.toLocalDate()).isPresent();
+            normalizedPlate, entryAt.toLocalDate(), entryAt.toLocalDate(), companyId).isPresent();
     
     if (isMonthly) {
       entryMode = EntryMode.SUBSCRIBER;
@@ -144,7 +143,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     session.setSyncStatus(SessionSyncStatus.SYNCED);
 
     try {
-      session = parkingSessionRepository.save(session);
+      session = parkingSessionPort.save(session);
     } catch (DataIntegrityViolationException ex) {
       return tryReplay(idempotencyKey, IdempotentOperationType.ENTRY)
           .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "Conflicto concurrente en el ingreso"));
@@ -173,25 +172,25 @@ public class RegisterEntryService implements RegisterEntryUseCase {
 
   private AppUser findRequiredOperator(UUID userId) {
     if (userId == null) {
-      return appUserRepository.findGlobalByEmail("system@parkflow.local")
+      return appUserPort.findGlobalByEmail("system@parkflow.local")
           .orElseThrow(() -> new OperationException(HttpStatus.INTERNAL_SERVER_ERROR, "Operador de sistema no encontrado"));
     }
-    return appUserRepository.findById(userId)
+    return appUserPort.findById(userId)
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
   }
 
   private Rate resolveRate(UUID rateId, String vehicleType, String site, OffsetDateTime entryAt, UUID companyId) {
     if (rateId != null) {
-      return rateRepository.findByIdAndCompanyId(rateId, companyId)
+      return ratePort.findByIdAndCompanyId(rateId, companyId)
           .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
     }
-    return rateRepository.findFirstApplicableRate(site, vehicleType, companyId)
+    return ratePort.findFirstApplicableRate(site, vehicleType, companyId)
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "No se encontró tarifa aplicable"));
   }
 
   private String nextTicketNumber(LocalDate date, UUID companyId) {
     String key = date.format(DateTimeFormatter.BASIC_ISO_DATE);
-    TicketCounter counter = ticketCounterRepository.findByIdForUpdate(key)
+    TicketCounter counter = ticketCounterPort.findByIdForUpdate(key)
         .orElseGet(() -> {
           TicketCounter c = new TicketCounter();
           c.setCounterKey(key);
@@ -200,7 +199,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
         });
     counter.setLastNumber(counter.getLastNumber() + 1);
     counter.setUpdatedAt(OffsetDateTime.now());
-    ticketCounterRepository.save(counter);
+    ticketCounterPort.save(counter);
     return "T-" + key + "-" + String.format("%06d", counter.getLastNumber());
   }
 
@@ -216,12 +215,12 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     report.setChecklistJson(writeJsonArray(normalizeList(checklist)));
     report.setPhotoUrlsJson(writeJsonArray(normalizeList(photoUrls)));
     report.setCreatedBy(operator);
-    vehicleConditionReportRepository.save(report);
+    vehicleConditionReportPort.save(report);
   }
 
   private Optional<OperationResultResponse> tryReplay(String key, IdempotentOperationType type) {
     if (isBlank(key)) return Optional.empty();
-    return operationIdempotencyRepository.findByIdempotencyKey(key)
+    return operationIdempotencyPort.findByIdempotencyKey(key)
         .map(i -> {
            if (i.getOperationType() != type) {
              throw new OperationException(HttpStatus.CONFLICT, "Clave de idempotencia ya usada con otra operacion");
@@ -242,7 +241,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     i.setOperationType(type);
     i.setSession(session);
     i.setCreatedAt(OffsetDateTime.now());
-    operationIdempotencyRepository.save(i);
+    operationIdempotencyPort.save(i);
   }
 
 
@@ -256,7 +255,9 @@ public class RegisterEntryService implements RegisterEntryUseCase {
           }
           int maxCapacity = parkingSite.getMaxCapacity();
           if (maxCapacity <= 0) return;
-          long activeSessions = parkingSessionRepository.countByStatusAndSite(SessionStatus.ACTIVE, parkingSite.getName());
+          long activeSessions =
+              parkingSessionPort.countByStatusAndSiteAndCompanyId(
+                  SessionStatus.ACTIVE, parkingSite.getName(), SecurityUtils.requireCompanyId());
           if (activeSessions >= maxCapacity) {
             throw new OperationException(HttpStatus.CONFLICT, "Parqueadero lleno para la sede");
           }

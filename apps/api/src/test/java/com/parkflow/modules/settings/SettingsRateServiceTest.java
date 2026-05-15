@@ -7,38 +7,45 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.parkflow.modules.configuration.entity.ParkingSite;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.auth.security.AuthPrincipal;
+import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateType;
 import com.parkflow.modules.parking.operation.domain.RoundingMode;
+import com.parkflow.modules.parking.operation.domain.UserRole;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
-import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.settings.dto.RateUpsertRequest;
-import com.parkflow.modules.settings.service.SettingsAuditService;
-import com.parkflow.modules.settings.service.SettingsRateService;
+import com.parkflow.modules.settings.application.service.SettingsAuditService;
+import com.parkflow.modules.settings.application.service.SettingsRateService;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class SettingsRateServiceTest {
 
-  @Mock private RateRepository rateRepository;
-  @Mock private com.parkflow.modules.settings.repository.MasterVehicleTypeRepository vehicleTypeRepository;
-  @Mock private ParkingSessionRepository parkingSessionRepository;
+  @Mock private RatePort rateRepository;
+  @Mock private com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort vehicleTypeRepository;
+  @Mock private ParkingSessionPort parkingSessionRepository;
   @Mock private SettingsAuditService settingsAuditService;
-  @Mock private ParkingSiteRepository parkingSiteRepository;
+  @Mock private ParkingSitePort parkingSiteRepository;
   @Mock private com.parkflow.modules.audit.service.AuditService globalAuditService;
   @Mock private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
@@ -47,11 +54,27 @@ class SettingsRateServiceTest {
   @BeforeEach
   void setUp() {
     service = new SettingsRateService(rateRepository, parkingSessionRepository, settingsAuditService, vehicleTypeRepository, parkingSiteRepository, globalAuditService, objectMapper);
+    UUID companyId = UUID.randomUUID();
+    AuthPrincipal principal = new AuthPrincipal(
+        UUID.randomUUID(),
+        companyId,
+        "admin@test.com",
+        UserRole.ADMIN.name(),
+        java.util.List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+    SecurityContextHolder.getContext()
+        .setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));
+    TenantContext.setTenantId(companyId);
+  }
+
+  @AfterEach
+  void tearDown() {
+    SecurityContextHolder.clearContext();
+    TenantContext.clear();
   }
 
   @Test
   void createPersistsWhenNoConflict() {
-    when(rateRepository.findActiveForConflictCheck(eq("DEFAULT"), eq("CAR"), any(UUID.class)))
+    when(rateRepository.findActiveForConflictCheck(eq("DEFAULT"), eq("CAR"), any(UUID.class), any(UUID.class)))
         .thenReturn(List.of());
     MasterVehicleType carType = new MasterVehicleType();
     carType.setCode("CAR");
@@ -111,7 +134,7 @@ class SettingsRateServiceTest {
     site.setId(siteId);
     site.setCode("HQ");
     when(parkingSiteRepository.findById(siteId)).thenReturn(java.util.Optional.of(site));
-    when(rateRepository.findActiveForConflictCheck(eq("HQ"), eq("CAR"), any(UUID.class)))
+    when(rateRepository.findActiveForConflictCheck(eq("HQ"), eq("CAR"), any(UUID.class), any(UUID.class)))
         .thenReturn(List.of());
     MasterVehicleType carType = new MasterVehicleType();
     carType.setCode("CAR");
@@ -217,7 +240,7 @@ class SettingsRateServiceTest {
     existing.setWindowEnd(LocalTime.of(12, 0));
 
     when(rateRepository.findActiveForConflictCheck(
-            eq("DEFAULT"), eq("CAR"), any(UUID.class)))
+            eq("DEFAULT"), eq("CAR"), any(UUID.class), any(UUID.class)))
         .thenReturn(List.of(existing));
 
     RateUpsertRequest req =
@@ -260,12 +283,12 @@ class SettingsRateServiceTest {
 
   @Test
   void listNormalizesSearchTextBeforeDelegating() {
-    when(rateRepository.search(eq("DEFAULT"), eq("Tarifa"), eq(Boolean.TRUE), any(), any()))
+    when(rateRepository.search(eq("DEFAULT"), eq("Tarifa"), eq(Boolean.TRUE), any(), any(UUID.class), any()))
         .thenReturn(org.springframework.data.domain.Page.empty());
 
     service.list(" DEFAULT ", " Tarifa ", true, null, org.springframework.data.domain.PageRequest.of(0, 20));
 
-    verify(rateRepository).search(eq("DEFAULT"), eq("Tarifa"), eq(Boolean.TRUE), any(), any());
+    verify(rateRepository).search(eq("DEFAULT"), eq("Tarifa"), eq(Boolean.TRUE), any(), any(UUID.class), any());
   }
 
   @Test
@@ -275,7 +298,7 @@ class SettingsRateServiceTest {
     rate.setName("Tarifa 1");
     rate.setActive(true);
     when(rateRepository.findById(rate.getId())).thenReturn(java.util.Optional.of(rate));
-    when(parkingSessionRepository.countByRate_Id(rate.getId())).thenReturn(0L);
+    when(parkingSessionRepository.countByRate_IdAndCompanyId(rate.getId(), com.parkflow.modules.auth.security.TenantContext.getTenantId())).thenReturn(0L);
     when(rateRepository.save(any(Rate.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
     var response = service.delete(rate.getId());

@@ -1,4 +1,4 @@
-package com.parkflow.modules.tickets.entity;
+package com.parkflow.modules.tickets.domain;
 
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;

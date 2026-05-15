@@ -39,10 +39,10 @@ copy .env.example .env
 Editar `.env` con tus valores:
 ```bash
 # JWT Secret (generar nuevo para producción)
-PARKFLOW_JWT_SECRET_BASE64=VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA=
+PARKFLOW_JWT_SECRET_BASE64=REPLACE_WITH_BASE64_JWT_SECRET
 
 # API Key
-PARKFLOW_API_KEY=dev-api-key-123
+PARKFLOW_API_KEY=REPLACE_WITH_SECURE_API_KEY
 ```
 
 **En desarrollo NO necesitas claves RSA** - el sistema usa hashing simple.

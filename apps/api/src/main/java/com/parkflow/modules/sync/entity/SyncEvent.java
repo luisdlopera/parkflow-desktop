@@ -1,4 +1,4 @@
-package com.parkflow.modules.sync.entity;
+package com.parkflow.modules.sync.domain;
 
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;

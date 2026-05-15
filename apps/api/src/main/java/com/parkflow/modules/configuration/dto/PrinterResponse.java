@@ -1,7 +1,7 @@
 package com.parkflow.modules.configuration.dto;
 
-import com.parkflow.modules.configuration.entity.Printer.PrinterConnection;
-import com.parkflow.modules.configuration.entity.Printer.PrinterType;
+import com.parkflow.modules.configuration.domain.Printer.PrinterConnection;
+import com.parkflow.modules.configuration.domain.Printer.PrinterType;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 

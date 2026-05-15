@@ -3,10 +3,10 @@ package com.parkflow.modules.configuration.application.service;
 import com.parkflow.modules.configuration.application.port.in.PrinterUseCase;
 import com.parkflow.modules.configuration.dto.PrinterRequest;
 import com.parkflow.modules.configuration.dto.PrinterResponse;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.entity.Printer;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.configuration.repository.PrinterRepository;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.Printer;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.configuration.domain.repository.PrinterPort;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +24,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PrinterManagementService implements PrinterUseCase {
 
-  private final PrinterRepository printerRepository;
-  private final ParkingSiteRepository parkingSiteRepository;
+  private final PrinterPort printerRepository;
+  private final ParkingSitePort parkingSiteRepository;
 
   @Override
   @Transactional(readOnly = true)

@@ -8,7 +8,7 @@ import com.parkflow.config.CashModuleProperties;
 import com.parkflow.modules.cash.service.CashPolicyResolver;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
 import com.parkflow.modules.settings.entity.ParkingParameters;
-import com.parkflow.modules.settings.repository.ParkingParametersRepository;
+import com.parkflow.modules.settings.domain.repository.ParkingParametersPort;
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,7 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CashPolicyResolverTest {
 
-  @Mock private ParkingParametersRepository parkingParametersRepository;
+  @Mock private ParkingParametersPort parkingParametersRepository;
 
   private CashModuleProperties props;
   private CashPolicyResolver resolver;

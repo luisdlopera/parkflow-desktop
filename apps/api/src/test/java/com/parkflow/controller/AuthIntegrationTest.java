@@ -3,7 +3,7 @@ package com.parkflow.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.config.BaseIntegrationTest;
-import com.parkflow.modules.auth.repository.AuthSessionRepository;
+import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +23,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private AuthSessionRepository authSessionRepository;
+    private AuthSessionPort authSessionRepository;
 
     @BeforeEach
     void resetAuthTestDevice() {

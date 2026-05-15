@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
-import com.parkflow.modules.cash.repository.CashSessionRepository;
+import com.parkflow.modules.cash.domain.repository.CashSessionPort;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
-import com.parkflow.modules.settings.service.ParkingParametersService;
+import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -29,17 +29,17 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class CashClosingOutboundNotifier {
 
-  private final CashSessionRepository cashSessionRepository;
+  private final CashSessionPort cashSessionPort;
   private final ParkingParametersService parkingParametersService;
   private final CashSessionUseCase cashSessionUseCase;
   private final ObjectMapper objectMapper;
 
   public CashClosingOutboundNotifier(
-      CashSessionRepository cashSessionRepository,
+      CashSessionPort cashSessionPort,
       ParkingParametersService parkingParametersService,
       @Lazy CashSessionUseCase cashSessionUseCase,
       ObjectMapper objectMapper) {
-    this.cashSessionRepository = cashSessionRepository;
+    this.cashSessionPort = cashSessionPort;
     this.parkingParametersService = parkingParametersService;
     this.cashSessionUseCase = cashSessionUseCase;
     this.objectMapper = objectMapper;
@@ -86,7 +86,7 @@ public class CashClosingOutboundNotifier {
     }
     try {
       CashSession sess =
-          cashSessionRepository.fetchForClosingWebhook(cashSessionId).orElse(null);
+          cashSessionPort.fetchForClosingWebhook(cashSessionId).orElse(null);
       if (sess == null) {
         log.warn("webhook PSC: sesion {} no encontrada", cashSessionId);
         return;
@@ -175,7 +175,7 @@ public class CashClosingOutboundNotifier {
         mapDecimalValues(sum.totalsByMovementType()));
     try {
       m.put("issuedAtUtc", java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toString());
-    } catch (@SuppressWarnings("unused") Exception ignored) {
+    } catch (Exception ignored) {
       //
     }
     return m;

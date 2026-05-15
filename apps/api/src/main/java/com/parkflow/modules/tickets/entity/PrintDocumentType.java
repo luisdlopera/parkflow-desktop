@@ -1,4 +1,4 @@
-package com.parkflow.modules.tickets.entity;
+package com.parkflow.modules.tickets.domain;
 
 public enum PrintDocumentType {
   ENTRY,

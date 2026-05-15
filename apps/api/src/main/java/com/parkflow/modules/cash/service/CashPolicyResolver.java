@@ -3,7 +3,7 @@ package com.parkflow.modules.cash.service;
 import com.parkflow.config.CashModuleProperties;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
 import com.parkflow.modules.settings.entity.ParkingParameters;
-import com.parkflow.modules.settings.repository.ParkingParametersRepository;
+import com.parkflow.modules.settings.domain.repository.ParkingParametersPort;
 import com.parkflow.modules.cash.dto.CashPolicyResponse;
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -15,7 +15,7 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class CashPolicyResolver {
   private final CashModuleProperties props;
-  private final ParkingParametersRepository parkingParametersRepository;
+  private final ParkingParametersPort parkingParametersPort;
 
   public CashPolicyResponse resolvePolicy(String siteLabel) {
     String site = StringUtils.hasText(siteLabel) ? siteLabel.trim() : "DEFAULT";
@@ -51,16 +51,16 @@ public class CashPolicyResolver {
 
   private Optional<ParkingParametersData> resolveData(String siteLabel) {
     if (!StringUtils.hasText(siteLabel)) {
-      return parkingParametersRepository
+      return parkingParametersPort
           .findBySiteCode("DEFAULT")
           .map(ParkingParameters::getData);
     }
     String code = siteLabel.trim();
-    Optional<ParkingParameters> row = parkingParametersRepository.findBySiteCode(code);
+    Optional<ParkingParameters> row = parkingParametersPort.findBySiteCode(code);
     if (row.isPresent()) {
       return Optional.ofNullable(row.get().getData());
     }
-    return parkingParametersRepository
+    return parkingParametersPort
         .findBySiteCode("DEFAULT")
         .map(ParkingParameters::getData);
   }

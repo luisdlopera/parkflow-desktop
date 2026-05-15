@@ -3,7 +3,7 @@ package com.parkflow.modules.auth.application.service;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.UserRole;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 public class AuthSeedService implements CommandLineRunner {
-  private final AppUserRepository appUserRepository;
+  private final AppUserPort appUserRepository;
   private final PasswordHashService passwordHashService;
 
   @Value("${app.security.seed-admin-email:admin@parkflow.local}")

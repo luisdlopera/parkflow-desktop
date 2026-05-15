@@ -7,13 +7,6 @@ import {
   CardBody,
   CardHeader,
   Chip,
-  Input,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
@@ -24,7 +17,6 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Skeleton,
   Alert,
   Tabs,
   Tab,
@@ -32,7 +24,6 @@ import {
 } from "@heroui/react";
 import {
   Monitor,
-  Search,
   MoreVertical,
   Eye,
   RefreshCw,
@@ -45,6 +36,7 @@ import {
 } from "lucide-react";
 import { useCompanies } from "@/lib/licensing/hooks";
 import type { Company, LicensedDevice } from "@/lib/licensing/types";
+import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 
 interface DeviceWithCompany extends LicensedDevice {
   companyName: string;
@@ -134,6 +126,74 @@ export default function DevicesPage() {
     };
   }, [allDevices]);
 
+  const columns: DataTableColumn<DeviceWithCompany>[] = [
+    {
+      key: "hostname",
+      header: "Dispositivo",
+      sortable: true,
+      render: (device) => (
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${device.isCurrentlyOnline ? "bg-success/10" : "bg-default-100"}`}>
+            <Monitor className={`w-4 h-4 ${device.isCurrentlyOnline ? "text-success" : "text-default-500"}`} />
+          </div>
+          <div>
+            <p className="font-medium">{device.hostname || "Sin nombre"}</p>
+            <p className="text-xs text-default-500 font-mono">
+              {device.deviceFingerprint.slice(0, 20)}...
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "companyName",
+      header: "Empresa",
+      sortable: true,
+      render: (device) => (
+        <div className="flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-default-400" />
+          <span className="text-sm">{device.companyName}</span>
+        </div>
+      ),
+    },
+    {
+      key: "isCurrentlyOnline",
+      header: "Estado",
+      sortable: true,
+      render: (device) => (
+        <Chip color={device.isCurrentlyOnline ? "success" : "default"} variant="flat" size="sm">
+          {device.isCurrentlyOnline ? "En línea" : "Desconectado"}
+        </Chip>
+      ),
+    },
+    {
+      key: "appVersion",
+      header: "Version",
+      render: (device) => (
+        <div className="text-sm">
+          <p>v{device.appVersion || "?"}</p>
+          <p className="text-xs text-default-400">{device.operatingSystem}</p>
+        </div>
+      ),
+    },
+    {
+      key: "pendingSyncEvents",
+      header: "Sincronización",
+      align: "center",
+      render: (device) => (
+        <div className="text-sm">
+          {(device.pendingSyncEvents || 0) > 0 ? (
+            <Badge color="warning" content={device.pendingSyncEvents}>
+              <span className="text-warning">Pendiente</span>
+            </Badge>
+          ) : (
+            <span className="text-success">Sincronizado</span>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   if (error) {
     return (
       <div className="space-y-4">
@@ -218,125 +278,61 @@ export default function DevicesPage() {
         </div>
       )}
 
-      {/* Tabs & Search */}
-      <Card>
-        <CardHeader className="flex flex-col gap-4">
-          <Tabs selectedKey={activeTab} onSelectionChange={(k) => setActiveTab(k as string)}>
-            <Tab key="all" title={`Todos (${stats?.total || 0})`} />
-            <Tab key="online" title={`En Línea (${stats?.online || 0})`} />
-            <Tab key="offline" title={`Desconectados (${stats?.offline || 0})`} />
-            <Tab key="sync_pending" title={`Sync Pendiente (${stats?.withSyncPending || 0})`} />
-          </Tabs>
-          <Input
-            placeholder="Buscar por nombre, empresa o sistema operativo..."
-            startContent={<Search className="w-4 h-4 text-default-400" />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full md:w-96"
-          />
-        </CardHeader>
-        <CardBody>
-          <Table aria-label="Tabla de dispositivos">
-            <TableHeader>
-              <TableColumn>DISPOSITIVO</TableColumn>
-              <TableColumn>EMPRESA</TableColumn>
-              <TableColumn>ESTADO</TableColumn>
-              <TableColumn>VERSION</TableColumn>
-              <TableColumn>SINCRONIZACIÓN</TableColumn>
-              <TableColumn align="center">ACCIONES</TableColumn>
-            </TableHeader>
-            <TableBody
-              emptyContent="No se encontraron dispositivos"
-              isLoading={isLoading}
-              loadingContent={<Skeleton className="w-full h-12" />}
-            >
-              {filteredDevices.map((device) => (
-                <TableRow key={device.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${device.isCurrentlyOnline ? 'bg-success/10' : 'bg-default-100'}`}>
-                        <Monitor className={`w-4 h-4 ${device.isCurrentlyOnline ? 'text-success' : 'text-default-500'}`} />
-                      </div>
-                      <div>
-                        <p className="font-medium">{device.hostname || "Sin nombre"}</p>
-                        <p className="text-xs text-default-500 font-mono">
-                          {device.deviceFingerprint.slice(0, 20)}...
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-default-400" />
-                      <span className="text-sm">{device.companyName}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      color={device.isCurrentlyOnline ? "success" : "default"}
-                      variant="flat"
-                      size="sm"
-                    >
-                      {device.isCurrentlyOnline ? "En línea" : "Desconectado"}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <p>v{device.appVersion || "?"}</p>
-                      <p className="text-xs text-default-400">{device.operatingSystem}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {(device.pendingSyncEvents || 0) > 0 ? (
-                        <Badge color="warning" content={device.pendingSyncEvents}>
-                          <span className="text-warning">Pendiente</span>
-                        </Badge>
-                      ) : (
-                        <span className="text-success">Sincronizado</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Dropdown>
-                      <DropdownTrigger>
-                        <Button isIconOnly variant="light" size="sm" aria-label="Más acciones">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu aria-label="Acciones">
-                        <DropdownItem
-                          key="view"
-                          textValue="Ver detalle"
-                          startContent={<Eye className="w-4 h-4" />}
-                          onPress={() => handleViewDetails(device)}
-                        >
-                          Ver detalle
-                        </DropdownItem>
-                        <DropdownItem
-                          key="command"
-                          textValue="Enviar comando"
-                          startContent={<Send className="w-4 h-4" />}
-                          onPress={() => handleSendCommand(device)}
-                        >
-                          Enviar comando
-                        </DropdownItem>
-                        <DropdownItem
-                          key="diagnose"
-                          textValue="Diagnosticar"
-                          startContent={<Cpu className="w-4 h-4" />}
-                        >
-                          Diagnosticar
-                        </DropdownItem>
-                      </DropdownMenu>
-                    </Dropdown>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+      <div className="space-y-4">
+        <Tabs selectedKey={activeTab} onSelectionChange={(k) => setActiveTab(k as string)}>
+          <Tab key="all" title={`Todos (${stats?.total || 0})`} />
+          <Tab key="online" title={`En Línea (${stats?.online || 0})`} />
+          <Tab key="offline" title={`Desconectados (${stats?.offline || 0})`} />
+          <Tab key="sync_pending" title={`Sync Pendiente (${stats?.withSyncPending || 0})`} />
+        </Tabs>
+        <DataTable
+          title="Inventario de dispositivos"
+          description="Monitorea conectividad, versión y sincronización por equipo."
+          columns={columns}
+          data={filteredDevices}
+          getRowKey={(device) => device.id}
+          isLoading={isLoading}
+          emptyMessage="No se encontraron dispositivos"
+          searchable
+          searchPlaceholder="Buscar por nombre, empresa o sistema operativo..."
+          onSearchChange={setSearchQuery}
+          filters={[
+            { key: "isCurrentlyOnline", label: "Conectado", type: "boolean" },
+            { key: "companyName", label: "Empresa", type: "text" },
+            { key: "pendingSyncEvents", label: "Sync pendiente", type: "numberRange" },
+          ]}
+          actions={(device) => (
+            <Dropdown>
+              <DropdownTrigger>
+                <Button isIconOnly variant="light" size="sm" aria-label="Más acciones">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu aria-label="Acciones">
+                <DropdownItem
+                  key="view"
+                  textValue="Ver detalle"
+                  startContent={<Eye className="w-4 h-4" />}
+                  onPress={() => handleViewDetails(device)}
+                >
+                  Ver detalle
+                </DropdownItem>
+                <DropdownItem
+                  key="command"
+                  textValue="Enviar comando"
+                  startContent={<Send className="w-4 h-4" />}
+                  onPress={() => handleSendCommand(device)}
+                >
+                  Enviar comando
+                </DropdownItem>
+                <DropdownItem key="diagnose" textValue="Diagnosticar" startContent={<Cpu className="w-4 h-4" />}>
+                  Diagnosticar
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+          )}
+        />
+      </div>
 
       {/* Device Detail Modal */}
       <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="2xl">
