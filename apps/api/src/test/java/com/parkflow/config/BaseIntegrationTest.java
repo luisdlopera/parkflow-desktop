@@ -4,23 +4,19 @@ import com.parkflow.modules.cash.domain.CashRegister;
 import com.parkflow.modules.cash.domain.repository.CashRegisterPort;
 import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
-import com.parkflow.modules.parking.spaces.domain.ParkingSpace;
-import com.parkflow.modules.parking.spaces.domain.ParkingSpaceStatus;
-import com.parkflow.modules.parking.spaces.domain.ParkingSpaceType;
-import com.parkflow.modules.parking.spaces.repository.ParkingSpaceRepository;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.Company.OperationMode;
 import com.parkflow.modules.licensing.enums.CompanyStatus;
 import com.parkflow.modules.licensing.enums.PlanType;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
-import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.configuration.domain.Rate;
-import com.parkflow.modules.configuration.domain.RateType;
-import com.parkflow.modules.configuration.domain.RoundingMode;
-import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.parking.operation.domain.Rate;
+import com.parkflow.modules.parking.operation.domain.RateType;
+import com.parkflow.modules.parking.operation.domain.RoundingMode;
+import com.parkflow.modules.parking.operation.domain.UserRole;
 import com.parkflow.modules.auth.security.PasswordHashService;
-import com.parkflow.modules.auth.domain.repository.AppUserPort;
-import com.parkflow.modules.configuration.domain.repository.RatePort;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
 import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -99,9 +95,6 @@ public abstract class BaseIntegrationTest {
 
     @Autowired
     protected PasswordHashService passwordHashService;
-
-    @Autowired
-    protected ParkingSpaceRepository parkingSpaceRepository;
 
     @BeforeEach
     void cleanDatabase() {
@@ -208,21 +201,6 @@ public abstract class BaseIntegrationTest {
         register.setActive(true);
         register = cashRegisterRepository.save(register);
         cashRegisterId = register.getId();
-
-        // Seed some parking spaces so entries don't fail with PARKING_FULL
-        for (int i = 1; i <= 20; i++) {
-            jdbcTemplate.update(
-                """
-                INSERT INTO parking_space (id, company_id, code, label, type, status, sort_order, created_at, updated_at)
-                VALUES (?, ?, ?, ?, 'GENERAL', 'ACTIVE', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                """,
-                UUID.randomUUID(),
-                companyId,
-                String.format("C%03d", i),
-                String.format("Celda %03d", i),
-                i
-            );
-        }
     }
 
     protected String getAuthToken() throws Exception {

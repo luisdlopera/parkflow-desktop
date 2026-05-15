@@ -8,10 +8,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
-import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.auth.domain.repository.AppUserPort;
+import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.tickets.dto.CreatePrintJobRequest;
 import com.parkflow.modules.tickets.dto.UpdatePrintJobStatusRequest;
@@ -22,7 +22,7 @@ import com.parkflow.modules.tickets.domain.repository.PrintAttemptPort;
 import com.parkflow.modules.tickets.domain.repository.PrintJobPort;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.parking.operation.domain.UserRole;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -59,11 +59,10 @@ class PrintJobServiceTest {
     companyId = UUID.randomUUID();
     sessionId = UUID.randomUUID();
     operatorId = UUID.randomUUID();
-    session = ParkingSession.builder()
-        .id(sessionId)
-        .ticketNumber("T-A-000001")
-        .companyId(companyId)
-        .build();
+    session = new ParkingSession();
+    session.setId(sessionId);
+    session.setTicketNumber("T-A-000001");
+    session.setCompanyId(companyId);
     operator = new AppUser();
     operator.setId(operatorId);
     operator.setCompanyId(companyId);
