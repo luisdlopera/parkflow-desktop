@@ -11,12 +11,13 @@ import com.parkflow.modules.configuration.domain.repository.PrepaidBalancePort;
 import com.parkflow.modules.parking.operation.application.port.in.ComplexPricingPort;
 import com.parkflow.modules.parking.operation.domain.EntryMode;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
-import com.parkflow.modules.configuration.domain.Rate;
+import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.parking.operation.domain.pricing.PricingCalculator;
-import com.parkflow.modules.common.exception.domain.BusinessValidationException;
-
+import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.parking.operation.application.service.DurationCalculator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -82,7 +83,7 @@ public class ComplexPricingService implements ComplexPricingPort {
 
     if (hasMonthly) {
       if (!dryRun) {
-        session.markAsMonthlySession();
+        session.setMonthlySession(true);
       }
       return new PriceBreakdown(
           0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.ZERO);
@@ -106,7 +107,7 @@ public class ComplexPricingService implements ComplexPricingPort {
       }
     }
     if (!dryRun) {
-      session.applyPrepaidMinutes(deductedMinutes);
+      session.setAppliedPrepaidMinutes(deductedMinutes);
     }
 
     // 5. Base tariff calculation
@@ -128,7 +129,7 @@ public class ComplexPricingService implements ComplexPricingPort {
       if (agreement.isPresent()) {
         Agreement a = agreement.get();
         if (!dryRun) {
-          session.applyAgreement(a.getCode());
+          session.setAgreementCode(a.getCode());
         }
         if (a.getFlatAmount() != null) {
           subtotal = a.getFlatAmount();
@@ -184,7 +185,7 @@ public class ComplexPricingService implements ComplexPricingPort {
 
   private Rate requireRate(ParkingSession session) {
     if (session.getRate() == null) {
-      throw new BusinessValidationException("La sesión no tiene tarifa asignada");
+      throw new OperationException(HttpStatus.BAD_REQUEST, "La sesión no tiene tarifa asignada");
     }
     return session.getRate();
   }

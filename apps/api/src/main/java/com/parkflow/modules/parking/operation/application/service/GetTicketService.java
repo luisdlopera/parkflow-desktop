@@ -6,12 +6,11 @@ import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
-import com.parkflow.modules.common.exception.domain.EntityNotFoundException;
+import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
-import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
-
+import com.parkflow.modules.parking.operation.application.service.DurationCalculator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,14 +23,13 @@ public class GetTicketService implements GetTicketUseCase {
 
   private final ParkingSessionPort parkingSessionPort;
   private final ComplexPricingPort complexPricingPort;
-  private final ParkingSpaceService parkingSpaceService;
 
   @Override
   @Transactional(readOnly = true)
   public OperationResultResponse execute(String ticketNumber) {
     ParkingSession session =
         parkingSessionPort.findByTicketNumberAndCompanyId(ticketNumber, com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId())
-            .orElseThrow(() -> new EntityNotFoundException("Ticket", ticketNumber));
+            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Ticket no encontrado"));
 
     int graceMinutes = session.getRate() != null ? session.getRate().getGraceMinutes() : 0;
     DurationCalculator.DurationBreakdown duration = DurationCalculator.calculate(
@@ -58,7 +56,6 @@ public class GetTicketService implements GetTicketUseCase {
   }
 
   private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
-    ParkingSpaceAssignment assignment = parkingSpaceService.findAssignmentBySessionId(session.getId());
     return new ReceiptResponse(
         session.getTicketNumber(), session.getPlate(),
         session.getVehicle().getType(),
@@ -73,9 +70,6 @@ public class GetTicketService implements GetTicketUseCase {
         session.getReprintCount(),
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
-        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
-        assignment != null ? assignment.getParkingSpace().getId() : null,
-        assignment != null ? assignment.getParkingSpace().getCode() : null,
-        assignment != null ? assignment.getParkingSpace().getLabel() : null);
+        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes());
   }
 }

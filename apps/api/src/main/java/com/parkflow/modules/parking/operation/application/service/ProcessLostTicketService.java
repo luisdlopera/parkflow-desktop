@@ -1,5 +1,7 @@
 package com.parkflow.modules.parking.operation.application.service;
 
+import com.parkflow.modules.audit.application.port.out.AuditPort;
+import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
 import com.parkflow.modules.cash.domain.CashMovementType;
@@ -13,20 +15,19 @@ import com.parkflow.modules.parking.operation.dto.LostTicketRequest;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
-import com.parkflow.modules.common.exception.domain.*;
-import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.auth.domain.UserRole;
-import com.parkflow.modules.auth.domain.repository.AppUserPort;
+import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
-import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
-
+import com.parkflow.modules.parking.operation.application.service.OperationAuditService;
+import com.parkflow.modules.parking.operation.application.service.OperationPrintService;
+import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import io.micrometer.core.instrument.MeterRegistry;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ import java.util.UUID;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ProcessLostTicketService implements ProcessLostTicketUseCase {
 
   private static final int LOST_TICKET_ENTRY_DRIFT_MAX_MINUTES = 240;
@@ -49,57 +51,12 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
   private final ParkingSitePort parkingSiteRepository;
   private final OperationalParameterPort operationalParameterRepository;
   private final OperationIdempotencyPort operationIdempotencyPort;
+  private final OperationAuditService auditService;
+  private final OperationPrintService operationPrintService;
   private final ComplexPricingPort complexPricingPort;
   private final CashMovementUseCase cashMovementUseCase;
   private final MeterRegistry meterRegistry;
-  private final ParkingSpaceService parkingSpaceService;
-
-  @Autowired
-  public ProcessLostTicketService(
-      ParkingSessionPort parkingSessionPort,
-      AppUserPort appUserPort,
-      PaymentPort paymentPort,
-      ParkingSitePort parkingSiteRepository,
-      OperationalParameterPort operationalParameterRepository,
-      OperationIdempotencyPort operationIdempotencyPort,
-      ComplexPricingPort complexPricingPort,
-      CashMovementUseCase cashMovementUseCase,
-      MeterRegistry meterRegistry,
-      ParkingSpaceService parkingSpaceService) {
-    this.parkingSessionPort = parkingSessionPort;
-    this.appUserPort = appUserPort;
-    this.paymentPort = paymentPort;
-    this.parkingSiteRepository = parkingSiteRepository;
-    this.operationalParameterRepository = operationalParameterRepository;
-    this.operationIdempotencyPort = operationIdempotencyPort;
-    this.complexPricingPort = complexPricingPort;
-    this.cashMovementUseCase = cashMovementUseCase;
-    this.meterRegistry = meterRegistry;
-    this.parkingSpaceService = parkingSpaceService;
-  }
-
-  public ProcessLostTicketService(
-      ParkingSessionPort parkingSessionPort,
-      AppUserPort appUserPort,
-      PaymentPort paymentPort,
-      ParkingSitePort parkingSiteRepository,
-      OperationalParameterPort operationalParameterRepository,
-      OperationIdempotencyPort operationIdempotencyPort,
-      ComplexPricingPort complexPricingPort,
-      CashMovementUseCase cashMovementUseCase,
-      MeterRegistry meterRegistry) {
-    this(
-        parkingSessionPort,
-        appUserPort,
-        paymentPort,
-        parkingSiteRepository,
-        operationalParameterRepository,
-        operationIdempotencyPort,
-        complexPricingPort,
-        cashMovementUseCase,
-        meterRegistry,
-        null);
-  }
+  private final AuditPort globalAuditService;
 
   @Override
   @Transactional
@@ -112,14 +69,15 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
     AppUser operator = findRequiredOperator(request.operatorUserId());
 
     if (operator.getRole() == UserRole.CAJERO || operator.getRole() == UserRole.OPERADOR) {
-      throw new BusinessValidationException("FORBIDDEN_LOST_TICKET", "Solo ADMIN o SUPER_ADMIN puede procesar ticket perdido");
+      throw new OperationException(HttpStatus.FORBIDDEN, "Solo ADMIN o SUPER_ADMIN puede procesar ticket perdido");
     }
     
     if (request.approximateEntryAt() != null) {
       long driftMinutes = Math.abs(
           Duration.between(request.approximateEntryAt(), session.getEntryAt()).toMinutes());
       if (driftMinutes > LOST_TICKET_ENTRY_DRIFT_MAX_MINUTES) {
-        throw new BusinessValidationException("Hora aproximada de ingreso no coincide con el registro");
+        throw new OperationException(HttpStatus.BAD_REQUEST,
+            "Hora aproximada de ingreso no coincide con el registro");
       }
     }
 
@@ -131,19 +89,16 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
     assertExitPhotoIfRequired(session, request.exitImageUrl());
     assertExitPaymentPolicy(session, request.paymentMethod(), price);
 
-    session.registerLostTicket(
-        operator,
-        exitAt,
-        price.total(),
-        request.reason(),
-        blankToNull(request.exitImageUrl())
-    );
+    session.setLostTicket(true);
+    session.setLostTicketReason(request.reason());
+    session.setExitAt(exitAt);
+    session.setExitOperator(operator);
+    session.setExitImageUrl(blankToNull(request.exitImageUrl()));
+    session.setStatus(SessionStatus.LOST_TICKET);
+    session.setSyncStatus(SessionSyncStatus.SYNCED);
+    session.setTotalAmount(price.total());
+    session.setUpdatedAt(OffsetDateTime.now());
     session = parkingSessionPort.save(session);
-    ParkingSpaceAssignment assignment =
-        parkingSpaceService != null ? parkingSpaceService.findAssignmentBySessionId(session.getId()) : null;
-    if (parkingSpaceService != null) {
-      parkingSpaceService.releaseSpaceBySession(session.getId());
-    }
 
     if (request.paymentMethod() != null) {
       cashMovementUseCase.assertCashOpenForParkingPayment(session);
@@ -158,12 +113,22 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
           session, payment, operator, request.idempotencyKey(), CashMovementType.LOST_TICKET_PAYMENT);
     }
 
+    auditService.recordEvent(session, SessionEventType.LOST_TICKET_MARKED, operator, request.reason());
+    try {
+      operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.LOST_TICKET, "lost-ticket");
+    } catch (Exception printError) {
+      log.warn("Print job failed for session={}: {}", session.getId(), printError.getMessage());
+    }
     safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.LOST_TICKET, session);
     meterRegistry.counter("parkflow.operations", "operation", "lost_ticket").increment();
 
+    globalAuditService.record(AuditAction.COBRAR, operator, null,
+        "Lost ticket Total: " + session.getTotalAmount(),
+        "Ticket: " + session.getTicketNumber() + ", Reason: " + request.reason());
+
     return new OperationResultResponse(
         session.getId().toString(),
-        toReceipt(session, assignment, Duration.between(session.getEntryAt(), exitAt).toMinutes(), "0h 0m"),
+        toReceipt(session, Duration.between(session.getEntryAt(), exitAt).toMinutes(), "0h 0m"),
         "Ticket perdido procesado",
         price.subtotal(), price.surcharge(), price.discount(), price.deductedMinutes(), price.total());
   }
@@ -171,8 +136,8 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
   private AppUser findRequiredOperator(UUID operatorUserId) {
     UUID effectiveId = operatorUserId != null ? operatorUserId : SecurityUtils.requireUserId();
     AppUser user = appUserPort.findById(effectiveId)
-        .orElseThrow(() -> new EntityNotFoundException("Operador", effectiveId.toString()));
-    if (!user.isActive()) throw new BusinessValidationException("OPERATOR_INACTIVE", "Operador inactivo");
+        .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
+    if (!user.isActive()) throw new OperationException(HttpStatus.FORBIDDEN, "Operador inactivo");
     return user;
   }
 
@@ -181,22 +146,22 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
     if (ticketNumber != null && !ticketNumber.isBlank() && plate != null && !plate.isBlank()) {
       ParkingSession s = parkingSessionPort
           .findActiveByTicketForUpdate(SessionStatus.ACTIVE, ticketNumber.trim(), companyId)
-          .orElseThrow(() -> new EntityNotFoundException("Sesion activa", ticketNumber));
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
       if (!s.getVehicle().getPlate().equalsIgnoreCase(plate.trim().toUpperCase(Locale.ROOT))) {
-        throw new BusinessValidationException("Placa no coincide");
+        throw new OperationException(HttpStatus.CONFLICT, "Placa no coincide");
       }
       return s;
     }
     if (ticketNumber != null && !ticketNumber.isBlank()) {
       return parkingSessionPort.findActiveByTicketForUpdate(SessionStatus.ACTIVE, ticketNumber.trim(), companyId)
-          .orElseThrow(() -> new EntityNotFoundException("Sesion activa", ticketNumber));
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
     }
     if (plate != null && !plate.isBlank()) {
       return parkingSessionPort.findActiveByPlateForUpdate(
               SessionStatus.ACTIVE, plate.trim().toUpperCase(Locale.ROOT), companyId)
-          .orElseThrow(() -> new EntityNotFoundException("Sesion activa para placa", plate));
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
     }
-    throw new BusinessValidationException("ticketNumber o plate es obligatorio");
+    throw new OperationException(HttpStatus.BAD_REQUEST, "ticketNumber o plate es obligatorio");
   }
 
   private void assertExitPaymentPolicy(ParkingSession session, PaymentMethod paymentMethod,
@@ -204,7 +169,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
     BigDecimal due = price.total();
     boolean allowWaive = due.compareTo(BigDecimal.ZERO) == 0 || isAllowExitWithoutPayment(session);
     if (!allowWaive && paymentMethod == null) {
-      throw new BusinessValidationException("Registre medio de pago");
+      throw new OperationException(HttpStatus.BAD_REQUEST, "Registre medio de pago");
     }
   }
 
@@ -216,7 +181,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
   private void assertExitPhotoIfRequired(ParkingSession session, String exitImageUrl) {
     if (resolveOperationalParameter(session).map(OperationalParameter::isRequirePhotoExit).orElse(false)) {
       if (blankToNull(exitImageUrl) == null) {
-        throw new BusinessValidationException("La sede exige foto en salida");
+        throw new OperationException(HttpStatus.BAD_REQUEST, "La sede exige foto en salida");
       }
     }
   }
@@ -234,21 +199,16 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
     return operationIdempotencyPort.findByIdempotencyKey(idempotencyKey.trim())
         .map(row -> {
           if (row.getOperationType() != expected) {
-            throw new ConcurrentOperationException("Clave de idempotencia ya usada");
+            throw new OperationException(HttpStatus.CONFLICT, "Clave de idempotencia ya usada");
           }
           ParkingSession session = row.getSession();
           if (session.getStatus() != SessionStatus.LOST_TICKET) {
-             throw new BusinessValidationException("Estado invalido para idempotencia");
+             throw new OperationException(HttpStatus.CONFLICT, "Estado invalido para idempotencia");
           }
           OffsetDateTime exitAt = session.getExitAt() != null ? session.getExitAt() : OffsetDateTime.now();
           var dur = Duration.between(session.getEntryAt(), exitAt).toMinutes();
           return new OperationResultResponse(session.getId().toString(),
-              toReceipt(
-                  session,
-                  parkingSpaceService != null ? parkingSpaceService.findAssignmentBySessionId(session.getId()) : null,
-                  dur,
-                  "0h 0m"),
-              "Ticket perdido (idempotente)",
+              toReceipt(session, dur, "0h 0m"), "Ticket perdido (idempotente)",
               null, null, null, session.getAppliedPrepaidMinutes(), session.getTotalAmount());
         });
   }
@@ -267,7 +227,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
     }
   }
 
-  private ReceiptResponse toReceipt(ParkingSession session, ParkingSpaceAssignment assignment, long totalMinutes, String duration) {
+  private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
     return new ReceiptResponse(
         session.getTicketNumber(), session.getPlate(),
         session.getVehicle().getType(),
@@ -282,10 +242,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
         session.getReprintCount(),
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
-        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
-        assignment != null ? assignment.getParkingSpace().getId() : null,
-        assignment != null ? assignment.getParkingSpace().getCode() : null,
-        assignment != null ? assignment.getParkingSpace().getLabel() : null);
+        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes());
   }
 
   private String blankToNull(String s) { return s == null || s.isBlank() ? null : s.trim(); }

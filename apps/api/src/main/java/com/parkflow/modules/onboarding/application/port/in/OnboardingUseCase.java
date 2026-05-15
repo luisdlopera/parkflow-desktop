@@ -13,5 +13,4 @@ public interface OnboardingUseCase {
     boolean isFeatureEnabled(UUID companyId, String featureKey);
     Map<String, Object> getCompanySettings(UUID companyId);
     CompanyCapabilitiesResponse getCapabilities(UUID companyId);
-    OnboardingStatusResponse resetOnboarding(UUID companyId, String reason);
 }

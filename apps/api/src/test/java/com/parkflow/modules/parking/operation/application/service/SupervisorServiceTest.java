@@ -6,11 +6,9 @@ import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.parking.operation.domain.UserRole;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.parking.operation.domain.repository.SessionEventPort;
-import com.parkflow.modules.parking.spaces.dto.ParkingSpaceOccupancySummaryResponse;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import com.parkflow.modules.sync.domain.repository.SyncEventPort;
 import com.parkflow.modules.tickets.domain.repository.PrintJobPort;
 import java.time.ZoneId;
@@ -40,9 +38,6 @@ class SupervisorServiceTest {
 
   @Mock
   private SyncEventPort syncEventRepository;
-
-  @Mock
-  private ParkingSpaceService parkingSpaceService;
 
   @InjectMocks
   private SupervisorService supervisorService;
@@ -77,8 +72,6 @@ class SupervisorServiceTest {
     when(printJobRepository.countByCompanyIdAndStatusInAndCreatedAtBetween(any(), any(), any(), any())).thenReturn(0L);
     when(printJobRepository.countByCompanyIdAndStatusInAndCreatedAtAfter(any(), any(), any())).thenReturn(1L);
     when(syncEventRepository.countByCompanyIdAndSyncedAtIsNull(any())).thenReturn(3L);
-    when(parkingSpaceService.getOccupancySummary(any())).thenReturn(
-        new ParkingSpaceOccupancySummaryResponse(UUID.randomUUID(), 100L, 100L, 5L, 95L, 0L, 0L, 5.0));
 
     var summary = supervisorService.buildSummary(ZoneId.of("America/Bogota"));
 
