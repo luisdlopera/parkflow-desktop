@@ -3,10 +3,10 @@ package com.parkflow.modules.settings.application.service;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.domain.UserRole;
-import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import com.parkflow.modules.settings.application.port.in.UserManagementUseCase;
 import com.parkflow.modules.settings.dto.*;
 import java.time.OffsetDateTime;
@@ -189,7 +189,7 @@ public class SettingsUserService implements UserManagementUseCase {
     try {
         globalAuditService.record(
             com.parkflow.modules.audit.domain.AuditAction.EDITAR,
-            (com.parkflow.modules.parking.operation.domain.AppUser) null,
+            (com.parkflow.modules.auth.domain.AppUser) null,
             objectMapper.writeValueAsString(before),
             objectMapper.writeValueAsString(snapshot(user)),
             null);

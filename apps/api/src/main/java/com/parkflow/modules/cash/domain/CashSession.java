@@ -1,6 +1,6 @@
 package com.parkflow.modules.cash.domain;
 
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.auth.domain.AppUser;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

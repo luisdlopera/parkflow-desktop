@@ -224,7 +224,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     @Test
     void devices_ShouldRejectUsersWithoutDevicePermissions() throws Exception {
         var cashier = appUserRepository.findById(adminUserId).orElseThrow();
-        cashier.setRole(com.parkflow.modules.parking.operation.domain.UserRole.CAJERO);
+        cashier.setRole(com.parkflow.modules.auth.domain.UserRole.CAJERO);
         appUserRepository.save(cashier);
         JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
 

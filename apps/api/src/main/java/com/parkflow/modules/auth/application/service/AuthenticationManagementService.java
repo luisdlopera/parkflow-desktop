@@ -11,12 +11,12 @@ import com.parkflow.modules.auth.security.JwtTokenService;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.RolePermissions;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import io.jsonwebtoken.Claims;
 import java.time.OffsetDateTime;
-import java.util.List;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;

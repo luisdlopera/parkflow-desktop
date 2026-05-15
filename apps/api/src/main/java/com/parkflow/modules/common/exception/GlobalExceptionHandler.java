@@ -1,7 +1,6 @@
 package com.parkflow.modules.common.exception;
 
 import com.parkflow.modules.common.dto.ErrorResponse;
-import com.parkflow.modules.parking.operation.exception.OperationException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;

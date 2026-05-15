@@ -14,7 +14,7 @@ import java.time.Duration;
 import com.parkflow.config.RateLimitConfig;
 import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
 import com.parkflow.modules.auth.security.JwtTokenService;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
 import com.parkflow.modules.configuration.dto.PaymentMethodResponse;
 import com.parkflow.modules.configuration.application.port.in.PaymentMethodUseCase;

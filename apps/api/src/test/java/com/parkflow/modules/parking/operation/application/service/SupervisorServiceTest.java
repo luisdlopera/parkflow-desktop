@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.parking.operation.domain.UserRole;
+import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.parking.operation.domain.repository.SessionEventPort;
 import com.parkflow.modules.sync.domain.repository.SyncEventPort;

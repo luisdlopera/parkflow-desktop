@@ -1,6 +1,6 @@
 package com.parkflow.modules.settings.dto;
 
-import com.parkflow.modules.parking.operation.domain.UserRole;
+import com.parkflow.modules.auth.domain.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

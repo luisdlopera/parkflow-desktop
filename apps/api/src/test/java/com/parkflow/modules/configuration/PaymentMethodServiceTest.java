@@ -11,7 +11,7 @@ import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
 import com.parkflow.modules.configuration.domain.PaymentMethod;
 import com.parkflow.modules.configuration.domain.repository.PaymentMethodPort;
 import com.parkflow.modules.configuration.application.service.PaymentMethodManagementService;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
