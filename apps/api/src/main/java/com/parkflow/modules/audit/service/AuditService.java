@@ -4,7 +4,7 @@ import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.audit.domain.AuditLog;
 import com.parkflow.modules.audit.domain.repository.AuditLogPort;
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import jakarta.servlet.http.HttpServletRequest;

@@ -5,8 +5,6 @@ import com.parkflow.modules.parking.operation.application.port.in.ListActiveSess
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
-import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;

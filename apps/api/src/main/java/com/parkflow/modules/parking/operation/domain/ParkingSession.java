@@ -121,22 +121,18 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
   private UUID companyId;
 
   @Column(nullable = false)
-  @Builder.Default
   private boolean isMonthlySession = false;
 
   @Column(nullable = false)
-  @Builder.Default
   private int reprintCount = 0;
 
   @Column(length = 50)
   private String agreementCode;
 
   @Column(nullable = false)
-  @Builder.Default
   private int appliedPrepaidMinutes = 0;
 
   @Column(nullable = false)
-  @Builder.Default
   private OffsetDateTime createdAt = OffsetDateTime.now();
 
   @Column(nullable = false)

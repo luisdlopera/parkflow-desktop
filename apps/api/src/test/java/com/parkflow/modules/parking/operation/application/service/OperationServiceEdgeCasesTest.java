@@ -3,19 +3,19 @@ package com.parkflow.modules.parking.operation.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
-import com.parkflow.modules.parking.operation.application.service.RegisterEntryService;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
 import com.parkflow.modules.configuration.domain.repository.MonthlyContractPort;
 import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
-import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.domain.UserRole;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.parking.operation.domain.Vehicle;
 import com.parkflow.modules.parking.operation.dto.EntryRequest;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
-import com.parkflow.modules.common.exception.domain.EntityNotFoundException;
-import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import com.parkflow.modules.configuration.domain.repository.RatePort;
 import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -69,8 +69,6 @@ class OperationServiceEdgeCasesTest {
   @Mock private com.parkflow.modules.audit.service.AuditService globalAuditService;
   @Mock private IdempotencyManager idempotencyManager;
   @Mock private com.parkflow.modules.parking.operation.domain.service.ParkingValidatorService parkingValidatorService;
-  @Mock private OperationalConfigurationService operationalConfigurationService;
-  @Mock private Counter counter;
 
   private RegisterEntryService registerEntryService;
 
@@ -91,10 +89,11 @@ class OperationServiceEdgeCasesTest {
         new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));
     
     registerEntryService = new RegisterEntryService(
-        appUserRepository, vehicleRepository, rateRepository, parkingSiteRepository,
+        appUserRepository, vehicleRepository, rateRepository,
         parkingSessionRepository, ticketCounterRepository, vehicleConditionReportRepository,
+        auditService, operationPrintService,
         plateValidator, monthlyContractRepository, objectMapper, meterRegistry,
-        idempotencyManager, parkingValidatorService, operationalConfigurationService
+        idempotencyManager, parkingValidatorService
     );
 
     TenantContext.setTenantId(companyId);

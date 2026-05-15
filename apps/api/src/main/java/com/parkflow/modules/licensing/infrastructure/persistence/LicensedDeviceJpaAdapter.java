@@ -5,7 +5,7 @@ import com.parkflow.modules.licensing.domain.repository.LicensedDevicePort;
 import com.parkflow.modules.licensing.enums.LicenseStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
