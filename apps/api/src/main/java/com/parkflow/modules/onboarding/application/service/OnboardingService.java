@@ -2,14 +2,12 @@ package com.parkflow.modules.onboarding.application.service;
 
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
-import com.parkflow.modules.licensing.enums.OperationalProfile;
-import com.parkflow.modules.configuration.service.OperationalConfigurationService;
 import com.parkflow.modules.onboarding.application.port.in.OnboardingUseCase;
 import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;
 import com.parkflow.modules.onboarding.domain.OnboardingProgress;
 import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
-import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.parking.operation.exception.OperationException;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
