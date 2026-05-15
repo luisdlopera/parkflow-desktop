@@ -3,10 +3,10 @@ package com.parkflow.modules.configuration.application.service;
 import com.parkflow.modules.configuration.application.port.in.ParkingSiteUseCase;
 import com.parkflow.modules.configuration.dto.ParkingSiteRequest;
 import com.parkflow.modules.configuration.dto.ParkingSiteResponse;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.licensing.entity.Company;
-import com.parkflow.modules.licensing.repository.CompanyRepository;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.licensing.domain.Company;
+import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +24,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ParkingSiteManagementService implements ParkingSiteUseCase {
 
-  private final ParkingSiteRepository parkingSiteRepository;
-  private final CompanyRepository companyRepository;
+  private final ParkingSitePort parkingSiteRepository;
+  private final CompanyPort companyRepository;
 
   @Override
   @Transactional(readOnly = true)

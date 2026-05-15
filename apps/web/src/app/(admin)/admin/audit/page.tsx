@@ -7,19 +7,6 @@ import {
   CardBody,
   CardHeader,
   Chip,
-  Input,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-  Skeleton,
-  Alert,
-  Pagination,
-  Select,
-  SelectItem,
-  DateRangePicker,
   Modal,
   ModalContent,
   ModalHeader,
@@ -31,16 +18,14 @@ import {
 } from "@heroui/react";
 import {
   Receipt,
-  Search,
   RefreshCw,
   Building2,
-  Monitor,
   User,
   Eye,
-  Filter,
   Download,
 } from "lucide-react";
 import { authHeaders } from "@/lib/auth";
+import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 
 interface AuditLogEntry {
   id: string;
@@ -190,6 +175,65 @@ export default function AuditPage() {
     URL.revokeObjectURL(url);
   };
 
+  const columns: DataTableColumn<AuditLogEntry>[] = [
+    {
+      key: "createdAt",
+      header: "Fecha",
+      sortable: true,
+      render: (log) => (
+        <div className="text-sm">
+          <p>{new Date(log.createdAt).toLocaleDateString("es-CO")}</p>
+          <p className="text-xs text-default-400">
+            {new Date(log.createdAt).toLocaleTimeString("es-CO")}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "companyName",
+      header: "Empresa",
+      render: (log) =>
+        log.companyName ? (
+          <div className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-default-400" />
+            <span className="font-medium">{log.companyName}</span>
+          </div>
+        ) : (
+          <span className="text-default-400">-</span>
+        ),
+    },
+    {
+      key: "action",
+      header: "Acción",
+      sortable: true,
+      render: (log) => (
+        <Chip color={getActionColor(log.action)} variant="flat" size="sm">
+          {formatActionName(log.action)}
+        </Chip>
+      ),
+    },
+    {
+      key: "description",
+      header: "Descripción",
+      render: (log) => (
+        <p className="text-sm text-default-600 max-w-xs truncate">
+          {log.description || "Sin descripción"}
+        </p>
+      ),
+    },
+    {
+      key: "performedBy",
+      header: "Realizado por",
+      sortable: true,
+      render: (log) => (
+        <div className="flex items-center gap-2">
+          <User className="w-4 h-4 text-default-400" />
+          <span className="text-sm">{log.performedBy}</span>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -219,129 +263,59 @@ export default function AuditPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-default-400" />
-            <span className="text-sm font-medium">Filtros:</span>
-          </div>
-          <Input
-            placeholder="Buscar empresa, usuario o descripción..."
-            startContent={<Search className="w-4 h-4 text-default-400" />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full md:w-80"
-          />
-          <Select
-            label="Tipo de acción"
-            selectedKeys={[actionFilter]}
-            onChange={(e) => setActionFilter(e.target.value)}
-            className="w-full md:w-48"
-          >
-            {ACTION_TYPES.map((type) => (
-              <SelectItem key={type.value} textValue={type.label}>
-                {type.label}
-              </SelectItem>
-            ))}
-          </Select>
+      <DataTable
+        title="Registro de auditoría"
+        description="Historial de cambios con filtros colapsables y paginación."
+        columns={columns}
+        data={logs}
+        getRowKey={(log) => log.id}
+        isLoading={isLoading}
+        error={error}
+        emptyMessage="No se encontraron registros"
+        searchable
+        searchPlaceholder="Buscar empresa, usuario o descripción..."
+        onSearchChange={(value) => {
+          setSearchQuery(value);
+          setPage(1);
+        }}
+        filters={[
+          {
+            key: "action",
+            label: "Tipo de acción",
+            type: "select",
+            options: ACTION_TYPES.filter((type) => type.value).map((type) => ({
+              label: type.label,
+              value: type.value,
+            })),
+          },
+          { key: "createdAt", label: "Fecha", type: "dateRange" },
+        ]}
+        onFilterChange={(values) => {
+          setActionFilter(values.action ?? "");
+          setDateRange({
+            start: values.createdAt?.from,
+            end: values.createdAt?.to,
+          });
+          setPage(1);
+        }}
+        pagination={{
+          page,
+          pageSize: 20,
+          total: totalPages * 20,
+          onPageChange: setPage,
+        }}
+        actions={(log) => (
           <Button
-            variant="flat"
+            isIconOnly
+            variant="light"
             size="sm"
-            onPress={() => {
-              setSearchQuery("");
-              setActionFilter("");
-              setDateRange({});
-              setPage(1);
-            }}
+            aria-label="Ver detalle"
+            onPress={() => handleViewDetail(log)}
           >
-            Limpiar filtros
+            <Eye className="w-4 h-4" />
           </Button>
-        </CardHeader>
-      </Card>
-
-      {/* Audit Log Table */}
-      <Card>
-        <CardBody>
-          <Table aria-label="Registro de auditoría">
-            <TableHeader>
-              <TableColumn>FECHA</TableColumn>
-              <TableColumn>EMPRESA</TableColumn>
-              <TableColumn>ACCIÓN</TableColumn>
-              <TableColumn>DESCRIPCIÓN</TableColumn>
-              <TableColumn>REALIZADO POR</TableColumn>
-              <TableColumn align="center">DETALLE</TableColumn>
-            </TableHeader>
-            <TableBody
-              emptyContent="No se encontraron registros"
-              isLoading={isLoading}
-              loadingContent={<Skeleton className="w-full h-12" />}
-            >
-              {logs.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell>
-                    <div className="text-sm">
-                      <p>{new Date(log.createdAt).toLocaleDateString("es-CO")}</p>
-                      <p className="text-xs text-default-400">
-                        {new Date(log.createdAt).toLocaleTimeString("es-CO")}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {log.companyName ? (
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-default-400" />
-                        <span className="font-medium">{log.companyName}</span>
-                      </div>
-                    ) : (
-                      <span className="text-default-400">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Chip color={getActionColor(log.action)} variant="flat" size="sm">
-                      {formatActionName(log.action)}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <p className="text-sm text-default-600 max-w-xs truncate">
-                      {log.description || "Sin descripción"}
-                    </p>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-default-400" />
-                      <span className="text-sm">{log.performedBy}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      isIconOnly
-                      variant="light"
-                      size="sm"
-                      aria-label="Ver detalle"
-                      onPress={() => handleViewDetail(log)}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {/* Pagination */}
-          <div className="flex justify-center mt-4">
-            <Pagination
-              total={totalPages}
-              page={page}
-              onChange={setPage}
-              showControls
-              showShadow
-              color="primary"
-            />
-          </div>
-        </CardBody>
-      </Card>
+        )}
+      />
 
       {/* Detail Modal */}
       <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="2xl">

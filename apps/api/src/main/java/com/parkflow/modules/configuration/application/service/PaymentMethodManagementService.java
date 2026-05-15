@@ -3,8 +3,8 @@ package com.parkflow.modules.configuration.application.service;
 import com.parkflow.modules.configuration.application.port.in.PaymentMethodUseCase;
 import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
 import com.parkflow.modules.configuration.dto.PaymentMethodResponse;
-import com.parkflow.modules.configuration.entity.PaymentMethod;
-import com.parkflow.modules.configuration.repository.PaymentMethodRepository;
+import com.parkflow.modules.configuration.domain.PaymentMethod;
+import com.parkflow.modules.configuration.domain.repository.PaymentMethodPort;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentMethodManagementService implements PaymentMethodUseCase {
 
-  private final PaymentMethodRepository paymentMethodRepository;
+  private final PaymentMethodPort paymentMethodRepository;
 
   @Override
   @Transactional(readOnly = true)

@@ -7,11 +7,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.configuration.dto.ParkingSiteRequest;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.configuration.application.service.ParkingSiteManagementService;
-import com.parkflow.modules.licensing.entity.Company;
-import com.parkflow.modules.licensing.repository.CompanyRepository;
+import com.parkflow.modules.licensing.domain.Company;
+import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import java.util.List;
 import java.util.Optional;
@@ -28,8 +28,8 @@ import org.springframework.http.HttpStatus;
 @ExtendWith(MockitoExtension.class)
 class ParkingSiteServiceTest {
 
-  @Mock private ParkingSiteRepository parkingSiteRepository;
-  @Mock private CompanyRepository companyRepository;
+  @Mock private ParkingSitePort parkingSiteRepository;
+  @Mock private CompanyPort companyRepository;
 
   private ParkingSiteManagementService service;
 

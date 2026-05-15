@@ -5,15 +5,8 @@ import {
   Button,
   Card,
   CardBody,
-  CardHeader,
   Chip,
   Input,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
@@ -24,7 +17,6 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Skeleton,
   Alert,
   Select,
   SelectItem,
@@ -34,7 +26,6 @@ import {
 import {
   Users,
   Plus,
-  Search,
   MoreVertical,
   Pencil,
   Trash2,
@@ -45,6 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { authHeaders } from "@/lib/auth";
+import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 
 interface AdminUser {
   id: string;
@@ -244,6 +236,80 @@ export default function AdminUsersPage() {
     online: users.filter((u) => u.lastAccessAt && new Date(u.lastAccessAt).getTime() > Date.now() - 300000).length,
   };
 
+  const columns: DataTableColumn<AdminUser>[] = [
+    {
+      key: "name",
+      header: "Usuario",
+      sortable: true,
+      render: (user) => (
+        <div className="flex items-center gap-3">
+          <Avatar name={getInitials(user.name)} className="bg-primary text-white" />
+          <div>
+            <p className="font-medium">{user.name}</p>
+            <p className="text-sm text-default-500">{user.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "role",
+      header: "Rol",
+      sortable: true,
+      render: (user) => (
+        <Chip color={getRoleColor(user.role)} variant="flat" size="sm">
+          {getRoleLabel(user.role)}
+        </Chip>
+      ),
+    },
+    {
+      key: "active",
+      header: "Estado",
+      align: "center",
+      render: (user) => (
+        <Switch
+          isSelected={user.active}
+          onValueChange={() => handleToggleActive(user)}
+          size="sm"
+          color="success"
+        />
+      ),
+    },
+    {
+      key: "permissions",
+      header: "Permisos",
+      render: (user) => (
+        <div className="flex flex-wrap gap-1">
+          {user.permissions.slice(0, 3).map((perm) => (
+            <Chip key={perm} variant="flat" size="sm" className="text-xs">
+              {perm.split(":")[0]}
+            </Chip>
+          ))}
+          {user.permissions.length > 3 && (
+            <Chip variant="flat" size="sm" className="text-xs">
+              +{user.permissions.length - 3}
+            </Chip>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "lastAccessAt",
+      header: "Ultimo acceso",
+      sortable: true,
+      render: (user) =>
+        user.lastAccessAt ? (
+          <span className="text-sm">
+            {new Date(user.lastAccessAt).toLocaleString("es-CO", {
+              dateStyle: "short",
+              timeStyle: "short",
+            })}
+          </span>
+        ) : (
+          <span className="text-default-400 text-sm">Nunca</span>
+        ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -317,120 +383,58 @@ export default function AdminUsersPage() {
         </Card>
       </div>
 
-      {/* Users Table */}
-      <Card>
-        <CardHeader className="flex justify-between items-center">
-          <Input
-            placeholder="Buscar por nombre, email o rol..."
-            startContent={<Search className="w-4 h-4 text-default-400" />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full md:w-96"
-          />
-        </CardHeader>
-        <CardBody>
-          <Table aria-label="Tabla de usuarios administrativos">
-            <TableHeader>
-              <TableColumn>USUARIO</TableColumn>
-              <TableColumn>ROL</TableColumn>
-              <TableColumn>ESTADO</TableColumn>
-              <TableColumn>PERMISOS</TableColumn>
-              <TableColumn>ULTIMO ACCESO</TableColumn>
-              <TableColumn align="center">ACCIONES</TableColumn>
-            </TableHeader>
-            <TableBody
-              emptyContent="No se encontraron usuarios"
-              isLoading={isLoading}
-              loadingContent={<Skeleton className="w-full h-12" />}
-            >
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar
-                        name={getInitials(user.name)}
-                        className="bg-primary text-white"
-                      />
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-default-500">{user.email}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip color={getRoleColor(user.role)} variant="flat" size="sm">
-                      {getRoleLabel(user.role)}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <Switch
-                      isSelected={user.active}
-                      onValueChange={() => handleToggleActive(user)}
-                      size="sm"
-                      color="success"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {user.permissions.slice(0, 3).map((perm) => (
-                        <Chip key={perm} variant="flat" size="sm" className="text-xs">
-                          {perm.split(":")[0]}
-                        </Chip>
-                      ))}
-                      {user.permissions.length > 3 && (
-                        <Chip variant="flat" size="sm" className="text-xs">
-                          +{user.permissions.length - 3}
-                        </Chip>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {user.lastAccessAt ? (
-                      <span className="text-sm">
-                        {new Date(user.lastAccessAt).toLocaleString("es-CO", {
-                          dateStyle: "short",
-                          timeStyle: "short",
-                        })}
-                      </span>
-                    ) : (
-                      <span className="text-default-400 text-sm">Nunca</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Dropdown>
-                      <DropdownTrigger>
-                        <Button isIconOnly variant="light" size="sm">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu aria-label="Acciones">
-                        <DropdownItem
-                          key="edit"
-                          textValue="Editar"
-                          startContent={<Pencil className="w-4 h-4" />}
-                          onPress={() => handleEdit(user)}
-                        >
-                          Editar
-                        </DropdownItem>
-                        <DropdownItem
-                          key="delete"
-                          textValue="Eliminar"
-                          className="text-danger"
-                          color="danger"
-                          startContent={<Trash2 className="w-4 h-4" />}
-                          onPress={() => handleDelete(user.id)}
-                        >
-                          Eliminar
-                        </DropdownItem>
-                      </DropdownMenu>
-                    </Dropdown>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+      <DataTable
+        title="Usuarios administrativos"
+        description="Gestiona roles, estado y permisos del panel."
+        columns={columns}
+        data={filteredUsers}
+        getRowKey={(user) => user.id}
+        isLoading={isLoading}
+        error={error}
+        emptyMessage="No se encontraron usuarios"
+        searchable
+        searchPlaceholder="Buscar por nombre, email o rol..."
+        onSearchChange={setSearchQuery}
+        filters={[
+          {
+            key: "role",
+            label: "Rol",
+            type: "select",
+            options: ROLES.map((role) => ({ label: role.label, value: role.value })),
+          },
+          { key: "active", label: "Activo", type: "boolean" },
+          { key: "lastAccessAt", label: "Ultimo acceso", type: "dateRange" },
+        ]}
+        actions={(user) => (
+          <Dropdown>
+            <DropdownTrigger>
+              <Button isIconOnly variant="light" size="sm" aria-label="Más acciones">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu aria-label="Acciones">
+              <DropdownItem
+                key="edit"
+                textValue="Editar"
+                startContent={<Pencil className="w-4 h-4" />}
+                onPress={() => handleEdit(user)}
+              >
+                Editar
+              </DropdownItem>
+              <DropdownItem
+                key="delete"
+                textValue="Eliminar"
+                className="text-danger"
+                color="danger"
+                startContent={<Trash2 className="w-4 h-4" />}
+                onPress={() => handleDelete(user.id)}
+              >
+                Eliminar
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+        )}
+      />
 
       {/* Create/Edit Modal */}
       <Modal isOpen={isModalOpen} onClose={onModalClose} size="2xl">

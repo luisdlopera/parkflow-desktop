@@ -1,8 +1,9 @@
 package com.parkflow.modules.audit.service;
 
+import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.audit.domain.AuditLog;
-import com.parkflow.modules.audit.repository.AuditLogRepository;
+import com.parkflow.modules.audit.domain.repository.AuditLogPort;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.auth.security.AuthPrincipal;
@@ -20,9 +21,9 @@ import java.time.OffsetDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class AuditService {
+public class AuditService implements AuditPort {
 
-    private final AuditLogRepository auditLogRepository;
+    private final AuditLogPort auditLogRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(AuditAction action, AppUser user, String previousPayload, String newPayload, String metadata) {

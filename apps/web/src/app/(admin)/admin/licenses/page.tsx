@@ -7,13 +7,6 @@ import {
   CardBody,
   CardHeader,
   Chip,
-  Input,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
@@ -24,7 +17,6 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Skeleton,
   Alert,
   Tabs,
   Tab,
@@ -33,11 +25,7 @@ import {
 } from "@heroui/react";
 import {
   FileBadge,
-  Plus,
-  Search,
   MoreVertical,
-  Pencil,
-  Trash2,
   Eye,
   RefreshCw,
   Monitor,
@@ -46,6 +34,7 @@ import {
 } from "lucide-react";
 import { useCompanies, translatePlan, translateStatus } from "@/lib/licensing/hooks";
 import type { Company, LicensedDevice } from "@/lib/licensing/types";
+import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 
 export default function LicensesPage() {
   const { data: companies, isLoading, error, mutate } = useCompanies();
@@ -125,6 +114,116 @@ export default function LicensesPage() {
       totalDevices: companies.reduce((acc, c) => acc + (c.devices?.length || 0), 0),
     };
   }, [companies]);
+
+  const columns: DataTableColumn<Company>[] = [
+    {
+      key: "name",
+      header: "Empresa",
+      sortable: true,
+      render: (company) => (
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-default-100 rounded-lg">
+            <Building2 className="w-4 h-4 text-default-500" />
+          </div>
+          <div>
+            <p className="font-medium">{company.name}</p>
+            <p className="text-sm text-default-500">{company.nit || "Sin NIT"}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "plan",
+      header: "Plan",
+      sortable: true,
+      render: (company) => (
+        <Chip color={getPlanColor(company.plan)} variant="flat" size="sm">
+          {translatePlan(company.plan)}
+        </Chip>
+      ),
+    },
+    {
+      key: "status",
+      header: "Estado",
+      sortable: true,
+      render: (company) => (
+        <Chip color={getStatusColor(company.status)} variant="flat" size="sm">
+          {translateStatus(company.status)}
+        </Chip>
+      ),
+    },
+    {
+      key: "expiresAt",
+      header: "Vencimiento",
+      sortable: true,
+      render: (company) =>
+        company.expiresAt ? (
+          <div>
+            <p>{new Date(company.expiresAt).toLocaleDateString("es-CO")}</p>
+            {company.graceUntil && (
+              <p className="text-xs text-warning">
+                Gracia: {new Date(company.graceUntil).toLocaleDateString("es-CO")}
+              </p>
+            )}
+          </div>
+        ) : (
+          <span className="text-default-400">Sin vencimiento</span>
+        ),
+    },
+    {
+      key: "maxDevices",
+      header: "Dispositivos",
+      render: (company) => (
+        <div className="flex items-center gap-2">
+          <Monitor className="w-4 h-4 text-default-400" />
+          <span className="text-sm">
+            {company.devices?.length || 0} / {company.maxDevices}
+          </span>
+        </div>
+      ),
+    },
+  ];
+
+  const deviceColumns: DataTableColumn<LicensedDevice>[] = [
+    {
+      key: "hostname",
+      header: "Dispositivo",
+      render: (device) => (
+        <div>
+          <p className="font-medium">{device.hostname || "Sin nombre"}</p>
+          <p className="text-xs text-default-500 font-mono">
+            {device.deviceFingerprint.slice(0, 16)}...
+          </p>
+          <p className="text-xs text-default-400">{device.operatingSystem}</p>
+        </div>
+      ),
+    },
+    {
+      key: "isCurrentlyOnline",
+      header: "Estado",
+      render: (device) => (
+        <Chip color={device.isCurrentlyOnline ? "success" : "default"} variant="flat" size="sm">
+          {device.isCurrentlyOnline ? "En línea" : "Desconectado"}
+        </Chip>
+      ),
+    },
+    {
+      key: "lastHeartbeatAt",
+      header: "Ultimo heartbeat",
+      render: (device) =>
+        device.lastHeartbeatAt ? new Date(device.lastHeartbeatAt).toLocaleString("es-CO") : "Nunca",
+    },
+    {
+      key: "pendingSyncEvents",
+      header: "Sincronización",
+      render: (device) => (
+        <div className="text-sm">
+          <p>Pendientes: {device.pendingSyncEvents || 0}</p>
+          <p className="text-default-400">Sincronizados: {device.syncedEvents || 0}</p>
+        </div>
+      ),
+    },
+  ];
 
   if (error) {
     return (
@@ -222,122 +321,72 @@ export default function LicensesPage() {
         </div>
       )}
 
-      {/* Tabs & Search */}
-      <Card>
-        <CardHeader className="flex flex-col gap-4">
-          <Tabs selectedKey={activeTab} onSelectionChange={(k) => setActiveTab(k as string)}>
-            <Tab key="all" title={`Todas (${stats?.total || 0})`} />
-            <Tab key="active" title={`Activas (${stats?.active || 0})`} />
-            <Tab key="past_due" title={`Por Vencer (${stats?.pastDue || 0})`} />
-            <Tab key="expired" title={`Expiradas (${stats?.expired || 0})`} />
-          </Tabs>
-          <Input
-            placeholder="Buscar por empresa o NIT..."
-            startContent={<Search className="w-4 h-4 text-default-400" />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full md:w-96"
-          />
-        </CardHeader>
-        <CardBody>
-          <Table aria-label="Tabla de licencias">
-            <TableHeader>
-              <TableColumn>EMPRESA</TableColumn>
-              <TableColumn>PLAN</TableColumn>
-              <TableColumn>ESTADO</TableColumn>
-              <TableColumn>VENCIMIENTO</TableColumn>
-              <TableColumn>DISPOSITIVOS</TableColumn>
-              <TableColumn align="center">ACCIONES</TableColumn>
-            </TableHeader>
-            <TableBody
-              emptyContent="No se encontraron licencias"
-              isLoading={isLoading}
-              loadingContent={<Skeleton className="w-full h-12" />}
-            >
-              {filteredCompanies.map((company) => (
-                <TableRow key={company.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-default-100 rounded-lg">
-                        <Building2 className="w-4 h-4 text-default-500" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{company.name}</p>
-                        <p className="text-sm text-default-500">{company.nit || "Sin NIT"}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip color={getPlanColor(company.plan)} variant="flat" size="sm">
-                      {translatePlan(company.plan)}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <Chip color={getStatusColor(company.status)} variant="flat" size="sm">
-                      {translateStatus(company.status)}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    {company.expiresAt ? (
-                      <div>
-                        <p>{new Date(company.expiresAt).toLocaleDateString("es-CO")}</p>
-                        {company.graceUntil && (
-                          <p className="text-xs text-warning">
-                            Gracia: {new Date(company.graceUntil).toLocaleDateString("es-CO")}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-default-400">Sin vencimiento</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Monitor className="w-4 h-4 text-default-400" />
-                      <span className="text-sm">
-                        {company.devices?.length || 0} / {company.maxDevices}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Dropdown>
-                      <DropdownTrigger>
-                        <Button isIconOnly variant="light" size="sm" aria-label="Más acciones">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu aria-label="Acciones">
-                        <DropdownItem
-                          key="view"
-                          textValue="Ver detalle"
-                          startContent={<Eye className="w-4 h-4" />}
-                          onPress={() => handleViewDetails(company)}
-                        >
-                          Ver detalle
-                        </DropdownItem>
-                        <DropdownItem
-                          key="renew"
-                          textValue="Renovar licencia"
-                          startContent={<RefreshCw className="w-4 h-4" />}
-                        >
-                          Renovar licencia
-                        </DropdownItem>
-                        <DropdownItem
-                          key="generate"
-                          textValue="Generar licencia offline"
-                          startContent={<Key className="w-4 h-4" />}
-                        >
-                          Generar licencia offline
-                        </DropdownItem>
-                      </DropdownMenu>
-                    </Dropdown>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+      <div className="space-y-4">
+        <Tabs selectedKey={activeTab} onSelectionChange={(k) => setActiveTab(k as string)}>
+          <Tab key="all" title={`Todas (${stats?.total || 0})`} />
+          <Tab key="active" title={`Activas (${stats?.active || 0})`} />
+          <Tab key="past_due" title={`Por Vencer (${stats?.pastDue || 0})`} />
+          <Tab key="expired" title={`Expiradas (${stats?.expired || 0})`} />
+        </Tabs>
+        <DataTable
+          title="Licencias"
+          description="Consulta planes, vencimientos y capacidad de dispositivos."
+          columns={columns}
+          data={filteredCompanies}
+          getRowKey={(company) => company.id}
+          isLoading={isLoading}
+          emptyMessage="No se encontraron licencias"
+          searchable
+          searchPlaceholder="Buscar por empresa o NIT..."
+          onSearchChange={setSearchQuery}
+          filters={[
+            {
+              key: "plan",
+              label: "Plan",
+              type: "select",
+              options: ["LOCAL", "SYNC", "PRO", "ENTERPRISE"].map((plan) => ({
+                label: translatePlan(plan),
+                value: plan,
+              })),
+            },
+            {
+              key: "status",
+              label: "Estado",
+              type: "select",
+              options: ["ACTIVE", "TRIAL", "PAST_DUE", "SUSPENDED", "EXPIRED", "BLOCKED", "CANCELLED"].map((status) => ({
+                label: translateStatus(status),
+                value: status,
+              })),
+            },
+            { key: "expiresAt", label: "Vencimiento", type: "dateRange" },
+          ]}
+          actions={(company) => (
+            <Dropdown>
+              <DropdownTrigger>
+                <Button isIconOnly variant="light" size="sm" aria-label="Más acciones">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu aria-label="Acciones">
+                <DropdownItem
+                  key="view"
+                  textValue="Ver detalle"
+                  startContent={<Eye className="w-4 h-4" />}
+                  onPress={() => handleViewDetails(company)}
+                >
+                  Ver detalle
+                </DropdownItem>
+                <DropdownItem key="renew" textValue="Renovar licencia" startContent={<RefreshCw className="w-4 h-4" />}>
+                  Renovar licencia
+                </DropdownItem>
+                <DropdownItem key="generate" textValue="Generar licencia offline" startContent={<Key className="w-4 h-4" />}>
+                  Generar licencia offline
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+          )}
+        />
+      </div>
 
       {/* Company Detail Modal */}
       <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="3xl">
@@ -380,57 +429,12 @@ export default function LicensesPage() {
                     <Monitor className="w-5 h-5" />
                     Dispositivos Licenciados
                   </h3>
-                  {selectedCompany.devices && selectedCompany.devices.length > 0 ? (
-                    <Table aria-label="Dispositivos">
-                      <TableHeader>
-                        <TableColumn>DISPOSITIVO</TableColumn>
-                        <TableColumn>ESTADO</TableColumn>
-                        <TableColumn>ULTIMO HEARTBEAT</TableColumn>
-                        <TableColumn>SINCRONIZACION</TableColumn>
-                      </TableHeader>
-                      <TableBody>
-                        {selectedCompany.devices.map((device) => (
-                          <TableRow key={device.id}>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">{device.hostname || "Sin nombre"}</p>
-                                <p className="text-xs text-default-500 font-mono">
-                                  {device.deviceFingerprint.slice(0, 16)}...
-                                </p>
-                                <p className="text-xs text-default-400">{device.operatingSystem}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                color={device.isCurrentlyOnline ? "success" : "default"}
-                                variant="flat"
-                                size="sm"
-                              >
-                                {device.isCurrentlyOnline ? "En línea" : "Desconectado"}
-                              </Chip>
-                            </TableCell>
-                            <TableCell>
-                              {device.lastHeartbeatAt
-                                ? new Date(device.lastHeartbeatAt).toLocaleString("es-CO")
-                                : "Nunca"}
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">
-                                <p>Pendientes: {device.pendingSyncEvents || 0}</p>
-                                <p className="text-default-400">
-                                  Sincronizados: {device.syncedEvents || 0}
-                                </p>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <p className="text-default-400 text-center py-8">
-                      No hay dispositivos registrados
-                    </p>
-                  )}
+                  <DataTable
+                    columns={deviceColumns}
+                    data={selectedCompany.devices ?? []}
+                    getRowKey={(device) => device.id}
+                    emptyMessage="No hay dispositivos registrados"
+                  />
                 </div>
 
                 {/* Modules */}

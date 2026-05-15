@@ -3,11 +3,11 @@ package com.parkflow.modules.configuration.application.service;
 import com.parkflow.modules.configuration.application.port.in.RateFractionUseCase;
 import com.parkflow.modules.configuration.dto.RateFractionRequest;
 import com.parkflow.modules.configuration.dto.RateFractionResponse;
-import com.parkflow.modules.configuration.entity.RateFraction;
-import com.parkflow.modules.configuration.repository.RateFractionRepository;
+import com.parkflow.modules.configuration.domain.RateFraction;
+import com.parkflow.modules.configuration.domain.repository.RateFractionPort;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,8 +22,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RateFractionManagementService implements RateFractionUseCase {
 
-  private final RateFractionRepository rateFractionRepository;
-  private final RateRepository rateRepository;
+  private final RateFractionPort rateFractionRepository;
+  private final RatePort rateRepository;
 
   @Override
   @Transactional(readOnly = true)

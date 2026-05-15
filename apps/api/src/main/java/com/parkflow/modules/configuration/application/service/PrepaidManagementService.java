@@ -1,20 +1,21 @@
 package com.parkflow.modules.configuration.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.configuration.application.port.in.PrepaidUseCase;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.PrepaidBalance;
+import com.parkflow.modules.configuration.domain.PrepaidPackage;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.configuration.domain.repository.PrepaidBalancePort;
+import com.parkflow.modules.configuration.domain.repository.PrepaidPackagePort;
 import com.parkflow.modules.configuration.dto.PrepaidBalancePurchaseRequest;
 import com.parkflow.modules.configuration.dto.PrepaidBalanceResponse;
 import com.parkflow.modules.configuration.dto.PrepaidPackageRequest;
 import com.parkflow.modules.configuration.dto.PrepaidPackageResponse;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.entity.PrepaidBalance;
-import com.parkflow.modules.configuration.entity.PrepaidPackage;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.configuration.repository.PrepaidBalanceRepository;
-import com.parkflow.modules.configuration.repository.PrepaidPackageRepository;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.auth.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -32,10 +33,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PrepaidManagementService implements PrepaidUseCase {
 
-  private final PrepaidPackageRepository packageRepo;
-  private final PrepaidBalanceRepository balanceRepo;
-  private final ParkingSiteRepository siteRepository;
-  private final AuditService globalAuditService;
+  private final PrepaidPackagePort packageRepo;
+  private final PrepaidBalancePort balanceRepo;
+  private final ParkingSitePort siteRepository;
+  private final AuditPort globalAuditService;
   private final ObjectMapper objectMapper;
 
   @Override
@@ -55,6 +56,7 @@ public class PrepaidManagementService implements PrepaidUseCase {
   @Transactional
   public PrepaidPackageResponse createPackage(PrepaidPackageRequest req) {
     PrepaidPackage pkg = fromPackageRequest(req, new PrepaidPackage());
+    pkg.setCompanyId(SecurityUtils.requireCompanyId());
     pkg = packageRepo.save(pkg);
     try {
         globalAuditService.record(
@@ -111,7 +113,7 @@ public class PrepaidManagementService implements PrepaidUseCase {
   @Override
   @Transactional(readOnly = true)
   public List<PrepaidBalanceResponse> getBalancesByPlate(String plate) {
-    return balanceRepo.findAllByPlateOrderByExpiresAtAsc(plate.toUpperCase().trim())
+    return balanceRepo.findAllByPlateAndCompanyIdOrderByExpiresAtAsc(plate.toUpperCase().trim(), SecurityUtils.requireCompanyId())
         .stream().map(this::toBalanceResponse).toList();
   }
 
@@ -124,6 +126,7 @@ public class PrepaidManagementService implements PrepaidUseCase {
     }
     PrepaidBalance balance = new PrepaidBalance();
     balance.setPrepaidPackage(pkg);
+    balance.setCompanyId(SecurityUtils.requireCompanyId());
     balance.setPlate(req.plate().toUpperCase().trim());
     balance.setHolderName(req.holderName());
     balance.setRemainingMinutes(pkg.getHoursIncluded() * 60);
