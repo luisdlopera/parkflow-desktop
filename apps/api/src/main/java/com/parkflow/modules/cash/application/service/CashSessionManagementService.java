@@ -1,20 +1,21 @@
 package com.parkflow.modules.cash.application.service;
 
-import com.parkflow.modules.auth.entity.AuthAuditAction;
+import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
 import com.parkflow.modules.cash.domain.*;
+import com.parkflow.modules.cash.domain.repository.*;
 import com.parkflow.modules.cash.dto.*;
-import com.parkflow.modules.cash.repository.*;
 import com.parkflow.modules.cash.service.*;
 import com.parkflow.modules.cash.support.CashHttpContext;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.UserRole;
+import com.parkflow.modules.cash.domain.exception.CashSessionException;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
-import com.parkflow.modules.settings.service.ParkingParametersService;
+import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -37,18 +38,20 @@ public class CashSessionManagementService implements CashSessionUseCase {
 
     private static final BigDecimal ZERO = new BigDecimal("0.00");
 
-    private final CashRegisterRepository cashRegisterRepository;
-    private final CashSessionRepository cashSessionRepository;
-    private final CashMovementRepository cashMovementRepository;
-    private final CashClosingReportRepository cashClosingReportRepository;
-    private final CashAuditLogRepository cashAuditLogRepository;
-    private final AppUserRepository appUserRepository;
+    private final CashRegisterPort cashRegisterPort;
+    private final CashSessionPort cashSessionPort;
+    private final CashMovementPort cashMovementPort;
+    private final CashClosingReportPort cashClosingReportPort;
+    private final CashAuditLogPort cashAuditLogPort;
+    private final AppUserPort appUserPort;
     private final CashDomainAuditService cashDomainAuditService;
     private final AuthAuditService authAuditService;
     private final ParkingParametersService parkingParametersService;
     private final CashSequentialSupportService cashSequentialSupportService;
     private final CashClosingOutboundNotifier cashClosingOutboundNotifier;
-    private final com.parkflow.modules.audit.service.AuditService globalAuditService;
+    private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
+    private final CashSessionResponseMapper responseMapper;
+    private final CashLedgerSummaryCalculator ledgerSummaryCalculator;
 
     @Override
     @Transactional
@@ -56,16 +59,16 @@ public class CashSessionManagementService implements CashSessionUseCase {
         validateOperator(request.operatorUserId());
         if (StringUtils.hasText(request.openIdempotencyKey())) {
             Optional<CashSession> existing =
-                cashSessionRepository.findByOpenIdempotencyKey(request.openIdempotencyKey().trim());
+                cashSessionPort.findByOpenIdempotencyKey(request.openIdempotencyKey().trim());
             if (existing.isPresent()) {
-                return toSessionResponse(existing.get());
+                return responseMapper.toSessionResponse(existing.get());
             }
         }
 
         String site = normalizeSite(request.site());
         String terminal = request.terminal().trim();
         CashRegister register =
-            cashRegisterRepository
+            cashRegisterPort
                 .findBySiteAndTerminal(site, terminal)
                 .orElseGet(
                     () -> {
@@ -77,23 +80,23 @@ public class CashSessionManagementService implements CashSessionUseCase {
                                 ? request.registerLabel().trim()
                                 : terminal);
                         r.setUpdatedAt(OffsetDateTime.now());
-                        return cashRegisterRepository.save(r);
+                        return cashRegisterPort.save(r);
                     });
 
-        cashSessionRepository
+        cashSessionPort
             .findByRegisterAndStatus(register.getId(), CashSessionStatus.OPEN)
             .ifPresent(
                 s -> {
-                    throw new OperationException(
+                    throw new CashSessionException(
                         HttpStatus.CONFLICT, "Ya existe una caja abierta en esta sede/terminal");
                 });
 
         AppUser operator =
-            appUserRepository
+            appUserPort
                 .findById(request.operatorUserId())
-                .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
+                .orElseThrow(() -> new CashSessionException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
         if (!operator.isActive()) {
-            throw new OperationException(HttpStatus.FORBIDDEN, "Operador inactivo");
+            throw new CashSessionException(HttpStatus.FORBIDDEN, "Operador inactivo");
         }
 
         CashSession session = new CashSession();
@@ -107,9 +110,9 @@ public class CashSessionManagementService implements CashSessionUseCase {
             session.setOpenIdempotencyKey(request.openIdempotencyKey().trim());
         }
         session.setUpdatedAt(OffsetDateTime.now());
-        session = cashSessionRepository.save(session);
+        session = cashSessionPort.save(session);
 
-        Map<String, Object> meta = baseMeta(session);
+        Map<String, Object> meta = responseMapper.baseMeta(session);
         meta.put("openingAmount", session.getOpeningAmount().toPlainString());
         authAudit(AuthAuditAction.CASH_SESSION_OPEN, operator, "opened", meta);
         cashDomainAuditService.log(session, null, "OPEN", null, session.getOpeningAmount().toPlainString(), null, meta);
@@ -121,7 +124,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
             "Opening amount: " + session.getOpeningAmount(),
             "Register: " + register.getSite() + "/" + register.getTerminal());
 
-        return toSessionResponse(session);
+        return responseMapper.toSessionResponse(session);
     }
 
     @Override
@@ -129,9 +132,9 @@ public class CashSessionManagementService implements CashSessionUseCase {
     public CashSessionResponse submitCount(UUID sessionId, CashCountRequest request) {
         CashSession session = requireOpenSession(sessionId);
         AppUser actor =
-            appUserRepository
+            appUserPort
                 .findById(SecurityUtils.requireUserId())
-                .orElseThrow(() -> new OperationException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
+                .orElseThrow(() -> new CashSessionException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
 
         BigDecimal cCash = request.countCash().setScale(2, RoundingMode.HALF_UP);
         BigDecimal cCard = request.countCard().setScale(2, RoundingMode.HALF_UP);
@@ -153,14 +156,14 @@ public class CashSessionManagementService implements CashSessionUseCase {
         session.setCountOperator(actor);
         session.setNotes(mergeNotes(session.getNotes(), request.observations()));
         session.setUpdatedAt(OffsetDateTime.now());
-        session = cashSessionRepository.save(session);
+        session = cashSessionPort.save(session);
 
         if (diff.compareTo(ZERO) != 0 && !StringUtils.hasText(request.observations())) {
-            throw new OperationException(
+            throw new CashSessionException(
                 HttpStatus.BAD_REQUEST, "Hay diferencia en arqueo; ingrese observaciones obligatorias");
         }
 
-        Map<String, Object> meta = baseMeta(session);
+        Map<String, Object> meta = responseMapper.baseMeta(session);
         meta.put("countedTotal", counted.toPlainString());
         meta.put("expected", sum.expectedLedgerTotal().toPlainString());
         meta.put("difference", diff.toPlainString());
@@ -174,7 +177,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
             request.observations(),
             meta);
 
-        return toSessionResponse(session);
+        return responseMapper.toSessionResponse(session);
     }
 
     @Override
@@ -182,27 +185,27 @@ public class CashSessionManagementService implements CashSessionUseCase {
     public CashSessionResponse close(UUID sessionId, CashCloseRequest request) {
         if (StringUtils.hasText(request.closeIdempotencyKey())) {
             Optional<CashSession> done =
-                cashSessionRepository.findByCloseIdempotencyKey(request.closeIdempotencyKey().trim());
+                cashSessionPort.findByCloseIdempotencyKey(request.closeIdempotencyKey().trim());
             if (done.isPresent() && done.get().getStatus() == CashSessionStatus.CLOSED) {
-                return toSessionResponse(done.get());
+                return responseMapper.toSessionResponse(done.get());
             }
         }
 
         CashSession session = requireOpenSession(sessionId);
         if (session.getCountedAt() == null) {
-            throw new OperationException(HttpStatus.BAD_REQUEST, "Debe registrar arqueo antes de cerrar");
+            throw new CashSessionException(HttpStatus.BAD_REQUEST, "Debe registrar arqueo antes de cerrar");
         }
         CashSummaryResponse sum = getSummary(sessionId);
         BigDecimal diff = session.getDifferenceAmount() != null ? session.getDifferenceAmount() : ZERO;
         if (diff.compareTo(ZERO) != 0 && !StringUtils.hasText(request.closingNotes())) {
-            throw new OperationException(
+            throw new CashSessionException(
                 HttpStatus.BAD_REQUEST, "Hay diferencia; observacion de cierre obligatoria");
         }
 
         AppUser closer =
-            appUserRepository
+            appUserPort
                 .findById(SecurityUtils.requireUserId())
-                .orElseThrow(() -> new OperationException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
+                .orElseThrow(() -> new CashSessionException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
 
         OffsetDateTime now = OffsetDateTime.now();
         session.setStatus(CashSessionStatus.CLOSED);
@@ -224,7 +227,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
             session.setSupportDocumentNumber(supportDoc);
         }
         session.setUpdatedAt(now);
-        session = cashSessionRepository.save(session);
+        session = cashSessionPort.save(session);
 
         CashClosingReport report = new CashClosingReport();
         report.setCashSession(session);
@@ -237,9 +240,9 @@ public class CashSessionManagementService implements CashSessionUseCase {
         report.setDifference(diff);
         report.setObservations(request.closingNotes());
         report.setGeneratedBy(closer);
-        cashClosingReportRepository.save(report);
+        cashClosingReportPort.save(report);
 
-        Map<String, Object> meta = baseMeta(session);
+        Map<String, Object> meta = responseMapper.baseMeta(session);
         meta.put("expected", sum.expectedLedgerTotal().toPlainString());
         meta.put("counted", report.getCountedTotal().toPlainString());
         authAudit(AuthAuditAction.CASH_SESSION_CLOSE, closer, "closed", meta);
@@ -261,13 +264,13 @@ public class CashSessionManagementService implements CashSessionUseCase {
 
         cashClosingOutboundNotifier.scheduleAfterCashClose(session.getId(), groupingSite);
 
-        return toSessionResponse(session);
+        return responseMapper.toSessionResponse(session);
     }
 
     @Override
     @Transactional(readOnly = true)
     public CashSessionResponse getSession(UUID sessionId) {
-        return toSessionResponse(requireSession(sessionId));
+        return responseMapper.toSessionResponse(requireSession(sessionId));
     }
 
     @Override
@@ -280,79 +283,37 @@ public class CashSessionManagementService implements CashSessionUseCase {
                 : CashHttpContext.currentTerminal()
                     .orElseThrow(
                         () ->
-                            new OperationException(
+                            new CashSessionException(
                                 HttpStatus.BAD_REQUEST,
                                 "Indique terminal o envie header X-Parkflow-Terminal"));
         CashSession session =
-            cashSessionRepository
+            cashSessionPort
                 .findOpenForSiteTerminal(site, terminal, CashSessionStatus.OPEN)
-                .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "No hay caja abierta"));
-        return toSessionResponse(session);
+                .orElseThrow(() -> new CashSessionException(HttpStatus.NOT_FOUND, "No hay caja abierta"));
+        return responseMapper.toSessionResponse(session);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<CashSessionResponse> listSessions(Pageable pageable) {
-        return cashSessionRepository.findAllByOrderByOpenedAtDesc(pageable).map(this::toSessionResponse);
+        return cashSessionPort.findAllByOrderByOpenedAtDesc(pageable).map(responseMapper::toSessionResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
     public CashSummaryResponse getSummary(UUID sessionId) {
         CashSession session = requireSession(sessionId);
-        List<CashMovement> movements = cashMovementRepository.findByCashSession_IdOrderByCreatedAtDesc(sessionId);
-        BigDecimal ledger =
-            movements.stream().map(this::ledgerContribution).reduce(ZERO, BigDecimal::add);
-        BigDecimal opening = session.getOpeningAmount() != null ? session.getOpeningAmount() : ZERO;
-        BigDecimal expected = opening.add(ledger);
-
-        Map<String, BigDecimal> byMethod = new HashMap<>();
-        Map<String, BigDecimal> byType = new HashMap<>();
-        long posted = 0;
-        for (CashMovement m : movements) {
-            if (m.getStatus() != CashMovementStatus.POSTED) {
-                continue;
-            }
-            posted++;
-            BigDecimal c = ledgerContribution(m);
-            byMethod.merge(m.getPaymentMethod().name(), c, BigDecimal::add);
-            byType.merge(m.getMovementType().name(), c, BigDecimal::add);
-        }
-
-        BigDecimal counted =
-            session.getCountedAmount() != null ? session.getCountedAmount() : null;
-        BigDecimal diff =
-            counted != null ? counted.subtract(expected) : null;
-
-        return new CashSummaryResponse(
-            opening,
-            expected,
-            counted,
-            diff,
-            byMethod,
-            byType,
-            posted);
+        List<CashMovement> movements = cashMovementPort.findByCashSession_IdOrderByCreatedAtDesc(sessionId);
+        return ledgerSummaryCalculator.summarize(session, movements);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<CashAuditEntryResponse> getAuditTrail(UUID sessionId) {
         requireSession(sessionId);
-        return cashAuditLogRepository.findByCashSession_IdOrderByCreatedAtDesc(sessionId).stream()
+        return cashAuditLogPort.findByCashSession_IdOrderByCreatedAtDesc(sessionId).stream()
             .map(
-                a ->
-                    new CashAuditEntryResponse(
-                        a.getId(),
-                        a.getAction(),
-                        a.getActorUser() != null ? a.getActorUser().getId() : null,
-                        a.getActorUser() != null ? a.getActorUser().getName() : null,
-                        a.getTerminalId(),
-                        a.getClientIp(),
-                        a.getOldValue(),
-                        a.getNewValue(),
-                        a.getReason(),
-                        a.getMetadata(),
-                        a.getCreatedAt()))
+                responseMapper::toAuditEntryResponse)
             .collect(Collectors.toList());
     }
 
@@ -364,7 +325,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
         if (!operatorUserId.equals(actor)
             && role != UserRole.ADMIN
             && role != UserRole.SUPER_ADMIN) {
-            throw new OperationException(HttpStatus.FORBIDDEN, "Solo puede operar caja como su usuario");
+            throw new CashSessionException(HttpStatus.FORBIDDEN, "Solo puede operar caja como su usuario");
         }
     }
 
@@ -376,32 +337,17 @@ public class CashSessionManagementService implements CashSessionUseCase {
     }
 
     private CashSession requireSession(UUID id) {
-        return cashSessionRepository
+        return cashSessionPort
             .findById(id)
-            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
+            .orElseThrow(() -> new CashSessionException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
     }
 
     private CashSession requireOpenSession(UUID id) {
         CashSession s = requireSession(id);
         if (s.getStatus() != CashSessionStatus.OPEN) {
-            throw new OperationException(HttpStatus.CONFLICT, "La sesion de caja ya esta cerrada");
+            throw new CashSessionException(HttpStatus.CONFLICT, "La sesion de caja ya esta cerrada");
         }
         return s;
-    }
-
-    private BigDecimal ledgerContribution(CashMovement m) {
-        if (m.getStatus() != CashMovementStatus.POSTED) {
-            return ZERO;
-        }
-        return switch (m.getMovementType()) {
-            case PARKING_PAYMENT,
-                MANUAL_INCOME,
-                LOST_TICKET_PAYMENT,
-                REPRINT_FEE,
-                ADJUSTMENT -> m.getAmount();
-            case MANUAL_EXPENSE, WITHDRAWAL, CUSTOMER_REFUND, DISCOUNT -> m.getAmount().negate();
-            case VOID_OFFSET -> m.getAmount();
-        };
     }
 
     private String groupingSiteForParams(CashSession s) {
@@ -415,43 +361,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
         return current + " | Arqueo: " + extra.trim();
     }
 
-    private Map<String, Object> baseMeta(CashSession s) {
-        Map<String, Object> m = new HashMap<>();
-        m.put("sessionId", s.getId().toString());
-        m.put("register", s.getCashRegister().getSite() + "/" + s.getCashRegister().getTerminal());
-        return m;
-    }
-
     private void authAudit(AuthAuditAction action, AppUser user, String detail, Map<String, Object> meta) {
         authAuditService.log(action, user, null, detail, meta);
-    }
-
-    private CashSessionResponse toSessionResponse(CashSession s) {
-        CashRegister r = s.getCashRegister();
-        return new CashSessionResponse(
-            s.getId(),
-            new CashRegisterInfoResponse(r.getId(), r.getSite(), r.getTerminal(), r.getLabel()),
-            s.getOperator().getId(),
-            s.getOperator().getName(),
-            s.getStatus().name(),
-            s.getOpeningAmount(),
-            s.getOpenedAt(),
-            s.getClosedAt(),
-            s.getClosedBy() != null ? s.getClosedBy().getId() : null,
-            s.getClosedBy() != null ? s.getClosedBy().getName() : null,
-            s.getExpectedAmount(),
-            s.getCountedAmount(),
-            s.getDifferenceAmount(),
-            s.getCountCash(),
-            s.getCountCard(),
-            s.getCountTransfer(),
-            s.getCountOther(),
-            s.getNotes(),
-            s.getClosingNotes(),
-            s.getClosingWitnessName(),
-            s.getSupportDocumentNumber(),
-            s.getCountedAt(),
-            s.getCountOperator() != null ? s.getCountOperator().getId() : null,
-            s.getCountOperator() != null ? s.getCountOperator().getName() : null);
     }
 }

@@ -8,8 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
-import com.parkflow.modules.configuration.entity.PaymentMethod;
-import com.parkflow.modules.configuration.repository.PaymentMethodRepository;
+import com.parkflow.modules.configuration.domain.PaymentMethod;
+import com.parkflow.modules.configuration.domain.repository.PaymentMethodPort;
 import com.parkflow.modules.configuration.application.service.PaymentMethodManagementService;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import java.util.List;
@@ -27,7 +27,7 @@ import org.springframework.http.HttpStatus;
 @ExtendWith(MockitoExtension.class)
 class PaymentMethodServiceTest {
 
-  @Mock private PaymentMethodRepository paymentMethodRepository;
+  @Mock private PaymentMethodPort paymentMethodRepository;
 
   private PaymentMethodManagementService service;
 

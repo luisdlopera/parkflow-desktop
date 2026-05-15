@@ -1,22 +1,30 @@
 "use client";
 
-import { useIsMobile } from "@/lib/hooks/useMediaQuery";
-import { AlertCircle, Inbox } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import {
+  Button,
   Checkbox,
   Input,
-  Button,
   Pagination,
   Select,
   SelectItem,
 } from "@heroui/react";
+import {
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
+  Filter,
+  Inbox,
+  Loader2,
+  Search,
+  X,
+} from "lucide-react";
 
-// Public types expected by the user (and used across the app)
 export type DataTableColumn<T> = {
   key: keyof T | string;
-  header?: string; // newer name
-  label?: string; // legacy
+  header?: string;
+  label?: string;
   render?: (row: T) => React.ReactNode;
   align?: "left" | "center" | "right";
   sortable?: boolean;
@@ -24,7 +32,7 @@ export type DataTableColumn<T> = {
   className?: string;
   headerClassName?: string;
   hideOnMobile?: boolean;
-  priority?: "high" | "medium" | "low"; // legacy used by mobile cards
+  priority?: "high" | "medium" | "low";
 };
 
 export type DataTableFilter = {
@@ -38,8 +46,8 @@ export type DataTableProps<T> = {
   title?: string;
   description?: string;
   columns: DataTableColumn<T>[];
-  data?: T[]; // preferred name
-  rows?: T[]; // legacy name support
+  data?: T[];
+  rows?: T[];
   getRowKey?: (row: T) => string;
   isLoading?: boolean;
   error?: string | null;
@@ -69,284 +77,427 @@ export type DataTableProps<T> = {
   toolbarActions?: React.ReactNode;
 };
 
-export default function DataTable<T extends Record<string, any>>(
-  props: DataTableProps<T>
-) {
-  // Backwards-compat: accept rows or data
-  const {
-    columns,
-    data,
-    rows,
-    getRowKey,
-    isLoading = false,
-    emptyMessage = "No hay datos disponibles",
-    searchable,
-    searchPlaceholder = "Buscar...",
-    selectable,
-    selectedKeys,
-    onSelectionChange,
-    pagination,
-    sorting,
-    onSearchChange,
-    filters,
-    onFilterChange,
-    title,
-    description,
-    actions,
-    toolbarActions,
-    error,
-  } = props as DataTableProps<T> & { rows?: T[]; data?: T[] };
+const alignClass = {
+  left: "text-left justify-start",
+  center: "text-center justify-center",
+  right: "text-right justify-end",
+};
 
-  const isMobile = useIsMobile();
-  const source = data ?? rows ?? [];
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
 
-  const [internalSearch, setInternalSearch] = useState("");
+function getValue<T extends Record<string, any>>(row: T, key: keyof T | string) {
+  return row[key as keyof T];
+}
 
-  // Selection handling (controlled or uncontrolled)
+function rowKey<T extends Record<string, any>>(row: T, getRowKey?: (row: T) => string) {
+  return getRowKey ? getRowKey(row) : String(row.id ?? row.key ?? JSON.stringify(row));
+}
+
+function normalize(value: unknown) {
+  return String(value ?? "").toLowerCase();
+}
+
+export default function DataTable<T extends Record<string, any>>({
+  title,
+  description,
+  columns,
+  data,
+  rows,
+  getRowKey,
+  isLoading = false,
+  error = null,
+  emptyMessage = "No hay datos disponibles",
+  actions,
+  filters = [],
+  searchable = false,
+  searchPlaceholder = "Buscar...",
+  selectable = false,
+  selectedKeys,
+  onSelectionChange,
+  pagination,
+  sorting,
+  onSearchChange,
+  onFilterChange,
+  toolbarActions,
+}: DataTableProps<T>) {
+  const source = useMemo(() => data ?? rows ?? [], [data, rows]);
+  const [search, setSearch] = useState("");
+  const [filterValues, setFilterValues] = useState<Record<string, any>>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [internalSelection, setInternalSelection] = useState<Set<string>>(new Set());
   const selection = selectedKeys ?? internalSelection;
-  const setSelection = (s: Set<string>) => {
-    if (onSelectionChange) onSelectionChange(s);
-    else setInternalSelection(new Set(Array.from(s)));
-  };
+  const hasToolbar = Boolean(title || description || searchable || filters.length || toolbarActions);
 
-  const allVisibleRowKeys = useMemo(() => source.map((r) => (getRowKey ? getRowKey(r) : String(r.id ?? r.key ?? JSON.stringify(r)))) , [source, getRowKey]);
+  const visibleColumns = useMemo(
+    () => columns.filter((column) => !column.hideOnMobile),
+    [columns],
+  );
 
-  const toggleSelectAll = () => {
-    const newSet = new Set<string>();
-    const allSelected = allVisibleRowKeys.every((k) => selection.has(k));
-    if (!allSelected) {
-      allVisibleRowKeys.forEach((k) => newSet.add(k));
+  const filteredData = useMemo(() => {
+    let next = source;
+
+    if (!onSearchChange && search.trim()) {
+      const query = search.trim().toLowerCase();
+      next = next.filter((row) => Object.values(row).some((value) => normalize(value).includes(query)));
     }
-    setSelection(newSet);
-  };
 
-  const toggleSelect = (key: string) => {
-    const next = new Set(selection);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    setSelection(next);
-  };
+    if (!onFilterChange) {
+      next = next.filter((row) =>
+        filters.every((filter) => {
+          const raw = getValue(row, filter.key);
+          const value = filterValues[filter.key];
+          if (value === undefined || value === "" || value === null) return true;
 
-  const getAlignmentClass = (align?: "left" | "center" | "right") => {
-    switch (align) {
-      case "center":
-        return "text-center";
-      case "right":
-        return "text-right";
-      default:
-        return "text-left";
+          if (filter.type === "text") return normalize(raw).includes(normalize(value));
+          if (filter.type === "select") return normalize(raw) === normalize(value);
+          if (filter.type === "boolean") return String(Boolean(raw)) === String(value);
+          if (filter.type === "date") {
+            if (!raw) return false;
+            return new Date(raw).toISOString().slice(0, 10) === value;
+          }
+          if (filter.type === "dateRange") {
+            if (!raw) return false;
+            const date = new Date(raw).getTime();
+            const from = value?.from ? new Date(value.from).getTime() : Number.NEGATIVE_INFINITY;
+            const to = value?.to ? new Date(value.to).getTime() : Number.POSITIVE_INFINITY;
+            return date >= from && date <= to;
+          }
+          if (filter.type === "numberRange") {
+            const number = Number(raw);
+            const min = value?.min !== "" && value?.min != null ? Number(value.min) : Number.NEGATIVE_INFINITY;
+            const max = value?.max !== "" && value?.max != null ? Number(value.max) : Number.POSITIVE_INFINITY;
+            return Number.isFinite(number) && number >= min && number <= max;
+          }
+          return true;
+        }),
+      );
     }
+
+    return next;
+  }, [filterValues, filters, onFilterChange, onSearchChange, search, source]);
+
+  const tableData = filteredData;
+  const keys = useMemo(() => tableData.map((row) => rowKey(row, getRowKey)), [getRowKey, tableData]);
+  const allSelected = keys.length > 0 && keys.every((key) => selection.has(key));
+  const colSpan = columns.length + (selectable ? 1 : 0) + (actions ? 1 : 0);
+  const pageSizeOptions = pagination?.pageSizeOptions ?? [10, 20, 50, 100];
+  const pageCount = pagination ? Math.max(1, Math.ceil(pagination.total / pagination.pageSize)) : 1;
+  const displayedPage = pagination ? (pagination.page <= 0 ? pagination.page + 1 : pagination.page) : 1;
+
+  const setSelection = (next: Set<string>) => {
+    if (onSelectionChange) onSelectionChange(next);
+    else setInternalSelection(next);
   };
 
-  // Mobile column prioritization (legacy support)
-  const highPriorityColumns = columns.filter((c) => c.priority === "high" || !c.priority);
-  const mediumPriorityColumns = columns.filter((c) => c.priority === "medium");
-
-  // Sorting header click
-  const handleHeaderSort = (col: DataTableColumn<T>) => {
-    if (!col.sortable || !sorting?.onSortChange) return;
-    const key = String(col.key);
-    const current = sorting?.sortKey === key ? sorting.direction : undefined;
-    const nextDir = current === "asc" ? "desc" : "asc";
-    sorting.onSortChange?.(key, nextDir);
+  const updateFilter = (key: string, value: any) => {
+    const next = { ...filterValues, [key]: value };
+    setFilterValues(next);
+    onFilterChange?.(next);
   };
 
-  // Render helpers
-  const renderCell = (col: DataTableColumn<T>, row: T) => {
-    if (col.render) return col.render(row);
-    const k = col.key as keyof T;
-    const v = row[k];
-    if (v === null || v === undefined) return "";
-    return String(v);
+  const clearFilters = () => {
+    setSearch("");
+    setFilterValues({});
+    onSearchChange?.("");
+    onFilterChange?.({});
   };
 
-  // Search change
-  const handleSearch = (v: string) => {
-    setInternalSearch(v);
-    onSearchChange?.(v);
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    onSearchChange?.(value);
   };
 
-  // Render states
-  if (isMobile) {
+  const handleSort = (column: DataTableColumn<T>) => {
+    if (!column.sortable || !sorting?.onSortChange) return;
+    const key = String(column.key);
+    const direction = sorting.sortKey === key && sorting.direction === "asc" ? "desc" : "asc";
+    sorting.onSortChange(key, direction);
+  };
+
+  const renderCell = (column: DataTableColumn<T>, row: T) => {
+    if (column.render) return column.render(row);
+    const value = getValue(row, column.key);
+    if (value === null || value === undefined || value === "") {
+      return <span className="text-default-400">-</span>;
+    }
+    return String(value);
+  };
+
+  const renderFilter = (filter: DataTableFilter) => {
+    const value = filterValues[filter.key];
+
+    if (filter.type === "select" || filter.type === "boolean") {
+      const options =
+        filter.type === "boolean"
+          ? [
+              { label: "Si", value: "true" },
+              { label: "No", value: "false" },
+            ]
+          : filter.options ?? [];
+
+      return (
+        <Select
+          key={filter.key}
+          label={filter.label}
+          size="sm"
+          variant="bordered"
+          selectedKeys={value ? [String(value)] : []}
+          onChange={(event) => updateFilter(filter.key, event.target.value)}
+          className="min-w-44"
+        >
+          {options.map((option) => (
+            <SelectItem key={option.value} textValue={option.label}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </Select>
+      );
+    }
+
+    if (filter.type === "dateRange") {
+      return (
+        <div key={filter.key} className="grid min-w-72 grid-cols-2 gap-2">
+          <Input
+            label={`${filter.label} desde`}
+            type="date"
+            size="sm"
+            variant="bordered"
+            value={value?.from ?? ""}
+            onChange={(event) => updateFilter(filter.key, { ...value, from: event.target.value })}
+          />
+          <Input
+            label="Hasta"
+            type="date"
+            size="sm"
+            variant="bordered"
+            value={value?.to ?? ""}
+            onChange={(event) => updateFilter(filter.key, { ...value, to: event.target.value })}
+          />
+        </div>
+      );
+    }
+
+    if (filter.type === "numberRange") {
+      return (
+        <div key={filter.key} className="grid min-w-64 grid-cols-2 gap-2">
+          <Input
+            label={`${filter.label} min`}
+            type="number"
+            size="sm"
+            variant="bordered"
+            value={value?.min ?? ""}
+            onChange={(event) => updateFilter(filter.key, { ...value, min: event.target.value })}
+          />
+          <Input
+            label="Max"
+            type="number"
+            size="sm"
+            variant="bordered"
+            value={value?.max ?? ""}
+            onChange={(event) => updateFilter(filter.key, { ...value, max: event.target.value })}
+          />
+        </div>
+      );
+    }
+
     return (
-      <div className="space-y-4 md:hidden animate-in fade-in slide-in-from-bottom-2 duration-500">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center p-12 space-y-4 rounded-3xl border border-slate-200/60 bg-white/50 dark:bg-zinc-900/55 dark:border-neutral-800/50 backdrop-blur-sm">
-            <div className="w-10 h-10 border-4 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
-            <p className="text-sm font-medium text-slate-500 dark:text-neutral-300">Cargando datos...</p>
-          </div>
-        ) : source.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 space-y-3 rounded-3xl border border-dashed border-slate-300 bg-slate-50/50 dark:bg-zinc-900/45 dark:border-neutral-800 backdrop-blur-sm">
-            <Inbox className="w-10 h-10 text-slate-300 dark:text-neutral-400" />
-            <p className="text-sm font-medium text-slate-500 dark:text-neutral-300">{error ?? emptyMessage}</p>
-          </div>
-        ) : (
-          source.map((row) => {
-            const key = getRowKey ? getRowKey(row) : String(row.id ?? row.key ?? JSON.stringify(row));
-            return (
-              <div key={key} className="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white dark:bg-zinc-900 shadow-sm dark:border-neutral-800 transition-all hover:shadow-md active:scale-[0.98]">
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-50/0 to-amber-50/50 opacity-0 transition-opacity group-hover:opacity-100" />
-                <div className="relative p-5 space-y-4">
-                  {highPriorityColumns[0] && (
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-neutral-400 uppercase tracking-widest">
-                          {highPriorityColumns[0].header ?? highPriorityColumns[0].label}
-                        </span>
-                        <div className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
-                          {renderCell(highPriorityColumns[0], row)}
-                        </div>
-                      </div>
-                      {selectable && (
-                        <div>
-                          <Checkbox
-                            isSelected={selection.has(key)}
-                            onValueChange={() => toggleSelect(key)}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-4">
-                    {highPriorityColumns.slice(1).map((column) => (
-                      <div key={String(column.key)} className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-neutral-400 uppercase tracking-widest">
-                          {column.header ?? column.label}
-                        </span>
-                        <div className="text-sm font-medium text-slate-700 dark:text-neutral-300">
-                          {renderCell(column, row)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {mediumPriorityColumns.length > 0 && (
-                    <div className="pt-3 border-t border-slate-100 dark:border-neutral-800 flex flex-wrap gap-x-4 gap-y-2">
-                      {mediumPriorityColumns.map((column) => (
-                        <div key={String(column.key)} className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-semibold text-slate-400 dark:text-neutral-400 uppercase tracking-tight">
-                            {column.header ?? column.label}:
-                          </span>
-                          <span className="text-xs font-medium text-slate-600 dark:text-neutral-300">
-                            {renderCell(column, row)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {actions && <div className="pt-2">{actions(row)}</div>}
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+      <Input
+        key={filter.key}
+        label={filter.label}
+        type={filter.type === "date" ? "date" : "text"}
+        size="sm"
+        variant="bordered"
+        value={value ?? ""}
+        onChange={(event) => updateFilter(filter.key, event.target.value)}
+        className="min-w-48"
+      />
     );
-  }
+  };
 
-  // Desktop view
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white/80 dark:bg-zinc-900/65 dark:border-neutral-800/60 backdrop-blur-md shadow-sm hidden md:block animate-in fade-in duration-700">
-      <div className="p-4 flex items-center justify-between gap-4">
-        <div>
-          {title ? <h3 className="text-lg font-semibold text-slate-900">{title}</h3> : null}
-          {description ? <p className="text-sm text-slate-600">{description}</p> : null}
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/70 dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-black/20">
+      {hasToolbar ? (
+        <div className="border-b border-slate-100 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              {title ? (
+                <h3 className="text-base font-semibold text-slate-950 dark:text-zinc-50">{title}</h3>
+              ) : null}
+              {description ? (
+                <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">{description}</p>
+              ) : null}
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              {searchable ? (
+                <Input
+                  aria-label="Buscar en tabla"
+                  placeholder={searchPlaceholder}
+                  size="sm"
+                  variant="bordered"
+                  value={search}
+                  onChange={(event) => handleSearch(event.target.value)}
+                  startContent={<Search className="h-4 w-4 text-default-400" />}
+                  className="w-full sm:w-80"
+                />
+              ) : null}
+              {filters.length ? (
+                <Button
+                  size="sm"
+                  variant="flat"
+                  startContent={<Filter className="h-4 w-4" />}
+                  endContent={filtersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  onPress={() => setFiltersOpen((open) => !open)}
+                >
+                  Filtros
+                </Button>
+              ) : null}
+              {toolbarActions}
+            </div>
+          </div>
+          {filters.length && filtersOpen ? (
+            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-zinc-800 dark:bg-zinc-900/60">
+              <div className="flex flex-wrap items-end gap-3">
+                {filters.map(renderFilter)}
+                <Button
+                  size="sm"
+                  variant="light"
+                  startContent={<X className="h-4 w-4" />}
+                  onPress={clearFilters}
+                >
+                  Limpiar
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </div>
-        <div className="flex items-center gap-3">
-          {searchable && (
-            <Input
-              placeholder={searchPlaceholder}
-              size="sm"
-              variant="flat"
-              className="max-w-xs"
-              value={internalSearch}
-              onChange={(e) => handleSearch((e.target as HTMLInputElement).value)}
-            />
-          )}
-          {toolbarActions}
-        </div>
-      </div>
+      ) : null}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-slate-700 dark:text-neutral-300 min-w-[800px] border-separate border-spacing-0">
+      <div className="hidden overflow-x-auto md:block">
+        <table className="min-w-full border-separate border-spacing-0 text-sm text-slate-700 dark:text-zinc-200">
           <thead>
-            <tr className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/30">
-              {selectable && (
-                <th className="px-6 py-4 w-12">
+            <tr className="bg-primary text-primary-foreground">
+              {selectable ? (
+                <th className="w-12 px-5 py-3.5 text-left first:rounded-tl-2xl">
                   <Checkbox
-                    isSelected={allVisibleRowKeys.length > 0 && allVisibleRowKeys.every((k) => selection.has(k))}
-                    onValueChange={toggleSelectAll}
+                    aria-label="Seleccionar todas las filas"
+                    isSelected={allSelected}
+                    onValueChange={() => {
+                      const next = new Set<string>();
+                      if (!allSelected) keys.forEach((key) => next.add(key));
+                      setSelection(next);
+                    }}
                   />
                 </th>
-              )}
-              {columns.map((column, idx) => (
-                <th
-                  key={String(column.key)}
-                  onClick={() => handleHeaderSort(column)}
-                  className={`px-6 py-4 font-bold text-[11px] uppercase tracking-[0.15em] text-amber-700 dark:text-amber-300 border-b border-amber-200 dark:border-amber-800 ${getAlignmentClass(column.align)} ${idx === 0 ? "pl-8" : ""} ${idx === columns.length - 1 ? "pr-8" : ""} ${column.headerClassName ?? ""}`}
-                  style={{ width: column.width }}
-                >
-                  <div className="flex items-center gap-2 select-none">
-                    <span>{column.header ?? column.label}</span>
-                    {column.sortable && sorting?.sortKey === String(column.key) ? (
-                      <span className="text-xs">{sorting.direction === "asc" ? "▲" : "▼"}</span>
-                    ) : null}
-                  </div>
+              ) : null}
+              {columns.map((column, index) => {
+                const activeSort = sorting?.sortKey === String(column.key);
+                return (
+                  <th
+                    key={String(column.key)}
+                    scope="col"
+                    style={{ width: column.width }}
+                    onClick={() => handleSort(column)}
+                    className={cn(
+                      "border-b border-primary-400/35 px-5 py-3.5 text-[0.7rem] font-bold uppercase tracking-[0.14em] text-white",
+                      column.sortable && "cursor-pointer select-none hover:bg-white/10",
+                      alignClass[column.align ?? "left"],
+                      index === 0 && !selectable && "first:rounded-tl-2xl",
+                      index === columns.length - 1 && !actions && "last:rounded-tr-2xl",
+                      column.headerClassName,
+                    )}
+                  >
+                    <span className={cn("flex items-center gap-1.5", alignClass[column.align ?? "left"])}>
+                      {column.header ?? column.label}
+                      {column.sortable ? (
+                        activeSort ? (
+                          sorting?.direction === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronsUpDown className="h-3.5 w-3.5 opacity-70" />
+                        )
+                      ) : null}
+                    </span>
+                  </th>
+                );
+              })}
+              {actions ? (
+                <th className="rounded-tr-2xl border-b border-primary-400/35 px-5 py-3.5 text-center text-[0.7rem] font-bold uppercase tracking-[0.14em] text-white">
+                  Acciones
                 </th>
-              ))}
+              ) : null}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50 dark:divide-neutral-800">
+          <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
             {error ? (
               <tr>
-                <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-6 py-12">
-                  <div className="flex items-center gap-3 text-rose-700">
-                    <AlertCircle className="w-5 h-5" />
-                    <div>
-                      <p className="font-medium">{error}</p>
-                    </div>
+                <td colSpan={colSpan} className="px-6 py-12">
+                  <div className="flex items-center justify-center gap-3 rounded-xl border border-danger-200 bg-danger-50 px-4 py-5 text-danger dark:border-danger-500/30 dark:bg-danger-500/10">
+                    <AlertCircle className="h-5 w-5" />
+                    <span className="font-medium">{error}</span>
                   </div>
                 </td>
               </tr>
             ) : isLoading ? (
               <tr>
-                <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-6 py-20">
-                  <div className="flex flex-col items-center justify-center space-y-4">
-                    <div className="w-8 h-8 border-3 border-amber-100 border-t-amber-500 rounded-full animate-spin" />
-                    <p className="text-sm font-medium text-slate-400 dark:text-neutral-300">Sincronizando datos...</p>
+                <td colSpan={colSpan} className="px-6 py-16">
+                  <div className="flex flex-col items-center gap-3 text-slate-500 dark:text-zinc-400">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-sm font-medium">Cargando datos...</span>
                   </div>
                 </td>
               </tr>
-            ) : source.length === 0 ? (
+            ) : tableData.length === 0 ? (
               <tr>
-                <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-6 py-24">
-                  <div className="flex flex-col items-center justify-center space-y-4 opacity-60">
-                    <div className="p-4 rounded-full bg-slate-50 border border-slate-100 dark:bg-zinc-900 dark:border-neutral-800">
-                      <Inbox className="w-8 h-8 text-slate-300 dark:text-neutral-400" />
+                <td colSpan={colSpan} className="px-6 py-16">
+                  <div className="mx-auto flex max-w-sm flex-col items-center gap-3 text-center">
+                    <div className="rounded-full border border-slate-200 bg-slate-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                      <Inbox className="h-7 w-7 text-slate-400" />
                     </div>
-                    <p className="text-base font-medium text-slate-500 dark:text-neutral-300">{emptyMessage}</p>
+                    <p className="font-medium text-slate-700 dark:text-zinc-200">{emptyMessage}</p>
                   </div>
                 </td>
               </tr>
             ) : (
-              source.map((row) => {
-                const key = getRowKey ? getRowKey(row) : String(row.id ?? row.key ?? JSON.stringify(row));
+              tableData.map((row, rowIndex) => {
+                const key = rowKey(row, getRowKey);
                 return (
-                  <tr key={key} className="group hover:bg-slate-50/80 dark:hover:bg-neutral-800/35 transition-all duration-200 ease-out">
-                    {selectable && (
-                      <td className="px-6 py-4.5 whitespace-nowrap w-12">
-                        <Checkbox isSelected={selection.has(key)} onValueChange={() => toggleSelect(key)} />
-                      </td>
+                  <tr
+                    key={key}
+                    className={cn(
+                      "group transition-colors hover:bg-primary-50/65 dark:hover:bg-primary-500/10",
+                      rowIndex % 2 === 1 && "bg-slate-50/55 dark:bg-zinc-900/35",
                     )}
-                    {columns.map((column, idx) => (
+                  >
+                    {selectable ? (
+                      <td className="w-12 px-5 py-4">
+                        <Checkbox
+                          aria-label={`Seleccionar fila ${key}`}
+                          isSelected={selection.has(key)}
+                          onValueChange={() => {
+                            const next = new Set(selection);
+                            if (next.has(key)) next.delete(key);
+                            else next.add(key);
+                            setSelection(next);
+                          }}
+                        />
+                      </td>
+                    ) : null}
+                    {columns.map((column, index) => (
                       <td
                         key={String(column.key)}
-                        className={`px-6 py-4.5 whitespace-nowrap transition-colors group-hover:text-slate-900 dark:group-hover:text-white ${getAlignmentClass(column.align)} ${idx === 0 ? "pl-8 font-semibold" : ""} ${idx === columns.length - 1 ? "pr-8" : ""} ${column.className ?? ""}`}
                         style={{ width: column.width }}
+                        className={cn(
+                          "px-5 py-4 align-middle text-slate-700 dark:text-zinc-200",
+                          alignClass[column.align ?? "left"],
+                          index === 0 && "font-medium text-slate-950 dark:text-zinc-50",
+                          column.className,
+                        )}
                       >
                         {renderCell(column, row)}
                       </td>
                     ))}
+                    {actions ? <td className="px-5 py-4 text-center">{actions(row)}</td> : null}
                   </tr>
                 );
               })
@@ -355,18 +506,100 @@ export default function DataTable<T extends Record<string, any>>(
         </table>
       </div>
 
+      <div className="divide-y divide-slate-100 md:hidden dark:divide-zinc-800">
+        {error ? (
+          <div className="m-4 rounded-xl border border-danger-200 bg-danger-50 p-4 text-sm font-medium text-danger dark:border-danger-500/30 dark:bg-danger-500/10">
+            {error}
+          </div>
+        ) : isLoading ? (
+          <div className="flex flex-col items-center gap-3 p-10 text-slate-500">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="text-sm font-medium">Cargando datos...</span>
+          </div>
+        ) : tableData.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 p-10 text-center">
+            <Inbox className="h-8 w-8 text-slate-400" />
+            <p className="text-sm font-medium text-slate-600 dark:text-zinc-300">{emptyMessage}</p>
+          </div>
+        ) : (
+          tableData.map((row) => {
+            const key = rowKey(row, getRowKey);
+            return (
+              <article key={key} className="p-4">
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wider text-primary">
+                        {visibleColumns[0]?.header ?? visibleColumns[0]?.label}
+                      </p>
+                      <div className="mt-1 text-base font-semibold text-slate-950 dark:text-zinc-50">
+                        {visibleColumns[0] ? renderCell(visibleColumns[0], row) : key}
+                      </div>
+                    </div>
+                    {selectable ? (
+                      <Checkbox
+                        aria-label={`Seleccionar fila ${key}`}
+                        isSelected={selection.has(key)}
+                        onValueChange={() => {
+                          const next = new Set(selection);
+                          if (next.has(key)) next.delete(key);
+                          else next.add(key);
+                          setSelection(next);
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    {visibleColumns.slice(1).map((column) => (
+                      <div key={String(column.key)}>
+                        <p className="text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">
+                          {column.header ?? column.label}
+                        </p>
+                        <div className="mt-1 text-sm text-slate-700 dark:text-zinc-200">{renderCell(column, row)}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {actions ? <div className="border-t border-slate-100 pt-3 dark:border-zinc-800">{actions(row)}</div> : null}
+                </div>
+              </article>
+            );
+          })
+        )}
+      </div>
+
       {pagination ? (
-        <div className="p-4 flex items-center justify-end">
-          <Pagination
-            total={pagination.total}
-            page={pagination.page + 1}
-            onChange={(p) => pagination.onPageChange(p - 1)}
-            showControls
-            showShadow
-            color="primary"
-          />
+        <div className="flex flex-col gap-3 border-t border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
+          <p className="text-sm text-slate-500 dark:text-zinc-400">
+            {pagination.total} registros
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            {pagination.onPageSizeChange ? (
+              <Select
+                aria-label="Filas por pagina"
+                size="sm"
+                variant="bordered"
+                selectedKeys={[String(pagination.pageSize)]}
+                onChange={(event) => pagination.onPageSizeChange?.(Number(event.target.value))}
+                className="w-32"
+              >
+                {pageSizeOptions.map((option) => (
+                  <SelectItem key={String(option)} textValue={String(option)}>
+                    {option} / pág.
+                  </SelectItem>
+                ))}
+              </Select>
+            ) : null}
+            <Pagination
+              total={pageCount}
+              page={displayedPage}
+              onChange={(nextPage) => pagination.onPageChange(pagination.page <= 0 ? nextPage - 1 : nextPage)}
+              showControls
+              showShadow
+              color="primary"
+            />
+          </div>
         </div>
       ) : null}
-    </div>
+    </section>
   );
 }

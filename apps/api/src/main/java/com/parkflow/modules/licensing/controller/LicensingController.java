@@ -1,7 +1,7 @@
 package com.parkflow.modules.licensing.controller;
 
+import com.parkflow.modules.licensing.application.port.in.*;
 import com.parkflow.modules.licensing.dto.*;
-import com.parkflow.modules.licensing.service.LicenseService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -20,7 +20,10 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class LicensingController {
 
-  private final LicenseService licenseService;
+  private final HeartbeatUseCase heartbeatUseCase;
+  private final ValidateLicenseUseCase validateLicenseUseCase;
+  private final CompanyManagementUseCase companyManagementUseCase;
+  private final GenerateLicenseUseCase generateLicenseUseCase;
 
   // ==================== HEARTBEAT ====================
 
@@ -38,7 +41,7 @@ public class LicensingController {
       clientIp = servletRequest.getRemoteAddr();
     }
 
-    HeartbeatResponse response = licenseService.processHeartbeat(request, clientIp);
+    HeartbeatResponse response = heartbeatUseCase.processHeartbeat(request, clientIp);
     return ResponseEntity.ok(response);
   }
 
@@ -50,7 +53,7 @@ public class LicensingController {
   public ResponseEntity<LicenseValidationResponse> validateLicense(
       @Valid @RequestBody LicenseValidationRequest request) {
 
-    LicenseValidationResponse response = licenseService.validateLicense(request);
+    LicenseValidationResponse response = validateLicenseUseCase.validateLicense(request);
     return ResponseEntity.ok(response);
   }
 
@@ -65,7 +68,7 @@ public class LicensingController {
       @Valid @RequestBody CreateCompanyRequest request,
       @RequestAttribute("currentUserEmail") String performedBy) {
 
-    CompanyResponse response = licenseService.createCompany(request, performedBy);
+    CompanyResponse response = companyManagementUseCase.createCompany(request, performedBy);
     return ResponseEntity.ok(response);
   }
 
@@ -75,7 +78,7 @@ public class LicensingController {
   @GetMapping("/companies")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
   public ResponseEntity<List<CompanyResponse>> listCompanies() {
-    return ResponseEntity.ok(licenseService.listAllCompanies());
+    return ResponseEntity.ok(companyManagementUseCase.listAllCompanies());
   }
 
   /**
@@ -84,7 +87,7 @@ public class LicensingController {
   @GetMapping("/companies/{companyId}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN') or @securityService.isCurrentUserCompany(#companyId)")
   public ResponseEntity<CompanyResponse> getCompany(@PathVariable UUID companyId) {
-    return ResponseEntity.ok(licenseService.getCompany(companyId));
+    return ResponseEntity.ok(companyManagementUseCase.getCompany(companyId));
   }
 
   /**
@@ -97,7 +100,7 @@ public class LicensingController {
       @Valid @RequestBody UpdateCompanyRequest request,
       @RequestAttribute("currentUserEmail") String performedBy) {
 
-    return ResponseEntity.ok(licenseService.updateCompany(companyId, request, performedBy));
+    return ResponseEntity.ok(companyManagementUseCase.updateCompany(companyId, request, performedBy));
   }
 
   // ==================== ADMIN: LICENSE MANAGEMENT ====================
@@ -111,7 +114,7 @@ public class LicensingController {
       @Valid @RequestBody GenerateLicenseRequest request,
       @RequestAttribute("currentUserEmail") String performedBy) {
 
-    return ResponseEntity.ok(licenseService.generateOfflineLicense(request, performedBy));
+    return ResponseEntity.ok(generateLicenseUseCase.generateOfflineLicense(request, performedBy));
   }
 
   /**
@@ -127,7 +130,7 @@ public class LicensingController {
     UpdateCompanyRequest request = new UpdateCompanyRequest();
     request.setStatus(com.parkflow.modules.licensing.enums.CompanyStatus.ACTIVE);
 
-    return ResponseEntity.ok(licenseService.updateCompany(companyId, request, performedBy));
+    return ResponseEntity.ok(companyManagementUseCase.updateCompany(companyId, request, performedBy));
   }
 
   // ==================== ADMIN: REMOTE COMMANDS ====================

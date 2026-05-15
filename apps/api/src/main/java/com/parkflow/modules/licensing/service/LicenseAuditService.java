@@ -1,9 +1,10 @@
 package com.parkflow.modules.licensing.service;
+import com.parkflow.modules.licensing.domain.repository.*;
 
 import com.parkflow.modules.licensing.dto.*;
-import com.parkflow.modules.licensing.entity.*;
+import com.parkflow.modules.licensing.domain.*;
+import com.parkflow.modules.licensing.domain.repository.LicensedDevicePort;
 import com.parkflow.modules.licensing.enums.*;
-import com.parkflow.modules.licensing.repository.*;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -21,10 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class LicenseAuditService {
 
-  private final LicenseBlockEventRepository blockEventRepository;
-  private final CompanyRepository companyRepository;
-  private final LicensedDeviceRepository deviceRepository;
-  private final LicenseAuditLogRepository auditLogRepository;
+  private final LicenseBlockEventPort blockEventRepository;
+  private final CompanyPort companyRepository;
+  private final LicensedDevicePort deviceRepository;
+  private final LicenseAuditLogPort auditLogRepository;
 
   // ==================== REGISTRO DE EVENTOS ====================
 
