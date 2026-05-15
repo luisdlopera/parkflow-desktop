@@ -2,7 +2,7 @@ package com.parkflow.modules.cash.service;
 
 import com.parkflow.config.CashModuleProperties;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
-import com.parkflow.modules.settings.entity.ParkingParameters;
+import com.parkflow.modules.settings.domain.ParkingParameters;
 import com.parkflow.modules.settings.domain.repository.ParkingParametersPort;
 import com.parkflow.modules.cash.dto.CashPolicyResponse;
 import java.math.BigDecimal;

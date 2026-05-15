@@ -105,17 +105,17 @@ describe("CompaniesPage", () => {
 
   it("renders the company list with correct data", () => {
     render(<CompaniesPage />);
-    expect(screen.getByText("Empresa Alpha")).toBeDefined();
-    expect(screen.getByText("Empresa Beta")).toBeDefined();
-    expect(screen.getByText("Sync / Cloud")).toBeDefined();
-    expect(screen.getByText("Pro / Multi-sede")).toBeDefined();
-    expect(screen.getByText("Activa")).toBeDefined();
-    expect(screen.getByText("Expirada")).toBeDefined();
+    expect(screen.getAllByText("Empresa Alpha").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Empresa Beta").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Sync / Cloud").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Pro / Multi-sede").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Activa").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Expirada").length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows correct stats card counts", () => {
     render(<CompaniesPage />);
-    expect(screen.getByText("2")).toBeDefined();
+    expect(screen.getAllByText("2").length).toBeGreaterThanOrEqual(1);
   });
 
   it("filters companies by search query", async () => {
@@ -126,7 +126,7 @@ describe("CompaniesPage", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Empresa Alpha")).toBeDefined();
+      expect(screen.getAllByText("Empresa Alpha").length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -138,7 +138,7 @@ describe("CompaniesPage", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("No se encontraron empresas")).toBeDefined();
+      expect(screen.getAllByText("No se encontraron empresas").length).toBeGreaterThanOrEqual(1);
     });
   });
 

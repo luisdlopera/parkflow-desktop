@@ -1,6 +1,5 @@
 package com.parkflow.modules.configuration.domain;
 
-import com.parkflow.modules.parking.operation.domain.Rate;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;

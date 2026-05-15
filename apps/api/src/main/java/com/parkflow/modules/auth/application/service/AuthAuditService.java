@@ -5,7 +5,7 @@ import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.domain.AuthAuditLog;
 import com.parkflow.modules.auth.domain.AuthorizedDevice;
 import com.parkflow.modules.auth.domain.repository.AuthAuditLogPort;
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.auth.domain.AppUser;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;

@@ -1,7 +1,7 @@
 package com.parkflow.modules.settings.application.port.in;
 
 import com.parkflow.modules.settings.dto.*;
-import com.parkflow.modules.parking.operation.domain.UserRole;
+import com.parkflow.modules.auth.domain.UserRole;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 

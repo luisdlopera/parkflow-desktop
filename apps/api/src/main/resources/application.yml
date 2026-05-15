@@ -16,7 +16,7 @@ spring:
     password: ${POSTGRES_PASSWORD:parkflow}
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     open-in-view: false
     properties:
       hibernate:
@@ -46,7 +46,7 @@ app:
     # SECURITY: These secrets MUST be overridden in production via environment variables
     # The application will fail to start if they are not set in non-dev profiles
     api-key: ${PARKFLOW_API_KEY:REPLACE_WITH_SECURE_API_KEY}
-    jwt-secret: ${PARKFLOW_JWT_SECRET_BASE64:REPLACE_WITH_BASE64_JWT_SECRET}
+    jwt-secret: ${PARKFLOW_JWT_SECRET_BASE64:cGFya2Zsb3ctZGVmYXVsdC1iYXNlNjQtand0LXNlY3JldC1rZXktZm9yLWRldmVsb3BtZW50}
     access-token-ttl-minutes: ${PARKFLOW_ACCESS_TOKEN_TTL_MINUTES:15}
     refresh-token-ttl-days: ${PARKFLOW_REFRESH_TOKEN_TTL_DAYS:7}
     jwt-clock-skew-seconds: ${PARKFLOW_JWT_CLOCK_SKEW_SECONDS:30}
@@ -57,7 +57,7 @@ app:
 
 parkflow:
   jwt:
-    secret: ${PARKFLOW_JWT_SECRET_BASE64:REPLACE_WITH_BASE64_JWT_SECRET}
+    secret: ${PARKFLOW_JWT_SECRET_BASE64:cGFya2Zsb3ctZGVmYXVsdC1iYXNlNjQtand0LXNlY3JldC1rZXktZm9yLWRldmVsb3BtZW50}
   licensing:
     # Claves RSA para firma de licencias (Base64 encoded)
     private-key: ${PARKFLOW_LICENSE_PRIVATE_KEY:}

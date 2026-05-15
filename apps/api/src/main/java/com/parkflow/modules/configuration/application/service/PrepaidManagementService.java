@@ -13,7 +13,7 @@ import com.parkflow.modules.configuration.dto.PrepaidBalancePurchaseRequest;
 import com.parkflow.modules.configuration.dto.PrepaidBalanceResponse;
 import com.parkflow.modules.configuration.dto.PrepaidPackageRequest;
 import com.parkflow.modules.configuration.dto.PrepaidPackageResponse;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;

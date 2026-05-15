@@ -4,7 +4,7 @@ import com.parkflow.modules.cash.domain.CashMovementType;
 import com.parkflow.modules.cash.dto.CashMovementRequest;
 import com.parkflow.modules.cash.dto.CashMovementResponse;
 import com.parkflow.modules.cash.dto.VoidMovementRequest;
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
 import com.parkflow.modules.parking.operation.domain.Payment;
 

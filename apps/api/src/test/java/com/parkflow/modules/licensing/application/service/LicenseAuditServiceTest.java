@@ -1,4 +1,4 @@
-package com.parkflow.modules.licensing.service;
+package com.parkflow.modules.licensing.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;

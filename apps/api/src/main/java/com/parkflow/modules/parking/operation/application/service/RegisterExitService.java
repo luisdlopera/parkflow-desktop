@@ -14,10 +14,10 @@ import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.parking.operation.domain.repository.*;
-import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.application.service.DurationCalculator;
-import com.parkflow.modules.parking.operation.application.service.OperationAuditService;
-import com.parkflow.modules.parking.operation.application.service.OperationPrintService;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
+
 import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

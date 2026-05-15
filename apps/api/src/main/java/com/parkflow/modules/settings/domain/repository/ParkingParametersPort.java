@@ -1,6 +1,6 @@
 package com.parkflow.modules.settings.domain.repository;
 
-import com.parkflow.modules.settings.entity.ParkingParameters;
+import com.parkflow.modules.settings.domain.ParkingParameters;
 import java.util.Optional;
 
 public interface ParkingParametersPort {

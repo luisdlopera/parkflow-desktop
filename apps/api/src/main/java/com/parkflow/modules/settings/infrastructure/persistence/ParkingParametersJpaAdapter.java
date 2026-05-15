@@ -1,7 +1,7 @@
 package com.parkflow.modules.settings.infrastructure.persistence;
 
 import com.parkflow.modules.settings.domain.repository.ParkingParametersPort;
-import com.parkflow.modules.settings.entity.ParkingParameters;
+import com.parkflow.modules.settings.domain.ParkingParameters;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;

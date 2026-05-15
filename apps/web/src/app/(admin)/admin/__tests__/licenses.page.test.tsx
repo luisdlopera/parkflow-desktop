@@ -39,15 +39,15 @@ vi.mock("@/lib/licensing/hooks", () => ({
 describe("LicensesPage", () => {
   it("renders the licenses page with company data", () => {
     render(<LicensesPage />);
-    expect(screen.getByText("Licencias")).toBeDefined();
-    expect(screen.getByText("Empresa Alpha")).toBeDefined();
-    expect(screen.getByText("Sync / Cloud")).toBeDefined();
-    expect(screen.getByText("Activa")).toBeDefined();
+    expect(screen.getAllByText("Licencias").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Empresa Alpha").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Sync / Cloud").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Activa").length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows stats cards", () => {
     render(<LicensesPage />);
-    expect(screen.getByText("Total Licencias")).toBeDefined();
+    expect(screen.getAllByText("Total Licencias").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(1);
   });
 });

@@ -14,10 +14,10 @@ import com.parkflow.modules.cash.domain.repository.CashSessionPort;
 import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
 import com.parkflow.modules.cash.service.CashDomainAuditService;
 import com.parkflow.modules.cash.service.CashPolicyResolver;
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.cash.domain.exception.CashSessionException;
-import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
 import com.parkflow.modules.settings.application.service.ParkingParametersService;

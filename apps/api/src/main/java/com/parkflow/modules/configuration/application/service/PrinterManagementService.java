@@ -7,7 +7,7 @@ import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.domain.Printer;
 import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.configuration.domain.repository.PrinterPort;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

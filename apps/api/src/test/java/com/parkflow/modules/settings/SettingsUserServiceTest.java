@@ -8,10 +8,10 @@ import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.domain.UserRole;
-import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import com.parkflow.modules.settings.dto.UserCreateRequest;
 import com.parkflow.modules.settings.dto.UserStatusRequest;
 import com.parkflow.modules.settings.application.service.SettingsAuditService;

@@ -6,7 +6,7 @@ import com.parkflow.modules.auth.dto.DeviceInfoResponse;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.domain.AuthorizedDevice;
 import com.parkflow.modules.auth.domain.repository.AuthorizedDevicePort;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;

@@ -1,6 +1,6 @@
 package com.parkflow.modules.parking.operation.application.service;
 
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
 import com.parkflow.modules.tickets.dto.CreatePrintJobRequest;
 import com.parkflow.modules.tickets.domain.PrintDocumentType;

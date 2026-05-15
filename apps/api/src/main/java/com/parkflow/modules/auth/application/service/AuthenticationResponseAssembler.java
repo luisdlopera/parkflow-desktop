@@ -8,7 +8,7 @@ import com.parkflow.modules.auth.dto.DeviceInfoResponse;
 import com.parkflow.modules.auth.dto.OfflineLeaseResponse;
 import com.parkflow.modules.auth.dto.SessionInfoResponse;
 import com.parkflow.modules.auth.security.RolePermissions;
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.auth.domain.AppUser;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.stereotype.Component;

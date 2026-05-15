@@ -1,7 +1,7 @@
 package com.parkflow.modules.auth.security;
 
-import com.parkflow.modules.parking.operation.domain.UserRole;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.common.exception.OperationException;
 import java.util.UUID;
 import org.springframework.lang.NonNull;
 import org.springframework.http.HttpStatus;

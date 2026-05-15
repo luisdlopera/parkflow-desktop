@@ -5,7 +5,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.common.dto.ErrorResponse;
-import com.parkflow.modules.parking.operation.exception.OperationException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.BeforeEach;

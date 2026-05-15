@@ -7,7 +7,7 @@ import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;
 import com.parkflow.modules.onboarding.domain.OnboardingProgress;
 import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -128,9 +128,9 @@ public class OnboardingService implements OnboardingUseCase {
 
   private Company getCompany(UUID companyId) {
     UUID currentCompanyId = com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId();
-    com.parkflow.modules.parking.operation.domain.UserRole role = com.parkflow.modules.auth.security.SecurityUtils.requireUserRole();
+    com.parkflow.modules.auth.domain.UserRole role = com.parkflow.modules.auth.security.SecurityUtils.requireUserRole();
     
-    if (!currentCompanyId.equals(companyId) && role != com.parkflow.modules.parking.operation.domain.UserRole.SUPER_ADMIN) {
+    if (!currentCompanyId.equals(companyId) && role != com.parkflow.modules.auth.domain.UserRole.SUPER_ADMIN) {
       throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a la empresa solicitada");
     }
 

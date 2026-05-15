@@ -15,7 +15,7 @@ import com.parkflow.modules.onboarding.application.service.FeatureAccessService;
 import com.parkflow.modules.onboarding.application.service.OnboardingService;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.parking.operation.domain.UserRole;
+import com.parkflow.modules.auth.domain.UserRole;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;

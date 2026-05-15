@@ -1,4 +1,4 @@
-package com.parkflow.modules.licensing.service;
+package com.parkflow.modules.licensing.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -16,13 +16,7 @@ import com.parkflow.modules.licensing.dto.HeartbeatRequest;
 import com.parkflow.modules.licensing.dto.HeartbeatResponse;
 import com.parkflow.modules.licensing.dto.LicenseValidationRequest;
 import com.parkflow.modules.licensing.dto.LicenseValidationResponse;
-import com.parkflow.modules.licensing.application.service.CompanyManagementService;
-import com.parkflow.modules.licensing.application.service.CompanyResponseAssembler;
-import com.parkflow.modules.licensing.application.service.LicenseHeartbeatService;
-import com.parkflow.modules.licensing.application.service.LicenseIssueService;
-import com.parkflow.modules.licensing.application.service.LicenseModuleProvisioner;
-import com.parkflow.modules.licensing.application.service.LicenseRemoteCommandPolicy;
-import com.parkflow.modules.licensing.application.service.LicenseValidationService;
+
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.CompanyModule;
 import com.parkflow.modules.licensing.domain.LicenseAuditLog;

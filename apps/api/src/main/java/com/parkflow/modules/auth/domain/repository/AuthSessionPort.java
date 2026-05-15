@@ -1,7 +1,7 @@
 package com.parkflow.modules.auth.domain.repository;
 
 import com.parkflow.modules.auth.domain.AuthSession;
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.auth.domain.AppUser;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;

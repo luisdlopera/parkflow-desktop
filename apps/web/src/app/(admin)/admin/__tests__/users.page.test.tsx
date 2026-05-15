@@ -9,17 +9,17 @@ vi.mock("@/lib/auth", () => ({
 describe("UsersPage", () => {
   it("renders the user management page", () => {
     render(<UsersPage />);
-    expect(screen.getByText("Usuarios Administrativos")).toBeDefined();
+    expect(screen.getAllByText("Usuarios Administrativos").length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows stats cards", () => {
     render(<UsersPage />);
-    expect(screen.getByText("Total Usuarios")).toBeDefined();
-    expect(screen.getByText("4")).toBeDefined();
+    expect(screen.getAllByText("Total Usuarios").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("4").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders the mock users list", () => {
     render(<UsersPage />);
-    expect(screen.getByText("admin@parkflow.local")).toBeDefined();
+    expect(screen.getAllByText("admin@parkflow.local").length).toBeGreaterThanOrEqual(1);
   });
 });

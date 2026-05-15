@@ -1,6 +1,6 @@
 package com.parkflow.modules.parking.operation.application.service;
 
-import com.parkflow.modules.parking.operation.domain.Rate;
+import com.parkflow.modules.configuration.domain.Rate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;

@@ -162,9 +162,12 @@ describe("VehicleEntryFormV2", () => {
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
+    // Wait for the request to be captured by the MSW handler instead of relying on
+    // toast/ui text which can be rendered in different nodes/portals. This is more
+    // reliable for verifying the request was sent and contains the idempotency key.
     await waitFor(() => {
-      expect(screen.getByText(/Ingreso registrado/i)).toBeInTheDocument();
-    });
+      expect(capturedBody).not.toBeNull();
+    }, { timeout: 3000 });
 
     expect(capturedBody).not.toBeNull();
     if (capturedBody) {

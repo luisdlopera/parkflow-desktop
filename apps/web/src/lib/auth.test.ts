@@ -53,6 +53,9 @@ beforeEach(() => {
   clearMocks();
 });
 
+// Ensure tests run with a predictable API key
+process.env.NEXT_PUBLIC_API_KEY = process.env.NEXT_PUBLIC_API_KEY ?? "dev-api-key-123";
+
 describe("auth client", () => {
   it("logs in, sends API key, persists the session, and exposes the current user", async () => {
     const { login, loadSession, currentUser, hasPermission } = await importAuth();

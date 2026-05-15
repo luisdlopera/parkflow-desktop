@@ -3,7 +3,7 @@ import com.parkflow.modules.licensing.domain.repository.*;
 
 import com.parkflow.modules.licensing.dto.*;
 import com.parkflow.modules.licensing.domain.LicenseBlockEvent;
-import com.parkflow.modules.licensing.service.LicenseAuditService;
+import com.parkflow.modules.licensing.application.service.LicenseAuditService;
 import jakarta.validation.Valid;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;

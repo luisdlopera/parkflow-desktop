@@ -14,7 +14,7 @@ class EntryRequestValidationTest {
 
   @Test
   void validate_ValidRequest_ShouldPass() {
-    EntryRequest request = new EntryRequest("idemp-123", "ABC123", "CAR", "CO", null, null, null, UUID.randomUUID(), UUID.randomUUID(), null, null, null, null, null, null, null, null, null, null);
+    EntryRequest request = new EntryRequest("idemp-123", "ABC123", "CAR", "CO", null, null, null, UUID.randomUUID(), UUID.randomUUID(), null, null, null, null, null, null, null, "Bueno", null, null);
 
     var violations = validator.validate(request);
 
@@ -23,7 +23,7 @@ class EntryRequestValidationTest {
 
   @Test
   void validate_InvalidPlate_ShouldFail() {
-    EntryRequest request = new EntryRequest("idemp-456", "invalid!", "CAR", "CO", null, null, null, UUID.randomUUID(), UUID.randomUUID(), null, null, null, null, null, null, null, null, null, null);
+    EntryRequest request = new EntryRequest("idemp-456", "invalid!", "CAR", "CO", null, null, null, UUID.randomUUID(), UUID.randomUUID(), null, null, null, null, null, null, null, "Bueno", null, null);
 
     var violations = validator.validate(request);
 
