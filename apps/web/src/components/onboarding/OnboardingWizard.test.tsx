@@ -35,6 +35,20 @@ describe("OnboardingWizard", () => {
     render(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
     await waitFor(() => expect(screen.getByText("Paso 1 de 12")).toBeInTheDocument());
     expect(screen.getByText("Tipos de vehículo")).toBeInTheDocument();
+    // should render help icons (title and question). pick the title help by its aria-controls id
+    const helpButtons = screen.getAllByRole("button", { name: /Mostrar explicación/i });
+    expect(helpButtons.length).toBeGreaterThanOrEqual(1);
+    // prefer the inline help inside the question body (its aria-controls id starts with 'help-')
+    const bodyHelp = helpButtons.find((b) => {
+      const ac = b.getAttribute("aria-controls") || "";
+      return ac.startsWith("help-") || ac.startsWith("help");
+    });
+    expect(bodyHelp).toBeDefined();
+    const user = userEvent.setup();
+    // hover opens the inline help (we also support click but hover is more reliable in tests)
+    await user.hover(bodyHelp!);
+    // the inline help contains the descriptive sentence we added - wait for it
+    await screen.findByText(/Selecciona los tipos de vehículo que aceptas/i);
   });
 
   it("shows warning when skipping setup", async () => {

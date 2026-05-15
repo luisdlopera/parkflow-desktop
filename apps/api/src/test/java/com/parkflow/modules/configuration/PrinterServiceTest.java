@@ -15,7 +15,7 @@ import com.parkflow.modules.configuration.domain.Printer.PrinterType;
 import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.configuration.domain.repository.PrinterPort;
 import com.parkflow.modules.configuration.application.service.PrinterManagementService;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

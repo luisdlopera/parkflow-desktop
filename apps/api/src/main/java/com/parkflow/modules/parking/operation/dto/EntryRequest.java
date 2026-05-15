@@ -26,6 +26,6 @@ public record EntryRequest(
     @Size(max = 50) String terminal,
     @Size(max = 500) String observations,
     @Size(max = 500) String entryImageUrl,
-    @Size(max = 200) String vehicleCondition,
+    @NotBlank @Size(max = 200) String vehicleCondition,
     List<@Size(max = 100) String> conditionChecklist,
     List<@Size(max = 500) String> conditionPhotoUrls) {}
