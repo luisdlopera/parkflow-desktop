@@ -11,10 +11,10 @@ import com.parkflow.modules.configuration.domain.repository.PrepaidBalancePort;
 import com.parkflow.modules.parking.operation.application.port.in.ComplexPricingPort;
 import com.parkflow.modules.parking.operation.domain.EntryMode;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
-import com.parkflow.modules.parking.operation.domain.Rate;
+import com.parkflow.modules.configuration.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.parking.operation.domain.pricing.PricingCalculator;
-import com.parkflow.modules.common.exception.domain.BusinessValidationException;
+import com.parkflow.modules.common.exception.OperationException;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,7 +1,7 @@
 package com.parkflow.modules.auth.security;
 
 import com.parkflow.modules.auth.domain.AuthPermission;
-import com.parkflow.modules.parking.operation.domain.UserRole;
+import com.parkflow.modules.auth.domain.UserRole;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -6,11 +6,12 @@ import com.parkflow.modules.parking.operation.domain.ParkingSession;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
-import com.parkflow.modules.common.exception.domain.ConcurrentOperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,7 +24,7 @@ public class IdempotencyManager {
     return operationIdempotencyPort.findByIdempotencyKey(key)
         .map(i -> {
            if (i.getOperationType() != type) {
-             throw new ConcurrentOperationException("Clave de idempotencia ya usada con otra operacion");
+             throw new OperationException(HttpStatus.CONFLICT, "Clave de idempotencia ya usada con otra operacion");
            }
             ParkingSession session = i.getSession();
             ReceiptResponse receipt = new ReceiptResponse(
@@ -38,8 +39,7 @@ public class IdempotencyManager {
                 session.getStatus(), session.isLostTicket(), session.getReprintCount(),
                 session.getEntryImageUrl(), session.getExitImageUrl(),
                 session.getSyncStatus(), session.getEntryMode(), session.isMonthlySession(),
-                session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
-                null, null, null);
+                session.getAgreementCode(), session.getAppliedPrepaidMinutes());
 
             return new OperationResultResponse(
                 session.getId().toString(),

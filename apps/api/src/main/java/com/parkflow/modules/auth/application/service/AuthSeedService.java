@@ -4,8 +4,6 @@ import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.domain.repository.AppUserPort;
-import com.parkflow.modules.licensing.domain.Company;
-import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

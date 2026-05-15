@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button, Checkbox, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Switch, Select, SelectItem } from "@heroui/react";
+import { Button, Checkbox, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Switch } from "@heroui/react";
 import QuestionHelp from "./QuestionHelp";
 import { completeOnboarding, fetchOnboardingStatus, saveOnboardingStep, skipOnboarding, type OnboardingStatus } from "@/lib/onboarding-api";
 
@@ -94,38 +94,27 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
 
         <div className="mt-6 rounded-xl border border-default-200 p-5 space-y-4 bg-white dark:bg-neutral-950">
           {step === 1 && (
-            <div className="space-y-6">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold text-default-700">Perfil Operacional</label>
-                  <QuestionHelp>
-                    El perfil operacional adapta dinámicamente todo el sistema de ParkFlow (flujos de ingreso, pantallas, permisos, defaults y validaciones).
-                  </QuestionHelp>
-                </div>
-                <Select
-                  aria-label="Perfil operacional"
-                  variant="flat"
-                  placeholder="Selecciona el perfil operacional"
-                  selectedKeys={stepData.operationalProfile ? [String(stepData.operationalProfile)] : (stepData.businessModel ? [String(stepData.businessModel)] : ["MIXED"])}
-                  onSelectionChange={(keys) => {
-                    const selected = Array.from(keys)[0] as string;
-                    let vehicles = ["MOTO", "CARRO"];
-                    if (selected === "MOTORCYCLE_ONLY") vehicles = ["MOTO"];
-                    if (selected === "CAR_ONLY") vehicles = ["CARRO"];
-                    setStepData({
-                      ...stepData,
-                      businessModel: selected,
-                      operationalProfile: selected,
-                      vehicleTypes: vehicles
-                    });
-                  }}
-                >
-                  {OPERATIONAL_PROFILES.map((model) => (
-                    <SelectItem key={model.key} textValue={model.label} description={model.desc}>
-                      {model.label}
-                    </SelectItem>
-                  ))}
-                </Select>
+            <>
+              <div className="flex items-center gap-2">
+                <p className="text-sm">¿Qué tipos de vehículos recibe tu parqueadero?</p>
+                <QuestionHelp>
+                  Selecciona los tipos de vehículo que aceptas. Esta información se usará en la caja para clasificar ingresos, en reportes y para adaptar tarifas por tipo cuando se configure.
+                </QuestionHelp>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {OPTIONS.vehicles.map((item) => (
+                  <Checkbox
+                    key={item}
+                    isSelected={Array.isArray(stepData.vehicleTypes) && (stepData.vehicleTypes as string[]).includes(item)}
+                    onValueChange={(checked) => {
+                      const prev = Array.isArray(stepData.vehicleTypes) ? (stepData.vehicleTypes as string[]) : [];
+                      const next = checked ? [...prev, item] : prev.filter((v) => v !== item);
+                      setStepData({ ...stepData, vehicleTypes: next });
+                    }}
+                  >
+                    {item}
+                  </Checkbox>
+                ))}
               </div>
 
               {String(stepData.operationalProfile ?? stepData.businessModel ?? "MIXED") !== "MOTORCYCLE_ONLY" && String(stepData.operationalProfile ?? stepData.businessModel ?? "MIXED") !== "CAR_ONLY" ? (
