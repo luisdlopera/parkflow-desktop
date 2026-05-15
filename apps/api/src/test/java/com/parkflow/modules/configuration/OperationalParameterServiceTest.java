@@ -6,10 +6,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.configuration.dto.OperationalParameterRequest;
-import com.parkflow.modules.configuration.entity.OperationalParameter;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.repository.OperationalParameterRepository;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
+import com.parkflow.modules.configuration.domain.OperationalParameter;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.configuration.application.service.OperationalParameterManagementService;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import java.util.Optional;
@@ -23,8 +23,8 @@ import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
 class OperationalParameterServiceTest {
-  @Mock private OperationalParameterRepository operationalParameterRepository;
-  @Mock private ParkingSiteRepository parkingSiteRepository;
+  @Mock private OperationalParameterPort operationalParameterRepository;
+  @Mock private ParkingSitePort parkingSiteRepository;
 
   private OperationalParameterManagementService service;
 

@@ -1,6 +1,6 @@
 package com.parkflow.modules.auth.security;
 
-import com.parkflow.modules.auth.entity.AuthPermission;
+import com.parkflow.modules.auth.domain.AuthPermission;
 import com.parkflow.modules.parking.operation.domain.UserRole;
 import java.util.EnumSet;
 import java.util.Map;

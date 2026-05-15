@@ -8,16 +8,16 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.cash.domain.CashRegister;
-import com.parkflow.modules.cash.repository.CashRegisterRepository;
+import com.parkflow.modules.cash.domain.repository.CashRegisterPort;
 import com.parkflow.modules.configuration.dto.CashRegisterRequest;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.entity.Printer;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.configuration.repository.PrinterRepository;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.Printer;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.configuration.domain.repository.PrinterPort;
 import com.parkflow.modules.configuration.application.service.CashRegisterManagementService;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,10 +32,10 @@ import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
 class CashRegisterConfigurationServiceTest {
-  @Mock private CashRegisterRepository cashRegisterRepository;
-  @Mock private ParkingSiteRepository parkingSiteRepository;
-  @Mock private PrinterRepository printerRepository;
-  @Mock private AppUserRepository appUserRepository;
+  @Mock private CashRegisterPort cashRegisterRepository;
+  @Mock private ParkingSitePort parkingSiteRepository;
+  @Mock private PrinterPort printerRepository;
+  @Mock private AppUserPort appUserRepository;
 
   private CashRegisterManagementService service;
 

@@ -827,6 +827,7 @@ CREATE TABLE IF NOT EXISTS monthly_contract (
 
 CREATE TABLE IF NOT EXISTS agreement (
     id UUID DEFAULT gen_random_uuid() NOT NULL,
+    company_id UUID,
     code VARCHAR(40) NOT NULL,
     company_name VARCHAR(200) NOT NULL,
     discount_percent NUMERIC(5,2) DEFAULT 0 NOT NULL,

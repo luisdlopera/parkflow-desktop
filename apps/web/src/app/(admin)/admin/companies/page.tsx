@@ -5,15 +5,7 @@ import {
   Button,
   Card,
   CardBody,
-  CardHeader,
   Chip,
-  Input,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
@@ -22,15 +14,12 @@ import {
   ModalContent,
   ModalHeader,
   ModalBody,
-  ModalFooter,
   useDisclosure,
   Skeleton,
-  Alert,
 } from "@heroui/react";
 import {
   Building2,
   Plus,
-  Search,
   MoreVertical,
   Pencil,
   FileBadge,
@@ -49,11 +38,11 @@ import { GenerateLicenseDialog } from "@/components/admin/GenerateLicenseDialog"
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
 import { ApiError } from "@/lib/errors/api-error";
+import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 
 export default function CompaniesPage() {
   const { data: companies, isLoading, error, mutate } = useCompanies();
   const { createCompany, isLoading: isCreating } = useCreateCompany();
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 
   const {
@@ -86,15 +75,6 @@ export default function CompaniesPage() {
     onLicenseOpen();
   }, [onLicenseOpen]);
 
-  const filteredCompanies = companies?.filter((company) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      company.name.toLowerCase().includes(query) ||
-      company.nit?.toLowerCase().includes(query) ||
-      company.email?.toLowerCase().includes(query)
-    );
-  });
-
   const getStatusColor = (status: string) => {
     const colors: Record<string, "success" | "warning" | "danger" | "default" | "primary"> = {
       ACTIVE: "success",
@@ -117,6 +97,68 @@ export default function CompaniesPage() {
     };
     return colors[plan] || "default";
   };
+
+  const columns: DataTableColumn<Company>[] = [
+    {
+      key: "name",
+      header: "Empresa",
+      sortable: true,
+      render: (company) => (
+        <div>
+          <p className="font-medium">{company.name}</p>
+          <p className="text-sm text-default-500">{company.nit || "Sin NIT"}</p>
+        </div>
+      ),
+    },
+    {
+      key: "plan",
+      header: "Plan",
+      sortable: true,
+      render: (company) => (
+        <Chip color={getPlanColor(company.plan)} variant="flat" size="sm">
+          {translatePlan(company.plan)}
+        </Chip>
+      ),
+    },
+    {
+      key: "status",
+      header: "Estado",
+      sortable: true,
+      render: (company) => (
+        <Chip color={getStatusColor(company.status)} variant="flat" size="sm">
+          {translateStatus(company.status)}
+        </Chip>
+      ),
+    },
+    {
+      key: "expiresAt",
+      header: "Vencimiento",
+      sortable: true,
+      render: (company) =>
+        company.expiresAt ? (
+          <div>
+            <p>{new Date(company.expiresAt).toLocaleDateString("es-CO")}</p>
+            {company.graceUntil && company.status === "PAST_DUE" && (
+              <p className="text-xs text-warning">
+                Gracia hasta: {new Date(company.graceUntil).toLocaleDateString("es-CO")}
+              </p>
+            )}
+          </div>
+        ) : (
+          <span className="text-default-400">-</span>
+        ),
+    },
+    {
+      key: "maxDevices",
+      header: "Dispositivos",
+      align: "right",
+      render: (company) => (
+        <p className="text-sm">
+          {company.devices?.length || 0} / {company.maxDevices}
+        </p>
+      ),
+    },
+  ];
 
   if (error) {
     const userError = getUserErrorMessage(error, "companies.load");
@@ -240,117 +282,72 @@ export default function CompaniesPage() {
         </Card>
       </div>
 
-      {/* Search */}
-      <Card>
-        <CardHeader className="flex justify-between items-center">
-          <Input
-            placeholder="Buscar por nombre, NIT o email..."
-            startContent={<Search className="w-4 h-4 text-default-400" />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-96"
-          />
-        </CardHeader>
-        <CardBody>
-          <Table aria-label="Tabla de empresas">
-            <TableHeader>
-              <TableColumn>EMPRESA</TableColumn>
-              <TableColumn>PLAN</TableColumn>
-              <TableColumn>ESTADO</TableColumn>
-              <TableColumn>VENCIMIENTO</TableColumn>
-              <TableColumn>DISPOSITIVOS</TableColumn>
-              <TableColumn align="center">ACCIONES</TableColumn>
-            </TableHeader>
-            <TableBody
-              emptyContent="No se encontraron empresas"
-              isLoading={isLoading}
-              loadingContent={<Skeleton className="w-full h-12" />}
-            >
-              {(filteredCompanies ?? []).map((company) => (
-                <TableRow key={company.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{company.name}</p>
-                      <p className="text-sm text-default-500">{company.nit || "Sin NIT"}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip color={getPlanColor(company.plan)} variant="flat" size="sm">
-                      {translatePlan(company.plan)}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <Chip color={getStatusColor(company.status)} variant="flat" size="sm">
-                      {translateStatus(company.status)}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    {company.expiresAt ? (
-                      <div>
-                        <p>{new Date(company.expiresAt).toLocaleDateString("es-CO")}</p>
-                        {company.graceUntil && company.status === "PAST_DUE" && (
-                          <p className="text-xs text-warning">
-                            Gracia hasta: {new Date(company.graceUntil).toLocaleDateString("es-CO")}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-default-400">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <p className="text-sm">
-                      {company.devices?.length || 0} / {company.maxDevices}
-                    </p>
-                  </TableCell>
-                  <TableCell>
-                    <Dropdown>
-                      <DropdownTrigger>
-                        <Button isIconOnly variant="light" size="sm" aria-label="Más acciones">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu aria-label="Acciones">
-                        <DropdownItem
-                          key="view"
-                          textValue="Ver detalle"
-                          startContent={<Eye className="w-4 h-4" />}
-                        >
-                          Ver detalle
-                        </DropdownItem>
-                        <DropdownItem
-                          key="edit"
-                          textValue="Editar"
-                          startContent={<Pencil className="w-4 h-4" />}
-                        >
-                          Editar
-                        </DropdownItem>
-                        <DropdownItem
-                          key="license"
-                          textValue="Generar licencia"
-                          startContent={<FileBadge className="w-4 h-4" />}
-                          onPress={() => handleGenerateLicense(company)}
-                        >
-                          Generar licencia
-                        </DropdownItem>
-                        <DropdownItem
-                          key="delete"
-                          textValue="Eliminar"
-                          className="text-danger"
-                          color="danger"
-                          startContent={<Trash2 className="w-4 h-4" />}
-                        >
-                          Eliminar
-                        </DropdownItem>
-                      </DropdownMenu>
-                    </Dropdown>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+      <DataTable
+        title="Empresas licenciadas"
+        description="Busca, filtra y revisa el estado de cada empresa."
+        columns={columns}
+        data={companies ?? []}
+        getRowKey={(company) => company.id}
+        isLoading={isLoading}
+        emptyMessage="No se encontraron empresas"
+        searchable
+        searchPlaceholder="Buscar por nombre, NIT o email..."
+        filters={[
+          {
+            key: "plan",
+            label: "Plan",
+            type: "select",
+            options: ["LOCAL", "SYNC", "PRO", "ENTERPRISE"].map((plan) => ({
+              label: translatePlan(plan),
+              value: plan,
+            })),
+          },
+          {
+            key: "status",
+            label: "Estado",
+            type: "select",
+            options: ["ACTIVE", "TRIAL", "PAST_DUE", "SUSPENDED", "EXPIRED", "BLOCKED", "CANCELLED"].map((status) => ({
+              label: translateStatus(status),
+              value: status,
+            })),
+          },
+          { key: "expiresAt", label: "Vencimiento", type: "dateRange" },
+        ]}
+        actions={(company) => (
+          <Dropdown>
+            <DropdownTrigger>
+              <Button isIconOnly variant="light" size="sm" aria-label="Más acciones">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu aria-label="Acciones">
+              <DropdownItem key="view" textValue="Ver detalle" startContent={<Eye className="w-4 h-4" />}>
+                Ver detalle
+              </DropdownItem>
+              <DropdownItem key="edit" textValue="Editar" startContent={<Pencil className="w-4 h-4" />}>
+                Editar
+              </DropdownItem>
+              <DropdownItem
+                key="license"
+                textValue="Generar licencia"
+                startContent={<FileBadge className="w-4 h-4" />}
+                onPress={() => handleGenerateLicense(company)}
+              >
+                Generar licencia
+              </DropdownItem>
+              <DropdownItem
+                key="delete"
+                textValue="Eliminar"
+                className="text-danger"
+                color="danger"
+                startContent={<Trash2 className="w-4 h-4" />}
+              >
+                Eliminar
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+        )}
+      />
 
       {/* Create Company Modal */}
       <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="2xl">

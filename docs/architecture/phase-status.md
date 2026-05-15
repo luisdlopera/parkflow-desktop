@@ -23,9 +23,9 @@ Criterios:
 - Logs/auditoria por ticket: cumplido (logs estructurados + consulta por `ticketNumber`).
 
 Evidencia:
-- `apps/api/src/main/resources/db/migration/V3__print_jobs.sql`
-- `apps/api/src/main/resources/db/migration/V4__print_attempts_devices_sync_events.sql`
-- `apps/api/src/main/resources/db/migration/V5__print_jobs_audit_fields.sql`
+- `apps/api/src/main/resources/db/migration/V001__initial_schema.sql`
+- `apps/api/src/main/resources/db/migration/V002__seed_base_data.sql`
+- `apps/api/src/main/resources/db/migration/V003__indexes_and_constraints.sql`
 - `apps/api/src/main/java/com/parkflow/modules/tickets/**`
 - `apps/api/src/main/java/com/parkflow/modules/sync/**`
 - `GET /actuator/prometheus`

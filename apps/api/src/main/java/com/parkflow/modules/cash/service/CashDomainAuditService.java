@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.cash.domain.CashAuditLog;
 import com.parkflow.modules.cash.domain.CashMovement;
 import com.parkflow.modules.cash.domain.CashSession;
-import com.parkflow.modules.cash.repository.CashAuditLogRepository;
+import com.parkflow.modules.cash.domain.repository.CashAuditLogPort;
 import com.parkflow.modules.cash.support.CashHttpContext;
 import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import java.util.Map;
 import java.util.UUID;
@@ -19,8 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class CashDomainAuditService {
-  private final CashAuditLogRepository cashAuditLogRepository;
-  private final AppUserRepository appUserRepository;
+  private final CashAuditLogPort cashAuditLogPort;
+  private final AppUserPort appUserPort;
   private final ObjectMapper objectMapper;
 
   @Transactional
@@ -33,7 +33,7 @@ public class CashDomainAuditService {
       String reason,
       Map<String, Object> metadata) {
     UUID uid = SecurityUtils.requireUserId();
-    AppUser actor = appUserRepository.findById(uid).orElse(null);
+    AppUser actor = appUserPort.findById(uid).orElse(null);
     CashAuditLog row = new CashAuditLog();
     row.setCashSession(session);
     row.setCashMovement(movement);
@@ -51,6 +51,6 @@ public class CashDomainAuditService {
         row.setMetadata("{}");
       }
     }
-    cashAuditLogRepository.save(row);
+    cashAuditLogPort.save(row);
   }
 }

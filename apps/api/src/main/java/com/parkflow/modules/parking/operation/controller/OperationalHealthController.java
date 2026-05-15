@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.operation.controller;
 
 import com.parkflow.modules.parking.operation.dto.OperationalHealthResponse;
-import com.parkflow.modules.parking.operation.service.OperationalHealthService;
+import com.parkflow.modules.parking.operation.application.service.OperationalHealthService;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

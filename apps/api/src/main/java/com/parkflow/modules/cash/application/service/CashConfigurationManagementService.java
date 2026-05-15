@@ -1,6 +1,6 @@
 package com.parkflow.modules.cash.application.service;
 
-import com.parkflow.modules.auth.entity.AuthAuditAction;
+import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.cash.application.port.in.CashConfigurationUseCase;
 import com.parkflow.modules.cash.domain.CashSession;
@@ -9,17 +9,18 @@ import com.parkflow.modules.cash.dto.CashClosingPrintResponse;
 import com.parkflow.modules.cash.dto.CashPolicyResponse;
 import com.parkflow.modules.cash.dto.CashRegisterInfoResponse;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
-import com.parkflow.modules.cash.repository.CashRegisterRepository;
-import com.parkflow.modules.cash.repository.CashSessionRepository;
+import com.parkflow.modules.cash.domain.repository.CashRegisterPort;
+import com.parkflow.modules.cash.domain.repository.CashSessionPort;
 import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
 import com.parkflow.modules.cash.service.CashDomainAuditService;
 import com.parkflow.modules.cash.service.CashPolicyResolver;
 import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.cash.domain.exception.CashSessionException;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
-import com.parkflow.modules.settings.service.ParkingParametersService;
+import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -35,9 +36,9 @@ import java.util.*;
 @RequiredArgsConstructor
 public class CashConfigurationManagementService implements CashConfigurationUseCase {
 
-    private final CashRegisterRepository cashRegisterRepository;
-    private final CashSessionRepository cashSessionRepository;
-    private final AppUserRepository appUserRepository;
+    private final CashRegisterPort cashRegisterPort;
+    private final CashSessionPort cashSessionPort;
+    private final AppUserPort appUserPort;
     private final CashPolicyResolver cashPolicyResolver;
     private final ParkingParametersService parkingParametersService;
     private final CashSessionUseCase cashSessionUseCase;
@@ -54,7 +55,7 @@ public class CashConfigurationManagementService implements CashConfigurationUseC
     @Transactional(readOnly = true)
     public List<CashRegisterInfoResponse> listRegisters(String siteParam) {
         String site = normalizeSite(siteParam != null ? siteParam : "default");
-        return cashRegisterRepository.findBySiteOrderByTerminalAsc(site).stream()
+        return cashRegisterPort.findBySiteOrderByTerminalAsc(site).stream()
             .map(r -> new CashRegisterInfoResponse(r.getId(), r.getSite(), r.getTerminal(), r.getLabel()))
             .toList();
     }
@@ -62,15 +63,15 @@ public class CashConfigurationManagementService implements CashConfigurationUseC
     @Override
     @Transactional(readOnly = true)
     public CashClosingPrintResponse printClosing(UUID sessionId) {
-        CashSession session = cashSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
+        CashSession session = cashSessionPort.findById(sessionId)
+            .orElseThrow(() -> new CashSessionException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
             
         if (session.getStatus() != CashSessionStatus.CLOSED) {
-            throw new OperationException(HttpStatus.BAD_REQUEST, "Solo se imprime comprobante de caja cerrada");
+            throw new CashSessionException(HttpStatus.BAD_REQUEST, "Solo se imprime comprobante de caja cerrada");
         }
         
-        AppUser actor = appUserRepository.findById(SecurityUtils.requireUserId())
-            .orElseThrow(() -> new OperationException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
+        AppUser actor = appUserPort.findById(SecurityUtils.requireUserId())
+            .orElseThrow(() -> new CashSessionException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
             
         CashSummaryResponse sum = cashSessionUseCase.getSummary(sessionId);
         ParkingParametersData param = parkingParametersService.get(groupingSiteForParams(session));

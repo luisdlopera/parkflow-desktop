@@ -27,11 +27,11 @@ docker compose -f ../../infra/docker-compose.yml up -d
 Antes de ejecutar la API, establece las siguientes variables de entorno requeridas:
 
 ```bash
-# JWT Secret (genera uno aleatorio o usa este para desarrollo)
-export PARKFLOW_JWT_SECRET_BASE64="VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA="
+# JWT Secret (genera uno aleatorio o configura uno seguro en tus entornos)
+export PARKFLOW_JWT_SECRET_BASE64="REPLACE_WITH_BASE64_JWT_SECRET"
 
-# API Key para autenticación de clientes técnicos
-export PARKFLOW_API_KEY="dev-api-key-123"
+# API Key para autenticación de clientes técnicos (no usar en repositorio)
+export PARKFLOW_API_KEY="REPLACE_WITH_SECURE_API_KEY"
 ```
 
 **Nota**: Si no se configuran estas variables, la aplicación fallará al iniciar.
@@ -53,10 +53,14 @@ cd apps/api
 
 ### Solución de problemas comunes
 
-#### Error de Flyway: "Found more than one migration with version 5"
-Si encuentras este error, significa que hay archivos de migración duplicados. Solución:
-- Renombra uno de los archivos V5 a una versión superior (ej: V10)
-- En este proyecto, `V5__print_jobs_audit_fields.sql` fue renombrado a `V10__print_jobs_audit_fields.sql`
+#### Error de Flyway: checksum mismatch o migración faltante
+Si encuentras este error, casi siempre significa que la historia de Flyway de tu base local no coincide con los archivos actuales.
+En este proyecto la carpeta de migraciones quedó reducida a:
+- `V001__initial_schema.sql`
+- `V002__seed_base_data.sql`
+- `V003__indexes_and_constraints.sql`
+
+La salida más limpia es resetear el esquema local o ejecutar `flyway repair` sobre esa base antes de volver a levantar la API.
 
 #### Error: "Could not resolve placeholder 'PARKFLOW_JWT_SECRET_BASE64'"
 Asegúrate de configurar la variable de entorno `PARKFLOW_JWT_SECRET_BASE64` con un valor base64 válido.
@@ -150,6 +154,6 @@ Base path: `/api/v1/sync`
 - `GET /pull`: entregar eventos por cursor temporal (`after`, `limit`)
 
 Migraciones Flyway:
-- `src/main/resources/db/migration/V1__operations_module.sql`
-- `src/main/resources/db/migration/V3__print_jobs.sql`
-- `src/main/resources/db/migration/V4__print_attempts_devices_sync_events.sql`
+- `src/main/resources/db/migration/V001__initial_schema.sql`
+- `src/main/resources/db/migration/V002__seed_base_data.sql`
+- `src/main/resources/db/migration/V003__indexes_and_constraints.sql`

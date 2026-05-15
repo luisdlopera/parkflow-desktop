@@ -8,7 +8,7 @@ This project is currently in **development mode** and uses a consolidated Flyway
 
 ## Important
 
-The old incremental files (`V1..V14`) were intentionally consolidated. If your local DB already had the old history, do a clean reset.
+The schema is intentionally capped at these three baseline migrations. If your local DB already has a different Flyway history, do a clean reset or run `flyway repair` before starting again.
 
 ## Safe local reset
 

@@ -9,8 +9,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import com.parkflow.modules.auth.repository.AuthSessionRepository;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,13 +23,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
   private final JwtTokenService jwtTokenService;
-  private final AuthSessionRepository authSessionRepository;
-  private final AppUserRepository appUserRepository;
+  private final AuthSessionPort authSessionRepository;
+  private final AppUserPort appUserRepository;
 
   public JwtAuthFilter(
       JwtTokenService jwtTokenService,
-      AuthSessionRepository authSessionRepository,
-      AppUserRepository appUserRepository) {
+      AuthSessionPort authSessionRepository,
+      AppUserPort appUserRepository) {
     this.jwtTokenService = jwtTokenService;
     this.authSessionRepository = authSessionRepository;
     this.appUserRepository = appUserRepository;

@@ -1,7 +1,7 @@
 package com.parkflow.modules.configuration.controller;
 
 import com.parkflow.modules.settings.dto.*;
-import com.parkflow.modules.settings.service.SettingsUserService;
+import com.parkflow.modules.settings.application.port.in.UserManagementUseCase;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ConfigurationUserController {
 
-  private final SettingsUserService settingsUserService;
+  private final UserManagementUseCase userManagementUseCase;
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
@@ -24,19 +24,19 @@ public class ConfigurationUserController {
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,
       Pageable pageable) {
-    return ResponseEntity.ok(settingsUserService.list(q, active, pageable));
+    return ResponseEntity.ok(userManagementUseCase.list(q, active, null, pageable));
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
   public ResponseEntity<UserAdminResponse> get(@PathVariable UUID id) {
-    return ResponseEntity.ok(settingsUserService.get(id));
+    return ResponseEntity.ok(userManagementUseCase.get(id));
   }
 
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<UserAdminResponse> create(@Valid @RequestBody UserCreateRequest req) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(settingsUserService.create(req));
+    return ResponseEntity.status(HttpStatus.CREATED).body(userManagementUseCase.create(req));
   }
 
   @PatchMapping("/{id}")
@@ -44,7 +44,7 @@ public class ConfigurationUserController {
   public ResponseEntity<UserAdminResponse> patch(
       @PathVariable UUID id,
       @Valid @RequestBody UserPatchRequest req) {
-    return ResponseEntity.ok(settingsUserService.patch(id, req));
+    return ResponseEntity.ok(userManagementUseCase.patch(id, req));
   }
 
   @PatchMapping("/{id}/status")
@@ -52,6 +52,6 @@ public class ConfigurationUserController {
   public ResponseEntity<UserAdminResponse> patchStatus(
       @PathVariable UUID id,
       @RequestBody UserStatusRequest req) {
-    return ResponseEntity.ok(settingsUserService.patchStatus(id, req));
+    return ResponseEntity.ok(userManagementUseCase.patchStatus(id, req));
   }
 }

@@ -1,7 +1,7 @@
 package com.parkflow.modules.cash.domain;
 
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.entity.Printer;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.Printer;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;

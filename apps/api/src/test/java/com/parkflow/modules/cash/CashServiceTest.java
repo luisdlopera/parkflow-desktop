@@ -6,22 +6,25 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.parkflow.modules.auth.application.service.AuthAuditService;
-import com.parkflow.modules.cash.application.service.CashConfigurationManagementService;
+import com.parkflow.modules.cash.application.service.CashLedgerSummaryCalculator;
 import com.parkflow.modules.cash.application.service.CashMovementManagementService;
+import com.parkflow.modules.cash.application.service.CashMovementResponseMapper;
 import com.parkflow.modules.cash.application.service.CashSessionManagementService;
+import com.parkflow.modules.cash.application.service.CashSessionResponseMapper;
 import com.parkflow.modules.cash.domain.*;
+import com.parkflow.modules.cash.domain.exception.CashSessionException;
 import com.parkflow.modules.cash.dto.*;
-import com.parkflow.modules.cash.repository.*;
+import com.parkflow.modules.cash.domain.repository.*;
 import com.parkflow.modules.cash.service.CashClosingOutboundNotifier;
 import com.parkflow.modules.cash.service.CashDomainAuditService;
 import com.parkflow.modules.cash.service.CashPolicyResolver;
 import com.parkflow.modules.cash.service.CashSequentialSupportService;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
-import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
-import com.parkflow.modules.settings.service.ParkingParametersService;
+import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -46,13 +49,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CashServiceTest {
 
-  @Mock private CashRegisterRepository cashRegisterRepository;
-  @Mock private CashSessionRepository cashSessionRepository;
-  @Mock private CashMovementRepository cashMovementRepository;
-  @Mock private CashClosingReportRepository cashClosingReportRepository;
-  @Mock private CashAuditLogRepository cashAuditLogRepository;
-  @Mock private AppUserRepository appUserRepository;
-  @Mock private ParkingSessionRepository parkingSessionRepository;
+  @Mock private CashRegisterPort cashRegisterRepository;
+  @Mock private CashSessionPort cashSessionRepository;
+  @Mock private CashMovementPort cashMovementRepository;
+  @Mock private CashClosingReportPort cashClosingReportRepository;
+  @Mock private CashAuditLogPort cashAuditLogRepository;
+  @Mock private AppUserPort appUserRepository;
+  @Mock private ParkingSessionPort parkingSessionRepository;
   @Mock private CashDomainAuditService cashDomainAuditService;
   @Mock private AuthAuditService authAuditService;
   @Mock private CashPolicyResolver cashPolicyResolver;
@@ -70,13 +73,14 @@ class CashServiceTest {
         cashRegisterRepository, cashSessionRepository, cashMovementRepository,
         cashClosingReportRepository, cashAuditLogRepository, appUserRepository,
         cashDomainAuditService, authAuditService, parkingParametersService,
-        cashSequentialSupportService, cashClosingOutboundNotifier, globalAuditService
+        cashSequentialSupportService, cashClosingOutboundNotifier, globalAuditService,
+        new CashSessionResponseMapper(), new CashLedgerSummaryCalculator()
     );
     
     movementService = new CashMovementManagementService(
         cashMovementRepository, cashSessionRepository, cashRegisterRepository,
         appUserRepository, parkingSessionRepository, cashDomainAuditService,
-        authAuditService, cashPolicyResolver
+        authAuditService, cashPolicyResolver, new CashMovementResponseMapper()
     );
     
     
@@ -130,9 +134,9 @@ class CashServiceTest {
         new OpenCashRequest("default", "T1", null, new BigDecimal("50.00"), oid, null, null);
 
     assertThatThrownBy(() -> sessionService.open(req))
-        .isInstanceOf(OperationException.class)
+        .isInstanceOf(CashSessionException.class)
         .satisfies(
-            ex -> assertThat(((OperationException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT));
+            ex -> assertThat(((CashSessionException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT));
   }
 
   @Test
@@ -143,9 +147,9 @@ class CashServiceTest {
     when(cashSessionRepository.findById(sid)).thenReturn(Optional.of(session));
 
     assertThatThrownBy(() -> sessionService.close(sid, new CashCloseRequest(null, null, null)))
-        .isInstanceOf(OperationException.class)
+        .isInstanceOf(CashSessionException.class)
         .satisfies(
-            ex -> assertThat(((OperationException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+            ex -> assertThat(((CashSessionException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
   }
 
   @Test

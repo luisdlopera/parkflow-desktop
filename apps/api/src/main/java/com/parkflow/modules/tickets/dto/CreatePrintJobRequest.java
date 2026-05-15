@@ -1,6 +1,6 @@
 package com.parkflow.modules.tickets.dto;
 
-import com.parkflow.modules.tickets.entity.PrintDocumentType;
+import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.UUID;

@@ -1,18 +1,19 @@
 package com.parkflow.modules.configuration.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.configuration.application.port.in.AgreementUseCase;
+import com.parkflow.modules.configuration.domain.Agreement;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.repository.AgreementPort;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.configuration.dto.AgreementRequest;
 import com.parkflow.modules.configuration.dto.AgreementResponse;
-import com.parkflow.modules.configuration.entity.Agreement;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.repository.AgreementRepository;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.auth.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -29,16 +30,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AgreementManagementService implements AgreementUseCase {
 
-  private final AgreementRepository repo;
-  private final ParkingSiteRepository siteRepository;
-  private final RateRepository rateRepository;
-  private final AuditService globalAuditService;
+  private final AgreementPort agreementPort;
+  private final ParkingSitePort siteRepository;
+  private final RatePort rateRepository;
+  private final AuditPort globalAuditService;
   private final ObjectMapper objectMapper;
 
   @Override
   @Transactional(readOnly = true)
   public SettingsPageResponse<AgreementResponse> list(String site, String q, Boolean active, Pageable pageable) {
-    Page<Agreement> page = repo.search(site, q, active, pageable);
+    Page<Agreement> page = agreementPort.search(site, q, active, SecurityUtils.requireCompanyId(), pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 
@@ -51,7 +52,7 @@ public class AgreementManagementService implements AgreementUseCase {
   @Override
   @Transactional(readOnly = true)
   public AgreementResponse resolveByCode(String code) {
-    Agreement a = repo.findByCodeAndIsActiveTrue(code)
+    Agreement a = agreementPort.findByCodeAndIsActiveTrue(code, SecurityUtils.requireCompanyId())
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND,
             "Convenio no encontrado o inactivo para el código: " + code));
     return toResponse(a);
@@ -60,12 +61,14 @@ public class AgreementManagementService implements AgreementUseCase {
   @Override
   @Transactional
   public AgreementResponse create(AgreementRequest req) {
-    if (repo.existsByCode(req.code())) {
+    UUID companyId = SecurityUtils.requireCompanyId();
+    if (agreementPort.existsByCodeAndCompanyId(req.code(), companyId)) {
       throw new OperationException(HttpStatus.CONFLICT,
           "Ya existe un convenio con el código: " + req.code());
     }
     Agreement a = fromRequest(req, new Agreement());
-    a = repo.save(a);
+    a.setCompanyId(companyId);
+    a = agreementPort.save(a);
     try {
         globalAuditService.record(
             com.parkflow.modules.audit.domain.AuditAction.CREAR,
@@ -82,6 +85,7 @@ public class AgreementManagementService implements AgreementUseCase {
   @Transactional
   public AgreementResponse update(UUID id, AgreementRequest req) {
     Agreement a = findOrThrow(id);
+    UUID companyId = SecurityUtils.requireCompanyId();
     String before = "";
     try {
       before = objectMapper.writeValueAsString(toResponse(a));
@@ -89,12 +93,12 @@ public class AgreementManagementService implements AgreementUseCase {
       log.warn("No se pudo serializar estado previo de convenio {}", id, e);
     }
     
-    if (repo.existsByCodeAndIdNot(req.code(), id)) {
+    if (agreementPort.existsByCodeAndIdNotAndCompanyId(req.code(), id, companyId)) {
       throw new OperationException(HttpStatus.CONFLICT,
           "Ya existe otro convenio con el código: " + req.code());
     }
     fromRequest(req, a);
-    a = repo.save(a);
+    a = agreementPort.save(a);
     
     try {
         globalAuditService.record(
@@ -115,7 +119,7 @@ public class AgreementManagementService implements AgreementUseCase {
     boolean previous = a.isActive();
     a.setActive(active);
     a.setUpdatedAt(OffsetDateTime.now());
-    a = repo.save(a);
+    a = agreementPort.save(a);
     
     globalAuditService.record(
         com.parkflow.modules.audit.domain.AuditAction.ELIMINAR,
@@ -154,7 +158,7 @@ public class AgreementManagementService implements AgreementUseCase {
   }
 
   private Agreement findOrThrow(UUID id) {
-    return repo.findById(id)
+    return agreementPort.findById(id)
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Convenio no encontrado"));
   }
 

@@ -4,7 +4,7 @@ import com.parkflow.modules.settings.dto.RateResponse;
 import com.parkflow.modules.settings.dto.RateStatusRequest;
 import com.parkflow.modules.settings.dto.RateUpsertRequest;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
-import com.parkflow.modules.settings.service.SettingsRateService;
+import com.parkflow.modules.settings.application.service.SettingsRateService;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

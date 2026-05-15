@@ -1,4 +1,4 @@
-package com.parkflow.modules.tickets.entity;
+package com.parkflow.modules.tickets.domain;
 
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;

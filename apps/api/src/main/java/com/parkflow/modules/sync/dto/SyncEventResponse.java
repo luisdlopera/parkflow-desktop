@@ -1,6 +1,6 @@
 package com.parkflow.modules.sync.dto;
 
-import com.parkflow.modules.sync.entity.SyncDirection;
+import com.parkflow.modules.sync.domain.SyncDirection;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 

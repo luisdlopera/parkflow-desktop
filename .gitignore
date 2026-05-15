@@ -1,41 +1,35 @@
-node_modules
-.next
-dist
 .env
-.env.local
-**/.gradle
-**/build
-**/target
-**/*.tsbuildinfo
-apps/api/target
-src-tauri/target
-src-tauri/gen
-apps/desktop/src-tauri/target
-apps/desktop/src-tauri/gen
-coverage
-test-results
-apps/web/coverage
-apps/desktop/test-results
-*.test.ts.snap
-*.test.tsx.snap
-.vitest-localstorage
-
-# Licensing Keys (Security - NEVER COMMIT)
+.env.*
+apps/web/.env.local
+apps/desktop/.env.local
 infra/keys/
-*.pem
 *.key
-license_private*
-license_public*
+*.pem
+*.p12
+secrets/
+dist/
+node_modules/
+target/
+/.idea
+.vscode
+/.DS_Store
 
-# Generated license files
-*.license
-license.json
+# Build artifacts
+build/
+bin/
+.gradle/
+.next/
+out/
+tsconfig.tsbuildinfo
+coverage/
 
-# Debug logs
-debug-*.log
+# Logs
 *.log
+logs/
 
-# IntelliJ build output
-apps/api/bin/
-out
-.next
+# IDE and Editor
+.cursor/
+
+# OS specific
+.DS_Store
+Thumbs.db

@@ -1,17 +1,17 @@
 package com.parkflow.modules.configuration.application.service;
 
 import com.parkflow.modules.cash.domain.CashRegister;
-import com.parkflow.modules.cash.repository.CashRegisterRepository;
+import com.parkflow.modules.cash.domain.repository.CashRegisterPort;
 import com.parkflow.modules.configuration.application.port.in.CashRegisterUseCase;
 import com.parkflow.modules.configuration.dto.CashRegisterRequest;
 import com.parkflow.modules.configuration.dto.CashRegisterResponse;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.entity.Printer;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.configuration.repository.PrinterRepository;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.Printer;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.configuration.domain.repository.PrinterPort;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,10 +28,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CashRegisterManagementService implements CashRegisterUseCase {
 
-  private final CashRegisterRepository cashRegisterRepository;
-  private final ParkingSiteRepository parkingSiteRepository;
-  private final PrinterRepository printerRepository;
-  private final AppUserRepository appUserRepository;
+  private final CashRegisterPort cashRegisterRepository;
+  private final ParkingSitePort parkingSiteRepository;
+  private final PrinterPort printerRepository;
+  private final AppUserPort appUserRepository;
 
   @Override
   @Transactional(readOnly = true)

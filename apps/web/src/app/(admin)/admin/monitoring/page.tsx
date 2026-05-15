@@ -7,13 +7,6 @@ import {
   CardBody,
   CardHeader,
   Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-  Skeleton,
   Alert,
   Badge,
   Progress,
@@ -41,6 +34,7 @@ import {
   Activity,
 } from "lucide-react";
 import { authHeaders } from "@/lib/auth";
+import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 
 interface PriorityCase {
   companyId: string;
@@ -179,6 +173,98 @@ export default function MonitoringPage() {
         return "default";
     }
   };
+
+  const priorityColumns: DataTableColumn<PriorityCase>[] = [
+    {
+      key: "companyName",
+      header: "Empresa",
+      render: (caseItem) => (
+        <div className="flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-default-400" />
+          <span className="font-medium">{caseItem.companyName}</span>
+        </div>
+      ),
+    },
+    {
+      key: "severity",
+      header: "Severidad",
+      sortable: true,
+      render: (caseItem) => (
+        <Chip color={getSeverityColor(caseItem.severity)} variant="flat" size="sm">
+          {caseItem.severity}
+        </Chip>
+      ),
+    },
+    {
+      key: "issueType",
+      header: "Problema",
+      render: (caseItem) => (
+        <div>
+          <p className="font-medium">{caseItem.issueType}</p>
+          <p className="text-sm text-default-500">{caseItem.description}</p>
+        </div>
+      ),
+    },
+    {
+      key: "affectedDevices",
+      header: "Dispositivos",
+      align: "center",
+      render: (caseItem) => (
+        <Badge color="danger" content={caseItem.affectedDevices}>
+          <Monitor className="w-4 h-4" />
+        </Badge>
+      ),
+    },
+    {
+      key: "lastIncidentAt",
+      header: "Ultimo incidente",
+      sortable: true,
+      render: (caseItem) => new Date(caseItem.lastIncidentAt).toLocaleString("es-CO"),
+    },
+    {
+      key: "recommendedAction",
+      header: "Acción recomendada",
+      render: (caseItem) => <span className="text-sm text-warning">{caseItem.recommendedAction}</span>,
+    },
+  ];
+
+  const blockColumns: DataTableColumn<BlockEvent>[] = [
+    {
+      key: "companyName",
+      header: "Empresa",
+      render: (event) => (
+        <div className="flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-default-400" />
+          <span className="font-medium">{event.companyName}</span>
+        </div>
+      ),
+    },
+    {
+      key: "eventType",
+      header: "Tipo",
+      render: (event) => (
+        <Chip variant="flat" size="sm">
+          {event.eventType}
+        </Chip>
+      ),
+    },
+    {
+      key: "reasonCode",
+      header: "Razón",
+      render: (event) => <span className="text-sm font-mono">{event.reasonCode}</span>,
+    },
+    {
+      key: "reasonDescription",
+      header: "Descripción",
+      render: (event) => <span className="text-sm text-default-500">{event.reasonDescription}</span>,
+    },
+    {
+      key: "createdAt",
+      header: "Fecha",
+      sortable: true,
+      render: (event) => new Date(event.createdAt).toLocaleString("es-CO"),
+    },
+  ];
 
   if (error) {
     return (
@@ -337,130 +423,59 @@ export default function MonitoringPage() {
 
       {/* Priority Cases Tab */}
       {activeTab === "cases" && (
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-danger" />
-              Casos Prioritarios Requieren Atención
-            </h3>
-          </CardHeader>
-          <CardBody>
-            <Table aria-label="Casos prioritarios">
-              <TableHeader>
-                <TableColumn>EMPRESA</TableColumn>
-                <TableColumn>SEVERIDAD</TableColumn>
-                <TableColumn>PROBLEMA</TableColumn>
-                <TableColumn>DISPOSITIVOS</TableColumn>
-                <TableColumn>ULTIMO INCIDENTE</TableColumn>
-                <TableColumn>ACCIÓN RECOMENDADA</TableColumn>
-              </TableHeader>
-              <TableBody
-                emptyContent="No hay casos prioritarios"
-                isLoading={isLoading}
-                loadingContent={<Skeleton className="w-full h-12" />}
-              >
-                {priorityCases.map((caseItem) => (
-                  <TableRow key={`${caseItem.companyId}-${caseItem.issueType}`}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-default-400" />
-                        <span className="font-medium">{caseItem.companyName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Chip color={getSeverityColor(caseItem.severity)} variant="flat" size="sm">
-                        {caseItem.severity}
-                      </Chip>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{caseItem.issueType}</p>
-                        <p className="text-sm text-default-500">{caseItem.description}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge color="danger" content={caseItem.affectedDevices}>
-                        <Monitor className="w-4 h-4" />
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(caseItem.lastIncidentAt).toLocaleString("es-CO")}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-warning">{caseItem.recommendedAction}</span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardBody>
-        </Card>
+        <DataTable
+          title="Casos prioritarios"
+          description="Incidentes que requieren atención del equipo de soporte."
+          columns={priorityColumns}
+          data={priorityCases}
+          getRowKey={(caseItem) => `${caseItem.companyId}-${caseItem.issueType}`}
+          isLoading={isLoading}
+          emptyMessage="No hay casos prioritarios"
+          filters={[
+            {
+              key: "severity",
+              label: "Severidad",
+              type: "select",
+              options: ["HIGH", "MEDIUM", "LOW"].map((severity) => ({ label: severity, value: severity })),
+            },
+            { key: "affectedDevices", label: "Dispositivos", type: "numberRange" },
+            { key: "lastIncidentAt", label: "Ultimo incidente", type: "dateRange" },
+          ]}
+        />
       )}
 
       {/* Block Events Tab */}
       {activeTab === "blocks" && (
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <X className="w-5 h-5 text-danger" />
-              Eventos de Bloqueo No Resueltos
-            </h3>
-          </CardHeader>
-          <CardBody>
-            <Table aria-label="Eventos de bloqueo">
-              <TableHeader>
-                <TableColumn>EMPRESA</TableColumn>
-                <TableColumn>TIPO</TableColumn>
-                <TableColumn>RAZÓN</TableColumn>
-                <TableColumn>DESCRIPCIÓN</TableColumn>
-                <TableColumn>FECHA</TableColumn>
-                <TableColumn align="center">ACCIONES</TableColumn>
-              </TableHeader>
-              <TableBody
-                emptyContent="No hay bloqueos pendientes"
-                isLoading={isLoading}
-                loadingContent={<Skeleton className="w-full h-12" />}
-              >
-                {blockEvents.map((event) => (
-                  <TableRow key={event.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-default-400" />
-                        <span className="font-medium">{event.companyName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Chip variant="flat" size="sm">{event.eventType}</Chip>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-mono">{event.reasonCode}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-default-500">{event.reasonDescription}</span>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(event.createdAt).toLocaleString("es-CO")}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        color="success"
-                        variant="flat"
-                        startContent={<Check className="w-4 h-4" />}
-                        onPress={() => {
-                          setSelectedEvent(event);
-                          onResolveOpen();
-                        }}
-                      >
-                        Resolver
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardBody>
-        </Card>
+        <DataTable
+          title="Eventos de bloqueo"
+          description="Bloqueos no resueltos y acciones de recuperación."
+          columns={blockColumns}
+          data={blockEvents}
+          getRowKey={(event) => event.id}
+          isLoading={isLoading}
+          emptyMessage="No hay bloqueos pendientes"
+          searchable
+          searchPlaceholder="Buscar empresa, tipo o razón..."
+          filters={[
+            { key: "eventType", label: "Tipo", type: "text" },
+            { key: "reasonCode", label: "Razón", type: "text" },
+            { key: "createdAt", label: "Fecha", type: "dateRange" },
+          ]}
+          actions={(event) => (
+            <Button
+              size="sm"
+              color="success"
+              variant="flat"
+              startContent={<Check className="w-4 h-4" />}
+              onPress={() => {
+                setSelectedEvent(event);
+                onResolveOpen();
+              }}
+            >
+              Resolver
+            </Button>
+          )}
+        />
       )}
 
       {/* Resolve Modal */}

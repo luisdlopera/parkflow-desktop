@@ -11,11 +11,11 @@ import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.UserRole;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.settings.dto.UserCreateRequest;
 import com.parkflow.modules.settings.dto.UserStatusRequest;
-import com.parkflow.modules.settings.service.SettingsAuditService;
-import com.parkflow.modules.settings.service.SettingsUserService;
+import com.parkflow.modules.settings.application.service.SettingsAuditService;
+import com.parkflow.modules.settings.application.service.SettingsUserService;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +32,7 @@ import com.parkflow.modules.auth.security.AuthPrincipal;
 @ExtendWith(MockitoExtension.class)
 class SettingsUserServiceTest {
 
-  @Mock private AppUserRepository appUserRepository;
+  @Mock private AppUserPort appUserRepository;
   @Mock private PasswordHashService passwordHashService;
   @Mock private SettingsAuditService settingsAuditService;
   @Mock private com.parkflow.modules.audit.service.AuditService globalAuditService;

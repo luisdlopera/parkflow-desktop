@@ -17,7 +17,7 @@ public class OperationLoggingAspect {
     private static final Logger log = LoggerFactory.getLogger(OperationLoggingAspect.class);
     private static final String CORRELATION_ID_KEY = "correlationId";
 
-    @Around("execution(* com.parkflow.modules.parking.operation.service.OperationService.*(..))")
+    @Around("execution(* com.parkflow.modules.parking.operation.application.service..*.*(..))")
     public Object logOperation(ProceedingJoinPoint joinPoint) throws Throwable {
         String correlationId = MDC.get(CORRELATION_ID_KEY);
         boolean generatedHere = false;

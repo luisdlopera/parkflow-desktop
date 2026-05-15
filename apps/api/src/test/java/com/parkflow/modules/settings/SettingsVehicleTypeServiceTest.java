@@ -9,8 +9,8 @@ import static org.mockito.Mockito.when;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
 import com.parkflow.modules.settings.dto.VehicleTypeRequest;
-import com.parkflow.modules.settings.repository.MasterVehicleTypeRepository;
-import com.parkflow.modules.settings.service.SettingsVehicleTypeService;
+import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;
+import com.parkflow.modules.settings.application.service.SettingsVehicleTypeService;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +23,7 @@ import org.springframework.http.HttpStatus;
 @ExtendWith(MockitoExtension.class)
 class SettingsVehicleTypeServiceTest {
 
-  @Mock private MasterVehicleTypeRepository repository;
+  @Mock private MasterVehicleTypePort repository;
 
   private SettingsVehicleTypeService service;
 

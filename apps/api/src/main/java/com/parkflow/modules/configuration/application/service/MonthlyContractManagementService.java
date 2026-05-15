@@ -1,18 +1,19 @@
 package com.parkflow.modules.configuration.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.configuration.application.port.in.MonthlyContractUseCase;
+import com.parkflow.modules.configuration.domain.MonthlyContract;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.repository.MonthlyContractPort;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.configuration.dto.MonthlyContractRequest;
 import com.parkflow.modules.configuration.dto.MonthlyContractResponse;
-import com.parkflow.modules.configuration.entity.MonthlyContract;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.auth.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -29,16 +30,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MonthlyContractManagementService implements MonthlyContractUseCase {
 
-  private final MonthlyContractRepository repo;
-  private final RateRepository rateRepository;
-  private final ParkingSiteRepository siteRepository;
-  private final AuditService globalAuditService;
+  private final MonthlyContractPort repo;
+  private final RatePort rateRepository;
+  private final ParkingSitePort siteRepository;
+  private final AuditPort globalAuditService;
   private final ObjectMapper objectMapper;
 
   @Override
   @Transactional(readOnly = true)
   public SettingsPageResponse<MonthlyContractResponse> list(String site, String plate, Boolean active, Pageable pageable) {
-    Page<MonthlyContract> page = repo.search(site, plate, active, pageable);
+    Page<MonthlyContract> page = repo.search(site, plate, active, SecurityUtils.requireCompanyId(), pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 
@@ -53,6 +54,7 @@ public class MonthlyContractManagementService implements MonthlyContractUseCase 
   public MonthlyContractResponse create(MonthlyContractRequest req) {
     validateDates(req);
     MonthlyContract mc = fromRequest(req, new MonthlyContract());
+    mc.setCompanyId(SecurityUtils.requireCompanyId());
     mc = repo.save(mc);
     try {
         globalAuditService.record(

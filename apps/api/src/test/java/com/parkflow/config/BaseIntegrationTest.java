@@ -1,24 +1,24 @@
 package com.parkflow.config;
 
 import com.parkflow.modules.cash.domain.CashRegister;
-import com.parkflow.modules.cash.repository.CashRegisterRepository;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.licensing.entity.Company;
-import com.parkflow.modules.licensing.entity.Company.OperationMode;
+import com.parkflow.modules.cash.domain.repository.CashRegisterPort;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.licensing.domain.Company;
+import com.parkflow.modules.licensing.domain.Company.OperationMode;
 import com.parkflow.modules.licensing.enums.CompanyStatus;
 import com.parkflow.modules.licensing.enums.PlanType;
-import com.parkflow.modules.licensing.repository.CompanyRepository;
+import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateType;
 import com.parkflow.modules.parking.operation.domain.RoundingMode;
 import com.parkflow.modules.parking.operation.domain.UserRole;
 import com.parkflow.modules.auth.security.PasswordHashService;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
-import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
-import com.parkflow.modules.settings.repository.MasterVehicleTypeRepository;
+import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -73,22 +73,22 @@ public abstract class BaseIntegrationTest {
     protected JdbcTemplate jdbcTemplate;
 
     @Autowired
-    protected CompanyRepository companyRepository;
+    protected CompanyPort companyRepository;
 
     @Autowired
-    protected ParkingSiteRepository parkingSiteRepository;
+    protected ParkingSitePort parkingSiteRepository;
 
     @Autowired
-    protected MasterVehicleTypeRepository masterVehicleTypeRepository;
+    protected MasterVehicleTypePort masterVehicleTypeRepository;
 
     @Autowired
-    protected RateRepository rateRepository;
+    protected RatePort rateRepository;
 
     @Autowired
-    protected AppUserRepository appUserRepository;
+    protected AppUserPort appUserRepository;
 
     @Autowired
-    protected CashRegisterRepository cashRegisterRepository;
+    protected CashRegisterPort cashRegisterRepository;
 
     @Autowired
     protected RateLimitConfig rateLimitConfig;

@@ -8,12 +8,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.configuration.dto.PrinterRequest;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.entity.Printer;
-import com.parkflow.modules.configuration.entity.Printer.PrinterConnection;
-import com.parkflow.modules.configuration.entity.Printer.PrinterType;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.configuration.repository.PrinterRepository;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.Printer;
+import com.parkflow.modules.configuration.domain.Printer.PrinterConnection;
+import com.parkflow.modules.configuration.domain.Printer.PrinterType;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.configuration.domain.repository.PrinterPort;
 import com.parkflow.modules.configuration.application.service.PrinterManagementService;
 import com.parkflow.modules.parking.operation.exception.OperationException;
 import java.util.List;
@@ -30,8 +30,8 @@ import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
 class PrinterServiceTest {
-  @Mock private PrinterRepository printerRepository;
-  @Mock private ParkingSiteRepository parkingSiteRepository;
+  @Mock private PrinterPort printerRepository;
+  @Mock private ParkingSitePort parkingSiteRepository;
 
   private PrinterManagementService service;
 

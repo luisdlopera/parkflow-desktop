@@ -1,8 +1,8 @@
 package com.parkflow.modules.licensing.controller;
+import com.parkflow.modules.licensing.domain.repository.*;
 
 import com.parkflow.modules.licensing.dto.*;
-import com.parkflow.modules.licensing.entity.LicenseBlockEvent;
-import com.parkflow.modules.licensing.repository.LicenseBlockEventRepository;
+import com.parkflow.modules.licensing.domain.LicenseBlockEvent;
 import com.parkflow.modules.licensing.service.LicenseAuditService;
 import jakarta.validation.Valid;
 import java.time.OffsetDateTime;
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class LicenseSupportController {
 
   private final LicenseAuditService auditService;
-  private final LicenseBlockEventRepository blockEventRepository;
+  private final LicenseBlockEventPort blockEventRepository;
 
   // ==================== DIAGNÓSTICO ====================
 

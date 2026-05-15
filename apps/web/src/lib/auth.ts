@@ -39,7 +39,9 @@ function authBaseUrl(): string {
 function operationsApiKey(): string {
   const key = process.env.NEXT_PUBLIC_API_KEY;
   if (!key || key.trim().length === 0) {
-    return "dev-api-key-123";
+    // In production this should never fall back to a secret string.
+    // Use an empty string so callers must provide a valid key via env.
+    return "";
   }
   return key.trim();
 }

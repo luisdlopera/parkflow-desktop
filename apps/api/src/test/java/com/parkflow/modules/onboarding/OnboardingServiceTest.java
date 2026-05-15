@@ -4,15 +4,15 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.parkflow.modules.licensing.entity.Company;
+import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.enums.PlanType;
-import com.parkflow.modules.licensing.repository.CompanyRepository;
+import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
-import com.parkflow.modules.onboarding.entity.OnboardingProgress;
-import com.parkflow.modules.onboarding.repository.OnboardingProgressRepository;
-import com.parkflow.modules.onboarding.service.CompanySettingsService;
-import com.parkflow.modules.onboarding.service.FeatureAccessService;
-import com.parkflow.modules.onboarding.service.OnboardingService;
+import com.parkflow.modules.onboarding.domain.OnboardingProgress;
+import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
+import com.parkflow.modules.onboarding.application.service.CompanySettingsService;
+import com.parkflow.modules.onboarding.application.service.FeatureAccessService;
+import com.parkflow.modules.onboarding.application.service.OnboardingService;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.parking.operation.domain.UserRole;
@@ -29,8 +29,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 class OnboardingServiceTest {
 
-  private CompanyRepository companyRepository;
-  private OnboardingProgressRepository onboardingProgressRepository;
+  private CompanyPort companyRepository;
+  private OnboardingProgressPort onboardingProgressRepository;
   private CompanySettingsService companySettingsService;
   private OnboardingService onboardingService;
 
@@ -38,8 +38,8 @@ class OnboardingServiceTest {
 
   @BeforeEach
   void setup() {
-    companyRepository = mock(CompanyRepository.class);
-    onboardingProgressRepository = mock(OnboardingProgressRepository.class);
+    companyRepository = mock(CompanyPort.class);
+    onboardingProgressRepository = mock(OnboardingProgressPort.class);
     companySettingsService = mock(CompanySettingsService.class);
     onboardingService = new OnboardingService(
         companyRepository,

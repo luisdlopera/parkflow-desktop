@@ -1,7 +1,7 @@
 package com.parkflow.modules.tickets.dto;
 
-import com.parkflow.modules.tickets.entity.PrintDocumentType;
-import com.parkflow.modules.tickets.entity.PrintJobStatus;
+import com.parkflow.modules.tickets.domain.PrintDocumentType;
+import com.parkflow.modules.tickets.domain.PrintJobStatus;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 

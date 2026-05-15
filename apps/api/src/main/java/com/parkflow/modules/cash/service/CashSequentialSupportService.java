@@ -1,7 +1,7 @@
 package com.parkflow.modules.cash.service;
 
 import com.parkflow.modules.cash.domain.CashFeSequenceCounter;
-import com.parkflow.modules.cash.repository.CashFeSequenceCounterRepository;
+import com.parkflow.modules.cash.domain.repository.CashFeSequenceCounterPort;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
 import java.util.Locale;
 import java.util.Optional;
@@ -20,7 +20,7 @@ import org.springframework.util.StringUtils;
 public class CashSequentialSupportService {
 
   private static final Pattern NORMALIZE_WS = Pattern.compile("\\s+");
-  private final CashFeSequenceCounterRepository sequenceRepository;
+  private final CashFeSequenceCounterPort sequencePort;
 
   @Transactional
   public String allocateIfEnabled(
@@ -50,7 +50,7 @@ public class CashSequentialSupportService {
     CashFeSequenceCounter row = resolveRowWithLock(siteNormalized, terminalKey);
 
     row.setLastValue(row.getLastValue() + 1);
-    sequenceRepository.save(row);
+    sequencePort.save(row);
 
     long n = row.getLastValue();
     String padded = String.format(Locale.ROOT, "%0" + digits + "d", n);
@@ -65,7 +65,7 @@ public class CashSequentialSupportService {
 
   private CashFeSequenceCounter resolveRowWithLock(String siteNormalized, String terminalKey) {
 
-    Optional<CashFeSequenceCounter> first = sequenceRepository.lockBySiteAndTerminal(siteNormalized, terminalKey);
+    Optional<CashFeSequenceCounter> first = sequencePort.lockBySiteAndTerminal(siteNormalized, terminalKey);
     if (first.isPresent()) {
       return first.get();
     }
@@ -73,10 +73,10 @@ public class CashSequentialSupportService {
     CashFeSequenceCounter newborn = CashFeSequenceCounter.newBlank(siteNormalized, terminalKey);
 
     try {
-      return sequenceRepository.saveAndFlush(newborn);
+      return sequencePort.save(newborn);
     } catch (DataIntegrityViolationException e) {
 
-      return sequenceRepository
+      return sequencePort
           .lockBySiteAndTerminal(siteNormalized, terminalKey)
           .orElseThrow(() -> new IllegalStateException("No se inicializo correlativo FE soporte para sede"));
     }
