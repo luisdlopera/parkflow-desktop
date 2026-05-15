@@ -1,8 +1,8 @@
 package com.parkflow.modules.parking.operation.domain.pricing;
 
-import com.parkflow.modules.parking.operation.domain.Rate;
-import com.parkflow.modules.parking.operation.domain.RateType;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.configuration.domain.Rate;
+import com.parkflow.modules.configuration.domain.RateType;
+import com.parkflow.modules.common.exception.OperationException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

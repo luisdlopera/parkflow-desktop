@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
 import com.parkflow.modules.settings.dto.VehicleTypeRequest;
 import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;

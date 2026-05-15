@@ -477,7 +477,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errorCode").value("OPERATION_ERROR"));
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
     }
 
     @Test

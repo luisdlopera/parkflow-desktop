@@ -16,8 +16,10 @@ import com.parkflow.modules.cash.support.CashHttpContext;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.cash.domain.exception.CashSessionException;
-import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

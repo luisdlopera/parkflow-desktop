@@ -10,7 +10,7 @@ import com.parkflow.modules.licensing.dto.LicenseValidationResponse;
 import com.parkflow.modules.licensing.enums.CompanyStatus;
 import com.parkflow.modules.licensing.enums.LicenseStatus;
 import com.parkflow.modules.licensing.infrastructure.crypto.LicenseSignatureService;
-import com.parkflow.modules.licensing.service.LicenseAuditService;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;

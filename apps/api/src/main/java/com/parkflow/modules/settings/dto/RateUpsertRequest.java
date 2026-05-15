@@ -1,8 +1,8 @@
 package com.parkflow.modules.settings.dto;
 
-import com.parkflow.modules.parking.operation.domain.RateCategory;
-import com.parkflow.modules.parking.operation.domain.RateType;
-import com.parkflow.modules.parking.operation.domain.RoundingMode;
+import com.parkflow.modules.configuration.domain.RateCategory;
+import com.parkflow.modules.configuration.domain.RateType;
+import com.parkflow.modules.configuration.domain.RoundingMode;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;

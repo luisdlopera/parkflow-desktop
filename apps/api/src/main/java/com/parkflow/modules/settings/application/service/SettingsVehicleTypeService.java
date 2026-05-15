@@ -1,6 +1,6 @@
 package com.parkflow.modules.settings.application.service;
 
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.settings.application.port.in.VehicleTypeUseCase;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
 import com.parkflow.modules.settings.dto.VehicleTypeRequest;

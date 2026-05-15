@@ -1,5 +1,7 @@
 package com.parkflow.modules.parking.operation.domain;
 
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.configuration.domain.Rate;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -79,21 +81,21 @@ public class ParkingSession {
 
   private String lostTicketReason;
 
-  @Column(nullable = false)
-  private int reprintCount = 0;
-
   @Column(precision = 10, scale = 2)
   private BigDecimal totalAmount;
 
-  @Column(length = 50)
-  private String agreementCode;
+  @Column(precision = 10, scale = 2)
+  private BigDecimal taxAmount;
 
-  @Column(name = "applied_prepaid_minutes")
-  private Integer appliedPrepaidMinutes = 0;
+  @Column(precision = 10, scale = 2)
+  private BigDecimal discountAmount;
 
-  @Column(name = "is_monthly_session")
-  private boolean monthlySession = false;
+  @Column(precision = 10, scale = 2)
+  private BigDecimal netAmount;
 
+  private String paymentMethod;
+
+  @Column(name = "site_code")
   private String site;
 
   private String lane;
@@ -102,8 +104,20 @@ public class ParkingSession {
 
   private String terminal;
 
-  @Column(name = "company_id")
+  @Column(nullable = false)
   private UUID companyId;
+
+  @Column(nullable = false)
+  private boolean isMonthlySession = false;
+
+  @Column(nullable = false)
+  private int reprintCount = 0;
+
+  @Column(length = 50)
+  private String agreementCode;
+
+  @Column(nullable = false)
+  private int appliedPrepaidMinutes = 0;
 
   @Column(nullable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();
