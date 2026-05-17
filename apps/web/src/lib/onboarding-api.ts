@@ -61,6 +61,11 @@ export async function completeOnboarding(companyId: string): Promise<OnboardingS
   return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}/complete`, { method: "POST" });
 }
 
+export async function resetOnboarding(companyId: string, reason?: string): Promise<OnboardingStatus> {
+  const query = reason ? `?reason=${encodeURIComponent(reason)}` : "";
+  return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}/reset${query}`, { method: "POST" });
+}
+
 export async function fetchCompanyCapabilities(companyId: string): Promise<CompanyCapabilities> {
   return apiFetch<CompanyCapabilities>(`/onboarding/companies/${companyId}/capabilities`);
 }

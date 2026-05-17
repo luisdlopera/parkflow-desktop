@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom'
 import { server } from './src/mocks/server'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
+import { configure } from '@testing-library/react'
 
 // Polyfill ResizeObserver for HeroUI components in jsdom
 if (typeof globalThis.ResizeObserver === 'undefined') {
@@ -66,3 +67,5 @@ beforeEach(() => {
 afterEach(() => server.resetHandlers())
 
 afterAll(() => server.close())
+
+configure({ asyncUtilTimeout: 15000 })

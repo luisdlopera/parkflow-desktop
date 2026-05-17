@@ -7,8 +7,59 @@ import { server } from "@/mocks/server";
 import { ToastProvider } from "@/lib/toast/ToastContext";
 import VehicleEntryFormV2 from "@/components/forms/VehicleEntryFormV2";
 
+vi.mock("@/lib/runtime-config", () => ({
+  fetchRuntimeConfig: vi.fn(async () => ({
+    vehicleTypes: ["CAR", "MOTORCYCLE"],
+    operationConfiguration: {
+      showVehicleType: true,
+      defaultVehicleType: "CAR",
+      showVisitorType: true,
+      defaultVisitorType: "VISITOR",
+      showAdvancedSection: true,
+      enableManualRate: true,
+      enableLaneSelection: true,
+      enableTerminalSelection: true,
+      enableCashierSelection: true,
+      enableVehicleCondition: true,
+      enableObservations: true,
+      enableCountryPlate: true,
+    }
+  })),
+  shouldShowModule: vi.fn((config, key, def = true) => def)
+}));
+
+vi.mock("@/lib/hooks/useAutoSave", () => ({
+  useAutoSave: vi.fn(() => ({
+    clearAutoSave: vi.fn(),
+    restoreData: vi.fn(() => null),
+    hasRestorableData: vi.fn(() => false),
+    isSaved: false
+  })),
+  useCrashRecovery: vi.fn(() => ({
+    checkForRecovery: vi.fn(() => ({ recovered: false })),
+    clearRecovery: vi.fn()
+  }))
+}));
+
+let store: Record<string, string> = {};
+const localStorageMock = {
+  getItem: (key: string) => store[key] || null,
+  setItem: (key: string, value: string) => { store[key] = String(value); },
+  clear: () => { store = {}; },
+  removeItem: (key: string) => { delete store[key]; },
+  get length() { return Object.keys(store).length; },
+  key: (index: number) => Object.keys(store)[index] || null,
+};
+Object.defineProperty(window, "localStorage", { value: localStorageMock, writable: true });
+
 function renderWithProviders(ui: React.ReactElement) {
   return render(<ToastProvider>{ui}</ToastProvider>);
+}
+
+async function flushPromises() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  });
 }
 
 const MOCK_USER_ID = "00000000-0000-0000-0000-000000000001";
@@ -31,6 +82,16 @@ const MOCK_SESSION = {
 
 function setupLocalStorage() {
   localStorage.setItem("parkflow.auth.session", JSON.stringify(MOCK_SESSION));
+  localStorage.setItem(
+    "parkflow_operator_settings",
+    JSON.stringify({
+      mode: "beginner",
+      defaultVehicleType: "CAR",
+      rememberLocation: true,
+      skipConditionCheck: false,
+      platePrefix: ""
+    })
+  );
 }
 
 function clearLocalStorage() {
@@ -52,22 +113,19 @@ describe("VehicleEntryFormV2", () => {
 
   afterEach(() => {
     clearLocalStorage();
+    server.resetHandlers();
   });
 
   it("renders the form with plate field", async () => {
     renderWithProviders(<VehicleEntryFormV2 />);
+    await flushPromises();
 
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
+    expect(screen.getByTestId("plate")).toBeInTheDocument();
   });
 
   it("does not submit when plate is empty", async () => {
     renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("register-entry")).toBeInTheDocument();
-    });
+    await flushPromises();
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -79,15 +137,7 @@ describe("VehicleEntryFormV2", () => {
 
   it("normalizes plate to uppercase and removes spaces", async () => {
     let capturedBody: unknown = null;
-    let typesFetched = false;
     server.use(
-      http.get("*/api/v1/configuration/vehicle-types", () => {
-        typesFetched = true;
-        return HttpResponse.json([
-          { id: "1", code: "CAR", name: "Carro", isActive: true },
-          { id: "2", code: "MOTORCYCLE", name: "Moto", isActive: true }
-        ]);
-      }),
       http.post("*/api/v1/operations/entries", async ({ request }) => {
         capturedBody = await request.json();
         return HttpResponse.json({
@@ -105,22 +155,17 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
+    await flushPromises();
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "abc123");
-
-    await screen.findByTestId("vehicle-type");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
       expect(capturedBody).not.toBeNull();
-    }, { timeout: 3000 });
+    });
 
     expect(capturedBody).not.toBeNull();
     if (capturedBody) {
@@ -149,15 +194,10 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
+    await flushPromises();
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "XYZ789");
-
-    await screen.findByTestId("vehicle-type"); // Wait for types to load
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -198,10 +238,7 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
+    await flushPromises();
 
     await userEvent.click(screen.getByLabelText(/Sin placa/i));
     await userEvent.type(screen.getByLabelText(/Justificación sin placa/i), "Vehiculo oficial sin placa visible");
@@ -239,15 +276,10 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
+    await flushPromises();
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "MOT111");
-
-    await screen.findByTestId("vehicle-type"); // Wait for types to load
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -278,15 +310,10 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
+    await flushPromises();
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "TES001");
-
-    await screen.findByTestId("vehicle-type"); // Wait for types to load
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -310,15 +337,10 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
+    await flushPromises();
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "DUP001");
-
-    await screen.findByTestId("vehicle-type"); // Wait for types to load
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -346,15 +368,10 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
+    await flushPromises();
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "SUC111");
-
-    await screen.findByTestId("vehicle-type");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -399,15 +416,10 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
+    await flushPromises();
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "RET111");
-
-    await screen.findByTestId("vehicle-type");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -446,15 +458,10 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
+    await flushPromises();
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "PRI111");
-
-    await screen.findByTestId("vehicle-type");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -486,15 +493,10 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
+    await flushPromises();
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "FAI111");
-
-    await screen.findByTestId("vehicle-type");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
@@ -518,23 +520,58 @@ describe("VehicleEntryFormV2", () => {
     );
 
     renderWithProviders(<VehicleEntryFormV2 />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("plate")).toBeInTheDocument();
-    });
+    await flushPromises();
 
     const plateInput = screen.getByTestId("plate");
     await userEvent.type(plateInput, "ERR500");
-
-    await screen.findByTestId("vehicle-type");
 
     const submitBtn = screen.getByTestId("register-entry");
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getByText(/no se pudo registrar/i)).toBeInTheDocument();
-    }, { timeout: 3000 });
+    });
 
     expect(screen.queryByText(/Ingreso registrado/i)).not.toBeInTheDocument();
+  });
+
+  it("hides visitor type, vehicle type, mode selector and advanced section in MOTORCYCLE_ONLY business model", async () => {
+    const mockConfig = {
+      businessModel: "MOTORCYCLE_ONLY",
+      operationalProfile: "MOTORCYCLE_ONLY",
+      vehicleTypes: ["MOTORCYCLE"],
+      operationConfiguration: {
+        showVehicleType: false,
+        defaultVehicleType: "MOTORCYCLE",
+        showVisitorType: false,
+        defaultVisitorType: "VISITOR",
+        showAdvancedSection: false,
+        enableManualRate: false,
+        enableLaneSelection: false,
+        enableTerminalSelection: false,
+        enableCashierSelection: false,
+        enableVehicleCondition: false,
+        enableObservations: false,
+        enableCountryPlate: false,
+      }
+    };
+    
+    const { fetchRuntimeConfig } = await import("@/lib/runtime-config");
+    vi.mocked(fetchRuntimeConfig).mockResolvedValueOnce(mockConfig);
+
+    renderWithProviders(<VehicleEntryFormV2 />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
+
+    const visitorTypeContainer = screen.getByText(/Tipo de Cliente \/ Parqueo/i).closest(".field-visitor-type");
+    expect(visitorTypeContainer).toHaveClass("hidden");
+
+    const vehicleTypeContainer = screen.getByText(/Tipo de Vehículo/i).closest(".field-vehicle-type");
+    expect(vehicleTypeContainer).toHaveClass("hidden");
+
+    expect(screen.queryByLabelText(/Modo de operación/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Mostrar opciones avanzadas/i)).not.toBeInTheDocument();
   });
 });

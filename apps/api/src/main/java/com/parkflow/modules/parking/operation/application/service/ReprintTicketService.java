@@ -1,26 +1,22 @@
 package com.parkflow.modules.parking.operation.application.service;
 
-import com.parkflow.modules.audit.application.port.out.AuditPort;
-import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.parking.operation.application.port.in.ReprintTicketUseCase;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.dto.ReprintRequest;
-import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.common.exception.domain.*;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 
-import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,10 +32,7 @@ public class ReprintTicketService implements ReprintTicketUseCase {
   private final ParkingSessionPort parkingSessionPort;
   private final AppUserPort appUserPort;
   private final OperationIdempotencyPort operationIdempotencyPort;
-  private final OperationAuditService auditService;
-  private final OperationPrintService operationPrintService;
   private final MeterRegistry meterRegistry;
-  private final AuditPort globalAuditService;
 
   @Override
   @Transactional
@@ -51,33 +44,16 @@ public class ReprintTicketService implements ReprintTicketUseCase {
     ParkingSession session =
         parkingSessionPort
             .findByTicketNumberForUpdate(request.ticketNumber().trim(), SecurityUtils.requireCompanyId())
-            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Ticket no encontrado"));
+            .orElseThrow(() -> new EntityNotFoundException("Ticket", request.ticketNumber()));
 
     AppUser operator = findRequiredOperator(request.operatorUserId());
     int maxReprints = maxReprintsForRole(operator.getRole());
-    if (session.getReprintCount() >= maxReprints) {
-      throw new OperationException(HttpStatus.FORBIDDEN, "Limite de reimpresion alcanzado");
-    }
-
-    session.setReprintCount(session.getReprintCount() + 1);
-    session.setUpdatedAt(OffsetDateTime.now());
+    
+    session.reprintTicket(operator, maxReprints, request.reason());
     session = parkingSessionPort.save(session);
 
-    auditService.recordEvent(session, SessionEventType.TICKET_REPRINTED, operator, request.reason());
-    try {
-      operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.REPRINT,
-          "reprint-" + session.getReprintCount());
-    } catch (Exception printError) {
-      log.warn("Print job failed for session={}: {}", session.getId(), printError.getMessage());
-    }
     safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.REPRINT, session);
     meterRegistry.counter("parkflow.operations", "operation", "reprint").increment();
-
-    globalAuditService.record(
-        AuditAction.REIMPRIMIR, operator,
-        "Reprint count: " + (session.getReprintCount() - 1),
-        "Reprint count: " + session.getReprintCount(),
-        "Ticket: " + session.getTicketNumber() + ", Reason: " + request.reason());
 
     DurationCalculator.DurationBreakdown duration = DurationCalculator.calculate(
         session.getEntryAt(),
@@ -91,8 +67,8 @@ public class ReprintTicketService implements ReprintTicketUseCase {
   private AppUser findRequiredOperator(UUID operatorUserId) {
     UUID effectiveId = operatorUserId != null ? operatorUserId : SecurityUtils.requireUserId();
     AppUser user = appUserPort.findById(effectiveId)
-        .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
-    if (!user.isActive()) throw new OperationException(HttpStatus.FORBIDDEN, "Operador inactivo");
+        .orElseThrow(() -> new EntityNotFoundException("Operador", effectiveId.toString()));
+    if (!user.isActive()) throw new BusinessValidationException("OPERATOR_INACTIVE", "Operador inactivo");
     return user;
   }
 
@@ -107,7 +83,7 @@ public class ReprintTicketService implements ReprintTicketUseCase {
     return operationIdempotencyPort.findByIdempotencyKey(idempotencyKey.trim())
         .map(row -> {
           if (row.getOperationType() != expected) {
-            throw new OperationException(HttpStatus.CONFLICT, "Clave de idempotencia ya usada con otra operacion");
+            throw new ConcurrentOperationException("Clave de idempotencia ya usada con otra operacion");
           }
           ParkingSession session = row.getSession();
           DurationCalculator.DurationBreakdown duration = DurationCalculator.calculate(
