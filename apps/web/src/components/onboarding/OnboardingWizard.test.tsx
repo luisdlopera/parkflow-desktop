@@ -41,14 +41,14 @@ describe("OnboardingWizard", () => {
     // prefer the inline help inside the question body (its aria-controls id starts with 'help-')
     const bodyHelp = helpButtons.find((b) => {
       const ac = b.getAttribute("aria-controls") || "";
-      return ac.startsWith("help-") || ac.startsWith("help");
+      return ac.startsWith("step-help") || ac.startsWith("step-");
     });
     expect(bodyHelp).toBeDefined();
     const user = userEvent.setup();
     // hover opens the inline help (we also support click but hover is more reliable in tests)
     await user.hover(bodyHelp!);
     // the inline help contains the descriptive sentence we added - wait for it
-    await screen.findByText(/Selecciona los tipos de vehículo que aceptas/i);
+    await screen.findByText(/Indica qué tipos de vehículos aceptas/i);
   });
 
   it("shows warning when skipping setup", async () => {

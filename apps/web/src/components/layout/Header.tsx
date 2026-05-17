@@ -1,7 +1,13 @@
-import LocalPrintAgentStatus from "@/components/print/LocalPrintAgentStatus";
-import { PrintStatusMonitor } from "@/components/print/PrintStatusMonitor";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { Input } from "@heroui/input";
+import { Search } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UserMenu } from "@/components/auth/UserMenu";
+import { useState } from "react";
+
+import { QuickSearch } from "@/modules/search/components/QuickSearch";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -32,25 +38,13 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
       {/* Right side: Actions + Status + User */}
       <div className="flex items-center gap-2 sm:gap-4">
+        {/* Buscador general */}
+        <div className="hidden md:block w-96">
+          <QuickSearch />
+        </div>
         {/* Theme toggle - hidden on smallest screens */}
         <div className="hidden sm:block">
           <ThemeToggle />
-        </div>
-
-        {/* Status indicators - stacked on mobile, row on larger screens */}
-        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4">
-          <div className="flex items-center gap-2">
-            <PrintStatusMonitor />
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden md:block">
-              <LocalPrintAgentStatus />
-            </div>
-            <div className="hidden sm:flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-xs text-slate-600">Caja 01</span>
-            </div>
-          </div>
         </div>
 
         {/* Divider */}

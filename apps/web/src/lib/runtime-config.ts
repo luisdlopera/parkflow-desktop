@@ -9,6 +9,22 @@ export type RuntimeConfig = {
   sites?: Array<{ code: string; name: string }>;
   modules?: Record<string, boolean>;
   wizard?: Record<string, Record<string, unknown>>;
+  businessModel?: string;
+  operationalProfile?: string;
+  operationConfiguration?: {
+    showVehicleType: boolean;
+    defaultVehicleType: string;
+    showVisitorType: boolean;
+    defaultVisitorType: string;
+    showAdvancedSection: boolean;
+    enableManualRate: boolean;
+    enableLaneSelection: boolean;
+    enableTerminalSelection: boolean;
+    enableCashierSelection: boolean;
+    enableVehicleCondition: boolean;
+    enableObservations: boolean;
+    enableCountryPlate: boolean;
+  };
 };
 
 export async function fetchRuntimeConfig(): Promise<RuntimeConfig | null> {

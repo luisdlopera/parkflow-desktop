@@ -16,7 +16,7 @@ import com.parkflow.modules.configuration.domain.RateType;
 import com.parkflow.modules.configuration.domain.RoundingMode;
 import com.parkflow.modules.parking.operation.application.service.ComplexPricingService;
 import com.parkflow.modules.parking.operation.domain.*;
-import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.common.exception.domain.*;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.parking.operation.domain.pricing.PricingCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +26,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -64,8 +63,7 @@ class ComplexPricingServiceTest {
   void calculate_throwsWhenNoRate() {
     ParkingSession session = session(null);
     assertThatThrownBy(() -> service.calculate(session, OffsetDateTime.now(), null, false, false))
-        .isInstanceOf(OperationException.class)
-        .satisfies(e -> assertThat(((OperationException) e).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+        .isInstanceOf(BusinessValidationException.class);
   }
 
   // -----------------------------------------------------------------------
@@ -95,11 +93,12 @@ class ComplexPricingServiceTest {
   // -----------------------------------------------------------------------
 
   @Test
-  void calculate_deductsPrepaidMinutesBeforeBaseCalculation() {
-    ParkingSession session = session(rate(0, BigDecimal.TEN)); // no grace
+  void calculate_appliesPrepaidDeduction() {
     OffsetDateTime entryAt = OffsetDateTime.now().minusMinutes(90);
-    session.setEntryAt(entryAt);
-    session.setCompanyId(UUID.randomUUID());
+    ParkingSession session = session(rate(0, BigDecimal.TEN)).toBuilder()
+        .entryAt(entryAt)
+        .companyId(UUID.randomUUID())
+        .build();
     OffsetDateTime exitAt = OffsetDateTime.now();
 
     when(monthlyContractRepository
@@ -131,9 +130,10 @@ class ComplexPricingServiceTest {
 
   @Test
   void calculate_dryRunDoesNotDeductPrepaid() {
-    ParkingSession session = session(rate(0, BigDecimal.TEN));
-    session.setEntryAt(OffsetDateTime.now().minusMinutes(60));
-    session.setCompanyId(UUID.randomUUID());
+    ParkingSession session = session(rate(0, BigDecimal.TEN)).toBuilder()
+        .entryAt(OffsetDateTime.now().minusMinutes(60))
+        .companyId(UUID.randomUUID())
+        .build();
     OffsetDateTime exitAt = OffsetDateTime.now();
 
     when(monthlyContractRepository
@@ -162,9 +162,10 @@ class ComplexPricingServiceTest {
 
   @Test
   void calculate_appliesAgreementPercentDiscount() {
-    ParkingSession session = session(rate(0, BigDecimal.TEN));
-    session.setEntryAt(OffsetDateTime.now().minusMinutes(60));
-    session.setCompanyId(UUID.randomUUID());
+    ParkingSession session = session(rate(0, BigDecimal.TEN)).toBuilder()
+        .entryAt(OffsetDateTime.now().minusMinutes(60))
+        .companyId(UUID.randomUUID())
+        .build();
     OffsetDateTime exitAt = OffsetDateTime.now();
 
     when(monthlyContractRepository
@@ -195,9 +196,10 @@ class ComplexPricingServiceTest {
 
   @Test
   void calculate_appliesAgreementFlatAmount() {
-    ParkingSession session = session(rate(0, BigDecimal.TEN));
-    session.setEntryAt(OffsetDateTime.now().minusMinutes(60));
-    session.setCompanyId(UUID.randomUUID());
+    ParkingSession session = session(rate(0, BigDecimal.TEN)).toBuilder()
+        .entryAt(OffsetDateTime.now().minusMinutes(60))
+        .companyId(UUID.randomUUID())
+        .build();
     OffsetDateTime exitAt = OffsetDateTime.now();
 
     when(monthlyContractRepository
@@ -226,8 +228,9 @@ class ComplexPricingServiceTest {
 
   @Test
   void applyCourtesy_visitorPaysNormally() {
-    ParkingSession session = session(null);
-    session.setEntryMode(EntryMode.VISITOR);
+    ParkingSession session = session(null).toBuilder()
+        .entryMode(EntryMode.VISITOR)
+        .build();
     PriceBreakdown computed =
         new PriceBreakdown(1, BigDecimal.valueOf(20), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(20));
 
@@ -238,8 +241,9 @@ class ComplexPricingServiceTest {
 
   @Test
   void applyCourtesy_subscriberPaysZero() {
-    ParkingSession session = session(null);
-    session.setEntryMode(EntryMode.SUBSCRIBER);
+    ParkingSession session = session(null).toBuilder()
+        .entryMode(EntryMode.SUBSCRIBER)
+        .build();
     PriceBreakdown computed =
         new PriceBreakdown(1, BigDecimal.valueOf(20), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(20));
 
@@ -250,8 +254,9 @@ class ComplexPricingServiceTest {
 
   @Test
   void applyCourtesy_lostTicketSettlementIgnoresCourtesy() {
-    ParkingSession session = session(null);
-    session.setEntryMode(EntryMode.SUBSCRIBER);
+    ParkingSession session = session(null).toBuilder()
+        .entryMode(EntryMode.SUBSCRIBER)
+        .build();
     PriceBreakdown computed =
         new PriceBreakdown(1, BigDecimal.valueOf(20), BigDecimal.TEN, BigDecimal.ZERO, 0, BigDecimal.valueOf(30));
 
@@ -265,18 +270,19 @@ class ComplexPricingServiceTest {
   // -----------------------------------------------------------------------
 
   private ParkingSession session(Rate rate) {
-    ParkingSession s = new ParkingSession();
-    s.setId(UUID.randomUUID());
-    s.setPlate("ABC123");
-    s.setCompanyId(UUID.randomUUID());
-    s.setEntryAt(OffsetDateTime.now().minusMinutes(60));
-    s.setEntryMode(EntryMode.VISITOR);
     Vehicle v = new Vehicle();
     v.setPlate("ABC123");
     v.setType("CAR");
-    s.setVehicle(v);
-    s.setRate(rate);
-    return s;
+
+    return ParkingSession.builder()
+        .id(UUID.randomUUID())
+        .plate("ABC123")
+        .companyId(UUID.randomUUID())
+        .entryAt(OffsetDateTime.now().minusMinutes(60))
+        .entryMode(EntryMode.VISITOR)
+        .vehicle(v)
+        .rate(rate)
+        .build();
   }
 
   private Rate rate(int graceMinutes, BigDecimal amount) {

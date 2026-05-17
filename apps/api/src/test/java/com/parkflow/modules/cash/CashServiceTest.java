@@ -156,9 +156,10 @@ class CashServiceTest {
   @Test
   void assertCashSkipsWhenPolicyDoesNotRequireOpen() {
     when(cashPolicyResolver.requireOpenForPayment("Sede")).thenReturn(false);
-    ParkingSession ps = new ParkingSession();
-    ps.setSite("Sede");
-    ps.setTerminal("T1");
+    ParkingSession ps = ParkingSession.builder()
+        .site("Sede")
+        .terminal("T1")
+        .build();
     movementService.assertCashOpenForParkingPayment(ps);
     verify(cashRegisterRepository, never()).findBySiteAndTerminal(any(), any());
   }

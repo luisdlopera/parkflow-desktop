@@ -28,6 +28,35 @@ import static com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(com.parkflow.modules.common.exception.domain.DomainException.class)
+    public ResponseEntity<ErrorResponse> handleDomainException(
+            com.parkflow.modules.common.exception.domain.DomainException ex, HttpServletRequest request) {
+        
+        String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
+        HttpStatus status = switch (ex) {
+            case com.parkflow.modules.common.exception.domain.EntityNotFoundException e -> HttpStatus.NOT_FOUND;
+            case com.parkflow.modules.common.exception.domain.BusinessValidationException e -> HttpStatus.BAD_REQUEST;
+            case com.parkflow.modules.common.exception.domain.ConcurrentOperationException e -> HttpStatus.CONFLICT;
+            default -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
+
+        String code = ex.getCode();
+        if ("BUSINESS_VALIDATION_ERROR".equals(code)) {
+            code = "OPERATION_ERROR";
+        }
+
+        ErrorResponse error = new ErrorResponse(
+            status.value(),
+            code,
+            ex.getMessage(),
+            ex.getClass().getSimpleName() + ": " + ex.getMessage(),
+            request.getRequestURI(),
+            correlationId
+        );
+
+        return ResponseEntity.status(status).body(error);
+    }
+
     @ExceptionHandler(OperationException.class)
     public ResponseEntity<ErrorResponse> handleOperationException(
             OperationException ex, HttpServletRequest request) {

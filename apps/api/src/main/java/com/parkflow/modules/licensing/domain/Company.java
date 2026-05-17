@@ -2,6 +2,7 @@ package com.parkflow.modules.licensing.domain;
 
 import com.parkflow.modules.licensing.enums.CompanyStatus;
 import com.parkflow.modules.licensing.enums.PlanType;
+import com.parkflow.modules.licensing.enums.OperationalProfile;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -170,6 +171,13 @@ public class Company {
 
   @Column(nullable = false)
   private Boolean onboardingCompleted = false;
+
+  /**
+   * Perfil operacional y de UI de la empresa.
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "operational_profile", nullable = false, length = 30)
+  private OperationalProfile operationalProfile = OperationalProfile.MIXED;
 
   /**
    * Observaciones internas de configuración.

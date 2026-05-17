@@ -52,4 +52,6 @@ public interface ParkingSessionPort {
   ParkingSession save(ParkingSession session);
   Optional<ParkingSession> findById(UUID id);
   void delete(ParkingSession session);
+  
+  List<ParkingSession> searchByPlateOrTicket(String query, UUID companyId, org.springframework.data.domain.Pageable pageable);
 }
