@@ -21,5 +21,8 @@ public class TicketCounter {
   private int lastNumber;
 
   @Column(nullable = false)
+  private java.util.UUID companyId;
+
+  @Column(nullable = false)
   private OffsetDateTime updatedAt = OffsetDateTime.now();
 }

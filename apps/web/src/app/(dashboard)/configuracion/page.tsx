@@ -7,13 +7,13 @@ import {
   Textarea,
   Checkbox,
   Button,
-  Switch,
   RadioGroup,
   Radio,
+  Switch,
 } from "@heroui/react";
 import { Chip } from "@heroui/chip";
 import { Tabs, Tab } from "@heroui/tabs";
-import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Card, CardBody } from "@heroui/card";
 import DataTable from "@/components/ui/DataTable";
 import {
   createUser,
@@ -60,7 +60,7 @@ import {
 } from "@/lib/settings-api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type TabKey = "rates" | "users" | "parameters" | "interface" | "masters" | "monthly" | "agreements" | "prepaid";
+type TabKey = "rates" | "users" | "parameters" | "masters" | "monthly" | "agreements" | "prepaid" | "system";
 
 const VEHICLE_TYPES: VehicleType[] = ["CAR", "MOTORCYCLE", "BICYCLE", "TRUCK", "BUS", "VAN", "ELECTRIC", "OTHER"];
 const RATE_TYPES: RateType[] = ["PER_MINUTE", "HOURLY", "DAILY", "FLAT"];
@@ -147,28 +147,6 @@ export default function ConfiguracionPage() {
   const [auditReason, setAuditReason] = useState("");
   const [perm, setPerm] = useState<Record<string, boolean>>({});
 
-  // Configuración de interfaz (persistida en localStorage)
-  const [uiSettings, setUiSettings] = useState({
-    showSystemStatus: true,
-    showKeyboardShortcuts: true
-  });
-
-  useEffect(() => {
-    const saved = localStorage.getItem("parkflow_ui_settings");
-    if (saved) {
-      try {
-        setUiSettings(JSON.parse(saved));
-      } catch {
-        localStorage.removeItem("parkflow_ui_settings");
-      }
-    }
-  }, []);
-
-  const updateUiSetting = (key: keyof typeof uiSettings, value: boolean) => {
-    const updated = { ...uiSettings, [key]: value };
-    setUiSettings(updated);
-    localStorage.setItem("parkflow_ui_settings", JSON.stringify(updated));
-  };
 
   const refreshPerms = useCallback(async () => {
     const checks: Permission[] = [
@@ -202,8 +180,8 @@ export default function ConfiguracionPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Configuracion</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Tarifas, usuarios y parametros</h1>
+        <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Configuración</p>
+        <h1 className="text-3xl font-semibold text-slate-900">Tarifas, usuarios y parámetros</h1>
         <p className="mt-2 max-w-3xl text-sm text-slate-600">
           Administracion operativa del parqueadero. Los cambios sensibles quedan auditados en el servidor.
         </p>
@@ -271,12 +249,21 @@ export default function ConfiguracionPage() {
           }
           isDisabled={!can.cfgRead}
         />
-        <Tab key="interface" title={<div className="flex items-center gap-2"><span>Interfaz</span></div>} />
         <Tab
           key="masters"
           title={
             <div className="flex items-center gap-2">
               <span>Maestros</span>
+              {!can.cfgRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
+            </div>
+          }
+          isDisabled={!can.cfgRead}
+        />
+        <Tab
+          key="system"
+          title={
+            <div className="flex items-center gap-2">
+              <span>Sistema</span>
               {!can.cfgRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
             </div>
           }
@@ -326,83 +313,15 @@ export default function ConfiguracionPage() {
         <p className="text-sm text-slate-600">No tiene permiso para ver parametros.</p>
       ) : null}
 
-      {tab === "interface" && (
-        <InterfaceSection
-          settings={uiSettings}
-          onUpdate={updateUiSetting}
-        />
-      )}
-
       {tab === "masters" && can.cfgRead ? <MastersSection onNotify={setNotice} canEdit={can.cfgEdit} /> : null}
       {tab === "masters" && !can.cfgRead ? (
         <p className="text-sm text-slate-600">No tienes permisos para ver esta sección. Contacta a un administrador.</p>
       ) : null}
-    </div>
-  );
-}
 
-function InterfaceSection({
-  settings,
-  onUpdate
-}: {
-  settings: { showSystemStatus: boolean; showKeyboardShortcuts: boolean };
-  onUpdate: (key: "showSystemStatus" | "showKeyboardShortcuts", value: boolean) => void;
-}) {
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-slate-900">Personalización del Sidebar</h2>
-        </CardHeader>
-        <CardBody className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-slate-800">Mostrar estado del sistema</p>
-              <p className="text-sm text-slate-500">
-                Muestra el indicador "Sistema operativo" en el sidebar con el punto verde de estado.
-              </p>
-            </div>
-            <Switch
-              isSelected={settings.showSystemStatus}
-              onValueChange={(checked) => onUpdate("showSystemStatus", checked)}
-              size="lg"
-              color="primary"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-slate-800">Mostrar atajos de teclado</p>
-              <p className="text-sm text-slate-500">
-                Muestra la sección de atajos de teclado (F1, F2, F3, F4, Esc) en la parte inferior del sidebar.
-              </p>
-            </div>
-            <Switch
-              isSelected={settings.showKeyboardShortcuts}
-              onValueChange={(checked) => onUpdate("showKeyboardShortcuts", checked)}
-              size="lg"
-              color="primary"
-            />
-          </div>
-        </CardBody>
-      </Card>
-
-      <Card className="bg-amber-50/50 border-amber-200">
-        <CardBody>
-          <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <p className="font-medium text-amber-800">Configuración local</p>
-              <p className="text-sm text-amber-700">
-                Estas preferencias se guardan solo en tu navegador y no afectan a otros usuarios.
-                Se aplican inmediatamente sin necesidad de recargar la página.
-              </p>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
+      {tab === "system" && can.cfgRead ? <SystemSection onNotify={setNotice} /> : null}
+      {tab === "system" && !can.cfgRead ? (
+        <p className="text-sm text-slate-600">No tienes permisos para ver esta sección. Contacta a un administrador.</p>
+      ) : null}
     </div>
   );
 }
@@ -2554,6 +2473,155 @@ function PrepaidSection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
         ]}
         rows={rows as any[]}
       />
+    </div>
+  );
+}
+
+function SystemSection({
+  onNotify
+}: {
+  onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void;
+}) {
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [currentUserObj, setCurrentUserObj] = useState<any>(null);
+  const [currentCompanyId, setCurrentCompanyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadUserAndCompany = async () => {
+      const { currentUser } = await import("@/lib/auth");
+      const { resolveCurrentCompanyId } = await import("@/lib/current-company");
+      const u = await currentUser();
+      const c = await resolveCurrentCompanyId();
+      setCurrentUserObj(u);
+      setCurrentCompanyId(c);
+    };
+    void loadUserAndCompany();
+  }, []);
+
+  const handleReset = async () => {
+    if (!currentCompanyId) {
+      onNotify({ kind: "err", text: "No se pudo identificar la empresa actual" });
+      return;
+    }
+    if (!reason.trim()) {
+      onNotify({ kind: "err", text: "Por favor, ingresa el motivo del reinicio para la auditoría" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { resetOnboarding } = await import("@/lib/onboarding-api");
+      await resetOnboarding(currentCompanyId, reason.trim());
+      onNotify({ kind: "ok", text: "El onboarding se ha reiniciado correctamente. Redirigiendo..." });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (e) {
+      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error al reiniciar el onboarding" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isAdmin = currentUserObj?.role === "ADMIN" || currentUserObj?.role === "SUPER_ADMIN";
+
+  if (!isAdmin) {
+    return (
+      <div className="surface rounded-2xl p-6 border border-slate-200">
+        <h2 className="text-lg font-semibold text-slate-900 mb-2">Panel del Sistema</h2>
+        <p className="text-sm text-slate-600">
+          Solo los usuarios con rol de Administrador o Super Administrador tienen permisos para realizar tareas de mantenimiento del sistema.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="surface rounded-2xl p-6 border border-slate-200 space-y-4">
+        <h2 className="text-xl font-bold text-slate-955">Mantenimiento del Sistema</h2>
+        <p className="text-sm text-slate-700 max-w-3xl">
+          Administra operaciones críticas de mantenimiento para tu tenant. Estas acciones afectan la estructura operativa global y son auditadas estrictamente.
+        </p>
+      </div>
+
+      <div className="border border-rose-200 bg-rose-50/50 rounded-2xl p-6 space-y-4 max-w-3xl">
+        <div className="flex items-start gap-3">
+          <span className="text-2xl">⚠️</span>
+          <div>
+            <h3 className="text-lg font-bold text-rose-955">Acción de Alto Riesgo: Reiniciar Onboarding</h3>
+            <p className="text-sm text-rose-900/90 mt-1">
+              Esta opción permite reconfigurar todos los parámetros iniciales de tu parqueadero (tipos de vehículos, módulos activos, tarifas básicas, convenios, métodos de pago, etc.) a través del asistente paso a paso.
+            </p>
+          </div>
+        </div>
+
+        <div className="pl-9 space-y-2">
+          <h4 className="text-sm font-semibold text-rose-955">Garantías de Integridad y Operación:</h4>
+          <ul className="list-disc list-inside text-xs text-rose-900/80 space-y-1">
+            <li><strong>Cero Pérdida de Datos:</strong> Los tickets históricos, cierres de caja y contratos mensuales existentes NO se eliminarán ni modificarán.</li>
+            <li><strong>Sin Interrupciones:</strong> Las cajas registradoras activas e ingresos de vehículos actuales continuarán operando con normalidad.</li>
+            <li><strong>Historial de Versiones:</strong> Se guardará automáticamente un backup completo de tu configuración actual antes del reinicio.</li>
+          </ul>
+        </div>
+
+        <div className="pl-9 space-y-4 pt-2">
+          <Input
+            label="Motivo del reinicio"
+            placeholder="Ej. Cambio de modelo de negocio a tarifas dinámicas..."
+            variant="flat"
+            isRequired
+            value={reason}
+            onValueChange={setReason}
+            className="bg-white rounded-xl max-w-xl"
+          />
+
+          {!confirmed ? (
+            <Button
+              color="danger"
+              variant="solid"
+              size="md"
+              onPress={() => {
+                if (!reason.trim()) {
+                  onNotify({ kind: "err", text: "Por favor, ingresa el motivo del reinicio para la auditoría" });
+                  return;
+                }
+                setConfirmed(true);
+              }}
+            >
+              Iniciar Reinicio de Onboarding
+            </Button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-rose-700 animate-pulse">
+                ¿Confirmas que deseas reiniciar el onboarding para tu empresa? Se guardará un backup y serás redirigido al asistente inicial.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  color="danger"
+                  variant="solid"
+                  size="md"
+                  isLoading={loading}
+                  onPress={handleReset}
+                >
+                  Sí, Confirmar Reinicio
+                </Button>
+                <Button
+                  color="default"
+                  variant="bordered"
+                  size="md"
+                  isDisabled={loading}
+                  onPress={() => setConfirmed(false)}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

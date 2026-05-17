@@ -112,8 +112,8 @@ export default function VehicleEntryFormV2() {
   const [showRecovery, setShowRecovery] = useState(false);
   const [vehicleTypes, setVehicleTypes] = useState<MasterVehicleTypeRow[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
-  const [activeLookup, setActiveLookup] = useState<string | null>(null);
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
+  const [loadingConfig, setLoadingConfig] = useState(true);
   const submitLock = useRef(false);
   const plateInputRef = useRef<HTMLInputElement>(null);
   const idempotencyKeyRef = useRef(newIdempotencyKey());
@@ -183,8 +183,23 @@ export default function VehicleEntryFormV2() {
   });
 
   useEffect(() => {
-    fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
+    fetchRuntimeConfig()
+      .then(setRuntimeConfig)
+      .catch(() => setRuntimeConfig(null))
+      .finally(() => setLoadingConfig(false));
   }, []);
+
+  useEffect(() => {
+    if (runtimeConfig?.operationConfiguration) {
+      const { defaultVehicleType, defaultVisitorType } = runtimeConfig.operationConfiguration;
+      if (defaultVehicleType && form.getValues("type") !== defaultVehicleType) {
+        form.setValue("type", defaultVehicleType, { shouldValidate: true });
+      }
+      if (defaultVisitorType && form.getValues("entryMode") !== defaultVisitorType) {
+        form.setValue("entryMode", defaultVisitorType as "VISITOR" | "AGREEMENT" | "SUBSCRIBER" | "EMPLOYEE", { shouldValidate: true });
+      }
+    }
+  }, [runtimeConfig, form]);
 
   useEffect(() => {
     let cancelled = false;
@@ -342,31 +357,7 @@ export default function VehicleEntryFormV2() {
     setPrintWarning(null);
   }, []);
 
-  const handleQuickLookup = useCallback(async () => {
-    const plate = normalizePlate(form.getValues("plate"));
-    if (!plate) {
-      setActiveLookup("Ingresa una placa para buscar.");
-      return;
-    }
-    try {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
-      const response = await fetch(`${apiBase}/sessions/active?plate=${encodeURIComponent(plate)}`, {
-        headers: await buildApiHeaders()
-      });
-      if (response.status === 404) {
-        setActiveLookup("Sin ingreso activo.");
-        return;
-      }
-      if (!response.ok) {
-        setActiveLookup("No se pudo consultar la placa.");
-        return;
-      }
-      const payload = await response.json();
-      setActiveLookup(`Activa: ${payload.receipt?.ticketNumber ?? "ticket sin número"}`);
-    } catch {
-      setActiveLookup("Consulta no disponible sin conexión.");
-    }
-  }, [form]);
+
 
   function isNetworkError(error: unknown): boolean {
     if (error instanceof TypeError) return true;
@@ -587,6 +578,33 @@ export default function VehicleEntryFormV2() {
     }
   };
 
+  if (loadingConfig) {
+    return (
+      <div className="space-y-4 animate-pulse">
+        {/* Header con stats y modo skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="h-8 bg-slate-200 rounded-xl w-16" />
+            <div className="h-8 bg-slate-100 rounded-xl w-16" />
+          </div>
+          <div className="h-8 bg-slate-200 rounded-xl w-32" />
+        </div>
+        {/* Formulario Principal skeleton */}
+        <div className="surface rounded-2xl p-6 space-y-6">
+          <div className="space-y-2">
+            <div className="h-4 bg-slate-200 rounded w-1/4" />
+            <div className="h-12 bg-slate-100 rounded-xl w-full" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-4 bg-slate-200 rounded w-1/3" />
+            <div className="h-10 bg-slate-100 rounded-xl w-full" />
+          </div>
+          <div className="h-12 bg-slate-200 rounded-xl w-full mt-4" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Crash Recovery Dialog */}
@@ -627,41 +645,43 @@ export default function VehicleEntryFormV2() {
         </div>
 
         {/* Selector de modo - ocupa todo el ancho en móvil */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 whitespace-nowrap">Modo:</span>
-          <Select
-            size="sm"
-            variant="flat"
-            aria-label="Modo de operación"
-            selectedKeys={[settings.mode]}
-            onSelectionChange={(keys) => {
-              const selected = Array.from(keys)[0] as OperatorMode;
-              setSettings(s => ({ ...s, mode: selected }));
-            }}
-            className="w-28 sm:w-32"
-            classNames={{
-              trigger: "min-h-0 h-8",
-            }}
-          >
-            {modeOptions.map((option) => (
-              <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
-            ))}
-          </Select>
-          <Button
-            isIconOnly
-            size="sm"
-            variant="flat"
-            color="primary"
-            aria-label="Configuración de operador"
-            onPress={() => setShowSettings(!showSettings)}
-            className="flex-shrink-0"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </Button>
-        </div>
+        {(runtimeConfig?.operationalProfile ?? runtimeConfig?.businessModel) !== "MOTORCYCLE_ONLY" && (runtimeConfig?.operationalProfile ?? runtimeConfig?.businessModel) !== "CAR_ONLY" && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500 whitespace-nowrap">Modo:</span>
+            <Select
+              size="sm"
+              variant="flat"
+              aria-label="Modo de operación"
+              selectedKeys={[settings.mode]}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys)[0] as OperatorMode;
+                setSettings(s => ({ ...s, mode: selected }));
+              }}
+              className="w-28 sm:w-32"
+              classNames={{
+                trigger: "min-h-0 h-8",
+              }}
+            >
+              {modeOptions.map((option) => (
+                <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
+              ))}
+            </Select>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="flat"
+              color="primary"
+              aria-label="Configuración de operador"
+              onPress={() => setShowSettings(!showSettings)}
+              className="flex-shrink-0"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Panel de configuración */}
@@ -758,9 +778,6 @@ export default function VehicleEntryFormV2() {
             )}
           />
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="flat" type="button" onPress={handleQuickLookup}>
-              Buscar placa activa
-            </Button>
             <Controller
               name="noPlate"
               control={form.control}
@@ -783,9 +800,6 @@ export default function VehicleEntryFormV2() {
                 </Checkbox>
               )}
             />
-            {activeLookup && (
-              <span className="text-xs font-medium text-slate-600">{activeLookup}</span>
-            )}
           </div>
 
           {noPlate && (
@@ -806,27 +820,32 @@ export default function VehicleEntryFormV2() {
             />
           )}
 
-          <Controller
-            name="entryMode"
-            control={form.control}
-            render={({ field }) => (
-              <Select
-                variant="flat"
-                size="sm"
-                aria-label="Tipo de ingreso"
-                selectedKeys={[field.value]}
-                onSelectionChange={(keys) => field.onChange(Array.from(keys)[0] as string)}
-              >
-                {entryModeOptions.map((option) => (
-                  <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
-                ))}
-              </Select>
-            )}
-          />
+          {/* Tipo de cliente/parqueo (entryMode) */}
+          <div className={`field-visitor-type ${runtimeConfig?.operationConfiguration?.showVisitorType === false ? "hidden" : "block"}`}>
+            <label className="text-sm font-semibold text-slate-700 mb-2 block">Tipo de Cliente / Parqueo</label>
+            <Controller
+              name="entryMode"
+              control={form.control}
+              render={({ field }) => (
+                <Select
+                  variant="flat"
+                  size="sm"
+                  aria-label="Tipo de ingreso"
+                  selectedKeys={[field.value]}
+                  onSelectionChange={(keys) => field.onChange(Array.from(keys)[0] as string)}
+                >
+                  {entryModeOptions.map((option) => (
+                    <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
+                  ))}
+                </Select>
+              )}
+            />
+          </div>
 
           {/* Tipo de Vehículo */}
-          <div className={vehicleTypes.length === 1 ? "hidden" : "block"}>
-            <label className="text-sm font-semibold text-slate-700 mb-2 block">Tipo de Vehículo</label>
+          <div className={`field-vehicle-type ${runtimeConfig?.operationConfiguration?.showVehicleType === false ? "hidden" : "block"}`}>
+            <div className={vehicleTypes.length === 1 ? "hidden" : "block"}>
+              <label className="text-sm font-semibold text-slate-700 mb-2 block">Tipo de Vehículo</label>
               {loadingTypes ? (
                 <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />
               ) : isExpert ? (
@@ -896,6 +915,7 @@ export default function VehicleEntryFormV2() {
                 </div>
               )}
             </div>
+          </div>
           {/* Botón principal */}
           <div className="pt-2">
             <Button
@@ -912,7 +932,7 @@ export default function VehicleEntryFormV2() {
         </div>
 
         {/* Sección Avanzada - Colapsable */}
-        {!isSpeed && (
+        {!isSpeed && runtimeConfig?.operationConfiguration?.showAdvancedSection !== false && (
           <div className="border-t border-slate-200 pt-4">
             <button
               type="button"
@@ -962,48 +982,58 @@ export default function VehicleEntryFormV2() {
                       )}
                     />
                   ) : null}
-                  <Controller
-                    name="lane"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input {...field} label="Carril" placeholder="1" variant="flat" size="sm" />
-                    )}
-                  />
-                  <Controller
-                    name="booth"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input {...field} label="Caja" placeholder="Caja 1" variant="flat" size="sm" />
-                    )}
-                  />
-                  <Controller
-                    name="terminal"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input {...field} label="Terminal" placeholder="T1" variant="flat" size="sm" />
-                    )}
-                  />
+                  {runtimeConfig?.operationConfiguration?.enableLaneSelection !== false && (
+                    <Controller
+                      name="lane"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Input {...field} label="Carril" placeholder="1" variant="flat" size="sm" />
+                      )}
+                    />
+                  )}
+                  {runtimeConfig?.operationConfiguration?.enableCashierSelection !== false && (
+                    <Controller
+                      name="booth"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Input {...field} label="Caja" placeholder="Caja 1" variant="flat" size="sm" />
+                      )}
+                    />
+                  )}
+                  {runtimeConfig?.operationConfiguration?.enableTerminalSelection !== false && (
+                    <Controller
+                      name="terminal"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Input {...field} label="Terminal" placeholder="T1" variant="flat" size="sm" />
+                      )}
+                    />
+                  )}
                 </div>
 
                 {/* Tarifa */}
-                <Controller
-                  name="countryCode"
-                  control={form.control}
-                  render={({ field }) => (
-                    <Input {...field} label="País placa" placeholder="CO" variant="flat" size="sm" maxLength={2} />
-                  )}
-                />
+                {runtimeConfig?.operationConfiguration?.enableCountryPlate !== false && (
+                  <Controller
+                    name="countryCode"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input {...field} label="País placa" placeholder="CO" variant="flat" size="sm" maxLength={2} />
+                    )}
+                  />
+                )}
 
-                <Controller
-                  name="rateId"
-                  control={form.control}
-                  render={({ field }) => (
-                    <Input {...field} label="Tarifa (opcional)" placeholder="ID de tarifa específica" variant="flat" size="sm" />
-                  )}
-                />
+                {runtimeConfig?.operationConfiguration?.enableManualRate !== false && (
+                  <Controller
+                    name="rateId"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input {...field} label="Tarifa (opcional)" placeholder="ID de tarifa específica" variant="flat" size="sm" />
+                    )}
+                  />
+                )}
 
                 {/* Estado del vehículo */}
-                {!settings.skipConditionCheck && (
+                {!settings.skipConditionCheck && runtimeConfig?.operationConfiguration?.enableVehicleCondition !== false && (
                   <Controller
                     name="vehicleCondition"
                     control={form.control}
@@ -1014,13 +1044,15 @@ export default function VehicleEntryFormV2() {
                 )}
 
                 {/* Observaciones */}
-                <Controller
-                  name="observations"
-                  control={form.control}
-                  render={({ field }) => (
-                    <Input {...field} label="Observaciones" placeholder="Notas adicionales" variant="flat" size="sm" />
-                  )}
-                />
+                {runtimeConfig?.operationConfiguration?.enableObservations !== false && (
+                  <Controller
+                    name="observations"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input {...field} label="Observaciones" placeholder="Notas adicionales" variant="flat" size="sm" />
+                    )}
+                  />
+                )}
               </div>
             )}
           </div>
