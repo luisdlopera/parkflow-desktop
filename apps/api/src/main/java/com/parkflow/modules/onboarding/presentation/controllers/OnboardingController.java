@@ -45,6 +45,14 @@ public class OnboardingController {
     return ResponseEntity.ok(onboardingUseCase.completeOnboarding(companyId));
   }
 
+  @PostMapping("/companies/{companyId}/reset")
+  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
+  public ResponseEntity<OnboardingStatusResponse> reset(
+      @PathVariable UUID companyId,
+      @RequestParam(required = false) String reason) {
+    return ResponseEntity.ok(onboardingUseCase.resetOnboarding(companyId, reason));
+  }
+
   @GetMapping("/companies/{companyId}/features/{featureKey}/enabled")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
   public ResponseEntity<Map<String, Boolean>> isFeatureEnabled(

@@ -271,8 +271,7 @@ export default function VehicleEntryFormV2() {
       .then(setRuntimeConfig)
       .catch(() => setRuntimeConfig(null))
       .finally(() => setLoadingConfig(false));
-    void loadOccupancy();
-  }, [loadOccupancy]);
+  }, []);
 
   useEffect(() => {
     if (runtimeConfig?.operationConfiguration) {
@@ -445,6 +444,7 @@ export default function VehicleEntryFormV2() {
   const handleClosePrintWarning = useCallback(() => {
     setPrintWarning(null);
   }, []);
+
 
 
 

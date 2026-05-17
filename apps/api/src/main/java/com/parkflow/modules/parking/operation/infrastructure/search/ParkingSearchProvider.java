@@ -22,23 +22,18 @@ public class ParkingSearchProvider implements SearchProvider {
 
     @Override
     public List<SearchResult> search(String query, UUID companyId) {
-        String normalizedQuery = query == null ? "" : query.trim();
-        if (normalizedQuery.isEmpty()) {
-            return List.of();
-        }
-
-        List<ParkingSession> sessions = parkingSessionPort.searchByPlateOrTicket(normalizedQuery, companyId, PageRequest.of(0, 10));
+        List<ParkingSession> sessions = parkingSessionPort.searchByPlateOrTicket(query, companyId, PageRequest.of(0, 10));
         
         return sessions.stream().map(session -> SearchResult.builder()
                 .id(session.getId().toString())
                 .type(SearchType.VEHICLE)
-                .title(session.getVehicle() != null && session.getVehicle().getPlate() != null ? session.getVehicle().getPlate() : session.getTicketNumber())
-                .subtitle(buildSubtitle(session))
+                .title(session.getVehicle().getPlate())
+                .subtitle("Ticket: " + session.getTicketNumber() + " | Status: " + session.getStatus())
                 .actionUrl("/parking/sessions/" + session.getId())
-                .score(calculateScore(session, normalizedQuery))
+                .score(calculateScore(session, query))
                 .metadata(Map.of(
-                        "status", String.valueOf(session.getStatus()),
-                        "entryAt", session.getEntryAt() != null ? session.getEntryAt().toString() : ""
+                        "status", session.getStatus(),
+                        "entryAt", session.getEntryAt().toString()
                 ))
                 .build()
         ).collect(Collectors.toList());
@@ -51,18 +46,8 @@ public class ParkingSearchProvider implements SearchProvider {
 
     private Double calculateScore(ParkingSession session, String query) {
         // Basic relevance: Exact plate match gets higher score
-        String plate = session.getVehicle() != null ? session.getVehicle().getPlate() : null;
-        String ticket = session.getTicketNumber();
-        if (plate != null && plate.equalsIgnoreCase(query)) return 1.0;
-        if (ticket != null && ticket.equalsIgnoreCase(query)) return 0.9;
-        if (plate != null && plate.toUpperCase().contains(query.toUpperCase())) return 0.8;
-        if (ticket != null && ticket.toUpperCase().contains(query.toUpperCase())) return 0.75;
+        if (session.getVehicle().getPlate().equalsIgnoreCase(query)) return 1.0;
+        if (session.getTicketNumber().equalsIgnoreCase(query)) return 0.9;
         return 0.5; // Partial matches
-    }
-
-    private String buildSubtitle(ParkingSession session) {
-        String ticket = session.getTicketNumber() != null ? session.getTicketNumber() : "Sin ticket";
-        String status = session.getStatus() != null ? session.getStatus().name() : "UNKNOWN";
-        return "Ticket: " + ticket + " | Status: " + status;
     }
 }

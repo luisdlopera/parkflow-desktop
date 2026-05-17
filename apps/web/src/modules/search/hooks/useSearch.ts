@@ -3,10 +3,6 @@ import { SearchResponse } from '../types/search.types';
 import { httpRequest } from '@/lib/http-client';
 import { authHeaders } from '@/lib/auth';
 
-function apiBaseUrl() {
-  return (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1").replace(/\/$/, "");
-}
-
 export function useSearch(query: string, scope?: string) {
   const [results, setResults] = useState<SearchResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,8 +18,8 @@ export function useSearch(query: string, scope?: string) {
       setIsLoading(true);
       setError(null);
       try {
-        const url = new URL(`${apiBaseUrl()}/search`);
-        url.searchParams.append('q', query.trim());
+        const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || '/api/v1'}/search`);
+        url.searchParams.append('q', query);
         if (scope) url.searchParams.append('scope', scope);
 
         const data = await httpRequest<SearchResponse>(url.toString(), {

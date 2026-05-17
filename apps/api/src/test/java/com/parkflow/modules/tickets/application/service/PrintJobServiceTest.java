@@ -59,10 +59,11 @@ class PrintJobServiceTest {
     companyId = UUID.randomUUID();
     sessionId = UUID.randomUUID();
     operatorId = UUID.randomUUID();
-    session = new ParkingSession();
-    session.setId(sessionId);
-    session.setTicketNumber("T-A-000001");
-    session.setCompanyId(companyId);
+    session = ParkingSession.builder()
+        .id(sessionId)
+        .ticketNumber("T-A-000001")
+        .companyId(companyId)
+        .build();
     operator = new AppUser();
     operator.setId(operatorId);
     operator.setCompanyId(companyId);

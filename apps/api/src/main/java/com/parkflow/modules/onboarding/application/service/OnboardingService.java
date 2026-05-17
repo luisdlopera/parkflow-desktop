@@ -2,6 +2,8 @@ package com.parkflow.modules.onboarding.application.service;
 
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
+import com.parkflow.modules.licensing.enums.OperationalProfile;
+import com.parkflow.modules.configuration.service.OperationalConfigurationService;
 import com.parkflow.modules.onboarding.application.port.in.OnboardingUseCase;
 import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;
@@ -26,6 +28,9 @@ public class OnboardingService implements OnboardingUseCase {
   private final OnboardingProgressPort onboardingProgressPort;
   private final CompanySettingsService companySettingsService;
   private final FeatureAccessService featureAccessService;
+  private final com.parkflow.modules.onboarding.domain.repository.CompanySettingsSnapshotPort companySettingsSnapshotPort;
+  private final com.parkflow.modules.audit.service.AuditService auditService;
+  private final OperationalConfigurationService operationalConfigurationService;
 
   @Transactional(readOnly = true)
   public OnboardingStatusResponse status(UUID companyId) {
@@ -59,6 +64,8 @@ public class OnboardingService implements OnboardingUseCase {
   public OnboardingStatusResponse skipAndApplyDefaults(UUID companyId) {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
+    company.setOperationalProfile(OperationalProfile.MIXED);
+    companyRepository.save(company);
     companySettingsService.upsertSettings(company, defaultConfiguration(company));
     progress.setSkipped(true);
     progress.setCompleted(true);
@@ -76,6 +83,15 @@ public class OnboardingService implements OnboardingUseCase {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
     Map<String, Object> finalSettings = buildSettingsFromProgress(company, progress.getProgressData());
+    
+    Map<String, Object> step1 = stepMap(progress.getProgressData(), 1);
+    String opStr = String.valueOf(step1.getOrDefault("operationalProfile", step1.getOrDefault("businessModel", "MIXED")));
+    try {
+      company.setOperationalProfile(OperationalProfile.valueOf(opStr));
+    } catch (Exception e) {
+      company.setOperationalProfile(OperationalProfile.MIXED);
+    }
+    
     companySettingsService.upsertSettings(company, finalSettings);
     progress.setCompleted(true);
     progress.setCurrentStep(12);
@@ -96,7 +112,12 @@ public class OnboardingService implements OnboardingUseCase {
   @Transactional(readOnly = true)
   public Map<String, Object> getCompanySettings(UUID companyId) {
     Company company = getCompany(companyId);
-    return companySettingsService.getSettingsOrDefault(company);
+    Map<String, Object> settings = companySettingsService.getSettingsOrDefault(company);
+    Map<String, Object> mutable = new LinkedHashMap<>(settings);
+    mutable.put("businessModel", company.getOperationalProfile().name());
+    mutable.put("operationalProfile", company.getOperationalProfile().name());
+    mutable.put("operationConfiguration", operationalConfigurationService.getOperationConfiguration(companyId));
+    return mutable;
   }
 
   @Transactional(readOnly = true)
@@ -176,7 +197,23 @@ public class OnboardingService implements OnboardingUseCase {
     Map<String, Object> step6 = stepMap(progressData, 6);
     Map<String, Object> step10 = stepMap(progressData, 10);
 
-    List<String> vehicleTypes = asStringList(step1.get("vehicleTypes"), List.of("MOTO", "CARRO"));
+    String opStr = String.valueOf(step1.getOrDefault("operationalProfile", step1.getOrDefault("businessModel", "MIXED")));
+    OperationalProfile op = OperationalProfile.MIXED;
+    try {
+      op = OperationalProfile.valueOf(opStr);
+    } catch (Exception e) {
+      // ignore
+    }
+
+    List<String> vehicleTypes;
+    if (op == OperationalProfile.MOTORCYCLE_ONLY) {
+      vehicleTypes = List.of("MOTORCYCLE");
+    } else if (op == OperationalProfile.CAR_ONLY) {
+      vehicleTypes = List.of("CAR");
+    } else {
+      vehicleTypes = asStringList(step1.get("vehicleTypes"), List.of("MOTO", "CARRO"));
+    }
+
     List<String> paymentMethods = asStringList(step6.get("paymentMethods"), List.of("EFECTIVO"));
     boolean multiSite = Boolean.TRUE.equals(step10.get("multiSite"));
     List<Map<String, String>> sites = multiSite
@@ -265,5 +302,65 @@ public class OnboardingService implements OnboardingUseCase {
         "sites", List.of(Map.of("code", "PRINCIPAL", "name", "Sede principal")),
         "roles", List.of("ADMIN", "OPERADOR"),
         "criticalAudit", List.of("COBROS", "ANULACIONES", "CIERRE_CAJA"));
+  }
+
+  @Override
+  @Transactional
+  public OnboardingStatusResponse resetOnboarding(UUID companyId, String reason) {
+    UUID currentCompanyId = com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId();
+    com.parkflow.modules.auth.domain.UserRole role = com.parkflow.modules.auth.security.SecurityUtils.requireUserRole();
+    
+    if (!currentCompanyId.equals(companyId) && role != com.parkflow.modules.auth.domain.UserRole.SUPER_ADMIN) {
+      throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a la empresa solicitada");
+    }
+    if (role != com.parkflow.modules.auth.domain.UserRole.SUPER_ADMIN && role != com.parkflow.modules.auth.domain.UserRole.ADMIN) {
+      throw new OperationException(HttpStatus.FORBIDDEN, "Solo administradores pueden reiniciar el onboarding");
+    }
+
+    Company company = getCompany(companyId);
+    OnboardingProgress progress = findOrCreateProgress(company);
+    Map<String, Object> currentSettings = companySettingsService.getSettingsOrDefault(company);
+
+    int nextVersion = companySettingsSnapshotPort.countByCompanyId(companyId) + 1;
+
+    com.parkflow.modules.onboarding.domain.CompanySettingsSnapshot snapshot = new com.parkflow.modules.onboarding.domain.CompanySettingsSnapshot();
+    snapshot.setCompany(company);
+    snapshot.setVersion(nextVersion);
+    snapshot.setSettingsJson(new LinkedHashMap<>(currentSettings));
+    snapshot.setProgressData(new LinkedHashMap<>(progress.getProgressData()));
+    snapshot.setReason(reason != null && !reason.isBlank() ? reason : "RESTART_ONBOARDING");
+    snapshot.setCreatedAt(OffsetDateTime.now());
+    
+    com.parkflow.modules.auth.domain.AppUser appUser = null;
+    String creator = "SYSTEM";
+    org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+    if (auth != null) {
+      if (auth.getPrincipal() instanceof com.parkflow.modules.auth.domain.AppUser user) {
+        appUser = user;
+        creator = user.getEmail();
+      } else if (auth.getPrincipal() instanceof com.parkflow.modules.auth.security.AuthPrincipal principal) {
+        creator = principal.email();
+      }
+    }
+    snapshot.setCreatedBy(creator);
+    companySettingsSnapshotPort.save(snapshot);
+
+    company.setOnboardingCompleted(false);
+    companyRepository.save(company);
+
+    progress.setCompleted(false);
+    progress.setCurrentStep(1);
+    progress.setUpdatedAt(OffsetDateTime.now());
+    onboardingProgressPort.save(progress);
+
+    auditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.REINICIAR_ONBOARDING,
+        appUser,
+        "onboardingCompleted=true, currentStep=" + progress.getCurrentStep(),
+        "onboardingCompleted=false, currentStep=1",
+        "Reinicio de onboarding multi-tenant. Snapshot v" + nextVersion + " guardado."
+    );
+
+    return status(companyId);
   }
 }
