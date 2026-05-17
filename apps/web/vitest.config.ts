@@ -13,7 +13,8 @@ export default defineConfig({
     setupFiles: ['./setupTests.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['.next/**', 'node_modules/**', 'test-results/**'],
-    pool: 'threads',
+    pool: 'forks',
+    testTimeout: 20000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],
