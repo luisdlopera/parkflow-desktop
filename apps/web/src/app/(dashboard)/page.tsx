@@ -7,7 +7,7 @@ import DataTable from "@/components/ui/DataTable";
 import Badge from "@/components/ui/Badge";
 import { buildApiHeaders } from "@/lib/api";
 import LocalPrintAgentStatus from "@/components/print/LocalPrintAgentStatus";
-
+import { PrintStatusMonitor } from "@/components/print/PrintStatusMonitor";
 
 type Summary = {
   activeVehicles: number;
@@ -179,17 +179,22 @@ export default function DashboardPage() {
         </Button>
       </section>
 
-      <section className="flex items-center gap-2 sm:gap-3">
-        <div className="hidden md:block">
-          <LocalPrintAgentStatus />
+      <section className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2">
+          <PrintStatusMonitor />
         </div>
-        <div className="hidden sm:flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-          <span className="text-xs text-slate-600">Caja 01</span>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="hidden md:block">
+            <LocalPrintAgentStatus />
+          </div>
+          <div className="hidden sm:flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="text-xs text-slate-600">Caja 01</span>
+          </div>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi) => (
           <KpiCard key={kpi.title} {...kpi} />
         ))}

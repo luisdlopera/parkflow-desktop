@@ -6,12 +6,11 @@ import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.domain.*;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,21 +46,21 @@ public class FindActiveSessionService implements FindActiveSessionUseCase {
     if (ticketNumber != null && !ticketNumber.isBlank() && plate != null && !plate.isBlank()) {
       ParkingSession s = parkingSessionPort
           .findByStatusAndTicketNumberAndCompanyId(SessionStatus.ACTIVE, ticketNumber.trim(), com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId())
-          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
+          .orElseThrow(() -> new EntityNotFoundException("Sesión activa no encontrada"));
       if (!s.getVehicle().getPlate().equalsIgnoreCase(plate.trim().toUpperCase(Locale.ROOT))) {
-        throw new OperationException(HttpStatus.CONFLICT, "Placa no coincide");
+        throw new BusinessValidationException("Placa no coincide");
       }
       return s;
     }
     if (ticketNumber != null && !ticketNumber.isBlank()) {
       return parkingSessionPort.findByStatusAndTicketNumberAndCompanyId(SessionStatus.ACTIVE, ticketNumber.trim(), com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId())
-          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
+          .orElseThrow(() -> new EntityNotFoundException("Sesión activa no encontrada"));
     }
     if (plate != null && !plate.isBlank()) {
       return parkingSessionPort.findByStatusAndVehicle_PlateAndCompanyId(SessionStatus.ACTIVE, plate.trim().toUpperCase(java.util.Locale.ROOT), com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId())
-          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion activa no encontrada"));
+          .orElseThrow(() -> new EntityNotFoundException("Sesión activa no encontrada"));
     }
-    throw new OperationException(HttpStatus.BAD_REQUEST, "ticketNumber o plate es obligatorio");
+    throw new BusinessValidationException("ticketNumber o plate es obligatorio");
   }
 
   private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {

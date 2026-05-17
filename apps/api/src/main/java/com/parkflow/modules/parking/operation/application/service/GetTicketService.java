@@ -6,13 +6,12 @@ import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.domain.EntityNotFoundException;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +31,7 @@ public class GetTicketService implements GetTicketUseCase {
   public OperationResultResponse execute(String ticketNumber) {
     ParkingSession session =
         parkingSessionPort.findByTicketNumberAndCompanyId(ticketNumber, com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId())
-            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Ticket no encontrado"));
+            .orElseThrow(() -> new EntityNotFoundException("Ticket", ticketNumber));
 
     int graceMinutes = session.getRate() != null ? session.getRate().getGraceMinutes() : 0;
     DurationCalculator.DurationBreakdown duration = DurationCalculator.calculate(

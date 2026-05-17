@@ -12,16 +12,19 @@ import com.parkflow.modules.parking.operation.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.UserRole;
 import com.parkflow.modules.parking.operation.domain.Vehicle;
 import com.parkflow.modules.parking.operation.dto.EntryRequest;
-import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
-import com.parkflow.modules.parking.operation.domain.repository.RatePort;
+import com.parkflow.modules.common.exception.domain.EntityNotFoundException;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
+import com.parkflow.modules.configuration.domain.repository.RatePort;
 import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.parking.operation.domain.repository.VehiclePort;
+import com.parkflow.modules.configuration.service.OperationalConfigurationService;
+import com.parkflow.modules.licensing.enums.OperationalProfile;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,7 +36,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -65,6 +67,10 @@ class OperationServiceEdgeCasesTest {
   @Mock private MonthlyContractPort monthlyContractRepository;
   @Mock private com.parkflow.modules.configuration.application.port.in.PrepaidUseCase prepaidUseCase;
   @Mock private com.parkflow.modules.audit.service.AuditService globalAuditService;
+  @Mock private IdempotencyManager idempotencyManager;
+  @Mock private com.parkflow.modules.parking.operation.domain.service.ParkingValidatorService parkingValidatorService;
+  @Mock private OperationalConfigurationService operationalConfigurationService;
+  @Mock private Counter counter;
 
   private RegisterEntryService registerEntryService;
 
@@ -87,8 +93,8 @@ class OperationServiceEdgeCasesTest {
     registerEntryService = new RegisterEntryService(
         appUserRepository, vehicleRepository, rateRepository, parkingSiteRepository,
         parkingSessionRepository, ticketCounterRepository, vehicleConditionReportRepository,
-        operationIdempotencyRepository, auditService, operationPrintService,
-        plateValidator, monthlyContractRepository, objectMapper, meterRegistry
+        plateValidator, monthlyContractRepository, objectMapper, meterRegistry,
+        idempotencyManager, parkingValidatorService, operationalConfigurationService
     );
 
     TenantContext.setTenantId(companyId);
@@ -114,14 +120,14 @@ class OperationServiceEdgeCasesTest {
     Mockito.when(vehicleRepository.save(Mockito.any(Vehicle.class))).thenAnswer(invocation -> invocation.getArgument(0));
     Mockito.when(rateRepository.findFirstApplicableRate(Mockito.anyString(), Mockito.any(), Mockito.any())).thenReturn(Optional.empty());
     Mockito.when(plateValidator.validatePlate(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn(com.parkflow.modules.parking.operation.validation.PlateValidationResult.valid("ABC123"));
+    Mockito.lenient().when(operationalConfigurationService.getOperationalProfile(Mockito.any())).thenReturn(OperationalProfile.MIXED);
+    Mockito.lenient().when(operationalConfigurationService.resolveVehicleType(Mockito.any(), Mockito.anyString()))
+        .thenAnswer(invocation -> invocation.getArgument(1));
+    Mockito.lenient().when(meterRegistry.counter(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn(counter);
 
     Throwable throwable = catchThrowable(() -> registerEntryService.execute(request));
 
-    assertThat(throwable).isInstanceOf(OperationException.class);
-
-    OperationException exception = (OperationException) throwable;
-    assertThat(exception.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
-    assertThat(exception.getMessage())
-        .contains("No se encontró tarifa aplicable");
+    assertThat(throwable).isInstanceOf(EntityNotFoundException.class);
+    assertThat(throwable.getMessage()).contains("No se encontró tarifa aplicable");
   }
 }
