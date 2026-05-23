@@ -234,7 +234,6 @@ export default function SalidaCobroPage() {
   const { playSuccess, playError } = useOperationSounds();
   const { success: toastSuccess, error: toastError } = useToast();
   const [reprintLoading, setReprintLoading] = useState(false);
-  const autoLookupDone = useRef(false);
 
   // Auto-focus en campo de ticket al cargar
   useEffect(() => {
@@ -414,21 +413,6 @@ export default function SalidaCobroPage() {
         return;
       }
 
-      // Validate cash register is open before allowing exit
-      const term = process.env.NEXT_PUBLIC_TERMINAL_ID?.trim() ||
-        window.localStorage.getItem("parkflow_terminal_id")?.trim() || "";
-      const site = process.env.NEXT_PUBLIC_PARKING_SITE?.trim() || "default";
-      let cashSessionId: string | null = null;
-      try {
-        const cs = await cashCurrent(site, term || undefined);
-        cashSessionId = cs.id;
-      } catch {
-        setError("Debe abrir caja en este terminal antes de procesar salidas");
-        setProcessing(false);
-        operationLock.current = false;
-        return;
-      }
-
       const idempotencyFingerprint = JSON.stringify({
         ticketNumber: active.receipt.ticketNumber,
         paymentMethod,
@@ -480,6 +464,9 @@ export default function SalidaCobroPage() {
       clearIdempotencyKey("exit", idempotencyFingerprint);
 
       const printPayload = operationPrintPayload(payload);
+      setPreviewLines(buildTicketPreviewForOperation(printPayload, "EXIT"));
+
+      const printPayload = operationPrintPayload(payload);
       const receiptPreview = buildTicketPreviewForOperation(printPayload, "EXIT");
       setPreviewLines(receiptPreview);
 
@@ -489,6 +476,28 @@ export default function SalidaCobroPage() {
           ticketNumber: payload.receipt.ticketNumber,
           plate: payload.receipt.plate,
           previewLines: receiptPreview
+        });
+      } else {
+        playSuccess();
+        toastSuccess(
+          `Salida registrada. Total: $${Number(payload.total ?? 0).toLocaleString("es-CO")}`,
+          6000
+        );
+        setActive(null);
+        setTicketNumber("");
+        setPlate("");
+        setAgreementCode("");
+
+        // Re-focus para siguiente operación
+        setTimeout(() => {
+          ticketInputRef.current?.focus();
+        }, 100);
+      }
+      if (printWarning) {
+        setPrintWarning({
+          ticketNumber: payload.receipt.ticketNumber,
+          plate: payload.receipt.plate,
+          previewLines: buildTicketPreviewForOperation(printPayload, "EXIT")
         });
       } else {
         playSuccess();
@@ -519,25 +528,20 @@ export default function SalidaCobroPage() {
         paymentMethod,
         total: totalDue
       });
-      const isQueued = await handleOfflineExit(
-        active.receipt.ticketNumber,
+      const queued = await queueOfflineOperation("EXIT_RECORDED", {
+        ticketNumber: active.receipt.ticketNumber,
         paymentMethod,
-        splitPayments,
-        idempotencyFingerprint,
-        playSuccess,
-        toastSuccess,
-        playError,
-        toastError,
-        setError
-      );
-      if (isQueued) {
-        setActive(null);
-        setTicketNumber("");
-        setPlate("");
-        setAgreementCode("");
-        setTimeout(() => {
-          ticketInputRef.current?.focus();
-        }, 100);
+        total: totalDue
+      });
+      if (queued) {
+        clearIdempotencyKey("exit", idempotencyFingerprint);
+        toastSuccess("Sin internet: salida guardada. Se sincronizará automáticamente al reconectar.");
+        playSuccess();
+      } else {
+        const errMsg = "Error de red procesando salida";
+        setError(errMsg);
+        toastError(errMsg);
+        playError();
       }
     } finally {
       setProcessing(false);
@@ -1152,9 +1156,7 @@ export default function SalidaCobroPage() {
           ) : null}
 
           <Button
-            color="primary"
-            size="lg"
-            className="mt-5 h-14 w-full font-bold shadow-md"
+            className="mt-5 h-14 w-full font-bold bg-slate-900 text-white"
             isDisabled={!active || searching || processing || !!printWarning}
             isLoading={processing}
             onPress={() => processExit()}
