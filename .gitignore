@@ -19,7 +19,7 @@ build/
 bin/
 .gradle/
 .next/
-out/
+apps/web/out/
 tsconfig.tsbuildinfo
 coverage/
 
