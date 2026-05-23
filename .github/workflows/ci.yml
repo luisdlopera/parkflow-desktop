@@ -75,12 +75,6 @@ jobs:
           gradle-version: 8.8
       - name: Run API unit tests + coverage verification
         run: ./apps/api/gradlew -p apps/api check
-      - name: Upload API coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-coverage
-          path: apps/api/build/reports/jacoco/test/jacocoTestReport.xml
-          retention-days: 5
 
   integration_regression:
     name: Integration + regression checks
@@ -134,9 +128,8 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev pkg-config libudev-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev pkg-config
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
         with:
           version: 10
