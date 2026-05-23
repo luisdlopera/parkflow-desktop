@@ -467,10 +467,10 @@ describe("VehicleEntryFormV2", () => {
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/No se pudo imprimir el ticket/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Impresion no confirmada. Reintente o entregue copia manual./i).length).toBeGreaterThan(0);
     });
 
-    expect(screen.getByText(/Ingreso registrado correctamente/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Ingreso registrado, pero falta comprobante/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/T-20260513-000100/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/PRINTFAIL/).length).toBeGreaterThan(0);
   });
@@ -502,11 +502,11 @@ describe("VehicleEntryFormV2", () => {
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getAllByText(/Descargar ticket/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Descargar copia/i).length).toBeGreaterThan(0);
     });
 
-    expect(screen.getAllByText(/Reimprimir/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Cerrar/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Reintentar impresión/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Confirmar entrega y continuar/i).length).toBeGreaterThan(0);
   });
 
   it("does NOT show success when backend returns error", async () => {
