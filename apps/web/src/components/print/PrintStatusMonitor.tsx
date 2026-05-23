@@ -74,18 +74,32 @@ export function PrintStatusMonitor() {
       // Llamar al comando de health check de la impresora
       const result = await invoke<{
         online: boolean;
-        paper: "ok" | "low" | "out" | "unknown";
-        queue_size: number;
-        error?: string;
+        status_byte?: number | null;
+        has_paper?: boolean | null;
+        status_hint?: string | null;
+        error?: string | null;
       }>("printer_health_esc_pos");
+
+      const hasPaper = result.has_paper;
+      const paperStatus = (
+        hasPaper == null ? "unknown" : hasPaper ? "ok" : "out"
+      ) as PrinterStatus["paperStatus"];
+
+      const outboxStats = await invoke<{
+        pending: number;
+        processing: number;
+        failed: number;
+        dead_letter: number;
+        synced: number;
+      }>("get_outbox_stats", {});
 
       setStatus({
         isTauri: true,
         isOnline: result.online,
-        paperStatus: result.paper,
+        paperStatus,
         lastCheck: new Date(),
-        queueSize: result.queue_size,
-        lastError: result.error,
+        queueSize: outboxStats.pending + outboxStats.failed + outboxStats.processing,
+        lastError: result.error ?? undefined,
         isChecked: true
       });
 
@@ -98,10 +112,10 @@ export function PrintStatusMonitor() {
         setHasAlerted(false);
       }
 
-      if (result.paper === "out" && !hasAlerted) {
+      if (paperStatus === "out" && !hasAlerted) {
         error("¡Sin papel! La impresora necesita recarga.");
         setHasAlerted(true);
-      } else if (result.paper === "low" && !hasAlerted) {
+      } else if (paperStatus === "low" && !hasAlerted) {
         warning("Papel bajo. Considere recargar pronto.");
         setHasAlerted(true);
       }

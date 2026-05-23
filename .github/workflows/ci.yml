@@ -73,7 +73,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libglib2.0-dev libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev pkg-config
+          sudo apt-get install -y libglib2.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev pkg-config
       - uses: dtolnay/rust-toolchain@stable
       - uses: pnpm/action-setup@v4
         with:
@@ -155,7 +155,7 @@ jobs:
       DB_USERNAME: parkflow
       DB_PASSWORD: parkflow
       PARKFLOW_API_KEY: ${{ secrets.PARKFLOW_API_KEY }}
-      PARKFLOW_JWT_SECRET_BASE64: ${{ secrets.PARKFLOW_JWT_SECRET_BASE64 }}
+      PARKFLOW_JWT_SECRET_BASE64: ${{ secrets.PARKFLOW_JWT_SECRET_BASE64 || 'cGFya2Zsb3ctZGVmYXVsdC1iYXNlNjQtand0LXNlY3JldC1rZXktZm9yLWRldmVsb3BtZW50' }}
       PARKFLOW_SEED_ADMIN_PASSWORD: ${{ secrets.PARKFLOW_SEED_ADMIN_PASSWORD }}
       PARKFLOW_SEED_CASHIER_PASSWORD: ${{ secrets.PARKFLOW_SEED_CASHIER_PASSWORD }}
     steps:
