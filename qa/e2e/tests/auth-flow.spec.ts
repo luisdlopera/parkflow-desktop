@@ -40,15 +40,6 @@ test('shows invalid credential error on login rejection', async ({ page }) => {
 })
 
 test('login flow stores session and loads dashboard with auth headers', async ({ page }) => {
-  // Intercept API calls to prevent 401 logout from dashboard fetches
-  await page.route('**/api/v1/**', async route => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({}),
-    })
-  })
-
   await loginAsAdmin(page)
 
   await expect(page).toHaveURL('/', { timeout: 15_000 })
