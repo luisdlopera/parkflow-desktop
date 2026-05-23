@@ -198,32 +198,28 @@ mod tests {
     result
   }
 
-  fn tamper_file(home: &PathBuf) -> PathBuf {
-    home.join("Library/Application Support/com.parkflow.desktop/license_timestamps.dat")
-  }
-
   #[test]
   #[serial]
   fn records_and_validates_time_integrity() {
-    with_temp_home(|home| {
+    with_temp_home(|_home| {
       let detector = TamperDetector::new().expect("detector");
       detector.record_valid_timestamp().expect("record");
 
       let status = detector.check_time_integrity().expect("check");
       assert!(!status.suspicious);
       assert_eq!(status.violation_count, 0);
-      assert!(tamper_file(home).exists());
+      assert!(detector.data_dir.join(TAMPER_FILE).exists());
     });
   }
 
   #[test]
   #[serial]
   fn detects_time_rollback() {
-    with_temp_home(|home| {
+    with_temp_home(|_home| {
       let detector = TamperDetector::new().expect("detector");
       detector.record_valid_timestamp().expect("record");
 
-      let path = tamper_file(home);
+      let path = detector.data_dir.join(TAMPER_FILE);
       let future_ts = chrono::Utc::now().timestamp() + 3_600;
       let record = TimestampRecord {
         timestamps: vec![future_ts],
