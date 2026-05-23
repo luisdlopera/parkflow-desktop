@@ -142,9 +142,9 @@ pub struct ConnectivityState {
   pub last_error: Option<String>,
 }
 
-pub struct AppState {
+struct AppState {
   // PERFORMANCE: Use a fresh connection per command to avoid global mutex blocking.
-  pub db_path: PathBuf,
+  db_path: PathBuf,
 }
 
 /// Simple in-memory rate limiter per command
@@ -181,26 +181,19 @@ impl RateLimiter {
 }
 
 fn db_passphrase() -> Result<String, String> {
-  #[cfg(debug_assertions)]
-  {
-    return Ok("dev-db-passphrase".to_string());
-  }
-  #[cfg(not(debug_assertions))]
-  {
-    let entry = KeyringEntry::new("com.parkflow.desktop", "db-passphrase")
-      .map_err(|e| format!("keyring entry failed: {}", e))?;
+  let entry = KeyringEntry::new("com.parkflow.desktop", "db-passphrase")
+    .map_err(|e| format!("keyring entry failed: {}", e))?;
 
-    match entry.get_password() {
-      Ok(pwd) => Ok(pwd),
-      Err(keyring::Error::NoEntry) => {
-        let generated = format!("pf-{}-{}", now_unix_ms_i64(), Uuid::new_v4());
-        entry
-          .set_password(&generated)
-          .map_err(|e| format!("failed to store db passphrase: {}", e))?;
-        Ok(generated)
-      }
-      Err(e) => Err(format!("keyring get failed: {}", e)),
+  match entry.get_password() {
+    Ok(pwd) => Ok(pwd),
+    Err(keyring::Error::NoEntry) => {
+      let generated = format!("pf-{}-{}", now_unix_ms_i64(), Uuid::new_v4());
+      entry
+        .set_password(&generated)
+        .map_err(|e| format!("failed to store db passphrase: {}", e))?;
+      Ok(generated)
     }
+    Err(e) => Err(format!("keyring get failed: {}", e)),
   }
 }
 
@@ -243,14 +236,7 @@ fn sqlite_path() -> Result<std::path::PathBuf, String> {
 
 fn init_local_db() -> Result<Connection, String> {
   let db_path = sqlite_path()?;
-  match init_local_db_with_path(&db_path) {
-    Ok(connection) => Ok(connection),
-    Err(error) if error.contains("file is not a database") => {
-      quarantine_corrupt_db(&db_path)?;
-      init_local_db_with_path(&db_path)
-    }
-    Err(error) => Err(error),
-  }
+  init_local_db_with_path(&db_path)
 }
 
 fn init_local_db_with_path(db_path: &Path) -> Result<Connection, String> {
@@ -259,9 +245,6 @@ fn init_local_db_with_path(db_path: &Path) -> Result<Connection, String> {
   let passphrase = db_passphrase()?;
   connection.pragma_update(None, "key", &passphrase)
     .map_err(|error| format!("sqlite key pragma failed: {}", error))?;
-
-  local_first::init_schema_tables(&connection)
-    .map_err(|error| format!("local_first schema init failed: {}", error))?;
 
   connection
     .execute_batch(
@@ -2190,6 +2173,28 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<String, String> {
   }
 }
 
+#[tauri::command]
+async fn check_for_updates(app: tauri::AppHandle) -> Result<String, String> {
+  use tauri_plugin_updater::UpdaterExt;
+
+  let update = app
+    .updater()
+    .map_err(|e| format!("updater init failed: {}", e))?
+    .check()
+    .await
+    .map_err(|e| format!("update check failed: {}", e))?;
+
+  if let Some(update) = update {
+    update
+      .download_and_install(|_chunk, _total| {}, || {})
+      .await
+      .map_err(|e| format!("update install failed: {}", e))?;
+    Ok("Updated".to_string())
+  } else {
+    Ok("Already up to date".to_string())
+  }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   // Setup structured logging with rotation
@@ -2225,7 +2230,6 @@ pub fn run() {
   let db_path = sqlite_path().expect("failed to resolve sqlite path");
   let _connection = init_local_db().expect("failed to initialize local sqlite");
   start_offline_worker(db_path.clone());
-  local_first::start_sync_worker(db_path.clone());
 
   // Initialize licensing state
   let license_state = LicenseState::new().expect("failed to initialize licensing");
