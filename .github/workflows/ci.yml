@@ -45,7 +45,7 @@ jobs:
         with:
           gradle-version: 8.8
       - name: Run API unit tests + coverage verification
-        run: gradle -p apps/api check
+        run: ./apps/api/gradlew -p apps/api check
 
   integration_regression:
     name: Integration + regression checks
@@ -63,7 +63,7 @@ jobs:
         with:
           gradle-version: 8.8
       - name: Run full API build (includes tests and packaging)
-        run: gradle -p apps/api build
+        run: ./apps/api/gradlew -p apps/api build
 
   desktop_tests:
     name: Desktop tests (Rust + integration)
@@ -92,6 +92,11 @@ jobs:
     needs: [desktop_tests]
     steps:
       - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev pkg-config
+      - uses: dtolnay/rust-toolchain@stable
       - uses: pnpm/action-setup@v4
         with:
           version: 10
