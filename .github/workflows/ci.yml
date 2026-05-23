@@ -213,7 +213,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      SPRING_PROFILES_ACTIVE: ci
+      SPRING_PROFILES_ACTIVE: dev
       PARKFLOW_API_PORT: 8080
       DB_URL: jdbc:postgresql://localhost:5432/parkflow
       DB_USERNAME: parkflow
