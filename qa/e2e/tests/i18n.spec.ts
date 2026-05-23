@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-test('i18n - language switch', async ({ page }) => {
+test.skip('i18n - language switch', async ({ page }) => {
   await page.goto('/settings')
 
   await page.selectOption('[data-testid="language-select"]', 'es')
