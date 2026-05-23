@@ -176,7 +176,7 @@ struct TimestampRecord {
 
 #[cfg(test)]
 mod tests {
-  use super::{TamperDetector, TimestampRecord};
+  use super::{TamperDetector, TimestampRecord, TAMPER_FILE};
   use serial_test::serial;
   use std::env;
   use std::path::PathBuf;

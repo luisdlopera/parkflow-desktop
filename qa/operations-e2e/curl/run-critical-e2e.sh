@@ -26,7 +26,7 @@ curl_json() {
 assert_eq(){ [[ "$1" == "$2" ]] || { echo "Assertion failed: expected '$2' got '$1'"; exit 1; }; }
 
 health="$(curl -sS "$API_BASE/health")"
-assert_eq "$(jq -r '.status' <<<"$health")" "ok"
+assert_eq "$(jq -r '.status' <<<"$health")" "UP"
 
 login_admin="$(curl_json POST "$API_BASE/auth/login" "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\",\"deviceId\":\"ci-admin-device\",\"deviceName\":\"CI Admin\",\"platform\":\"ci\",\"fingerprint\":\"ci-admin-fp\"}")"
 ADMIN_REFRESH_TOKEN="$(jq -r '.refreshToken' <<<"$login_admin")"
