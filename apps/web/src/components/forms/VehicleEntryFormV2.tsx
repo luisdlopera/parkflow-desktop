@@ -12,7 +12,7 @@ import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
 import { vehicleEntrySchema, VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { buildApiHeaders } from "@/lib/api";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { newIdempotencyKey, getOrCreateIdempotencyKey, clearIdempotencyKey } from "@/lib/idempotency";
 import { queueOfflineOperation } from "@/lib/offline-outbox";
 import {
   buildTicketPreviewForOperation,
@@ -116,7 +116,7 @@ export default function VehicleEntryFormV2() {
   const [loadingConfig, setLoadingConfig] = useState(true);
   const submitLock = useRef(false);
   const plateInputRef = useRef<HTMLInputElement>(null);
-  const idempotencyKeyRef = useRef(newIdempotencyKey());
+  const idempotencyKeyRef = useRef("");
   const { playSuccess, playError } = useOperationSounds();
   const { success: toastSuccess, error: toastError } = useToast();
 
@@ -380,6 +380,17 @@ export default function VehicleEntryFormV2() {
     // Limpiar auto-save antes de enviar
     clearAutoSave();
 
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
+    const normalizedPlate = values.noPlate ? null : normalizePlate(values.plate);
+
+    const idempotencyFingerprint = JSON.stringify({
+      plate: normalizedPlate ?? "",
+      type: values.type,
+      site: values.site ?? "",
+      terminal: values.terminal ?? "",
+      entryMode: values.entryMode ?? ""
+    });
+
     try {
       const user = await currentUser();
       if (!user?.id) {
@@ -388,13 +399,13 @@ export default function VehicleEntryFormV2() {
         return;
       }
 
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
-      const normalizedPlate = values.noPlate ? null : normalizePlate(values.plate);
+      const idempotencyKey = getOrCreateIdempotencyKey("entry", idempotencyFingerprint);
+      idempotencyKeyRef.current = idempotencyKey;
 
       const requestBody = validatePayloadOrThrow(
         operationEntryRequestSchema,
         {
-          idempotencyKey: idempotencyKeyRef.current,
+          idempotencyKey,
           operatorUserId: user.id,
           ...values,
           plate: normalizedPlate,
@@ -452,6 +463,8 @@ export default function VehicleEntryFormV2() {
         playError();
         return;
       }
+
+      clearIdempotencyKey("entry", idempotencyFingerprint);
 
       const printPayload = {
         sessionId: payload.sessionId,
@@ -530,6 +543,13 @@ export default function VehicleEntryFormV2() {
         return;
       }
       playError();
+      const idempotencyFingerprint = JSON.stringify({
+        plate: normalizedPlate ?? "",
+        type: values.type,
+        site: values.site ?? "",
+        terminal: values.terminal ?? "",
+        entryMode: values.entryMode ?? ""
+      });
       if (isNetworkError(err)) {
         const queued = await queueOfflineOperation("ENTRY_RECORDED", {
           plate: form.getValues("plate"),
@@ -538,6 +558,7 @@ export default function VehicleEntryFormV2() {
           origin: "OFFLINE_PENDING_SYNC"
         });
         if (queued) {
+          clearIdempotencyKey("entry", idempotencyFingerprint);
           toastSuccess("Sin internet: ingreso guardado en cola offline. Será sincronizado automáticamente.");
           incrementStats();
           playSuccess();
@@ -563,6 +584,10 @@ export default function VehicleEntryFormV2() {
   const visibleQuickTypes = quickVehicleTypes.length > 0 ? quickVehicleTypes : vehicleTypes;
 
   const handleFormKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
+    if (printWarning) {
+      event.preventDefault();
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
       event.preventDefault();
       form.handleSubmit(onSubmit)();
@@ -629,6 +654,11 @@ export default function VehicleEntryFormV2() {
           onReprint={handleReprint}
           onClose={handleClosePrintWarning}
           reprintLoading={reprintLoading}
+          title="Ingreso registrado, pero falta comprobante"
+          subtitle="Impresion no confirmada. Reintente o entregue copia manual."
+          confirmLabel="Confirmar entrega y continuar"
+          downloadLabel="Descargar copia"
+          reprintLabel="Reintentar impresión"
         />
       )}
 
@@ -923,6 +953,7 @@ export default function VehicleEntryFormV2() {
               color="primary"
               size={isSpeed ? "lg" : "md"}
               isLoading={form.formState.isSubmitting}
+              isDisabled={!!printWarning}
               className={`w-full font-bold ${isSpeed ? "text-lg shadow-xl" : ""}`}
               data-testid="register-entry"
             >

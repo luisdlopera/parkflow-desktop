@@ -11,15 +11,16 @@ function sampleLoginResponse(overrides: Record<string, unknown> = {}) {
     accessToken: "access-token",
     refreshToken: "refresh-token",
     tokenType: "Bearer",
-    user: {
-      id: "user-1",
-      name: "Admin",
-      email: "admin@parkflow.local",
-      role: "ADMIN",
-      permissions: ["tickets:emitir", "configuracion:leer"],
-      active: true,
-      passwordChangedAtIso: null
-    },
+      user: {
+        id: "user-1",
+        name: "Admin",
+        email: "admin@parkflow.local",
+        role: "ADMIN" as any,
+        permissions: ["tickets:emitir", "configuracion:leer"] as any,
+        active: true,
+        passwordChangedAtIso: null,
+        companyId: "company-1"
+      },
     session: {
       sessionId: "session-1",
       userId: "user-1",
@@ -59,7 +60,7 @@ process.env.NEXT_PUBLIC_API_KEY = process.env.NEXT_PUBLIC_API_KEY ?? "dev-api-ke
 describe("auth client", () => {
   it("logs in, sends API key, persists the session, and exposes the current user", async () => {
     const { login, loadSession, currentUser, hasPermission } = await importAuth();
-    let requestHeaders: Headers | null = null;
+    let requestHeaders: Headers | null = null as any;
 
     server.use(
       http.post(`${authBase}/login`, async ({ request }) => {
@@ -216,7 +217,7 @@ describe("auth client", () => {
 
     mockIPC((cmd, args) => {
       if (cmd === "auth_store_session") {
-        storedPayload = String(args?.payloadJson ?? "");
+        storedPayload = String((args as any)?.payloadJson ?? "");
         return null;
       }
       if (cmd === "auth_load_session") {
