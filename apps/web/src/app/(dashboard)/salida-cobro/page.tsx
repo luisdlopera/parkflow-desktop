@@ -12,7 +12,7 @@ import Badge from "@/components/ui/Badge";
 import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { ChangeCalculator } from "@/components/ui/ChangeCalculator";
 import { buildApiHeaders } from "@/lib/api";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { newIdempotencyKey, getOrCreateIdempotencyKey, clearIdempotencyKey } from "@/lib/idempotency";
 import { queueOfflineOperation } from "@/lib/offline-outbox";
 import { cashPolicy } from "@/lib/cash/cash-api";
 import {
@@ -26,6 +26,8 @@ import { useExitShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
 import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
 import { useToast } from "@/lib/toast/ToastContext";
 import { currentUser } from "@/lib/auth";
+import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
+import { downloadTicketAsHtml } from "@/lib/print/ticket-download";
 import {
   operationExitRequestSchema,
   operationLostTicketRequestSchema,
@@ -144,6 +146,11 @@ export default function SalidaCobroPage() {
   const [message, setMessage] = useState("");
   const [active, setActive] = useState<ActiveLookup | null>(null);
   const [previewLines, setPreviewLines] = useState<string[] | null>(null);
+  const [printWarning, setPrintWarning] = useState<{
+    ticketNumber: string;
+    plate: string;
+    previewLines: string[];
+  } | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodCode>("CASH");
   const [splitPayments, setSplitPayments] = useState<SplitPaymentRow[]>([
     { id: "split-1", method: "CASH", amount: "" },
@@ -156,6 +163,7 @@ export default function SalidaCobroPage() {
   const ticketInputRef = useRef<HTMLInputElement>(null);
   const { playSuccess, playError } = useOperationSounds();
   const { success: toastSuccess, error: toastError } = useToast();
+  const [reprintLoading, setReprintLoading] = useState(false);
 
   // Auto-focus en campo de ticket al cargar
   useEffect(() => {
@@ -230,6 +238,7 @@ export default function SalidaCobroPage() {
   const lookup = useCallback(async () => {
     setError("");
     setMessage("");
+    setPrintWarning(null);
 
     const locator = ticketNumber.trim() || plate.trim();
     if (!locator) {
@@ -263,6 +272,7 @@ export default function SalidaCobroPage() {
       setActive(payload);
       setSelectedPaymentMethod("CASH");
       setCashReceived("");
+      setPrintWarning(null);
       setSplitPayments([
         { id: "split-1", method: "CASH", amount: "" },
         { id: "split-2", method: "NEQUI", amount: "" }
@@ -306,6 +316,7 @@ export default function SalidaCobroPage() {
     setProcessing(true);
     setError("");
     setMessage("");
+    setPrintWarning(null);
 
     try {
       const user = await currentUser();
@@ -314,8 +325,14 @@ export default function SalidaCobroPage() {
         return;
       }
 
+      const idempotencyFingerprint = JSON.stringify({
+        ticketNumber: active.receipt.ticketNumber,
+        paymentMethod,
+        total: totalDue
+      });
+      const idempotencyKey = getOrCreateIdempotencyKey("exit", idempotencyFingerprint);
       const requestBody = validatePayloadOrThrow(operationExitRequestSchema, {
-        idempotencyKey: newIdempotencyKey(),
+        idempotencyKey,
         ticketNumber: active.receipt.ticketNumber,
         operatorUserId: user.id,
         paymentMethod,
@@ -355,6 +372,8 @@ export default function SalidaCobroPage() {
         return;
       }
 
+      clearIdempotencyKey("exit", idempotencyFingerprint);
+
       const printPayload = operationPrintPayload(payload);
       setPreviewLines(buildTicketPreviewForOperation(printPayload, "EXIT"));
 
@@ -367,23 +386,28 @@ export default function SalidaCobroPage() {
             ? `No se pudo imprimir en desktop: ${printError.message}`
             : "No se pudo imprimir en desktop.";
       }
-      
-      playSuccess();
-      toastSuccess(
-        `Salida registrada. Total: $${Number(payload.total ?? 0).toLocaleString("es-CO")}${
-          printWarning ? `. ${printWarning}` : ""
-        }`,
-        6000
-      );
-      setActive(null);
-      setTicketNumber("");
-      setPlate("");
-      setAgreementCode("");
-      
-      // Re-focus para siguiente operación
-      setTimeout(() => {
-        ticketInputRef.current?.focus();
-      }, 100);
+      if (printWarning) {
+        setPrintWarning({
+          ticketNumber: payload.receipt.ticketNumber,
+          plate: payload.receipt.plate,
+          previewLines: buildTicketPreviewForOperation(printPayload, "EXIT")
+        });
+      } else {
+        playSuccess();
+        toastSuccess(
+          `Salida registrada. Total: $${Number(payload.total ?? 0).toLocaleString("es-CO")}`,
+          6000
+        );
+        setActive(null);
+        setTicketNumber("");
+        setPlate("");
+        setAgreementCode("");
+
+        // Re-focus para siguiente operación
+        setTimeout(() => {
+          ticketInputRef.current?.focus();
+        }, 100);
+      }
     } catch (err) {
       const validationMessage = toUserMessageFromClientValidation(err);
       if (validationMessage) {
@@ -392,6 +416,11 @@ export default function SalidaCobroPage() {
         playError();
         return;
       }
+      const idempotencyFingerprint = JSON.stringify({
+        ticketNumber: active.receipt.ticketNumber,
+        paymentMethod,
+        total: totalDue
+      });
       const queued = await queueOfflineOperation("EXIT_RECORDED", {
         ticketNumber: active.receipt.ticketNumber,
         paymentMethod,
@@ -400,6 +429,7 @@ export default function SalidaCobroPage() {
         origin: "OFFLINE_PENDING_SYNC"
       });
       if (queued) {
+        clearIdempotencyKey("exit", idempotencyFingerprint);
         toastSuccess("Sin internet: salida guardada. Se sincronizará automáticamente al reconectar.");
         playSuccess();
       } else {
@@ -428,9 +458,14 @@ export default function SalidaCobroPage() {
       return;
     }
     reprintLock.current = true;
+    setReprintLoading(true);
     setPreviewLines(null);
     setError("");
     setMessage("");
+    const idempotencyFingerprint = JSON.stringify({
+      ticketNumber: active.receipt.ticketNumber,
+      reason: reprintReason
+    });
     try {
       const user = await currentUser();
       if (!user?.id) {
@@ -438,8 +473,9 @@ export default function SalidaCobroPage() {
         return;
       }
 
+      const idempotencyKey = getOrCreateIdempotencyKey("reprint", idempotencyFingerprint);
       const requestBody = validatePayloadOrThrow(operationReprintRequestSchema, {
-        idempotencyKey: newIdempotencyKey(),
+        idempotencyKey,
         ticketNumber: active.receipt.ticketNumber,
         operatorUserId: user.id,
         reason: reprintReason
@@ -455,6 +491,8 @@ export default function SalidaCobroPage() {
         setError(payload.error ?? "No se pudo reimprimir");
         return;
       }
+
+      clearIdempotencyKey("reprint", idempotencyFingerprint);
       const printPayload = operationPrintPayload(payload);
       setPreviewLines(buildTicketPreviewForOperation(printPayload, "REPRINT"));
       let printWarning: string | null = null;
@@ -466,11 +504,17 @@ export default function SalidaCobroPage() {
             ? `No se pudo imprimir en desktop: ${printError.message}`
             : "No se pudo imprimir en desktop.";
       }
-      playSuccess();
-      setMessage(
-        `Ticket reimpreso (${payload.receipt.ticketNumber})${printWarning ? `. ${printWarning}` : ""}`
-      );
-      setActive(payload);
+      if (printWarning) {
+        setPrintWarning({
+          ticketNumber: payload.receipt.ticketNumber,
+          plate: payload.receipt.plate,
+          previewLines: buildTicketPreviewForOperation(printPayload, "REPRINT")
+        });
+      } else {
+        playSuccess();
+        setMessage(`Ticket reimpreso (${payload.receipt.ticketNumber})`);
+        setActive(payload);
+      }
     } catch (err) {
       const validationMessage = toUserMessageFromClientValidation(err);
       if (validationMessage) {
@@ -485,6 +529,7 @@ export default function SalidaCobroPage() {
         origin: "OFFLINE_PENDING_SYNC"
       });
       if (queued) {
+        clearIdempotencyKey("reprint", idempotencyFingerprint);
         setMessage("Sin internet: reimpresion en cola offline.");
         playSuccess();
       } else {
@@ -495,6 +540,7 @@ export default function SalidaCobroPage() {
       // UX: Debounce delay to prevent rapid double-clicks
       setTimeout(() => {
         reprintLock.current = false;
+        setReprintLoading(false);
       }, 500);
     }
   };
@@ -508,6 +554,12 @@ export default function SalidaCobroPage() {
     setProcessing(true);
     setError("");
     setMessage("");
+    setPrintWarning(null);
+    const idempotencyFingerprint = JSON.stringify({
+      ticketNumber: active.receipt.ticketNumber,
+      reason: lostReason
+    });
+
     try {
       const user = await currentUser();
       if (!user?.id) {
@@ -516,8 +568,9 @@ export default function SalidaCobroPage() {
         return;
       }
 
+      const idempotencyKey = getOrCreateIdempotencyKey("lost_ticket", idempotencyFingerprint);
       const requestBody = validatePayloadOrThrow(operationLostTicketRequestSchema, {
-        idempotencyKey: newIdempotencyKey(),
+        idempotencyKey,
         ticketNumber: active.receipt.ticketNumber,
         operatorUserId: user.id,
         reason: lostReason,
@@ -535,6 +588,8 @@ export default function SalidaCobroPage() {
         playError();
         return;
       }
+
+      clearIdempotencyKey("lost_ticket", idempotencyFingerprint);
       const printPayload = operationPrintPayload(payload);
       setPreviewLines(buildTicketPreviewForOperation(printPayload, "LOST_TICKET"));
       let printWarning: string | null = null;
@@ -546,16 +601,22 @@ export default function SalidaCobroPage() {
             ? `No se pudo imprimir en desktop: ${printError.message}`
             : "No se pudo imprimir en desktop.";
       }
-      playSuccess();
-      setMessage(
-        `Ticket perdido procesado. Total: $ ${Number(payload.total ?? 0).toLocaleString("es-CO")}${
-          printWarning ? `. ${printWarning}` : ""
-        }`
-      );
-      setActive(null);
-      setTimeout(() => {
-        ticketInputRef.current?.focus();
-      }, 100);
+      if (printWarning) {
+        setPrintWarning({
+          ticketNumber: payload.receipt.ticketNumber,
+          plate: payload.receipt.plate,
+          previewLines: buildTicketPreviewForOperation(printPayload, "LOST_TICKET")
+        });
+      } else {
+        playSuccess();
+        setMessage(
+          `Ticket perdido procesado. Total: $ ${Number(payload.total ?? 0).toLocaleString("es-CO")}`
+        );
+        setActive(null);
+        setTimeout(() => {
+          ticketInputRef.current?.focus();
+        }, 100);
+      }
     } catch (err) {
       const validationMessage = toUserMessageFromClientValidation(err);
       if (validationMessage) {
@@ -570,6 +631,7 @@ export default function SalidaCobroPage() {
         origin: "OFFLINE_PENDING_SYNC"
       });
       if (queued) {
+        clearIdempotencyKey("lost_ticket", idempotencyFingerprint);
         setMessage("Sin internet: operacion de ticket perdido en cola offline.");
         playSuccess();
       } else {
@@ -584,6 +646,37 @@ export default function SalidaCobroPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {printWarning ? (
+        <TicketPrintWarning
+          ticketNumber={printWarning.ticketNumber}
+          plate={printWarning.plate}
+          previewLines={printWarning.previewLines}
+          onDownload={() => downloadTicketAsHtml(
+            printWarning.previewLines,
+            printWarning.ticketNumber,
+            printWarning.plate
+          )}
+          onReprint={() => void reprintTicket()}
+          onClose={() => {
+            setPrintWarning(null);
+            setActive(null);
+            setTicketNumber("");
+            setPlate("");
+            setAgreementCode("");
+            setTimeout(() => {
+              ticketInputRef.current?.focus();
+            }, 100);
+          }}
+          reprintLoading={reprintLoading}
+          title="Salida registrada, pero falta comprobante"
+          subtitle="Impresion no confirmada. Reintente o entregue copia manual."
+          confirmLabel="Confirmar entrega y continuar"
+          downloadLabel="Descargar copia"
+          reprintLabel="Reintentar impresión"
+          showDownload={true}
+          showReprint={true}
+        />
+      ) : null}
       <div>
         <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">
           Salida y cobro
@@ -937,7 +1030,7 @@ export default function SalidaCobroPage() {
 
           <Button
             className="mt-5 h-14 w-full font-bold bg-slate-900 text-white"
-            isDisabled={!active || searching || processing}
+            isDisabled={!active || searching || processing || !!printWarning}
             isLoading={processing}
             onPress={() => processExit()}
           >
@@ -968,7 +1061,7 @@ export default function SalidaCobroPage() {
                 variant="flat"
                 color="primary"
                 className="font-semibold"
-                isDisabled={!active || searching || processing}
+                isDisabled={!active || searching || processing || !!printWarning}
                 onPress={reprintTicket}
               >
                 Reimprimir ticket
@@ -988,7 +1081,7 @@ export default function SalidaCobroPage() {
                 variant="flat"
                 color="primary"
                 className="font-semibold"
-                isDisabled={!active || searching || processing}
+                isDisabled={!active || searching || processing || !!printWarning}
                 onPress={lostTicket}
               >
                 Procesar ticket perdido
