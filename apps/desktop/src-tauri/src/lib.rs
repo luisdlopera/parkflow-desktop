@@ -7,8 +7,10 @@ use licensing::LicenseState;
 use keyring::Entry as KeyringEntry;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -139,8 +141,69 @@ pub struct ConnectivityState {
 }
 
 struct AppState {
-  // PERFORMANCE: Mutex blocks all access, but rusqlite::Connection is not Sync
-  db: Mutex<Connection>,
+  // PERFORMANCE: Use a fresh connection per command to avoid global mutex blocking.
+  db_path: PathBuf,
+}
+
+/// Simple in-memory rate limiter per command
+struct RateLimiter {
+  requests: Mutex<HashMap<String, Vec<Instant>>>,
+  max_requests: u32,
+  window: Duration,
+}
+
+impl RateLimiter {
+  fn new(max_requests: u32, window_secs: u64) -> Self {
+    RateLimiter {
+      requests: Mutex::new(HashMap::new()),
+      max_requests,
+      window: Duration::from_secs(window_secs),
+    }
+  }
+
+  fn check(&self, key: &str) -> Result<(), String> {
+    let mut requests = self.requests.lock().map_err(|_| "rate limiter poisoned")?;
+    let now = Instant::now();
+    let window_start = now - self.window;
+
+    let timestamps = requests.entry(key.to_string()).or_default();
+    timestamps.retain(|&t| t > window_start);
+
+    if timestamps.len() >= self.max_requests as usize {
+      return Err(format!("Rate limit exceeded for {}. Try again later.", key));
+    }
+
+    timestamps.push(now);
+    Ok(())
+  }
+}
+
+fn db_passphrase() -> Result<String, String> {
+  let entry = KeyringEntry::new("com.parkflow.desktop", "db-passphrase")
+    .map_err(|e| format!("keyring entry failed: {}", e))?;
+
+  match entry.get_password() {
+    Ok(pwd) => Ok(pwd),
+    Err(keyring::Error::NoEntry) => {
+      let generated = format!("pf-{}-{}", now_unix_ms_i64(), Uuid::new_v4());
+      entry
+        .set_password(&generated)
+        .map_err(|e| format!("failed to store db passphrase: {}", e))?;
+      Ok(generated)
+    }
+    Err(e) => Err(format!("keyring get failed: {}", e)),
+  }
+}
+
+fn open_local_connection(state: &tauri::State<'_, AppState>) -> Result<Connection, String> {
+  let conn = Connection::open(&state.db_path)
+    .map_err(|error| format!("sqlite open failed: {}", error))?;
+
+  let passphrase = db_passphrase()?;
+  conn.pragma_update(None, "key", &passphrase)
+    .map_err(|error| format!("sqlite key pragma failed: {}", error))?;
+
+  Ok(conn)
 }
 
 fn now_unix_ms() -> u128 {
@@ -171,7 +234,15 @@ fn sqlite_path() -> Result<std::path::PathBuf, String> {
 
 fn init_local_db() -> Result<Connection, String> {
   let db_path = sqlite_path()?;
+  init_local_db_with_path(&db_path)
+}
+
+fn init_local_db_with_path(db_path: &Path) -> Result<Connection, String> {
   let connection = Connection::open(db_path).map_err(|error| format!("sqlite open failed: {}", error))?;
+
+  let passphrase = db_passphrase()?;
+  connection.pragma_update(None, "key", &passphrase)
+    .map_err(|error| format!("sqlite key pragma failed: {}", error))?;
 
   connection
     .execute_batch(
@@ -282,11 +353,10 @@ fn ping() -> String {
 fn queue_print_job(
   request: QueuePrintJobRequest,
   state: tauri::State<'_, AppState>,
+  rate_limiter: tauri::State<'_, RateLimiter>,
 ) -> Result<PrintJobRecord, String> {
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  rate_limiter.check("queue_print_job")?;
+  let connection = open_local_connection(&state)?;
 
   let existing = connection
     .query_row(
@@ -354,11 +424,7 @@ fn list_print_jobs(
   offset: Option<i64>,
   state: tauri::State<'_, AppState>,
 ) -> Result<Vec<PrintJobRecord>, String> {
-  // PERFORMANCE: Use read lock for concurrent reads
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   // PERFORMANCE: Add pagination to prevent OOM with large tables
   let page_limit = limit.unwrap_or(100).clamp(1, 500);
@@ -400,10 +466,7 @@ fn update_print_job_status(
   request: UpdatePrintJobStatusRequest,
   state: tauri::State<'_, AppState>,
 ) -> Result<PrintJobRecord, String> {
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   let now = now_unix_ms_i64();
   let new_status = print_status_to_db(&request.status);
@@ -499,11 +562,7 @@ fn update_print_job_status(
 
 #[tauri::command]
 fn get_printer_health(state: tauri::State<'_, AppState>) -> Result<PrinterHealth, String> {
-  // PERFORMANCE: Use read lock for concurrent reads
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   connection
     .query_row(
@@ -529,10 +588,7 @@ fn register_local_session(
   request: RegisterLocalSessionRequest,
   state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   connection
     .execute(
@@ -561,10 +617,7 @@ fn enqueue_outbox_event(
   request: EnqueueOutboxRequest,
   state: tauri::State<'_, AppState>,
 ) -> Result<OutboxEvent, String> {
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   let existing = connection
     .query_row(
@@ -636,11 +689,7 @@ fn enqueue_outbox_event(
 
 #[tauri::command]
 fn claim_outbox_batch(limit: i64, state: tauri::State<'_, AppState>) -> Result<Vec<OutboxEvent>, String> {
-  // PERFORMANCE: Use write lock as this updates rows to 'processing'
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   let now = now_unix_ms_i64();
   let mut statement = connection
@@ -693,10 +742,7 @@ fn claim_outbox_batch(limit: i64, state: tauri::State<'_, AppState>) -> Result<V
 
 #[tauri::command]
 fn mark_outbox_synced(outbox_id: i64, state: tauri::State<'_, AppState>) -> Result<(), String> {
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   connection
     .execute("UPDATE outbox SET status = 'synced' WHERE id = ?1", params![outbox_id])
@@ -707,10 +753,7 @@ fn mark_outbox_synced(outbox_id: i64, state: tauri::State<'_, AppState>) -> Resu
 
 #[tauri::command]
 fn mark_outbox_failed(outbox_id: i64, state: tauri::State<'_, AppState>) -> Result<(), String> {
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   let retry_count: i32 = connection
     .query_row(
@@ -725,7 +768,7 @@ fn mark_outbox_failed(outbox_id: i64, state: tauri::State<'_, AppState>) -> Resu
   let next_count = retry_count + 1;
   if next_count >= OUTBOX_MAX_RETRIES {
     // RELIABILITY/ALERTING: Log dead letter for operational visibility
-    eprintln!("[DEAD_LETTER] Outbox event {} exceeded max retries ({}). Manual intervention required.", outbox_id, OUTBOX_MAX_RETRIES);
+    tracing::error!(outbox_id, max_retries = OUTBOX_MAX_RETRIES, "Outbox event exceeded max retries. Manual intervention required");
     
     connection
       .execute(
@@ -734,7 +777,7 @@ fn mark_outbox_failed(outbox_id: i64, state: tauri::State<'_, AppState>) -> Resu
       )
       .map_err(|error| format!("sqlite outbox dead letter failed: {}", error))?;
       
-    eprintln!("[DEAD_LETTER] Event {} moved to dead_letter status. Check outbox table for details.", outbox_id);
+    tracing::warn!(outbox_id, "Event moved to dead_letter status. Check outbox table for details");
   } else {
     let next_retry = now_unix_ms_i64() + compute_retry_delay_ms(next_count);
     connection
@@ -845,11 +888,7 @@ fn check_backend_heartbeat(request: HeartbeatRequest) -> Result<bool, String> {
 
 #[tauri::command]
 fn get_connectivity_state(state: tauri::State<'_, AppState>) -> Result<ConnectivityState, String> {
-  // PERFORMANCE: Use read lock for concurrent reads
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   connection
     .query_row(
@@ -904,11 +943,7 @@ fn auth_clear_session() -> Result<(), String> {
 
 #[tauri::command]
 fn auth_get_or_create_device_id(state: tauri::State<'_, AppState>) -> Result<String, String> {
-  // PERFORMANCE: Use write lock for upsert operation
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   let existing: Option<String> = connection
     .query_row(
@@ -939,10 +974,7 @@ fn auth_upsert_offline_lease(
   request: OfflineLeaseRequest,
   state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   connection
     .execute(
@@ -973,11 +1005,7 @@ fn auth_get_offline_lease(
   session_id: String,
   state: tauri::State<'_, AppState>,
 ) -> Result<Option<OfflineLeaseRecord>, String> {
-  // PERFORMANCE: Use read lock for concurrent reads
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   connection
     .query_row(
@@ -999,46 +1027,166 @@ fn auth_get_offline_lease(
     .map_err(|error| format!("sqlite offline lease query failed: {}", error))
 }
 
-fn start_offline_worker(db_path: std::path::PathBuf) {
-  std::thread::spawn(move || loop {
-    let now = now_unix_ms_i64();
-    let heartbeat_url = std::env::var("PARKFLOW_API_HEALTH_URL")
-      .unwrap_or_else(|_| "http://localhost:8080/actuator/health".to_string());
+/// BACKUP: Create timestamped database backup in backups/ directory.
+/// Keeps last 7 backups, removes older ones.
+fn backup_database(db_path: &std::path::PathBuf) -> Result<(), String> {
+  let backup_dir = db_path.parent().ok_or("invalid db path")?.join("backups");
+  std::fs::create_dir_all(&backup_dir).map_err(|e| format!("backup dir failed: {}", e))?;
 
-    let heartbeat_ok = ureq::AgentBuilder::new()
-      .timeout(std::time::Duration::from_secs(2))
-      .build()
-      .get(&heartbeat_url)
-      .call()
-      .map(|response| (200..300).contains(&response.status()))
-      .unwrap_or(false);
+  let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
+  let backup_path = backup_dir.join(format!("parkflow_desktop_local_{}.db", timestamp));
 
-    if let Ok(connection) = Connection::open(&db_path) {
-      let _ = connection.execute(
-        "UPDATE connectivity_state SET is_online = ?1, last_checked_at_unix_ms = ?2, last_error = ?3 WHERE id = 1",
-        params![
-          if heartbeat_ok { 1 } else { 0 },
-          now,
-          if heartbeat_ok {
-            Option::<String>::None
-          } else {
-            Some("heartbeat failed".to_string())
-          }
-        ],
-      );
+  std::fs::copy(db_path, &backup_path).map_err(|e| format!("backup copy failed: {}", e))?;
+  tracing::info!(path = ?backup_path, "Database backup created");
 
-      let _ = connection.execute(
-        "UPDATE outbox
-         SET status = 'pending'
-         WHERE status = 'failed'
-           AND next_retry_at_unix_ms IS NOT NULL
-           AND next_retry_at_unix_ms <= ?1",
-        params![now],
-      );
+  // Keep only last 7 backups
+  let mut backups: Vec<_> = std::fs::read_dir(&backup_dir)
+    .map_err(|e| format!("read backup dir failed: {}", e))?
+    .filter_map(|entry| entry.ok())
+    .filter(|entry| {
+      entry.file_name().to_string_lossy().starts_with("parkflow_desktop_local_")
+    })
+    .collect();
+
+  if backups.len() > 7 {
+    backups.sort_by_key(|entry| {
+      entry.metadata().ok().and_then(|m| m.modified().ok())
+    });
+    let to_remove = backups.len() - 7;
+    for entry in backups.iter().take(to_remove) {
+      let _ = std::fs::remove_file(entry.path());
+      tracing::info!(path = ?entry.path(), "Old backup removed");
     }
+  }
 
-    std::thread::sleep(std::time::Duration::from_secs(3));
+  Ok(())
+}
+
+fn start_offline_worker(db_path: std::path::PathBuf) {
+  std::thread::spawn(move || {
+    let mut failure_count = 0u32;
+    let mut backoff_secs;
+    loop {
+      let now = now_unix_ms_i64();
+      let heartbeat_url = std::env::var("PARKFLOW_API_HEALTH_URL")
+        .unwrap_or_else(|_| "http://localhost:8080/actuator/health".to_string());
+
+      let heartbeat_ok = ureq::AgentBuilder::new()
+        .timeout(std::time::Duration::from_secs(2))
+        .build()
+        .get(&heartbeat_url)
+        .call()
+        .map(|response| (200..300).contains(&response.status()))
+        .unwrap_or(false);
+
+      if let Ok(connection) = Connection::open(&db_path) {
+        let _ = connection.execute(
+          "UPDATE connectivity_state SET is_online = ?1, last_checked_at_unix_ms = ?2, last_error = ?3 WHERE id = 1",
+          params![
+            if heartbeat_ok { 1 } else { 0 },
+            now,
+            if heartbeat_ok {
+              Option::<String>::None
+            } else {
+              Some("heartbeat failed".to_string())
+            }
+          ],
+        );
+
+        let _ = connection.execute(
+          "UPDATE outbox
+           SET status = 'pending'
+           WHERE status = 'failed'
+             AND next_retry_at_unix_ms IS NOT NULL
+             AND next_retry_at_unix_ms <= ?1",
+          params![now],
+        );
+      }
+
+      if heartbeat_ok {
+        failure_count = 0;
+        backoff_secs = 10;
+      } else {
+        failure_count = failure_count.saturating_add(1);
+        let capped = (1u64 << failure_count.min(5)) * 10;
+        backoff_secs = capped.min(120);
+      }
+
+      // PRUNING: Clean old data every ~1 hour (when backoff is around 60s)
+      if backoff_secs >= 60 {
+        prune_old_data(&db_path);
+        let _ = backup_database(&db_path);
+      }
+
+      std::thread::sleep(std::time::Duration::from_secs(backoff_secs));
+    }
   });
+}
+
+/// PRUNING: Delete old records to prevent unbounded growth.
+/// - synced outbox: 7 days
+/// - dead_letter outbox: 90 days
+/// - print jobs + attempts: 30 days
+/// - old sessions: 30 days
+fn prune_old_data(db_path: &std::path::PathBuf) {
+  let Ok(conn) = Connection::open(db_path) else { return };
+  let now = now_unix_ms_i64();
+
+  // synced outbox after 7 days
+  let cutoff_synced = now - 7 * 24 * 60 * 60 * 1000;
+  if let Ok(deleted) = conn.execute(
+    "DELETE FROM outbox WHERE status = 'synced' AND created_at_unix_ms < ?1",
+    params![cutoff_synced],
+  ) {
+    if deleted > 0 {
+      tracing::info!(deleted, table = "outbox", status = "synced", "Pruned old records");
+    }
+  }
+
+  // dead_letter outbox after 90 days
+  let cutoff_dead = now - 90 * 24 * 60 * 60 * 1000;
+  if let Ok(deleted) = conn.execute(
+    "DELETE FROM outbox WHERE status = 'dead_letter' AND created_at_unix_ms < ?1",
+    params![cutoff_dead],
+  ) {
+    if deleted > 0 {
+      tracing::info!(deleted, table = "outbox", status = "dead_letter", "Pruned old records");
+    }
+  }
+
+  // print jobs after 30 days
+  let cutoff_jobs = now - 30 * 24 * 60 * 60 * 1000;
+  if let Ok(deleted) = conn.execute(
+    "DELETE FROM local_print_jobs WHERE created_at_unix_ms < ?1",
+    params![cutoff_jobs],
+  ) {
+    if deleted > 0 {
+      tracing::info!(deleted, table = "local_print_jobs", "Pruned old records");
+    }
+  }
+
+  // print attempts after 30 days
+  if let Ok(deleted) = conn.execute(
+    "DELETE FROM local_print_attempts WHERE created_at_unix_ms < ?1",
+    params![cutoff_jobs],
+  ) {
+    if deleted > 0 {
+      tracing::info!(deleted, table = "local_print_attempts", "Pruned old records");
+    }
+  }
+
+  // old sessions after 30 days
+  if let Ok(deleted) = conn.execute(
+    "DELETE FROM sessions WHERE updated_at_unix_ms < ?1",
+    params![cutoff_jobs],
+  ) {
+    if deleted > 0 {
+      tracing::info!(deleted, table = "sessions", "Pruned old records");
+    }
+  }
+
+  // Vacuum to reclaim space periodically (once per day approx)
+  let _ = conn.execute("VACUUM", []);
 }
 
 fn parse_document_type(value: String) -> PrintDocumentType {
@@ -1103,11 +1251,7 @@ pub struct OutboxStats {
 /// OBSERVABILITY: Get outbox statistics for monitoring dead letters and sync health
 #[tauri::command]
 fn get_outbox_stats(state: tauri::State<'_, AppState>) -> Result<OutboxStats, String> {
-  // PERFORMANCE: Use read lock for concurrent reads
-  let connection = state
-    .db
-    .lock()
-    .map_err(|_| "unable to lock sqlite connection".to_string())?;
+  let connection = open_local_connection(&state)?;
 
   let stats = connection
     .query_row(
@@ -1133,7 +1277,7 @@ fn get_outbox_stats(state: tauri::State<'_, AppState>) -> Result<OutboxStats, St
 
   // Log warning if dead letters exist
   if stats.dead_letter > 0 {
-    eprintln!("[ALERT] Outbox contains {} dead letter(s) requiring manual intervention", stats.dead_letter);
+    tracing::warn!(dead_letter_count = stats.dead_letter, "Outbox contains dead letters requiring manual intervention");
   }
 
   Ok(stats)
@@ -1320,6 +1464,23 @@ mod tests {
         UNIQUE(attempt_key)
       );"
     ).unwrap();
+  }
+
+  #[test]
+  fn init_local_db_with_path_creates_schema() {
+    let dir = tempfile::tempdir().expect("tempdir failed");
+    let db_path = dir.path().join("local.db");
+    let conn = init_local_db_with_path(&db_path).expect("init failed");
+
+    let table_count: i64 = conn
+      .query_row(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table'",
+        [],
+        |row| row.get(0),
+      )
+      .expect("table count failed");
+
+    assert!(table_count >= 7, "expected base tables to exist");
   }
 
   #[test]
@@ -1588,23 +1749,77 @@ mod tests {
   }
 }
 
+#[tauri::command]
+async fn check_for_updates(app: tauri::AppHandle) -> Result<String, String> {
+  use tauri_plugin_updater::UpdaterExt;
+
+  let update = app
+    .updater()
+    .map_err(|e| format!("updater init failed: {}", e))?
+    .check()
+    .await
+    .map_err(|e| format!("update check failed: {}", e))?;
+
+  if let Some(update) = update {
+    update
+      .download_and_install(|_chunk, _total| {}, || {})
+      .await
+      .map_err(|e| format!("update install failed: {}", e))?;
+    Ok("Updated".to_string())
+  } else {
+    Ok("Already up to date".to_string())
+  }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+  // Setup structured logging with rotation
+  let log_dir = dirs::data_local_dir()
+    .expect("failed to get local data dir")
+    .join("com.parkflow.desktop/logs");
+  std::fs::create_dir_all(&log_dir).ok();
+
+  let file_appender = tracing_appender::rolling::daily(&log_dir, "parkflow");
+  let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+
+  tracing_subscriber::fmt()
+    .with_env_filter(
+      tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+    )
+    .with_writer(non_blocking)
+    .with_ansi(false)
+    .init();
+
+  tracing::info!("Parkflow Desktop starting up");
+
+  // Initialize Sentry for crash reporting
+  let _sentry = sentry::init((
+    "https://public@sentry.parkflow.app/1",
+    sentry::ClientOptions {
+      release: Some("parkflow-desktop@0.1.0".into()),
+      environment: Some("production".into()),
+      ..Default::default()
+    },
+  ));
+
   let db_path = sqlite_path().expect("failed to resolve sqlite path");
-  let connection = init_local_db().expect("failed to initialize local sqlite");
-  start_offline_worker(db_path);
+  let _connection = init_local_db().expect("failed to initialize local sqlite");
+  start_offline_worker(db_path.clone());
 
   // Initialize licensing state
   let license_state = LicenseState::new().expect("failed to initialize licensing");
 
+  let rate_limiter = RateLimiter::new(30, 60); // 30 requests per minute
+
   tauri::Builder::default()
-    .manage(AppState {
-      // PERFORMANCE: Mutex blocks all access
-      db: Mutex::new(connection),
-    })
+    .plugin(tauri_plugin_updater::Builder::new().build())
+    .manage(AppState { db_path })
     .manage(license_state)
+    .manage(rate_limiter)
     .invoke_handler(tauri::generate_handler![
       ping,
+      check_for_updates,
       queue_print_job,
       list_print_jobs,
       update_print_job_status,

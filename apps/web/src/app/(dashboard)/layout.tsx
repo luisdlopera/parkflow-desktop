@@ -6,6 +6,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import MobileSidebar from "@/components/layout/MobileSidebar";
 import AuthGate from "@/components/auth/AuthGate";
 import OnboardingGate from "@/components/onboarding/OnboardingGate";
+import { PrintStatusMonitor } from "@/components/print/PrintStatusMonitor";
 import { useSidebar } from "@/lib/hooks/useSidebar";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -25,6 +26,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
           <Header onMenuClick={open} />
           <main className="flex-1 p-4 sm:p-6 lg:px-8 lg:py-6 overflow-y-auto">
+            <div className="flex items-center justify-end mb-4">
+              <PrintStatusMonitor />
+            </div>
             <div className="surface rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
               {children}
             </div>

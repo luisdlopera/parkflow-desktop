@@ -181,16 +181,10 @@ pub fn validate_license_offline(
 
   let days_remaining = (expires - now).num_days();
 
-  let grace_active = grace_until.map_or(false, |g| now < g && now > expires);
+  let grace_active = grace_until.is_some_and(|g| now < g && now > expires);
   let in_grace_period = grace_active;
 
-  let allows_ops = if now < expires {
-    true
-  } else if grace_active {
-    true // Permitir en período de gracia con advertencias
-  } else {
-    false
-  };
+  let allows_ops = now < expires || grace_active;
 
   let valid = license.status != "BLOCKED" && license.status != "REVOKED";
 
@@ -332,7 +326,7 @@ pub fn get_license_status(
     days_remaining: validation.days_remaining,
     grace_period_active: validation.grace_period_active,
     installed_at,
-    show_renewal_banner: validation.days_remaining.map_or(false, |d| d < 14),
+    show_renewal_banner: validation.days_remaining.is_some_and(|d| d < 14),
     days_until_block: if validation.grace_period_active {
       validation.days_remaining
     } else {
