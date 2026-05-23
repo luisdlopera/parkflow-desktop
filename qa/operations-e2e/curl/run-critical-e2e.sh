@@ -43,9 +43,7 @@ curl_json_debug() {
 
 echo "=== Step 1: Health check ==="
 health="$(curl -sS "$API_BASE/health")"
-echo "Health response: $health"
 assert_eq "$(jq -r '.status' <<<"$health")" "UP"
-echo "✓ Health check passed"
 
 echo "=== Step 2: Admin login ==="
 login_admin="$(curl_json POST "$API_BASE/auth/login" "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\",\"deviceId\":\"ci-admin-device\",\"deviceName\":\"CI Admin\",\"platform\":\"ci\",\"fingerprint\":\"ci-admin-fp\"}")"
