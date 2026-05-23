@@ -104,7 +104,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev pkg-config
+          sudo apt-get install -y libglib2.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev pkg-config
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
@@ -210,10 +210,10 @@ jobs:
       DB_URL: jdbc:postgresql://localhost:5432/parkflow
       DB_USERNAME: parkflow
       DB_PASSWORD: parkflow
-      PARKFLOW_API_KEY: ${{ secrets.PARKFLOW_API_KEY || 'ci-test-api-key-12345' }}
+      PARKFLOW_API_KEY: ${{ secrets.PARKFLOW_API_KEY }}
       PARKFLOW_JWT_SECRET_BASE64: ${{ secrets.PARKFLOW_JWT_SECRET_BASE64 || 'cGFya2Zsb3ctZGVmYXVsdC1iYXNlNjQtand0LXNlY3JldC1rZXktZm9yLWRldmVsb3BtZW50' }}
-      PARKFLOW_SEED_ADMIN_PASSWORD: ${{ secrets.PARKFLOW_SEED_ADMIN_PASSWORD || 'Admin123!' }}
-      PARKFLOW_SEED_CASHIER_PASSWORD: ${{ secrets.PARKFLOW_SEED_CASHIER_PASSWORD || 'Cashier123!' }}
+      PARKFLOW_SEED_ADMIN_PASSWORD: ${{ secrets.PARKFLOW_SEED_ADMIN_PASSWORD }}
+      PARKFLOW_SEED_CASHIER_PASSWORD: ${{ secrets.PARKFLOW_SEED_CASHIER_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4

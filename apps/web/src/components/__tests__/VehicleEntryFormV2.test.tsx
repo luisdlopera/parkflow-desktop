@@ -510,45 +510,6 @@ describe("VehicleEntryFormV2", () => {
     expect(screen.getAllByText(/Confirmar entrega y continuar/i).length).toBeGreaterThan(0);
   });
 
-  it("sends NP- plate (not null) when noPlate is checked", async () => {
-    let capturedBody: unknown = null;
-    server.use(
-      http.post("*/api/v1/operations/entries", async ({ request }) => {
-        capturedBody = await request.json();
-        return HttpResponse.json({
-          sessionId: "session-no-plate-np",
-          receipt: {
-            ticketNumber: "T-20260526-000099",
-            plate: "NP-TEST1234",
-            vehicleType: "CAR",
-            site: "Test Site",
-            entryAt: "2026-05-26T10:00:00Z",
-          },
-          message: "Ingreso registrado",
-        });
-      })
-    );
-
-    renderWithProviders(<VehicleEntryFormV2 />);
-    await flushPromises();
-
-    await userEvent.click(screen.getByLabelText(/Sin placa/i));
-    await userEvent.type(screen.getByLabelText(/Justificación sin placa/i), "Vehiculo oficial sin placa visible");
-
-    const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
-
-    await waitFor(() => {
-      expect(capturedBody).not.toBeNull();
-    });
-
-    const body = capturedBody as Record<string, unknown>;
-    expect(body.noPlate).toBe(true);
-    expect(body.plate).toMatch(/^NP-/);
-    expect(typeof body.plate).toBe("string");
-    expect(body.noPlateReason).toBe("Vehiculo oficial sin placa visible");
-  });
-
   it("does NOT show success when backend returns error", async () => {
     server.use(
       http.post("*/api/v1/operations/entries", () => {

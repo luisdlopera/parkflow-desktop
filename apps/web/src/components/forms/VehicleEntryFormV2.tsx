@@ -468,9 +468,7 @@ export default function VehicleEntryFormV2() {
     clearAutoSave();
 
     const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
-    const normalizedPlate = values.noPlate
-      ? `NP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
-      : normalizePlate(values.plate);
+    const normalizedPlate = values.noPlate ? null : normalizePlate(values.plate);
 
     const idempotencyFingerprint = JSON.stringify({
       plate: normalizedPlate ?? "",
@@ -490,14 +488,6 @@ export default function VehicleEntryFormV2() {
 
       const idempotencyKey = getOrCreateIdempotencyKey("entry", idempotencyFingerprint);
       idempotencyKeyRef.current = idempotencyKey;
-
-      let resolvedType = values.type;
-      if (!resolvedType || resolvedType === "CAR" || resolvedType === "OTHER") {
-        const inferredType = inferVehicleType(values.countryCode, values.plate);
-        if (inferredType) {
-          resolvedType = inferredType as VehicleType;
-        }
-      }
 
       const requestBody = validatePayloadOrThrow(
         operationEntryRequestSchema,
@@ -646,15 +636,15 @@ export default function VehicleEntryFormV2() {
         entryMode: values.entryMode ?? ""
       });
       if (isNetworkError(err)) {
-        const isQueued = await handleOfflineEntry(
-          form.getValues("plate"),
-          form.getValues("type"),
-          idempotencyFingerprint,
-          playSuccess,
-          toastSuccess,
-          toastError
-        );
-        if (isQueued) {
+        const queued = await queueOfflineOperation("ENTRY_RECORDED", {
+          plate: form.getValues("plate"),
+          type: form.getValues("type"),
+          occurredAtIso: new Date().toISOString(),
+          origin: "OFFLINE_PENDING_SYNC"
+        });
+        if (queued) {
+          clearIdempotencyKey("entry", idempotencyFingerprint);
+          toastSuccess("Sin internet: ingreso guardado en cola offline. Será sincronizado automáticamente.");
           incrementStats();
           form.reset({ plate: "", type: settings.defaultVehicleType, countryCode: "CO", entryMode: "VISITOR", noPlate: false, noPlateReason: "" });
           focusPlate();
@@ -1067,7 +1057,7 @@ export default function VehicleEntryFormV2() {
               color="primary"
               size={isSpeed ? "lg" : "md"}
               isLoading={form.formState.isSubmitting}
-              isDisabled={!!printWarning || (occupancy !== null && occupancy.availableSpaces <= 0)}
+              isDisabled={!!printWarning}
               className={`w-full font-bold ${isSpeed ? "text-lg shadow-xl" : ""}`}
               data-testid="register-entry"
             >
