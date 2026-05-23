@@ -18,8 +18,18 @@
       }
     ],
     "security": {
-      "csp": null,
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:* https://updates.parkflow.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
       "capabilities": ["default", "licensing"]
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://updates.parkflow.app/api/v1/update/{{target}}/{{current_version}}"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZCMDZCMjEwNjE4QUU3RDUKUldTNDRtbXJXYXRXdnFOWHVKNU5nMVlHN1ZxVzJBS2wxT3ZsNkx3Y1J5c1pQaGlJS3R5czNsdEEK",
+      "dialog": true
     }
   },
   "bundle": {

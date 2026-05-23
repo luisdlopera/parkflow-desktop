@@ -319,7 +319,7 @@ describe("VehicleEntryFormV2", () => {
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/revisa los datos/i)).toBeInTheDocument();
+      expect(screen.getByTestId("error-message")).toHaveTextContent(/revisa los datos/i);
     });
   });
 
@@ -425,7 +425,7 @@ describe("VehicleEntryFormV2", () => {
     await userEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/revisa los datos/i)).toBeInTheDocument();
+      expect(screen.getByTestId("error-message")).toHaveTextContent(/revisa los datos/i);
     });
 
     await userEvent.click(submitBtn);

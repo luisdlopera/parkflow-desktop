@@ -166,23 +166,12 @@ impl TamperDetector {
   }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 struct TimestampRecord {
   timestamps: Vec<i64>,
   violation_count: i32,
   consecutive_rollbacks: i32,
   last_check: i64,
-}
-
-impl Default for TimestampRecord {
-  fn default() -> Self {
-    TimestampRecord {
-      timestamps: Vec::new(),
-      violation_count: 0,
-      consecutive_rollbacks: 0,
-      last_check: 0,
-    }
-  }
 }
 
 #[cfg(test)]
