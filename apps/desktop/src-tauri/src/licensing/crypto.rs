@@ -2,7 +2,9 @@ use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use sha2::{Digest, Sha256};
 
 /// Validador de firmas de licencia
+#[derive(Default)]
 pub struct LicenseValidator {
+  #[allow(dead_code)]
   embedded_public_key: Option<String>,
 }
 
