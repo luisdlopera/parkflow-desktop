@@ -158,6 +158,7 @@ jobs:
           --health-retries 10
     env:
       SPRING_PROFILES_ACTIVE: dev
+      PARKFLOW_API_PORT: 8080
       DB_URL: jdbc:postgresql://localhost:5432/parkflow
       DB_USERNAME: parkflow
       DB_PASSWORD: parkflow
