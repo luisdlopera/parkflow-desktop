@@ -31,6 +31,12 @@ jobs:
       - run: pnpm --filter @parkflow/web typecheck
       - run: pnpm --filter @parkflow/web test
       - run: pnpm --filter @parkflow/web test:coverage
+      - name: Upload web coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-coverage
+          path: apps/web/coverage/lcov.info
+          retention-days: 5
 
   unit_tests:
     name: Unit tests (API)
@@ -47,6 +53,12 @@ jobs:
           gradle-version: 8.8
       - name: Run API unit tests + coverage verification
         run: ./apps/api/gradlew -p apps/api check
+      - name: Upload API coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage
+          path: apps/api/build/reports/jacoco/test/jacocoTestReport.xml
+          retention-days: 5
 
   integration_regression:
     name: Integration + regression checks
@@ -200,3 +212,40 @@ jobs:
         with:
           name: api-log
           path: /tmp/api.log
+
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    needs: [lint_typecheck, unit_tests]
+    if: github.event_name != 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download web coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: web-coverage
+          path: apps/web/coverage/
+
+      - name: Download API coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: api-coverage
+          path: apps/api/build/reports/jacoco/test/
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Build API (for compiled classes)
+        run: ./apps/api/gradlew -p apps/api compileJava compileTestJava
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

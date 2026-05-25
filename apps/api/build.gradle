@@ -14,6 +14,7 @@ plugins {
   id 'io.spring.dependency-management' version '1.1.6'
   id 'org.flywaydb.flyway' version '10.10.0'
   id 'jacoco'
+  id 'org.sonarqube' version '5.1.0.4882'
 }
 
 group = 'com.parkflow'
@@ -117,4 +118,13 @@ flyway {
   user = 'parkflow'
   password = 'parkflow'
   driver = 'org.postgresql.Driver'
+}
+
+sonar {
+  properties {
+    property 'sonar.projectKey', 'luisdlopera_parkflow-desktop'
+    property 'sonar.organization', 'luisdlopera'
+    property 'sonar.host.url', 'https://sonarcloud.io'
+    property 'sonar.coverage.jacoco.xmlReportPaths', 'build/reports/jacoco/test/jacocoTestReport.xml'
+  }
 }
