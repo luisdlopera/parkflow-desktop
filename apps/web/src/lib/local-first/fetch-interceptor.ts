@@ -1,144 +1,14 @@
 import { isLocalFirstMode } from "./config";
 
-type ActiveTicketDto = {
-  id: string;
-  ticketNumber: string;
-  siteId: string;
-  vehiclePlate: string;
-  vehicleType: string;
-  status: string;
-  entryAt: string;
-  exitAt: string | null;
-  totalAmount: number;
-  graceMinutes: number;
-  fractionMinutes: number;
-  lostTicketSurcharge: number;
-};
-
-type LocalSearchResponseDto = {
-  query: string;
-  results: Record<string, Array<{
-    id: string;
-    searchType: string;
-    title: string;
-    subtitle: string;
-    actionUrl: string;
-    score: number;
-    status?: string | null;
-  }>>;
-  processingTimeMs: number;
-};
-
-type ExitResponseDto = {
-  sessionId: string;
-  ticketNumber: string;
-  plate: string;
-  vehicleType: string;
-  amount: number;
-  exitedAt: string;
-};
-
-function formatDuration(entryAtIso: string): { duration: string; totalMinutes: number } {
-  const entryTime = new Date(entryAtIso).getTime();
-  const diffMs = Date.now() - entryTime;
-  const totalMinutes = Math.max(0, Math.floor(diffMs / 60000));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours > 0) {
-    return { duration: `${hours}h ${minutes}m`, totalMinutes };
-  }
-  return { duration: `${minutes}m`, totalMinutes };
-}
-
-function mapActiveSessionResponse(dto: ActiveTicketDto) {
-  const { duration, totalMinutes } = formatDuration(dto.entryAt);
-  return {
-    sessionId: dto.id,
-    receipt: {
-      ticketNumber: dto.ticketNumber,
-      plate: dto.vehiclePlate,
-      vehicleType: dto.vehicleType,
-      site: null,
-      lane: null,
-      booth: null,
-      terminal: null,
-      entryOperatorName: null,
-      exitOperatorName: null,
-      entryAt: dto.entryAt,
-      exitAt: dto.exitAt,
-      totalMinutes,
-      duration,
-      totalAmount: dto.totalAmount,
-      rateName: null,
-      status: dto.status,
-      lostTicket: false,
-      reprintCount: 0,
-      entryImageUrl: null,
-      exitImageUrl: null,
-      syncStatus: null,
-      entryMode: "VISITOR",
-      monthlySession: false,
-      agreementCode: null,
-      prepaidMinutes: null,
-      parkingSpaceId: null,
-      parkingSpaceCode: null,
-      parkingSpaceLabel: null,
-    },
-    message: null,
-    subtotal: dto.totalAmount,
-    surcharge: 0,
-    discount: 0,
-    deductedMinutes: null,
-    total: dto.totalAmount,
-  };
-}
-
-function mapExitResponse(dto: ExitResponseDto, entryAt?: string | null) {
-  return {
-    sessionId: dto.sessionId,
-    receipt: {
-      ticketNumber: dto.ticketNumber,
-      plate: dto.plate,
-      vehicleType: dto.vehicleType,
-      site: null,
-      lane: null,
-      booth: null,
-      terminal: null,
-      entryOperatorName: null,
-      exitOperatorName: null,
-      entryAt: entryAt ?? null,
-      exitAt: dto.exitedAt,
-      totalMinutes: 0,
-      duration: "",
-      totalAmount: dto.amount,
-      rateName: null,
-      status: "PAID",
-      lostTicket: false,
-      reprintCount: 0,
-      entryImageUrl: null,
-      exitImageUrl: null,
-      syncStatus: null,
-      entryMode: "VISITOR",
-      monthlySession: false,
-      agreementCode: null,
-      prepaidMinutes: null,
-      parkingSpaceId: null,
-      parkingSpaceCode: null,
-      parkingSpaceLabel: null,
-    },
-    message: null,
-    subtotal: dto.amount,
-    surcharge: 0,
-    discount: 0,
-    deductedMinutes: null,
-    total: dto.amount,
-  };
-}
-
 export async function handleLocalFirstFetch(
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<Response | null> {
+  const isLocal = await isLocalFirstMode();
+  if (!isLocal) {
+    return null;
+  }
+
   const urlStr = typeof input === "string" || input instanceof URL ? String(input) : input.url;
   const method = init?.method?.toUpperCase() ?? "GET";
 
@@ -160,11 +30,6 @@ export async function handleLocalFirstFetch(
 
   // Intercept operations and auth API endpoints
   if (!pathname.includes("/api/v1/")) {
-    return null;
-  }
-
-  const isLocal = await isLocalFirstMode();
-  if (!isLocal) {
     return null;
   }
 
@@ -201,80 +66,12 @@ export async function handleLocalFirstFetch(
       return jsonResponse(result);
     }
 
-    if (
-      pathname.endsWith("/auth/profile") ||
-      pathname.endsWith("/auth/me") ||
-      pathname.endsWith("/auth/change-password")
-    ) {
-      const { loadSession } = await import("@/lib/auth");
-      const session = await loadSession();
-      const userId = session?.user?.id;
-      if (!userId) {
-        return new Response(
-          JSON.stringify({
-            code: "UNAUTHORIZED",
-            userMessage: "Debe iniciar sesion para continuar",
-          }),
-          { status: 401, headers: { "Content-Type": "application/json" } }
-        );
-      }
-
-      if (pathname.endsWith("/auth/profile") && method === "GET") {
-        const result = await invoke("local_get_profile", { userId });
-        return jsonResponse(result);
-      }
-
-      if (pathname.endsWith("/auth/profile") && method === "PATCH") {
-        const body = getBody();
-        const result = await invoke("local_update_profile", {
-          userId,
-          name: body.name,
-          email: body.email,
-          document: body.document ?? null,
-          phone: body.phone ?? null,
-          site: body.site ?? null,
-          terminal: body.terminal ?? null,
-        });
-        return jsonResponse(result);
-      }
-
-      if (pathname.endsWith("/auth/me") && method === "GET") {
-        const profile = await invoke<{
-          id: string;
-          name: string;
-          email: string;
-          role: string;
-          active: boolean;
-          passwordChangedAt: string | null;
-        }>("local_get_profile", { userId });
-        return jsonResponse({
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          role: profile.role,
-          permissions: localPermissionsForRole(profile.role),
-          active: profile.active,
-          passwordChangedAt: profile.passwordChangedAt,
-        });
-      }
-
-      if (pathname.endsWith("/auth/change-password") && method === "POST") {
-        const body = getBody();
-        await invoke("local_change_password", {
-          userId,
-          currentPassword: body.currentPassword,
-          newPassword: body.newPassword,
-        });
-        return new Response(null, { status: 204 });
-      }
-    }
-
     // 2. Settings / Configuration Settings
     if (pathname.includes("/onboarding/companies/") && pathname.endsWith("/settings") && method === "GET") {
       // /api/v1/onboarding/companies/{id}/settings
       const parts = pathname.split("/");
       const companyId = parts[parts.indexOf("companies") + 1] || "00000000-0000-0000-0000-000000000001";
-      const result = await invoke("local_get_settings", { companyId: companyId });
+      const result = await invoke("local_get_settings", { companyId });
       return jsonResponse(result);
     }
 
@@ -322,34 +119,11 @@ export async function handleLocalFirstFetch(
     if (pathname.endsWith("/operations/sessions/active") && method === "GET") {
       const plate = searchParams.get("plate");
       const ticketNumber = searchParams.get("ticketNumber");
-      const result = await invoke<ActiveTicketDto>("local_get_active_session", {
+      const result = await invoke("local_get_active_session", {
         plate: plate || null,
         ticketNumber: ticketNumber || null,
       });
-      return jsonResponse(mapActiveSessionResponse(result));
-    }
-
-    if (pathname.endsWith("/search") && method === "GET") {
-      const q = searchParams.get("q") || "";
-      const result = await invoke<LocalSearchResponseDto>("local_search_global", { q });
-      return jsonResponse({
-        query: result.query,
-        processingTimeMs: result.processingTimeMs,
-        results: Object.fromEntries(
-          Object.entries(result.results).map(([key, items]) => [
-            key,
-            items.map((item) => ({
-              id: item.id,
-              type: item.searchType,
-              title: item.title,
-              subtitle: item.subtitle,
-              actionUrl: item.actionUrl,
-              score: item.score,
-              metadata: item.status ? { status: item.status } : {},
-            })),
-          ])
-        ),
-      });
+      return jsonResponse(result);
     }
 
     // 7. Parking Space Management
@@ -411,67 +185,33 @@ export async function handleLocalFirstFetch(
     // 9. Exits (Vehicle Exit)
     if (pathname.endsWith("/operations/exits") && method === "POST") {
       const body = getBody();
-      const ticketNumber = body.ticketNumber;
-      const plate = body.plate;
-      if (!ticketNumber && !plate) {
-        return new Response(JSON.stringify({ error: "ticketNumber o plate es obligatorio" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      const activeTicket = await invoke<ActiveTicketDto>("local_get_active_session", {
-        plate: plate || null,
-        ticketNumber: ticketNumber || null,
-      });
-      const result = await invoke<ExitResponseDto>("local_create_exit", {
-        ticketId: activeTicket.id,
+      const result = await invoke("local_create_exit", {
+        ticketId: body.sessionId || body.ticketId,
         paymentMethod: body.paymentMethod,
-        amountPaid: 0,
-        reference: body.observations || null,
+        amountPaid: Number(body.amount),
+        reference: body.reference || null,
         cashSessionId: body.cashSessionId || null,
       });
-      return jsonResponse(mapExitResponse(result, activeTicket.entryAt));
+      return jsonResponse(result);
     }
 
     // 10. Reprint / Lost ticket
     if (pathname.endsWith("/operations/tickets/reprint") && method === "POST") {
       const body = getBody();
-      const ticketNumber = body.ticketNumber;
-      if (!ticketNumber) {
-        return new Response(JSON.stringify({ error: "ticketNumber es obligatorio" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      const activeTicket = await invoke<ActiveTicketDto>("local_get_active_session", {
-        plate: null,
-        ticketNumber,
-      });
-      await invoke("local_reprint_ticket", { ticketId: activeTicket.id });
-      return jsonResponse(mapActiveSessionResponse(activeTicket));
+      await invoke("local_reprint_ticket", { ticketId: body.ticketNumber });
+      return jsonResponse({ success: true });
     }
 
     if (pathname.endsWith("/operations/tickets/lost") && method === "POST") {
       const body = getBody();
-      const ticketNumber = body.ticketNumber;
-      if (!ticketNumber) {
-        return new Response(JSON.stringify({ error: "ticketNumber es obligatorio" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      const activeTicket = await invoke<ActiveTicketDto>("local_get_active_session", {
-        plate: null,
-        ticketNumber,
-      });
-      const result = await invoke<ExitResponseDto>("local_process_lost_ticket", {
-        ticketId: activeTicket.id,
-        surcharge: Number(body.surcharge) || activeTicket.lostTicketSurcharge,
+      const result = await invoke("local_process_lost_ticket", {
+        ticketId: body.sessionId || body.ticketId,
+        surcharge: Number(body.surcharge),
         paymentMethod: body.paymentMethod,
         reference: body.reference || null,
         cashSessionId: body.cashSessionId || null,
       });
-      return jsonResponse(mapExitResponse(result, activeTicket.entryAt));
+      return jsonResponse(result);
     }
 
     // 11. Cash drawer policies & list registers
@@ -604,102 +344,12 @@ export async function handleLocalFirstFetch(
       const result = await invoke("local_get_rates");
       return jsonResponse(result);
     }
-
-    // 14. Initial Admin Setup Check
-    if (pathname.endsWith("/auth/setup-required") && method === "GET") {
-      const result = await invoke("local_is_setup_required");
-      return jsonResponse({ setupRequired: result });
-    }
-
-    if (pathname.endsWith("/auth/setup") && method === "POST") {
-      const body = getBody();
-      const result = await invoke("local_setup_initial_admin", {
-        email: body.email,
-        password: body.password,
-        name: body.name,
-        companyName: body.companyName,
-        nit: body.nit,
-      });
-      return jsonResponse(result);
-    }
-
-    // 15. Onboarding status and actions
-    if (pathname.includes("/onboarding/companies/")) {
-      const parts = pathname.split("/");
-      const compId = parts[parts.indexOf("companies") + 1] || "00000000-0000-0000-0000-000000000001";
-
-      if (pathname.endsWith("/steps") && method === "PUT") {
-        const body = getBody();
-        const result = await invoke("local_save_onboarding_step", {
-          companyId: compId,
-          step: Number(body.step),
-          data: body.data || {},
-        });
-        return jsonResponse(result);
-      }
-
-      if (pathname.endsWith("/complete") && method === "POST") {
-        const result = await invoke("local_complete_onboarding", { companyId: compId });
-        return jsonResponse(result);
-      }
-
-      if (pathname.endsWith("/skip") && method === "POST") {
-        const result = await invoke("local_skip_onboarding", { companyId: compId });
-        return jsonResponse(result);
-      }
-
-      if (pathname.endsWith("/capabilities") && method === "GET") {
-        const result = {
-          onboardingCompleted: true,
-          allowMultiLocation: false,
-          allowAdvancedPermissions: true,
-          cashEnabled: true,
-          shiftsEnabled: true,
-          clientsEnabled: true,
-          agreementsEnabled: true,
-          activeVehicleTypes: 6,
-          activePaymentMethods: 8,
-          activeSites: 1,
-          vehicleTypes: ["CAR", "MOTORCYCLE", "VAN", "TRUCK", "BICYCLE", "OTHER"],
-          paymentMethods: ["CASH", "DEBIT_CARD", "CREDIT_CARD", "NEQUI", "DAVIPLATA", "TRANSFER", "QR", "OTHER"],
-        };
-        return jsonResponse(result);
-      }
-
-      // Default GET status: /api/v1/onboarding/companies/{id}
-      if (method === "GET" && !pathname.endsWith("/settings")) {
-        const result = await invoke("local_get_onboarding_status", { companyId: compId });
-        return jsonResponse(result);
-      }
-    }
   } catch (err) {
     console.error("Local first interceptor error matching path:", pathname, err);
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
-  }
-
-  // Settings / Configuration endpoints not available in local-first mode
-  const isSettingsEndpoint =
-    pathname.includes("/settings/") ||
-    pathname.includes("/configuration/") ||
-    pathname.includes("/monthly-contracts") ||
-    pathname.includes("/agreements") ||
-    pathname.includes("/prepaid/");
-
-  if (isSettingsEndpoint) {
-    return new Response(
-      JSON.stringify({
-        code: "OFFLINE_NOT_SUPPORTED",
-        userMessage: "Esta funcion no esta disponible en modo offline. Conecte el servidor para acceder a configuraciones avanzadas.",
-        developerMessage: `Endpoint ${pathname} not implemented in local-first mode`,
-      }),
-      {
-        status: 503,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
   }
 
   return null;
@@ -710,46 +360,4 @@ function jsonResponse(data: unknown): Response {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
-}
-
-/** Mirrors `permissions_for_role` in desktop `local_first.rs`. */
-function localPermissionsForRole(role: string): string[] {
-  switch (role) {
-    case "SUPER_ADMIN":
-    case "ADMIN":
-      return [
-        "tickets:emitir",
-        "tickets:imprimir",
-        "cobros:registrar",
-        "anulaciones:crear",
-        "tarifas:leer",
-        "usuarios:leer",
-        "usuarios:editar",
-        "cierres_caja:abrir",
-        "cierres_caja:cerrar",
-        "reportes:leer",
-        "configuracion:leer",
-        "configuracion:editar",
-      ];
-    case "CAJERO":
-      return [
-        "tickets:emitir",
-        "tickets:imprimir",
-        "cobros:registrar",
-        "cierres_caja:abrir",
-        "cierres_caja:cerrar",
-      ];
-    case "OPERADOR":
-      return [
-        "tickets:emitir",
-        "tickets:imprimir",
-        "cobros:registrar",
-        "tarifas:leer",
-        "cierres_caja:abrir",
-      ];
-    case "AUDITOR":
-      return ["reportes:leer", "usuarios:leer", "configuracion:leer"];
-    default:
-      return ["tickets:emitir", "tickets:imprimir", "cobros:registrar"];
-  }
 }

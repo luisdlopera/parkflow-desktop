@@ -1,6 +1,5 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
@@ -24,20 +23,15 @@ pub struct LocalUserDto {
   pub role: String,
   pub permissions: Vec<String>,
   pub company_id: String,
-  pub active: bool,
-  pub password_changed_at_iso: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalSessionInfoDto {
   pub session_id: String,
-  pub user_id: String,
   pub device_id: String,
-  pub issued_at_iso: String,
   pub access_token_expires_at_iso: String,
   pub refresh_token_expires_at_iso: String,
-  pub last_seen_at_iso: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,65 +43,11 @@ pub struct LocalOfflineLeaseDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct LocalDeviceDto {
-  pub id: String,
-  pub display_name: String,
-  pub platform: String,
-  pub fingerprint: String,
-  pub authorized: bool,
-  pub revoked_at_iso: Option<String>,
-  pub last_seen_at_iso: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LocalProfileDto {
-  pub id: String,
-  pub name: String,
-  pub email: String,
-  pub document: Option<String>,
-  pub phone: Option<String>,
-  pub role: String,
-  pub site: Option<String>,
-  pub terminal: Option<String>,
-  pub active: bool,
-  pub can_void_tickets: bool,
-  pub can_reprint_tickets: bool,
-  pub can_close_cash: bool,
-  pub require_password_change: bool,
-  pub last_access_at: Option<String>,
-  pub password_changed_at: Option<String>,
-  pub created_at: String,
-  pub updated_at: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LocalUpdateProfileRequest {
-  pub name: String,
-  pub email: String,
-  pub document: Option<String>,
-  pub phone: Option<String>,
-  pub site: Option<String>,
-  pub terminal: Option<String>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LocalChangePasswordRequest {
-  pub current_password: String,
-  pub new_password: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct LocalStoredSession {
   pub access_token: String,
   pub refresh_token: String,
-  pub token_type: String,
   pub user: LocalUserDto,
   pub session: LocalSessionInfoDto,
-  pub device: LocalDeviceDto,
   pub offline_lease: Option<LocalOfflineLeaseDto>,
 }
 
@@ -136,26 +76,6 @@ pub struct LocalActiveSessionRow {
   pub entry_at: String, // ISO
   pub status: String,
   pub total_amount: Option<i64>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LocalSearchResultDto {
-  pub id: String,
-  pub search_type: String,
-  pub title: String,
-  pub subtitle: String,
-  pub action_url: String,
-  pub score: f64,
-  pub status: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LocalSearchResponseDto {
-  pub query: String,
-  pub results: std::collections::BTreeMap<String, Vec<LocalSearchResultDto>>,
-  pub processing_time_ms: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -322,183 +242,13 @@ pub struct LocalRateDto {
 }
 
 // =============================================================================
-// Report DTOs
-// =============================================================================
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DailyOperationsRowDto {
-  pub date: String,
-  pub entries: i64,
-  pub exits: i64,
-  pub lost_tickets: i64,
-  pub cash_total: f64,
-  pub card_total: f64,
-  pub transfer_total: f64,
-  pub other_total: f64,
-  pub grand_total: f64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VehicleTypeReportRowDto {
-  pub vehicle_type: String,
-  pub active_count: i64,
-  pub entries_today: i64,
-  pub exits_today: i64,
-  pub revenue_today: f64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CashSessionHistoryRowDto {
-  pub id: String,
-  pub opened_at: String,
-  pub closed_at: Option<String>,
-  pub operator_name: Option<String>,
-  pub status: String,
-  pub opening_amount: f64,
-  pub expected_amount: f64,
-  pub counted_amount: Option<f64>,
-  pub difference: Option<f64>,
-  pub movement_count: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ReportCsvDataDto {
-  pub headers: Vec<String>,
-  pub rows: Vec<Vec<String>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VoidedTicketDto {
-  pub id: String,
-  pub movement_type: String,
-  pub display_name: String,
-  pub payment_method: String,
-  pub amount: f64,
-  pub reason: Option<String>,
-  pub void_reason: Option<String>,
-  pub voided_by_name: Option<String>,
-  pub voided_at: String,
-  pub created_at: String,
-  pub cash_session_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PaidTicketDto {
-  pub ticket_number: String,
-  pub plate: String,
-  pub vehicle_type: String,
-  pub amount: f64,
-  pub payment_method: String,
-  pub paid_at: String,
-  pub entry_at: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IncomeExpenseSummaryDto {
-  pub income_total: f64,
-  pub expense_total: f64,
-  pub net_total: f64,
-  pub breakdown: Vec<IncomeExpenseRowDto>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IncomeExpenseRowDto {
-  pub movement_type: String,
-  pub display_name: String,
-  pub amount: f64,
-  pub count: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OccupancyReportDto {
-  pub total_spaces: i64,
-  pub occupied_spaces: i64,
-  pub available_spaces: i64,
-  pub occupancy_percentage: f64,
-  pub by_vehicle_type: Vec<OccupancyByTypeDto>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OccupancyByTypeDto {
-  pub vehicle_type: String,
-  pub occupied: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OperatorReportRowDto {
-  pub operator_id: String,
-  pub operator_name: String,
-  pub transaction_count: i64,
-  pub total_amount: f64,
-  pub cash_amount: f64,
-  pub card_amount: f64,
-  pub transfer_amount: f64,
-  pub other_amount: f64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PaymentMethodReportRowDto {
-  pub payment_method: String,
-  pub display_name: String,
-  pub transaction_count: i64,
-  pub total_amount: f64,
-  pub percentage: f64,
-}
-
-// =============================================================================
-// Helper: midnight unix ms for date filtering
-// =============================================================================
-
-fn midnight_unix_ms(date_str: &str) -> Option<i64> {
-  let naive =
-    chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok()?;
-  let datetime = naive.and_hms_opt(0, 0, 0)?;
-  Some(datetime.and_utc().timestamp_millis())
-}
-
-fn today_start_ms() -> i64 {
-  let now = chrono::Utc::now();
-  let date = now.date_naive();
-  let datetime = date.and_hms_opt(0, 0, 0).unwrap();
-  datetime.and_utc().timestamp_millis()
-}
-
-fn classify_payment_method(pm: &str) -> &str {
-  match pm.to_uppercase().as_str() {
-    "CASH" => "CASH",
-    "DEBIT_CARD" | "CREDIT_CARD" | "CARD" => "CARD",
-    "TRANSFER" => "TRANSFER",
-    _ => "OTHER",
-  }
-}
-
-// =============================================================================
 // Database Initialization & Seeding
 // =============================================================================
 
 fn get_db_passphrase() -> Result<String, String> {
-  #[cfg(debug_assertions)]
-  {
-    return Ok("dev-db-passphrase".to_string());
-  }
-  #[cfg(not(debug_assertions))]
-  {
-    let entry = keyring::Entry::new("com.parkflow.desktop", "db-passphrase")
-      .map_err(|e| format!("keyring entry failed: {}", e))?;
-    entry.get_password().map_err(|e| format!("keyring get failed: {}", e))
-  }
+  let entry = keyring::Entry::new("com.parkflow.desktop", "db-passphrase")
+    .map_err(|e| format!("keyring entry failed: {}", e))?;
+  entry.get_password().map_err(|e| format!("keyring get failed: {}", e))
 }
 
 pub fn open_local_connection(db_path: &Path) -> Result<Connection, String> {
@@ -614,13 +364,7 @@ pub fn init_schema_tables(conn: &Connection) -> Result<(), rusqlite::Error> {
       notes TEXT,
       closing_notes TEXT,
       closed_at_unix_ms INTEGER,
-      opened_at_unix_ms INTEGER NOT NULL,
-      count_cash INTEGER,
-      count_card INTEGER,
-      count_transfer INTEGER,
-      count_other INTEGER,
-      counted_at_unix_ms INTEGER,
-      count_operator_id TEXT
+      opened_at_unix_ms INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS local_cash_movements (
@@ -656,158 +400,108 @@ pub fn init_schema_tables(conn: &Connection) -> Result<(), rusqlite::Error> {
       created_at INTEGER NOT NULL,
       synced_at INTEGER
     );
-
-    CREATE TABLE IF NOT EXISTS local_settings (
-      setting_key TEXT PRIMARY KEY,
-      setting_value TEXT NOT NULL,
-      updated_at_unix_ms INTEGER NOT NULL
-    );
     ",
   )?;
-
-  let columns = [
-    ("count_cash", "INTEGER"),
-    ("count_card", "INTEGER"),
-    ("count_transfer", "INTEGER"),
-    ("count_other", "INTEGER"),
-    ("counted_at_unix_ms", "INTEGER"),
-    ("count_operator_id", "TEXT"),
-    ("terminal", "TEXT"),
-  ];
-  for (name, col_type) in &columns {
-    ensure_column(conn, "local_cash_sessions", name, col_type)?;
-  }
-
-  let movement_columns = [
-    ("parking_session_id", "TEXT"),
-    ("status", "TEXT NOT NULL DEFAULT 'ACTIVE'"),
-    ("voided_at_unix_ms", "INTEGER"),
-    ("void_reason", "TEXT"),
-    ("voided_by_id", "TEXT"),
-    ("voided_by_name", "TEXT"),
-    ("created_by_id", "TEXT"),
-    ("created_by_name", "TEXT"),
-    ("terminal", "TEXT"),
-    ("idempotency_key", "TEXT"),
-  ];
-  for (name, col_type) in &movement_columns {
-    ensure_column(conn, "local_cash_movements", name, col_type)?;
-  }
-
-  let user_columns = [
-    ("document", "TEXT"),
-    ("phone", "TEXT"),
-    ("site", "TEXT"),
-    ("terminal", "TEXT"),
-    ("last_access_at_unix_ms", "INTEGER"),
-    ("password_changed_at_unix_ms", "INTEGER"),
-  ];
-  for (name, col_type) in &user_columns {
-    ensure_column(conn, "local_users", name, col_type)?;
-  }
 
   seed_local_database(conn)?;
   Ok(())
 }
 
 fn seed_local_database(conn: &Connection) -> Result<(), rusqlite::Error> {
-  let company_count: i64 = conn.query_row("SELECT COUNT(*) FROM local_companies", [], |r| r.get(0))?;
-  let now = chrono::Utc::now().timestamp_millis();
-
-  if company_count == 0 {
-    // 1. Seed company
-    conn.execute(
-      "INSERT INTO local_companies (id, name, legal_name, nit, email, slug, status, created_at_unix_ms)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-      params![
-        "00000000-0000-0000-0000-000000000001",
-        "Empresa Demo Local",
-        "Empresa Demo Local S.A.S.",
-        "900123456",
-        "admin@parkflow.local",
-        "empresa-demo-local",
-        "ACTIVE",
-        now
-      ],
-    )?;
-
-    // 2. Seed site
-    conn.execute(
-      "INSERT INTO local_parking_sites (id, company_id, code, name, city, timezone, currency, max_capacity, created_at_unix_ms)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-      params![
-        "00000000-0000-0000-0000-000000000002",
-        "00000000-0000-0000-0000-000000000001",
-        "DEFAULT",
-        "Sede Principal Local",
-        "Bogota",
-        "America/Bogota",
-        "COP",
-        50,
-        now
-      ],
-    )?;
-
-    // 3. Seed operational parameters
-    conn.execute(
-      "INSERT INTO local_operational_parameters (site_id, allow_reprint, allow_void, tolerance_minutes, max_time_no_charge, offline_mode_enabled)
-       VALUES (?1, 1, 1, 5, 15, 1)",
-      params!["00000000-0000-0000-0000-000000000002"],
-    )?;
-
-    // 4. Seed default rates
-    let default_rates = vec![
-      ("CAR", "Tarifa Carro Local", 2000),
-      ("MOTORCYCLE", "Tarifa Moto Local", 1000),
-      ("VAN", "Tarifa Van Local", 3000),
-      ("TRUCK", "Tarifa Camion Local", 5000),
-      ("BICYCLE", "Tarifa Bici Local", 500),
-      ("OTHER", "Tarifa Otro Local", 2000),
-    ];
-
-    for (v_type, name, amount) in default_rates {
-      let id = format!("rate-{}", v_type.to_lowercase());
-      conn.execute(
-        "INSERT INTO local_rates (id, name, vehicle_type, rate_type, amount, grace_minutes, fraction_minutes, max_daily_value, lost_ticket_surcharge, is_active)
-         VALUES (?1, ?2, ?3, 'HOURLY', ?4, 5, 60, ?5, 15000, 1)",
-        params![id, name, v_type, amount, amount * 10],
-      )?;
-    }
-
-    // 5. Seed some default spaces
-    for i in 1..=50 {
-      let id = format!("space-{}", i);
-      let code = format!("P-{:03}", i);
-      conn.execute(
-        "INSERT INTO local_parking_spaces (id, site_id, code, status, vehicle_type, updated_at_unix_ms)
-         VALUES (?1, ?2, ?3, 'AVAILABLE', 'CAR', ?4)",
-        params![
-          id,
-          "00000000-0000-0000-0000-000000000002",
-          code,
-          now
-        ],
-      )?;
-    }
+  let count: i64 = conn.query_row("SELECT COUNT(*) FROM local_users", [], |r| r.get(0))?;
+  if count > 0 {
+    return Ok(());
   }
 
-  // 6. Seed default users if none exist (offline login support)
-  let user_count: i64 = conn.query_row("SELECT COUNT(*) FROM local_users", [], |r| r.get(0))?;
-  if user_count == 0 {
-    let password = "Qwert.12345";
-    let hashed = bcrypt::hash(password, 12).map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))))?;
+  let now = chrono::Utc::now().timestamp_millis();
 
+  // 1. Seed user (password: Qwert.12345)
+  conn.execute(
+    "INSERT INTO local_users (id, company_id, name, email, role, password_hash, is_active, created_at_unix_ms, updated_at_unix_ms)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1, ?7, ?7)",
+    params![
+      "00000000-0000-0000-0000-000000000003",
+      "00000000-0000-0000-0000-000000000001",
+      "Administrador Local",
+      "admin@parkflow.local",
+      "SUPER_ADMIN",
+      "$2b$12$bU4bjxtQIMHP/us3972HTuIz.OM2128W34BtysTTH1AeqjInkGcRe", // Qwert.12345
+      now
+    ],
+  )?;
+
+  // 2. Seed company
+  conn.execute(
+    "INSERT INTO local_companies (id, name, legal_name, nit, email, slug, status, created_at_unix_ms)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+    params![
+      "00000000-0000-0000-0000-000000000001",
+      "Empresa Demo Local",
+      "Empresa Demo Local S.A.S.",
+      "900123456",
+      "admin@parkflow.local",
+      "empresa-demo-local",
+      "ACTIVE",
+      now
+    ],
+  )?;
+
+  // 3. Seed site
+  conn.execute(
+    "INSERT INTO local_parking_sites (id, company_id, code, name, city, timezone, currency, max_capacity, created_at_unix_ms)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+    params![
+      "00000000-0000-0000-0000-000000000002",
+      "00000000-0000-0000-0000-000000000001",
+      "DEFAULT",
+      "Sede Principal Local",
+      "Bogota",
+      "America/Bogota",
+      "COP",
+      50,
+      now
+    ],
+  )?;
+
+  // 4. Seed operational parameters
+  conn.execute(
+    "INSERT INTO local_operational_parameters (site_id, allow_reprint, allow_void, tolerance_minutes, max_time_no_charge, offline_mode_enabled)
+     VALUES (?1, 1, 1, 5, 15, 1)",
+    params!["00000000-0000-0000-0000-000000000002"],
+  )?;
+
+  // 5. Seed default rates
+  let default_rates = vec![
+    ("CAR", "Tarifa Carro Local", 2000),
+    ("MOTORCYCLE", "Tarifa Moto Local", 1000),
+    ("VAN", "Tarifa Van Local", 3000),
+    ("TRUCK", "Tarifa Camion Local", 5000),
+    ("BICYCLE", "Tarifa Bici Local", 500),
+    ("OTHER", "Tarifa Otro Local", 2000),
+  ];
+
+  for (v_type, name, amount) in default_rates {
+    let id = format!("rate-{}", v_type.to_lowercase());
     conn.execute(
-      "INSERT INTO local_users (id, company_id, name, email, role, password_hash, is_active, can_void_tickets, can_reprint_tickets, can_close_cash, require_password_change, created_at_unix_ms, updated_at_unix_ms)
-       VALUES (?1, ?2, ?3, ?4, 'SUPER_ADMIN', ?5, 1, 1, 1, 1, 0, ?6, ?6)",
-      params!["00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000001", "Administrador", "admin@parkflow.local", hashed, now],
+      "INSERT INTO local_rates (id, name, vehicle_type, rate_type, amount, grace_minutes, fraction_minutes, max_daily_value, lost_ticket_surcharge, is_active)
+       VALUES (?1, ?2, ?3, 'HOURLY', ?4, 5, 60, ?5, 15000, 1)",
+      params![id, name, v_type, amount, amount * 10],
     )?;
+  }
 
-    let hashed_cashier = bcrypt::hash(password, 12).map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))))?;
+  // 6. Seed some default spaces
+  for i in 1..=50 {
+    let id = format!("space-{}", i);
+    let code = format!("P-{:03}", i);
     conn.execute(
-      "INSERT INTO local_users (id, company_id, name, email, role, password_hash, is_active, can_void_tickets, can_reprint_tickets, can_close_cash, require_password_change, created_at_unix_ms, updated_at_unix_ms)
-       VALUES (?1, ?2, ?3, ?4, 'CAJERO', ?5, 1, 0, 0, 1, 0, ?6, ?6)",
-      params!["00000000-0000-0000-0000-000000000002", "00000000-0000-0000-0000-000000000001", "Cajero", "cashier@parkflow.local", hashed_cashier, now],
+      "INSERT INTO local_parking_spaces (id, site_id, code, status, vehicle_type, updated_at_unix_ms)
+       VALUES (?1, ?2, ?3, 'AVAILABLE', 'CAR', ?4)",
+      params![
+        id,
+        "00000000-0000-0000-0000-000000000002",
+        code,
+        now
+      ],
     )?;
   }
 
@@ -848,50 +542,6 @@ fn get_sync_enabled() -> bool {
 // Tauri Commands
 // =============================================================================
 
-fn permissions_for_role(role: &str) -> Vec<String> {
-  match role {
-    "SUPER_ADMIN" | "ADMIN" => vec![
-      "tickets:emitir".to_string(),
-      "tickets:imprimir".to_string(),
-      "cobros:registrar".to_string(),
-      "anulaciones:crear".to_string(),
-      "tarifas:leer".to_string(),
-      "usuarios:leer".to_string(),
-      "usuarios:editar".to_string(),
-      "cierres_caja:abrir".to_string(),
-      "cierres_caja:cerrar".to_string(),
-      "reportes:leer".to_string(),
-      "configuracion:leer".to_string(),
-      "configuracion:editar".to_string(),
-    ],
-    "CAJERO" => vec![
-      "tickets:emitir".to_string(),
-      "tickets:imprimir".to_string(),
-      "cobros:registrar".to_string(),
-      "cierres_caja:abrir".to_string(),
-      "cierres_caja:cerrar".to_string(),
-    ],
-    "OPERADOR" => vec![
-      "tickets:emitir".to_string(),
-      "tickets:imprimir".to_string(),
-      "cobros:registrar".to_string(),
-      "tarifas:leer".to_string(),
-      "cierres_caja:abrir".to_string(),
-    ],
-    "AUDITOR" => vec![
-      "reportes:leer".to_string(),
-      "usuarios:leer".to_string(),
-      "cierres_caja:leer".to_string(),
-      "configuracion:leer".to_string(),
-    ],
-    _ => vec![
-      "tickets:emitir".to_string(),
-      "tickets:imprimir".to_string(),
-      "cobros:registrar".to_string(),
-    ],
-  }
-}
-
 pub struct AppState {
   pub db_path: PathBuf,
 }
@@ -903,29 +553,38 @@ pub fn get_parkflow_config() -> ParkflowConfig {
   ParkflowConfig { mode, sync_enabled }
 }
 
-pub fn local_login_impl(
+#[tauri::command]
+pub fn local_login(
   email: String,
   password: String,
   device_id: String,
-  db_path: &std::path::Path,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalStoredSession, String> {
-  let conn = open_local_connection(db_path)?;
+  let conn = open_local_connection(&state.db_path)?;
 
   let user: Option<LocalUserDto> = conn
     .query_row(
       "SELECT id, email, name, role, company_id, password_hash FROM local_users WHERE email = ?1 AND is_active = 1",
       params![email.trim()],
       |row| {
-        let role: String = row.get(3)?;
         Ok(LocalUserDto {
           id: row.get(0)?,
           email: row.get(1)?,
           name: row.get(2)?,
-          role: role.clone(),
-          permissions: permissions_for_role(&role),
+          role: row.get(3)?,
+          permissions: vec![
+            "tickets:emitir".to_string(),
+            "tickets:imprimir".to_string(),
+            "cobros:registrar".to_string(),
+            "anulaciones:crear".to_string(),
+            "tarifas:leer".to_string(),
+            "usuarios:leer".to_string(),
+            "cierres_caja:abrir".to_string(),
+            "cierres_caja:cerrar".to_string(),
+            "reportes:leer".to_string(),
+            "configuracion:leer".to_string(),
+          ],
           company_id: row.get(4)?,
-          active: true,
-          password_changed_at_iso: None,
         })
       },
     )
@@ -944,114 +603,22 @@ pub fn local_login_impl(
     |row| row.get(0)
   ).map_err(|e| format!("Hash fetch failed: {}", e))?;
 
-  let valid = bcrypt::verify(&password, &stored_hash).map_err(|e| format!("Bcrypt verify failed: {}", e))?;
-  if !valid {
-    return Err("Credenciales invalidas".to_string());
-  }
+  bcrypt::verify(&password, &stored_hash).map_err(|e| format!("Bcrypt verify failed: {}", e))?;
 
-  let now_ms = chrono::Utc::now().timestamp_millis();
-  let _ = conn.execute(
-    "UPDATE local_users SET last_access_at_unix_ms = ?1 WHERE id = ?2",
-    params![now_ms, user_dto.id],
-  );
-
-  let now = chrono::Utc::now();
   let session_id = format!("s-{}", Uuid::new_v4());
 
   Ok(LocalStoredSession {
     access_token: format!("local-access-token-{}", Uuid::new_v4()),
     refresh_token: format!("local-refresh-token-{}", Uuid::new_v4()),
-    token_type: "Bearer".to_string(),
-    user: user_dto.clone(),
+    user: user_dto,
     session: LocalSessionInfoDto {
-      session_id: session_id.clone(),
-      user_id: user_dto.id.clone(),
-      device_id: device_id.clone(),
-      issued_at_iso: now.to_rfc3339(),
-      access_token_expires_at_iso: (now + chrono::Duration::minutes(15)).to_rfc3339(),
-      refresh_token_expires_at_iso: (now + chrono::Duration::days(7)).to_rfc3339(),
-      last_seen_at_iso: now.to_rfc3339(),
-    },
-    device: LocalDeviceDto {
-      id: device_id.clone(),
-      display_name: "Dispositivo Local".to_string(),
-      platform: "desktop".to_string(),
-      fingerprint: "local-dev".to_string(),
-      authorized: true,
-      revoked_at_iso: None,
-      last_seen_at_iso: Some(now.to_rfc3339()),
+      session_id,
+      device_id,
+      access_token_expires_at_iso: chrono::Utc::now().to_rfc3339(),
+      refresh_token_expires_at_iso: (chrono::Utc::now() + chrono::Duration::days(7)).to_rfc3339(),
     },
     offline_lease: Some(LocalOfflineLeaseDto {
-      expires_at_iso: (now + chrono::Duration::days(2)).to_rfc3339(),
-      restricted_actions: vec![],
-    }),
-  })
-}
-
-#[tauri::command]
-pub fn local_login(
-  email: String,
-  password: String,
-  device_id: String,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<LocalStoredSession, String> {
-  local_login_impl(email, password, device_id, &state.db_path)
-}
-
-pub fn local_refresh_impl(
-  refresh_token: String,
-  device_id: String,
-  db_path: &std::path::Path,
-) -> Result<LocalStoredSession, String> {
-  let conn = open_local_connection(db_path)?;
-  let user_dto: LocalUserDto = conn
-    .query_row(
-      "SELECT id, email, name, role, company_id FROM local_users LIMIT 1",
-      [],
-      |row| {
-        let role: String = row.get(3)?;
-        Ok(LocalUserDto {
-          id: row.get(0)?,
-          email: row.get(1)?,
-          name: row.get(2)?,
-          role: role.clone(),
-          permissions: permissions_for_role(&role),
-          company_id: row.get(4)?,
-          active: true,
-          password_changed_at_iso: None,
-        })
-      },
-    )
-    .map_err(|e| format!("No users seeded: {}", e))?;
-
-  let now = chrono::Utc::now();
-  let session_id = format!("s-{}", Uuid::new_v4());
-
-  Ok(LocalStoredSession {
-    access_token: format!("local-access-token-{}", Uuid::new_v4()),
-    refresh_token,
-    token_type: "Bearer".to_string(),
-    user: user_dto.clone(),
-    session: LocalSessionInfoDto {
-      session_id: session_id.clone(),
-      user_id: user_dto.id.clone(),
-      device_id: device_id.clone(),
-      issued_at_iso: now.to_rfc3339(),
-      access_token_expires_at_iso: (now + chrono::Duration::minutes(15)).to_rfc3339(),
-      refresh_token_expires_at_iso: (now + chrono::Duration::days(7)).to_rfc3339(),
-      last_seen_at_iso: now.to_rfc3339(),
-    },
-    device: LocalDeviceDto {
-      id: device_id.clone(),
-      display_name: "Dispositivo Local".to_string(),
-      platform: "desktop".to_string(),
-      fingerprint: "local-dev".to_string(),
-      authorized: true,
-      revoked_at_iso: None,
-      last_seen_at_iso: Some(now.to_rfc3339()),
-    },
-    offline_lease: Some(LocalOfflineLeaseDto {
-      expires_at_iso: (now + chrono::Duration::days(2)).to_rfc3339(),
+      expires_at_iso: (chrono::Utc::now() + chrono::Duration::days(2)).to_rfc3339(),
       restricted_actions: vec![],
     }),
   })
@@ -1061,7 +628,7 @@ pub fn local_refresh_impl(
 pub fn local_refresh(
   refresh_token: String,
   device_id: String,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalStoredSession, String> {
   // Mock session refresh
   let conn = open_local_connection(&state.db_path)?;
@@ -1070,262 +637,45 @@ pub fn local_refresh(
       "SELECT id, email, name, role, company_id FROM local_users LIMIT 1",
       [],
       |row| {
-        let role: String = row.get(3)?;
         Ok(LocalUserDto {
           id: row.get(0)?,
           email: row.get(1)?,
           name: row.get(2)?,
-          role: role.clone(),
-          permissions: permissions_for_role(&role),
+          role: row.get(3)?,
+          permissions: vec![
+            "tickets:emitir".to_string(),
+            "tickets:imprimir".to_string(),
+            "cobros:registrar".to_string(),
+            "cierres_caja:abrir".to_string(),
+            "cierres_caja:cerrar".to_string(),
+          ],
           company_id: row.get(4)?,
         })
       },
     )
     .map_err(|e| format!("No users seeded: {}", e))?;
 
-fn unix_ms_to_rfc3339(ms: Option<i64>) -> Option<String> {
-  ms.and_then(|value| {
-    chrono::DateTime::from_timestamp_millis(value)
-      .map(|dt| dt.to_rfc3339())
-  })
-}
-
-fn trim_optional(value: Option<String>) -> Option<String> {
-  value
-    .map(|v| v.trim().to_string())
-    .filter(|v| !v.is_empty())
-}
-
-fn validate_new_password(password: &str) -> Result<(), String> {
-  if password.len() < 8 {
-    return Err("La contrasena debe tener al menos 8 caracteres".to_string());
-  }
-  let has_upper = password.chars().any(|c| c.is_ascii_uppercase());
-  let has_lower = password.chars().any(|c| c.is_ascii_lowercase());
-  let has_digit = password.chars().any(|c| c.is_ascii_digit());
-  let has_special = password.chars().any(|c| "@#$%^&+=!.".contains(c));
-  if !(has_upper && has_lower && has_digit && has_special) {
-    return Err(
-      "La contrasena debe contener al menos: una mayuscula, una minuscula, un numero y un caracter especial (@#$%^&+=!.)"
-        .to_string(),
-    );
-  }
-  Ok(())
-}
-
-fn map_profile_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<LocalProfileDto> {
-  let created_ms: i64 = row.get(15)?;
-  let updated_ms: i64 = row.get(16)?;
-  let created_at = unix_ms_to_rfc3339(Some(created_ms)).unwrap_or_default();
-  let updated_at = unix_ms_to_rfc3339(Some(updated_ms)).unwrap_or_default();
-  Ok(LocalProfileDto {
-    id: row.get(0)?,
-    name: row.get(1)?,
-    email: row.get(2)?,
-    document: row.get(3)?,
-    phone: row.get(4)?,
-    role: row.get(5)?,
-    site: row.get(6)?,
-    terminal: row.get(7)?,
-    active: row.get::<_, i64>(8)? == 1,
-    can_void_tickets: row.get::<_, i64>(9)? == 1,
-    can_reprint_tickets: row.get::<_, i64>(10)? == 1,
-    can_close_cash: row.get::<_, i64>(11)? == 1,
-    require_password_change: row.get::<_, i64>(12)? == 1,
-    last_access_at: unix_ms_to_rfc3339(row.get(13)?),
-    password_changed_at: unix_ms_to_rfc3339(row.get(14)?),
-    created_at,
-    updated_at,
-  })
-}
-
-const PROFILE_SELECT: &str = "
-  SELECT id, name, email, document, phone, role, site, terminal,
-         is_active, can_void_tickets, can_reprint_tickets, can_close_cash,
-         require_password_change, last_access_at_unix_ms, password_changed_at_unix_ms,
-         created_at_unix_ms, updated_at_unix_ms
-  FROM local_users
-";
-
-pub fn local_get_profile_impl(user_id: &str, db_path: &Path) -> Result<LocalProfileDto, String> {
-  let conn = open_local_connection(db_path)?;
-  conn
-    .query_row(
-      &format!("{} WHERE id = ?1 AND is_active = 1", PROFILE_SELECT),
-      params![user_id],
-      map_profile_row,
-    )
-    .map_err(|_| "Usuario no encontrado".to_string())
-}
-
-pub fn local_update_profile_impl(
-  user_id: &str,
-  request: LocalUpdateProfileRequest,
-  db_path: &Path,
-) -> Result<LocalProfileDto, String> {
-  let name = request.name.trim();
-  let email = request.email.trim().to_lowercase();
-  if name.is_empty() || email.is_empty() {
-    return Err("Nombre y correo son obligatorios".to_string());
-  }
-
-  let conn = open_local_connection(db_path)?;
-  let company_id: String = conn
-    .query_row(
-      "SELECT company_id FROM local_users WHERE id = ?1 AND is_active = 1",
-      params![user_id],
-      |row| row.get(0),
-    )
-    .map_err(|_| "Usuario no encontrado".to_string())?;
-
-  let email_taken: bool = conn
-    .query_row(
-      "SELECT COUNT(*) FROM local_users WHERE LOWER(email) = LOWER(?1) AND company_id = ?2 AND id != ?3",
-      params![email, company_id, user_id],
-      |row| row.get::<_, i64>(0),
-    )
-    .map(|count| count > 0)
-    .unwrap_or(false);
-  if email_taken {
-    return Err("Ya existe un usuario con este correo".to_string());
-  }
-
-  let document = trim_optional(request.document);
-  if let Some(ref doc) = document {
-    let doc_taken: bool = conn
-      .query_row(
-        "SELECT COUNT(*) FROM local_users WHERE LOWER(document) = LOWER(?1) AND company_id = ?2 AND id != ?3",
-        params![doc, company_id, user_id],
-        |row| row.get::<_, i64>(0),
-      )
-      .map(|count| count > 0)
-      .unwrap_or(false);
-    if doc_taken {
-      return Err("Ya existe un usuario con este documento".to_string());
-    }
-  }
-
-  let now_ms = chrono::Utc::now().timestamp_millis();
-  let updated = conn.execute(
-    "UPDATE local_users
-     SET name = ?1, email = ?2, document = ?3, phone = ?4, site = ?5, terminal = ?6, updated_at_unix_ms = ?7
-     WHERE id = ?8 AND is_active = 1",
-    params![
-      name,
-      email,
-      document,
-      trim_optional(request.phone),
-      trim_optional(request.site),
-      trim_optional(request.terminal),
-      now_ms,
-      user_id
-    ],
-  )
-  .map_err(|e| format!("Profile update failed: {}", e))?;
-
-  if updated == 0 {
-    return Err("Usuario no encontrado".to_string());
-  }
-
-  local_get_profile_impl(user_id, db_path)
-}
-
-pub fn local_change_password_impl(
-  user_id: &str,
-  request: LocalChangePasswordRequest,
-  db_path: &Path,
-) -> Result<(), String> {
-  validate_new_password(&request.new_password)?;
-
-  let conn = open_local_connection(db_path)?;
-  let stored_hash: String = conn
-    .query_row(
-      "SELECT password_hash FROM local_users WHERE id = ?1 AND is_active = 1",
-      params![user_id],
-      |row| row.get(0),
-    )
-    .map_err(|_| "Usuario no encontrado".to_string())?;
-
-  let valid = bcrypt::verify(&request.current_password, &stored_hash)
-    .map_err(|e| format!("Bcrypt verify failed: {}", e))?;
-  if !valid {
-    return Err("Contrasena actual invalida".to_string());
-  }
-
-  let hashed = bcrypt::hash(&request.new_password, 12)
-    .map_err(|e| format!("Bcrypt hash failed: {}", e))?;
-  let now_ms = chrono::Utc::now().timestamp_millis();
-
-  let updated = conn
-    .execute(
-      "UPDATE local_users
-       SET password_hash = ?1, password_changed_at_unix_ms = ?2, require_password_change = 0, updated_at_unix_ms = ?3
-       WHERE id = ?4 AND is_active = 1",
-      params![hashed, now_ms, now_ms, user_id],
-    )
-    .map_err(|e| format!("Password update failed: {}", e))?;
-
-  if updated == 0 {
-    return Err("Usuario no encontrado".to_string());
-  }
-
-  Ok(())
-}
-
-#[tauri::command]
-pub fn local_get_profile(
-  user_id: String,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<LocalProfileDto, String> {
-  local_get_profile_impl(&user_id, &state.db_path)
-}
-
-#[tauri::command]
-pub fn local_update_profile(
-  user_id: String,
-  name: String,
-  email: String,
-  document: Option<String>,
-  phone: Option<String>,
-  site: Option<String>,
-  terminal: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<LocalProfileDto, String> {
-  local_update_profile_impl(
-    &user_id,
-    LocalUpdateProfileRequest {
-      name,
-      email,
-      document,
-      phone,
-      site,
-      terminal,
+  Ok(LocalStoredSession {
+    access_token: format!("local-access-token-{}", Uuid::new_v4()),
+    refresh_token,
+    user: user_dto,
+    session: LocalSessionInfoDto {
+      session_id: format!("s-{}", Uuid::new_v4()),
+      device_id,
+      access_token_expires_at_iso: (chrono::Utc::now() + chrono::Duration::minutes(15)).to_rfc3339(),
+      refresh_token_expires_at_iso: (chrono::Utc::now() + chrono::Duration::days(7)).to_rfc3339(),
     },
-    &state.db_path,
-  )
-}
-
-#[tauri::command]
-pub fn local_change_password(
-  user_id: String,
-  current_password: String,
-  new_password: String,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<(), String> {
-  local_change_password_impl(
-    &user_id,
-    LocalChangePasswordRequest {
-      current_password,
-      new_password,
-    },
-    &state.db_path,
-  )
+    offline_lease: Some(LocalOfflineLeaseDto {
+      expires_at_iso: (chrono::Utc::now() + chrono::Duration::days(2)).to_rfc3339(),
+      restricted_actions: vec![],
+    }),
+  })
 }
 
 #[tauri::command]
 pub fn local_get_settings(
   company_id: String,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
   let conn = open_local_connection(&state.db_path)?;
   let site_name: String = conn.query_row(
@@ -1388,7 +738,7 @@ fn calculate_duration_charge(
 }
 
 #[tauri::command]
-pub fn local_get_dashboard_summary(state: tauri::State<'_, crate::AppState>) -> Result<LocalDashboardSummary, String> {
+pub fn local_get_dashboard_summary(state: tauri::State<'_, AppState>) -> Result<LocalDashboardSummary, String> {
   let conn = open_local_connection(&state.db_path)?;
 
   let active_vehicles: i64 = conn
@@ -1454,7 +804,7 @@ pub fn local_get_dashboard_summary(state: tauri::State<'_, crate::AppState>) -> 
 }
 
 #[tauri::command]
-pub fn local_list_active_sessions(state: tauri::State<'_, crate::AppState>) -> Result<Vec<LocalActiveSessionRow>, String> {
+pub fn local_list_active_sessions(state: tauri::State<'_, AppState>) -> Result<Vec<LocalActiveSessionRow>, String> {
   let conn = open_local_connection(&state.db_path)?;
   let mut stmt = conn
     .prepare(
@@ -1511,7 +861,7 @@ pub fn local_list_active_sessions(state: tauri::State<'_, crate::AppState>) -> R
 pub fn local_get_active_session(
   plate: Option<String>,
   ticket_number: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalTicketDto, String> {
   let conn = open_local_connection(&state.db_path)?;
 
@@ -1575,116 +925,7 @@ pub fn local_get_active_session(
 }
 
 #[tauri::command]
-pub fn local_search_global(
-  q: String,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<LocalSearchResponseDto, String> {
-  let conn = open_local_connection(&state.db_path)?;
-  let query = q.trim();
-  if query.is_empty() {
-    return Ok(LocalSearchResponseDto {
-      query: query.to_string(),
-      results: std::collections::BTreeMap::new(),
-      processing_time_ms: 0,
-    });
-  }
-
-  let started = std::time::Instant::now();
-  let like = format!("%{}%", query.to_uppercase());
-
-  let mut active_results = Vec::new();
-  let mut stmt = conn
-    .prepare(
-      "SELECT id, ticket_number, vehicle_plate, vehicle_type, entry_at_unix_ms, status
-       FROM local_tickets
-       WHERE status = 'ACTIVE' AND (UPPER(vehicle_plate) LIKE ?1 OR UPPER(ticket_number) LIKE ?1)
-       ORDER BY entry_at_unix_ms DESC
-       LIMIT 10",
-    )
-    .map_err(|e| format!("search prepare failed: {}", e))?;
-
-  let rows = stmt
-    .query_map(params![like.clone()], |row| {
-      let entry_at: i64 = row.get(4)?;
-      Ok((
-        row.get::<_, String>(0)?,
-        row.get::<_, String>(1)?,
-        row.get::<_, String>(2)?,
-        row.get::<_, String>(3)?,
-        entry_at,
-        row.get::<_, String>(5)?,
-      ))
-    })
-    .map_err(|e| format!("search query failed: {}", e))?;
-
-  for row in rows {
-    let (id, ticket_number, plate, vehicle_type, _entry_at, status) = row.map_err(|e| e.to_string())?;
-    let score = if plate.eq_ignore_ascii_case(query) || ticket_number.eq_ignore_ascii_case(query) {
-      1.0
-    } else {
-      0.85
-    };
-    active_results.push(LocalSearchResultDto {
-      id: id.clone(),
-      search_type: "VEHICLE".to_string(),
-      title: plate.clone(),
-      subtitle: format!("Ticket: {} | Status: {} | {}", ticket_number, status, vehicle_type),
-      action_url: format!("/salida-cobro?plate={}&ticketNumber={}", plate, ticket_number),
-      score,
-      status: Some(status),
-    });
-  }
-
-  if active_results.is_empty() {
-    let mut stmt2 = conn
-      .prepare(
-        "SELECT ticket_number, vehicle_plate, vehicle_type, entry_at_unix_ms, status
-         FROM local_tickets
-         WHERE UPPER(vehicle_plate) LIKE ?1 OR UPPER(ticket_number) LIKE ?1
-         ORDER BY entry_at_unix_ms DESC
-         LIMIT 10",
-      )
-      .map_err(|e| format!("search prepare failed: {}", e))?;
-    let rows2 = stmt2
-      .query_map(params![like], |row| {
-        Ok((
-          row.get::<_, String>(0)?,
-          row.get::<_, String>(1)?,
-          row.get::<_, String>(2)?,
-          row.get::<_, i64>(3)?,
-          row.get::<_, String>(4)?,
-        ))
-      })
-      .map_err(|e| format!("search query failed: {}", e))?;
-
-    for row in rows2 {
-      let (ticket_number, plate, vehicle_type, _entry_at, status) = row.map_err(|e| e.to_string())?;
-      active_results.push(LocalSearchResultDto {
-        id: ticket_number.clone(),
-        search_type: "TICKET".to_string(),
-        title: ticket_number.clone(),
-        subtitle: format!("Placa: {} | Status: {} | {}", plate, status, vehicle_type),
-        action_url: format!("/salida-cobro?plate={}&ticketNumber={}", plate, ticket_number),
-        score: if plate.eq_ignore_ascii_case(query) || ticket_number.eq_ignore_ascii_case(query) { 1.0 } else { 0.8 },
-        status: Some(status),
-      });
-    }
-  }
-
-  let mut results = std::collections::BTreeMap::new();
-  if !active_results.is_empty() {
-    results.insert("VEHICLE".to_string(), active_results);
-  }
-
-  Ok(LocalSearchResponseDto {
-    query: query.to_string(),
-    results,
-    processing_time_ms: started.elapsed().as_millis() as i64,
-  })
-}
-
-#[tauri::command]
-pub fn local_get_parking_spaces_summary(state: tauri::State<'_, crate::AppState>) -> Result<LocalParkingSpacesSummary, String> {
+pub fn local_get_parking_spaces_summary(state: tauri::State<'_, AppState>) -> Result<LocalParkingSpacesSummary, String> {
   let conn = open_local_connection(&state.db_path)?;
 
   let active_spaces: i64 = conn
@@ -1713,7 +954,7 @@ pub fn local_get_parking_spaces_summary(state: tauri::State<'_, crate::AppState>
 }
 
 #[tauri::command]
-pub fn local_list_parking_spaces(state: tauri::State<'_, crate::AppState>) -> Result<Vec<LocalParkingSpaceDto>, String> {
+pub fn local_list_parking_spaces(state: tauri::State<'_, AppState>) -> Result<Vec<LocalParkingSpaceDto>, String> {
   let conn = open_local_connection(&state.db_path)?;
   let mut stmt = conn
     .prepare("SELECT id, site_id, code, status, vehicle_type FROM local_parking_spaces")
@@ -1742,7 +983,7 @@ pub fn local_list_parking_spaces(state: tauri::State<'_, crate::AppState>) -> Re
 pub fn local_update_parking_space_capacity(
   vehicle_type: String,
   capacity: i64,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
   let conn = open_local_connection(&state.db_path)?;
 
@@ -1779,7 +1020,7 @@ pub fn local_update_parking_space_capacity(
 pub fn local_update_parking_space(
   id: String,
   status: String,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
   let conn = open_local_connection(&state.db_path)?;
   let now = chrono::Utc::now().timestamp_millis();
@@ -1804,7 +1045,7 @@ pub fn local_update_parking_space(
 pub fn local_create_entry(
   plate: String,
   vehicle_type: String,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalEntryResponse, String> {
   let conn = open_local_connection(&state.db_path)?;
 
@@ -1891,18 +1132,6 @@ pub fn local_create_entry(
   Ok(entry_response)
 }
 
-fn resolve_cash_session_id(conn: &Connection) -> Option<String> {
-  conn
-    .query_row(
-      "SELECT id FROM local_cash_sessions WHERE status = 'OPEN' LIMIT 1",
-      [],
-      |row| row.get(0),
-    )
-    .optional()
-    .ok()
-    .flatten()
-}
-
 #[tauri::command]
 pub fn local_create_exit(
   ticket_id: String,
@@ -1910,7 +1139,7 @@ pub fn local_create_exit(
   _amount_paid: i64,
   reference: Option<String>,
   cash_session_id: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalExitResponse, String> {
   let conn = open_local_connection(&state.db_path)?;
 
@@ -1948,17 +1177,9 @@ pub fn local_create_exit(
   conn.execute(
     "UPDATE local_tickets SET status = 'PAID', exit_at_unix_ms = ?1, amount = ?2, updated_at_unix_ms = ?1 WHERE id = ?3",
     params![now_ms, computed_amount, ticket_id],
-  )      .map_err(|e| format!("Exit update failed: {}", e))?;
+  ).map_err(|e| format!("Exit update failed: {}", e))?;
 
-  // Auto-resolve cash session if not provided
-  let resolved_session_id = cash_session_id
-    .filter(|s| !s.is_empty())
-    .or_else(|| resolve_cash_session_id(&conn));
-  if resolved_session_id.is_none() {
-    return Err("Debe abrir caja antes de procesar salidas".to_string());
-  }
-
-  // Record payment linked to cash session
+  // Record payment
   let payment_id = format!("pay-{}", Uuid::new_v4());
   conn.execute(
     "INSERT INTO local_payments (id, ticket_id, amount, payment_method, reference, cash_session_id, created_at_unix_ms)
@@ -1969,17 +1190,19 @@ pub fn local_create_exit(
       computed_amount,
       payment_method,
       reference,
-      resolved_session_id,
+      cash_session_id,
       now_ms
     ],
   ).map_err(|e| format!("Payment insert failed: {}", e))?;
 
-  // Increment expected cash drawer amount for all payment methods
-  if let Some(ref session_id) = resolved_session_id {
-    let _ = conn.execute(
-      "UPDATE local_cash_sessions SET expected_amount = expected_amount + ?1 WHERE id = ?2",
-      params![computed_amount, session_id],
-    );
+  // Increment expected cash drawer amount if it's a cash payment
+  if let Some(ref session_id) = cash_session_id {
+    if payment_method.to_uppercase() == "CASH" {
+      let _ = conn.execute(
+        "UPDATE local_cash_sessions SET expected_amount = expected_amount + ?1 WHERE id = ?2",
+        params![computed_amount, session_id],
+      );
+    }
   }
 
   // Release parking space code if associated
@@ -2005,7 +1228,7 @@ pub fn local_create_exit(
 }
 
 #[tauri::command]
-pub fn local_reprint_ticket(ticket_id: String, state: tauri::State<'_, crate::AppState>) -> Result<(), String> {
+pub fn local_reprint_ticket(ticket_id: String, state: tauri::State<'_, AppState>) -> Result<(), String> {
   // Simple print command bypass or record
   let conn = open_local_connection(&state.db_path)?;
   let now = chrono::Utc::now().timestamp_millis();
@@ -2021,7 +1244,7 @@ pub fn local_process_lost_ticket(
   payment_method: String,
   reference: Option<String>,
   cash_session_id: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalExitResponse, String> {
   let conn = open_local_connection(&state.db_path)?;
   let now_ms = chrono::Utc::now().timestamp_millis();
@@ -2036,17 +1259,9 @@ pub fn local_process_lost_ticket(
   conn.execute(
     "UPDATE local_tickets SET status = 'LOST', exit_at_unix_ms = ?1, amount = ?2, updated_at_unix_ms = ?1 WHERE id = ?3",
     params![now_ms, surcharge, ticket_id],
-  )      .map_err(|e| format!("Lost exit update failed: {}", e))?;
+  ).map_err(|e| format!("Lost exit update failed: {}", e))?;
 
-  // Auto-resolve cash session if not provided
-  let resolved_session_id = cash_session_id
-    .filter(|s| !s.is_empty())
-    .or_else(|| resolve_cash_session_id(&conn));
-  if resolved_session_id.is_none() {
-    return Err("Debe abrir caja antes de procesar salidas".to_string());
-  }
-
-  // Record payment linked to cash session
+  // Record payment
   let payment_id = format!("pay-{}", Uuid::new_v4());
   conn.execute(
     "INSERT INTO local_payments (id, ticket_id, amount, payment_method, reference, cash_session_id, created_at_unix_ms)
@@ -2057,17 +1272,19 @@ pub fn local_process_lost_ticket(
       surcharge,
       payment_method,
       reference,
-      resolved_session_id,
+      cash_session_id,
       now_ms
     ],
   ).map_err(|e| format!("Payment insert failed: {}", e))?;
 
-  // expected drawer amount adjustment for all payment methods
-  if let Some(ref session_id) = resolved_session_id {
-    let _ = conn.execute(
-      "UPDATE local_cash_sessions SET expected_amount = expected_amount + ?1 WHERE id = ?2",
-      params![surcharge, session_id],
-    );
+  // expected drawer amount adjustment
+  if let Some(ref session_id) = cash_session_id {
+    if payment_method.to_uppercase() == "CASH" {
+      let _ = conn.execute(
+        "UPDATE local_cash_sessions SET expected_amount = expected_amount + ?1 WHERE id = ?2",
+        params![surcharge, session_id],
+      );
+    }
   }
 
   let exit_response = LocalExitResponse {
@@ -2093,7 +1310,7 @@ pub fn local_open_cash_session(
   opening_amount: f64,
   operator_user_id: String,
   notes: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalCashSessionDto, String> {
   let conn = open_local_connection(&state.db_path)?;
 
@@ -2101,13 +1318,12 @@ pub fn local_open_cash_session(
   let now = chrono::Utc::now().timestamp_millis();
 
   conn.execute(
-    "INSERT INTO local_cash_sessions (id, user_id, site_id, terminal, status, opening_amount, expected_amount, notes, opened_at_unix_ms)
-     VALUES (?1, ?2, ?3, ?4, 'OPEN', ?5, ?5, ?6, ?7)",
+    "INSERT INTO local_cash_sessions (id, user_id, site_id, status, opening_amount, expected_amount, notes, opened_at_unix_ms)
+     VALUES (?1, ?2, ?3, 'OPEN', ?4, ?4, ?5, ?6)",
     params![
       id,
       operator_user_id,
       site,
-      terminal,
       opening_amount as i64,
       notes,
       now
@@ -2153,99 +1369,64 @@ pub fn local_open_cash_session(
   Ok(session)
 }
 
-fn query_row_to_session_dto(
-  row: &rusqlite::Row,
-  site: Option<&str>,
-  terminal: Option<&str>,
-) -> rusqlite::Result<LocalCashSessionDto> {
-  let opened_at: i64 = row.get(7)?;
-  let closed_at: Option<i64> = row.get(10)?;
-  let expected: f64 = row.get::<_, i64>(5)? as f64;
-  let counted: Option<f64> = row.get::<_, Option<i64>>(8)?.map(|v| v as f64);
-  let counted_at_ts: Option<i64> = row.get(15)?;
-  let site_val = site.unwrap_or("00000000-0000-0000-0000-000000000002");
-  let term_val = terminal.unwrap_or("TERM-LOCAL");
-  Ok(LocalCashSessionDto {
-    id: row.get(0)?,
-    register: LocalCashRegisterRow {
-      id: "REG-01".to_string(),
-      site: site_val.to_string(),
-      terminal: term_val.to_string(),
-      label: Some("Caja Local".to_string()),
-    },
-    operator_id: row.get(1)?,
-    operator_name: Some("Operador Local".to_string()),
-    status: row.get(3)?,
-    opening_amount: row.get::<_, i64>(4)? as f64,
-    opened_at: chrono::DateTime::<chrono::Utc>::from_timestamp(opened_at / 1000, 0)
-      .unwrap_or_else(|| chrono::Utc::now())
-      .to_rfc3339(),
-    closed_at: closed_at.map(|t| {
-      chrono::DateTime::<chrono::Utc>::from_timestamp(t / 1000, 0)
-        .unwrap_or_else(|| chrono::Utc::now())
-        .to_rfc3339()
-    }),
-    closed_by_id: None,
-    closed_by_name: None,
-    expected_amount: Some(expected),
-    counted_amount: counted,
-    difference_amount: counted.map(|c| c - expected),
-    count_cash: row.get::<_, Option<i64>>(11)?.map(|v| v as f64),
-    count_card: row.get::<_, Option<i64>>(12)?.map(|v| v as f64),
-    count_transfer: row.get::<_, Option<i64>>(13)?.map(|v| v as f64),
-    count_other: row.get::<_, Option<i64>>(14)?.map(|v| v as f64),
-    notes: row.get(6)?,
-    closing_notes: row.get(9)?,
-    closing_witness_name: None,
-    support_document_number: None,
-    counted_at: counted_at_ts.map(|t| {
-      chrono::DateTime::<chrono::Utc>::from_timestamp(t / 1000, 0)
-        .unwrap_or_else(|| chrono::Utc::now())
-        .to_rfc3339()
-    }),
-    count_operator_id: row.get::<_, Option<String>>(16)?,
-    count_operator_name: None,
-  })
-}
-
 #[tauri::command]
 pub fn local_get_current_cash_session(
   site: Option<String>,
   terminal: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalCashSessionDto, String> {
   let conn = open_local_connection(&state.db_path)?;
 
-  let site_filter = site.clone().unwrap_or_else(|| "00000000-0000-0000-0000-000000000002".to_string());
+  let res: Option<LocalCashSessionDto> = conn
+    .query_row(
+      "SELECT id, user_id, site_id, status, opening_amount, expected_amount, notes, opened_at_unix_ms, counted_amount, closing_notes, closed_at_unix_ms
+       FROM local_cash_sessions WHERE status = 'OPEN' LIMIT 1",
+      [],
+      |row| {
+        let opened_at: i64 = row.get(7)?;
+        let closed_at: Option<i64> = row.get(10)?;
+        Ok(LocalCashSessionDto {
+          id: row.get(0)?,
+          register: LocalCashRegisterRow {
+            id: "REG-01".to_string(),
+            site: site.clone().unwrap_or_else(|| "00000000-0000-0000-0000-000000000002".to_string()),
+            terminal: terminal.clone().unwrap_or_else(|| "TERM-LOCAL".to_string()),
+            label: Some("Caja Local".to_string()),
+          },
+          operator_id: row.get(1)?,
+          operator_name: Some("Operador Local".to_string()),
+          status: row.get(3)?,
+          opening_amount: row.get::<_, i64>(4)? as f64,
+          opened_at: chrono::DateTime::<chrono::Utc>::from_timestamp(opened_at / 1000, 0)
+            .unwrap_or_else(|| chrono::Utc::now())
+            .to_rfc3339(),
+          closed_at: closed_at.map(|t| {
+            chrono::DateTime::<chrono::Utc>::from_timestamp(t / 1000, 0)
+              .unwrap_or_else(|| chrono::Utc::now())
+              .to_rfc3339()
+          }),
+          closed_by_id: None,
+          closed_by_name: None,
+          expected_amount: Some(row.get::<_, i64>(5)? as f64),
+          counted_amount: row.get::<_, Option<i64>>(8)?.map(|v| v as f64),
+          difference_amount: None,
+          count_cash: None,
+          count_card: None,
+          count_transfer: None,
+          count_other: None,
+          notes: row.get(6)?,
+          closing_notes: row.get(9)?,
+          closing_witness_name: None,
+          support_document_number: None,
+          counted_at: None,
+          count_operator_id: None,
+          count_operator_name: None,
+        })
+      },
+    )
+    .optional()
+    .map_err(|e| format!("Query failed: {}", e))?;
 
-  // Add terminal filter if provided so we find the correct session for this terminal
-  let terminal_filter = terminal.clone().filter(|t| !t.is_empty());
-
-  let res: Option<LocalCashSessionDto> = if let Some(ref term) = terminal_filter {
-    conn
-      .query_row(
-        "SELECT id, user_id, site_id, status, opening_amount, expected_amount, notes, opened_at_unix_ms, counted_amount, closing_notes, closed_at_unix_ms, count_cash, count_card, count_transfer, count_other, counted_at_unix_ms, count_operator_id
-         FROM local_cash_sessions WHERE status = 'OPEN' AND site_id = ?1 AND terminal = ?2 LIMIT 1",
-        params![site_filter, term],
-        |row| {
-          query_row_to_session_dto(row, site.as_deref(), terminal.as_deref())
-        },
-      )
-      .optional()
-      .map_err(|e| format!("Query failed: {}", e))?
-  } else {
-    conn
-      .query_row(
-        "SELECT id, user_id, site_id, status, opening_amount, expected_amount, notes, opened_at_unix_ms, counted_amount, closing_notes, closed_at_unix_ms, count_cash, count_card, count_transfer, count_other, counted_at_unix_ms, count_operator_id
-         FROM local_cash_sessions WHERE status = 'OPEN' AND site_id = ?1 LIMIT 1",
-        params![site_filter],
-        |row| {
-          query_row_to_session_dto(row, site.as_deref(), terminal.as_deref())
-        },
-      )
-      .optional()
-      .map_err(|e| format!("Query failed: {}", e))?
-  };
   match res {
     Some(s) => Ok(s),
     None => Err("No active cash session found".to_string()),
@@ -2255,7 +1436,7 @@ pub fn local_get_current_cash_session(
 #[tauri::command]
 pub fn local_list_cash_movements(
   session_id: String,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<Vec<LocalCashMovementDto>, String> {
   let conn = open_local_connection(&state.db_path)?;
   let mut stmt = conn
@@ -2305,7 +1486,7 @@ pub fn local_list_cash_movements(
       Ok(LocalCashMovementDto {
         id: row.get(0)?,
         cash_session_id: session_id.clone(),
-        movement_type: "PARKING_PAYMENT".to_string(),
+        movement_type: "ENTRY".to_string(),
         payment_method: row.get(2)?,
         amount: row.get::<_, i64>(1)? as f64,
         parking_session_id: Some(row.get(4)?),
@@ -2325,10 +1506,10 @@ pub fn local_list_cash_movements(
         idempotency_key: None,
       })
     })
-    .map_err(|e| format!("payments query map failed: {}", e))?;
+    .unwrap();
 
   for r in pay_rows {
-    list.push(r.map_err(|e| e.to_string())?);
+    list.push(r.unwrap());
   }
 
   Ok(list)
@@ -2337,17 +1518,17 @@ pub fn local_list_cash_movements(
 #[tauri::command]
 pub fn local_get_cash_session_summary(
   session_id: String,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalCashSummaryDto, String> {
   let conn = open_local_connection(&state.db_path)?;
 
-  let (opening_amount, expected_amount, counted_amount): (i64, i64, Option<i64>) = conn
+  let (opening_amount, expected_amount): (i64, i64) = conn
     .query_row(
-      "SELECT opening_amount, expected_amount, counted_amount FROM local_cash_sessions WHERE id = ?1",
+      "SELECT opening_amount, expected_amount FROM local_cash_sessions WHERE id = ?1",
       params![session_id],
-      |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+      |r| Ok((r.get(0)?, r.get(1)?)),
     )
-    .unwrap_or((0, 0, None));
+    .unwrap_or((0, 0));
 
   let movements = local_list_cash_movements(session_id, state)?;
 
@@ -2365,14 +1546,11 @@ pub fn local_get_cash_session_summary(
     *current_mt += amt;
   }
 
-  let counted_total_f64 = counted_amount.map(|v| v as f64);
-  let difference_f64 = counted_total_f64.map(|c| c - expected_amount as f64);
-
   Ok(LocalCashSummaryDto {
     opening_amount: opening_amount as f64,
     expected_ledger_total: expected_amount as f64,
-    counted_total: counted_total_f64,
-    difference: difference_f64,
+    counted_total: None,
+    difference: None,
     totals_by_payment_method,
     totals_by_movement_type,
     movement_count: movements.len() as i64,
@@ -2386,28 +1564,7 @@ pub fn local_add_cash_movement(
   payment_method: String,
   amount: f64,
   reason: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<LocalCashMovementDto, String> {
-  local_add_cash_movement_ext(
-    session_id, movement_type, payment_method, amount, reason,
-    None, None, None, None, None, None, None, state,
-  )
-}
-
-pub fn local_add_cash_movement_ext(
-  session_id: String,
-  movement_type: String,
-  payment_method: String,
-  amount: f64,
-  reason: Option<String>,
-  parking_session_id: Option<String>,
-  created_by_id: Option<String>,
-  created_by_name: Option<String>,
-  terminal: Option<String>,
-  metadata: Option<String>,
-  external_reference: Option<String>,
-  idempotency_key: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalCashMovementDto, String> {
   let conn = open_local_connection(&state.db_path)?;
 
@@ -2415,8 +1572,8 @@ pub fn local_add_cash_movement_ext(
   let now = chrono::Utc::now().timestamp_millis();
 
   conn.execute(
-    "INSERT INTO local_cash_movements (id, cash_session_id, movement_type, payment_method, amount, reason, created_at_unix_ms, parking_session_id, status, created_by_id, created_by_name, terminal, idempotency_key)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'ACTIVE', ?9, ?10, ?11, ?12)",
+    "INSERT INTO local_cash_movements (id, cash_session_id, movement_type, payment_method, amount, reason, created_at_unix_ms)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
     params![
       id,
       session_id,
@@ -2424,22 +1581,15 @@ pub fn local_add_cash_movement_ext(
       payment_method,
       amount as i64,
       reason,
-      now,
-      parking_session_id,
-      created_by_id,
-      created_by_name,
-      terminal,
-      idempotency_key,
+      now
     ],
   ).map_err(|e| format!("Insert movement failed: {}", e))?;
 
-  // Update expected amount in session based on movement type category
-  let adjust = match movement_type.to_uppercase().as_str() {
-    "MANUAL_INCOME" | "REPRINT_FEE" | "PARKING_PAYMENT" | "LOST_TICKET_PAYMENT" => amount as i64,
-    "MANUAL_EXPENSE" | "CUSTOMER_REFUND" | "WITHDRAWAL" | "DISCOUNT" => -(amount as i64),
-    _ => {
-      if amount >= 0.0 { amount as i64 } else { -(amount as i64) }
-    }
+  // Update expected amount in session
+  let adjust = if movement_type.to_uppercase() == "ENTRY" {
+    amount as i64
+  } else {
+    -(amount as i64)
   };
   let _ = conn.execute(
     "UPDATE local_cash_sessions SET expected_amount = expected_amount + ?1 WHERE id = ?2",
@@ -2452,19 +1602,19 @@ pub fn local_add_cash_movement_ext(
     movement_type,
     payment_method,
     amount,
-    parking_session_id,
+    parking_session_id: None,
     reason,
-    metadata,
+    metadata: None,
     status: "ACTIVE".to_string(),
     voided_at: None,
     void_reason: None,
     voided_by_id: None,
-    external_reference,
-    created_by_id: created_by_id.unwrap_or_else(|| "00000000-0000-0000-0000-000000000003".to_string()),
-    created_by_name: created_by_name.or(Some("Operador Local".to_string())),
+    external_reference: None,
+    created_by_id: "00000000-0000-0000-0000-000000000003".to_string(),
+    created_by_name: Some("Operador Local".to_string()),
     created_at: chrono::Utc::now().to_rfc3339(),
-    terminal: terminal.or(Some("TERM-LOCAL".to_string())),
-    idempotency_key,
+    terminal: Some("TERM-LOCAL".to_string()),
+    idempotency_key: None,
   };
 
   let payload = serde_json::to_string(&dto).map_err(|e| e.to_string())?;
@@ -2482,27 +1632,17 @@ pub fn local_count_cash_session(
   count_transfer: f64,
   count_other: f64,
   observations: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalCashSessionDto, String> {
   let conn = open_local_connection(&state.db_path)?;
 
   let counted_total = count_cash + count_card + count_transfer + count_other;
-  let now = chrono::Utc::now().timestamp_millis();
   conn.execute(
-    "UPDATE local_cash_sessions SET counted_amount = ?1, count_cash = ?2, count_card = ?3, count_transfer = ?4, count_other = ?5, counted_at_unix_ms = ?6, notes = ?7 WHERE id = ?8",
-    params![counted_total as i64, count_cash as i64, count_card as i64, count_transfer as i64, count_other as i64, now, observations, session_id],
+    "UPDATE local_cash_sessions SET counted_amount = ?1, notes = ?2 WHERE id = ?3",
+    params![counted_total as i64, observations, session_id],
   ).map_err(|e| format!("Count update failed: {}", e))?;
 
-  // Read site and terminal from session to pass to refresh
-  let (session_site, session_terminal): (String, Option<String>) = conn
-    .query_row(
-      "SELECT site_id, terminal FROM local_cash_sessions WHERE id = ?1",
-      params![session_id],
-      |row| Ok((row.get(0)?, row.get(1)?)),
-    )
-    .unwrap_or(("00000000-0000-0000-0000-000000000002".to_string(), None));
-
-  local_get_current_cash_session(Some(session_site), session_terminal, state)
+  local_get_current_cash_session(None, None, state)
 }
 
 #[tauri::command]
@@ -2510,23 +1650,10 @@ pub fn local_close_cash_session(
   session_id: String,
   closing_notes: Option<String>,
   closing_witness_name: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalCashSessionDto, String> {
   let conn = open_local_connection(&state.db_path)?;
   let now = chrono::Utc::now().timestamp_millis();
-
-  // Require count before close
-  let (has_count, _opening, _expected): (bool, i64, i64) = conn
-    .query_row(
-      "SELECT counted_at_unix_ms IS NOT NULL, opening_amount, expected_amount FROM local_cash_sessions WHERE id = ?1",
-      params![session_id],
-      |row| Ok((row.get::<_, i64>(0)? != 0, row.get(1)?, row.get(2)?)),
-    )
-    .map_err(|_| "Sesion de caja no encontrada".to_string())?;
-
-  if !has_count {
-    return Err("Debe registrar arqueo antes de cerrar".to_string());
-  }
 
   conn.execute(
     "UPDATE local_cash_sessions SET status = 'CLOSED', closing_notes = ?1, closed_at_unix_ms = ?2 WHERE id = ?3",
@@ -2535,15 +1662,12 @@ pub fn local_close_cash_session(
 
   let mut s = conn
     .query_row(
-      "SELECT id, user_id, site_id, status, opening_amount, expected_amount, notes, opened_at_unix_ms, counted_amount, closing_notes, closed_at_unix_ms, count_cash, count_card, count_transfer, count_other, counted_at_unix_ms, count_operator_id
+      "SELECT id, user_id, site_id, status, opening_amount, expected_amount, notes, opened_at_unix_ms, counted_amount, closing_notes, closed_at_unix_ms
        FROM local_cash_sessions WHERE id = ?1",
       params![session_id],
       |row| {
         let opened_at: i64 = row.get(7)?;
         let closed_at: Option<i64> = row.get(10)?;
-        let counted: Option<i64> = row.get(8)?;
-        let counted_at_ts: Option<i64> = row.get(15)?;
-        let expected_val: i64 = row.get(5)?;
         Ok(LocalCashSessionDto {
           id: row.get(0)?,
           register: LocalCashRegisterRow {
@@ -2566,23 +1690,19 @@ pub fn local_close_cash_session(
           }),
           closed_by_id: Some(row.get::<_, String>(1)?),
           closed_by_name: Some("Operador Local".to_string()),
-          expected_amount: Some(expected_val as f64),
-          counted_amount: counted.map(|v| v as f64),
-          difference_amount: counted.map(|c| c as f64 - expected_val as f64),
-          count_cash: row.get::<_, Option<i64>>(11)?.map(|v| v as f64),
-          count_card: row.get::<_, Option<i64>>(12)?.map(|v| v as f64),
-          count_transfer: row.get::<_, Option<i64>>(13)?.map(|v| v as f64),
-          count_other: row.get::<_, Option<i64>>(14)?.map(|v| v as f64),
+          expected_amount: Some(row.get::<_, i64>(5)? as f64),
+          counted_amount: row.get::<_, Option<i64>>(8)?.map(|v| v as f64),
+          difference_amount: None,
+          count_cash: None,
+          count_card: None,
+          count_transfer: None,
+          count_other: None,
           notes: row.get(6)?,
           closing_notes: row.get(9)?,
           closing_witness_name: closing_witness_name.clone(),
           support_document_number: None,
-          counted_at: counted_at_ts.map(|t| {
-            chrono::DateTime::<chrono::Utc>::from_timestamp(t / 1000, 0)
-              .unwrap_or_else(|| chrono::Utc::now())
-              .to_rfc3339()
-          }),
-          count_operator_id: row.get::<_, Option<String>>(16)?,
+          counted_at: None,
+          count_operator_id: None,
           count_operator_name: None,
         })
       },
@@ -2601,7 +1721,7 @@ pub fn local_close_cash_session(
 #[tauri::command]
 pub fn local_print_cash_closing(
   session_id: String,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalCashClosingPrintDto, String> {
   let summary = local_get_cash_session_summary(session_id.clone(), state)?;
 
@@ -2629,7 +1749,7 @@ pub fn local_print_cash_closing(
 }
 
 #[tauri::command]
-pub fn local_get_rates(state: tauri::State<'_, crate::AppState>) -> Result<Vec<LocalRateDto>, String> {
+pub fn local_get_rates(state: tauri::State<'_, AppState>) -> Result<Vec<LocalRateDto>, String> {
   let conn = open_local_connection(&state.db_path)?;
   let mut stmt = conn
     .prepare("SELECT id, name, vehicle_type, rate_type, amount, grace_minutes, fraction_minutes, max_daily_value, lost_ticket_surcharge, is_active FROM local_rates")
@@ -2667,266 +1787,6 @@ pub fn local_trigger_operational_action(action: String) -> Result<serde_json::Va
     "message": format!("Acción local '{}' ejecutada correctamente", action)
   });
   Ok(val)
-}
-
-pub fn local_is_setup_required_impl(db_path: &std::path::Path) -> Result<bool, String> {
-  let conn = open_local_connection(db_path)?;
-  let count: i64 = conn
-    .query_row("SELECT COUNT(*) FROM local_users", [], |r| r.get(0))
-    .map_err(|e| e.to_string())?;
-  Ok(count == 0)
-}
-
-#[tauri::command]
-pub fn local_is_setup_required(state: tauri::State<'_, AppState>) -> Result<bool, String> {
-  local_is_setup_required_impl(&state.db_path)
-}
-
-pub fn local_setup_initial_admin_impl(
-  email: String,
-  password: String,
-  name: String,
-  company_name: String,
-  nit: String,
-  db_path: &std::path::Path,
-) -> Result<LocalStoredSession, String> {
-  let conn = open_local_connection(db_path)?;
-
-  // 1. Hash password with bcrypt
-  let salt_rounds = 12;
-  let hashed = bcrypt::hash(password.trim(), salt_rounds)
-    .map_err(|e| format!("Bcrypt hash failed: {}", e))?;
-
-  let now = chrono::Utc::now().timestamp_millis();
-  let user_id = "00000000-0000-0000-0000-000000000003".to_string();
-  let company_id = "00000000-0000-0000-0000-000000000001".to_string();
-
-  // 2. Update company name and nit in SQLite
-  conn.execute(
-    "UPDATE local_companies SET name = ?1, legal_name = ?1, nit = ?2 WHERE id = ?3",
-    params![company_name.trim(), nit.trim(), company_id],
-  ).map_err(|e| format!("Company update failed: {}", e))?;
-
-  // 3. Insert the new admin user
-  conn.execute(
-    "INSERT INTO local_users (id, company_id, name, email, role, password_hash, is_active, created_at_unix_ms, updated_at_unix_ms)
-     VALUES (?1, ?2, ?3, ?4, 'SUPER_ADMIN', ?5, 1, ?6, ?6)",
-    params![user_id, company_id, name.trim(), email.trim(), hashed, now],
-  ).map_err(|e| format!("Admin insert failed: {}", e))?;
-
-  // 4. Mark onboarding as NOT completed (we want them to see OnboardingWizard once they log in!)
-  let _ = conn.execute(
-    "INSERT OR REPLACE INTO local_settings (setting_key, setting_value, updated_at_unix_ms)
-     VALUES ('onboarding_completed', 'false', ?1)",
-    params![now],
-  );
-
-  // 5. Generate session
-  let session_id = format!("s-{}", Uuid::new_v4());
-  let user_dto = LocalUserDto {
-    id: user_id,
-    email: email.clone(),
-    name: name.clone(),
-    role: "SUPER_ADMIN".to_string(),
-    permissions: vec![
-      "tickets:emitir".to_string(),
-      "tickets:imprimir".to_string(),
-      "cobros:registrar".to_string(),
-      "anulaciones:crear".to_string(),
-      "tarifas:leer".to_string(),
-      "usuarios:leer".to_string(),
-      "cierres_caja:abrir".to_string(),
-      "cierres_caja:cerrar".to_string(),
-      "reportes:leer".to_string(),
-      "configuracion:leer".to_string(),
-    ],
-    company_id: company_id.clone(),
-  };
-
-  Ok(LocalStoredSession {
-    access_token: format!("local-access-token-{}", Uuid::new_v4()),
-    refresh_token: format!("local-refresh-token-{}", Uuid::new_v4()),
-    user: user_dto,
-    session: LocalSessionInfoDto {
-      session_id,
-      device_id: "local-device".to_string(),
-      access_token_expires_at_iso: chrono::Utc::now().to_rfc3339(),
-      refresh_token_expires_at_iso: (chrono::Utc::now() + chrono::Duration::days(7)).to_rfc3339(),
-    },
-    offline_lease: Some(LocalOfflineLeaseDto {
-      expires_at_iso: (chrono::Utc::now() + chrono::Duration::days(2)).to_rfc3339(),
-      restricted_actions: vec![],
-    }),
-  })
-}
-
-#[tauri::command]
-pub fn local_setup_initial_admin(
-  email: String,
-  password: String,
-  name: String,
-  company_name: String,
-  nit: String,
-  state: tauri::State<'_, AppState>,
-) -> Result<LocalStoredSession, String> {
-  local_setup_initial_admin_impl(email, password, name, company_name, nit, &state.db_path)
-}
-
-pub fn local_get_onboarding_status_impl(
-  company_id: String,
-  db_path: &std::path::Path,
-) -> Result<serde_json::Value, String> {
-  let conn = open_local_connection(db_path)?;
-
-  let onboarding_completed: String = conn
-    .query_row(
-      "SELECT setting_value FROM local_settings WHERE setting_key = 'onboarding_completed'",
-      [],
-      |r| r.get(0),
-    )
-    .unwrap_or_else(|_| "false".to_string());
-
-  let current_step: String = conn
-    .query_row(
-      "SELECT setting_value FROM local_settings WHERE setting_key = 'onboarding_current_step'",
-      [],
-      |r| r.get(0),
-    )
-    .unwrap_or_else(|_| "1".to_string());
-
-  let progress_data_str: String = conn
-    .query_row(
-      "SELECT setting_value FROM local_settings WHERE setting_key = 'onboarding_progress_data'",
-      [],
-      |r| r.get(0),
-    )
-    .unwrap_or_else(|_| "{}".to_string());
-
-  let progress_data: serde_json::Value = serde_json::from_str(&progress_data_str)
-    .unwrap_or_else(|_| serde_json::json!({}));
-
-  let val = serde_json::json!({
-    "companyId": company_id,
-    "plan": "LOCAL",
-    "onboardingCompleted": onboarding_completed == "true",
-    "currentStep": current_step.parse::<i64>().unwrap_or(1),
-    "skipped": onboarding_completed == "true",
-    "progressData": progress_data,
-    "availableOptionsByPlan": {
-      "allowMultiLocation": false,
-      "allowAdvancedPermissions": true,
-      "paymentMethods": ["EFECTIVO", "TARJETA_DEBITO", "TARJETA_CREDITO", "NEQUI", "DAVIPLATA", "TRANSFERENCIA", "QR", "MIXTO"]
-    }
-  });
-
-  Ok(val)
-}
-
-#[tauri::command]
-pub fn local_get_onboarding_status(
-  company_id: String,
-  state: tauri::State<'_, AppState>,
-) -> Result<serde_json::Value, String> {
-  local_get_onboarding_status_impl(company_id, &state.db_path)
-}
-
-pub fn local_save_onboarding_step_impl(
-  company_id: String,
-  step: i64,
-  data: serde_json::Value,
-  db_path: &std::path::Path,
-) -> Result<serde_json::Value, String> {
-  let conn = open_local_connection(db_path)?;
-  let now = chrono::Utc::now().timestamp_millis();
-
-  let progress_data_str: String = conn
-    .query_row(
-      "SELECT setting_value FROM local_settings WHERE setting_key = 'onboarding_progress_data'",
-      [],
-      |r| r.get(0),
-    )
-    .unwrap_or_else(|_| "{}".to_string());
-
-  let mut progress_data: serde_json::Value = serde_json::from_str(&progress_data_str)
-    .unwrap_or_else(|_| serde_json::json!({}));
-
-  if let Some(obj) = progress_data.as_object_mut() {
-    obj.insert(format!("step_{}", step), data);
-  }
-
-  let updated_progress_str = serde_json::to_string(&progress_data).unwrap_or_else(|_| "{}".to_string());
-
-  conn.execute(
-    "INSERT OR REPLACE INTO local_settings (setting_key, setting_value, updated_at_unix_ms)
-     VALUES ('onboarding_progress_data', ?1, ?2)",
-    params![updated_progress_str, now],
-  ).map_err(|e| e.to_string())?;
-
-  conn.execute(
-    "INSERT OR REPLACE INTO local_settings (setting_key, setting_value, updated_at_unix_ms)
-     VALUES ('onboarding_current_step', ?1, ?2)",
-    params![step.to_string(), now],
-  ).map_err(|e| e.to_string())?;
-
-  local_get_onboarding_status_impl(company_id, db_path)
-}
-
-#[tauri::command]
-pub fn local_save_onboarding_step(
-  company_id: String,
-  step: i64,
-  data: serde_json::Value,
-  state: tauri::State<'_, AppState>,
-) -> Result<serde_json::Value, String> {
-  local_save_onboarding_step_impl(company_id, step, data, &state.db_path)
-}
-
-pub fn local_complete_onboarding_impl(
-  company_id: String,
-  db_path: &std::path::Path,
-) -> Result<serde_json::Value, String> {
-  let conn = open_local_connection(db_path)?;
-  let now = chrono::Utc::now().timestamp_millis();
-
-  conn.execute(
-    "INSERT OR REPLACE INTO local_settings (setting_key, setting_value, updated_at_unix_ms)
-     VALUES ('onboarding_completed', 'true', ?1)",
-    params![now],
-  ).map_err(|e| e.to_string())?;
-
-  local_get_onboarding_status_impl(company_id, db_path)
-}
-
-#[tauri::command]
-pub fn local_complete_onboarding(
-  company_id: String,
-  state: tauri::State<'_, AppState>,
-) -> Result<serde_json::Value, String> {
-  local_complete_onboarding_impl(company_id, &state.db_path)
-}
-
-pub fn local_skip_onboarding_impl(
-  company_id: String,
-  db_path: &std::path::Path,
-) -> Result<serde_json::Value, String> {
-  let conn = open_local_connection(db_path)?;
-  let now = chrono::Utc::now().timestamp_millis();
-
-  conn.execute(
-    "INSERT OR REPLACE INTO local_settings (setting_key, setting_value, updated_at_unix_ms)
-     VALUES ('onboarding_completed', 'true', ?1)",
-    params![now],
-  ).map_err(|e| e.to_string())?;
-
-  local_get_onboarding_status_impl(company_id, db_path)
-}
-
-#[tauri::command]
-pub fn local_skip_onboarding(
-  company_id: String,
-  state: tauri::State<'_, AppState>,
-) -> Result<serde_json::Value, String> {
-  local_skip_onboarding_impl(company_id, &state.db_path)
 }
 
 // =============================================================================
