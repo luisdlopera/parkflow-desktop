@@ -271,7 +271,7 @@ export default function VehicleEntryFormV2() {
       .then(setRuntimeConfig)
       .catch(() => setRuntimeConfig(null))
       .finally(() => setLoadingConfig(false));
-    loadOccupancy().catch(console.error);
+    void loadOccupancy();
   }, [loadOccupancy]);
 
   useEffect(() => {
@@ -491,7 +491,13 @@ export default function VehicleEntryFormV2() {
       const idempotencyKey = getOrCreateIdempotencyKey("entry", idempotencyFingerprint);
       idempotencyKeyRef.current = idempotencyKey;
 
-      const resolvedType = resolveVehicleType(values.type, values.countryCode, values.plate);
+      let resolvedType = values.type;
+      if (!resolvedType || resolvedType === "CAR" || resolvedType === "OTHER") {
+        const inferredType = inferVehicleType(values.countryCode, values.plate);
+        if (inferredType) {
+          resolvedType = inferredType as VehicleType;
+        }
+      }
 
       const requestBody = validatePayloadOrThrow(
         operationEntryRequestSchema,
@@ -586,13 +592,12 @@ export default function VehicleEntryFormV2() {
         });
       } else {
         const spaceMsg = payload?.receipt?.parkingSpaceCode ? ` · Celda: ${payload.receipt.parkingSpaceCode}` : "";
-        const plateMsg = plateLabel ? ` · Placa: ${plateLabel}` : "";
-        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${plateMsg}${spaceMsg}`, 5000);
+        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${spaceMsg}`, 5000);
       }
       
       playSuccess();
       incrementStats();
-      loadOccupancy().catch(console.error);
+      void loadOccupancy();
 
       const durationMs = Math.round(performance.now() - startTime);
       writePerfLog("entrySubmit", durationMs, {
