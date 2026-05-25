@@ -20,10 +20,12 @@ import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
+import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
+import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +39,6 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ProcessLostTicketService implements ProcessLostTicketUseCase {
 
   private static final int LOST_TICKET_ENTRY_DRIFT_MAX_MINUTES = 240;
@@ -51,6 +52,54 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
   private final ComplexPricingPort complexPricingPort;
   private final CashMovementUseCase cashMovementUseCase;
   private final MeterRegistry meterRegistry;
+  private final ParkingSpaceService parkingSpaceService;
+
+  @Autowired
+  public ProcessLostTicketService(
+      ParkingSessionPort parkingSessionPort,
+      AppUserPort appUserPort,
+      PaymentPort paymentPort,
+      ParkingSitePort parkingSiteRepository,
+      OperationalParameterPort operationalParameterRepository,
+      OperationIdempotencyPort operationIdempotencyPort,
+      ComplexPricingPort complexPricingPort,
+      CashMovementUseCase cashMovementUseCase,
+      MeterRegistry meterRegistry,
+      ParkingSpaceService parkingSpaceService) {
+    this.parkingSessionPort = parkingSessionPort;
+    this.appUserPort = appUserPort;
+    this.paymentPort = paymentPort;
+    this.parkingSiteRepository = parkingSiteRepository;
+    this.operationalParameterRepository = operationalParameterRepository;
+    this.operationIdempotencyPort = operationIdempotencyPort;
+    this.complexPricingPort = complexPricingPort;
+    this.cashMovementUseCase = cashMovementUseCase;
+    this.meterRegistry = meterRegistry;
+    this.parkingSpaceService = parkingSpaceService;
+  }
+
+  public ProcessLostTicketService(
+      ParkingSessionPort parkingSessionPort,
+      AppUserPort appUserPort,
+      PaymentPort paymentPort,
+      ParkingSitePort parkingSiteRepository,
+      OperationalParameterPort operationalParameterRepository,
+      OperationIdempotencyPort operationIdempotencyPort,
+      ComplexPricingPort complexPricingPort,
+      CashMovementUseCase cashMovementUseCase,
+      MeterRegistry meterRegistry) {
+    this(
+        parkingSessionPort,
+        appUserPort,
+        paymentPort,
+        parkingSiteRepository,
+        operationalParameterRepository,
+        operationIdempotencyPort,
+        complexPricingPort,
+        cashMovementUseCase,
+        meterRegistry,
+        null);
+  }
 
   @Override
   @Transactional
@@ -90,6 +139,11 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
         blankToNull(request.exitImageUrl())
     );
     session = parkingSessionPort.save(session);
+    ParkingSpaceAssignment assignment =
+        parkingSpaceService != null ? parkingSpaceService.findAssignmentBySessionId(session.getId()) : null;
+    if (parkingSpaceService != null) {
+      parkingSpaceService.releaseSpaceBySession(session.getId());
+    }
 
     if (request.paymentMethod() != null) {
       cashMovementUseCase.assertCashOpenForParkingPayment(session);
@@ -109,7 +163,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
 
     return new OperationResultResponse(
         session.getId().toString(),
-        toReceipt(session, Duration.between(session.getEntryAt(), exitAt).toMinutes(), "0h 0m"),
+        toReceipt(session, assignment, Duration.between(session.getEntryAt(), exitAt).toMinutes(), "0h 0m"),
         "Ticket perdido procesado",
         price.subtotal(), price.surcharge(), price.discount(), price.deductedMinutes(), price.total());
   }
@@ -189,7 +243,12 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
           OffsetDateTime exitAt = session.getExitAt() != null ? session.getExitAt() : OffsetDateTime.now();
           var dur = Duration.between(session.getEntryAt(), exitAt).toMinutes();
           return new OperationResultResponse(session.getId().toString(),
-              toReceipt(session, dur, "0h 0m"), "Ticket perdido (idempotente)",
+              toReceipt(
+                  session,
+                  parkingSpaceService != null ? parkingSpaceService.findAssignmentBySessionId(session.getId()) : null,
+                  dur,
+                  "0h 0m"),
+              "Ticket perdido (idempotente)",
               null, null, null, session.getAppliedPrepaidMinutes(), session.getTotalAmount());
         });
   }
@@ -208,7 +267,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
     }
   }
 
-  private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
+  private ReceiptResponse toReceipt(ParkingSession session, ParkingSpaceAssignment assignment, long totalMinutes, String duration) {
     return new ReceiptResponse(
         session.getTicketNumber(), session.getPlate(),
         session.getVehicle().getType(),
@@ -223,7 +282,10 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
         session.getReprintCount(),
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
-        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes());
+        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
+        assignment != null ? assignment.getParkingSpace().getId() : null,
+        assignment != null ? assignment.getParkingSpace().getCode() : null,
+        assignment != null ? assignment.getParkingSpace().getLabel() : null);
   }
 
   private String blankToNull(String s) { return s == null || s.isBlank() ? null : s.trim(); }

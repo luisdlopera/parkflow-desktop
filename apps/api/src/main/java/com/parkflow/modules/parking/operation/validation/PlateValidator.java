@@ -3,6 +3,7 @@ package com.parkflow.modules.parking.operation.validation;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.ArrayList;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
@@ -73,6 +74,35 @@ public class PlateValidator {
         }
 
         return PlateValidationResult.invalid(normalized, errorMessage);
+    }
+
+    /**
+     * Infers the most likely vehicle type from plate format for a given country.
+     * Returns empty if no rule matches.
+     */
+    public Optional<String> inferVehicleType(String countryCode, String plate) {
+        String normalized = normalizePlate(plate);
+        if (normalized.isEmpty()) {
+            return Optional.empty();
+        }
+
+        String targetCountry = (countryCode != null && !countryCode.isBlank()) ? countryCode : "CO";
+        List<String> matches = new ArrayList<>();
+
+        for (PlateValidationRule rule : rules) {
+            if (!rule.enabled()) continue;
+            if (!rule.countryCode().equalsIgnoreCase(targetCountry)) continue;
+            if (rule.pattern().matcher(normalized).matches()) {
+                if (!matches.contains(rule.vehicleType().toUpperCase(Locale.ROOT))) {
+                    matches.add(rule.vehicleType().toUpperCase(Locale.ROOT));
+                }
+            }
+        }
+
+        if (matches.isEmpty()) return Optional.empty();
+        if (matches.contains("MOTORCYCLE")) return Optional.of("MOTORCYCLE");
+        if (matches.contains("CAR")) return Optional.of("CAR");
+        return Optional.of(matches.get(0));
     }
 
     private String translateVehicleType(String type) {
