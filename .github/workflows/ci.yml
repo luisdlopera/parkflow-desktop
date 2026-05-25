@@ -228,6 +228,19 @@ jobs:
           gradle-version: 8.8
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Verify secrets and generate JWT secret if missing
+        run: |
+          echo "=== Secret Verification ==="
+          if [ -n "$PARKFLOW_API_KEY" ]; then echo "✓ PARKFLOW_API_KEY is set"; else echo "✗ PARKFLOW_API_KEY is missing"; fi
+          if [ -n "$PARKFLOW_JWT_SECRET_BASE64" ]; then 
+            echo "✓ PARKFLOW_JWT_SECRET_BASE64 is set" 
+          else 
+            echo "⚠ PARKFLOW_JWT_SECRET_BASE64 is empty — generating secure fallback"
+            export PARKFLOW_JWT_SECRET_BASE64=$(openssl rand -base64 32)
+            echo "PARKFLOW_JWT_SECRET_BASE64=$PARKFLOW_JWT_SECRET_BASE64" >> $GITHUB_ENV
+          fi
+          if [ -n "$PARKFLOW_SEED_ADMIN_PASSWORD" ]; then echo "✓ PARKFLOW_SEED_ADMIN_PASSWORD is set"; else echo "✗ PARKFLOW_SEED_ADMIN_PASSWORD is missing"; fi
+          if [ -n "$PARKFLOW_SEED_CASHIER_PASSWORD" ]; then echo "✓ PARKFLOW_SEED_CASHIER_PASSWORD is set"; else echo "✗ PARKFLOW_SEED_CASHIER_PASSWORD is missing"; fi
       - name: Build API (skip tests - already verified)
         run: ./apps/api/gradlew -p apps/api build -x test
       - name: Start API
