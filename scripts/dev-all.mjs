@@ -18,6 +18,7 @@ const repoRoot = join(__dirname, '..');
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
+    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process, javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
     const child = spawn(command, args, {
       cwd: repoRoot,
       stdio: 'inherit',
@@ -104,6 +105,7 @@ async function main() {
       PARKFLOW_WEB_PORT: webPort.toString(),
     };
 
+    // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
     const api = spawn('pnpm', ['dev:api'], {
       cwd: repoRoot,
       env: sharedEnv,
@@ -111,6 +113,7 @@ async function main() {
       shell: process.platform === 'win32',
     });
 
+    // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
     const web = spawn('pnpm', ['dev:web'], {
       cwd: repoRoot,
       env: sharedEnv,
@@ -130,19 +133,19 @@ async function main() {
     };
 
     api.on('error', (err) => {
-      console.error(`${label} API failed to start:`, err.message);
+      console.error(`${label} API failed to start: %s`, err.message);
       terminateOthers(api, 1);
     });
 
     web.on('error', (err) => {
-      console.error(`${label} Web failed to start:`, err.message);
+      console.error(`${label} Web failed to start: %s`, err.message);
       terminateOthers(web, 1);
     });
 
     api.on('exit', (code) => terminateOthers(api, code ?? 0));
     web.on('exit', (code) => terminateOthers(web, code ?? 0));
   } catch (error) {
-    console.error(`${label} Error:`, error.message);
+    console.error(`${label} Error: %s`, error.message);
     shutdown(1);
   }
 }

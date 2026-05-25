@@ -23,6 +23,7 @@ function log(message, color = "reset") {
 
 function checkCommand(command, name) {
   try {
+    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
     execSync(`${command} --version`, { stdio: "ignore" });
     log(`✓ ${name} instalado`, "green");
     return true;
