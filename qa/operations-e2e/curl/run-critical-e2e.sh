@@ -69,7 +69,7 @@ echo "=== Step 7: Create exit ==="
 exit_resp="$(curl_json POST "$API_BASE/operations/exits" "{\"ticketNumber\":\"$ticket\",\"operatorUserId\":\"$CASHIER_OPERATOR_ID\",\"paymentMethod\":\"CASH\",\"exitAt\":\"2026-05-01T09:15:00Z\",\"idempotencyKey\":\"ci-exit-$ticket\"}")"
 echo "Exit response: $exit_resp"
 assert_eq "$(jq -r '.receipt.status' <<<"$exit_resp")" "CLOSED"
-session_id="$(jq -r '.receipt.sessionId' <<<"$exit_resp")"
+session_id="$(jq -r '.sessionId' <<<"$exit_resp")"
 echo "✓ Exit created, session: $session_id"
 
 echo "=== Step 8: Create print job ==="
