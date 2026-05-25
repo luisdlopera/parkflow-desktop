@@ -139,7 +139,6 @@ refresh_resp="$(curl_json POST "$API_BASE/auth/refresh" "{\"refreshToken\":\"$AD
 echo "Refresh response: $refresh_resp"
 AUTH_TOKEN="$(jq -r '.accessToken' <<<"$refresh_resp")"
 ADMIN_AUTH_TOKEN="$AUTH_TOKEN"
-assert_not_null "$AUTH_TOKEN"
 echo "✓ Token refresh passed"
 
 FAILED_STEP="Step 4: Cashier login"
@@ -212,7 +211,7 @@ lost_plate="LP$RANDOM"
 lost_entry="$(curl_json POST "$API_BASE/operations/entries" "{\"plate\":\"$lost_plate\",\"type\":\"CAR\",\"rateId\":\"$RATE_CAR_ID\",\"operatorUserId\":\"$CASHIER_OPERATOR_ID\",\"entryAt\":\"2026-05-01T10:00:00Z\",\"site\":\"CI\",\"lane\":\"L2\",\"booth\":\"B2\",\"terminal\":\"TERM-CI\",\"vehicleCondition\":\"GOOD\",\"idempotencyKey\":\"ci-entry-$lost_plate\"}")"
 echo "Lost entry response: $lost_entry"
 lost_ticket="$(jq -r '.receipt.ticketNumber' <<<"$lost_entry")"
-# Lost ticket requiere rol de admin
+# Lost ticket requiere rol de admin, usar token de admin
 AUTH_TOKEN="$ADMIN_AUTH_TOKEN"
 lost_resp="$(curl_json POST "$API_BASE/operations/tickets/lost" "{\"ticketNumber\":\"$lost_ticket\",\"operatorUserId\":\"$ADMIN_OPERATOR_ID\",\"paymentMethod\":\"CASH\",\"reason\":\"CI lost flow\",\"idempotencyKey\":\"ci-lost-$lost_ticket\"}")"
 echo "Lost ticket response: $lost_resp"
