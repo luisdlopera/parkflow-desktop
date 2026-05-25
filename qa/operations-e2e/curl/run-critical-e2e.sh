@@ -201,8 +201,7 @@ echo "Reprint response: $reprint"
 [[ "$(jq -r '.receipt.reprintCount' <<<"$reprint")" != "null" ]] || { echo "Reprint failed"; exit 1; }
 echo "✓ Reprint verified"
 
-FAILED_STEP="Step 12: Lost ticket flow"
-echo "=== $FAILED_STEP ==="
+echo "=== Step 12: Lost ticket flow ==="
 lost_plate="LP$RANDOM"
 lost_entry="$(curl_json POST "$API_BASE/operations/entries" "{\"plate\":\"$lost_plate\",\"type\":\"CAR\",\"rateId\":\"$RATE_CAR_ID\",\"operatorUserId\":\"$CASHIER_OPERATOR_ID\",\"entryAt\":\"2026-05-01T10:00:00Z\",\"site\":\"CI\",\"lane\":\"L2\",\"booth\":\"B2\",\"terminal\":\"TERM-CI\",\"vehicleCondition\":\"GOOD\",\"idempotencyKey\":\"ci-entry-$lost_plate\"}")"
 echo "Lost entry response: $lost_entry"
