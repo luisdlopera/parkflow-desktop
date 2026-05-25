@@ -32,6 +32,11 @@ logs/
 .agents/
 skills-lock.json
 
+# Test results
+test-results/
+playwright-report/
+playwright/.cache/
+
 # OS specific
 .DS_Store
 Thumbs.db

@@ -11,6 +11,10 @@ on:
 
 permissions:
   contents: read
+  issues: write
+  security-events: write
+  actions: read
+  checks: write
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -185,7 +189,7 @@ jobs:
   e2e-critical:
     name: E2E critical flows (API)
     runs-on: ubuntu-latest
-    needs: [unit_tests]
+    needs: [lint_typecheck, unit_tests]
     timeout-minutes: 15
     services:
       postgres:
@@ -268,10 +272,8 @@ jobs:
           cat /tmp/api.log
           exit 1
       - name: Seed CI database
-        env:
-          PGPASSWORD: ${{ env.DB_PASSWORD }}
         run: |
-          psql -h localhost -U parkflow -d parkflow -f .github/scripts/seed-ci-data.sql
+          PGPASSWORD=parkflow psql -h localhost -U parkflow -d parkflow -f .github/scripts/seed-ci-data.sql
       - name: Run critical E2E suite
         run: bash qa/operations-e2e/curl/run-critical-e2e.sh
       - name: Upload API log on failure
@@ -285,7 +287,7 @@ jobs:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
     needs: [lint_typecheck, unit_tests]
-    if: github.event_name != 'schedule' && always() && (needs.lint_typecheck.result == 'success' || needs.lint_typecheck.result == 'skipped')
+    if: github.event_name != 'schedule'
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
