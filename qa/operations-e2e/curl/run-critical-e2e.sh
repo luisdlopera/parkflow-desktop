@@ -17,9 +17,9 @@ curl_json() {
   local headers=(-H "X-API-Key: $API_KEY" -H "Content-Type: application/json")
   if [[ -n "${AUTH_TOKEN:-}" ]]; then headers+=(-H "Authorization: Bearer $AUTH_TOKEN"); fi
   if [[ -n "$body" ]]; then
-    curl -sS -w "\nHTTP_CODE: %{http_code}" -X "$method" "$url" "${headers[@]}" -d "$body"
+    curl -sS -X "$method" "$url" "${headers[@]}" -d "$body"
   else
-    curl -sS -w "\nHTTP_CODE: %{http_code}" -X "$method" "$url" "${headers[@]}"
+    curl -sS -X "$method" "$url" "${headers[@]}"
   fi
 }
 
