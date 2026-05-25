@@ -81,6 +81,9 @@ export function buildEscPosReceiptBytes(
   if (ticket.terminal) {
     pushLineCentered(buf, `Terminal: ${ticket.terminal}`, w);
   }
+  if (ticket.parkingSpaceCode) {
+    pushLineCentered(buf, `Celda: ${ticket.parkingSpaceCode}`, w);
+  }
   if (ticket.copyNumber != null) {
     pushLineCentered(buf, `Copia: ${ticket.copyNumber}`, w);
   }

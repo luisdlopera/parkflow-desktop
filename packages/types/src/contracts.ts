@@ -68,6 +68,7 @@ export interface TicketDocument {
   lane: string | null;
   booth: string | null;
   terminal: string | null;
+  parkingSpaceCode?: string | null;
   operatorName: string | null;
   issuedAtIso: string;
   legalMessage: string | null;
