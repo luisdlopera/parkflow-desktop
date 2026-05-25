@@ -46,6 +46,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
     { label: "Cajas", href: "/configuracion/cajas" },
     { label: "Operación", href: "/configuracion/operacion" },
     { label: "Fracciones", href: "/configuracion/fracciones" },
+    { label: "Espacios", href: "/configuracion/espacios" },
   ].filter((subItem) => {
     if (subItem.href === "/configuracion/sedes") {
       const sites = runtimeConfig?.sites;
