@@ -2,6 +2,7 @@ mod escpos;
 mod printer;
 mod printer_profile;
 pub mod licensing;
+pub mod local_first;
 
 use licensing::LicenseState;
 use keyring::Entry as KeyringEntry;
@@ -250,6 +251,9 @@ fn init_local_db_with_path(db_path: &Path) -> Result<Connection, String> {
   let passphrase = db_passphrase()?;
   connection.pragma_update(None, "key", &passphrase)
     .map_err(|error| format!("sqlite key pragma failed: {}", error))?;
+
+  local_first::init_schema_tables(&connection)
+    .map_err(|error| format!("local_first schema init failed: {}", error))?;
 
   connection
     .execute_batch(
@@ -1450,6 +1454,7 @@ mod tests {
 
   /// Execute the full DDL schema on an in-memory database
   fn setup_schema(conn: &Connection) {
+    local_first::init_schema_tables(conn).unwrap();
     conn.execute_batch(
       "CREATE TABLE IF NOT EXISTS local_print_jobs (
         id TEXT PRIMARY KEY, session_id TEXT NOT NULL, document_type TEXT NOT NULL,
@@ -1837,6 +1842,7 @@ pub fn run() {
   let db_path = sqlite_path().expect("failed to resolve sqlite path");
   let _connection = init_local_db().expect("failed to initialize local sqlite");
   start_offline_worker(db_path.clone());
+  local_first::start_sync_worker(db_path.clone());
 
   // Initialize licensing state
   let license_state = LicenseState::new().expect("failed to initialize licensing");
@@ -1879,7 +1885,33 @@ pub fn run() {
       licensing::check_tamper_status,
       licensing::process_heartbeat_response,
       licensing::clear_license,
-      licensing::get_license_status
+      licensing::get_license_status,
+      // Local first commands
+      local_first::get_parkflow_config,
+      local_first::local_login,
+      local_first::local_refresh,
+      local_first::local_get_settings,
+      local_first::local_get_parking_spaces_summary,
+      local_first::local_list_parking_spaces,
+      local_first::local_update_parking_space_capacity,
+      local_first::local_update_parking_space,
+      local_first::local_get_dashboard_summary,
+      local_first::local_list_active_sessions,
+      local_first::local_get_active_session,
+      local_first::local_create_entry,
+      local_first::local_create_exit,
+      local_first::local_reprint_ticket,
+      local_first::local_process_lost_ticket,
+      local_first::local_open_cash_session,
+      local_first::local_get_current_cash_session,
+      local_first::local_list_cash_movements,
+      local_first::local_get_cash_session_summary,
+      local_first::local_add_cash_movement,
+      local_first::local_count_cash_session,
+      local_first::local_close_cash_session,
+      local_first::local_print_cash_closing,
+      local_first::local_get_rates,
+      local_first::local_trigger_operational_action
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
