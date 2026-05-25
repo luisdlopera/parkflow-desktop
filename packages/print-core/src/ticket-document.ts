@@ -22,6 +22,7 @@ export function previewLinesFromTicketDocument(
     lane: doc.lane,
     booth: doc.booth,
     terminal: doc.terminal,
+    parkingSpaceCode: doc.parkingSpaceCode,
     copyNumber: doc.copyNumber,
     legalMessage: doc.legalMessage,
     qrPayload: doc.qrPayload,
