@@ -26,9 +26,9 @@ curl_json() {
   local headers=(-H "X-API-Key: $API_KEY" -H "Content-Type: application/json")
   if [[ -n "${AUTH_TOKEN:-}" ]]; then headers+=(-H "Authorization: Bearer $AUTH_TOKEN"); fi
   if [[ -n "$body" ]]; then
-    curl -sS -X "$method" "$url" "${headers[@]}" -d "$body"
+    curl -sS -w "\nHTTP_CODE: %{http_code}" -X "$method" "$url" "${headers[@]}" -d "$body"
   else
-    curl -sS -X "$method" "$url" "${headers[@]}"
+    curl -sS -w "\nHTTP_CODE: %{http_code}" -X "$method" "$url" "${headers[@]}"
   fi
 }
 
@@ -211,8 +211,6 @@ lost_plate="LP$RANDOM"
 lost_entry="$(curl_json POST "$API_BASE/operations/entries" "{\"plate\":\"$lost_plate\",\"type\":\"CAR\",\"rateId\":\"$RATE_CAR_ID\",\"operatorUserId\":\"$CASHIER_OPERATOR_ID\",\"entryAt\":\"2026-05-01T10:00:00Z\",\"site\":\"CI\",\"lane\":\"L2\",\"booth\":\"B2\",\"terminal\":\"TERM-CI\",\"vehicleCondition\":\"GOOD\",\"idempotencyKey\":\"ci-entry-$lost_plate\"}")"
 echo "Lost entry response: $lost_entry"
 lost_ticket="$(jq -r '.receipt.ticketNumber' <<<"$lost_entry")"
-# Lost ticket requiere rol de admin, usar token de admin
-AUTH_TOKEN="$ADMIN_AUTH_TOKEN"
 lost_resp="$(curl_json POST "$API_BASE/operations/tickets/lost" "{\"ticketNumber\":\"$lost_ticket\",\"operatorUserId\":\"$ADMIN_OPERATOR_ID\",\"paymentMethod\":\"CASH\",\"reason\":\"CI lost flow\",\"idempotencyKey\":\"ci-lost-$lost_ticket\"}")"
 echo "Lost ticket response: $lost_resp"
 assert_eq "$(jq -r '.receipt.lostTicket' <<<"$lost_resp")" "true"
