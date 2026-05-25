@@ -14,6 +14,56 @@ Plataforma de parqueaderos desktop-first preparada para crecer a web y backend e
 
 ---
 
+## Arquitectura Local-First (Nuevo 🎉)
+
+ParkFlow Desktop implementa una arquitectura Local-First real que permite el funcionamiento 100% autónomo de la aplicación de escritorio sin depender de la API o la base de datos central en la nube.
+
+### 1. Modos de Ejecución (`PARKFLOW_MODE`)
+
+Configura la variable de entorno `PARKFLOW_MODE` para definir el comportamiento de la aplicación:
+
+- **`local`**: La aplicación opera de manera 100% local. Utiliza SQLite local (cifrado con SQLCipher si hay credenciales en el llavero del sistema) para el almacenamiento de datos. La API no es requerida y las operaciones no se encolan para sincronización.
+- **`sync`**: La aplicación opera localmente, pero encola todas las mutaciones críticas (entradas, salidas, pagos, movimientos de caja) en una cola de sincronización local (`sync_queue`). Un hilo de fondo en Rust intenta enviar continuamente los eventos a la API central en `/sync/push` cuando se detecta conexión a internet.
+- **`cloud`**: Modo heredado en línea. Todas las llamadas se realizan directamente a la API central `/api/v1/*` sin interceptación local.
+
+Controla el estado de sincronización con:
+- `PARKFLOW_SYNC_ENABLED=true | false` (Habilita o deshabilita el hilo de fondo de sincronización).
+
+### 2. Creación de Administrador Inicial en Primer Arranque
+
+En el primer arranque en modo `local` o `sync`, la base de datos SQLite se crea automáticamente y se insertan los siguientes datos semillas de forma predeterminada:
+
+- **Usuario Super Administrador Inicial**:
+  - **Email**: `admin@parkflow.local`
+  - **Contraseña**: `Qwert.12345` (Contraseña cifrada de forma segura con BCrypt en la base de datos local)
+- **Roles Locales Soportados**:
+  - `SUPER_ADMIN` (Permisos totales)
+  - `ADMIN` (Administración de tarifas, cajas y personal)
+  - `CAJERO` (Operación de entradas, salidas y cobros)
+  - `OPERADOR` (Registro de vehículos)
+  - `AUDITOR` (Solo lectura y reportes)
+
+### 3. Sincronización Automática e Historial de Eventos
+
+Cuando se ejecuta en modo `sync`, cada operación crítica se escribe primero en la base de datos local SQLite y se genera un registro en la tabla `sync_queue`:
+- `event_id` (UUID del evento)
+- `entity_type` (`USER`, `COMPANY`, `SITE`, `TICKET`, `PAYMENT`, `CASH_SESSION`, etc.)
+- `entity_id` (UUID de la entidad asociada)
+- `operation` (`CREATE_ENTRY`, `CREATE_EXIT`, `OPEN_CASH_SESSION`, `CLOSE_CASH_SESSION`, etc.)
+- `payload_json` (El JSON exacto enviado o generado por la operación)
+- `status`: `LOCAL_ONLY`, `PENDING_SYNC`, `SYNCED`, `CONFLICT`, `FAILED`
+- `created_at` / `synced_at`
+
+El servicio de fondo monitoriza la conectividad enviando heartbeats al endpoint `/health` de la API. Al restablecerse la conexión:
+1. Lee los eventos en estado `PENDING_SYNC` en orden cronológico ascendente.
+2. Los envía a la API mediante peticiones POST seguras a `/sync/push`.
+3. Al recibir un estado exitoso (`200 OK`), marca el evento como `SYNCED`.
+4. Si hay un conflicto lógico (`409 Conflict`), marca el estado como `CONFLICT`.
+5. Si ocurre un fallo del cliente (`4xx`), marca el estado como `FAILED`.
+6. Si hay un fallo de red o servidor (`5xx`), mantiene el estado en `PENDING_SYNC` para reintentarlo en el próximo ciclo.
+
+---
+
 ## Requisitos Previos
 
 - **Node.js 18+** y **pnpm**
