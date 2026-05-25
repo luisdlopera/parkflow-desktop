@@ -176,7 +176,7 @@ jobs:
   e2e-critical:
     name: E2E critical flows (API)
     runs-on: ubuntu-latest
-    needs: [lint_typecheck, unit_tests]
+    needs: [unit_tests]
     timeout-minutes: 15
     services:
       postgres:
@@ -274,7 +274,7 @@ jobs:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
     needs: [lint_typecheck, unit_tests]
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && always() && (needs.lint_typecheck.result == 'success' || needs.lint_typecheck.result == 'skipped')
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
