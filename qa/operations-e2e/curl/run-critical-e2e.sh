@@ -93,7 +93,7 @@ echo "Sync pull response: $sync_pull"
 echo "✓ Sync pull verified"
 
 echo "=== Step 11: Reprint ticket ==="
-reprint="$(curl_json POST "$API_BASE/operations/tickets/reprint" "{\"ticketNumber\":\"$ticket\",\"operatorUserId\":\"$CASHIER_OPERATOR_ID\",\"reason\":\"CI test\"}")"
+reprint="$(curl_json POST "$API_BASE/operations/tickets/reprint" "{\"ticketNumber\":\"$ticket\",\"operatorUserId\":\"$CASHIER_OPERATOR_ID\",\"reason\":\"CI test\",\"idempotencyKey\":\"ci-reprint-$ticket\"}")"
 echo "Reprint response: $reprint"
 [[ "$(jq -r '.receipt.reprintCount' <<<"$reprint")" != "null" ]] || { echo "Reprint failed"; exit 1; }
 echo "✓ Reprint verified"
@@ -104,7 +104,7 @@ lost_entry="$(curl_json POST "$API_BASE/operations/entries" "{\"plate\":\"$lost_
 echo "Lost entry response: $lost_entry"
 lost_ticket="$(jq -r '.receipt.ticketNumber' <<<"$lost_entry")"
 AUTH_TOKEN="$(jq -r '.accessToken' <<<"$refresh_resp")"
-lost_resp="$(curl_json POST "$API_BASE/operations/tickets/lost" "{\"ticketNumber\":\"$lost_ticket\",\"operatorUserId\":\"$ADMIN_OPERATOR_ID\",\"paymentMethod\":\"CASH\",\"reason\":\"CI lost flow\"}")"
+lost_resp="$(curl_json POST "$API_BASE/operations/tickets/lost" "{\"ticketNumber\":\"$lost_ticket\",\"operatorUserId\":\"$ADMIN_OPERATOR_ID\",\"paymentMethod\":\"CASH\",\"reason\":\"CI lost flow\",\"idempotencyKey\":\"ci-lost-$lost_ticket\"}")"
 echo "Lost ticket response: $lost_resp"
 assert_eq "$(jq -r '.receipt.lostTicket' <<<"$lost_resp")" "true"
 echo "✓ Lost ticket flow verified"
