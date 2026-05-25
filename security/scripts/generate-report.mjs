@@ -7,7 +7,7 @@
 // =============================================================================
 
 import { readdir, readFile, stat } from 'fs/promises';
-import { join, resolve, basename } from 'path';
+import { join, resolve } from 'path';
 import { execSync } from 'child_process';
 
 const ROOT = resolve(process.cwd());
@@ -21,15 +21,10 @@ async function findLatestReport(pattern) {
     if (matching.length === 0) return null;
     
     const stats = await Promise.all(
-      matching.map(async f => {
-        const safeF = basename(f);
-        // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
-        const filePath = join(REPORTS_DIR, safeF);
-        return {
-          file: f,
-          mtime: (await stat(filePath)).mtime,
-        };
-      })
+      matching.map(async f => ({
+        file: f,
+        mtime: (await stat(join(REPORTS_DIR, f))).mtime,
+      }))
     );
     
     stats.sort((a, b) => b.mtime - a.mtime);
@@ -41,10 +36,8 @@ async function findLatestReport(pattern) {
 
 async function readJsonReport(filename) {
   if (!filename) return null;
-  const safeFilename = basename(filename);
   try {
-    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
-    const content = await readFile(join(REPORTS_DIR, safeFilename), 'utf-8');
+    const content = await readFile(join(REPORTS_DIR, filename), 'utf-8');
     return JSON.parse(content);
   } catch {
     return null;

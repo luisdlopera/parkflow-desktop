@@ -1587,7 +1587,7 @@ RATE_LIMIT_ENABLED=true
 # .env (Este archivo NO se commitea — está en .gitignore)
 # Valores reales solo aquí
 DATABASE_URL=postgresql://parkflow:secret_password@localhost:6021/parkflow_dev
-JWT_SECRET=your_jwt_secret_key_should_be_at_least_32_characters_long
+JWT_SECRET=aBcD1234eFgH5678iJkL9012mNoP3456
 # ... etc
 ```
 

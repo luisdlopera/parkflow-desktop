@@ -37,6 +37,10 @@ test-results/
 playwright-report/
 playwright/.cache/
 
+# Security reports
+security/reports/
+*.sarif
+
 # OS specific
 .DS_Store
 Thumbs.db
