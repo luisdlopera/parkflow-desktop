@@ -25,6 +25,7 @@ pub struct TicketDoc {
   pub qr_payload: Option<String>,
   pub barcode_payload: Option<String>,
   pub copy_number: Option<i32>,
+  pub parking_space_code: Option<String>,
   /// Matches shared contract `TicketDocument.printerProfile` (slug).
   pub printer_profile: Option<String>,
   #[serde(rename = "detailLines")]
@@ -137,6 +138,9 @@ pub fn build_receipt(kind: &str, ticket: &TicketDoc, profile: &EscPosProfile) ->
   if let Some(ref t) = ticket.terminal {
     push_line_centered(&mut out, &format!("Terminal: {}", t), w);
   }
+  if let Some(ref psc) = ticket.parking_space_code {
+    push_line_centered(&mut out, &format!("Celda: {}", psc), w);
+  }
   if let Some(n) = ticket.copy_number {
     push_line_centered(&mut out, &format!("Copia: {}", n), w);
   }
@@ -233,6 +237,7 @@ mod tests {
       qr_payload: None,
       barcode_payload: None,
       copy_number: Some(1),
+      parking_space_code: None,
       printer_profile: None,
       detail_lines: None,
     };
