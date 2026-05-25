@@ -172,7 +172,6 @@ exit_resp="$(curl_json POST "$API_BASE/operations/exits" "{\"ticketNumber\":\"$t
 echo "Exit response: $exit_resp"
 assert_eq "$(jq -r '.receipt.status' <<<"$exit_resp")" "CLOSED"
 session_id="$(jq -r '.sessionId' <<<"$exit_resp")"
-MAIN_SESSION_ID="$session_id"
 echo "✓ Exit created, session: $session_id"
 
 echo "=== Step 8: Create print job ==="
