@@ -73,7 +73,7 @@ session_id="$(jq -r '.sessionId' <<<"$exit_resp")"
 echo "✓ Exit created, session: $session_id"
 
 echo "=== Step 8: Create print job ==="
-print_job="$(curl_json POST "$API_BASE/print-jobs" "{\"sessionId\":\"$session_id\",\"operatorUserId\":\"$CASHIER_OPERATOR_ID\",\"documentType\":\"TICKET\",\"idempotencyKey\":\"ci-print-$ticket\",\"payloadHash\":\"hash-$ticket\",\"ticketSnapshotJson\":\"{}\",\"terminalId\":\"TERM-CI\"}")"
+print_job="$(curl_json POST "$API_BASE/print-jobs" "{\"sessionId\":\"$session_id\",\"operatorUserId\":\"$CASHIER_OPERATOR_ID\",\"documentType\":\"ENTRY\",\"idempotencyKey\":\"ci-print-$ticket\",\"payloadHash\":\"hash-$ticket\",\"ticketSnapshotJson\":\"{}\",\"terminalId\":\"TERM-CI\"}")"
 echo "Print job response: $print_job"
 print_id="$(jq -r '.id' <<<"$print_job")"
 [[ "$print_id" != "null" ]] || { echo "Print job creation failed"; exit 1; }
