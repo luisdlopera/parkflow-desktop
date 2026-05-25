@@ -21,7 +21,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- Ensure admin user exists (password: Admin123!)
 INSERT INTO app_user (id, company_id, name, email, role, password_hash, is_active, can_void_tickets, can_reprint_tickets, can_close_cash, require_password_change)
-VALUES ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Administrador', 'admin@parkflow.local', 'SUPER_ADMIN', '$2b$12$85zO6ApugETurtS6fuv0v.4l4rxlZSjsTW2heoeT1vqUDyzKTwzlm', TRUE, TRUE, TRUE, TRUE, FALSE)
+VALUES ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Administrador', 'admin@parkflow.local', 'SUPER_ADMIN', crypt('Admin123!', gen_salt('bf', 12)), TRUE, TRUE, TRUE, TRUE, FALSE)
 ON CONFLICT (email) DO UPDATE SET
   password_hash = EXCLUDED.password_hash,
   is_active = TRUE,
@@ -30,7 +30,7 @@ ON CONFLICT (email) DO UPDATE SET
 
 -- Ensure cashier user exists (password: Cashier123!)
 INSERT INTO app_user (id, company_id, name, email, role, password_hash, is_active, can_void_tickets, can_reprint_tickets, can_close_cash, require_password_change)
-VALUES ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'Cajero', 'cashier@parkflow.local', 'CAJERO', '$2b$12$53S2zQ7i/710dh4a2EGxr.9Y3mMtAYWbGAp9u8d6BZCr.o/X/sUuK', TRUE, FALSE, FALSE, TRUE, FALSE)
+VALUES ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'Cajero', 'cashier@parkflow.local', 'CAJERO', crypt('Cashier123!', gen_salt('bf', 12)), TRUE, FALSE, FALSE, TRUE, FALSE)
 ON CONFLICT (email) DO UPDATE SET
   password_hash = EXCLUDED.password_hash,
   is_active = TRUE,

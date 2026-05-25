@@ -98,15 +98,16 @@ async function main() {
     console.log('');
 
     // Start Next.js
+    // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
     const nextDev = spawn('pnpm', ['next', 'dev', '-p', port.toString()], {
       cwd: webDir,
       env,
       stdio: 'inherit',
-      shell: true,
+      shell: process.platform === 'win32',
     });
 
     nextDev.on('error', (err) => {
-      console.error(`${label} Failed to start Next.js:`, err.message);
+      console.error(`${label} Failed to start Next.js: %s`, err.message);
       process.exit(1);
     });
 

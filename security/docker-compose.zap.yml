@@ -24,6 +24,12 @@ services:
     volumes:
       - ./zap/baseline.conf:/zap/wrk/baseline.conf:ro
       - ./reports:/zap/wrk/reports:rw
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/zap
+    security_opt:
+      - no-new-privileges:true
     network_mode: host
     profiles:
       - baseline
@@ -50,6 +56,12 @@ services:
       - ./zap/api-scan.conf:/zap/wrk/api-scan.conf:ro
       - ./reports:/zap/wrk/reports:rw
       - /tmp/openapi.json:/zap/wrk/openapi.json:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/zap
+    security_opt:
+      - no-new-privileges:true
     network_mode: host
     profiles:
       - api
@@ -70,6 +82,12 @@ services:
     volumes:
       - ./zap/full-scan.conf:/zap/wrk/full-scan.conf:ro
       - ./reports:/zap/wrk/reports:rw
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/zap
+    security_opt:
+      - no-new-privileges:true
     network_mode: host
     profiles:
       - full
