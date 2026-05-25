@@ -111,6 +111,7 @@ jacocoTestCoverageVerification {
 }
 
 check.dependsOn jacocoTestCoverageVerification
+check.dependsOn jacocoTestReport
 
 flyway {
   configurations = ['flywayMigration']
