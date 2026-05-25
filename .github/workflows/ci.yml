@@ -282,3 +282,33 @@ jobs:
           path: /tmp/api.log
 
 
+      - name: Download web coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: web-coverage
+          path: apps/web/coverage/
+
+      - name: Download API coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: api-coverage
+          path: apps/api/build/reports/jacoco/test/
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.8
+
+      - name: Build API (for compiled classes)
+        run: ./apps/api/gradlew -p apps/api compileJava compileTestJava
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
