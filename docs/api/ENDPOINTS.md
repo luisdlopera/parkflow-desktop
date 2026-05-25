@@ -13,6 +13,10 @@ This document provides a comprehensive list of all current API endpoints in the 
 | **Operations** | GET | `/api/v1/operations/sessions/active` | `OperationController` | Find active session | Yes | - | `ParkingSession` | `OperationServiceTest` |
 | **Operations** | POST | `/api/v1/operations/tickets/reprint` | `OperationController` | Reprint ticket | Yes | `ReprintRequest` | `PrintJobResponse` | `OperationServiceTest` |
 | **Operations** | POST | `/api/v1/operations/tickets/lost` | `OperationController` | Process lost ticket | Yes (Manager) | `LostTicketRequest` | `ReceiptResponse` | `OperationServiceTest` |
+| **Parking Spaces** | GET | `/api/v1/parking-spaces` | `ParkingSpaceController` | List parking spaces by company | Yes | - | `ParkingSpaceDto[]` | `ParkingSpaceServiceTest` |
+| **Parking Spaces** | GET | `/api/v1/parking-spaces/summary` | `ParkingSpaceController` | Occupancy summary by company | Yes | - | `ParkingSpaceOccupancySummaryResponse` | `ParkingSpaceServiceTest` |
+| **Parking Spaces** | PUT | `/api/v1/parking-spaces/capacity` | `ParkingSpaceController` | Resize active capacity | Yes | `ResizeCapacityRequest` | `ParkingSpaceOccupancySummaryResponse` | `ParkingSpaceServiceTest` |
+| **Parking Spaces** | PATCH | `/api/v1/parking-spaces/{id}` | `ParkingSpaceController` | Update space status/type/label | Yes | `PatchParkingSpaceRequest` | `ParkingSpaceDto` | `ParkingSpaceServiceTest` |
 | **Cash** | POST | `/api/v1/cash/open` | `CashController` | Open cash session | Yes | `OpenCashRequest` | `CashSessionResponse` | `CashServiceTest` |
 | **Cash** | POST | `/api/v1/cash/sessions/{id}/close` | `CashController` | Close cash session | Yes | `CashCloseRequest` | `CashSessionResponse` | `CashServiceTest` |
 | **Cash** | POST | `/api/v1/cash/sessions/{id}/movements` | `CashController` | Register movement | Yes | `CashMovementRequest` | `CashMovementResponse` | `CashServiceTest` |
