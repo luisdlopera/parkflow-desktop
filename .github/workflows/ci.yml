@@ -9,6 +9,13 @@ on:
     # Daily at 02:00 UTC for full background validation
     - cron: "0 2 * * *"
 
+permissions:
+  contents: read
+  issues: write
+  security-events: write
+  actions: read
+  checks: write
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -17,6 +24,7 @@ jobs:
   lint_typecheck:
     name: Lint + Typecheck + Unit Tests (Web)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -33,6 +41,7 @@ jobs:
       - run: pnpm --filter @parkflow/web test:coverage
       - name: Upload web coverage
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: web-coverage
           path: apps/web/coverage/lcov.info
@@ -41,6 +50,7 @@ jobs:
   unit_tests:
     name: Unit tests (API)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -48,13 +58,14 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: gradle
-      - uses: gradle/gradle-build-action@v3
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.8
-      - name: Run API unit tests + coverage verification
-        run: ./apps/api/gradlew -p apps/api check
+      - name: Run API unit tests + generate coverage report
+        run: ./apps/api/gradlew -p apps/api test jacocoTestReport
       - name: Upload API coverage
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: api-coverage
           path: apps/api/build/reports/jacoco/test/jacocoTestReport.xml
@@ -65,6 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint_typecheck, unit_tests]
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -72,7 +84,7 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: gradle
-      - uses: gradle/gradle-build-action@v3
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.8
       - name: Run full API build (includes tests and packaging)
@@ -81,6 +93,7 @@ jobs:
   desktop_tests:
     name: Desktop tests (Rust + integration)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Install system dependencies
@@ -88,6 +101,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev pkg-config libudev-dev
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -103,13 +117,15 @@ jobs:
     name: Desktop E2E (Playwright)
     runs-on: ubuntu-latest
     needs: [desktop_tests]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev pkg-config libudev-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev pkg-config libudev-dev xvfb
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -120,12 +136,21 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm --filter @parkflow/desktop test:e2e
+      - name: Run Desktop E2E
+        run: xvfb-run pnpm --filter @parkflow/desktop test:e2e
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-desktop-report
+          path: apps/desktop/playwright-report/
+          retention-days: 5
 
   e2e_cross_browser:
     name: E2E cross-browser (Playwright)
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -140,11 +165,19 @@ jobs:
         run: pnpm exec playwright install --with-deps firefox webkit chromium
       - name: Run full cross-browser E2E suite
         run: pnpm exec playwright test --config qa/e2e/playwright.config.ts
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-cross-browser-report
+          path: qa/e2e/playwright-report/
+          retention-days: 5
 
   e2e-critical:
     name: E2E critical flows (API)
     runs-on: ubuntu-latest
     needs: [lint_typecheck, unit_tests]
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:16
@@ -169,15 +202,20 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: ci
       PARKFLOW_API_PORT: 8080
       DB_URL: jdbc:postgresql://localhost:5432/parkflow
       DB_USERNAME: parkflow
       DB_PASSWORD: parkflow
-      PARKFLOW_API_KEY: ${{ secrets.PARKFLOW_API_KEY || 'ci-test-api-key-12345' }}
-      PARKFLOW_JWT_SECRET_BASE64: ${{ secrets.PARKFLOW_JWT_SECRET_BASE64 || 'cGFya2Zsb3ctZGVmYXVsdC1iYXNlNjQtand0LXNlY3JldC1rZXktZm9yLWRldmVsb3BtZW50' }}
-      PARKFLOW_SEED_ADMIN_PASSWORD: ${{ secrets.PARKFLOW_SEED_ADMIN_PASSWORD || 'Admin123!' }}
-      PARKFLOW_SEED_CASHIER_PASSWORD: ${{ secrets.PARKFLOW_SEED_CASHIER_PASSWORD || 'Cashier123!' }}
+      PARKFLOW_API_KEY: ${{ secrets.PARKFLOW_API_KEY }}
+      PARKFLOW_JWT_SECRET_BASE64: ${{ secrets.PARKFLOW_JWT_SECRET_BASE64 }}
+      PARKFLOW_SEED_ADMIN_PASSWORD: ${{ secrets.PARKFLOW_SEED_ADMIN_PASSWORD }}
+      PARKFLOW_SEED_CASHIER_PASSWORD: ${{ secrets.PARKFLOW_SEED_CASHIER_PASSWORD }}
+      PARKFLOW_SEED_ADMIN_EMAIL: admin@parkflow.local
+      PARKFLOW_SEED_CASHIER_EMAIL: cashier@parkflow.local
+      ADMIN_OPERATOR_ID: 00000000-0000-0000-0000-000000000001
+      CASHIER_OPERATOR_ID: 00000000-0000-0000-0000-000000000002
+      RATE_CAR_ID: 10000000-0000-0000-0000-000000000001
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -185,6 +223,9 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: gradle
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.8
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
       - name: Build API (skip tests - already verified)
@@ -194,18 +235,21 @@ jobs:
           nohup ./apps/api/gradlew -p apps/api bootRun > /tmp/api.log 2>&1 &
       - name: Wait for health
         run: |
-          for i in {1..180}; do
+          for i in {1..90}; do
             if curl -fsS http://127.0.0.1:8080/api/v1/health >/dev/null; then
-              echo "API is healthy after $((i * 2)) seconds"
+              echo "API is healthy after ${i}s"
               exit 0
             fi
             sleep 2
           done
-          echo "API failed to start within 6 minutes"
+          echo "API failed to start within 3 minutes"
           cat /tmp/api.log
           exit 1
+      - name: Seed CI database
+        run: |
+          PGPASSWORD=parkflow psql -h localhost -U parkflow -d parkflow -f .github/scripts/seed-ci-data.sql
       - name: Run critical E2E suite
-        run: qa/operations-e2e/curl/run-critical-e2e.sh
+        run: bash qa/operations-e2e/curl/run-critical-e2e.sh
       - name: Upload API log on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -218,6 +262,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint_typecheck, unit_tests]
     if: github.event_name != 'schedule'
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -240,6 +285,10 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: gradle
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.8
 
       - name: Build API (for compiled classes)
         run: ./apps/api/gradlew -p apps/api compileJava compileTestJava

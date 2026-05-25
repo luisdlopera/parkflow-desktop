@@ -1,0 +1,36 @@
+# Gitleaks Configuration — Ignore known false positives and safe patterns
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+
+title = "Parkflow Gitleaks Config"
+
+[extend]
+# Use default rules as baseline
+useDefault = true
+
+[[rules]]
+id = "workflow-fallbacks"
+description = "Ignore GitHub Actions expression fallbacks (already removed but keep for historical commits)"
+regex = '''\$\{\{\s*secrets\.\w+\s*\|\|\s*['"].*?['"]\s*\}\}'''
+[rules.allowlist]
+paths = ['''\.github/workflows/.*\.yml''']
+
+[[rules]]
+id = "zap-replacer-config"
+description = "Ignore ZAP replacer config strings in workflow files"
+regex = '''replacement=Bearer\s+\$\{\{'''
+[rules.allowlist]
+paths = ['''\.github/workflows/.*\.yml''']
+
+[allowlist]
+# Ignore historical remediation docs (may contain example secrets)
+paths = [
+  '''docs\/security\/REMEDIATION-.*\.md''',
+  '''\.gitleaks\.toml''',
+]
+
+# Ignore test fixtures and example configs
+paths = [
+  '''.*_test\.go''',
+  '''.*\.test\.(ts|tsx|js|jsx)''',
+  '''.*\.spec\.(ts|tsx|js|jsx)''',
+]
