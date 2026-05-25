@@ -234,6 +234,18 @@ jobs:
         with:
           gradle-version: 8.8
 
+      - name: Verify secrets and generate JWT secret if missing
+        run: |
+          echo "=== Secret Verification ==="
+          if [ -n "$PARKFLOW_API_KEY" ]; then echo "✓ PARKFLOW_API_KEY is set"; else echo "✗ PARKFLOW_API_KEY is missing"; fi
+          if [ -n "$PARKFLOW_JWT_SECRET_BASE64" ]; then 
+            echo "✓ PARKFLOW_JWT_SECRET_BASE64 is set" 
+          else 
+            echo "⚠ PARKFLOW_JWT_SECRET_BASE64 is empty — generating secure fallback"
+            export PARKFLOW_JWT_SECRET_BASE64=$(openssl rand -base64 32)
+            echo "PARKFLOW_JWT_SECRET_BASE64=$PARKFLOW_JWT_SECRET_BASE64" >> $GITHUB_ENV
+          fi
+
       - name: Build API
         run: ./apps/api/gradlew -p apps/api build -x test
 
