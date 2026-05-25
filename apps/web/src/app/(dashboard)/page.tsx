@@ -11,6 +11,9 @@ import LocalPrintAgentStatus from "@/components/print/LocalPrintAgentStatus";
 
 type Summary = {
   activeVehicles: number;
+  totalCapacity: number;
+  availableSpaces: number;
+  occupancyPercent: number;
   entriesSinceMidnight: number;
   exitsSinceMidnight: number;
   reprintsSinceMidnight: number;
@@ -124,12 +127,16 @@ export default function DashboardPage() {
   const kpis = summary
     ? [
         { title: "Vehiculos activos", value: String(summary.activeVehicles), trend: "API" },
+        { title: "Espacios disponibles", value: String(summary.availableSpaces), trend: `Cap: ${summary.totalCapacity}` },
+        { title: "Ocupación actual", value: `${Math.round(summary.occupancyPercent)}%`, trend: "En vivo" },
         { title: "Ingresos hoy", value: String(summary.entriesSinceMidnight), trend: "Sede" },
         { title: "Salidas hoy", value: String(summary.exitsSinceMidnight), trend: "Sede" },
         { title: "Reimpresiones hoy", value: String(summary.reprintsSinceMidnight), trend: "Sede" }
       ]
     : [
         { title: "Vehiculos activos", value: "—", trend: "…" },
+        { title: "Espacios disponibles", value: "—", trend: "…" },
+        { title: "Ocupación actual", value: "—", trend: "…" },
         { title: "Ingresos hoy", value: "—", trend: "…" },
         { title: "Salidas hoy", value: "—", trend: "…" },
         { title: "Reimpresiones hoy", value: "—", trend: "…" }
@@ -182,7 +189,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {kpis.map((kpi) => (
           <KpiCard key={kpi.title} {...kpi} />
         ))}
@@ -231,9 +238,17 @@ export default function DashboardPage() {
       </section>
 
       <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-900">Vehículos en Patio</h2>
-          <Badge label="En vivo" tone="success" />
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-slate-900">Vehículos en Patio</h2>
+            <Badge label="En vivo" tone="success" />
+          </div>
+          <div className="text-sm font-semibold text-slate-700">
+            Espacios disponibles:{" "}
+            <span className="text-emerald-700">
+              {summary ? `${summary.availableSpaces} / ${summary.totalCapacity}` : "—"}
+            </span>
+          </div>
         </div>
         {sessionsError ? <p className="text-sm text-amber-800">{sessionsError}</p> : null}
         <DataTable
