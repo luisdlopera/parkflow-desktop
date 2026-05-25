@@ -12,10 +12,9 @@ import com.parkflow.modules.parking.operation.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
-import com.parkflow.modules.parking.operation.application.service.DurationCalculator;
-import com.parkflow.modules.parking.operation.application.service.OperationAuditService;
-import com.parkflow.modules.parking.operation.application.service.OperationPrintService;
-import com.parkflow.modules.tickets.domain.PrintDocumentType;
+import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
+import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +38,7 @@ public class ReprintTicketService implements ReprintTicketUseCase {
   private final OperationAuditService auditService;
   private final OperationPrintService operationPrintService;
   private final MeterRegistry meterRegistry;
-  private final AuditPort globalAuditService;
+  private final ParkingSpaceService parkingSpaceService;
 
   @Override
   @Transactional
@@ -134,6 +133,7 @@ public class ReprintTicketService implements ReprintTicketUseCase {
   }
 
   private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
+    ParkingSpaceAssignment assignment = parkingSpaceService.findAssignmentBySessionId(session.getId());
     return new ReceiptResponse(
         session.getTicketNumber(), session.getPlate(),
         session.getVehicle().getType(),
@@ -148,6 +148,9 @@ public class ReprintTicketService implements ReprintTicketUseCase {
         session.getReprintCount(),
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
-        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes());
+        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
+        assignment != null ? assignment.getParkingSpace().getId() : null,
+        assignment != null ? assignment.getParkingSpace().getCode() : null,
+        assignment != null ? assignment.getParkingSpace().getLabel() : null);
   }
 }

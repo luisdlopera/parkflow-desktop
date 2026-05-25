@@ -2,6 +2,7 @@ package com.parkflow.modules.parking.operation.application.service;
 
 import com.parkflow.modules.parking.operation.dto.OperationsSummaryResponse;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import com.parkflow.modules.sync.domain.repository.SyncEventPort;
 import com.parkflow.modules.tickets.domain.PrintJobStatus;
 import com.parkflow.modules.tickets.domain.repository.PrintJobPort;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SupervisorService {
 
   private final ParkingSessionPort parkingSessionPort;
+  private final ParkingSpaceService parkingSpaceService;
   private final PrintJobPort printJobRepository;
   private final SyncEventPort syncEventRepository;
 
@@ -33,6 +35,10 @@ public class SupervisorService {
 
     UUID companyId = SecurityUtils.requireCompanyId();
     long active = parkingSessionPort.countActive(companyId);
+    var occupancy = parkingSpaceService.getOccupancySummary(companyId);
+    long totalCapacity = occupancy.activeSpaces();
+    long availableSpaces = occupancy.availableSpaces();
+    double occupancyPercent = occupancy.occupancyPercentage();
     long entries = parkingSessionPort.countEntriesInPeriod(dayStart, nextDayStart, companyId);
     long exits = parkingSessionPort.countExitsInPeriod(dayStart, nextDayStart, companyId);
     long reprints = parkingSessionPort.countReprintsInPeriod(dayStart, nextDayStart, companyId);
@@ -45,6 +51,17 @@ public class SupervisorService {
             companyId, EnumSet.of(PrintJobStatus.DEAD_LETTER), dayStart);
     long syncPending = syncEventRepository.countByCompanyIdAndSyncedAtIsNull(companyId);
     return new OperationsSummaryResponse(
-        active, entries, exits, reprints, lost, printFailed, deadLetter, syncPending, now);
+        active,
+        totalCapacity,
+        availableSpaces,
+        occupancyPercent,
+        entries,
+        exits,
+        reprints,
+        lost,
+        printFailed,
+        deadLetter,
+        syncPending,
+        now);
   }
 }
