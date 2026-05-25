@@ -2273,19 +2273,15 @@ pub fn run() {
       local_first::get_parkflow_config,
       local_first::local_login,
       local_first::local_refresh,
-      local_first::local_get_profile,
-      local_first::local_update_profile,
-      local_first::local_change_password,
       local_first::local_get_settings,
       local_first::local_get_parking_spaces_summary,
       local_first::local_list_parking_spaces,
       local_first::local_update_parking_space_capacity,
       local_first::local_update_parking_space,
-       local_first::local_get_dashboard_summary,
-       local_first::local_list_active_sessions,
-       local_first::local_get_active_session,
-       local_first::local_search_global,
-       local_first::local_create_entry,
+      local_first::local_get_dashboard_summary,
+      local_first::local_list_active_sessions,
+      local_first::local_get_active_session,
+      local_first::local_create_entry,
       local_first::local_create_exit,
       local_first::local_reprint_ticket,
       local_first::local_process_lost_ticket,
@@ -2298,13 +2294,7 @@ pub fn run() {
       local_first::local_close_cash_session,
       local_first::local_print_cash_closing,
       local_first::local_get_rates,
-      local_first::local_trigger_operational_action,
-      local_first::local_is_setup_required,
-      local_first::local_setup_initial_admin,
-      local_first::local_get_onboarding_status,
-      local_first::local_save_onboarding_step,
-      local_first::local_complete_onboarding,
-      local_first::local_skip_onboarding
+      local_first::local_trigger_operational_action
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

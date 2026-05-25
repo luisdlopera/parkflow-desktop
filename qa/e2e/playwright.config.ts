@@ -12,6 +12,10 @@ export default defineConfig({
   },
   retries: process.env.CI ? 2 : 0,
   trace: 'on-first-retry',
+  reporter: [
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['list'],
+  ],
   projects: [
     {
       name: 'chromium',
