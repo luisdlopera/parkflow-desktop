@@ -24,7 +24,7 @@ import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
 import { useToast } from "@/lib/toast/ToastContext";
 import { useAutoSave } from "@/lib/hooks/useAutoSave";
 import { CrashRecoveryDialog } from "@/components/ui/CrashRecoveryDialog";
-import { normalizePlate } from "@/lib/validation/plate-validator";
+import { inferVehicleType, normalizePlate } from "@/lib/validation/plate-validator";
 import type { VehicleType } from "@parkflow/types";
 import { fetchMasterVehicleTypes, type MasterVehicleTypeRow } from "@/lib/settings-api";
 import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
@@ -115,6 +115,26 @@ export default function VehicleEntryFormV2() {
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
   const submitLock = useRef(false);
+  const [occupancy, setOccupancy] = useState<{ availableSpaces: number; activeSpaces: number } | null>(null);
+
+  const loadOccupancy = useCallback(async () => {
+    try {
+      const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
+      const response = await fetch(`${api}/parking-spaces/summary`, {
+        headers: await buildApiHeaders(),
+        cache: "no-store"
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setOccupancy({
+          availableSpaces: data.availableSpaces,
+          activeSpaces: data.activeSpaces
+        });
+      }
+    } catch (err) {
+      console.error("Error loading occupancy summary:", err);
+    }
+  }, []);
   const plateInputRef = useRef<HTMLInputElement>(null);
   const idempotencyKeyRef = useRef("");
   const { playSuccess, playError } = useOperationSounds();
@@ -187,7 +207,8 @@ export default function VehicleEntryFormV2() {
       .then(setRuntimeConfig)
       .catch(() => setRuntimeConfig(null))
       .finally(() => setLoadingConfig(false));
-  }, []);
+    void loadOccupancy();
+  }, [loadOccupancy]);
 
   useEffect(() => {
     if (runtimeConfig?.operationConfiguration) {
@@ -376,6 +397,13 @@ export default function VehicleEntryFormV2() {
     setMessage("");
     setError("");
     setPreviewLines(null);
+
+    if (occupancy !== null && occupancy.availableSpaces <= 0) {
+      setError("No hay celdas disponibles para este negocio.");
+      playError();
+      submitLock.current = false;
+      return;
+    }
     
     // Limpiar auto-save antes de enviar
     clearAutoSave();
@@ -402,12 +430,21 @@ export default function VehicleEntryFormV2() {
       const idempotencyKey = getOrCreateIdempotencyKey("entry", idempotencyFingerprint);
       idempotencyKeyRef.current = idempotencyKey;
 
+      let resolvedType = values.type;
+      if (!resolvedType || resolvedType === "CAR" || resolvedType === "OTHER") {
+        const inferredType = inferVehicleType(values.countryCode, values.plate);
+        if (inferredType) {
+          resolvedType = inferredType as VehicleType;
+        }
+      }
+
       const requestBody = validatePayloadOrThrow(
         operationEntryRequestSchema,
         {
           idempotencyKey,
           operatorUserId: user.id,
           ...values,
+          type: resolvedType,
           plate: normalizedPlate,
           countryCode: values.countryCode,
           entryMode: values.entryMode,
@@ -439,7 +476,11 @@ export default function VehicleEntryFormV2() {
 
       if (!response.ok) {
         if (response.status === 409) {
-          setError("Este vehículo ya tiene una entrada activa.");
+          if (payload?.code === "PARKING_FULL") {
+            setError("No hay celdas disponibles para este negocio.");
+          } else {
+            setError("Este vehículo ya tiene una entrada activa.");
+          }
           playError();
           return;
         }
@@ -476,6 +517,7 @@ export default function VehicleEntryFormV2() {
           lane: payload.receipt.lane ?? values.lane?.trim() ?? null,
           booth: payload.receipt.booth ?? values.booth?.trim() ?? null,
           terminal: payload.receipt.terminal ?? values.terminal?.trim() ?? null,
+          parkingSpaceCode: payload.receipt.parkingSpaceCode ?? null,
           entryAt: payload.receipt.entryAt ?? null
         }
       };
@@ -498,11 +540,13 @@ export default function VehicleEntryFormV2() {
           previewLines: generatedPreviewLines
         });
       } else {
-        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}`, 5000);
+        const spaceMsg = payload?.receipt?.parkingSpaceCode ? ` · Celda: ${payload.receipt.parkingSpaceCode}` : "";
+        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${spaceMsg}`, 5000);
       }
       
       playSuccess();
       incrementStats();
+      void loadOccupancy();
 
       const durationMs = Math.round(performance.now() - startTime);
       writePerfLog("entrySubmit", durationMs, {
@@ -672,6 +716,13 @@ export default function VehicleEntryFormV2() {
           <div className="bg-slate-100 rounded-xl px-3 py-2">
             <span className="text-xs text-slate-600 font-medium whitespace-nowrap">Sesión: {stats.session}</span>
           </div>
+          {occupancy && (
+            <div className={`${occupancy.availableSpaces <= 0 ? "bg-rose-50 border border-rose-100" : "bg-emerald-50 border border-emerald-100"} rounded-xl px-3 py-2`}>
+              <span className={`text-xs ${occupancy.availableSpaces <= 0 ? "text-rose-700 font-bold" : "text-emerald-700 font-medium"} whitespace-nowrap`}>
+                Disponibles: {occupancy.availableSpaces} / {occupancy.activeSpaces}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Selector de modo - ocupa todo el ancho en móvil */}
@@ -764,6 +815,14 @@ export default function VehicleEntryFormV2() {
 
       {/* Formulario Principal */}
       <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown} className="surface rounded-2xl p-6 space-y-4">
+        {occupancy && occupancy.availableSpaces <= 0 && (
+          <div className="rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-800 flex items-center gap-2">
+            <svg className="w-5 h-5 text-rose-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <strong>No hay celdas disponibles para este negocio.</strong>
+          </div>
+        )}
         {/* Sección Principal - Siempre visible */}
         <div className="space-y-4">
           {/* Placa */}
@@ -953,7 +1012,7 @@ export default function VehicleEntryFormV2() {
               color="primary"
               size={isSpeed ? "lg" : "md"}
               isLoading={form.formState.isSubmitting}
-              isDisabled={!!printWarning}
+              isDisabled={!!printWarning || (occupancy !== null && occupancy.availableSpaces <= 0)}
               className={`w-full font-bold ${isSpeed ? "text-lg shadow-xl" : ""}`}
               data-testid="register-entry"
             >
