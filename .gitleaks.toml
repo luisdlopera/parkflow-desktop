@@ -22,14 +22,10 @@ regex = '''replacement=Bearer\s+\$\{\{'''
 paths = ['''\.github/workflows/.*\.yml''']
 
 [allowlist]
-# Ignore historical remediation docs (may contain example secrets)
+# Ignore historical remediation docs, test fixtures and example configs
 paths = [
   '''docs\/security\/REMEDIATION-.*\.md''',
   '''\.gitleaks\.toml''',
-]
-
-# Ignore test fixtures and example configs
-paths = [
   '''.*_test\.go''',
   '''.*\.test\.(ts|tsx|js|jsx)''',
   '''.*\.spec\.(ts|tsx|js|jsx)''',
