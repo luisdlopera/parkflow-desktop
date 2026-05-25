@@ -198,8 +198,7 @@ echo "Sync pull response: $sync_pull"
 [[ "$(jq 'length' <<<"$sync_pull")" -ge 1 ]] || { echo "Sync pull returned empty list"; exit 1; }
 echo "✓ Sync pull verified"
 
-FAILED_STEP="Step 11: Reprint ticket"
-echo "=== $FAILED_STEP ==="
+echo "=== Step 11: Reprint ticket ==="
 reprint="$(curl_json POST "$API_BASE/operations/tickets/reprint" "{\"ticketNumber\":\"$ticket\",\"operatorUserId\":\"$CASHIER_OPERATOR_ID\",\"reason\":\"CI test\",\"idempotencyKey\":\"ci-reprint-$ticket\"}")"
 echo "Reprint response: $reprint"
 [[ "$(jq -r '.receipt.reprintCount' <<<"$reprint")" != "null" ]] || { echo "Reprint failed"; exit 1; }
@@ -211,6 +210,7 @@ lost_plate="LP$RANDOM"
 lost_entry="$(curl_json POST "$API_BASE/operations/entries" "{\"plate\":\"$lost_plate\",\"type\":\"CAR\",\"rateId\":\"$RATE_CAR_ID\",\"operatorUserId\":\"$CASHIER_OPERATOR_ID\",\"entryAt\":\"2026-05-01T10:00:00Z\",\"site\":\"CI\",\"lane\":\"L2\",\"booth\":\"B2\",\"terminal\":\"TERM-CI\",\"vehicleCondition\":\"GOOD\",\"idempotencyKey\":\"ci-entry-$lost_plate\"}")"
 echo "Lost entry response: $lost_entry"
 lost_ticket="$(jq -r '.receipt.ticketNumber' <<<"$lost_entry")"
+AUTH_TOKEN="$(jq -r '.accessToken' <<<"$refresh_resp")"
 lost_resp="$(curl_json POST "$API_BASE/operations/tickets/lost" "{\"ticketNumber\":\"$lost_ticket\",\"operatorUserId\":\"$ADMIN_OPERATOR_ID\",\"paymentMethod\":\"CASH\",\"reason\":\"CI lost flow\",\"idempotencyKey\":\"ci-lost-$lost_ticket\"}")"
 echo "Lost ticket response: $lost_resp"
 assert_eq "$(jq -r '.receipt.lostTicket' <<<"$lost_resp")" "true"
