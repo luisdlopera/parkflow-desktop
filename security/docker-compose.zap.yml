@@ -1,0 +1,75 @@
+version: '3.8'
+
+# =============================================================================
+# OWASP ZAP DAST Environment
+# =============================================================================
+# Usage:
+#   docker compose -f security/docker-compose.zap.yml up --abort-on-container-exit
+# =============================================================================
+
+services:
+  zap-baseline:
+    image: ghcr.io/zaproxy/zaproxy:${ZAP_VERSION:-stable}
+    container_name: parkflow-zap-baseline
+    command: >
+      zap-baseline.py
+      -t http://host.docker.internal:3000
+      -r zap-baseline-report.html
+      -w zap-baseline-report.md
+      -J zap-baseline-report.json
+      -c /zap/wrk/baseline.conf
+      -a
+      -j
+      --auto
+    volumes:
+      - ./zap/baseline.conf:/zap/wrk/baseline.conf:ro
+      - ./reports:/zap/wrk/reports:rw
+    network_mode: host
+    profiles:
+      - baseline
+
+  zap-api:
+    image: ghcr.io/zaproxy/zaproxy:${ZAP_VERSION:-stable}
+    container_name: parkflow-zap-api
+    command: >
+      zap-api-scan.py
+      -t http://host.docker.internal:8080
+      -f openapi
+      -r zap-api-report.html
+      -w zap-api-report.md
+      -J zap-api-report.json
+      -c /zap/wrk/api-scan.conf
+      -a
+      -z "-config replacer.full_list(0).description=auth"
+      -z "-config replacer.full_list(0).enabled=true"
+      -z "-config replacer.full_list(0).matchtype=REQ_HEADER"
+      -z "-config replacer.full_list(0).matchstr=Authorization"
+      -z "-config replacer.full_list(0).regex=false"
+      -z "-config replacer.full_list(0).replacement=Bearer ${API_KEY}"
+    volumes:
+      - ./zap/api-scan.conf:/zap/wrk/api-scan.conf:ro
+      - ./reports:/zap/wrk/reports:rw
+      - /tmp/openapi.json:/zap/wrk/openapi.json:ro
+    network_mode: host
+    profiles:
+      - api
+
+  zap-full:
+    image: ghcr.io/zaproxy/zaproxy:${ZAP_VERSION:-stable}
+    container_name: parkflow-zap-full
+    command: >
+      zap-full-scan.py
+      -t http://host.docker.internal:3000
+      -r zap-full-report.html
+      -w zap-full-report.md
+      -J zap-full-report.json
+      -c /zap/wrk/full-scan.conf
+      -a
+      -j
+      --auto
+    volumes:
+      - ./zap/full-scan.conf:/zap/wrk/full-scan.conf:ro
+      - ./reports:/zap/wrk/reports:rw
+    network_mode: host
+    profiles:
+      - full
