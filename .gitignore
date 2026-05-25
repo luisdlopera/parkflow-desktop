@@ -30,6 +30,10 @@ logs/
 # IDE and Editor
 .cursor/
 
+# Security reports
+security/reports/
+*.sarif
+
 # OS specific
 .DS_Store
 Thumbs.db
