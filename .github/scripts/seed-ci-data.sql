@@ -5,9 +5,6 @@
 -- Requires PostgreSQL client (psql) with env vars already exported
 -- ============================================================================
 
--- Ensure pgcrypto is available (defensive; V001 already does this)
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
 -- Ensure demo company exists (idempotent)
 INSERT INTO companies (id, name, legal_name, nit, email, slug, status, max_devices, max_users, max_locations)
 VALUES ('00000000-0000-0000-0000-000000000001', 'Empresa Demo CI', 'Empresa Demo CI S.A.S.', '900123456', 'admin@parkflow.local', 'empresa-demo-ci', 'ACTIVE', 10, 50, 5)
@@ -22,18 +19,18 @@ ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   updated_at = NOW();
 
--- Ensure admin user exists (password: Qwert.12345)
+-- Ensure admin user exists (password: Admin123!)
 INSERT INTO app_user (id, company_id, name, email, role, password_hash, is_active, can_void_tickets, can_reprint_tickets, can_close_cash, require_password_change)
-VALUES ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Administrador', 'admin@parkflow.local', 'SUPER_ADMIN', crypt('Admin123!', gen_salt('bf', 12)), TRUE, TRUE, TRUE, TRUE, FALSE)
+VALUES ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Administrador', 'admin@parkflow.local', 'SUPER_ADMIN', '$2b$12$85zO6ApugETurtS6fuv0v.4l4rxlZSjsTW2heoeT1vqUDyzKTwzlm', TRUE, TRUE, TRUE, TRUE, FALSE)
 ON CONFLICT (email) DO UPDATE SET
   password_hash = EXCLUDED.password_hash,
   is_active = TRUE,
   role = 'SUPER_ADMIN',
   updated_at = NOW();
 
--- Ensure cashier user exists (password: Qwert.12345)
+-- Ensure cashier user exists (password: Cashier123!)
 INSERT INTO app_user (id, company_id, name, email, role, password_hash, is_active, can_void_tickets, can_reprint_tickets, can_close_cash, require_password_change)
-VALUES ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'Cajero', 'cashier@parkflow.local', 'CAJERO', crypt('Cashier123!', gen_salt('bf', 12)), TRUE, FALSE, FALSE, TRUE, FALSE)
+VALUES ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'Cajero', 'cashier@parkflow.local', 'CAJERO', '$2b$12$53S2zQ7i/710dh4a2EGxr.9Y3mMtAYWbGAp9u8d6BZCr.o/X/sUuK', TRUE, FALSE, FALSE, TRUE, FALSE)
 ON CONFLICT (email) DO UPDATE SET
   password_hash = EXCLUDED.password_hash,
   is_active = TRUE,
@@ -73,15 +70,3 @@ ON CONFLICT (id) DO UPDATE SET
 INSERT INTO ticket_counter (counter_key, last_number, updated_at)
 VALUES ('GLOBAL', 0, NOW())
 ON CONFLICT (counter_key) DO NOTHING;
-
--- Ensure cash register exists for CI terminal
-INSERT INTO cash_register (id, site, terminal, site_id, code, label, name, responsible_user_id, active)
-VALUES ('00000000-0000-0000-0000-000000000003', 'CI', 'TERM-CI', '00000000-0000-0000-0000-000000000002', 'CI-001', 'Caja CI', 'Caja Principal CI', '00000000-0000-0000-0000-000000000002', TRUE)
-ON CONFLICT (site, terminal) DO UPDATE SET
-  active = TRUE,
-  updated_at = NOW();
-
--- Ensure cash session is OPEN for the cashier
-INSERT INTO cash_session (id, cash_register_id, operator_id, status, opening_amount, opened_at)
-VALUES ('00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'OPEN', 0, NOW())
-ON CONFLICT DO NOTHING;
