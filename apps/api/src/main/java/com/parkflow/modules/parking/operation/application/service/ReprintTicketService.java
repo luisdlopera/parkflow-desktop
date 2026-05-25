@@ -12,6 +12,8 @@ import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
+import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,7 @@ public class ReprintTicketService implements ReprintTicketUseCase {
   private final AppUserPort appUserPort;
   private final OperationIdempotencyPort operationIdempotencyPort;
   private final MeterRegistry meterRegistry;
+  private final ParkingSpaceService parkingSpaceService;
 
   @Override
   @Transactional
@@ -110,6 +113,7 @@ public class ReprintTicketService implements ReprintTicketUseCase {
   }
 
   private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
+    ParkingSpaceAssignment assignment = parkingSpaceService.findAssignmentBySessionId(session.getId());
     return new ReceiptResponse(
         session.getTicketNumber(), session.getPlate(),
         session.getVehicle().getType(),
@@ -124,6 +128,9 @@ public class ReprintTicketService implements ReprintTicketUseCase {
         session.getReprintCount(),
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
-        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes());
+        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
+        assignment != null ? assignment.getParkingSpace().getId() : null,
+        assignment != null ? assignment.getParkingSpace().getCode() : null,
+        assignment != null ? assignment.getParkingSpace().getLabel() : null);
   }
 }

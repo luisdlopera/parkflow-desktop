@@ -4,6 +4,9 @@ import java.time.OffsetDateTime;
 
 public record OperationsSummaryResponse(
     long activeVehicles,
+    long totalCapacity,
+    long availableSpaces,
+    double occupancyPercent,
     long entriesSinceMidnight,
     long exitsSinceMidnight,
     long reprintsSinceMidnight,
