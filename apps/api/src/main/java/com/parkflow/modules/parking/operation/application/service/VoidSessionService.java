@@ -12,6 +12,8 @@ import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
+import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,7 @@ public class VoidSessionService implements VoidSessionUseCase {
   private final ParkingSessionPort parkingSessionPort;
   private final AppUserPort appUserPort;
   private final OperationIdempotencyPort operationIdempotencyPort;
+  private final ParkingSpaceService parkingSpaceService;
 
   @Override
   @Transactional
@@ -50,11 +53,13 @@ public class VoidSessionService implements VoidSessionUseCase {
 
     session.voidSession(operator, request.reason());
     session = parkingSessionPort.save(session);
+    ParkingSpaceAssignment assignment = parkingSpaceService.findAssignmentBySessionId(session.getId());
+    parkingSpaceService.releaseSpaceBySession(session.getId());
 
     safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.VOID, session);
 
     return new OperationResultResponse(
-        session.getId().toString(), toReceipt(session, 0L, "0h 0m"),
+        session.getId().toString(), toReceipt(session, assignment, 0L, "0h 0m"),
         "Ticket anulado", null, null, null, null, null);
   }
 
@@ -98,7 +103,7 @@ public class VoidSessionService implements VoidSessionUseCase {
           }
           ParkingSession session = row.getSession();
           return new OperationResultResponse(session.getId().toString(),
-              toReceipt(session, 0L, "0h 0m"), "Anulacion (idempotente)", null, null, null, null, null);
+              toReceipt(session, parkingSpaceService.findAssignmentBySessionId(session.getId()), 0L, "0h 0m"), "Anulacion (idempotente)", null, null, null, null, null);
         });
   }
 
@@ -116,7 +121,7 @@ public class VoidSessionService implements VoidSessionUseCase {
     }
   }
 
-  private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
+  private ReceiptResponse toReceipt(ParkingSession session, ParkingSpaceAssignment assignment, long totalMinutes, String duration) {
     return new ReceiptResponse(
         session.getTicketNumber(), session.getPlate(),
         session.getVehicle().getType(),
@@ -131,6 +136,9 @@ public class VoidSessionService implements VoidSessionUseCase {
         session.getReprintCount(),
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
-        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes());
+        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
+        assignment != null ? assignment.getParkingSpace().getId() : null,
+        assignment != null ? assignment.getParkingSpace().getCode() : null,
+        assignment != null ? assignment.getParkingSpace().getLabel() : null);
   }
 }

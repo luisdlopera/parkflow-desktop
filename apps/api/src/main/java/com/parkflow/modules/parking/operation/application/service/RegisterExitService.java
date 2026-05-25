@@ -13,6 +13,8 @@ import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.parking.operation.domain.repository.*;
+import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
+import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import com.parkflow.modules.common.exception.domain.*;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.repository.AppUserPort;
@@ -59,6 +61,7 @@ public class RegisterExitService implements RegisterExitUseCase {
   private final VehicleConditionReportPort vehicleConditionReportPort;
   private final OperationIdempotencyPort operationIdempotencyPort;
   private final ObjectMapper objectMapper;
+  private final ParkingSpaceService parkingSpaceService;
 
   @Override
   @Transactional
@@ -90,6 +93,8 @@ public class RegisterExitService implements RegisterExitUseCase {
         blankToNull(request.exitImageUrl())
     );
     parkingSessionPort.save(session);
+    ParkingSpaceAssignment assignment = parkingSpaceService.findAssignmentBySessionId(session.getId());
+    parkingSpaceService.releaseSpaceBySession(session.getId());
 
     if (price.total().compareTo(BigDecimal.ZERO) > 0 && request.paymentMethod() != null) {
       Payment payment = new Payment();
@@ -112,7 +117,7 @@ public class RegisterExitService implements RegisterExitUseCase {
 
     return new OperationResultResponse(
         session.getId().toString(),
-        toReceipt(session, duration.totalMinutes(), duration.human()),
+        toReceipt(session, assignment, duration.totalMinutes(), duration.human()),
         "Salida registrada",
         price.subtotal(),
         price.surcharge(),
@@ -189,7 +194,11 @@ public class RegisterExitService implements RegisterExitUseCase {
               DurationCalculator.calculate(session.getEntryAt(), session.getExitAt(), 0);
           return new OperationResultResponse(
               session.getId().toString(),
-              toReceipt(session, duration.totalMinutes(), duration.human()),
+              toReceipt(
+                  session,
+                  parkingSpaceService.findAssignmentBySessionId(session.getId()),
+                  duration.totalMinutes(),
+                  duration.human()),
               "Salida (idempotente)",
               null, null, null, null, session.getTotalAmount());
         });
@@ -224,7 +233,7 @@ public class RegisterExitService implements RegisterExitUseCase {
     // Placeholder: mismatch detection logic preserved from legacy
   }
 
-  private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
+  private ReceiptResponse toReceipt(ParkingSession session, ParkingSpaceAssignment assignment, long totalMinutes, String duration) {
     return new ReceiptResponse(
         session.getTicketNumber(),
         session.getPlate(),
@@ -250,7 +259,10 @@ public class RegisterExitService implements RegisterExitUseCase {
         session.getEntryMode(),
         session.isMonthlySession(),
         session.getAgreementCode(),
-        session.getAppliedPrepaidMinutes());
+        session.getAppliedPrepaidMinutes(),
+        assignment != null ? assignment.getParkingSpace().getId() : null,
+        assignment != null ? assignment.getParkingSpace().getCode() : null,
+        assignment != null ? assignment.getParkingSpace().getLabel() : null);
   }
 
   // -------------------------------------------------------------------------
