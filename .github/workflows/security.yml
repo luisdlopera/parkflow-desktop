@@ -37,9 +37,7 @@ jobs:
       image: semgrep/semgrep
     steps:
       - uses: actions/checkout@v4
-      - run: semgrep ci --sarif --output=semgrep.sarif
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+      - run: semgrep scan --config=auto --sarif --output=semgrep.sarif
       - name: Upload Semgrep SARIF
         uses: github/codeql-action/upload-sarif@v3
         if: always()
@@ -134,7 +132,7 @@ jobs:
 
       - name: Start web application (background)
         run: |
-          pnpm --filter @parkflow/web start &
+          npx serve@latest apps/web/out -l 3000 &
           echo $! > /tmp/nextjs.pid
 
       - name: Wait for application readiness
