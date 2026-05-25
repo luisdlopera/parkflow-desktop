@@ -234,7 +234,14 @@ fn sqlite_path() -> Result<std::path::PathBuf, String> {
 
 fn init_local_db() -> Result<Connection, String> {
   let db_path = sqlite_path()?;
-  init_local_db_with_path(&db_path)
+  match init_local_db_with_path(&db_path) {
+    Ok(connection) => Ok(connection),
+    Err(error) if error.contains("file is not a database") => {
+      quarantine_corrupt_db(&db_path)?;
+      init_local_db_with_path(&db_path)
+    }
+    Err(error) => Err(error),
+  }
 }
 
 fn init_local_db_with_path(db_path: &Path) -> Result<Connection, String> {
@@ -334,6 +341,30 @@ fn init_local_db_with_path(db_path: &Path) -> Result<Connection, String> {
     .map_err(|error| format!("sqlite schema failed: {}", error))?;
 
   Ok(connection)
+}
+
+fn quarantine_corrupt_db(db_path: &Path) -> Result<(), String> {
+  if !db_path.exists() {
+    return Ok(());
+  }
+
+  let parent = db_path.parent().ok_or_else(|| "invalid db path".to_string())?;
+  let backup_dir = parent.join("backups").join("corrupt");
+  std::fs::create_dir_all(&backup_dir)
+    .map_err(|error| format!("failed to create corrupt backup dir: {}", error))?;
+
+  let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+  let backup_path = backup_dir.join(format!("parkflow_desktop_local_corrupt_{}.db", timestamp));
+  std::fs::rename(db_path, &backup_path)
+    .map_err(|error| format!("failed to quarantine corrupt sqlite file: {}", error))?;
+
+  tracing::warn!(
+    "Quarantined corrupt sqlite database from {:?} to {:?}",
+    db_path,
+    backup_path
+  );
+
+  Ok(())
 }
 
 const OUTBOX_MAX_RETRIES: i32 = 12;
