@@ -11,6 +11,7 @@ export type OperationPayload = {
     lane?: string | null;
     booth?: string | null;
     terminal?: string | null;
+    parkingSpaceCode?: string | null;
     entryAt?: string | null;
   };
 };
@@ -43,6 +44,7 @@ export function buildTicketDocument(
     lane: receipt.lane ?? null,
     booth: receipt.booth ?? null,
     terminal: receipt.terminal ?? null,
+    parkingSpaceCode: receipt.parkingSpaceCode ?? null,
     operatorName: options?.operatorName ?? null,
     issuedAtIso: receipt.entryAt ?? new Date().toISOString(),
     legalMessage: process.env.NEXT_PUBLIC_TICKET_LEGAL_MESSAGE ?? null,

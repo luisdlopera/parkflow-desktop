@@ -49,6 +49,7 @@ export function buildTicketPreviewLines(input: {
   lane?: string | null;
   booth?: string | null;
   terminal?: string | null;
+  parkingSpaceCode?: string | null;
   copyNumber?: number | null;
   legalMessage?: string | null;
   qrPayload?: string | null;
@@ -81,6 +82,9 @@ export function buildTicketPreviewLines(input: {
   }
   if (input.terminal) {
     lines.push(centerLine(`Terminal: ${input.terminal}`, w));
+  }
+  if (input.parkingSpaceCode) {
+    lines.push(centerLine(`Celda: ${input.parkingSpaceCode}`, w));
   }
   if (input.copyNumber != null) {
     lines.push(centerLine(`Copia: ${input.copyNumber}`, w));
