@@ -1,0 +1,33 @@
+# =============================================================================
+# CI PROFILE — PostgreSQL + Flyway for GitHub Actions
+# =============================================================================
+# This profile is used exclusively in CI pipelines (e2e-critical, ZAP scans).
+# It ensures the app connects to the real PostgreSQL service container and
+# runs Flyway migrations so that all seeded data (admin, cashier, rates) exists.
+# =============================================================================
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/parkflow}
+    username: ${DB_USERNAME:parkflow}
+    password: ${DB_PASSWORD:parkflow}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    repair-on-migrate: true
+
+# Logging
+logging:
+  level:
+    com.parkflow: INFO
+    org.springframework.security: WARN
+    org.flywaydb: INFO

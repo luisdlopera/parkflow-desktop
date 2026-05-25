@@ -10,6 +10,12 @@ on:
     # Nightly full DAST at 03:00 UTC
     - cron: '0 3 * * *'
 
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+  actions: read
+
 concurrency:
   group: security-${{ github.ref }}
   cancel-in-progress: false
@@ -21,24 +27,17 @@ env:
 
 jobs:
   # =============================================================================
-  # SAST (Semgrep) — Fast static analysis for every PR
+  # SAST (Semgrep) — Fast static analysis
   # =============================================================================
   sast_semgrep:
     name: SAST — Semgrep
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    timeout-minutes: 15
+    container:
+      image: semgrep/semgrep
     steps:
       - uses: actions/checkout@v4
-      - uses: returntocorp/semgrep-action@v1
-        with:
-          config: >-
-            p/security-audit
-            p/owasp-top-ten
-            p/cwe-top-25
-            p/react
-            p/typescript
-            p/rust
-            p/java
+      - run: semgrep ci --sarif --output=semgrep.sarif
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
       - name: Upload Semgrep SARIF
@@ -53,6 +52,7 @@ jobs:
   dependency_check:
     name: Dependency Check
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Run OWASP Dependency-Check
@@ -78,6 +78,7 @@ jobs:
   secret_scan:
     name: Secret Scanning (GitLeaks)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -93,8 +94,8 @@ jobs:
   zap_baseline:
     name: DAST — ZAP Baseline (Web)
     runs-on: ubuntu-latest
-    needs: [sast_semgrep]
-    if: always() && (needs.sast_semgrep.result == 'success' || needs.sast_semgrep.result == 'skipped')
+    needs: []
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16-alpine
@@ -112,7 +113,7 @@ jobs:
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://parkflow:parkflow@localhost:5432/parkflow_test
-      NEXTAUTH_SECRET: test-secret-for-zap-scan
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
       NEXTAUTH_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
@@ -198,6 +199,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [dependency_check]
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16-alpine
@@ -213,12 +215,12 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      SPRING_PROFILES_ACTIVE: test
+      SPRING_PROFILES_ACTIVE: ci
       DB_URL: jdbc:postgresql://localhost:5432/parkflow_test
       DB_USERNAME: parkflow
       DB_PASSWORD: parkflow
-      PARKFLOW_API_KEY: ${{ secrets.PARKFLOW_API_KEY || 'ci-test-api-key-12345' }}
-      PARKFLOW_JWT_SECRET_BASE64: ${{ secrets.PARKFLOW_JWT_SECRET_BASE64 || 'cGFya2Zsb3ctZGVmYXVsdC1iYXNlNjQtand0LXNlY3JldC1rZXktZm9yLWRldmVsb3BtZW50' }}
+      PARKFLOW_API_KEY: ${{ secrets.PARKFLOW_API_KEY }}
+      PARKFLOW_JWT_SECRET_BASE64: ${{ secrets.PARKFLOW_JWT_SECRET_BASE64 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -227,6 +229,10 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: gradle
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.8
 
       - name: Build API
         run: ./apps/api/gradlew -p apps/api build -x test
@@ -248,6 +254,10 @@ jobs:
           cat /tmp/api.log
           exit 1
 
+      - name: Seed CI database
+        run: |
+          PGPASSWORD=parkflow psql -h localhost -U parkflow -d parkflow_test -f .github/scripts/seed-ci-data.sql
+
       - name: Fetch OpenAPI spec
         run: |
           curl -fsS http://127.0.0.1:8080/api/v1/api-docs -o /tmp/openapi.json
@@ -266,7 +276,7 @@ jobs:
             -z "-config replacer.full_list(0).matchtype=REQ_HEADER"
             -z "-config replacer.full_list(0).matchstr=Authorization"
             -z "-config replacer.full_list(0).regex=false"
-            -z "-config replacer.full_list(0).replacement=Bearer ${{ secrets.PARKFLOW_API_KEY || 'ci-test-api-key-12345' }}"
+            -z "-config replacer.full_list(0).replacement=Bearer ${{ secrets.PARKFLOW_API_KEY }}"
           allow_issue_writing: true
           issue_title: 'ZAP API Scan — Security Alerts'
 
@@ -307,6 +317,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [zap_baseline, zap_api_scan, dependency_check, secret_scan]
     if: always()
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
