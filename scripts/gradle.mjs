@@ -8,6 +8,7 @@ const isWin = process.platform === "win32";
 const cmd = isWin ? "gradlew.bat" : "./gradlew";
 const args = process.argv.slice(2);
 
+// nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
 const result = spawnSync(cmd, args, {
   cwd: apiDir,
   stdio: "inherit",

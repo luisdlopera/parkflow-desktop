@@ -21,7 +21,11 @@ function log(message, color = "reset") {
 }
 
 function check(name, path) {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
   const fullPath = resolve(process.cwd(), path);
+  if (!fullPath.startsWith(process.cwd())) {
+    throw new Error(`Directory traversal attempt detected: ${path}`);
+  }
   if (existsSync(fullPath)) {
     log(`  ✓ ${name}`, "green");
     return true;

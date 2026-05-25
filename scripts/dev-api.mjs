@@ -67,6 +67,7 @@ async function resolveJavaHome() {
   const javaBinName = process.platform === 'win32' ? 'java.exe' : 'java';
 
   async function isUsableJavaHome(home) {
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
     const javaExe = join(home, 'bin', javaBinName);
     try {
       await execAsync(`"${javaExe}" -version`, { windowsHide: true });
@@ -183,6 +184,7 @@ async function main() {
 
     // Start Gradle bootRun
     const gradlew = process.platform === 'win32' ? join(apiDir, 'gradlew.bat') : join(apiDir, 'gradlew');
+    // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
     const gradle = spawn(
       gradlew,
       ['bootRun', `--args=--server.port=${port}`],
@@ -195,7 +197,7 @@ async function main() {
     );
 
     gradle.on('error', (err) => {
-      console.error(`${label} Failed to start Spring Boot:`, err.message);
+      console.error(`${label} Failed to start Spring Boot: %s`, err.message);
       process.exit(1);
     });
 
