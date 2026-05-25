@@ -11,10 +11,19 @@ type ActiveSessionRow = {
   vehicleType: string;
   duration: string;
   rateName: string | null;
+  parkingSpaceCode?: string | null;
+  parkingSpaceLabel?: string | null;
+};
+
+type Summary = {
+  occupiedSpaces: number;
+  totalCapacity: number;
+  availableSpaces: number;
 };
 
 export default function VehiculosActivosPage() {
   const [rows, setRows] = useState<ActiveSessionRow[]>([]);
+  const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -36,9 +45,21 @@ export default function VehiculosActivosPage() {
       }
 
       setRows(payload);
+
+      const summaryResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1"}/parking-spaces/summary`, {
+        cache: "no-store",
+        headers: await buildApiHeaders()
+      });
+      const summaryPayload = await summaryResponse.json();
+      if (summaryResponse.ok) {
+        setSummary(summaryPayload);
+      } else {
+        setSummary(null);
+      }
     } catch {
       setError("Error de red consultando vehículos activos");
       setRows([]);
+      setSummary(null);
     } finally {
       setLoading(false);
     }
@@ -75,12 +96,30 @@ export default function VehiculosActivosPage() {
       </div>
 
       {error ? <p className="text-sm text-rose-700 font-medium">{error}</p> : null}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+          <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Ocupados</p>
+          <p className="text-2xl font-bold text-slate-900">{summary?.occupiedSpaces ?? rows.length}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+          <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Disponibles</p>
+          <p className="text-2xl font-bold text-emerald-700">
+            {summary ? `${summary.availableSpaces} / ${summary.totalCapacity}` : "—"}
+          </p>
+        </div>
+      </div>
 
       <DataTable
         columns={[
           { key: "plate", label: "Placa", priority: "high" },
           { key: "ticketNumber", label: "Ticket", priority: "medium" },
           { key: "vehicleType", label: "Tipo", priority: "high" },
+          {
+            key: "parkingSpaceCode",
+            label: "Celda",
+            priority: "high",
+            render: (row) => row.parkingSpaceCode ?? <span className="text-slate-400">Sin asignar</span>
+          },
           { key: "duration", label: "Tiempo", priority: "medium" },
           {
             key: "rateName",
