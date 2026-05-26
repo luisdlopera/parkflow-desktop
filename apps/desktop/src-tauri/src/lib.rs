@@ -2304,19 +2304,7 @@ pub fn run() {
       local_first::local_get_onboarding_status,
       local_first::local_save_onboarding_step,
       local_first::local_complete_onboarding,
-      local_first::local_skip_onboarding,
-      // Report commands
-      local_first::local_get_daily_operations,
-      local_first::local_get_vehicle_type_report,
-      local_first::local_get_cash_session_history,
-      local_first::local_export_report_csv,
-      local_first::local_get_paid_tickets_report,
-      local_first::local_get_income_expense_report,
-      local_first::local_get_occupancy_report,
-      local_first::local_get_operator_report,
-      local_first::local_get_payment_method_report,
-      local_first::local_void_cash_movement,
-      local_first::local_get_voided_tickets_report
+      local_first::local_skip_onboarding
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

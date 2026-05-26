@@ -12,9 +12,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
-  issues: write
-  actions: read
 
 concurrency:
   group: security-${{ github.ref }}
@@ -24,6 +21,7 @@ env:
   ZAP_VERSION: stable
   FAIL_ON_HIGH: true
   FAIL_ON_MEDIUM: false
+  DB_PASSWORD: parkflow
 
 jobs:
   # =============================================================================
@@ -33,6 +31,9 @@ jobs:
     name: SAST — Semgrep
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
     container:
       image: semgrep/semgrep
     steps:
@@ -94,12 +95,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: []
     timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: write
     services:
       postgres:
         image: postgres:16-alpine
         env:
           POSTGRES_USER: parkflow
-          POSTGRES_PASSWORD: parkflow
+          POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}
           POSTGRES_DB: parkflow_test
         ports:
           - 5432:5432
@@ -110,7 +114,7 @@ jobs:
           --health-retries 5
     env:
       NODE_ENV: test
-      DATABASE_URL: postgresql://parkflow:parkflow@localhost:5432/parkflow_test
+      DATABASE_URL: postgresql://parkflow:${{ env.DB_PASSWORD }}@localhost:5432/parkflow_test
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
       NEXTAUTH_URL: http://localhost:3000
     steps:
@@ -198,12 +202,15 @@ jobs:
     needs: [dependency_check]
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: write
     services:
       postgres:
         image: postgres:16-alpine
         env:
           POSTGRES_USER: parkflow
-          POSTGRES_PASSWORD: parkflow
+          POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}
           POSTGRES_DB: parkflow_test
         ports:
           - 5432:5432
@@ -216,7 +223,7 @@ jobs:
       SPRING_PROFILES_ACTIVE: ci
       DB_URL: jdbc:postgresql://localhost:5432/parkflow_test
       DB_USERNAME: parkflow
-      DB_PASSWORD: parkflow
+      DB_PASSWORD: ${{ env.DB_PASSWORD }}
       PARKFLOW_API_KEY: ${{ secrets.PARKFLOW_API_KEY }}
       PARKFLOW_JWT_SECRET_BASE64: ${{ secrets.PARKFLOW_JWT_SECRET_BASE64 }}
     steps:
@@ -265,8 +272,10 @@ jobs:
           exit 1
 
       - name: Seed CI database
+        env:
+          PGPASSWORD: ${{ env.DB_PASSWORD }}
         run: |
-          PGPASSWORD=parkflow psql -h localhost -U parkflow -d parkflow_test -f .github/scripts/seed-ci-data.sql
+          psql -h localhost -U parkflow -d parkflow_test -f .github/scripts/seed-ci-data.sql
 
       - name: Fetch OpenAPI spec
         run: |

@@ -11,10 +11,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
-  security-events: write
-  actions: read
-  checks: write
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -272,8 +268,10 @@ jobs:
           cat /tmp/api.log
           exit 1
       - name: Seed CI database
+        env:
+          PGPASSWORD: ${{ env.DB_PASSWORD }}
         run: |
-          PGPASSWORD=parkflow psql -h localhost -U parkflow -d parkflow -f .github/scripts/seed-ci-data.sql
+          psql -h localhost -U parkflow -d parkflow -f .github/scripts/seed-ci-data.sql
       - name: Run critical E2E suite
         run: bash qa/operations-e2e/curl/run-critical-e2e.sh
       - name: Upload API log on failure
