@@ -131,6 +131,72 @@ function operationPrintPayload(
   };
 }
 
+function validatePayment(
+  paymentMethod: PaymentMethodCode,
+  splitPayments: SplitPaymentRow[],
+  splitTotal: number,
+  totalDue: number,
+  singleCashReceived: number
+): string | null {
+  if (paymentMethod === "MIXED") {
+    const validSplits = splitPayments.filter((row) => (Number(row.amount) || 0) > 0);
+    if (validSplits.length < 2) {
+      return "Para pago dividido registra al menos dos medios con valor.";
+    }
+    if (Math.abs(splitTotal - totalDue) > 0.009) {
+      return `El pago dividido debe sumar $${totalDue.toLocaleString("es-CO")}. Falta $${Math.max(0, totalDue - splitTotal).toLocaleString("es-CO")}.`;
+    }
+  }
+  if (paymentMethod === "CASH" && singleCashReceived > 0 && singleCashReceived < totalDue) {
+    return `El efectivo recibido es menor al total. Falta $${(totalDue - singleCashReceived).toLocaleString("es-CO")}.`;
+  }
+  return null;
+}
+
+async function executePrintReceipt(
+  printPayload: OperationPayload,
+  documentKind: "EXIT" | "ENTRY" | "REPRINT" | "LOST_TICKET"
+): Promise<string | null> {
+  try {
+    return await printReceiptIfTauri(printPayload, documentKind);
+  } catch (printError) {
+    return printError instanceof Error
+      ? `No se pudo imprimir en desktop: ${printError.message}`
+      : "No se pudo imprimir en desktop.";
+  }
+}
+
+async function handleOfflineExit(
+  ticketNumber: string,
+  paymentMethod: PaymentMethodCode,
+  splitPayments: SplitPaymentRow[],
+  idempotencyFingerprint: string,
+  playSuccess: () => void,
+  toastSuccess: (msg: string) => void,
+  playError: () => void,
+  toastError: (msg: string) => void,
+  setError: (msg: string) => void
+): Promise<boolean> {
+  const queued = await queueOfflineOperation("EXIT_RECORDED", {
+    ticketNumber,
+    paymentMethod,
+    paymentBreakdown: paymentMethod === "MIXED" ? splitPayments : undefined,
+    occurredAtIso: new Date().toISOString(),
+    origin: "OFFLINE_PENDING_SYNC"
+  });
+  if (queued) {
+    clearIdempotencyKey("exit", idempotencyFingerprint);
+    toastSuccess("Sin internet: salida guardada. Se sincronizará automáticamente al reconectar.");
+    playSuccess();
+    return true;
+  }
+  const errMsg = "Error de red procesando salida";
+  setError(errMsg);
+  toastError(errMsg);
+  playError();
+  return false;
+}
+
 export default function SalidaCobroPage() {
   const [ticketNumber, setTicketNumber] = useState("");
   const [plate, setPlate] = useState("");
@@ -294,18 +360,9 @@ export default function SalidaCobroPage() {
       setError("Primero busca una sesion activa");
       return;
     }
-    if (paymentMethod === "MIXED") {
-      if (splitPayments.filter((row) => (Number(row.amount) || 0) > 0).length < 2) {
-        setError("Para pago dividido registra al menos dos medios con valor.");
-        return;
-      }
-      if (Math.abs(splitTotal - totalDue) > 0.009) {
-        setError(`El pago dividido debe sumar $${totalDue.toLocaleString("es-CO")}. Falta $${Math.max(0, totalDue - splitTotal).toLocaleString("es-CO")}.`);
-        return;
-      }
-    }
-    if (paymentMethod === "CASH" && singleCashReceived > 0 && singleCashReceived < totalDue) {
-      setError(`El efectivo recibido es menor al total. Falta $${(totalDue - singleCashReceived).toLocaleString("es-CO")}.`);
+    const validationError = validatePayment(paymentMethod, splitPayments, splitTotal, totalDue, singleCashReceived);
+    if (validationError) {
+      setError(validationError);
       return;
     }
     if (operationLock.current) {
@@ -375,22 +432,15 @@ export default function SalidaCobroPage() {
       clearIdempotencyKey("exit", idempotencyFingerprint);
 
       const printPayload = operationPrintPayload(payload);
-      setPreviewLines(buildTicketPreviewForOperation(printPayload, "EXIT"));
+      const receiptPreview = buildTicketPreviewForOperation(printPayload, "EXIT");
+      setPreviewLines(receiptPreview);
 
-      let printWarning: string | null = null;
-      try {
-        printWarning = await printReceiptIfTauri(printPayload, "EXIT");
-      } catch (printError) {
-        printWarning =
-          printError instanceof Error
-            ? `No se pudo imprimir en desktop: ${printError.message}`
-            : "No se pudo imprimir en desktop.";
-      }
-      if (printWarning) {
+      const printWarningMsg = await executePrintReceipt(printPayload, "EXIT");
+      if (printWarningMsg) {
         setPrintWarning({
           ticketNumber: payload.receipt.ticketNumber,
           plate: payload.receipt.plate,
-          previewLines: buildTicketPreviewForOperation(printPayload, "EXIT")
+          previewLines: receiptPreview
         });
       } else {
         playSuccess();
@@ -421,22 +471,25 @@ export default function SalidaCobroPage() {
         paymentMethod,
         total: totalDue
       });
-      const queued = await queueOfflineOperation("EXIT_RECORDED", {
-        ticketNumber: active.receipt.ticketNumber,
+      const isQueued = await handleOfflineExit(
+        active.receipt.ticketNumber,
         paymentMethod,
-        paymentBreakdown: paymentMethod === "MIXED" ? splitPayments : undefined,
-        occurredAtIso: new Date().toISOString(),
-        origin: "OFFLINE_PENDING_SYNC"
-      });
-      if (queued) {
-        clearIdempotencyKey("exit", idempotencyFingerprint);
-        toastSuccess("Sin internet: salida guardada. Se sincronizará automáticamente al reconectar.");
-        playSuccess();
-      } else {
-        const errMsg = "Error de red procesando salida";
-        setError(errMsg);
-        toastError(errMsg);
-        playError();
+        splitPayments,
+        idempotencyFingerprint,
+        playSuccess,
+        toastSuccess,
+        playError,
+        toastError,
+        setError
+      );
+      if (isQueued) {
+        setActive(null);
+        setTicketNumber("");
+        setPlate("");
+        setAgreementCode("");
+        setTimeout(() => {
+          ticketInputRef.current?.focus();
+        }, 100);
       }
     } finally {
       setProcessing(false);

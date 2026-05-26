@@ -246,9 +246,16 @@ pub struct LocalRateDto {
 // =============================================================================
 
 fn get_db_passphrase() -> Result<String, String> {
-  let entry = keyring::Entry::new("com.parkflow.desktop", "db-passphrase")
-    .map_err(|e| format!("keyring entry failed: {}", e))?;
-  entry.get_password().map_err(|e| format!("keyring get failed: {}", e))
+  #[cfg(debug_assertions)]
+  {
+    return Ok("dev-db-passphrase".to_string());
+  }
+  #[cfg(not(debug_assertions))]
+  {
+    let entry = keyring::Entry::new("com.parkflow.desktop", "db-passphrase")
+      .map_err(|e| format!("keyring entry failed: {}", e))?;
+    entry.get_password().map_err(|e| format!("keyring get failed: {}", e))
+  }
 }
 
 pub fn open_local_connection(db_path: &Path) -> Result<Connection, String> {
@@ -400,6 +407,12 @@ pub fn init_schema_tables(conn: &Connection) -> Result<(), rusqlite::Error> {
       created_at INTEGER NOT NULL,
       synced_at INTEGER
     );
+
+    CREATE TABLE IF NOT EXISTS local_settings (
+      setting_key TEXT PRIMARY KEY,
+      setting_value TEXT NOT NULL,
+      updated_at_unix_ms INTEGER NOT NULL
+    );
     ",
   )?;
 
@@ -408,100 +421,103 @@ pub fn init_schema_tables(conn: &Connection) -> Result<(), rusqlite::Error> {
 }
 
 fn seed_local_database(conn: &Connection) -> Result<(), rusqlite::Error> {
-  let count: i64 = conn.query_row("SELECT COUNT(*) FROM local_users", [], |r| r.get(0))?;
-  if count > 0 {
-    return Ok(());
-  }
-
+  let company_count: i64 = conn.query_row("SELECT COUNT(*) FROM local_companies", [], |r| r.get(0))?;
   let now = chrono::Utc::now().timestamp_millis();
 
-  // 1. Seed user (password: Qwert.12345)
-  conn.execute(
-    "INSERT INTO local_users (id, company_id, name, email, role, password_hash, is_active, created_at_unix_ms, updated_at_unix_ms)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1, ?7, ?7)",
-    params![
-      "00000000-0000-0000-0000-000000000003",
-      "00000000-0000-0000-0000-000000000001",
-      "Administrador Local",
-      "admin@parkflow.local",
-      "SUPER_ADMIN",
-      "$2b$12$bU4bjxtQIMHP/us3972HTuIz.OM2128W34BtysTTH1AeqjInkGcRe", // Qwert.12345
-      now
-    ],
-  )?;
-
-  // 2. Seed company
-  conn.execute(
-    "INSERT INTO local_companies (id, name, legal_name, nit, email, slug, status, created_at_unix_ms)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-    params![
-      "00000000-0000-0000-0000-000000000001",
-      "Empresa Demo Local",
-      "Empresa Demo Local S.A.S.",
-      "900123456",
-      "admin@parkflow.local",
-      "empresa-demo-local",
-      "ACTIVE",
-      now
-    ],
-  )?;
-
-  // 3. Seed site
-  conn.execute(
-    "INSERT INTO local_parking_sites (id, company_id, code, name, city, timezone, currency, max_capacity, created_at_unix_ms)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-    params![
-      "00000000-0000-0000-0000-000000000002",
-      "00000000-0000-0000-0000-000000000001",
-      "DEFAULT",
-      "Sede Principal Local",
-      "Bogota",
-      "America/Bogota",
-      "COP",
-      50,
-      now
-    ],
-  )?;
-
-  // 4. Seed operational parameters
-  conn.execute(
-    "INSERT INTO local_operational_parameters (site_id, allow_reprint, allow_void, tolerance_minutes, max_time_no_charge, offline_mode_enabled)
-     VALUES (?1, 1, 1, 5, 15, 1)",
-    params!["00000000-0000-0000-0000-000000000002"],
-  )?;
-
-  // 5. Seed default rates
-  let default_rates = vec![
-    ("CAR", "Tarifa Carro Local", 2000),
-    ("MOTORCYCLE", "Tarifa Moto Local", 1000),
-    ("VAN", "Tarifa Van Local", 3000),
-    ("TRUCK", "Tarifa Camion Local", 5000),
-    ("BICYCLE", "Tarifa Bici Local", 500),
-    ("OTHER", "Tarifa Otro Local", 2000),
-  ];
-
-  for (v_type, name, amount) in default_rates {
-    let id = format!("rate-{}", v_type.to_lowercase());
+  if company_count == 0 {
+    // 1. Seed company
     conn.execute(
-      "INSERT INTO local_rates (id, name, vehicle_type, rate_type, amount, grace_minutes, fraction_minutes, max_daily_value, lost_ticket_surcharge, is_active)
-       VALUES (?1, ?2, ?3, 'HOURLY', ?4, 5, 60, ?5, 15000, 1)",
-      params![id, name, v_type, amount, amount * 10],
-    )?;
-  }
-
-  // 6. Seed some default spaces
-  for i in 1..=50 {
-    let id = format!("space-{}", i);
-    let code = format!("P-{:03}", i);
-    conn.execute(
-      "INSERT INTO local_parking_spaces (id, site_id, code, status, vehicle_type, updated_at_unix_ms)
-       VALUES (?1, ?2, ?3, 'AVAILABLE', 'CAR', ?4)",
+      "INSERT INTO local_companies (id, name, legal_name, nit, email, slug, status, created_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
       params![
-        id,
-        "00000000-0000-0000-0000-000000000002",
-        code,
+        "00000000-0000-0000-0000-000000000001",
+        "Empresa Demo Local",
+        "Empresa Demo Local S.A.S.",
+        "900123456",
+        "admin@parkflow.local",
+        "empresa-demo-local",
+        "ACTIVE",
         now
       ],
+    )?;
+
+    // 2. Seed site
+    conn.execute(
+      "INSERT INTO local_parking_sites (id, company_id, code, name, city, timezone, currency, max_capacity, created_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+      params![
+        "00000000-0000-0000-0000-000000000002",
+        "00000000-0000-0000-0000-000000000001",
+        "DEFAULT",
+        "Sede Principal Local",
+        "Bogota",
+        "America/Bogota",
+        "COP",
+        50,
+        now
+      ],
+    )?;
+
+    // 3. Seed operational parameters
+    conn.execute(
+      "INSERT INTO local_operational_parameters (site_id, allow_reprint, allow_void, tolerance_minutes, max_time_no_charge, offline_mode_enabled)
+       VALUES (?1, 1, 1, 5, 15, 1)",
+      params!["00000000-0000-0000-0000-000000000002"],
+    )?;
+
+    // 4. Seed default rates
+    let default_rates = vec![
+      ("CAR", "Tarifa Carro Local", 2000),
+      ("MOTORCYCLE", "Tarifa Moto Local", 1000),
+      ("VAN", "Tarifa Van Local", 3000),
+      ("TRUCK", "Tarifa Camion Local", 5000),
+      ("BICYCLE", "Tarifa Bici Local", 500),
+      ("OTHER", "Tarifa Otro Local", 2000),
+    ];
+
+    for (v_type, name, amount) in default_rates {
+      let id = format!("rate-{}", v_type.to_lowercase());
+      conn.execute(
+        "INSERT INTO local_rates (id, name, vehicle_type, rate_type, amount, grace_minutes, fraction_minutes, max_daily_value, lost_ticket_surcharge, is_active)
+         VALUES (?1, ?2, ?3, 'HOURLY', ?4, 5, 60, ?5, 15000, 1)",
+        params![id, name, v_type, amount, amount * 10],
+      )?;
+    }
+
+    // 5. Seed some default spaces
+    for i in 1..=50 {
+      let id = format!("space-{}", i);
+      let code = format!("P-{:03}", i);
+      conn.execute(
+        "INSERT INTO local_parking_spaces (id, site_id, code, status, vehicle_type, updated_at_unix_ms)
+         VALUES (?1, ?2, ?3, 'AVAILABLE', 'CAR', ?4)",
+        params![
+          id,
+          "00000000-0000-0000-0000-000000000002",
+          code,
+          now
+        ],
+      )?;
+    }
+  }
+
+  // 6. Seed default users if none exist (offline login support)
+  let user_count: i64 = conn.query_row("SELECT COUNT(*) FROM local_users", [], |r| r.get(0))?;
+  if user_count == 0 {
+    let password = "Qwert.12345";
+    let hashed = bcrypt::hash(password, 12).map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))))?;
+
+    conn.execute(
+      "INSERT INTO local_users (id, company_id, name, email, role, password_hash, is_active, can_void_tickets, can_reprint_tickets, can_close_cash, require_password_change, created_at_unix_ms, updated_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, 'SUPER_ADMIN', ?5, 1, 1, 1, 1, 0, ?6, ?6)",
+      params!["00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000001", "Administrador", "admin@parkflow.local", hashed, now],
+    )?;
+
+    let hashed_cashier = bcrypt::hash(password, 12).map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))))?;
+    conn.execute(
+      "INSERT INTO local_users (id, company_id, name, email, role, password_hash, is_active, can_void_tickets, can_reprint_tickets, can_close_cash, require_password_change, created_at_unix_ms, updated_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, 'CAJERO', ?5, 1, 0, 0, 1, 0, ?6, ?6)",
+      params!["00000000-0000-0000-0000-000000000002", "00000000-0000-0000-0000-000000000001", "Cajero", "cashier@parkflow.local", hashed_cashier, now],
     )?;
   }
 
@@ -542,6 +558,50 @@ fn get_sync_enabled() -> bool {
 // Tauri Commands
 // =============================================================================
 
+fn permissions_for_role(role: &str) -> Vec<String> {
+  match role {
+    "SUPER_ADMIN" | "ADMIN" => vec![
+      "tickets:emitir".to_string(),
+      "tickets:imprimir".to_string(),
+      "cobros:registrar".to_string(),
+      "anulaciones:crear".to_string(),
+      "tarifas:leer".to_string(),
+      "usuarios:leer".to_string(),
+      "usuarios:editar".to_string(),
+      "cierres_caja:abrir".to_string(),
+      "cierres_caja:cerrar".to_string(),
+      "reportes:leer".to_string(),
+      "configuracion:leer".to_string(),
+      "configuracion:editar".to_string(),
+    ],
+    "CAJERO" => vec![
+      "tickets:emitir".to_string(),
+      "tickets:imprimir".to_string(),
+      "cobros:registrar".to_string(),
+      "cierres_caja:abrir".to_string(),
+      "cierres_caja:cerrar".to_string(),
+    ],
+    "OPERADOR" => vec![
+      "tickets:emitir".to_string(),
+      "tickets:imprimir".to_string(),
+      "cobros:registrar".to_string(),
+      "tarifas:leer".to_string(),
+      "cierres_caja:abrir".to_string(),
+    ],
+    "AUDITOR" => vec![
+      "reportes:leer".to_string(),
+      "usuarios:leer".to_string(),
+      "cierres_caja:leer".to_string(),
+      "configuracion:leer".to_string(),
+    ],
+    _ => vec![
+      "tickets:emitir".to_string(),
+      "tickets:imprimir".to_string(),
+      "cobros:registrar".to_string(),
+    ],
+  }
+}
+
 pub struct AppState {
   pub db_path: PathBuf,
 }
@@ -567,23 +627,13 @@ pub fn local_login(
       "SELECT id, email, name, role, company_id, password_hash FROM local_users WHERE email = ?1 AND is_active = 1",
       params![email.trim()],
       |row| {
+        let role: String = row.get(3)?;
         Ok(LocalUserDto {
           id: row.get(0)?,
           email: row.get(1)?,
           name: row.get(2)?,
-          role: row.get(3)?,
-          permissions: vec![
-            "tickets:emitir".to_string(),
-            "tickets:imprimir".to_string(),
-            "cobros:registrar".to_string(),
-            "anulaciones:crear".to_string(),
-            "tarifas:leer".to_string(),
-            "usuarios:leer".to_string(),
-            "cierres_caja:abrir".to_string(),
-            "cierres_caja:cerrar".to_string(),
-            "reportes:leer".to_string(),
-            "configuracion:leer".to_string(),
-          ],
+          role: role.clone(),
+          permissions: permissions_for_role(&role),
           company_id: row.get(4)?,
         })
       },
@@ -637,18 +687,13 @@ pub fn local_refresh(
       "SELECT id, email, name, role, company_id FROM local_users LIMIT 1",
       [],
       |row| {
+        let role: String = row.get(3)?;
         Ok(LocalUserDto {
           id: row.get(0)?,
           email: row.get(1)?,
           name: row.get(2)?,
-          role: row.get(3)?,
-          permissions: vec![
-            "tickets:emitir".to_string(),
-            "tickets:imprimir".to_string(),
-            "cobros:registrar".to_string(),
-            "cierres_caja:abrir".to_string(),
-            "cierres_caja:cerrar".to_string(),
-          ],
+          role: role.clone(),
+          permissions: permissions_for_role(&role),
           company_id: row.get(4)?,
         })
       },
@@ -1787,6 +1832,266 @@ pub fn local_trigger_operational_action(action: String) -> Result<serde_json::Va
     "message": format!("Acción local '{}' ejecutada correctamente", action)
   });
   Ok(val)
+}
+
+pub fn local_is_setup_required_impl(db_path: &std::path::Path) -> Result<bool, String> {
+  let conn = open_local_connection(db_path)?;
+  let count: i64 = conn
+    .query_row("SELECT COUNT(*) FROM local_users", [], |r| r.get(0))
+    .map_err(|e| e.to_string())?;
+  Ok(count == 0)
+}
+
+#[tauri::command]
+pub fn local_is_setup_required(state: tauri::State<'_, AppState>) -> Result<bool, String> {
+  local_is_setup_required_impl(&state.db_path)
+}
+
+pub fn local_setup_initial_admin_impl(
+  email: String,
+  password: String,
+  name: String,
+  company_name: String,
+  nit: String,
+  db_path: &std::path::Path,
+) -> Result<LocalStoredSession, String> {
+  let conn = open_local_connection(db_path)?;
+
+  // 1. Hash password with bcrypt
+  let salt_rounds = 12;
+  let hashed = bcrypt::hash(password.trim(), salt_rounds)
+    .map_err(|e| format!("Bcrypt hash failed: {}", e))?;
+
+  let now = chrono::Utc::now().timestamp_millis();
+  let user_id = "00000000-0000-0000-0000-000000000003".to_string();
+  let company_id = "00000000-0000-0000-0000-000000000001".to_string();
+
+  // 2. Update company name and nit in SQLite
+  conn.execute(
+    "UPDATE local_companies SET name = ?1, legal_name = ?1, nit = ?2 WHERE id = ?3",
+    params![company_name.trim(), nit.trim(), company_id],
+  ).map_err(|e| format!("Company update failed: {}", e))?;
+
+  // 3. Insert the new admin user
+  conn.execute(
+    "INSERT INTO local_users (id, company_id, name, email, role, password_hash, is_active, created_at_unix_ms, updated_at_unix_ms)
+     VALUES (?1, ?2, ?3, ?4, 'SUPER_ADMIN', ?5, 1, ?6, ?6)",
+    params![user_id, company_id, name.trim(), email.trim(), hashed, now],
+  ).map_err(|e| format!("Admin insert failed: {}", e))?;
+
+  // 4. Mark onboarding as NOT completed (we want them to see OnboardingWizard once they log in!)
+  let _ = conn.execute(
+    "INSERT OR REPLACE INTO local_settings (setting_key, setting_value, updated_at_unix_ms)
+     VALUES ('onboarding_completed', 'false', ?1)",
+    params![now],
+  );
+
+  // 5. Generate session
+  let session_id = format!("s-{}", Uuid::new_v4());
+  let user_dto = LocalUserDto {
+    id: user_id,
+    email: email.clone(),
+    name: name.clone(),
+    role: "SUPER_ADMIN".to_string(),
+    permissions: vec![
+      "tickets:emitir".to_string(),
+      "tickets:imprimir".to_string(),
+      "cobros:registrar".to_string(),
+      "anulaciones:crear".to_string(),
+      "tarifas:leer".to_string(),
+      "usuarios:leer".to_string(),
+      "cierres_caja:abrir".to_string(),
+      "cierres_caja:cerrar".to_string(),
+      "reportes:leer".to_string(),
+      "configuracion:leer".to_string(),
+    ],
+    company_id: company_id.clone(),
+  };
+
+  Ok(LocalStoredSession {
+    access_token: format!("local-access-token-{}", Uuid::new_v4()),
+    refresh_token: format!("local-refresh-token-{}", Uuid::new_v4()),
+    user: user_dto,
+    session: LocalSessionInfoDto {
+      session_id,
+      device_id: "local-device".to_string(),
+      access_token_expires_at_iso: chrono::Utc::now().to_rfc3339(),
+      refresh_token_expires_at_iso: (chrono::Utc::now() + chrono::Duration::days(7)).to_rfc3339(),
+    },
+    offline_lease: Some(LocalOfflineLeaseDto {
+      expires_at_iso: (chrono::Utc::now() + chrono::Duration::days(2)).to_rfc3339(),
+      restricted_actions: vec![],
+    }),
+  })
+}
+
+#[tauri::command]
+pub fn local_setup_initial_admin(
+  email: String,
+  password: String,
+  name: String,
+  company_name: String,
+  nit: String,
+  state: tauri::State<'_, AppState>,
+) -> Result<LocalStoredSession, String> {
+  local_setup_initial_admin_impl(email, password, name, company_name, nit, &state.db_path)
+}
+
+pub fn local_get_onboarding_status_impl(
+  company_id: String,
+  db_path: &std::path::Path,
+) -> Result<serde_json::Value, String> {
+  let conn = open_local_connection(db_path)?;
+
+  let onboarding_completed: String = conn
+    .query_row(
+      "SELECT setting_value FROM local_settings WHERE setting_key = 'onboarding_completed'",
+      [],
+      |r| r.get(0),
+    )
+    .unwrap_or_else(|_| "false".to_string());
+
+  let current_step: String = conn
+    .query_row(
+      "SELECT setting_value FROM local_settings WHERE setting_key = 'onboarding_current_step'",
+      [],
+      |r| r.get(0),
+    )
+    .unwrap_or_else(|_| "1".to_string());
+
+  let progress_data_str: String = conn
+    .query_row(
+      "SELECT setting_value FROM local_settings WHERE setting_key = 'onboarding_progress_data'",
+      [],
+      |r| r.get(0),
+    )
+    .unwrap_or_else(|_| "{}".to_string());
+
+  let progress_data: serde_json::Value = serde_json::from_str(&progress_data_str)
+    .unwrap_or_else(|_| serde_json::json!({}));
+
+  let val = serde_json::json!({
+    "companyId": company_id,
+    "plan": "LOCAL",
+    "onboardingCompleted": onboarding_completed == "true",
+    "currentStep": current_step.parse::<i64>().unwrap_or(1),
+    "skipped": onboarding_completed == "true",
+    "progressData": progress_data,
+    "availableOptionsByPlan": {
+      "allowMultiLocation": false,
+      "allowAdvancedPermissions": true,
+      "paymentMethods": ["EFECTIVO", "TARJETA_DEBITO", "TARJETA_CREDITO", "NEQUI", "DAVIPLATA", "TRANSFERENCIA", "QR", "MIXTO"]
+    }
+  });
+
+  Ok(val)
+}
+
+#[tauri::command]
+pub fn local_get_onboarding_status(
+  company_id: String,
+  state: tauri::State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+  local_get_onboarding_status_impl(company_id, &state.db_path)
+}
+
+pub fn local_save_onboarding_step_impl(
+  company_id: String,
+  step: i64,
+  data: serde_json::Value,
+  db_path: &std::path::Path,
+) -> Result<serde_json::Value, String> {
+  let conn = open_local_connection(db_path)?;
+  let now = chrono::Utc::now().timestamp_millis();
+
+  let progress_data_str: String = conn
+    .query_row(
+      "SELECT setting_value FROM local_settings WHERE setting_key = 'onboarding_progress_data'",
+      [],
+      |r| r.get(0),
+    )
+    .unwrap_or_else(|_| "{}".to_string());
+
+  let mut progress_data: serde_json::Value = serde_json::from_str(&progress_data_str)
+    .unwrap_or_else(|_| serde_json::json!({}));
+
+  if let Some(obj) = progress_data.as_object_mut() {
+    obj.insert(format!("step_{}", step), data);
+  }
+
+  let updated_progress_str = serde_json::to_string(&progress_data).unwrap_or_else(|_| "{}".to_string());
+
+  conn.execute(
+    "INSERT OR REPLACE INTO local_settings (setting_key, setting_value, updated_at_unix_ms)
+     VALUES ('onboarding_progress_data', ?1, ?2)",
+    params![updated_progress_str, now],
+  ).map_err(|e| e.to_string())?;
+
+  conn.execute(
+    "INSERT OR REPLACE INTO local_settings (setting_key, setting_value, updated_at_unix_ms)
+     VALUES ('onboarding_current_step', ?1, ?2)",
+    params![step.to_string(), now],
+  ).map_err(|e| e.to_string())?;
+
+  local_get_onboarding_status_impl(company_id, db_path)
+}
+
+#[tauri::command]
+pub fn local_save_onboarding_step(
+  company_id: String,
+  step: i64,
+  data: serde_json::Value,
+  state: tauri::State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+  local_save_onboarding_step_impl(company_id, step, data, &state.db_path)
+}
+
+pub fn local_complete_onboarding_impl(
+  company_id: String,
+  db_path: &std::path::Path,
+) -> Result<serde_json::Value, String> {
+  let conn = open_local_connection(db_path)?;
+  let now = chrono::Utc::now().timestamp_millis();
+
+  conn.execute(
+    "INSERT OR REPLACE INTO local_settings (setting_key, setting_value, updated_at_unix_ms)
+     VALUES ('onboarding_completed', 'true', ?1)",
+    params![now],
+  ).map_err(|e| e.to_string())?;
+
+  local_get_onboarding_status_impl(company_id, db_path)
+}
+
+#[tauri::command]
+pub fn local_complete_onboarding(
+  company_id: String,
+  state: tauri::State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+  local_complete_onboarding_impl(company_id, &state.db_path)
+}
+
+pub fn local_skip_onboarding_impl(
+  company_id: String,
+  db_path: &std::path::Path,
+) -> Result<serde_json::Value, String> {
+  let conn = open_local_connection(db_path)?;
+  let now = chrono::Utc::now().timestamp_millis();
+
+  conn.execute(
+    "INSERT OR REPLACE INTO local_settings (setting_key, setting_value, updated_at_unix_ms)
+     VALUES ('onboarding_completed', 'true', ?1)",
+    params![now],
+  ).map_err(|e| e.to_string())?;
+
+  local_get_onboarding_status_impl(company_id, db_path)
+}
+
+#[tauri::command]
+pub fn local_skip_onboarding(
+  company_id: String,
+  state: tauri::State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+  local_skip_onboarding_impl(company_id, &state.db_path)
 }
 
 // =============================================================================

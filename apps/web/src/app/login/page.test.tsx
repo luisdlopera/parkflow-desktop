@@ -63,7 +63,7 @@ describe("LoginPage", () => {
 
     fireEvent.click(screen.getByTestId("login-button"));
 
-    expect(await screen.findByTestId("error-message")).toHaveTextContent("Debes ingresar la contrasena");
+    expect(await screen.findByTestId("error-message")).toHaveTextContent("Debes ingresar la contraseña");
     expect(replace).not.toHaveBeenCalled();
   });
 

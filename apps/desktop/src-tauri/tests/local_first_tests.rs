@@ -7,7 +7,7 @@ use uuid::Uuid;
 fn setup_test_db() -> (tempfile::TempDir, PathBuf, Connection) {
   let dir = tempfile::tempdir().expect("failed to create temp dir");
   let db_path = dir.path().join("test_local_first.db");
-  let conn = Connection::open(&db_path).expect("failed to open sqlite connection");
+  let conn = local_first::open_local_connection(&db_path).expect("failed to open sqlite connection");
   local_first::init_schema_tables(&conn).expect("failed to initialize schema");
   (dir, db_path, conn)
 }
@@ -17,11 +17,11 @@ fn setup_test_db() -> (tempfile::TempDir, PathBuf, Connection) {
 fn test_database_initialization_and_seeding() {
   let (_dir, _db_path, conn) = setup_test_db();
 
-  // Verify default user seeded
+  // Verify no default user is seeded (setup required)
   let user_count: i64 = conn
     .query_row("SELECT COUNT(*) FROM local_users", [], |row| row.get(0))
     .expect("users count");
-  assert_eq!(user_count, 1);
+  assert_eq!(user_count, 0);
 
   // Verify default company seeded
   let company_name: String = conn
@@ -40,9 +40,30 @@ fn test_database_initialization_and_seeding() {
 #[serial]
 fn test_local_login_success() {
   let (_dir, db_path, _conn) = setup_test_db();
-  
-  // We can test password verification directly in Rust
-  let conn = Connection::open(&db_path).unwrap();
+
+  // Verify setup is required initially
+  let setup_req = local_first::local_is_setup_required_impl(&db_path).unwrap();
+  assert!(setup_req);
+
+  // Setup the initial admin
+  let session = local_first::local_setup_initial_admin_impl(
+    "admin@parkflow.local".to_string(),
+    "Qwert.12345".to_string(),
+    "Administrador Local".to_string(),
+    "Empresa Demo Local".to_string(),
+    "900123456".to_string(),
+    &db_path,
+  ).unwrap();
+
+  assert_eq!(session.user.email, "admin@parkflow.local");
+  assert_eq!(session.user.role, "SUPER_ADMIN");
+
+  // Verify setup is no longer required
+  let setup_req_after = local_first::local_is_setup_required_impl(&db_path).unwrap();
+  assert!(!setup_req_after);
+
+  // Now login should succeed
+  let conn = local_first::open_local_connection(&db_path).unwrap();
   let stored_hash: String = conn
     .query_row(
       "SELECT password_hash FROM local_users WHERE email = 'admin@parkflow.local'",
@@ -193,4 +214,29 @@ fn test_sync_queue_enqueuing() {
 
   assert_eq!(e_type, "TICKET");
   assert_eq!(status, "PENDING_SYNC");
+}
+
+#[test]
+#[serial]
+fn test_onboarding_wizard_steps() {
+  let (_dir, db_path, _conn) = setup_test_db();
+  
+  let company_id = "00000000-0000-0000-0000-000000000001".to_string();
+
+  // 1. Get initial status
+  let status = local_first::local_get_onboarding_status_impl(company_id.clone(), &db_path).unwrap();
+  assert_eq!(status["onboardingCompleted"], false);
+  assert_eq!(status["currentStep"], 1);
+
+  // 2. Save a step
+  let step_data = serde_json::json!({
+    "vehicleTypes": ["CAR", "MOTORCYCLE"]
+  });
+  let status2 = local_first::local_save_onboarding_step_impl(company_id.clone(), 1, step_data, &db_path).unwrap();
+  assert_eq!(status2["currentStep"], 1);
+  assert_eq!(status2["progressData"]["step_1"]["vehicleTypes"], serde_json::json!(["CAR", "MOTORCYCLE"]));
+
+  // 3. Complete onboarding
+  let status3 = local_first::local_complete_onboarding_impl(company_id.clone(), &db_path).unwrap();
+  assert_eq!(status3["onboardingCompleted"], true);
 }

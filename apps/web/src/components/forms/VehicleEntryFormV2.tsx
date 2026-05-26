@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect, type KeyboardEvent } from "react";
+import { useRef, useState, useCallback, useEffect, useMemo, type KeyboardEvent } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@heroui/input";
@@ -103,6 +103,65 @@ const entryModeOptions = [
   { key: "SUBSCRIBER", label: "Abonado" },
   { key: "EMPLOYEE", label: "Empleado" },
 ];
+
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return msg.includes("network") || msg.includes("fetch") || msg.includes("connection") || msg.includes("offline");
+  }
+  return false;
+}
+
+function resolveVehicleType(type: string, countryCode: string, plate: string): VehicleType {
+  if (!type || type === "CAR" || type === "OTHER") {
+    const inferred = inferVehicleType(countryCode, plate);
+    if (inferred) {
+      return inferred as VehicleType;
+    }
+  }
+  return type as VehicleType;
+}
+
+function extractValidationError(apiError: any, defaultDescription: string): string {
+  if (apiError.code === "VALIDATION_ERROR" && apiError.details) {
+    if (Array.isArray(apiError.details) && apiError.details.length > 0) {
+      return apiError.details[0].message || defaultDescription;
+    }
+    if (typeof apiError.details === "object") {
+      const details = apiError.details as Record<string, any>;
+      const firstKey = Object.keys(details)[0];
+      if (firstKey) {
+        return `${firstKey}: ${details[firstKey]}`;
+      }
+    }
+  }
+  return defaultDescription;
+}
+
+async function handleOfflineEntry(
+  plate: string,
+  type: string,
+  idempotencyFingerprint: string,
+  playSuccess: () => void,
+  toastSuccess: (msg: string) => void,
+  toastError: (msg: string) => void
+): Promise<boolean> {
+  const queued = await queueOfflineOperation("ENTRY_RECORDED", {
+    plate,
+    type,
+    occurredAtIso: new Date().toISOString(),
+    origin: "OFFLINE_PENDING_SYNC"
+  });
+  if (queued) {
+    clearIdempotencyKey("entry", idempotencyFingerprint);
+    toastSuccess("Sin internet: ingreso guardado en cola offline. Será sincronizado automáticamente.");
+    playSuccess();
+    return true;
+  }
+  toastError("Sin conexión: no se pudo guardar localmente. Verifique la configuración offline.");
+  return false;
+}
 
 export default function VehicleEntryFormV2() {
   const [message, setMessage] = useState("");
@@ -207,7 +266,7 @@ export default function VehicleEntryFormV2() {
       .then(setRuntimeConfig)
       .catch(() => setRuntimeConfig(null))
       .finally(() => setLoadingConfig(false));
-    void loadOccupancy();
+    loadOccupancy().catch(console.error);
   }, [loadOccupancy]);
 
   useEffect(() => {
@@ -274,7 +333,9 @@ export default function VehicleEntryFormV2() {
 
   const selectedVehicleType = vehicleTypes.find((type) => type.code === selectedTypeCode);
   const requiresPlate = selectedVehicleType?.requiresPlate ?? true;
-  const configuredSites = Array.isArray(runtimeConfig?.sites) ? runtimeConfig.sites : [];
+  const configuredSites = useMemo(() => {
+    return Array.isArray(runtimeConfig?.sites) ? runtimeConfig.sites : [];
+  }, [runtimeConfig]);
   const hasMultipleSites = configuredSites.length > 1;
 
   useEffect(() => {
@@ -380,15 +441,6 @@ export default function VehicleEntryFormV2() {
 
 
 
-  function isNetworkError(error: unknown): boolean {
-    if (error instanceof TypeError) return true;
-    if (error instanceof Error) {
-      const msg = error.message.toLowerCase();
-      return msg.includes("network") || msg.includes("fetch") || msg.includes("connection") || msg.includes("offline");
-    }
-    return false;
-  }
-
   const onSubmit = async (values: VehicleEntryFormValues) => {
     const startTime = performance.now();
 
@@ -430,13 +482,7 @@ export default function VehicleEntryFormV2() {
       const idempotencyKey = getOrCreateIdempotencyKey("entry", idempotencyFingerprint);
       idempotencyKeyRef.current = idempotencyKey;
 
-      let resolvedType = values.type;
-      if (!resolvedType || resolvedType === "CAR" || resolvedType === "OTHER") {
-        const inferredType = inferVehicleType(values.countryCode, values.plate);
-        if (inferredType) {
-          resolvedType = inferredType as VehicleType;
-        }
-      }
+      const resolvedType = resolveVehicleType(values.type, values.countryCode, values.plate);
 
       const requestBody = validatePayloadOrThrow(
         operationEntryRequestSchema,
@@ -487,18 +533,7 @@ export default function VehicleEntryFormV2() {
 
         const apiError = await normalizeApiError(clonedResponse);
         const userError = getUserErrorMessage(apiError, "tickets.create");
-        
-        let errorText = userError.description;
-        if (apiError.code === "VALIDATION_ERROR" && apiError.details) {
-          // Si el backend manda los errores de validación, mostramos el primero
-          if (Array.isArray(apiError.details) && apiError.details.length > 0) {
-             errorText = apiError.details[0].message || userError.description;
-          } else if (typeof apiError.details === "object" && !Array.isArray(apiError.details)) {
-             const details = apiError.details as Record<string, any>;
-             const firstKey = Object.keys(details)[0];
-             if (firstKey) errorText = `${firstKey}: ${details[firstKey]}`;
-          }
-        }
+        const errorText = extractValidationError(apiError, userError.description);
         
         setError(errorText);
         playError();
@@ -546,7 +581,7 @@ export default function VehicleEntryFormV2() {
       
       playSuccess();
       incrementStats();
-      void loadOccupancy();
+      loadOccupancy().catch(console.error);
 
       const durationMs = Math.round(performance.now() - startTime);
       writePerfLog("entrySubmit", durationMs, {
@@ -595,21 +630,18 @@ export default function VehicleEntryFormV2() {
         entryMode: values.entryMode ?? ""
       });
       if (isNetworkError(err)) {
-        const queued = await queueOfflineOperation("ENTRY_RECORDED", {
-          plate: form.getValues("plate"),
-          type: form.getValues("type"),
-          occurredAtIso: new Date().toISOString(),
-          origin: "OFFLINE_PENDING_SYNC"
-        });
-        if (queued) {
-          clearIdempotencyKey("entry", idempotencyFingerprint);
-          toastSuccess("Sin internet: ingreso guardado en cola offline. Será sincronizado automáticamente.");
+        const isQueued = await handleOfflineEntry(
+          form.getValues("plate"),
+          form.getValues("type"),
+          idempotencyFingerprint,
+          playSuccess,
+          toastSuccess,
+          toastError
+        );
+        if (isQueued) {
           incrementStats();
-          playSuccess();
           form.reset({ plate: "", type: settings.defaultVehicleType, countryCode: "CO", entryMode: "VISITOR", noPlate: false, noPlateReason: "" });
           focusPlate();
-        } else {
-          toastError("Sin conexión: no se pudo guardar localmente. Verifique la configuración offline.");
         }
       } else {
         console.error("Error during entry:", err);
@@ -1064,7 +1096,7 @@ export default function VehicleEntryFormV2() {
                             if (selected) field.onChange(selected);
                           }}
                         >
-                          {configuredSites.map((site) => {
+                          {configuredSites.map((site: any) => {
                             const key = String(site.code ?? site.name ?? "PRINCIPAL");
                             return <SelectItem key={key}>{String(site.name ?? site.code ?? key)}</SelectItem>;
                           })}
