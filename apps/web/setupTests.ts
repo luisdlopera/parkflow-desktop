@@ -6,9 +6,9 @@ import { configure } from '@testing-library/react'
 // Polyfill ResizeObserver for HeroUI components in jsdom
 if (typeof globalThis.ResizeObserver === 'undefined') {
   globalThis.ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
+    observe() { /* Mock ResizeObserver observe hook */ }
+    unobserve() { /* Mock ResizeObserver unobserve hook */ }
+    disconnect() { /* Mock ResizeObserver disconnect hook */ }
   }
 }
 

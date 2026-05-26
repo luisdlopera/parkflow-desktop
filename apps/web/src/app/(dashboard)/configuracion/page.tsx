@@ -162,7 +162,7 @@ export default function ConfiguracionPage() {
   }, []);
 
   useEffect(() => {
-    void refreshPerms();
+    refreshPerms().catch(console.error);
   }, [refreshPerms]);
 
   const can = useMemo(
@@ -365,7 +365,7 @@ function RatesSection({
   }, [site, q, activeFilter, page]);
 
   useEffect(() => {
-    void load();
+    load().catch(console.error);
   }, [load]);
 
   const formState = useMemo(() => {
@@ -446,7 +446,7 @@ function RatesSection({
             color="primary"
             size="md"
             className="font-semibold"
-            onPress={() => void load()}
+            onPress={() => { load().catch(console.error); }}
             isLoading={loading}
           >
             Actualizar
@@ -1131,7 +1131,7 @@ function UsersSection({
   }, [q, activeFilter, page]);
 
   useEffect(() => {
-    void load();
+    load().catch(console.error);
   }, [load]);
 
   return (
@@ -1166,7 +1166,7 @@ function UsersSection({
           color="primary"
           size="md"
           className="font-semibold"
-          onPress={() => void load()}
+          onPress={() => { load().catch(console.error); }}
           isLoading={loading}
         >
           Actualizar
@@ -1611,7 +1611,7 @@ function ParametersSection({
   }, [paramSite]);
 
   useEffect(() => {
-    void load();
+    load().catch(console.error);
   }, [load]);
 
   if (loading && !data) {
@@ -1650,7 +1650,7 @@ function ParametersSection({
             color="primary"
             size="md"
             className="font-semibold"
-            onPress={() => void load()}
+            onPress={() => { load().catch(console.error); }}
             isLoading={loading}
           >
             Cargar sede
@@ -2127,7 +2127,7 @@ function MastersSection({
     }
   }, [onNotify]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { load().catch(console.error); }, [load]);
 
   const toggleActive = useCallback(async (id: string, current: boolean) => {
     setTogglingId(id);
@@ -2367,13 +2367,13 @@ function MonthlySection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
     }
   }, [plate, page, onNotify]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { load().catch(console.error); }, [load]);
 
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex gap-3 items-end">
         <Input label="Placa" variant="flat" size="sm" value={plate} onValueChange={setPlate} className="w-48" />
-        <Button color="primary" variant="bordered" size="md" onPress={() => void load()} isLoading={loading}>Buscar</Button>
+        <Button color="primary" variant="bordered" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Buscar</Button>
       </div>
       <DataTable
         columns={[
@@ -2416,13 +2416,13 @@ function AgreementsSection({ canEdit, onNotify, auditReason }: { canEdit: boolea
     }
   }, [q, page, onNotify]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { load().catch(console.error); }, [load]);
 
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex gap-3 items-end">
         <Input label="Buscar" variant="flat" size="sm" value={q} onValueChange={setQ} className="w-64" placeholder="Empresa o código..." />
-        <Button color="primary" variant="bordered" size="md" onPress={() => void load()} isLoading={loading}>Buscar</Button>
+        <Button color="primary" variant="bordered" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Buscar</Button>
       </div>
       <DataTable
         columns={[
@@ -2455,13 +2455,13 @@ function PrepaidSection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
     }
   }, [onNotify]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { load().catch(console.error); }, [load]);
 
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex justify-between items-center">
         <h2 className="text-lg font-semibold text-slate-900">Paquetes Prepagados</h2>
-        <Button color="primary" variant="bordered" size="md" onPress={() => void load()} isLoading={loading}>Actualizar</Button>
+        <Button color="primary" variant="bordered" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Actualizar</Button>
       </div>
       <DataTable
         columns={[

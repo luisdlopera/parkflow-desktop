@@ -163,7 +163,7 @@ async function handleOfflineEntry(
   return false;
 }
 
-export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery = false }: { initialPlate?: string; disableRecovery?: boolean }) {
+export default function VehicleEntryFormV2() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [previewLines, setPreviewLines] = useState<string[] | null>(null);

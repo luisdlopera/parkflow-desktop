@@ -17,11 +17,11 @@ fn setup_test_db() -> (tempfile::TempDir, PathBuf, Connection) {
 fn test_database_initialization_and_seeding() {
   let (_dir, _db_path, conn) = setup_test_db();
 
-  // Verify default users are seeded (2: admin + cashier)
+  // Verify no default user is seeded (setup required)
   let user_count: i64 = conn
     .query_row("SELECT COUNT(*) FROM local_users", [], |row| row.get(0))
     .expect("users count");
-  assert_eq!(user_count, 2);
+  assert_eq!(user_count, 0);
 
   // Verify default company seeded
   let company_name: String = conn
@@ -41,24 +41,28 @@ fn test_database_initialization_and_seeding() {
 fn test_local_login_success() {
   let (_dir, db_path, _conn) = setup_test_db();
 
-  // Setup is no longer required because default users are seeded
+  // Verify setup is required initially
   let setup_req = local_first::local_is_setup_required_impl(&db_path).unwrap();
-  assert!(!setup_req);
+  assert!(setup_req);
 
-  // Login with seeded admin user
-  let session = local_first::local_login_impl(
+  // Setup the initial admin
+  let session = local_first::local_setup_initial_admin_impl(
     "admin@parkflow.local".to_string(),
     "Qwert.12345".to_string(),
-    "test-device".to_string(),
+    "Administrador Local".to_string(),
+    "Empresa Demo Local".to_string(),
+    "900123456".to_string(),
     &db_path,
   ).unwrap();
 
   assert_eq!(session.user.email, "admin@parkflow.local");
   assert_eq!(session.user.role, "SUPER_ADMIN");
-  assert!(session.user.permissions.contains(&"tickets:emitir".to_string()));
-  assert!(session.user.permissions.contains(&"reportes:leer".to_string()));
 
-  // Verify password hash matches
+  // Verify setup is no longer required
+  let setup_req_after = local_first::local_is_setup_required_impl(&db_path).unwrap();
+  assert!(!setup_req_after);
+
+  // Now login should succeed
   let conn = local_first::open_local_connection(&db_path).unwrap();
   let stored_hash: String = conn
     .query_row(

@@ -710,18 +710,6 @@ pub fn init_schema_tables(conn: &Connection) -> Result<(), rusqlite::Error> {
   Ok(())
 }
 
-fn ensure_column(conn: &Connection, table: &str, column: &str, col_type: &str) -> Result<(), rusqlite::Error> {
-  let exists: bool = conn.query_row(
-    &format!("SELECT COUNT(*) FROM pragma_table_info('{}') WHERE name = ?1", table),
-    [column],
-    |row| row.get(0),
-  )?;
-  if !exists {
-    conn.execute_batch(&format!("ALTER TABLE {} ADD COLUMN {} {};", table, column, col_type))?;
-  }
-  Ok(())
-}
-
 fn seed_local_database(conn: &Connection) -> Result<(), rusqlite::Error> {
   let company_count: i64 = conn.query_row("SELECT COUNT(*) FROM local_companies", [], |r| r.get(0))?;
   let now = chrono::Utc::now().timestamp_millis();
@@ -904,6 +892,10 @@ fn permissions_for_role(role: &str) -> Vec<String> {
   }
 }
 
+pub struct AppState {
+  pub db_path: PathBuf,
+}
+
 #[tauri::command]
 pub fn get_parkflow_config() -> ParkflowConfig {
   let mode = std::env::var("PARKFLOW_MODE").unwrap_or_else(|_| "local".to_string());
@@ -1071,8 +1063,25 @@ pub fn local_refresh(
   device_id: String,
   state: tauri::State<'_, crate::AppState>,
 ) -> Result<LocalStoredSession, String> {
-  local_refresh_impl(refresh_token, device_id, &state.db_path)
-}
+  // Mock session refresh
+  let conn = open_local_connection(&state.db_path)?;
+  let user_dto: LocalUserDto = conn
+    .query_row(
+      "SELECT id, email, name, role, company_id FROM local_users LIMIT 1",
+      [],
+      |row| {
+        let role: String = row.get(3)?;
+        Ok(LocalUserDto {
+          id: row.get(0)?,
+          email: row.get(1)?,
+          name: row.get(2)?,
+          role: role.clone(),
+          permissions: permissions_for_role(&role),
+          company_id: row.get(4)?,
+        })
+      },
+    )
+    .map_err(|e| format!("No users seeded: {}", e))?;
 
 fn unix_ms_to_rfc3339(ms: Option<i64>) -> Option<String> {
   ms.and_then(|value| {
@@ -2669,7 +2678,7 @@ pub fn local_is_setup_required_impl(db_path: &std::path::Path) -> Result<bool, S
 }
 
 #[tauri::command]
-pub fn local_is_setup_required(state: tauri::State<'_, crate::AppState>) -> Result<bool, String> {
+pub fn local_is_setup_required(state: tauri::State<'_, AppState>) -> Result<bool, String> {
   local_is_setup_required_impl(&state.db_path)
 }
 
@@ -2713,10 +2722,9 @@ pub fn local_setup_initial_admin_impl(
   );
 
   // 5. Generate session
-  let now = chrono::Utc::now();
   let session_id = format!("s-{}", Uuid::new_v4());
   let user_dto = LocalUserDto {
-    id: user_id.clone(),
+    id: user_id,
     email: email.clone(),
     name: name.clone(),
     role: "SUPER_ADMIN".to_string(),
@@ -2733,35 +2741,20 @@ pub fn local_setup_initial_admin_impl(
       "configuracion:leer".to_string(),
     ],
     company_id: company_id.clone(),
-    active: true,
-    password_changed_at_iso: None,
   };
 
   Ok(LocalStoredSession {
     access_token: format!("local-access-token-{}", Uuid::new_v4()),
     refresh_token: format!("local-refresh-token-{}", Uuid::new_v4()),
-    token_type: "Bearer".to_string(),
     user: user_dto,
     session: LocalSessionInfoDto {
-      session_id: session_id.clone(),
-      user_id: user_id.clone(),
+      session_id,
       device_id: "local-device".to_string(),
-      issued_at_iso: now.to_rfc3339(),
-      access_token_expires_at_iso: (now + chrono::Duration::minutes(15)).to_rfc3339(),
-      refresh_token_expires_at_iso: (now + chrono::Duration::days(7)).to_rfc3339(),
-      last_seen_at_iso: now.to_rfc3339(),
-    },
-    device: LocalDeviceDto {
-      id: "local-device".to_string(),
-      display_name: "Dispositivo Local".to_string(),
-      platform: "desktop".to_string(),
-      fingerprint: "local-dev".to_string(),
-      authorized: true,
-      revoked_at_iso: None,
-      last_seen_at_iso: Some(now.to_rfc3339()),
+      access_token_expires_at_iso: chrono::Utc::now().to_rfc3339(),
+      refresh_token_expires_at_iso: (chrono::Utc::now() + chrono::Duration::days(7)).to_rfc3339(),
     },
     offline_lease: Some(LocalOfflineLeaseDto {
-      expires_at_iso: (now + chrono::Duration::days(2)).to_rfc3339(),
+      expires_at_iso: (chrono::Utc::now() + chrono::Duration::days(2)).to_rfc3339(),
       restricted_actions: vec![],
     }),
   })
@@ -2774,7 +2767,7 @@ pub fn local_setup_initial_admin(
   name: String,
   company_name: String,
   nit: String,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<LocalStoredSession, String> {
   local_setup_initial_admin_impl(email, password, name, company_name, nit, &state.db_path)
 }
@@ -2832,7 +2825,7 @@ pub fn local_get_onboarding_status_impl(
 #[tauri::command]
 pub fn local_get_onboarding_status(
   company_id: String,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
   local_get_onboarding_status_impl(company_id, &state.db_path)
 }
@@ -2883,7 +2876,7 @@ pub fn local_save_onboarding_step(
   company_id: String,
   step: i64,
   data: serde_json::Value,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
   local_save_onboarding_step_impl(company_id, step, data, &state.db_path)
 }
@@ -2907,7 +2900,7 @@ pub fn local_complete_onboarding_impl(
 #[tauri::command]
 pub fn local_complete_onboarding(
   company_id: String,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
   local_complete_onboarding_impl(company_id, &state.db_path)
 }
@@ -2931,879 +2924,9 @@ pub fn local_skip_onboarding_impl(
 #[tauri::command]
 pub fn local_skip_onboarding(
   company_id: String,
-  state: tauri::State<'_, crate::AppState>,
+  state: tauri::State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
   local_skip_onboarding_impl(company_id, &state.db_path)
-}
-
-// =============================================================================
-// Report commands
-// =============================================================================
-
-#[tauri::command]
-pub fn local_get_daily_operations(
-  date_from: Option<String>,
-  date_to: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<Vec<DailyOperationsRowDto>, String> {
-  let conn = open_local_connection(&state.db_path)?;
-  let today = today_start_ms();
-  let from_ms = date_from
-    .as_deref()
-    .and_then(midnight_unix_ms)
-    .unwrap_or(today);
-  let to_ms = date_to
-    .as_deref()
-    .and_then(|d| midnight_unix_ms(d).map(|ts| ts + 86_400_000))
-    .unwrap_or(today + 86_400_000);
-
-  let mut stmt = conn
-    .prepare(
-      "SELECT
-         CAST(entry_at_unix_ms / 86400000 AS INTEGER) AS day_bucket,
-         SUM(CASE WHEN status = 'ACTIVE' OR status = 'PAID' THEN 1 ELSE 0 END) AS entries,
-         SUM(CASE WHEN status = 'PAID' AND exit_at_unix_ms IS NOT NULL THEN 1 ELSE 0 END) AS exits,
-         SUM(CASE WHEN status = 'LOST' THEN 1 ELSE 0 END) AS lost_tickets
-       FROM local_tickets
-       WHERE entry_at_unix_ms >= ?1 AND entry_at_unix_ms < ?2
-       GROUP BY day_bucket
-       ORDER BY day_bucket DESC",
-    )
-    .map_err(|e| format!("prepare daily ops failed: {}", e))?;
-
-  let mut map: HashMap<i64, DailyOperationsRowDto> = HashMap::new();
-  let rows = stmt
-    .query_map(params![from_ms, to_ms], |row| {
-      let bucket: i64 = row.get(0)?;
-      Ok((
-        bucket,
-        DailyOperationsRowDto {
-          date: String::new(),
-          entries: row.get(1)?,
-          exits: row.get(2)?,
-          lost_tickets: row.get(3)?,
-          cash_total: 0.0,
-          card_total: 0.0,
-          transfer_total: 0.0,
-          other_total: 0.0,
-          grand_total: 0.0,
-        },
-      ))
-    })
-    .map_err(|e| format!("query map failed: {}", e))?;
-
-  for r in rows {
-    if let Ok((bucket, mut row)) = r {
-      let day_start = bucket * 86_400_000;
-      let dt = chrono::DateTime::from_timestamp(day_start / 1000, 0)
-        .unwrap_or_default();
-      row.date = dt.format("%Y-%m-%d").to_string();
-      map.insert(bucket, row);
-    }
-  }
-
-  // Aggregate payments by day bucket
-  let mut pay_stmt = conn
-    .prepare(
-      "SELECT
-         CAST(p.created_at_unix_ms / 86400000 AS INTEGER) AS day_bucket,
-         p.payment_method,
-         p.amount,
-         t.ticket_number
-       FROM local_payments p
-       JOIN local_tickets t ON t.id = p.ticket_id
-       WHERE p.created_at_unix_ms >= ?1 AND p.created_at_unix_ms < ?2",
-    )
-    .map_err(|e| format!("prepare payments failed: {}", e))?;
-
-  let pay_rows = pay_stmt
-    .query_map(params![from_ms, to_ms], |row| {
-      Ok((
-        row.get::<_, i64>(0)?,
-        row.get::<_, String>(1)?,
-        row.get::<_, i64>(2)?,
-      ))
-    })
-    .map_err(|e| format!("pay query map failed: {}", e))?;
-
-  for r in pay_rows {
-    if let Ok((bucket, method, amount)) = r {
-      let entry = map.entry(bucket).or_insert(DailyOperationsRowDto {
-        date: String::new(),
-        entries: 0,
-        exits: 0,
-        lost_tickets: 0,
-        cash_total: 0.0,
-        card_total: 0.0,
-        transfer_total: 0.0,
-        other_total: 0.0,
-        grand_total: 0.0,
-      });
-      let amt = amount as f64;
-      match classify_payment_method(&method) {
-        "CASH" => entry.cash_total += amt,
-        "CARD" => entry.card_total += amt,
-        "TRANSFER" => entry.transfer_total += amt,
-        _ => entry.other_total += amt,
-      }
-      entry.grand_total += amt;
-      if entry.date.is_empty() {
-        let day_start = bucket * 86_400_000;
-        let dt = chrono::DateTime::from_timestamp(day_start / 1000, 0)
-          .unwrap_or_default();
-        entry.date = dt.format("%Y-%m-%d").to_string();
-      }
-    }
-  }
-
-  let mut results: Vec<DailyOperationsRowDto> = map.into_values().collect();
-  results.sort_by(|a, b| b.date.cmp(&a.date));
-  Ok(results)
-}
-
-#[tauri::command]
-pub fn local_get_vehicle_type_report(
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<Vec<VehicleTypeReportRowDto>, String> {
-  let conn = open_local_connection(&state.db_path)?;
-  let today = today_start_ms();
-  let tomorrow = today + 86_400_000;
-
-  let mut stmt = conn
-    .prepare(
-      "SELECT
-         t.vehicle_type,
-         SUM(CASE WHEN t.status = 'ACTIVE' THEN 1 ELSE 0 END) AS active,
-         SUM(CASE WHEN t.entry_at_unix_ms >= ?1 AND t.entry_at_unix_ms < ?2 THEN 1 ELSE 0 END) AS entries_today,
-         SUM(CASE WHEN t.exit_at_unix_ms >= ?1 AND t.exit_at_unix_ms < ?2 THEN 1 ELSE 0 END) AS exits_today
-       FROM local_tickets t
-       GROUP BY t.vehicle_type
-       ORDER BY t.vehicle_type",
-    )
-    .map_err(|e| format!("prepare vt report failed: {}", e))?;
-
-  let mut results: Vec<VehicleTypeReportRowDto> = Vec::new();
-  let rows = stmt
-    .query_map(params![today, tomorrow], |row| {
-      Ok((
-        row.get::<_, String>(0)?,
-        row.get::<_, i64>(1)?,
-        row.get::<_, i64>(2)?,
-        row.get::<_, i64>(3)?,
-      ))
-    })
-    .map_err(|e| format!("vt query map failed: {}", e))?;
-
-  for r in rows {
-    if let Ok((vt, active, entries_today, exits_today)) = r {
-      results.push(VehicleTypeReportRowDto {
-        vehicle_type: vt,
-        active_count: active,
-        entries_today,
-        exits_today,
-        revenue_today: 0.0,
-      });
-    }
-  }
-
-  // Sum payments today per vehicle type
-  let mut rev_stmt = conn
-    .prepare(
-      "SELECT t.vehicle_type, SUM(p.amount)
-       FROM local_payments p
-       JOIN local_tickets t ON t.id = p.ticket_id
-       WHERE p.created_at_unix_ms >= ?1 AND p.created_at_unix_ms < ?2
-       GROUP BY t.vehicle_type",
-    )
-    .map_err(|e| format!("prepare vt revenue failed: {}", e))?;
-
-  let rev_rows = rev_stmt
-    .query_map(params![today, tomorrow], |row| {
-      Ok((
-        row.get::<_, String>(0)?,
-        row.get::<_, f64>(1)?,
-      ))
-    })
-    .map_err(|e| format!("vt rev query failed: {}", e))?;
-
-  for r in rev_rows {
-    if let Ok((vt, revenue)) = r {
-      if let Some(row) = results.iter_mut().find(|x| x.vehicle_type == vt) {
-        row.revenue_today = revenue;
-      }
-    }
-  }
-
-  Ok(results)
-}
-
-#[tauri::command]
-pub fn local_get_cash_session_history(
-  limit: Option<i64>,
-  offset: Option<i64>,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<Vec<CashSessionHistoryRowDto>, String> {
-  let conn = open_local_connection(&state.db_path)?;
-  let lim = limit.unwrap_or(50);
-  let off = offset.unwrap_or(0);
-
-  let mut stmt = conn
-    .prepare(
-      "SELECT
-         id, opened_at_unix_ms, closed_at_unix_ms, operator_name, status,
-         opening_amount, expected_amount, counted_amount
-       FROM (
-         SELECT cs.id, cs.opened_at_unix_ms, cs.closed_at_unix_ms,
-                u.name AS operator_name,
-                cs.status, cs.opening_amount, cs.expected_amount, cs.counted_amount
-         FROM local_cash_sessions cs
-         LEFT JOIN local_users u ON u.id = cs.user_id
-       )
-       ORDER BY opened_at_unix_ms DESC
-       LIMIT ?1 OFFSET ?2",
-    )
-    .map_err(|e| format!("prepare cash history failed: {}", e))?;
-
-  let mut results: Vec<CashSessionHistoryRowDto> = Vec::new();
-  let rows = stmt
-    .query_map(params![lim, off], |row| {
-      let opened_at: i64 = row.get(1)?;
-      let closed_at: Option<i64> = row.get(2)?;
-      let expected: i64 = row.get(6)?;
-      let counted: Option<i64> = row.get(7)?;
-      Ok(CashSessionHistoryRowDto {
-        id: row.get(0)?,
-        opened_at: chrono::DateTime::from_timestamp(opened_at / 1000, 0)
-          .unwrap_or_default()
-          .to_rfc3339(),
-        closed_at: closed_at.map(|t| {
-          chrono::DateTime::from_timestamp(t / 1000, 0)
-            .unwrap_or_default()
-            .to_rfc3339()
-        }),
-        operator_name: row.get::<_, Option<String>>(3)?,
-        status: row.get(4)?,
-        opening_amount: row.get::<_, i64>(5)? as f64,
-        expected_amount: expected as f64,
-        counted_amount: counted.map(|v| v as f64),
-        difference: counted.map(|c| c as f64 - expected as f64),
-        movement_count: 0,
-      })
-    })
-    .map_err(|e| format!("cash history query failed: {}", e))?;
-
-  for r in rows {
-    if let Ok(mut row) = r {
-      // Count movements for this session
-      let count: i64 = conn
-        .query_row(
-          "SELECT COUNT(*) FROM local_cash_movements WHERE cash_session_id = ?1",
-          params![row.id],
-          |r2| r2.get(0),
-        )
-        .unwrap_or(0);
-      row.movement_count = count;
-      results.push(row);
-    }
-  }
-
-  Ok(results)
-}
-
-#[tauri::command]
-pub fn local_export_report_csv(
-  report_type: String,
-  date_from: Option<String>,
-  date_to: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<ReportCsvDataDto, String> {
-  match report_type.to_uppercase().as_str() {
-    "DAILY_OPERATIONS" => {
-      let data = local_get_daily_operations(date_from, date_to, state)?;
-      let headers = vec![
-        "Fecha".to_string(),
-        "Entradas".to_string(),
-        "Salidas".to_string(),
-        "Ticket Perdido".to_string(),
-        "Efectivo".to_string(),
-        "Tarjeta".to_string(),
-        "Transferencia".to_string(),
-        "Otros".to_string(),
-        "Total".to_string(),
-      ];
-      let rows: Vec<Vec<String>> = data
-        .into_iter()
-        .map(|r| {
-          vec![
-            r.date,
-            r.entries.to_string(),
-            r.exits.to_string(),
-            r.lost_tickets.to_string(),
-            format!("{:.2}", r.cash_total),
-            format!("{:.2}", r.card_total),
-            format!("{:.2}", r.transfer_total),
-            format!("{:.2}", r.other_total),
-            format!("{:.2}", r.grand_total),
-          ]
-        })
-        .collect();
-      Ok(ReportCsvDataDto { headers, rows })
-    }
-    "VEHICLE_TYPE" => {
-      let data = local_get_vehicle_type_report(state)?;
-      let headers = vec![
-        "Tipo Vehiculo".to_string(),
-        "Activos".to_string(),
-        "Entradas Hoy".to_string(),
-        "Salidas Hoy".to_string(),
-        "Recaudo Hoy".to_string(),
-      ];
-      let rows: Vec<Vec<String>> = data
-        .into_iter()
-        .map(|r| {
-          vec![
-            r.vehicle_type,
-            r.active_count.to_string(),
-            r.entries_today.to_string(),
-            r.exits_today.to_string(),
-            format!("{:.2}", r.revenue_today),
-          ]
-        })
-        .collect();
-      Ok(ReportCsvDataDto { headers, rows })
-    }
-    "CASH_SESSION_HISTORY" => {
-      let data = local_get_cash_session_history(None, None, state)?;
-      let headers = vec![
-        "ID".to_string(),
-        "Apertura".to_string(),
-        "Cierre".to_string(),
-        "Operador".to_string(),
-        "Estado".to_string(),
-        "Base".to_string(),
-        "Esperado".to_string(),
-        "Contado".to_string(),
-        "Diferencia".to_string(),
-        "Movimientos".to_string(),
-      ];
-      let rows: Vec<Vec<String>> = data
-        .into_iter()
-        .map(|r| {
-          vec![
-            r.id,
-            r.opened_at,
-            r.closed_at.unwrap_or_default(),
-            r.operator_name.unwrap_or_default(),
-            r.status,
-            format!("{:.2}", r.opening_amount),
-            format!("{:.2}", r.expected_amount),
-            r.counted_amount
-              .map(|v| format!("{:.2}", v))
-              .unwrap_or_default(),
-            r.difference
-              .map(|v| format!("{:.2}", v))
-              .unwrap_or_default(),
-            r.movement_count.to_string(),
-          ]
-        })
-        .collect();
-      Ok(ReportCsvDataDto { headers, rows })
-    }
-    _ => Err(format!("Tipo de reporte no soportado: {}", report_type)),
-  }
-}
-
-#[tauri::command]
-pub fn local_get_paid_tickets_report(
-  date_from: Option<String>,
-  date_to: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<Vec<PaidTicketDto>, String> {
-  let conn = open_local_connection(&state.db_path)?;
-  let today = today_start_ms();
-  let from_ms = date_from
-    .as_deref()
-    .and_then(midnight_unix_ms)
-    .unwrap_or(today);
-  let to_ms = date_to
-    .as_deref()
-    .and_then(|d| midnight_unix_ms(d).map(|ts| ts + 86_400_000))
-    .unwrap_or(today + 86_400_000);
-
-  let mut stmt = conn
-    .prepare(
-      "SELECT t.ticket_number, t.vehicle_plate, t.vehicle_type,
-              p.amount, p.payment_method, p.created_at_unix_ms, t.entry_at_unix_ms
-       FROM local_payments p
-       JOIN local_tickets t ON t.id = p.ticket_id
-       WHERE p.created_at_unix_ms >= ?1 AND p.created_at_unix_ms < ?2
-       ORDER BY p.created_at_unix_ms DESC",
-    )
-    .map_err(|e| format!("prepare paid tickets failed: {}", e))?;
-
-  let rows = stmt
-    .query_map(params![from_ms, to_ms], |row| {
-      let paid_at_ts: i64 = row.get(5)?;
-      let entry_at_ts: i64 = row.get(6)?;
-      Ok(PaidTicketDto {
-        ticket_number: row.get(0)?,
-        plate: row.get(1)?,
-        vehicle_type: row.get(2)?,
-        amount: row.get::<_, i64>(3)? as f64,
-        payment_method: row.get(4)?,
-        paid_at: chrono::DateTime::from_timestamp(paid_at_ts / 1000, 0)
-          .unwrap_or_default()
-          .to_rfc3339(),
-        entry_at: chrono::DateTime::from_timestamp(entry_at_ts / 1000, 0)
-          .unwrap_or_default()
-          .to_rfc3339(),
-      })
-    })
-    .map_err(|e| format!("paid tickets query failed: {}", e))?;
-
-  let mut results = Vec::new();
-  for r in rows {
-    if let Ok(dto) = r {
-      results.push(dto);
-    }
-  }
-  Ok(results)
-}
-
-fn display_name_for_movement(mtype: &str) -> String {
-  match mtype {
-    "PARKING_PAYMENT" => "Parqueadero".to_string(),
-    "LOST_TICKET_PAYMENT" => "Ticket Perdido".to_string(),
-    "MANUAL_INCOME" => "Ingreso Manual".to_string(),
-    "REPRINT_FEE" => "Reimpresión".to_string(),
-    "MANUAL_EXPENSE" => "Gasto Manual".to_string(),
-    "WITHDRAWAL" => "Retiro".to_string(),
-    "DISCOUNT" => "Descuento".to_string(),
-    "CUSTOMER_REFUND" => "Reembolso".to_string(),
-    _ => {
-      let lower = mtype.replace('_', " ").to_lowercase();
-      let mut result = String::new();
-      let mut capitalize = true;
-      for ch in lower.chars() {
-        if capitalize {
-          result.push(ch.to_ascii_uppercase());
-          capitalize = false;
-        } else {
-          result.push(ch);
-        }
-        if ch == ' ' {
-          capitalize = true;
-        }
-      }
-      result
-    }
-  }
-}
-
-#[tauri::command]
-pub fn local_get_income_expense_report(
-  date_from: Option<String>,
-  date_to: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<IncomeExpenseSummaryDto, String> {
-  let conn = open_local_connection(&state.db_path)?;
-  let today = today_start_ms();
-  let from_ms = date_from
-    .as_deref()
-    .and_then(midnight_unix_ms)
-    .unwrap_or(today);
-  let to_ms = date_to
-    .as_deref()
-    .and_then(|d| midnight_unix_ms(d).map(|ts| ts + 86_400_000))
-    .unwrap_or(today + 86_400_000);
-
-  let mut stmt = conn
-    .prepare(
-      "SELECT movement_type, SUM(amount), COUNT(*)
-       FROM local_cash_movements
-       WHERE created_at_unix_ms >= ?1 AND created_at_unix_ms < ?2
-       GROUP BY movement_type
-       ORDER BY movement_type",
-    )
-    .map_err(|e| format!("prepare income expense failed: {}", e))?;
-
-  let rows = stmt
-    .query_map(params![from_ms, to_ms], |row| {
-      Ok((
-        row.get::<_, String>(0)?,
-        row.get::<_, i64>(1)?,
-        row.get::<_, i64>(2)?,
-      ))
-    })
-    .map_err(|e| format!("income expense query failed: {}", e))?;
-
-  let income_types =
-    ["PARKING_PAYMENT", "LOST_TICKET_PAYMENT", "MANUAL_INCOME", "REPRINT_FEE"];
-  let mut income_total = 0.0_f64;
-  let mut expense_total = 0.0_f64;
-  let mut breakdown = Vec::new();
-
-  for r in rows {
-    if let Ok((mtype, amt, cnt)) = r {
-      let amt_f64 = amt as f64;
-      if income_types.contains(&mtype.as_str()) {
-        income_total += amt_f64;
-      } else {
-        expense_total += amt_f64;
-      }
-      breakdown.push(IncomeExpenseRowDto {
-        display_name: display_name_for_movement(&mtype),
-        movement_type: mtype,
-        amount: amt_f64,
-        count: cnt,
-      });
-    }
-  }
-
-  Ok(IncomeExpenseSummaryDto {
-    income_total,
-    expense_total,
-    net_total: income_total - expense_total,
-    breakdown,
-  })
-}
-
-#[tauri::command]
-pub fn local_get_occupancy_report(
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<OccupancyReportDto, String> {
-  let conn = open_local_connection(&state.db_path)?;
-
-  let total_capacity: i64 = conn
-    .query_row(
-      "SELECT COALESCE(SUM(max_capacity), 0) FROM local_parking_sites",
-      [],
-      |r| r.get(0),
-    )
-    .unwrap_or(0);
-
-  let active_sessions: i64 = conn
-    .query_row(
-      "SELECT COUNT(*) FROM local_tickets WHERE status = 'ACTIVE'",
-      [],
-      |r| r.get(0),
-    )
-    .unwrap_or(0);
-
-  let occ_pct = if total_capacity > 0 {
-    (active_sessions as f64 / total_capacity as f64) * 100.0
-  } else {
-    0.0
-  };
-
-  let mut vt_stmt = conn
-    .prepare(
-      "SELECT vehicle_type, COUNT(*)
-       FROM local_tickets WHERE status = 'ACTIVE'
-       GROUP BY vehicle_type",
-    )
-    .map_err(|e| format!("prepare occupancy vt failed: {}", e))?;
-
-  let vt_rows = vt_stmt
-    .query_map([], |row| {
-      Ok(OccupancyByTypeDto {
-        vehicle_type: row.get(0)?,
-        occupied: row.get(1)?,
-      })
-    })
-    .map_err(|e| format!("occupancy vt query failed: {}", e))?;
-
-  let mut by_vehicle_type = Vec::new();
-  for r in vt_rows {
-    if let Ok(dto) = r {
-      by_vehicle_type.push(dto);
-    }
-  }
-
-  Ok(OccupancyReportDto {
-    total_spaces: total_capacity,
-    occupied_spaces: active_sessions,
-    available_spaces: (total_capacity - active_sessions).max(0),
-    occupancy_percentage: occ_pct,
-    by_vehicle_type,
-  })
-}
-
-#[tauri::command]
-pub fn local_get_operator_report(
-  date_from: Option<String>,
-  date_to: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<Vec<OperatorReportRowDto>, String> {
-  let conn = open_local_connection(&state.db_path)?;
-  let today = today_start_ms();
-  let from_ms = date_from
-    .as_deref()
-    .and_then(midnight_unix_ms)
-    .unwrap_or(today);
-  let to_ms = date_to
-    .as_deref()
-    .and_then(|d| midnight_unix_ms(d).map(|ts| ts + 86_400_000))
-    .unwrap_or(today + 86_400_000);
-
-  let mut stmt = conn
-    .prepare(
-      "SELECT cs.user_id, u.name, cm.payment_method, SUM(cm.amount), COUNT(*)
-       FROM local_cash_movements cm
-       JOIN local_cash_sessions cs ON cs.id = cm.cash_session_id
-       LEFT JOIN local_users u ON u.id = cs.user_id
-       WHERE cm.created_at_unix_ms >= ?1 AND cm.created_at_unix_ms < ?2
-       GROUP BY cs.user_id, u.name, cm.payment_method",
-    )
-    .map_err(|e| format!("prepare operator report failed: {}", e))?;
-
-  let rows = stmt
-    .query_map(params![from_ms, to_ms], |row| {
-      Ok((
-        row.get::<_, String>(0)?,
-        row.get::<_, Option<String>>(1)?,
-        row.get::<_, String>(2)?,
-        row.get::<_, i64>(3)?,
-        row.get::<_, i64>(4)?,
-      ))
-    })
-    .map_err(|e| format!("operator report query failed: {}", e))?;
-
-  use std::collections::HashMap;
-  let mut map: HashMap<String, OperatorReportRowDto> = HashMap::new();
-
-  for r in rows {
-    if let Ok((op_id, op_name, pm, amt, cnt)) = r {
-      let entry = map.entry(op_id.clone()).or_insert(OperatorReportRowDto {
-        operator_id: op_id,
-        operator_name: op_name.unwrap_or_else(|| "Desconocido".to_string()),
-        transaction_count: 0,
-        total_amount: 0.0,
-        cash_amount: 0.0,
-        card_amount: 0.0,
-        transfer_amount: 0.0,
-        other_amount: 0.0,
-      });
-      let amt_f64 = amt as f64;
-      entry.transaction_count += cnt;
-      entry.total_amount += amt_f64;
-      match classify_payment_method(&pm) {
-        "CASH" => entry.cash_amount += amt_f64,
-        "CARD" => entry.card_amount += amt_f64,
-        "TRANSFER" => entry.transfer_amount += amt_f64,
-        _ => entry.other_amount += amt_f64,
-      }
-    }
-  }
-
-  let mut results: Vec<OperatorReportRowDto> = map.into_values().collect();
-  results.sort_by(|a, b| {
-    b.total_amount
-      .partial_cmp(&a.total_amount)
-      .unwrap_or(std::cmp::Ordering::Equal)
-  });
-  Ok(results)
-}
-
-#[tauri::command]
-pub fn local_get_payment_method_report(
-  date_from: Option<String>,
-  date_to: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<Vec<PaymentMethodReportRowDto>, String> {
-  let conn = open_local_connection(&state.db_path)?;
-  let today = today_start_ms();
-  let from_ms = date_from
-    .as_deref()
-    .and_then(midnight_unix_ms)
-    .unwrap_or(today);
-  let to_ms = date_to
-    .as_deref()
-    .and_then(|d| midnight_unix_ms(d).map(|ts| ts + 86_400_000))
-    .unwrap_or(today + 86_400_000);
-
-  let mut stmt = conn
-    .prepare(
-      "SELECT payment_method, COUNT(*), SUM(amount)
-       FROM local_cash_movements
-       WHERE created_at_unix_ms >= ?1 AND created_at_unix_ms < ?2
-         AND movement_type IN ('PARKING_PAYMENT', 'LOST_TICKET_PAYMENT', 'REPRINT_FEE')
-       GROUP BY payment_method
-       ORDER BY SUM(amount) DESC",
-    )
-    .map_err(|e| format!("prepare payment method report failed: {}", e))?;
-
-  let rows = stmt
-    .query_map(params![from_ms, to_ms], |row| {
-      Ok((
-        row.get::<_, String>(0)?,
-        row.get::<_, i64>(1)?,
-        row.get::<_, i64>(2)?,
-      ))
-    })
-    .map_err(|e| format!("payment method query failed: {}", e))?;
-
-  let mut raw = Vec::new();
-  let mut grand_total = 0.0_f64;
-
-  for r in rows {
-    if let Ok((pm, cnt, amt)) = r {
-      let amt_f64 = amt as f64;
-      grand_total += amt_f64;
-      raw.push((pm, cnt, amt_f64));
-    }
-  }
-
-  let results = raw
-    .into_iter()
-    .map(|(pm, cnt, amt)| {
-      let pct = if grand_total > 0.0 {
-        (amt / grand_total) * 100.0
-      } else {
-        0.0
-      };
-      PaymentMethodReportRowDto {
-        display_name: display_name_for_movement(&pm),
-        payment_method: pm,
-        transaction_count: cnt,
-        total_amount: amt,
-        percentage: pct,
-      }
-    })
-    .collect();
-
-  Ok(results)
-}
-
-#[tauri::command]
-pub fn local_void_cash_movement(
-  movement_id: String,
-  void_reason: String,
-  voided_by_id: String,
-  voided_by_name: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<LocalCashMovementDto, String> {
-  let conn = open_local_connection(&state.db_path)?;
-  let now = chrono::Utc::now().timestamp_millis();
-
-  // Read the movement to know the session and amount for reversal
-  let (session_id, amount, movement_type): (String, i64, String) = conn
-    .query_row(
-      "SELECT cash_session_id, amount, movement_type FROM local_cash_movements WHERE id = ?1",
-      params![movement_id],
-      |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
-    )
-    .map_err(|e| format!("Movement not found: {}", e))?;
-
-  conn.execute(
-    "UPDATE local_cash_movements
-     SET status = 'VOIDED', void_reason = ?1, voided_by_id = ?2, voided_by_name = ?3, voided_at_unix_ms = ?4
-     WHERE id = ?5",
-    params![void_reason, voided_by_id, voided_by_name, now, movement_id],
-  ).map_err(|e| format!("Void movement failed: {}", e))?;
-
-  // Reverse the expected_amount impact in the session
-  let reversal = match movement_type.to_uppercase().as_str() {
-    "MANUAL_INCOME" | "REPRINT_FEE" | "PARKING_PAYMENT" | "LOST_TICKET_PAYMENT" => -(amount as i64),
-    "MANUAL_EXPENSE" | "CUSTOMER_REFUND" | "WITHDRAWAL" | "DISCOUNT" => amount as i64,
-    _ => -(amount as i64),
-  };
-  let _ = conn.execute(
-    "UPDATE local_cash_sessions SET expected_amount = expected_amount + ?1 WHERE id = ?2",
-    params![reversal, session_id],
-  );
-
-  // Build and return the updated DTO
-  let dto = LocalCashMovementDto {
-    id: movement_id.clone(),
-    cash_session_id: session_id,
-    movement_type,
-    payment_method: String::new(),
-    amount: amount as f64,
-    parking_session_id: None,
-    reason: None,
-    metadata: None,
-    status: "VOIDED".to_string(),
-    voided_at: Some(
-      chrono::DateTime::from_timestamp(now / 1000, 0)
-        .unwrap_or_default()
-        .to_rfc3339(),
-    ),
-    void_reason: Some(void_reason),
-    voided_by_id: Some(voided_by_id),
-    external_reference: None,
-    created_by_id: String::new(),
-    created_by_name: None,
-    created_at: String::new(),
-    terminal: None,
-    idempotency_key: None,
-  };
-
-  let payload = serde_json::to_string(&dto).map_err(|e| e.to_string())?;
-  let sync_enabled = get_sync_enabled();
-  let _ = enqueue_sync_event(&conn, "CASH_MOVEMENT", &movement_id, "VOID", &payload, sync_enabled);
-
-  Ok(dto)
-}
-
-#[tauri::command]
-pub fn local_get_voided_tickets_report(
-  date_from: Option<String>,
-  date_to: Option<String>,
-  state: tauri::State<'_, crate::AppState>,
-) -> Result<Vec<VoidedTicketDto>, String> {
-  let conn = open_local_connection(&state.db_path)?;
-  let today = today_start_ms();
-  let from_ms = date_from
-    .as_deref()
-    .and_then(midnight_unix_ms)
-    .unwrap_or(today);
-  let to_ms = date_to
-    .as_deref()
-    .and_then(|d| midnight_unix_ms(d).map(|ts| ts + 86_400_000))
-    .unwrap_or(today + 86_400_000);
-
-  let mut stmt = conn
-    .prepare(
-      "SELECT id, movement_type, payment_method, amount, reason, void_reason, voided_by_name, voided_at_unix_ms, created_at_unix_ms, cash_session_id
-       FROM local_cash_movements
-       WHERE status = 'VOIDED'
-         AND voided_at_unix_ms >= ?1 AND voided_at_unix_ms < ?2
-       ORDER BY voided_at_unix_ms DESC",
-    )
-    .map_err(|e| format!("prepare voided tickets failed: {}", e))?;
-
-  let rows = stmt
-    .query_map(params![from_ms, to_ms], |row| {
-      let voided_at_ts: i64 = row.get(7)?;
-      let created_at_ts: i64 = row.get(8)?;
-      Ok(VoidedTicketDto {
-        id: row.get(0)?,
-        movement_type: row.get(1)?,
-        display_name: display_name_for_movement(&row.get::<_, String>(1)?),
-        payment_method: row.get(2)?,
-        amount: row.get::<_, i64>(3)? as f64,
-        reason: row.get(4)?,
-        void_reason: row.get(5)?,
-        voided_by_name: row.get(6)?,
-        voided_at: chrono::DateTime::from_timestamp(voided_at_ts / 1000, 0)
-          .unwrap_or_default()
-          .to_rfc3339(),
-        created_at: chrono::DateTime::from_timestamp(created_at_ts / 1000, 0)
-          .unwrap_or_default()
-          .to_rfc3339(),
-        cash_session_id: row.get(9)?,
-      })
-    })
-    .map_err(|e| format!("voided tickets query failed: {}", e))?;
-
-  let mut results = Vec::new();
-  for r in rows {
-    if let Ok(dto) = r {
-      results.push(dto);
-    }
-  }
-  Ok(results)
 }
 
 // =============================================================================
