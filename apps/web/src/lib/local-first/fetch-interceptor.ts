@@ -4,11 +4,6 @@ export async function handleLocalFirstFetch(
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<Response | null> {
-  const isLocal = await isLocalFirstMode();
-  if (!isLocal) {
-    return null;
-  }
-
   const urlStr = typeof input === "string" || input instanceof URL ? String(input) : input.url;
   const method = init?.method?.toUpperCase() ?? "GET";
 
@@ -30,6 +25,11 @@ export async function handleLocalFirstFetch(
 
   // Intercept operations and auth API endpoints
   if (!pathname.includes("/api/v1/")) {
+    return null;
+  }
+
+  const isLocal = await isLocalFirstMode();
+  if (!isLocal) {
     return null;
   }
 
@@ -343,6 +343,74 @@ export async function handleLocalFirstFetch(
     if ((pathname.endsWith("/rates") || pathname.endsWith("/settings/rates")) && method === "GET") {
       const result = await invoke("local_get_rates");
       return jsonResponse(result);
+    }
+
+    // 14. Initial Admin Setup Check
+    if (pathname.endsWith("/auth/setup-required") && method === "GET") {
+      const result = await invoke("local_is_setup_required");
+      return jsonResponse({ setupRequired: result });
+    }
+
+    if (pathname.endsWith("/auth/setup") && method === "POST") {
+      const body = getBody();
+      const result = await invoke("local_setup_initial_admin", {
+        email: body.email,
+        password: body.password,
+        name: body.name,
+        companyName: body.companyName,
+        nit: body.nit,
+      });
+      return jsonResponse(result);
+    }
+
+    // 15. Onboarding status and actions
+    if (pathname.includes("/onboarding/companies/")) {
+      const parts = pathname.split("/");
+      const compId = parts[parts.indexOf("companies") + 1] || "00000000-0000-0000-0000-000000000001";
+
+      if (pathname.endsWith("/steps") && method === "PUT") {
+        const body = getBody();
+        const result = await invoke("local_save_onboarding_step", {
+          companyId: compId,
+          step: Number(body.step),
+          data: body.data || {},
+        });
+        return jsonResponse(result);
+      }
+
+      if (pathname.endsWith("/complete") && method === "POST") {
+        const result = await invoke("local_complete_onboarding", { companyId: compId });
+        return jsonResponse(result);
+      }
+
+      if (pathname.endsWith("/skip") && method === "POST") {
+        const result = await invoke("local_skip_onboarding", { companyId: compId });
+        return jsonResponse(result);
+      }
+
+      if (pathname.endsWith("/capabilities") && method === "GET") {
+        const result = {
+          onboardingCompleted: true,
+          allowMultiLocation: false,
+          allowAdvancedPermissions: true,
+          cashEnabled: true,
+          shiftsEnabled: true,
+          clientsEnabled: true,
+          agreementsEnabled: true,
+          activeVehicleTypes: 6,
+          activePaymentMethods: 8,
+          activeSites: 1,
+          vehicleTypes: ["CAR", "MOTORCYCLE", "VAN", "TRUCK", "BICYCLE", "OTHER"],
+          paymentMethods: ["CASH", "DEBIT_CARD", "CREDIT_CARD", "NEQUI", "DAVIPLATA", "TRANSFER", "QR", "OTHER"],
+        };
+        return jsonResponse(result);
+      }
+
+      // Default GET status: /api/v1/onboarding/companies/{id}
+      if (method === "GET" && !pathname.endsWith("/settings")) {
+        const result = await invoke("local_get_onboarding_status", { companyId: compId });
+        return jsonResponse(result);
+      }
     }
   } catch (err) {
     console.error("Local first interceptor error matching path:", pathname, err);

@@ -161,25 +161,25 @@ export default function CajaPage() {
   }, []);
 
   useEffect(() => {
-    void cashPolicy(site || defaultSite())
+    cashPolicy(site || defaultSite())
       .then(setPolicy)
       .catch(() => setPolicy(null));
   }, [site]);
 
   useEffect(() => {
-    void cashRegisters(site || defaultSite())
+    cashRegisters(site || defaultSite())
       .then(setRegisterRows)
       .catch(() => setRegisterRows([]));
   }, [site]);
 
   useEffect(() => {
     startLocalPrintQueueWorker();
-    void refreshOutbox();
-    void flushCashMovementOutbox().then(() => void refreshOutbox());
+    refreshOutbox().catch(console.error);
+    flushCashMovementOutbox().then(() => { refreshOutbox().catch(console.error); }).catch(console.error);
   }, [refreshOutbox]);
 
   useEffect(() => {
-    void load();
+    load().catch(console.error);
   }, [load]);
 
   const filteredMovements = useMemo(() => {
@@ -201,7 +201,7 @@ export default function CajaPage() {
   const [canAudit, setCanAudit] = useState(false);
 
   useEffect(() => {
-    void (async () => {
+    (async () => {
       setCanOpen(await hasPermission("cierres_caja:abrir"));
       setCanClose(await hasPermission("cierres_caja:cerrar"));
       setCanMove(await hasPermission("cobros:registrar"));
@@ -209,7 +209,7 @@ export default function CajaPage() {
       setCanAudit(
         (await hasPermission("reportes:leer")) || (await hasPermission("cierres_caja:cerrar"))
       );
-    })();
+    })().catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -217,7 +217,7 @@ export default function CajaPage() {
       setAuditLog([]);
       return;
     }
-    void cashAudit(session.id)
+    cashAudit(session.id)
       .then(setAuditLog)
       .catch(() => setAuditLog([]));
   }, [session?.id, canAudit]);
@@ -287,7 +287,7 @@ export default function CajaPage() {
       setManualAmount("");
       setManualReason("");
       await load();
-      void refreshOutbox();
+      refreshOutbox().catch(console.error);
     } catch (e) {
       if (!navigator.onLine) {
         const { enqueueCashMovementOffline } = await import("@/lib/cash/cash-outbox-idb");
@@ -299,7 +299,7 @@ export default function CajaPage() {
           idempotencyKey: `offline:${session.id}:${Date.now()}`
         });
         setError("Sin conexion: movimiento guardado en cola local para sincronizar.");
-        void refreshOutbox();
+        refreshOutbox().catch(console.error);
       } else {
         setError(e instanceof Error ? e.message : "Error al registrar");
       }
@@ -528,7 +528,7 @@ export default function CajaPage() {
           variant="bordered" 
           color="primary"
           className="font-semibold h-[48px]" 
-          onPress={() => void load()} 
+          onPress={() => { load().catch(console.error); }} 
           isLoading={busy}
         >
           Actualizar
@@ -670,7 +670,7 @@ export default function CajaPage() {
               size="lg"
               isDisabled={busy || !!session || !canOpen}
               isLoading={busy}
-              onPress={() => void onOpen()}
+              onPress={() => { onOpen().catch(console.error); }}
             >
               Abrir caja
             </Button>
@@ -831,7 +831,7 @@ export default function CajaPage() {
               variant="flat"
               isDisabled={busy || !canMove}
               isLoading={busy}
-              onPress={() => void onAddManual()}
+              onPress={() => { onAddManual().catch(console.error); }}
             >
               Registrar movimiento
             </Button>
@@ -840,7 +840,7 @@ export default function CajaPage() {
               variant="bordered"
               color="primary"
               isDisabled={busy || movements.length === 0}
-              onPress={() => void onPrintLastMovement()}
+              onPress={() => { onPrintLastMovement().catch(console.error); }}
             >
               Imprimir ultimo movimiento
             </Button>
@@ -904,7 +904,7 @@ export default function CajaPage() {
               variant="flat"
               isDisabled={busy} 
               isLoading={busy}
-              onPress={() => void onCount()}
+              onPress={() => { onCount().catch(console.error); }}
             >
               Guardar arqueo
             </Button>
@@ -913,7 +913,7 @@ export default function CajaPage() {
               variant="bordered"
               color="primary"
               isDisabled={busy || !session.countedAt}
-              onPress={() => void onPrintCount()}
+              onPress={() => { onPrintCount().catch(console.error); }}
             >
               Imprimir comprobante de arqueo
             </Button>
@@ -949,7 +949,7 @@ export default function CajaPage() {
               className="flex-1 font-bold"
               isDisabled={busy} 
               isLoading={busy}
-              onPress={() => void onClose()}
+              onPress={() => { onClose().catch(console.error); }}
             >
               Cerrar caja (Fin turno)
             </Button>
@@ -976,7 +976,7 @@ export default function CajaPage() {
               color="primary" 
               isDisabled={busy} 
               isLoading={busy}
-              onPress={() => void onPrintClosing()}
+              onPress={() => { onPrintClosing().catch(console.error); }}
             >
               Imprimir cierre
             </Button>
@@ -1003,7 +1003,7 @@ export default function CajaPage() {
             <Button variant="light" onPress={() => setShowShiftChangeModal(false)}>
               Cancelar
             </Button>
-            <Button color="primary" isLoading={busy} onPress={() => void onShiftChange()}>
+            <Button color="primary" isLoading={busy} onPress={() => { onShiftChange().catch(console.error); }}>
               Confirmar Cambio
             </Button>
           </ModalFooter>
@@ -1027,7 +1027,7 @@ export default function CajaPage() {
             <Button variant="light" color="primary" onPress={() => setVoidTarget(null)}>
               Cancelar
             </Button>
-            <Button color="danger" isLoading={busy} onPress={() => void onVoid()}>
+            <Button color="danger" isLoading={busy} onPress={() => { onVoid().catch(console.error); }}>
               Confirmar anulacion
             </Button>
           </ModalFooter>

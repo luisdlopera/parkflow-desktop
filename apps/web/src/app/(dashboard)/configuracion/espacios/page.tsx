@@ -62,7 +62,7 @@ export default function EspaciosPage() {
   }, [api]);
 
   useEffect(() => {
-    void load();
+    load().catch(console.error);
   }, [load]);
 
   const canReduce = useMemo(() => {
@@ -82,7 +82,7 @@ export default function EspaciosPage() {
       return;
     }
     if (summary && next < summary.activeSpaces) {
-      const ok = window.confirm("Vas a reducir capacidad. Las celdas libres de mayor número se desactivarán. ¿Continuar?");
+      const ok = globalThis.confirm("Vas a reducir capacidad. Las celdas libres de mayor número se desactivarán. ¿Continuar?");
       if (!ok) return;
     }
 
@@ -136,7 +136,7 @@ export default function EspaciosPage() {
           <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80 font-medium">Configuración</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Espacios del parqueadero</h1>
         </div>
-        <Button size="sm" color="primary" variant="flat" onPress={() => void load()} isLoading={loading}>Actualizar</Button>
+        <Button size="sm" color="primary" variant="flat" onPress={() => { load().catch(console.error); }} isLoading={loading}>Actualizar</Button>
       </div>
 
       {error ? <p className="text-sm text-rose-700 font-medium">{error}</p> : null}
@@ -160,7 +160,7 @@ export default function EspaciosPage() {
           onValueChange={setCapacity}
           className="max-w-xs"
         />
-        <Button color="primary" onPress={() => void onResize()} isDisabled={!canReduce || loading}>Guardar capacidad</Button>
+        <Button color="primary" onPress={() => { onResize().catch(console.error); }} isDisabled={!canReduce || loading}>Guardar capacidad</Button>
       </div>
 
       <DataTable
@@ -176,9 +176,9 @@ export default function EspaciosPage() {
             priority: "high",
             render: (row) => (
               <div className="flex gap-2">
-                <Button size="sm" variant="flat" onPress={() => void patchSpace(row.id, { status: "MAINTENANCE" })} isDisabled={row.occupied}>Mantenimiento</Button>
-                <Button size="sm" variant="flat" onPress={() => void patchSpace(row.id, { status: "ACTIVE" })}>Activar</Button>
-                <Button size="sm" variant="flat" onPress={() => void patchSpace(row.id, { status: "INACTIVE" })} isDisabled={row.occupied}>Desactivar</Button>
+                <Button size="sm" variant="flat" onPress={() => { patchSpace(row.id, { status: "MAINTENANCE" }).catch(console.error); }} isDisabled={row.occupied}>Mantenimiento</Button>
+                <Button size="sm" variant="flat" onPress={() => { patchSpace(row.id, { status: "ACTIVE" }).catch(console.error); }}>Activar</Button>
+                <Button size="sm" variant="flat" onPress={() => { patchSpace(row.id, { status: "INACTIVE" }).catch(console.error); }} isDisabled={row.occupied}>Desactivar</Button>
               </div>
             )
           },
@@ -190,7 +190,7 @@ export default function EspaciosPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number | string | undefined }) {
+function Stat({ label, value }: Readonly<{ label: string; value: number | string | undefined }>) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
       <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">{label}</p>

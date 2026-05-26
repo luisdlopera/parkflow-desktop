@@ -66,7 +66,7 @@ export default function VehiculosActivosPage() {
   }, [apiBase]);
 
   useEffect(() => {
-    void loadRows();
+    loadRows().catch(console.error);
   }, [loadRows]);
 
   return (
@@ -87,7 +87,7 @@ export default function VehiculosActivosPage() {
             variant="flat"
             color="primary"
             className="font-bold"
-            onPress={() => void loadRows()}
+            onPress={() => { loadRows().catch(console.error); }}
             isLoading={loading}
           >
             Actualizar

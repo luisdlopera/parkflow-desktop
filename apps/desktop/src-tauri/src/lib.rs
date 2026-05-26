@@ -5,6 +5,7 @@ pub mod licensing;
 pub mod local_first;
 
 use licensing::LicenseState;
+#[cfg(not(debug_assertions))]
 use keyring::Entry as KeyringEntry;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -180,19 +181,26 @@ impl RateLimiter {
 }
 
 fn db_passphrase() -> Result<String, String> {
-  let entry = KeyringEntry::new("com.parkflow.desktop", "db-passphrase")
-    .map_err(|e| format!("keyring entry failed: {}", e))?;
+  #[cfg(debug_assertions)]
+  {
+    return Ok("dev-db-passphrase".to_string());
+  }
+  #[cfg(not(debug_assertions))]
+  {
+    let entry = KeyringEntry::new("com.parkflow.desktop", "db-passphrase")
+      .map_err(|e| format!("keyring entry failed: {}", e))?;
 
-  match entry.get_password() {
-    Ok(pwd) => Ok(pwd),
-    Err(keyring::Error::NoEntry) => {
-      let generated = format!("pf-{}-{}", now_unix_ms_i64(), Uuid::new_v4());
-      entry
-        .set_password(&generated)
-        .map_err(|e| format!("failed to store db passphrase: {}", e))?;
-      Ok(generated)
+    match entry.get_password() {
+      Ok(pwd) => Ok(pwd),
+      Err(keyring::Error::NoEntry) => {
+        let generated = format!("pf-{}-{}", now_unix_ms_i64(), Uuid::new_v4());
+        entry
+          .set_password(&generated)
+          .map_err(|e| format!("failed to store db passphrase: {}", e))?;
+        Ok(generated)
+      }
+      Err(e) => Err(format!("keyring get failed: {}", e)),
     }
-    Err(e) => Err(format!("keyring get failed: {}", e)),
   }
 }
 
@@ -944,35 +952,76 @@ fn get_connectivity_state(state: tauri::State<'_, AppState>) -> Result<Connectiv
 
 #[tauri::command]
 fn auth_store_session(payload_json: String) -> Result<(), String> {
-  let entry =
-    KeyringEntry::new("com.parkflow.desktop", "auth-session").map_err(|error| error.to_string())?;
-  entry
-    .set_password(&payload_json)
-    .map_err(|error| format!("keyring set failed: {}", error))
+  #[cfg(debug_assertions)]
+  {
+    let dev_session_path = dirs::data_dir()
+      .unwrap_or_else(|| std::env::temp_dir())
+      .join("parkflow-dev-session.json");
+    std::fs::write(dev_session_path, payload_json).map_err(|error| error.to_string())?;
+    return Ok(());
+  }
+  #[cfg(not(debug_assertions))]
+  {
+    let entry =
+      KeyringEntry::new("com.parkflow.desktop", "auth-session").map_err(|error| error.to_string())?;
+    entry
+      .set_password(&payload_json)
+      .map_err(|error| format!("keyring set failed: {}", error))
+  }
 }
 
 #[tauri::command]
 fn auth_load_session() -> Result<Option<serde_json::Value>, String> {
-  let entry =
-    KeyringEntry::new("com.parkflow.desktop", "auth-session").map_err(|error| error.to_string())?;
-  match entry.get_password() {
-    Ok(raw) => {
+  #[cfg(debug_assertions)]
+  {
+    let dev_session_path = dirs::data_dir()
+      .unwrap_or_else(|| std::env::temp_dir())
+      .join("parkflow-dev-session.json");
+    if dev_session_path.exists() {
+      let raw = std::fs::read_to_string(dev_session_path).map_err(|error| error.to_string())?;
       let parsed: serde_json::Value =
         serde_json::from_str(&raw).map_err(|error| format!("invalid session payload: {}", error))?;
-      Ok(Some(parsed))
+      return Ok(Some(parsed));
+    } else {
+      return Ok(None);
     }
-    Err(keyring::Error::NoEntry) => Ok(None),
-    Err(error) => Err(format!("keyring get failed: {}", error)),
+  }
+  #[cfg(not(debug_assertions))]
+  {
+    let entry =
+      KeyringEntry::new("com.parkflow.desktop", "auth-session").map_err(|error| error.to_string())?;
+    match entry.get_password() {
+      Ok(raw) => {
+        let parsed: serde_json::Value =
+          serde_json::from_str(&raw).map_err(|error| format!("invalid session payload: {}", error))?;
+        Ok(Some(parsed))
+      }
+      Err(keyring::Error::NoEntry) => Ok(None),
+      Err(error) => Err(format!("keyring get failed: {}", error)),
+    }
   }
 }
 
 #[tauri::command]
 fn auth_clear_session() -> Result<(), String> {
-  let entry =
-    KeyringEntry::new("com.parkflow.desktop", "auth-session").map_err(|error| error.to_string())?;
-  match entry.delete_credential() {
-    Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-    Err(error) => Err(format!("keyring clear failed: {}", error)),
+  #[cfg(debug_assertions)]
+  {
+    let dev_session_path = dirs::data_dir()
+      .unwrap_or_else(|| std::env::temp_dir())
+      .join("parkflow-dev-session.json");
+    if dev_session_path.exists() {
+      let _ = std::fs::remove_file(dev_session_path);
+    }
+    return Ok(());
+  }
+  #[cfg(not(debug_assertions))]
+  {
+    let entry =
+      KeyringEntry::new("com.parkflow.desktop", "auth-session").map_err(|error| error.to_string())?;
+    match entry.delete_credential() {
+      Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+      Err(error) => Err(format!("keyring clear failed: {}", error)),
+    }
   }
 }
 
@@ -1911,7 +1960,13 @@ pub fn run() {
       local_first::local_close_cash_session,
       local_first::local_print_cash_closing,
       local_first::local_get_rates,
-      local_first::local_trigger_operational_action
+      local_first::local_trigger_operational_action,
+      local_first::local_is_setup_required,
+      local_first::local_setup_initial_admin,
+      local_first::local_get_onboarding_status,
+      local_first::local_save_onboarding_step,
+      local_first::local_complete_onboarding,
+      local_first::local_skip_onboarding
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

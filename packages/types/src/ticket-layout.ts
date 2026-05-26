@@ -64,54 +64,36 @@ export function buildTicketPreviewLines(input: {
   lines.push(centerLine(`No: ${input.ticketNumber}`, w));
   lines.push(centerLine(`Placa: ${input.plate}`, w));
   lines.push(centerLine(`Id: ${input.ticketId}`, w));
-  if (input.templateVersion) {
-    lines.push(centerLine(`Tpl: ${input.templateVersion}`, w));
-  }
-  lines.push(centerLine(`Fecha: ${input.issuedAtIso}`, w));
-  if (input.operatorName) {
-    lines.push(centerLine(`Operador: ${input.operatorName}`, w));
-  }
-  if (input.site) {
-    lines.push(centerLine(`Sede: ${input.site}`, w));
-  }
-  if (input.lane) {
-    lines.push(centerLine(`Carril: ${input.lane}`, w));
-  }
-  if (input.booth) {
-    lines.push(centerLine(`Cabina: ${input.booth}`, w));
-  }
-  if (input.terminal) {
-    lines.push(centerLine(`Terminal: ${input.terminal}`, w));
-  }
-  if (input.parkingSpaceCode) {
-    lines.push(centerLine(`Celda: ${input.parkingSpaceCode}`, w));
-  }
-  if (input.copyNumber != null) {
-    lines.push(centerLine(`Copia: ${input.copyNumber}`, w));
-  }
-  if (input.legalMessage?.trim()) {
-    lines.push("");
-    for (const row of input.legalMessage.split(/\r?\n/)) {
-      lines.push(row);
+
+  const metadataFields = [
+    { value: input.templateVersion, format: (val: string) => `Tpl: ${val}` },
+    { value: input.issuedAtIso, format: (val: string) => `Fecha: ${val}` },
+    { value: input.operatorName, format: (val: string) => `Operador: ${val}` },
+    { value: input.site, format: (val: string) => `Sede: ${val}` },
+    { value: input.lane, format: (val: string) => `Carril: ${val}` },
+    { value: input.booth, format: (val: string) => `Cabina: ${val}` },
+    { value: input.terminal, format: (val: string) => `Terminal: ${val}` },
+    { value: input.parkingSpaceCode, format: (val: string) => `Celda: ${val}` },
+    { value: input.copyNumber != null ? String(input.copyNumber) : null, format: (val: string) => `Copia: ${val}` }
+  ];
+
+  for (const field of metadataFields) {
+    if (field.value) {
+      lines.push(centerLine(field.format(field.value), w));
     }
-    lines.push("");
+  }
+
+  if (input.legalMessage?.trim()) {
+    lines.push("", ...input.legalMessage.split(/\r?\n/), "");
   }
   if (input.qrPayload) {
-    lines.push("");
-    lines.push(`[QR] ${input.qrPayload}`);
-  } else   if (input.barcodePayload) {
-    lines.push("");
-    lines.push(`Codigo: ${input.barcodePayload}`);
+    lines.push("", `[QR] ${input.qrPayload}`);
+  } else if (input.barcodePayload) {
+    lines.push("", `Codigo: ${input.barcodePayload}`);
   }
   if (input.detailLines?.length) {
-    lines.push("");
-    for (const row of input.detailLines) {
-      lines.push(row);
-    }
+    lines.push("", ...input.detailLines);
   }
-  lines.push("");
-  lines.push("");
-  lines.push("");
-  lines.push("--- corte ---");
+  lines.push("", "", "", "--- corte ---");
   return lines;
 }
