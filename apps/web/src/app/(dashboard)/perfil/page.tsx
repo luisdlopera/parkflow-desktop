@@ -1,0 +1,328 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button, Input, Divider } from "@heroui/react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { changePassword, fetchProfile, updateProfile, type UserProfile } from "@/lib/profile-api";
+import { clearSession, patchSessionUser } from "@/lib/auth";
+import type { UserRole } from "@/modules/users/types";
+import { PageBackButton } from "@/components/ui/PageBackButton";
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  SUPER_ADMIN: "Super Administrador",
+  ADMIN: "Administrador",
+  CAJERO: "Cajero",
+  OPERADOR: "Operador",
+  AUDITOR: "Auditor"
+};
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    return new Intl.DateTimeFormat("es-CO", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+}
+
+export default function ProfilePage() {
+  const router = useRouter();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [document, setDocument] = useState("");
+  const [phone, setPhone] = useState("");
+  const [site, setSite] = useState("");
+  const [terminal, setTerminal] = useState("");
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  const applyProfile = useCallback((data: UserProfile) => {
+    setProfile(data);
+    setName(data.name);
+    setEmail(data.email);
+    setDocument(data.document ?? "");
+    setPhone(data.phone ?? "");
+    setSite(data.site ?? "");
+    setTerminal(data.terminal ?? "");
+  }, []);
+
+  useEffect(() => {
+    void (async () => {
+      setLoading(true);
+      setMessage(null);
+      try {
+        applyProfile(await fetchProfile());
+      } catch (e) {
+        setMessage({
+          kind: "err",
+          text: e instanceof Error ? e.message : "No se pudo cargar el perfil"
+        });
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [applyProfile]);
+
+  const handleSaveProfile = async () => {
+    if (!name.trim() || !email.trim()) {
+      setMessage({ kind: "err", text: "Nombre y correo son obligatorios" });
+      return;
+    }
+    setSaving(true);
+    setMessage(null);
+    try {
+      const updated = await updateProfile({
+        name: name.trim(),
+        email: email.trim(),
+        document: document.trim() || null,
+        phone: phone.trim() || null,
+        site: site.trim() || null,
+        terminal: terminal.trim() || null
+      });
+      applyProfile(updated);
+      await patchSessionUser({ name: updated.name, email: updated.email });
+      setMessage({ kind: "ok", text: "Perfil actualizado correctamente" });
+    } catch (e) {
+      setMessage({
+        kind: "err",
+        text: e instanceof Error ? e.message : "No se pudo guardar el perfil"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword) {
+      setMessage({ kind: "err", text: "Complete la contraseña actual y la nueva" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setMessage({ kind: "err", text: "La confirmación de contraseña no coincide" });
+      return;
+    }
+    setChangingPassword(true);
+    setMessage(null);
+    try {
+      await changePassword(currentPassword, newPassword);
+      await clearSession();
+      router.push("/login?reason=password-changed");
+    } catch (e) {
+      setMessage({
+        kind: "err",
+        text: e instanceof Error ? e.message : "No se pudo cambiar la contraseña"
+      });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  if (loading) {
+    return <p className="text-sm text-slate-500">Cargando perfil…</p>;
+  }
+
+  if (!profile) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-semibold text-slate-900">Editar perfil</h1>
+        <p className="text-sm text-danger">{message?.text ?? "No se pudo cargar el perfil"}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 max-w-3xl">
+      <div className="flex flex-wrap items-center gap-3">
+        <PageBackButton />
+        <div>
+          <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Cuenta</p>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-neutral-100">
+            Editar perfil
+          </h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-neutral-400">
+            Actualice sus datos personales y credenciales de acceso.
+          </p>
+        </div>
+      </div>
+
+      {message ? (
+        <p
+          className={`text-sm rounded-lg px-4 py-3 ${
+            message.kind === "ok"
+              ? "bg-emerald-50 text-emerald-800"
+              : "bg-red-50 text-red-800"
+          }`}
+          role="status"
+        >
+          {message.text}
+        </p>
+      ) : null}
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-slate-900">Datos personales</h2>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input
+              label="Nombre completo"
+              variant="flat"
+              value={name}
+              onValueChange={setName}
+              isRequired
+            />
+            <Input
+              label="Correo electrónico"
+              type="email"
+              variant="flat"
+              value={email}
+              onValueChange={setEmail}
+              isRequired
+            />
+            <Input
+              label="Documento"
+              variant="flat"
+              value={document}
+              onValueChange={setDocument}
+              placeholder="Opcional"
+            />
+            <Input
+              label="Teléfono"
+              variant="flat"
+              value={phone}
+              onValueChange={setPhone}
+              placeholder="Opcional"
+            />
+            <Input
+              label="Sede"
+              variant="flat"
+              value={site}
+              onValueChange={setSite}
+              placeholder="Opcional"
+            />
+            <Input
+              label="Terminal"
+              variant="flat"
+              value={terminal}
+              onValueChange={setTerminal}
+              placeholder="Opcional"
+            />
+          </div>
+
+          <div className="flex justify-end">
+            <Button color="primary" isLoading={saving} onPress={() => void handleSaveProfile()}>
+              Guardar cambios
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-slate-900">Información de la cuenta</h2>
+          <p className="text-sm text-slate-500">Solo lectura — gestionada por un administrador</p>
+        </CardHeader>
+        <CardBody>
+          <dl className="grid gap-3 sm:grid-cols-2 text-sm">
+            <div>
+              <dt className="text-slate-500">Rol</dt>
+              <dd className="font-medium text-slate-900">{ROLE_LABELS[profile.role]}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Estado</dt>
+              <dd className="font-medium text-slate-900">{profile.active ? "Activo" : "Inactivo"}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Último acceso</dt>
+              <dd className="font-medium text-slate-900">{formatDate(profile.lastAccessAt)}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Contraseña actualizada</dt>
+              <dd className="font-medium text-slate-900">{formatDate(profile.passwordChangedAt)}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Puede anular tickets</dt>
+              <dd className="font-medium text-slate-900">{profile.canVoidTickets ? "Sí" : "No"}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Puede reimprimir tickets</dt>
+              <dd className="font-medium text-slate-900">{profile.canReprintTickets ? "Sí" : "No"}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Puede cerrar caja</dt>
+              <dd className="font-medium text-slate-900">{profile.canCloseCash ? "Sí" : "No"}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Cambio de contraseña obligatorio</dt>
+              <dd className="font-medium text-slate-900">
+                {profile.requirePasswordChange ? "Sí" : "No"}
+              </dd>
+            </div>
+          </dl>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-slate-900">Cambiar contraseña</h2>
+          <p className="text-sm text-slate-500">
+            Al cambiar la contraseña se cerrarán todas las sesiones activas.
+          </p>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input
+              label="Contraseña actual"
+              type="password"
+              variant="flat"
+              value={currentPassword}
+              onValueChange={setCurrentPassword}
+              autoComplete="current-password"
+            />
+            <div className="hidden md:block" />
+            <Input
+              label="Nueva contraseña"
+              type="password"
+              variant="flat"
+              value={newPassword}
+              onValueChange={setNewPassword}
+              autoComplete="new-password"
+              description="Mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial"
+            />
+            <Input
+              label="Confirmar nueva contraseña"
+              type="password"
+              variant="flat"
+              value={confirmPassword}
+              onValueChange={setConfirmPassword}
+              autoComplete="new-password"
+            />
+          </div>
+          <Divider />
+          <div className="flex justify-end">
+            <Button
+              color="warning"
+              variant="flat"
+              isLoading={changingPassword}
+              onPress={() => void handleChangePassword()}
+            >
+              Cambiar contraseña
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
+    </div>
+  );
+}
