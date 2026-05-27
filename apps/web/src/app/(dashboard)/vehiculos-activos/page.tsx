@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@heroui/react";
 import DataTable from "@/components/ui/DataTable";
 import { buildApiHeaders } from "@/lib/api";
+import { cashCurrent } from "@/lib/cash/cash-api";
 
 type ActiveSessionRow = {
   ticketNumber: string;
@@ -26,8 +27,18 @@ export default function VehiculosActivosPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [cajaOpen, setCajaOpen] = useState<boolean | null>(null);
 
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
+
+  useEffect(() => {
+    const term = process.env.NEXT_PUBLIC_TERMINAL_ID?.trim() ||
+      window.localStorage.getItem("parkflow_terminal_id")?.trim() || "";
+    const site = process.env.NEXT_PUBLIC_PARKING_SITE?.trim() || "default";
+    cashCurrent(site, term || undefined)
+      .then(() => setCajaOpen(true))
+      .catch(() => setCajaOpen(false));
+  }, []);
 
   const loadRows = useCallback(async () => {
     setLoading(true);
@@ -96,6 +107,11 @@ export default function VehiculosActivosPage() {
       </div>
 
       {error ? <p className="text-sm text-rose-700 font-medium">{error}</p> : null}
+      {cajaOpen === false ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          No hay caja abierta en este terminal. Debe abrir caja antes de procesar entradas o salidas.
+        </div>
+      ) : null}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
           <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Ocupados</p>
@@ -111,7 +127,17 @@ export default function VehiculosActivosPage() {
 
       <DataTable
         columns={[
-          { key: "plate", label: "Placa", priority: "high" },
+          {
+            key: "plate",
+            label: "Placa",
+            priority: "high",
+            render: (row) => {
+              if (!row.plate || row.plate.startsWith("NP-")) {
+                return <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">SIN PLACA</span>;
+              }
+              return row.plate;
+            }
+          },
           { key: "ticketNumber", label: "Ticket", priority: "medium" },
           { key: "vehicleType", label: "Tipo", priority: "high" },
           {

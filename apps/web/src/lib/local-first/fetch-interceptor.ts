@@ -1,5 +1,140 @@
 import { isLocalFirstMode } from "./config";
 
+type ActiveTicketDto = {
+  id: string;
+  ticketNumber: string;
+  siteId: string;
+  vehiclePlate: string;
+  vehicleType: string;
+  status: string;
+  entryAt: string;
+  exitAt: string | null;
+  totalAmount: number;
+  graceMinutes: number;
+  fractionMinutes: number;
+  lostTicketSurcharge: number;
+};
+
+type LocalSearchResponseDto = {
+  query: string;
+  results: Record<string, Array<{
+    id: string;
+    searchType: string;
+    title: string;
+    subtitle: string;
+    actionUrl: string;
+    score: number;
+    status?: string | null;
+  }>>;
+  processingTimeMs: number;
+};
+
+type ExitResponseDto = {
+  sessionId: string;
+  ticketNumber: string;
+  plate: string;
+  vehicleType: string;
+  amount: number;
+  exitedAt: string;
+};
+
+function formatDuration(entryAtIso: string): { duration: string; totalMinutes: number } {
+  const entryTime = new Date(entryAtIso).getTime();
+  const diffMs = Date.now() - entryTime;
+  const totalMinutes = Math.max(0, Math.floor(diffMs / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0) {
+    return { duration: `${hours}h ${minutes}m`, totalMinutes };
+  }
+  return { duration: `${minutes}m`, totalMinutes };
+}
+
+function mapActiveSessionResponse(dto: ActiveTicketDto) {
+  const { duration, totalMinutes } = formatDuration(dto.entryAt);
+  return {
+    sessionId: dto.id,
+    receipt: {
+      ticketNumber: dto.ticketNumber,
+      plate: dto.vehiclePlate,
+      vehicleType: dto.vehicleType,
+      site: null,
+      lane: null,
+      booth: null,
+      terminal: null,
+      entryOperatorName: null,
+      exitOperatorName: null,
+      entryAt: dto.entryAt,
+      exitAt: dto.exitAt,
+      totalMinutes,
+      duration,
+      totalAmount: dto.totalAmount,
+      rateName: null,
+      status: dto.status,
+      lostTicket: false,
+      reprintCount: 0,
+      entryImageUrl: null,
+      exitImageUrl: null,
+      syncStatus: null,
+      entryMode: "VISITOR",
+      monthlySession: false,
+      agreementCode: null,
+      prepaidMinutes: null,
+      parkingSpaceId: null,
+      parkingSpaceCode: null,
+      parkingSpaceLabel: null,
+    },
+    message: null,
+    subtotal: dto.totalAmount,
+    surcharge: 0,
+    discount: 0,
+    deductedMinutes: null,
+    total: dto.totalAmount,
+  };
+}
+
+function mapExitResponse(dto: ExitResponseDto, entryAt?: string | null) {
+  return {
+    sessionId: dto.sessionId,
+    receipt: {
+      ticketNumber: dto.ticketNumber,
+      plate: dto.plate,
+      vehicleType: dto.vehicleType,
+      site: null,
+      lane: null,
+      booth: null,
+      terminal: null,
+      entryOperatorName: null,
+      exitOperatorName: null,
+      entryAt: entryAt ?? null,
+      exitAt: dto.exitedAt,
+      totalMinutes: 0,
+      duration: "",
+      totalAmount: dto.amount,
+      rateName: null,
+      status: "PAID",
+      lostTicket: false,
+      reprintCount: 0,
+      entryImageUrl: null,
+      exitImageUrl: null,
+      syncStatus: null,
+      entryMode: "VISITOR",
+      monthlySession: false,
+      agreementCode: null,
+      prepaidMinutes: null,
+      parkingSpaceId: null,
+      parkingSpaceCode: null,
+      parkingSpaceLabel: null,
+    },
+    message: null,
+    subtotal: dto.amount,
+    surcharge: 0,
+    discount: 0,
+    deductedMinutes: null,
+    total: dto.amount,
+  };
+}
+
 export async function handleLocalFirstFetch(
   input: RequestInfo | URL,
   init?: RequestInit
@@ -66,12 +201,80 @@ export async function handleLocalFirstFetch(
       return jsonResponse(result);
     }
 
+    if (
+      pathname.endsWith("/auth/profile") ||
+      pathname.endsWith("/auth/me") ||
+      pathname.endsWith("/auth/change-password")
+    ) {
+      const { loadSession } = await import("@/lib/auth");
+      const session = await loadSession();
+      const userId = session?.user?.id;
+      if (!userId) {
+        return new Response(
+          JSON.stringify({
+            code: "UNAUTHORIZED",
+            userMessage: "Debe iniciar sesion para continuar",
+          }),
+          { status: 401, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      if (pathname.endsWith("/auth/profile") && method === "GET") {
+        const result = await invoke("local_get_profile", { userId });
+        return jsonResponse(result);
+      }
+
+      if (pathname.endsWith("/auth/profile") && method === "PATCH") {
+        const body = getBody();
+        const result = await invoke("local_update_profile", {
+          userId,
+          name: body.name,
+          email: body.email,
+          document: body.document ?? null,
+          phone: body.phone ?? null,
+          site: body.site ?? null,
+          terminal: body.terminal ?? null,
+        });
+        return jsonResponse(result);
+      }
+
+      if (pathname.endsWith("/auth/me") && method === "GET") {
+        const profile = await invoke<{
+          id: string;
+          name: string;
+          email: string;
+          role: string;
+          active: boolean;
+          passwordChangedAt: string | null;
+        }>("local_get_profile", { userId });
+        return jsonResponse({
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          role: profile.role,
+          permissions: localPermissionsForRole(profile.role),
+          active: profile.active,
+          passwordChangedAt: profile.passwordChangedAt,
+        });
+      }
+
+      if (pathname.endsWith("/auth/change-password") && method === "POST") {
+        const body = getBody();
+        await invoke("local_change_password", {
+          userId,
+          currentPassword: body.currentPassword,
+          newPassword: body.newPassword,
+        });
+        return new Response(null, { status: 204 });
+      }
+    }
+
     // 2. Settings / Configuration Settings
     if (pathname.includes("/onboarding/companies/") && pathname.endsWith("/settings") && method === "GET") {
       // /api/v1/onboarding/companies/{id}/settings
       const parts = pathname.split("/");
       const companyId = parts[parts.indexOf("companies") + 1] || "00000000-0000-0000-0000-000000000001";
-      const result = await invoke("local_get_settings", { companyId });
+      const result = await invoke("local_get_settings", { companyId: companyId });
       return jsonResponse(result);
     }
 
@@ -119,11 +322,34 @@ export async function handleLocalFirstFetch(
     if (pathname.endsWith("/operations/sessions/active") && method === "GET") {
       const plate = searchParams.get("plate");
       const ticketNumber = searchParams.get("ticketNumber");
-      const result = await invoke("local_get_active_session", {
+      const result = await invoke<ActiveTicketDto>("local_get_active_session", {
         plate: plate || null,
         ticketNumber: ticketNumber || null,
       });
-      return jsonResponse(result);
+      return jsonResponse(mapActiveSessionResponse(result));
+    }
+
+    if (pathname.endsWith("/search") && method === "GET") {
+      const q = searchParams.get("q") || "";
+      const result = await invoke<LocalSearchResponseDto>("local_search_global", { q });
+      return jsonResponse({
+        query: result.query,
+        processingTimeMs: result.processingTimeMs,
+        results: Object.fromEntries(
+          Object.entries(result.results).map(([key, items]) => [
+            key,
+            items.map((item) => ({
+              id: item.id,
+              type: item.searchType,
+              title: item.title,
+              subtitle: item.subtitle,
+              actionUrl: item.actionUrl,
+              score: item.score,
+              metadata: item.status ? { status: item.status } : {},
+            })),
+          ])
+        ),
+      });
     }
 
     // 7. Parking Space Management
@@ -185,33 +411,67 @@ export async function handleLocalFirstFetch(
     // 9. Exits (Vehicle Exit)
     if (pathname.endsWith("/operations/exits") && method === "POST") {
       const body = getBody();
-      const result = await invoke("local_create_exit", {
-        ticketId: body.sessionId || body.ticketId,
+      const ticketNumber = body.ticketNumber;
+      const plate = body.plate;
+      if (!ticketNumber && !plate) {
+        return new Response(JSON.stringify({ error: "ticketNumber o plate es obligatorio" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      const activeTicket = await invoke<ActiveTicketDto>("local_get_active_session", {
+        plate: plate || null,
+        ticketNumber: ticketNumber || null,
+      });
+      const result = await invoke<ExitResponseDto>("local_create_exit", {
+        ticketId: activeTicket.id,
         paymentMethod: body.paymentMethod,
-        amountPaid: Number(body.amount),
-        reference: body.reference || null,
+        amountPaid: 0,
+        reference: body.observations || null,
         cashSessionId: body.cashSessionId || null,
       });
-      return jsonResponse(result);
+      return jsonResponse(mapExitResponse(result, activeTicket.entryAt));
     }
 
     // 10. Reprint / Lost ticket
     if (pathname.endsWith("/operations/tickets/reprint") && method === "POST") {
       const body = getBody();
-      await invoke("local_reprint_ticket", { ticketId: body.ticketNumber });
-      return jsonResponse({ success: true });
+      const ticketNumber = body.ticketNumber;
+      if (!ticketNumber) {
+        return new Response(JSON.stringify({ error: "ticketNumber es obligatorio" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      const activeTicket = await invoke<ActiveTicketDto>("local_get_active_session", {
+        plate: null,
+        ticketNumber,
+      });
+      await invoke("local_reprint_ticket", { ticketId: activeTicket.id });
+      return jsonResponse(mapActiveSessionResponse(activeTicket));
     }
 
     if (pathname.endsWith("/operations/tickets/lost") && method === "POST") {
       const body = getBody();
-      const result = await invoke("local_process_lost_ticket", {
-        ticketId: body.sessionId || body.ticketId,
-        surcharge: Number(body.surcharge),
+      const ticketNumber = body.ticketNumber;
+      if (!ticketNumber) {
+        return new Response(JSON.stringify({ error: "ticketNumber es obligatorio" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      const activeTicket = await invoke<ActiveTicketDto>("local_get_active_session", {
+        plate: null,
+        ticketNumber,
+      });
+      const result = await invoke<ExitResponseDto>("local_process_lost_ticket", {
+        ticketId: activeTicket.id,
+        surcharge: Number(body.surcharge) || activeTicket.lostTicketSurcharge,
         paymentMethod: body.paymentMethod,
         reference: body.reference || null,
         cashSessionId: body.cashSessionId || null,
       });
-      return jsonResponse(result);
+      return jsonResponse(mapExitResponse(result, activeTicket.entryAt));
     }
 
     // 11. Cash drawer policies & list registers
@@ -345,7 +605,111 @@ export async function handleLocalFirstFetch(
       return jsonResponse(result);
     }
 
-    // 14. Initial Admin Setup Check
+    // 14. Reports
+    if (pathname.endsWith("/reports/daily-operations") && method === "GET") {
+      const result = await invoke("local_get_daily_operations", {
+        dateFrom: searchParams.get("dateFrom"),
+        dateTo: searchParams.get("dateTo"),
+      });
+      return jsonResponse(result);
+    }
+
+    if (pathname.endsWith("/reports/vehicle-type") && method === "GET") {
+      const result = await invoke("local_get_vehicle_type_report");
+      return jsonResponse(result);
+    }
+
+    if (pathname.endsWith("/reports/cash-session-history") && method === "GET") {
+      const result = await invoke("local_get_cash_session_history", {
+        limit: Number(searchParams.get("limit") ?? "50"),
+        offset: Number(searchParams.get("offset") ?? "0"),
+      });
+      return jsonResponse(result);
+    }
+
+    if (pathname.endsWith("/reports/export-csv") && method === "GET") {
+      const result = await invoke("local_export_report_csv", {
+        reportType: searchParams.get("reportType"),
+        dateFrom: searchParams.get("dateFrom"),
+        dateTo: searchParams.get("dateTo"),
+      });
+      return jsonResponse(result);
+    }
+
+    // 14b. Reporte: tickets cobrados
+    if (pathname.endsWith("/reports/paid-tickets") && method === "GET") {
+      const result = await invoke("local_get_paid_tickets_report", {
+        dateFrom: searchParams.get("dateFrom"),
+        dateTo: searchParams.get("dateTo"),
+      });
+      return jsonResponse(result);
+    }
+
+    // 14c. Reporte: ingresos/egresos
+    if (pathname.endsWith("/reports/income-expense") && method === "GET") {
+      const result = await invoke("local_get_income_expense_report", {
+        dateFrom: searchParams.get("dateFrom"),
+        dateTo: searchParams.get("dateTo"),
+      });
+      return jsonResponse(result);
+    }
+
+    // 14d. Reporte: ocupación
+    if (pathname.endsWith("/reports/occupancy") && method === "GET") {
+      const result = await invoke("local_get_occupancy_report");
+      return jsonResponse(result);
+    }
+
+    // 14e. Reporte: por cajero
+    if (pathname.endsWith("/reports/by-operator") && method === "GET") {
+      const result = await invoke("local_get_operator_report", {
+        dateFrom: searchParams.get("dateFrom"),
+        dateTo: searchParams.get("dateTo"),
+      });
+      return jsonResponse(result);
+    }
+
+    // 14f. Reporte: por método de pago
+    if (pathname.endsWith("/reports/by-payment-method") && method === "GET") {
+      const result = await invoke("local_get_payment_method_report", {
+        dateFrom: searchParams.get("dateFrom"),
+        dateTo: searchParams.get("dateTo"),
+      });
+      return jsonResponse(result);
+    }
+
+    // 14g. Reporte: resumen de sesión de caja
+    if (pathname.endsWith("/reports/cash-session-summary") && method === "GET") {
+      const sessionId = searchParams.get("sessionId");
+      const result = await invoke("local_get_cash_session_summary", { sessionId });
+      return jsonResponse(result);
+    }
+
+    // 14h. Reporte: tickets anulados (voided tickets)
+    if (pathname.endsWith("/reports/voided-tickets") && method === "GET") {
+      const result = await invoke("local_get_voided_tickets_report", {
+        dateFrom: searchParams.get("dateFrom"),
+        dateTo: searchParams.get("dateTo"),
+      });
+      return jsonResponse(result);
+    }
+
+    // 14i. Anular un movimiento de caja
+    if (pathname.includes("/cash/movements/") && pathname.endsWith("/void") && method === "POST") {
+      const parts = pathname.split("/");
+      const movementId = parts[parts.indexOf("movements") + 1];
+      if (!movementId) return null;
+      const body = getBody();
+      const result = await invoke("local_void_cash_movement", {
+        movementId,
+        voidReason: body.reason || "Anulación manual",
+        voidedById: body.voidedById || "00000000-0000-0000-0000-000000000003",
+        voidedByName: body.voidedByName || null,
+      });
+      return jsonResponse(result);
+    }
+
+    // 15. Initial Admin Setup Check
     if (pathname.endsWith("/auth/setup-required") && method === "GET") {
       const result = await invoke("local_is_setup_required");
       return jsonResponse({ setupRequired: result });
@@ -420,6 +784,28 @@ export async function handleLocalFirstFetch(
     });
   }
 
+  // Settings / Configuration endpoints not available in local-first mode
+  const isSettingsEndpoint =
+    pathname.includes("/settings/") ||
+    pathname.includes("/configuration/") ||
+    pathname.includes("/monthly-contracts") ||
+    pathname.includes("/agreements") ||
+    pathname.includes("/prepaid/");
+
+  if (isSettingsEndpoint) {
+    return new Response(
+      JSON.stringify({
+        code: "OFFLINE_NOT_SUPPORTED",
+        userMessage: "Esta funcion no esta disponible en modo offline. Conecte el servidor para acceder a configuraciones avanzadas.",
+        developerMessage: `Endpoint ${pathname} not implemented in local-first mode`,
+      }),
+      {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
   return null;
 }
 
@@ -428,4 +814,46 @@ function jsonResponse(data: unknown): Response {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+/** Mirrors `permissions_for_role` in desktop `local_first.rs`. */
+function localPermissionsForRole(role: string): string[] {
+  switch (role) {
+    case "SUPER_ADMIN":
+    case "ADMIN":
+      return [
+        "tickets:emitir",
+        "tickets:imprimir",
+        "cobros:registrar",
+        "anulaciones:crear",
+        "tarifas:leer",
+        "usuarios:leer",
+        "usuarios:editar",
+        "cierres_caja:abrir",
+        "cierres_caja:cerrar",
+        "reportes:leer",
+        "configuracion:leer",
+        "configuracion:editar",
+      ];
+    case "CAJERO":
+      return [
+        "tickets:emitir",
+        "tickets:imprimir",
+        "cobros:registrar",
+        "cierres_caja:abrir",
+        "cierres_caja:cerrar",
+      ];
+    case "OPERADOR":
+      return [
+        "tickets:emitir",
+        "tickets:imprimir",
+        "cobros:registrar",
+        "tarifas:leer",
+        "cierres_caja:abrir",
+      ];
+    case "AUDITOR":
+      return ["reportes:leer", "usuarios:leer", "configuracion:leer"];
+    default:
+      return ["tickets:emitir", "tickets:imprimir", "cobros:registrar"];
+  }
 }
