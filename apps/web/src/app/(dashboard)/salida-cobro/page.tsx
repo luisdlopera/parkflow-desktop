@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Input,
   Button,
@@ -14,7 +15,7 @@ import { ChangeCalculator } from "@/components/ui/ChangeCalculator";
 import { buildApiHeaders } from "@/lib/api";
 import { newIdempotencyKey, getOrCreateIdempotencyKey, clearIdempotencyKey } from "@/lib/idempotency";
 import { queueOfflineOperation } from "@/lib/offline-outbox";
-import { cashPolicy } from "@/lib/cash/cash-api";
+import { cashPolicy, cashCurrent } from "@/lib/cash/cash-api";
 import {
   buildTicketPreviewForOperation,
   printReceiptIfTauri,
@@ -132,6 +133,9 @@ function operationPrintPayload(
 }
 
 export default function SalidaCobroPage() {
+  const searchParams = useSearchParams();
+  const initialTicketNumber = searchParams?.get("ticketNumber")?.trim() ?? "";
+  const initialPlate = searchParams?.get("plate")?.trim().toUpperCase() ?? "";
   const [ticketNumber, setTicketNumber] = useState("");
   const [plate, setPlate] = useState("");
   const [vehicleCondition, setVehicleCondition] = useState("Sin novedades a la salida");
@@ -164,6 +168,7 @@ export default function SalidaCobroPage() {
   const { playSuccess, playError } = useOperationSounds();
   const { success: toastSuccess, error: toastError } = useToast();
   const [reprintLoading, setReprintLoading] = useState(false);
+  const autoLookupDone = useRef(false);
 
   // Auto-focus en campo de ticket al cargar
   useEffect(() => {
@@ -176,6 +181,15 @@ export default function SalidaCobroPage() {
   useEffect(() => {
     fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
   }, []);
+
+  useEffect(() => {
+    if (initialTicketNumber) {
+      setTicketNumber(initialTicketNumber);
+    }
+    if (initialPlate) {
+      setPlate(initialPlate);
+    }
+  }, [initialTicketNumber, initialPlate]);
 
   // PERFORMANCE: Constant value, no need for useMemo
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
@@ -235,22 +249,24 @@ export default function SalidaCobroPage() {
     return null;
   }, [changeDue, paymentLabel, singleCashReceived, splitPayments, splitTotal]);
 
-  const lookup = useCallback(async () => {
+  const lookup = useCallback(async (override?: { ticketNumber?: string; plate?: string }) => {
     setError("");
     setMessage("");
     setPrintWarning(null);
 
-    const locator = ticketNumber.trim() || plate.trim();
+    const currentTicketNumber = override?.ticketNumber ?? ticketNumber;
+    const currentPlate = override?.plate ?? plate;
+    const locator = currentTicketNumber.trim() || currentPlate.trim();
     if (!locator) {
       setError("Ingresa ticket o placa");
       return;
     }
 
     const params = new URLSearchParams();
-    if (ticketNumber.trim()) {
-      params.set("ticketNumber", ticketNumber.trim());
+    if (currentTicketNumber.trim()) {
+      params.set("ticketNumber", currentTicketNumber.trim());
     } else {
-      params.set("plate", plate.trim().toUpperCase());
+      params.set("plate", currentPlate.trim().toUpperCase());
     }
     if (agreementCode.trim()) {
       params.set("agreementCode", agreementCode.trim());
@@ -289,6 +305,22 @@ export default function SalidaCobroPage() {
     }
   }, [ticketNumber, plate, agreementCode, apiBase, playSuccess, playError]);
 
+  useEffect(() => {
+    if (autoLookupDone.current) {
+      return;
+    }
+    if (!initialTicketNumber && !initialPlate) {
+      return;
+    }
+
+    autoLookupDone.current = true;
+    void lookup({ ticketNumber: initialTicketNumber, plate: initialPlate });
+  }, [initialPlate, initialTicketNumber, lookup]);
+
+  const handleLookupClick = useCallback(() => {
+    void lookup();
+  }, [lookup]);
+
   const processExit = useCallback(async (paymentMethod: PaymentMethodCode = selectedPaymentMethod) => {
     if (!active) {
       setError("Primero busca una sesion activa");
@@ -325,6 +357,21 @@ export default function SalidaCobroPage() {
         return;
       }
 
+      // Validate cash register is open before allowing exit
+      const term = process.env.NEXT_PUBLIC_TERMINAL_ID?.trim() ||
+        window.localStorage.getItem("parkflow_terminal_id")?.trim() || "";
+      const site = process.env.NEXT_PUBLIC_PARKING_SITE?.trim() || "default";
+      let cashSessionId: string | null = null;
+      try {
+        const cs = await cashCurrent(site, term || undefined);
+        cashSessionId = cs.id;
+      } catch {
+        setError("Debe abrir caja en este terminal antes de procesar salidas");
+        setProcessing(false);
+        operationLock.current = false;
+        return;
+      }
+
       const idempotencyFingerprint = JSON.stringify({
         ticketNumber: active.receipt.ticketNumber,
         paymentMethod,
@@ -336,6 +383,7 @@ export default function SalidaCobroPage() {
         ticketNumber: active.receipt.ticketNumber,
         operatorUserId: user.id,
         paymentMethod,
+        cashSessionId,
         observations: paymentObservation(paymentMethod),
         vehicleCondition,
         conditionChecklist: conditionChecklist
@@ -696,7 +744,7 @@ export default function SalidaCobroPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  lookup();
+                  handleLookupClick();
                 }
               }}
               endContent={
@@ -705,23 +753,30 @@ export default function SalidaCobroPage() {
                 </span>
               }
             />
-            <Input
-              label="Placa"
-              variant="flat"
-              value={plate}
-              onValueChange={(val) => setPlate(val.toUpperCase())}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  lookup();
+            <div className="space-y-1">
+              <Input
+                label="Placa"
+                variant="flat"
+                value={plate}
+                onValueChange={(val) => setPlate(val.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleLookupClick();
+                  }
+                }}
+                endContent={
+                  <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
+                    Placa
+                  </span>
                 }
-              }}
-              endContent={
-                <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
-                  Placa
-                </span>
-              }
-            />
+              />
+              {plate.startsWith("NP-") && (
+                <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                  Esta placa corresponde a un ingreso sin placa. Use el número de ticket para buscar.
+                </p>
+              )}
+            </div>
           </div>
           <div className="mt-4">
             <Input
@@ -733,7 +788,7 @@ export default function SalidaCobroPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  lookup();
+                  handleLookupClick();
                 }
               }}
               classNames={{
@@ -745,7 +800,7 @@ export default function SalidaCobroPage() {
             <Button
               color="primary"
               className="font-bold w-full sm:w-auto"
-              onPress={lookup}
+              onPress={handleLookupClick}
               isLoading={searching}
               isDisabled={processing}
               startContent={
@@ -764,7 +819,7 @@ export default function SalidaCobroPage() {
             <>
               {/* Tarjeta de resultado con total destacado */}
               <div className="mt-6 bg-gradient-to-br from-brand-50 to-amber-50 border-2 border-brand-200 rounded-2xl p-6">
-                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 bg-brand-500 rounded-xl flex items-center justify-center">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -772,7 +827,14 @@ export default function SalidaCobroPage() {
                   </div>
                   <div>
                     <Badge label="Sesion Activa" tone="warning" />
-                    <p className="text-sm text-slate-600 font-medium">Placa: {active.receipt.plate}</p>
+                    {active.receipt.plate?.startsWith("NP-") ? (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">SIN PLACA</span>
+                        <span className="text-sm text-slate-500">(Ingreso sin placa — busque por ticket)</span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-600 font-medium">Placa: {active.receipt.plate}</p>
+                    )}
                   </div>
                 </div>
 
