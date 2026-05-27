@@ -571,22 +571,50 @@ export default function CajaPage() {
               {summary && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Base inicial</p>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                      Base inicial
+                      <Tooltip content="Monto en efectivo con el que se abrió la caja">
+                        <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
+                      </Tooltip>
+                    </p>
                     <p className="text-lg font-semibold text-slate-900">${summary.openingAmount.toLocaleString()}</p>
                   </div>
                   <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Esperado (Libro)</p>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                      Esperado (Libro)
+                      <Tooltip content="Total que debería haber según los movimientos registrados">
+                        <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
+                      </Tooltip>
+                    </p>
                     <p className="text-lg font-semibold text-slate-900">${summary.expectedLedgerTotal.toLocaleString()}</p>
                   </div>
-                  <div className="rounded-xl bg-blue-50 p-3 border border-blue-100">
-                    <p className="text-[10px] uppercase tracking-wider text-blue-600">Contado</p>
-                    <p className="text-lg font-semibold text-blue-900">${(summary.countedTotal ?? 0).toLocaleString()}</p>
-                  </div>
-                  <div className={`rounded-xl p-3 border ${summary.difference === 0 ? "bg-emerald-50 border-emerald-100" : "bg-amber-50 border-amber-100"}`}>
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Diferencia</p>
-                    <p className={`text-lg font-semibold ${summary.difference === 0 ? "text-emerald-700" : "text-amber-700"}`}>
-                      ${(summary.difference ?? 0).toLocaleString()}
+                  <div className={`rounded-xl p-3 border ${summary.countedTotal != null ? "bg-blue-50 border-blue-100" : "bg-slate-50 border-slate-200 border-dashed"}`}>
+                    <p className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-blue-600" : "text-slate-400"}`}>
+                      Contado
+                      <Tooltip content="Efectivo físico contado al realizar el arqueo">
+                        <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
+                      </Tooltip>
                     </p>
+                    {summary.countedTotal != null ? (
+                      <p className="text-lg font-semibold text-blue-900">${summary.countedTotal.toLocaleString()}</p>
+                    ) : (
+                      <p className="text-lg font-semibold text-slate-400 italic">Pendiente</p>
+                    )}
+                  </div>
+                  <div className={`rounded-xl p-3 border ${summary.countedTotal != null ? (summary.difference === 0 ? "bg-emerald-50 border-emerald-100" : "bg-amber-50 border-amber-100") : "bg-slate-50 border-slate-200 border-dashed"}`}>
+                    <p className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-slate-500" : "text-slate-400"}`}>
+                      Diferencia
+                      <Tooltip content={summary.countedTotal != null ? `Contado − Esperado = ${summary.countedTotal.toLocaleString()} − ${summary.expectedLedgerTotal.toLocaleString()}` : "Realiza el arqueo para ver la diferencia"}>
+                        <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
+                      </Tooltip>
+                    </p>
+                    {summary.countedTotal != null ? (
+                      <p className={`text-lg font-semibold ${summary.difference === 0 ? "text-emerald-700" : "text-amber-700"}`}>
+                        ${(summary.difference ?? 0).toLocaleString()}
+                      </p>
+                    ) : (
+                      <p className="text-lg font-semibold text-slate-400 italic">Pendiente</p>
+                    )}
                   </div>
                 </div>
               )}
