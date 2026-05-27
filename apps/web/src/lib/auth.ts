@@ -263,6 +263,16 @@ export async function currentUser(): Promise<AuthUser | null> {
   return session?.user ?? null;
 }
 
+/** Updates the cached user in the active session (e.g. after profile edit). */
+export async function patchSessionUser(patch: Pick<AuthUser, "name" | "email">): Promise<void> {
+  const session = await loadSession();
+  if (!session) return;
+  await saveSession({
+    ...session,
+    user: { ...session.user, ...patch }
+  });
+}
+
 /** Licensing / SaaS administration UI at `/admin/*` (SUPER_ADMIN only). */
 export function canAccessSuperAdminPortal(user: AuthUser | null): boolean {
   return user?.role === "SUPER_ADMIN";
