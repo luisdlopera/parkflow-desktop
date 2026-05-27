@@ -29,6 +29,8 @@ logs/
 
 # IDE and Editor
 .cursor/
+.agents/
+skills-lock.json
 
 # Security reports
 security/reports/
@@ -42,3 +44,8 @@ playwright/.cache/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Local tooling / generated artifacts
+apps/api/.gradle/
+apps/api/bin/
+apps/web/.env.local
