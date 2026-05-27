@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect, type KeyboardEvent } from "react";
+import { useRef, useState, useCallback, useEffect, useMemo, type KeyboardEvent } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@heroui/input";
@@ -104,7 +104,66 @@ const entryModeOptions = [
   { key: "EMPLOYEE", label: "Empleado" },
 ];
 
-export default function VehicleEntryFormV2() {
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return msg.includes("network") || msg.includes("fetch") || msg.includes("connection") || msg.includes("offline");
+  }
+  return false;
+}
+
+function resolveVehicleType(type: string, countryCode: string, plate: string): VehicleType {
+  if (!type || type === "CAR" || type === "OTHER") {
+    const inferred = inferVehicleType(countryCode, plate);
+    if (inferred) {
+      return inferred as VehicleType;
+    }
+  }
+  return type as VehicleType;
+}
+
+function extractValidationError(apiError: any, defaultDescription: string): string {
+  if (apiError.code === "VALIDATION_ERROR" && apiError.details) {
+    if (Array.isArray(apiError.details) && apiError.details.length > 0) {
+      return apiError.details[0].message || defaultDescription;
+    }
+    if (typeof apiError.details === "object") {
+      const details = apiError.details as Record<string, any>;
+      const firstKey = Object.keys(details)[0];
+      if (firstKey) {
+        return `${firstKey}: ${details[firstKey]}`;
+      }
+    }
+  }
+  return defaultDescription;
+}
+
+async function handleOfflineEntry(
+  plate: string,
+  type: string,
+  idempotencyFingerprint: string,
+  playSuccess: () => void,
+  toastSuccess: (msg: string) => void,
+  toastError: (msg: string) => void
+): Promise<boolean> {
+  const queued = await queueOfflineOperation("ENTRY_RECORDED", {
+    plate,
+    type,
+    occurredAtIso: new Date().toISOString(),
+    origin: "OFFLINE_PENDING_SYNC"
+  });
+  if (queued) {
+    clearIdempotencyKey("entry", idempotencyFingerprint);
+    toastSuccess("Sin internet: ingreso guardado en cola offline. Será sincronizado automáticamente.");
+    playSuccess();
+    return true;
+  }
+  toastError("Sin conexión: no se pudo guardar localmente. Verifique la configuración offline.");
+  return false;
+}
+
+export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery = false }: { initialPlate?: string; disableRecovery?: boolean }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [previewLines, setPreviewLines] = useState<string[] | null>(null);
@@ -191,6 +250,11 @@ export default function VehicleEntryFormV2() {
     }
   });
 
+  useEffect(() => {
+    if (!initialPlate) return;
+    form.setValue("plate", initialPlate.toUpperCase(), { shouldValidate: true, shouldDirty: true });
+  }, [form, initialPlate]);
+
   // Auto-save form data
   const formValues = useWatch({ control: form.control });
   const selectedTypeCode = useWatch({ control: form.control, name: "type" });
@@ -207,7 +271,7 @@ export default function VehicleEntryFormV2() {
       .then(setRuntimeConfig)
       .catch(() => setRuntimeConfig(null))
       .finally(() => setLoadingConfig(false));
-    void loadOccupancy();
+    loadOccupancy().catch(console.error);
   }, [loadOccupancy]);
 
   useEffect(() => {
@@ -274,7 +338,9 @@ export default function VehicleEntryFormV2() {
 
   const selectedVehicleType = vehicleTypes.find((type) => type.code === selectedTypeCode);
   const requiresPlate = selectedVehicleType?.requiresPlate ?? true;
-  const configuredSites = Array.isArray(runtimeConfig?.sites) ? runtimeConfig.sites : [];
+  const configuredSites = useMemo(() => {
+    return Array.isArray(runtimeConfig?.sites) ? runtimeConfig.sites : [];
+  }, [runtimeConfig]);
   const hasMultipleSites = configuredSites.length > 1;
 
   useEffect(() => {
@@ -289,6 +355,8 @@ export default function VehicleEntryFormV2() {
 
   useEffect(() => {
     if (requiresPlate) {
+      form.setValue("noPlate", false, { shouldValidate: true });
+      form.setValue("noPlateReason", "", { shouldValidate: true });
       return;
     }
     form.setValue("noPlate", true, { shouldValidate: true });
@@ -380,15 +448,6 @@ export default function VehicleEntryFormV2() {
 
 
 
-  function isNetworkError(error: unknown): boolean {
-    if (error instanceof TypeError) return true;
-    if (error instanceof Error) {
-      const msg = error.message.toLowerCase();
-      return msg.includes("network") || msg.includes("fetch") || msg.includes("connection") || msg.includes("offline");
-    }
-    return false;
-  }
-
   const onSubmit = async (values: VehicleEntryFormValues) => {
     const startTime = performance.now();
 
@@ -409,7 +468,9 @@ export default function VehicleEntryFormV2() {
     clearAutoSave();
 
     const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
-    const normalizedPlate = values.noPlate ? null : normalizePlate(values.plate);
+    const normalizedPlate = values.noPlate
+      ? `NP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+      : normalizePlate(values.plate);
 
     const idempotencyFingerprint = JSON.stringify({
       plate: normalizedPlate ?? "",
@@ -430,13 +491,7 @@ export default function VehicleEntryFormV2() {
       const idempotencyKey = getOrCreateIdempotencyKey("entry", idempotencyFingerprint);
       idempotencyKeyRef.current = idempotencyKey;
 
-      let resolvedType = values.type;
-      if (!resolvedType || resolvedType === "CAR" || resolvedType === "OTHER") {
-        const inferredType = inferVehicleType(values.countryCode, values.plate);
-        if (inferredType) {
-          resolvedType = inferredType as VehicleType;
-        }
-      }
+      const resolvedType = resolveVehicleType(values.type, values.countryCode, values.plate);
 
       const requestBody = validatePayloadOrThrow(
         operationEntryRequestSchema,
@@ -487,18 +542,7 @@ export default function VehicleEntryFormV2() {
 
         const apiError = await normalizeApiError(clonedResponse);
         const userError = getUserErrorMessage(apiError, "tickets.create");
-        
-        let errorText = userError.description;
-        if (apiError.code === "VALIDATION_ERROR" && apiError.details) {
-          // Si el backend manda los errores de validación, mostramos el primero
-          if (Array.isArray(apiError.details) && apiError.details.length > 0) {
-             errorText = apiError.details[0].message || userError.description;
-          } else if (typeof apiError.details === "object" && !Array.isArray(apiError.details)) {
-             const details = apiError.details as Record<string, any>;
-             const firstKey = Object.keys(details)[0];
-             if (firstKey) errorText = `${firstKey}: ${details[firstKey]}`;
-          }
-        }
+        const errorText = extractValidationError(apiError, userError.description);
         
         setError(errorText);
         playError();
@@ -533,20 +577,22 @@ export default function VehicleEntryFormV2() {
           : "No se pudo imprimir";
       }
 
+      const plateLabel = payload?.receipt?.plate?.startsWith("NP-") ? "SIN PLACA" : payload?.receipt?.plate;
       if (printWarning) {
         setPrintWarning({
           ticketNumber: payload.receipt.ticketNumber,
-          plate: payload.receipt.plate,
+          plate: plateLabel,
           previewLines: generatedPreviewLines
         });
       } else {
         const spaceMsg = payload?.receipt?.parkingSpaceCode ? ` · Celda: ${payload.receipt.parkingSpaceCode}` : "";
-        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${spaceMsg}`, 5000);
+        const plateMsg = plateLabel ? ` · Placa: ${plateLabel}` : "";
+        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${plateMsg}${spaceMsg}`, 5000);
       }
       
       playSuccess();
       incrementStats();
-      void loadOccupancy();
+      loadOccupancy().catch(console.error);
 
       const durationMs = Math.round(performance.now() - startTime);
       writePerfLog("entrySubmit", durationMs, {
@@ -595,21 +641,18 @@ export default function VehicleEntryFormV2() {
         entryMode: values.entryMode ?? ""
       });
       if (isNetworkError(err)) {
-        const queued = await queueOfflineOperation("ENTRY_RECORDED", {
-          plate: form.getValues("plate"),
-          type: form.getValues("type"),
-          occurredAtIso: new Date().toISOString(),
-          origin: "OFFLINE_PENDING_SYNC"
-        });
-        if (queued) {
-          clearIdempotencyKey("entry", idempotencyFingerprint);
-          toastSuccess("Sin internet: ingreso guardado en cola offline. Será sincronizado automáticamente.");
+        const isQueued = await handleOfflineEntry(
+          form.getValues("plate"),
+          form.getValues("type"),
+          idempotencyFingerprint,
+          playSuccess,
+          toastSuccess,
+          toastError
+        );
+        if (isQueued) {
           incrementStats();
-          playSuccess();
           form.reset({ plate: "", type: settings.defaultVehicleType, countryCode: "CO", entryMode: "VISITOR", noPlate: false, noPlateReason: "" });
           focusPlate();
-        } else {
-          toastError("Sin conexión: no se pudo guardar localmente. Verifique la configuración offline.");
         }
       } else {
         console.error("Error during entry:", err);
@@ -677,16 +720,18 @@ export default function VehicleEntryFormV2() {
   return (
     <div className="space-y-4">
       {/* Crash Recovery Dialog */}
-      <CrashRecoveryDialog
-        formKey="entry_form"
-        onRestore={(data) => {
-          const recovered = data as VehicleEntryFormValues;
-          form.reset(recovered);
-          toastSuccess("Datos recuperados correctamente");
-          setShowRecovery(true);
-        }}
-        onDismiss={() => setShowRecovery(false)}
-      />
+      {!disableRecovery && (
+        <CrashRecoveryDialog
+          formKey="entry_form"
+          onRestore={(data) => {
+            const recovered = data as VehicleEntryFormValues;
+            form.reset(recovered);
+            toastSuccess("Datos recuperados correctamente");
+            setShowRecovery(true);
+          }}
+          onDismiss={() => setShowRecovery(false)}
+        />
+      )}
 
       {/* Print Warning */}
       {printWarning && (
@@ -797,6 +842,7 @@ export default function VehicleEntryFormV2() {
                   const selected = Array.from(keys)[0] as VehicleType;
                   if (selected) {
                     setSettings(s => ({ ...s, defaultVehicleType: selected }));
+                    void form.trigger("plate");
                   }
                 }}
                 className="w-40"
@@ -947,7 +993,10 @@ export default function VehicleEntryFormV2() {
                       <button
                         key={t.code}
                         type="button"
-                        onClick={() => form.setValue("type", t.code)}
+                onClick={() => {
+                  form.setValue("type", t.code, { shouldValidate: true, shouldDirty: true });
+                  form.trigger("plate");
+                }}
                         className={`
                           relative rounded-xl p-2 sm:p-3 text-center transition-all
                           ${isSelected
@@ -980,10 +1029,11 @@ export default function VehicleEntryFormV2() {
                         data-testid="vehicle-type"
                         selectedKeys={selectedKey ? [selectedKey] : []}
                         isDisabled={vehicleTypes.length === 0 || loadingTypes}
-                        onSelectionChange={(keys) => {
-                          const selected = Array.from(keys)[0] as string;
-                          field.onChange(selected);
-                        }}
+                          onSelectionChange={(keys) => {
+                            const selected = Array.from(keys)[0] as string;
+                            field.onChange(selected);
+                            void form.trigger("plate");
+                          }}
                       >
                         {vehicleTypes.map((t) => {
                           const config = vehicleTypeView(t);
@@ -1064,7 +1114,7 @@ export default function VehicleEntryFormV2() {
                             if (selected) field.onChange(selected);
                           }}
                         >
-                          {configuredSites.map((site) => {
+                          {configuredSites.map((site: any) => {
                             const key = String(site.code ?? site.name ?? "PRINCIPAL");
                             return <SelectItem key={key}>{String(site.name ?? site.code ?? key)}</SelectItem>;
                           })}
