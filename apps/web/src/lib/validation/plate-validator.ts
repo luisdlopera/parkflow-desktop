@@ -44,7 +44,7 @@ export function inferVehicleType(countryCode: string | undefined | null, plate: 
   return matches[0] ?? null;
 }
 
-const translateVehicleType = (type: string) => {
+export const translateVehicleType = (type: string) => {
   switch (type.toUpperCase()) {
     case 'CAR': return 'carro';
     case 'MOTORCYCLE': return 'moto';
