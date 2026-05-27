@@ -157,7 +157,7 @@ export default function CajaPage() {
         setMovements(mv);
         setSummary(sm);
       } catch (e2) {
-        const msg = e2 instanceof Error ? friendlyCashError(e2.message) : "Error al cargar movimientos/resumen";
+        const msg = e2 instanceof Error ? e2.message : "Error al cargar movimientos/resumen";
         setError(msg);
       }
     } catch (e) {
