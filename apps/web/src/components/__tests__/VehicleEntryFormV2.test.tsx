@@ -153,6 +153,45 @@ describe("VehicleEntryFormV2", () => {
     }
   });
 
+  it("allows special entry without plate when a reason is provided", async () => {
+    let capturedBody: unknown = null;
+    server.use(
+      http.post("*/api/v1/operations/entries", async ({ request }) => {
+        capturedBody = await request.json();
+        return HttpResponse.json({
+          sessionId: "session-no-plate",
+          receipt: {
+            ticketNumber: "T-20260513-000077",
+            plate: "SIN-123456789ABC",
+            vehicleType: "CAR",
+            site: "Test Site",
+            entryAt: "2026-05-13T10:00:00Z",
+          },
+          message: "Ingreso registrado",
+        });
+      })
+    );
+
+    renderWithProviders(<VehicleEntryFormV2 />);
+    await flushPromises();
+
+    await userEvent.click(screen.getByLabelText(/Sin placa/i));
+    await userEvent.type(screen.getByLabelText(/Justificación sin placa/i), "Vehiculo oficial sin placa visible");
+
+    const submitBtn = screen.getByTestId("register-entry");
+    await userEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(capturedBody).not.toBeNull();
+    });
+
+    const body = capturedBody as Record<string, unknown>;
+    expect(body.noPlate).toBe(true);
+    expect(body.plate).toMatch(/^NP-/);
+    expect(typeof body.plate).toBe("string");
+    expect(body.noPlateReason).toBe("Vehiculo oficial sin placa visible");
+  });
+
   it("sends the correct vehicle type", async () => {
     let capturedBody: unknown = null;
     server.use(
@@ -427,6 +466,45 @@ describe("VehicleEntryFormV2", () => {
     expect(screen.getAllByText(/Cerrar/i).length).toBeGreaterThan(0);
   });
 
+  it("sends NP- plate (not null) when noPlate is checked", async () => {
+    let capturedBody: unknown = null;
+    server.use(
+      http.post("*/api/v1/operations/entries", async ({ request }) => {
+        capturedBody = await request.json();
+        return HttpResponse.json({
+          sessionId: "session-no-plate-np",
+          receipt: {
+            ticketNumber: "T-20260526-000099",
+            plate: "NP-TEST1234",
+            vehicleType: "CAR",
+            site: "Test Site",
+            entryAt: "2026-05-26T10:00:00Z",
+          },
+          message: "Ingreso registrado",
+        });
+      })
+    );
+
+    renderWithProviders(<VehicleEntryFormV2 />);
+    await flushPromises();
+
+    await userEvent.click(screen.getByLabelText(/Sin placa/i));
+    await userEvent.type(screen.getByLabelText(/Justificación sin placa/i), "Vehiculo oficial sin placa visible");
+
+    const submitBtn = screen.getByTestId("register-entry");
+    await userEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(capturedBody).not.toBeNull();
+    });
+
+    const body = capturedBody as Record<string, unknown>;
+    expect(body.noPlate).toBe(true);
+    expect(body.plate).toMatch(/^NP-/);
+    expect(typeof body.plate).toBe("string");
+    expect(body.noPlateReason).toBe("Vehiculo oficial sin placa visible");
+  });
+
   it("does NOT show success when backend returns error", async () => {
     server.use(
       http.post("*/api/v1/operations/entries", () => {
@@ -454,5 +532,131 @@ describe("VehicleEntryFormV2", () => {
     }, { timeout: 3000 });
 
     expect(screen.queryByText(/Ingreso registrado/i)).not.toBeInTheDocument();
+  });
+
+  it("shows validation error when plate is empty and noPlate is unchecked", async () => {
+    renderWithProviders(<VehicleEntryFormV2 />);
+    await flushPromises();
+
+    const submitBtn = screen.getByTestId("register-entry");
+    await userEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Placa obligatoria/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows validation error when motorcycle plate is typed with CAR type selected", async () => {
+    renderWithProviders(<VehicleEntryFormV2 />);
+    await flushPromises();
+
+    const plateInput = screen.getByTestId("plate");
+    await userEvent.type(plateInput, "ABC12A");
+
+    const submitBtn = screen.getByTestId("register-entry");
+    await userEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/corresponde a moto/i)).toBeInTheDocument();
+    });
+  });
+
+  it("resets noPlate when switching from Bicycle (no plate) to Car (plate required)", async () => {
+    localStorage.setItem("parkflow_operator_settings", JSON.stringify({
+      mode: "expert", defaultVehicleType: "CAR", rememberLocation: true, skipConditionCheck: false, platePrefix: ""
+    }));
+
+    const { fetchRuntimeConfig } = await import("@/lib/runtime-config");
+    vi.mocked(fetchRuntimeConfig).mockResolvedValueOnce({
+      vehicleTypes: ["CAR", "MOTORCYCLE", "BICYCLE"],
+      operationConfiguration: {
+        showVehicleType: true,
+        defaultVehicleType: "CAR",
+        showVisitorType: true,
+        defaultVisitorType: "VISITOR",
+        showAdvancedSection: true,
+        enableManualRate: true,
+        enableLaneSelection: true,
+        enableTerminalSelection: true,
+        enableCashierSelection: true,
+        enableVehicleCondition: true,
+        enableObservations: true,
+        enableCountryPlate: true,
+      }
+    });
+
+    server.use(
+      http.get("*/api/v1/configuration/vehicle-types", () => {
+        return HttpResponse.json([
+          { id: "1", code: "CAR", name: "Carro", isActive: true, requiresPlate: true },
+          { id: "2", code: "MOTORCYCLE", name: "Moto", isActive: true, requiresPlate: true },
+          { id: "3", code: "BICYCLE", name: "Bicicleta", isActive: true, requiresPlate: false },
+        ]);
+      })
+    );
+
+    renderWithProviders(<VehicleEntryFormV2 />);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    });
+
+    const noPlateCheckbox = screen.getByLabelText(/Sin placa/i);
+    expect(noPlateCheckbox).not.toBeChecked();
+
+    await userEvent.click(screen.getByText(/bicicleta/i));
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    });
+
+    expect(noPlateCheckbox).toBeChecked();
+
+    await userEvent.click(screen.getByText(/carro/i));
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    });
+
+    expect(noPlateCheckbox).not.toBeChecked();
+  });
+
+  it("hides visitor type, vehicle type, mode selector and advanced section in MOTORCYCLE_ONLY business model", async () => {
+    const mockConfig = {
+      businessModel: "MOTORCYCLE_ONLY",
+      operationalProfile: "MOTORCYCLE_ONLY",
+      vehicleTypes: ["MOTORCYCLE"],
+      operationConfiguration: {
+        showVehicleType: false,
+        defaultVehicleType: "MOTORCYCLE",
+        showVisitorType: false,
+        defaultVisitorType: "VISITOR",
+        showAdvancedSection: false,
+        enableManualRate: false,
+        enableLaneSelection: false,
+        enableTerminalSelection: false,
+        enableCashierSelection: false,
+        enableVehicleCondition: false,
+        enableObservations: false,
+        enableCountryPlate: false,
+      }
+    };
+    
+    const { fetchRuntimeConfig } = await import("@/lib/runtime-config");
+    vi.mocked(fetchRuntimeConfig).mockResolvedValueOnce(mockConfig);
+
+    renderWithProviders(<VehicleEntryFormV2 />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
+
+    const visitorTypeContainer = screen.getByText(/Tipo de Cliente \/ Parqueo/i).closest(".field-visitor-type");
+    expect(visitorTypeContainer).toHaveClass("hidden");
+
+    const vehicleTypeContainer = screen.getByText(/Tipo de Vehículo/i).closest(".field-vehicle-type");
+    expect(vehicleTypeContainer).toHaveClass("hidden");
+
+    expect(screen.queryByLabelText(/Modo de operación/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Mostrar opciones avanzadas/i)).not.toBeInTheDocument();
   });
 });

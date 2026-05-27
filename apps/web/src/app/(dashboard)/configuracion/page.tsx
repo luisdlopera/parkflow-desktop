@@ -516,7 +516,7 @@ function RatesSection({
             color="primary"
             size="md"
             className="font-semibold"
-            onPress={() => void load()}
+            onPress={() => { load().catch(console.error); }}
             isLoading={loading}
           >
             Actualizar
@@ -1236,7 +1236,7 @@ function UsersSection({
           color="primary"
           size="md"
           className="font-semibold"
-          onPress={() => void load()}
+          onPress={() => { load().catch(console.error); }}
           isLoading={loading}
         >
           Actualizar
@@ -1720,7 +1720,7 @@ function ParametersSection({
             color="primary"
             size="md"
             className="font-semibold"
-            onPress={() => void load()}
+            onPress={() => { load().catch(console.error); }}
             isLoading={loading}
           >
             Cargar sede
@@ -2207,20 +2207,6 @@ function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "in
     }
   }, [onNotify]);
 
-  const toggleActive = useCallback(async (id: string, current: boolean) => {
-    setTogglingId(id);
-    try {
-      const { patchVehicleTypeStatus } = await import("@/lib/settings-api");
-      await patchVehicleTypeStatus(id, !current);
-      setRows(prev => prev.map(r => r.id === id ? { ...r, isActive: !current } : r));
-      onNotify({ kind: "ok", text: current ? "Tipo desactivado" : "Tipo activado" });
-    } catch (e) {
-      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error cambiando estado" });
-    } finally {
-      setTogglingId(null);
-    }
-  }, [onNotify]);
-
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center surface rounded-2xl p-4">
@@ -2416,13 +2402,13 @@ function MonthlySection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
     }
   }, [plate, page, onNotify]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { load().catch(console.error); }, [load]);
 
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex gap-3 items-end">
         <Input label="Placa" variant="flat" size="sm" value={plate} onValueChange={setPlate} className="w-48" />
-        <Button color="primary" variant="bordered" size="md" onPress={() => void load()} isLoading={loading}>Buscar</Button>
+        <Button color="primary" variant="bordered" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Buscar</Button>
       </div>
       <DataTable
         columns={[
@@ -2465,13 +2451,13 @@ function AgreementsSection({ canEdit, onNotify, auditReason }: { canEdit: boolea
     }
   }, [q, page, onNotify]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { load().catch(console.error); }, [load]);
 
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex gap-3 items-end">
         <Input label="Buscar" variant="flat" size="sm" value={q} onValueChange={setQ} className="w-64" placeholder="Empresa o código..." />
-        <Button color="primary" variant="bordered" size="md" onPress={() => void load()} isLoading={loading}>Buscar</Button>
+        <Button color="primary" variant="bordered" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Buscar</Button>
       </div>
       <DataTable
         columns={[
@@ -2504,13 +2490,13 @@ function PrepaidSection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
     }
   }, [onNotify]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { load().catch(console.error); }, [load]);
 
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex justify-between items-center">
         <h2 className="text-lg font-semibold text-slate-900">Paquetes Prepagados</h2>
-        <Button color="primary" variant="bordered" size="md" onPress={() => void load()} isLoading={loading}>Actualizar</Button>
+        <Button color="primary" variant="bordered" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Actualizar</Button>
       </div>
       <DataTable
         columns={[

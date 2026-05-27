@@ -26,9 +26,11 @@ import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -265,6 +267,52 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public ProfileResponse getProfile() {
+    return toProfile(requireCurrentUser());
+  }
+
+  @Override
+  @Transactional
+  public ProfileResponse updateProfile(UpdateProfileRequest request) {
+    AppUser user = requireCurrentUser();
+    UUID userId = user.getId();
+    UUID companyId = user.getCompanyId();
+    String email = request.email().trim().toLowerCase();
+
+    appUserRepository
+        .findByEmailIgnoreCaseAndCompanyId(email, companyId)
+        .filter(u -> !u.getId().equals(userId))
+        .ifPresent(
+            u -> {
+              throw new OperationException(HttpStatus.CONFLICT, "Ya existe un usuario con este correo");
+            });
+
+    String doc = normalizeDocument(request.document());
+    if (doc != null
+        && appUserRepository.existsByDocumentIgnoreCaseAndCompanyIdAndIdNot(doc, companyId, userId)) {
+      throw new OperationException(HttpStatus.CONFLICT, "Ya existe un usuario con este documento");
+    }
+
+    user.setName(request.name().trim());
+    user.setEmail(email);
+    user.setDocument(doc);
+    user.setPhone(trimToNull(request.phone()));
+    user.setSite(trimToNull(request.site()));
+    user.setTerminal(trimToNull(request.terminal()));
+    user.setUpdatedAt(OffsetDateTime.now());
+
+    try {
+      user = appUserRepository.save(user);
+    } catch (DataIntegrityViolationException ex) {
+      throw new OperationException(HttpStatus.CONFLICT, "Datos duplicados (correo o documento)");
+    }
+
+    log.info("AUTH: Profile updated - userId={}, email={}", user.getId(), maskEmail(user.getEmail()));
+    return toProfile(user);
+  }
+
+  @Override
   @Transactional
   public void changePassword(ChangePasswordRequest request) {
     UUID userId = SecurityUtils.requireUserId();
@@ -309,6 +357,48 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
       throw new OperationException(HttpStatus.BAD_REQUEST,
           "La contraseña debe contener al menos: una mayúscula, una minúscula, un número y un carácter especial (@#$%^&+=!.))");
     }
+  }
+
+  private AppUser requireCurrentUser() {
+    UUID userId = SecurityUtils.requireUserId();
+    return appUserRepository
+        .findById(userId)
+        .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+  }
+
+  private ProfileResponse toProfile(AppUser user) {
+    return new ProfileResponse(
+        user.getId(),
+        user.getName(),
+        user.getEmail(),
+        user.getDocument(),
+        user.getPhone(),
+        user.getRole(),
+        user.getSite(),
+        user.getTerminal(),
+        user.isActive(),
+        user.isCanVoidTickets(),
+        user.isCanReprintTickets(),
+        user.isCanCloseCash(),
+        user.isRequirePasswordChange(),
+        user.getLastAccessAt(),
+        user.getPasswordChangedAt(),
+        user.getCreatedAt(),
+        user.getUpdatedAt());
+  }
+
+  private String normalizeDocument(String document) {
+    if (!StringUtils.hasText(document)) {
+      return null;
+    }
+    return document.trim();
+  }
+
+  private String trimToNull(String value) {
+    if (!StringUtils.hasText(value)) {
+      return null;
+    }
+    return value.trim();
   }
 
   private String maskEmail(String email) {

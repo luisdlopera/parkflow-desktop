@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
+import OfflineFeatureGate from "@/components/feedback/OfflineFeatureGate";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -61,19 +62,28 @@ export default function ConfiguracionLayout({ children }: { children: React.Reac
   );
 
   return (
-    <div className="space-y-4">
-      <nav className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
-        {nav.map((n) => (
-          <Link
-            key={n.href}
-            href={n.href}
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-          >
-            {n.label}
-          </Link>
-        ))}
-      </nav>
-      {children}
-    </div>
+    <OfflineFeatureGate>
+      <div className="space-y-4">
+        <nav className="space-y-3 border-b border-slate-200 pb-4">
+          {navGroups.map((group) => (
+            <div key={group.label} className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{group.label}</p>
+              <div className="flex flex-wrap gap-2">
+                {group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
+        {children}
+      </div>
+    </OfflineFeatureGate>
   );
 }

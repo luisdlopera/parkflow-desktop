@@ -29,7 +29,22 @@ export interface PlateValidationResult {
   errorMessage?: string;
 }
 
-const translateVehicleType = (type: string) => {
+export function inferVehicleType(countryCode: string | undefined | null, plate: string): string | null {
+  const normalized = normalizePlate(plate);
+  if (!normalized) return null;
+
+  const targetCountry = (countryCode || "CO").toUpperCase();
+  const matches = plateRules
+    .filter((r) => r.enabled && r.countryCode.toUpperCase() === targetCountry && r.pattern.test(normalized))
+    .map((r) => r.vehicleType.toUpperCase());
+
+  if (matches.length === 0) return null;
+  if (matches.includes("MOTORCYCLE")) return "MOTORCYCLE";
+  if (matches.includes("CAR")) return "CAR";
+  return matches[0] ?? null;
+}
+
+export const translateVehicleType = (type: string) => {
   switch (type.toUpperCase()) {
     case 'CAR': return 'carro';
     case 'MOTORCYCLE': return 'moto';
