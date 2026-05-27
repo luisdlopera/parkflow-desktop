@@ -1,0 +1,78 @@
+import { authHeaders } from "@/lib/auth";
+import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
+import type { UserRole } from "@/modules/users/types";
+
+function authBaseUrl(): string {
+  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+    return "/api/v1/auth";
+  }
+  const raw = process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "http://localhost:6011/api/v1/auth";
+  return raw.replace(/\/$/, "");
+}
+
+async function authFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  try {
+    const res = await fetch(`${authBaseUrl()}${path}`, {
+      ...options,
+      headers: {
+        ...(await authHeaders()),
+        ...(options?.headers ?? {})
+      }
+    });
+    if (!res.ok) throw await normalizeApiError(res);
+    if (res.status === 204) return {} as T;
+    return (await res.json()) as T;
+  } catch (error) {
+    if (error instanceof Error && error.name === "ApiError") throw error;
+    throw handleNetworkError(error);
+  }
+}
+
+export type UserProfile = {
+  id: string;
+  name: string;
+  email: string;
+  document: string | null;
+  phone: string | null;
+  role: UserRole;
+  site: string | null;
+  terminal: string | null;
+  active: boolean;
+  canVoidTickets: boolean;
+  canReprintTickets: boolean;
+  canCloseCash: boolean;
+  requirePasswordChange: boolean;
+  lastAccessAt: string | null;
+  passwordChangedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpdateProfilePayload = {
+  name: string;
+  email: string;
+  document?: string | null;
+  phone?: string | null;
+  site?: string | null;
+  terminal?: string | null;
+};
+
+export async function fetchProfile(): Promise<UserProfile> {
+  return authFetch<UserProfile>("/profile", { cache: "no-store" });
+}
+
+export async function updateProfile(payload: UpdateProfilePayload): Promise<UserProfile> {
+  return authFetch<UserProfile>("/profile", {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const res = await fetch(`${authBaseUrl()}/change-password`, {
+    method: "POST",
+    headers: await authHeaders(),
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  if (!res.ok) throw await normalizeApiError(res);
+}
