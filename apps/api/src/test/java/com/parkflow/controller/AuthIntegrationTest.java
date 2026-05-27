@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.RequestBuilder;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -82,6 +83,41 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.id").value(adminUserId.toString()))
                 .andExpect(jsonPath("$.email").value("admin@example.com"))
                 .andExpect(jsonPath("$.permissions", hasItem("configuracion:leer")));
+    }
+
+    @Test
+    void profile_ShouldReturnAndUpdateCurrentUserProfile() throws Exception {
+        JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
+        String accessToken = login.path("accessToken").asText();
+
+        mockMvc.perform(get("/api/v1/auth/profile")
+                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("admin@example.com"))
+                .andExpect(jsonPath("$.role").value("ADMIN"));
+
+        mockMvc.perform(patch("/api/v1/auth/profile")
+                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "name": "Admin Actualizado",
+                      "email": "admin@example.com",
+                      "document": "123456789",
+                      "phone": "3001234567",
+                      "site": "SEDE-1",
+                      "terminal": "T-01"
+                    }
+                    """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Admin Actualizado"))
+                .andExpect(jsonPath("$.document").value("123456789"))
+                .andExpect(jsonPath("$.phone").value("3001234567"));
+
+        mockMvc.perform(get("/api/v1/auth/profile")
+                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Admin Actualizado"));
     }
 
     @Test
