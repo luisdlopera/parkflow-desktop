@@ -1,7 +1,7 @@
 type KpiCardProps = {
   title: string;
   value: string;
-  trend: string;
+  trend?: string;
 };
 
 export default function KpiCard({ title, value, trend }: KpiCardProps) {
@@ -12,7 +12,7 @@ export default function KpiCard({ title, value, trend }: KpiCardProps) {
       </p>
       <div className="mt-2 sm:mt-3 flex items-end justify-between gap-2">
         <p className="text-xl sm:text-2xl font-semibold text-slate-900 truncate">{value}</p>
-        <span className="text-xs sm:text-sm font-medium text-emerald-600 flex-shrink-0">{trend}</span>
+        {trend ? <span className="text-xs sm:text-sm font-medium text-emerald-600 flex-shrink-0">{trend}</span> : null}
       </div>
     </div>
   );

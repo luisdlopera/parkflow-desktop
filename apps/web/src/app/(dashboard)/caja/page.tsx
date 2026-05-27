@@ -8,6 +8,7 @@ import {
   Textarea,
   Button,
   Switch,
+  Tooltip,
   Modal,
   ModalContent,
   ModalHeader,
@@ -141,9 +142,14 @@ export default function CajaPage() {
     try {
       const s = await cashCurrent(site || defaultSite(), term);
       setSession(s);
-      const [mv, sm] = await Promise.all([cashMovements(s.id), cashSummary(s.id)]);
-      setMovements(mv);
-      setSummary(sm);
+      try {
+        const [mv, sm] = await Promise.all([cashMovements(s.id), cashSummary(s.id)]);
+        setMovements(mv);
+        setSummary(sm);
+      } catch (e2) {
+        const msg = e2 instanceof Error ? e2.message : "Error al cargar movimientos/resumen";
+        setError(msg);
+      }
     } catch (e) {
       setSession(null);
       setMovements([]);
@@ -332,6 +338,10 @@ export default function CajaPage() {
 
   const onClose = async () => {
     if (!session) {
+      return;
+    }
+    if (!session.countedAt) {
+      setError("Debe realizar el arqueo (guardar conteo) antes de cerrar la caja.");
       return;
     }
     if (
@@ -766,6 +776,11 @@ export default function CajaPage() {
             ]}
             rows={filteredMovements}
           />
+          {filteredMovements.length === 0 && session?.status === "OPEN" ? (
+            <p className="mt-3 text-xs text-slate-500 text-center">
+              No hay movimientos registrados en esta sesión. Los cobros de salida y movimientos manuales aparecerán aquí.
+            </p>
+          ) : null}
 
           <h3 className="mt-8 text-base font-semibold text-slate-900">Ingreso / egreso manual</h3>
           <div className="mt-3 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 items-end">
@@ -942,12 +957,17 @@ export default function CajaPage() {
               onValueChange={setClosingWitness}
             />
           </div>
+          {session && !session.countedAt ? (
+            <p className="mt-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 border border-amber-200">
+              ⚠ Debe realizar el arqueo (ingresar valores de conteo y guardar) antes de poder cerrar la caja.
+            </p>
+          ) : null}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Button 
               color="danger" 
               variant="flat" 
               className="flex-1 font-bold"
-              isDisabled={busy} 
+              isDisabled={busy || !session?.countedAt} 
               isLoading={busy}
               onPress={() => { onClose().catch(console.error); }}
             >

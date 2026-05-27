@@ -163,7 +163,7 @@ async function handleOfflineEntry(
   return false;
 }
 
-export default function VehicleEntryFormV2() {
+export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery = false }: { initialPlate?: string; disableRecovery?: boolean }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [previewLines, setPreviewLines] = useState<string[] | null>(null);
@@ -249,6 +249,11 @@ export default function VehicleEntryFormV2() {
       conditionPhotoUrls: ""
     }
   });
+
+  useEffect(() => {
+    if (!initialPlate) return;
+    form.setValue("plate", initialPlate.toUpperCase(), { shouldValidate: true, shouldDirty: true });
+  }, [form, initialPlate]);
 
   // Auto-save form data
   const formValues = useWatch({ control: form.control });
@@ -350,6 +355,8 @@ export default function VehicleEntryFormV2() {
 
   useEffect(() => {
     if (requiresPlate) {
+      form.setValue("noPlate", false, { shouldValidate: true });
+      form.setValue("noPlateReason", "", { shouldValidate: true });
       return;
     }
     form.setValue("noPlate", true, { shouldValidate: true });
@@ -461,7 +468,9 @@ export default function VehicleEntryFormV2() {
     clearAutoSave();
 
     const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
-    const normalizedPlate = values.noPlate ? null : normalizePlate(values.plate);
+    const normalizedPlate = values.noPlate
+      ? `NP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+      : normalizePlate(values.plate);
 
     const idempotencyFingerprint = JSON.stringify({
       plate: normalizedPlate ?? "",
@@ -568,15 +577,17 @@ export default function VehicleEntryFormV2() {
           : "No se pudo imprimir";
       }
 
+      const plateLabel = payload?.receipt?.plate?.startsWith("NP-") ? "SIN PLACA" : payload?.receipt?.plate;
       if (printWarning) {
         setPrintWarning({
           ticketNumber: payload.receipt.ticketNumber,
-          plate: payload.receipt.plate,
+          plate: plateLabel,
           previewLines: generatedPreviewLines
         });
       } else {
         const spaceMsg = payload?.receipt?.parkingSpaceCode ? ` · Celda: ${payload.receipt.parkingSpaceCode}` : "";
-        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${spaceMsg}`, 5000);
+        const plateMsg = plateLabel ? ` · Placa: ${plateLabel}` : "";
+        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${plateMsg}${spaceMsg}`, 5000);
       }
       
       playSuccess();
@@ -709,16 +720,18 @@ export default function VehicleEntryFormV2() {
   return (
     <div className="space-y-4">
       {/* Crash Recovery Dialog */}
-      <CrashRecoveryDialog
-        formKey="entry_form"
-        onRestore={(data) => {
-          const recovered = data as VehicleEntryFormValues;
-          form.reset(recovered);
-          toastSuccess("Datos recuperados correctamente");
-          setShowRecovery(true);
-        }}
-        onDismiss={() => setShowRecovery(false)}
-      />
+      {!disableRecovery && (
+        <CrashRecoveryDialog
+          formKey="entry_form"
+          onRestore={(data) => {
+            const recovered = data as VehicleEntryFormValues;
+            form.reset(recovered);
+            toastSuccess("Datos recuperados correctamente");
+            setShowRecovery(true);
+          }}
+          onDismiss={() => setShowRecovery(false)}
+        />
+      )}
 
       {/* Print Warning */}
       {printWarning && (
@@ -829,6 +842,7 @@ export default function VehicleEntryFormV2() {
                   const selected = Array.from(keys)[0] as VehicleType;
                   if (selected) {
                     setSettings(s => ({ ...s, defaultVehicleType: selected }));
+                    void form.trigger("plate");
                   }
                 }}
                 className="w-40"
@@ -979,7 +993,10 @@ export default function VehicleEntryFormV2() {
                       <button
                         key={t.code}
                         type="button"
-                        onClick={() => form.setValue("type", t.code)}
+                onClick={() => {
+                  form.setValue("type", t.code, { shouldValidate: true, shouldDirty: true });
+                  form.trigger("plate");
+                }}
                         className={`
                           relative rounded-xl p-2 sm:p-3 text-center transition-all
                           ${isSelected
@@ -1012,10 +1029,11 @@ export default function VehicleEntryFormV2() {
                         data-testid="vehicle-type"
                         selectedKeys={selectedKey ? [selectedKey] : []}
                         isDisabled={vehicleTypes.length === 0 || loadingTypes}
-                        onSelectionChange={(keys) => {
-                          const selected = Array.from(keys)[0] as string;
-                          field.onChange(selected);
-                        }}
+                          onSelectionChange={(keys) => {
+                            const selected = Array.from(keys)[0] as string;
+                            field.onChange(selected);
+                            void form.trigger("plate");
+                          }}
                       >
                         {vehicleTypes.map((t) => {
                           const config = vehicleTypeView(t);
