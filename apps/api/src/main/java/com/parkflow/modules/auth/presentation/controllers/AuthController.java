@@ -49,6 +49,16 @@ public class AuthController {
     return authenticationUseCase.me();
   }
 
+  @GetMapping("/profile")
+  public ProfileResponse profile() {
+    return authenticationUseCase.getProfile();
+  }
+
+  @PatchMapping("/profile")
+  public ProfileResponse updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
+    return authenticationUseCase.updateProfile(request);
+  }
+
   @PostMapping("/change-password")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void changePassword(@Valid @RequestBody ChangePasswordRequest request) {
