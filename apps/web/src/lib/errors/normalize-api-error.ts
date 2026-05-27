@@ -37,13 +37,22 @@ export async function normalizeApiError(response: Response): Promise<ApiError> {
   return new ApiError(status, code, message, path, correlationId, details, body?.developerMessage);
 }
 
+function isTauriDesktop(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
 export function handleNetworkError(error: any): ApiError {
+  const isDesktop = isTauriDesktop();
+  const message = isDesktop
+    ? "Servidor local no disponible. Algunas funciones de configuracion requieren conexion al servidor."
+    : "Sin conexion. Verifica internet o la red local e intenta nuevamente.";
+
   return new ApiError(
     0,
     ErrorCode.NETWORK_ERROR,
-    "Sin conexion. Verifica internet o la red local e intenta nuevamente.",
+    message,
     undefined,
     undefined,
-    { originalError: error?.message ?? String(error) }
+    { originalError: error?.message ?? String(error), isDesktop }
   );
 }
