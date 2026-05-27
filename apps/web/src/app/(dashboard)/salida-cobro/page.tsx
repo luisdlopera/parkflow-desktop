@@ -977,23 +977,27 @@ export default function SalidaCobroPage() {
           </div>
 
           {active && selectedPaymentMethod === "CASH" ? (
-            <div className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50 p-3 space-y-3">
+            <div className="mt-5 rounded-xl border border-emerald-200/80 bg-emerald-50/90 dark:border-emerald-800/50 dark:bg-emerald-950/30 p-3 space-y-3">
               <Input
                 label="Recibido en efectivo"
-                variant="flat"
+                variant="bordered"
                 type="number"
                 value={cashReceived}
                 onValueChange={setCashReceived}
                 placeholder={String(totalDue)}
               />
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-lg bg-white p-3 border border-emerald-100">
-                  <p className="text-xs uppercase text-slate-500">Cambio</p>
-                  <p className="text-lg font-bold text-emerald-700">${changeDue.toLocaleString("es-CO")}</p>
+                <div className="rounded-lg bg-white dark:bg-neutral-950 p-3 border border-emerald-200/80 dark:border-emerald-800/50">
+                  <p className="text-xs uppercase text-slate-500 dark:text-neutral-400">Cambio</p>
+                  <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                    ${changeDue.toLocaleString("es-CO")}
+                  </p>
                 </div>
-                <div className="rounded-lg bg-white p-3 border border-emerald-100">
-                  <p className="text-xs uppercase text-slate-500">Vuelto</p>
-                  <p className="text-lg font-bold text-emerald-700">${changeDue.toLocaleString("es-CO")}</p>
+                <div className="rounded-lg bg-white dark:bg-neutral-950 p-3 border border-emerald-200/80 dark:border-emerald-800/50">
+                  <p className="text-xs uppercase text-slate-500 dark:text-neutral-400">Vuelto</p>
+                  <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                    ${changeDue.toLocaleString("es-CO")}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1068,8 +1072,8 @@ export default function SalidaCobroPage() {
 
               <div className={`rounded-lg p-3 text-sm font-semibold ${
                 Math.abs(splitTotal - totalDue) <= 0.009
-                  ? "bg-white text-emerald-700 border border-emerald-100"
-                  : "bg-white text-amber-700 border border-amber-100"
+                  ? "bg-white dark:bg-neutral-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50"
+                  : "bg-white dark:bg-neutral-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50"
               }`}>
                 {Math.abs(splitTotal - totalDue) <= 0.009
                   ? "Pago dividido completo"
@@ -1077,13 +1081,17 @@ export default function SalidaCobroPage() {
               </div>
               {splitCashReceived > totalDue ? (
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="rounded-lg bg-white p-3 border border-teal-100">
-                    <p className="text-xs uppercase text-slate-500">Cambio</p>
-                    <p className="text-lg font-bold text-emerald-700">${changeDue.toLocaleString("es-CO")}</p>
+                  <div className="rounded-lg bg-white dark:bg-neutral-950 p-3 border border-teal-200 dark:border-teal-800/50">
+                    <p className="text-xs uppercase text-slate-500 dark:text-neutral-400">Cambio</p>
+                    <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                      ${changeDue.toLocaleString("es-CO")}
+                    </p>
                   </div>
-                  <div className="rounded-lg bg-white p-3 border border-teal-100">
-                    <p className="text-xs uppercase text-slate-500">Vuelto</p>
-                    <p className="text-lg font-bold text-emerald-700">${changeDue.toLocaleString("es-CO")}</p>
+                  <div className="rounded-lg bg-white dark:bg-neutral-950 p-3 border border-teal-200 dark:border-teal-800/50">
+                    <p className="text-xs uppercase text-slate-500 dark:text-neutral-400">Vuelto</p>
+                    <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                      ${changeDue.toLocaleString("es-CO")}
+                    </p>
                   </div>
                 </div>
               ) : null}
@@ -1091,7 +1099,9 @@ export default function SalidaCobroPage() {
           ) : null}
 
           <Button
-            className="mt-5 h-14 w-full font-bold bg-slate-900 text-white"
+            color="primary"
+            size="lg"
+            className="mt-5 h-14 w-full font-bold shadow-md"
             isDisabled={!active || searching || processing || !!printWarning}
             isLoading={processing}
             onPress={() => processExit()}
