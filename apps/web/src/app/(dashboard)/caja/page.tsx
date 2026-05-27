@@ -86,6 +86,16 @@ function closingDocToTicket(doc: Record<string, unknown>): TicketDocument {
   };
 }
 
+function friendlyCashError(msg: string): string {
+  if (msg.includes("No active cash session found")) {
+    return "No hay una caja abierta en este terminal. Selecciona un terminal y presiona 'Abrir caja' para iniciar una sesión.";
+  }
+  if (msg.includes("already has an active cash session")) {
+    return "Este terminal ya tiene una caja abierta. Ciérrala antes de abrir una nueva.";
+  }
+  return msg;
+}
+
 export default function CajaPage() {
   const [session, setSession] = useState<CashSessionDto | null>(null);
   const [movements, setMovements] = useState<CashMovementDto[]>([]);
@@ -147,15 +157,18 @@ export default function CajaPage() {
         setMovements(mv);
         setSummary(sm);
       } catch (e2) {
-        const msg = e2 instanceof Error ? e2.message : "Error al cargar movimientos/resumen";
+        const msg = e2 instanceof Error ? friendlyCashError(e2.message) : "Error al cargar movimientos/resumen";
         setError(msg);
       }
     } catch (e) {
       setSession(null);
       setMovements([]);
       setSummary(null);
-      if (e instanceof Error && !e.message.includes("404") && !e.message.includes("No hay")) {
-        setError(e.message);
+      if (e instanceof Error && !e.message.includes("404")) {
+        const friendly = friendlyCashError(e.message);
+        if (!friendly.includes("No hay")) {
+          setError(friendly);
+        }
       }
     } finally {
       setLoading(false);
@@ -551,7 +564,11 @@ export default function CajaPage() {
           {loading ? (
             <p className="mt-4 text-sm text-slate-600">Cargando...</p>
           ) : !session ? (
-            <p className="mt-4 text-sm text-slate-600">No hay caja abierta en este terminal.</p>
+            <div className="mt-4 text-sm text-slate-600">
+              <p>No hay una caja abierta en este terminal.</p>
+              <p className="mt-2">Para operar caja: ingresa el monto inicial y presiona <strong>Abrir caja</strong>.</p>
+              <p className="mt-1">Si la caja ya está abierta en otro terminal, selecciona el terminal correcto y presiona <strong>Actualizar</strong>.</p>
+            </div>
           ) : (
             <div className="mt-4 space-y-4 text-sm">
               <div className="flex items-center gap-2">
@@ -567,7 +584,38 @@ export default function CajaPage() {
                   ) : null}
                 </span>
               </div>
-              
+
+              {session?.status === "OPEN" ? (
+                <div className="flex items-center justify-between gap-1 pt-1">
+                  {[
+                    { label: "Abrir", done: true },
+                    { label: "Movimientos", done: movements.length > 0 },
+                    { label: "Arqueo", done: !!session.countedAt },
+                    { label: "Cerrar", done: false },
+                  ].map((step, i) => (
+                    <div key={step.label} className="flex items-center gap-1 flex-1">
+                      <div className="flex flex-col items-center flex-1">
+                        <div
+                          className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold ${
+                            step.done
+                              ? "bg-emerald-500 text-white"
+                              : !session.countedAt && i === 2
+                                ? "bg-blue-500 text-white"
+                                : "bg-slate-200 text-slate-400"
+                          }`}
+                        >
+                          {step.done ? "\u2713" : String(i + 1)}
+                        </div>
+                        <span className="text-[10px] text-slate-500 mt-1">{step.label}</span>
+                      </div>
+                      {i < 3 ? (
+                        <div className={`h-[2px] flex-1 self-start mt-3 ${step.done ? "bg-emerald-300" : "bg-slate-200"}`} />
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
               {summary && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
