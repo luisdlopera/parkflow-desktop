@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-test.skip('i18n - language switch', async ({ page }) => {
+test('i18n - language switch via HeroUI Select', async ({ page }) => {
   await page.goto('/settings')
   await page.waitForSelector('[data-testid="language-select"]', { timeout: 15_000 })
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { validatePlate } from "@/lib/validation/plate-validator";
+import { inferVehicleType, translateVehicleType, validatePlate } from "@/lib/validation/plate-validator";
 
 export const vehicleEntrySchema = z.object({
   plate: z.string().optional().default(""),
@@ -38,7 +38,25 @@ export const vehicleEntrySchema = z.object({
     return;
   }
 
-  const result = validatePlate(data.countryCode, data.type, data.plate);
+  const inferredType = inferVehicleType(data.countryCode, data.plate);
+
+  if (inferredType && data.type && data.type !== "OTHER" && inferredType !== data.type) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `La placa ingresada corresponde a ${translateVehicleType(inferredType)}. Verifica el tipo de vehículo seleccionado.`,
+      path: ["plate"]
+    });
+    return;
+  }
+
+  let typeForValidation = data.type;
+  if (!typeForValidation || typeForValidation === "CAR" || typeForValidation === "OTHER") {
+    if (inferredType) {
+      typeForValidation = inferredType;
+    }
+  }
+
+  const result = validatePlate(data.countryCode, typeForValidation, data.plate);
   if (!result.isValid) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

@@ -1,11 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Input } from "@heroui/input";
-import { Search } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UserMenu } from "@/components/auth/UserMenu";
-import { useState } from "react";
 
 import { QuickSearch } from "@/modules/search/components/QuickSearch";
 
@@ -40,10 +37,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
       {/* Right side: Actions + Status + User */}
       <div className="flex items-center gap-2 sm:gap-4">
-        {/* Buscador general */}
-        <div className="hidden md:block w-96">
-          <QuickSearch />
-        </div>
+        <QuickSearch />
         {/* Theme toggle - hidden on smallest screens */}
         <div className="hidden sm:block">
           <ThemeToggle />

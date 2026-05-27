@@ -2,6 +2,7 @@ mod escpos;
 mod printer;
 mod printer_profile;
 pub mod licensing;
+pub mod local_first;
 
 use licensing::LicenseState;
 #[cfg(not(debug_assertions))]
@@ -141,9 +142,9 @@ pub struct ConnectivityState {
   pub last_error: Option<String>,
 }
 
-struct AppState {
+pub struct AppState {
   // PERFORMANCE: Use a fresh connection per command to avoid global mutex blocking.
-  db_path: PathBuf,
+  pub db_path: PathBuf,
 }
 
 /// Simple in-memory rate limiter per command
@@ -180,19 +181,26 @@ impl RateLimiter {
 }
 
 fn db_passphrase() -> Result<String, String> {
-  let entry = KeyringEntry::new("com.parkflow.desktop", "db-passphrase")
-    .map_err(|e| format!("keyring entry failed: {}", e))?;
+  #[cfg(debug_assertions)]
+  {
+    return Ok("dev-db-passphrase".to_string());
+  }
+  #[cfg(not(debug_assertions))]
+  {
+    let entry = KeyringEntry::new("com.parkflow.desktop", "db-passphrase")
+      .map_err(|e| format!("keyring entry failed: {}", e))?;
 
-  match entry.get_password() {
-    Ok(pwd) => Ok(pwd),
-    Err(keyring::Error::NoEntry) => {
-      let generated = format!("pf-{}-{}", now_unix_ms_i64(), Uuid::new_v4());
-      entry
-        .set_password(&generated)
-        .map_err(|e| format!("failed to store db passphrase: {}", e))?;
-      Ok(generated)
+    match entry.get_password() {
+      Ok(pwd) => Ok(pwd),
+      Err(keyring::Error::NoEntry) => {
+        let generated = format!("pf-{}-{}", now_unix_ms_i64(), Uuid::new_v4());
+        entry
+          .set_password(&generated)
+          .map_err(|e| format!("failed to store db passphrase: {}", e))?;
+        Ok(generated)
+      }
+      Err(e) => Err(format!("keyring get failed: {}", e)),
     }
-    Err(e) => Err(format!("keyring get failed: {}", e)),
   }
 }
 
@@ -244,6 +252,9 @@ fn init_local_db_with_path(db_path: &Path) -> Result<Connection, String> {
   let passphrase = db_passphrase()?;
   connection.pragma_update(None, "key", &passphrase)
     .map_err(|error| format!("sqlite key pragma failed: {}", error))?;
+
+  local_first::init_schema_tables(&connection)
+    .map_err(|error| format!("local_first schema init failed: {}", error))?;
 
   connection
     .execute_batch(
@@ -1485,6 +1496,7 @@ mod tests {
 
   /// Execute the full DDL schema on an in-memory database
   fn setup_schema(conn: &Connection) {
+    local_first::init_schema_tables(conn).unwrap();
     conn.execute_batch(
       "CREATE TABLE IF NOT EXISTS local_print_jobs (
         id TEXT PRIMARY KEY, session_id TEXT NOT NULL, document_type TEXT NOT NULL,
@@ -1796,6 +1808,340 @@ mod tests {
       assert!(seen.insert(db_str.clone()), "duplicate db: {}", db_str);
     }
   }
+
+  #[test]
+  fn db_passphrase_is_non_empty_string() {
+    let pass = db_passphrase();
+    assert!(pass.is_ok());
+    let pass_str = pass.unwrap();
+    assert!(!pass_str.is_empty());
+    assert!(pass_str.len() >= 16);
+  }
+
+  #[test]
+  fn offline_lease_request_round_trip() {
+    let now = now_unix_ms_i64();
+    let request = OfflineLeaseRequest {
+      session_id: "session-test-1".into(),
+      user_id: "user-test-1".into(),
+      device_id: "device-test-1".into(),
+      expires_at_unix_ms: now + 3600_000,
+      restricted_actions_json: r#"["sync","print"]"#.into(),
+    };
+
+    let serialized = serde_json::to_string(&request).unwrap();
+    let deserialized: OfflineLeaseRequest = serde_json::from_str(&serialized).unwrap();
+
+    assert_eq!(deserialized.session_id, "session-test-1");
+    assert_eq!(deserialized.user_id, "user-test-1");
+    assert_eq!(deserialized.restricted_actions_json, r#"["sync","print"]"#);
+    assert!(deserialized.expires_at_unix_ms > now);
+  }
+
+  #[test]
+  fn connectivity_state_default_is_offline() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+
+    let is_online: i32 = conn
+      .query_row("SELECT is_online FROM connectivity_state WHERE id = 1", [], |row| {
+        row.get(0)
+      })
+      .unwrap();
+    assert_eq!(is_online, 0);
+  }
+
+  #[test]
+  fn update_print_job_status_changes_status() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let now = now_unix_ms_i64();
+    let job_id = Uuid::new_v4().to_string();
+
+    conn.execute(
+      "INSERT INTO local_print_jobs (id, session_id, document_type, status, idempotency_key, payload_hash, attempts, created_at_unix_ms, updated_at_unix_ms)
+       VALUES (?1, 'session-upd', 'EXIT', 'created', ?2, 'hash-upd', 0, ?3, ?3)",
+      params![job_id, format!("idem-{}", job_id), now],
+    )
+    .unwrap();
+
+    conn.execute(
+      "UPDATE local_print_jobs SET status = 'sent', updated_at_unix_ms = ?1 WHERE id = ?2",
+      params![now + 1000, job_id],
+    )
+    .unwrap();
+
+    let status: String = conn
+      .query_row(
+        "SELECT status FROM local_print_jobs WHERE id = ?1",
+        params![job_id],
+        |row| row.get(0),
+      )
+      .unwrap();
+    assert_eq!(status, "sent");
+  }
+
+  #[test]
+  fn update_print_job_status_idempotent() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let now = now_unix_ms_i64();
+    let job_id = Uuid::new_v4().to_string();
+
+    conn.execute(
+      "INSERT INTO local_print_jobs (id, session_id, document_type, status, idempotency_key, payload_hash, attempts, created_at_unix_ms, updated_at_unix_ms)
+       VALUES (?1, 'session-idem', 'ENTRY', 'created', ?2, 'hash-idem', 0, ?3, ?3)",
+      params![job_id, format!("idem-{}", job_id), now],
+    )
+    .unwrap();
+
+    // Update twice to same status — should not error
+    let r1 = conn.execute(
+      "UPDATE local_print_jobs SET status = 'failed', updated_at_unix_ms = ?1 WHERE id = ?2",
+      params![now + 1000, job_id],
+    );
+    assert!(r1.is_ok());
+
+    let r2 = conn.execute(
+      "UPDATE local_print_jobs SET status = 'failed', updated_at_unix_ms = ?1 WHERE id = ?2",
+      params![now + 2000, job_id],
+    );
+    assert!(r2.is_ok());
+  }
+
+  #[test]
+  fn mark_outbox_synced_updates_status() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let now = now_unix_ms_i64();
+
+    conn.execute(
+      "INSERT INTO outbox (idempotency_key, event_type, payload_json, origin, status, retry_count, created_at_unix_ms)
+       VALUES ('outbox-sync-test', 'TEST_EVENT', '{}', 'LOCAL', 'pending', 0, ?1)",
+      params![now],
+    )
+    .unwrap();
+
+    conn.execute(
+      "UPDATE outbox SET status = 'synced' WHERE idempotency_key = 'outbox-sync-test'",
+      [],
+    )
+    .unwrap();
+
+    let status: String = conn
+      .query_row(
+        "SELECT status FROM outbox WHERE idempotency_key = 'outbox-sync-test'",
+        [],
+        |row| row.get(0),
+      )
+      .unwrap();
+    assert_eq!(status, "synced");
+  }
+
+  #[test]
+  fn claim_outbox_batch_filters_by_limit() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let now = now_unix_ms_i64();
+
+    for i in 0..10 {
+      conn.execute(
+        "INSERT INTO outbox (idempotency_key, event_type, payload_json, origin, status, retry_count, created_at_unix_ms)
+         VALUES (?1, 'BATCH_TEST', '{}', 'LOCAL', 'pending', 0, ?2)",
+        params![format!("outbox-batch-{}", i), now],
+      )
+      .unwrap();
+    }
+
+    let count: i64 = conn
+      .query_row(
+        "SELECT COUNT(*) FROM outbox WHERE status = 'pending'",
+        [],
+        |row| row.get(0),
+      )
+      .unwrap();
+    assert_eq!(count, 10);
+
+    // Claim 4 items
+    conn.execute(
+      "UPDATE outbox SET status = 'processing' WHERE id IN (SELECT id FROM outbox WHERE status = 'pending' LIMIT 4)",
+      [],
+    )
+    .unwrap();
+
+    let processing: i64 = conn
+      .query_row(
+        "SELECT COUNT(*) FROM outbox WHERE status = 'processing'",
+        [],
+        |row| row.get(0),
+      )
+      .unwrap();
+    assert_eq!(processing, 4);
+
+    let pending: i64 = conn
+      .query_row(
+        "SELECT COUNT(*) FROM outbox WHERE status = 'pending'",
+        [],
+        |row| row.get(0),
+      )
+      .unwrap();
+    assert_eq!(pending, 6);
+  }
+
+  #[test]
+  fn prune_old_data_removes_old_sessions() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let old = 1_000_000_000i64;
+    let recent = now_unix_ms_i64();
+
+    conn.execute(
+      "INSERT INTO sessions (session_id, ticket_number, status, payload_json, updated_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5)",
+      params!["old-session", "T-OLD", "CLOSED", "{}", old],
+    )
+    .unwrap();
+
+    conn.execute(
+      "INSERT INTO sessions (session_id, ticket_number, status, payload_json, updated_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5)",
+      params!["recent-session", "T-RECENT", "CLOSED", "{}", recent],
+    )
+    .unwrap();
+
+    // Delete sessions older than 30 days (~2.6M seconds)
+    let cutoff = now_unix_ms_i64() - 2_600_000i64 * 1000;
+    let deleted = conn
+      .execute("DELETE FROM sessions WHERE updated_at_unix_ms < ?1", params![cutoff])
+      .unwrap();
+    assert_eq!(deleted, 1);
+
+    let remaining: i64 = conn
+      .query_row("SELECT COUNT(*) FROM sessions", [], |row| row.get(0))
+      .unwrap();
+    assert_eq!(remaining, 1);
+  }
+
+  #[test]
+  fn outbox_stats_counts_pending_and_failed() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let now = now_unix_ms_i64();
+
+    conn.execute(
+      "INSERT INTO outbox (idempotency_key, event_type, payload_json, status, retry_count, created_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+      params!["stat-1", "EVENT_A", "{}", "pending", 0, now],
+    )
+    .unwrap();
+
+    conn.execute(
+      "INSERT INTO outbox (idempotency_key, event_type, payload_json, status, retry_count, created_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+      params!["stat-2", "EVENT_B", "{}", "failed", 3, now],
+    )
+    .unwrap();
+
+    conn.execute(
+      "INSERT INTO outbox (idempotency_key, event_type, payload_json, status, retry_count, created_at_unix_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+      params!["stat-3", "EVENT_C", "{}", "pending", 0, now],
+    )
+    .unwrap();
+
+    let pending: i64 = conn
+      .query_row(
+        "SELECT COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) FROM outbox",
+        [],
+        |row| row.get(0),
+      )
+      .unwrap();
+    assert_eq!(pending, 2);
+
+    let failed: i64 = conn
+      .query_row(
+        "SELECT COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) FROM outbox",
+        [],
+        |row| row.get(0),
+      )
+      .unwrap();
+    assert_eq!(failed, 1);
+  }
+
+  #[test]
+  fn auth_store_session_persists_and_loads() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let now = now_unix_ms_i64();
+
+    conn.execute(
+      "INSERT OR REPLACE INTO local_settings (setting_key, setting_value, updated_at_unix_ms)
+       VALUES ('auth_session', ?1, ?2)",
+      params![r#"{"accessToken":"tok-1","refreshToken":"ref-1"}"#, now],
+    )
+    .unwrap();
+
+    let value: String = conn
+      .query_row(
+        "SELECT setting_value FROM local_settings WHERE setting_key = 'auth_session'",
+        [],
+        |row| row.get(0),
+      )
+      .unwrap();
+    assert!(value.contains("tok-1"));
+    assert!(value.contains("ref-1"));
+
+    // Clear
+    conn
+      .execute(
+        "DELETE FROM local_settings WHERE setting_key = 'auth_session'",
+        [],
+      )
+      .unwrap();
+
+    let count: i64 = conn
+      .query_row(
+        "SELECT COUNT(*) FROM local_settings WHERE setting_key = 'auth_session'",
+        [],
+        |row| row.get(0),
+      )
+      .unwrap();
+    assert_eq!(count, 0);
+  }
+
+  #[test]
+  fn auth_upsert_offline_lease_round_trip() {
+    let conn = Connection::open_in_memory().unwrap();
+    setup_schema(&conn);
+    let now = now_unix_ms_i64();
+    let session_id = "lease-session-1";
+
+    conn
+      .execute(
+        "INSERT OR REPLACE INTO offline_leases (session_id, user_id, device_id, issued_at_unix_ms, expires_at_unix_ms, restricted_actions_json)
+         VALUES (?1, 'lease-user', 'lease-device', ?2, ?3, '[\"sync\"]')",
+        params![session_id, now, now + 86400_000],
+      )
+      .unwrap();
+
+    let expires: i64 = conn
+      .query_row(
+        "SELECT expires_at_unix_ms FROM offline_leases WHERE session_id = ?1",
+        params![session_id],
+        |row| row.get(0),
+      )
+      .unwrap();
+    assert!(expires > now);
+
+    let device_id: String = conn
+      .query_row(
+        "SELECT device_id FROM offline_leases WHERE session_id = ?1",
+        params![session_id],
+        |row| row.get(0),
+      )
+      .unwrap();
+    assert_eq!(device_id, "lease-device");
+  }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -1833,6 +2179,7 @@ pub fn run() {
   let db_path = sqlite_path().expect("failed to resolve sqlite path");
   let _connection = init_local_db().expect("failed to initialize local sqlite");
   start_offline_worker(db_path.clone());
+  local_first::start_sync_worker(db_path.clone());
 
   // Initialize licensing state
   let license_state = LicenseState::new().expect("failed to initialize licensing");
@@ -1880,15 +2227,19 @@ pub fn run() {
       local_first::get_parkflow_config,
       local_first::local_login,
       local_first::local_refresh,
+      local_first::local_get_profile,
+      local_first::local_update_profile,
+      local_first::local_change_password,
       local_first::local_get_settings,
       local_first::local_get_parking_spaces_summary,
       local_first::local_list_parking_spaces,
       local_first::local_update_parking_space_capacity,
       local_first::local_update_parking_space,
-      local_first::local_get_dashboard_summary,
-      local_first::local_list_active_sessions,
-      local_first::local_get_active_session,
-      local_first::local_create_entry,
+       local_first::local_get_dashboard_summary,
+       local_first::local_list_active_sessions,
+       local_first::local_get_active_session,
+       local_first::local_search_global,
+       local_first::local_create_entry,
       local_first::local_create_exit,
       local_first::local_reprint_ticket,
       local_first::local_process_lost_ticket,
@@ -1901,7 +2252,25 @@ pub fn run() {
       local_first::local_close_cash_session,
       local_first::local_print_cash_closing,
       local_first::local_get_rates,
-      local_first::local_trigger_operational_action
+      local_first::local_trigger_operational_action,
+      local_first::local_is_setup_required,
+      local_first::local_setup_initial_admin,
+      local_first::local_get_onboarding_status,
+      local_first::local_save_onboarding_step,
+      local_first::local_complete_onboarding,
+      local_first::local_skip_onboarding,
+      // Report commands
+      local_first::local_get_daily_operations,
+      local_first::local_get_vehicle_type_report,
+      local_first::local_get_cash_session_history,
+      local_first::local_export_report_csv,
+      local_first::local_get_paid_tickets_report,
+      local_first::local_get_income_expense_report,
+      local_first::local_get_occupancy_report,
+      local_first::local_get_operator_report,
+      local_first::local_get_payment_method_report,
+      local_first::local_void_cash_movement,
+      local_first::local_get_voided_tickets_report
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

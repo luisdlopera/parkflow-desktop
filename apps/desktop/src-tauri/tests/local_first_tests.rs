@@ -7,7 +7,7 @@ use uuid::Uuid;
 fn setup_test_db() -> (tempfile::TempDir, PathBuf, Connection) {
   let dir = tempfile::tempdir().expect("failed to create temp dir");
   let db_path = dir.path().join("test_local_first.db");
-  let conn = Connection::open(&db_path).expect("failed to open sqlite connection");
+  let conn = local_first::open_local_connection(&db_path).expect("failed to open sqlite connection");
   local_first::init_schema_tables(&conn).expect("failed to initialize schema");
   (dir, db_path, conn)
 }
@@ -17,11 +17,11 @@ fn setup_test_db() -> (tempfile::TempDir, PathBuf, Connection) {
 fn test_database_initialization_and_seeding() {
   let (_dir, _db_path, conn) = setup_test_db();
 
-  // Verify default user seeded
+  // Verify default users are seeded (2: admin + cashier)
   let user_count: i64 = conn
     .query_row("SELECT COUNT(*) FROM local_users", [], |row| row.get(0))
     .expect("users count");
-  assert_eq!(user_count, 1);
+  assert_eq!(user_count, 2);
 
   // Verify default company seeded
   let company_name: String = conn
@@ -40,9 +40,26 @@ fn test_database_initialization_and_seeding() {
 #[serial]
 fn test_local_login_success() {
   let (_dir, db_path, _conn) = setup_test_db();
-  
-  // We can test password verification directly in Rust
-  let conn = Connection::open(&db_path).unwrap();
+
+  // Setup is no longer required because default users are seeded
+  let setup_req = local_first::local_is_setup_required_impl(&db_path).unwrap();
+  assert!(!setup_req);
+
+  // Login with seeded admin user
+  let session = local_first::local_login_impl(
+    "admin@parkflow.local".to_string(),
+    "Qwert.12345".to_string(),
+    "test-device".to_string(),
+    &db_path,
+  ).unwrap();
+
+  assert_eq!(session.user.email, "admin@parkflow.local");
+  assert_eq!(session.user.role, "SUPER_ADMIN");
+  assert!(session.user.permissions.contains(&"tickets:emitir".to_string()));
+  assert!(session.user.permissions.contains(&"reportes:leer".to_string()));
+
+  // Verify password hash matches
+  let conn = local_first::open_local_connection(&db_path).unwrap();
   let stored_hash: String = conn
     .query_row(
       "SELECT password_hash FROM local_users WHERE email = 'admin@parkflow.local'",
@@ -56,6 +73,81 @@ fn test_local_login_success() {
 
   let invalid = bcrypt::verify("WrongPass123", &stored_hash).unwrap();
   assert!(!invalid);
+
+  // Login with seeded cashier user
+  let cashier_session = local_first::local_login_impl(
+    "cashier@parkflow.local".to_string(),
+    "Qwert.12345".to_string(),
+    "test-device".to_string(),
+    &db_path,
+  ).unwrap();
+
+  assert_eq!(cashier_session.user.email, "cashier@parkflow.local");
+  assert_eq!(cashier_session.user.role, "CAJERO");
+  assert!(cashier_session.user.permissions.contains(&"tickets:emitir".to_string()));
+  assert!(!cashier_session.user.permissions.contains(&"anulaciones:crear".to_string()));
+}
+
+#[test]
+#[serial]
+fn test_local_profile_get_update_and_change_password() {
+  let (_dir, db_path, _conn) = setup_test_db();
+
+  let session = local_first::local_login_impl(
+    "admin@parkflow.local".to_string(),
+    "Qwert.12345".to_string(),
+    "test-device".to_string(),
+    &db_path,
+  )
+  .unwrap();
+
+  let profile = local_first::local_get_profile_impl(&session.user.id, &db_path).unwrap();
+  assert_eq!(profile.email, "admin@parkflow.local");
+  assert_eq!(profile.role, "SUPER_ADMIN");
+
+  let updated = local_first::local_update_profile_impl(
+    &session.user.id,
+    local_first::LocalUpdateProfileRequest {
+      name: "Admin Local".to_string(),
+      email: "admin@parkflow.local".to_string(),
+      document: Some("123456789".to_string()),
+      phone: Some("3001234567".to_string()),
+      site: Some("SEDE-1".to_string()),
+      terminal: Some("T-01".to_string()),
+    },
+    &db_path,
+  )
+  .unwrap();
+
+  assert_eq!(updated.name, "Admin Local");
+  assert_eq!(updated.document.as_deref(), Some("123456789"));
+
+  local_first::local_change_password_impl(
+    &session.user.id,
+    local_first::LocalChangePasswordRequest {
+      current_password: "Qwert.12345".to_string(),
+      new_password: "Newpass.123".to_string(),
+    },
+    &db_path,
+  )
+  .unwrap();
+
+  let login_old = local_first::local_login_impl(
+    "admin@parkflow.local".to_string(),
+    "Qwert.12345".to_string(),
+    "test-device".to_string(),
+    &db_path,
+  );
+  assert!(login_old.is_err());
+
+  let login_new = local_first::local_login_impl(
+    "admin@parkflow.local".to_string(),
+    "Newpass.123".to_string(),
+    "test-device".to_string(),
+    &db_path,
+  )
+  .unwrap();
+  assert_eq!(login_new.user.name, "Admin Local");
 }
 
 #[test]
@@ -193,4 +285,29 @@ fn test_sync_queue_enqueuing() {
 
   assert_eq!(e_type, "TICKET");
   assert_eq!(status, "PENDING_SYNC");
+}
+
+#[test]
+#[serial]
+fn test_onboarding_wizard_steps() {
+  let (_dir, db_path, _conn) = setup_test_db();
+  
+  let company_id = "00000000-0000-0000-0000-000000000001".to_string();
+
+  // 1. Get initial status
+  let status = local_first::local_get_onboarding_status_impl(company_id.clone(), &db_path).unwrap();
+  assert_eq!(status["onboardingCompleted"], false);
+  assert_eq!(status["currentStep"], 1);
+
+  // 2. Save a step
+  let step_data = serde_json::json!({
+    "vehicleTypes": ["CAR", "MOTORCYCLE"]
+  });
+  let status2 = local_first::local_save_onboarding_step_impl(company_id.clone(), 1, step_data, &db_path).unwrap();
+  assert_eq!(status2["currentStep"], 1);
+  assert_eq!(status2["progressData"]["step_1"]["vehicleTypes"], serde_json::json!(["CAR", "MOTORCYCLE"]));
+
+  // 3. Complete onboarding
+  let status3 = local_first::local_complete_onboarding_impl(company_id.clone(), &db_path).unwrap();
+  assert_eq!(status3["onboardingCompleted"], true);
 }

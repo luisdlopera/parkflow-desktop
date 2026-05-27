@@ -11,16 +11,25 @@ on:
 
 permissions:
   contents: read
-  issues: write
-  security-events: write
-  actions: read
-  checks: write
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  sonarcloud:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v4.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   lint_typecheck:
     name: Lint + Typecheck + Unit Tests (Web)
     runs-on: ubuntu-latest
@@ -215,8 +224,10 @@ jobs:
           cat /tmp/api.log
           exit 1
       - name: Seed CI database
+        env:
+          PGPASSWORD: ${{ env.DB_PASSWORD }}
         run: |
-          PGPASSWORD=parkflow psql -h localhost -U parkflow -d parkflow -f .github/scripts/seed-ci-data.sql
+          psql -h localhost -U parkflow -d parkflow -f .github/scripts/seed-ci-data.sql
       - name: Run critical E2E suite
         run: bash qa/operations-e2e/curl/run-critical-e2e.sh
       - name: Upload API log on failure
@@ -226,39 +237,4 @@ jobs:
           name: api-log
           path: /tmp/api.log
 
-  sonarcloud:
-    name: SonarCloud Analysis
-    runs-on: ubuntu-latest
-    needs: [lint_typecheck, unit_tests]
-    if: github.event_name != 'schedule'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Download web coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: web-coverage
-          path: apps/web/coverage/
-
-      - name: Download API coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: api-coverage
-          path: apps/api/build/reports/jacoco/test/
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: gradle
-
-      - name: Build API (for compiled classes)
-        run: ./apps/api/gradlew -p apps/api compileJava compileTestJava
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

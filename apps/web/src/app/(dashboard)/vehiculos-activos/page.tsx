@@ -98,7 +98,7 @@ export default function VehiculosActivosPage() {
             variant="flat"
             color="primary"
             className="font-bold"
-            onPress={() => void loadRows()}
+            onPress={() => { loadRows().catch(console.error); }}
             isLoading={loading}
           >
             Actualizar
@@ -107,6 +107,23 @@ export default function VehiculosActivosPage() {
       </div>
 
       {error ? <p className="text-sm text-rose-700 font-medium">{error}</p> : null}
+      {cajaOpen === false ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          No hay caja abierta en este terminal. Debe abrir caja antes de procesar entradas o salidas.
+        </div>
+      ) : null}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+          <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Ocupados</p>
+          <p className="text-2xl font-bold text-slate-900">{summary?.occupiedSpaces ?? rows.length}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+          <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Disponibles</p>
+          <p className="text-2xl font-bold text-emerald-700">
+            {summary ? `${summary.availableSpaces} / ${summary.totalCapacity}` : "—"}
+          </p>
+        </div>
+      </div>
 
       <DataTable
         columns={[

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Input,
   Button,
@@ -227,6 +228,7 @@ export default function SalidaCobroPage() {
   const { playSuccess, playError } = useOperationSounds();
   const { success: toastSuccess, error: toastError } = useToast();
   const [reprintLoading, setReprintLoading] = useState(false);
+  const autoLookupDone = useRef(false);
 
   // Auto-focus en campo de ticket al cargar
   useEffect(() => {
@@ -239,6 +241,15 @@ export default function SalidaCobroPage() {
   useEffect(() => {
     fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
   }, []);
+
+  useEffect(() => {
+    if (initialTicketNumber) {
+      setTicketNumber(initialTicketNumber);
+    }
+    if (initialPlate) {
+      setPlate(initialPlate);
+    }
+  }, [initialTicketNumber, initialPlate]);
 
   // PERFORMANCE: Constant value, no need for useMemo
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
@@ -274,7 +285,7 @@ export default function SalidaCobroPage() {
     return null;
   }, [changeDue, paymentLabel, singleCashReceived, splitPayments, splitTotal]);
 
-  const lookup = useCallback(async () => {
+  const lookup = useCallback(async (override?: { ticketNumber?: string; plate?: string }) => {
     setError("");
     setMessage("");
     setPrintWarning(null);
@@ -292,9 +303,6 @@ export default function SalidaCobroPage() {
       params.set("ticketNumber", currentTicketNumber.trim());
     } else {
       params.set("plate", currentPlate.trim().toUpperCase());
-    }
-    if (agreementCode.trim()) {
-      params.set("agreementCode", agreementCode.trim());
     }
     if (agreementCode.trim()) {
       params.set("agreementCode", agreementCode.trim());
@@ -332,23 +340,30 @@ export default function SalidaCobroPage() {
     }
   }, [ticketNumber, plate, agreementCode, apiBase, playSuccess, playError]);
 
+  useEffect(() => {
+    if (autoLookupDone.current) {
+      return;
+    }
+    if (!initialTicketNumber && !initialPlate) {
+      return;
+    }
+
+    autoLookupDone.current = true;
+    void lookup({ ticketNumber: initialTicketNumber, plate: initialPlate });
+  }, [initialPlate, initialTicketNumber, lookup]);
+
+  const handleLookupClick = useCallback(() => {
+    void lookup();
+  }, [lookup]);
+
   const processExit = useCallback(async (paymentMethod: PaymentMethodCode = selectedPaymentMethod) => {
     if (!active) {
       setError("Primero busca una sesion activa");
       return;
     }
-    if (paymentMethod === "MIXED") {
-      if (splitPayments.filter((row) => (Number(row.amount) || 0) > 0).length < 2) {
-        setError("Para pago dividido registra al menos dos medios con valor.");
-        return;
-      }
-      if (Math.abs(splitTotal - totalDue) > 0.009) {
-        setError(`El pago dividido debe sumar $${totalDue.toLocaleString("es-CO")}. Falta $${Math.max(0, totalDue - splitTotal).toLocaleString("es-CO")}.`);
-        return;
-      }
-    }
-    if (paymentMethod === "CASH" && singleCashReceived > 0 && singleCashReceived < totalDue) {
-      setError(`El efectivo recibido es menor al total. Falta $${(totalDue - singleCashReceived).toLocaleString("es-CO")}.`);
+    const validationError = validatePayment(paymentMethod, splitPayments, splitTotal, totalDue, singleCashReceived);
+    if (validationError) {
+      setError(validationError);
       return;
     }
     if (operationLock.current) {
@@ -368,6 +383,21 @@ export default function SalidaCobroPage() {
         return;
       }
 
+      // Validate cash register is open before allowing exit
+      const term = process.env.NEXT_PUBLIC_TERMINAL_ID?.trim() ||
+        window.localStorage.getItem("parkflow_terminal_id")?.trim() || "";
+      const site = process.env.NEXT_PUBLIC_PARKING_SITE?.trim() || "default";
+      let cashSessionId: string | null = null;
+      try {
+        const cs = await cashCurrent(site, term || undefined);
+        cashSessionId = cs.id;
+      } catch {
+        setError("Debe abrir caja en este terminal antes de procesar salidas");
+        setProcessing(false);
+        operationLock.current = false;
+        return;
+      }
+
       const idempotencyFingerprint = JSON.stringify({
         ticketNumber: active.receipt.ticketNumber,
         paymentMethod,
@@ -379,6 +409,7 @@ export default function SalidaCobroPage() {
         ticketNumber: active.receipt.ticketNumber,
         operatorUserId: user.id,
         paymentMethod,
+        cashSessionId,
         observations: paymentObservation(paymentMethod),
         vehicleCondition,
         conditionChecklist: conditionChecklist
@@ -418,9 +449,6 @@ export default function SalidaCobroPage() {
       clearIdempotencyKey("exit", idempotencyFingerprint);
 
       const printPayload = operationPrintPayload(payload);
-      setPreviewLines(buildTicketPreviewForOperation(printPayload, "EXIT"));
-
-      const printPayload = operationPrintPayload(payload);
       const receiptPreview = buildTicketPreviewForOperation(printPayload, "EXIT");
       setPreviewLines(receiptPreview);
 
@@ -430,28 +458,6 @@ export default function SalidaCobroPage() {
           ticketNumber: payload.receipt.ticketNumber,
           plate: payload.receipt.plate,
           previewLines: receiptPreview
-        });
-      } else {
-        playSuccess();
-        toastSuccess(
-          `Salida registrada. Total: $${Number(payload.total ?? 0).toLocaleString("es-CO")}`,
-          6000
-        );
-        setActive(null);
-        setTicketNumber("");
-        setPlate("");
-        setAgreementCode("");
-
-        // Re-focus para siguiente operación
-        setTimeout(() => {
-          ticketInputRef.current?.focus();
-        }, 100);
-      }
-      if (printWarning) {
-        setPrintWarning({
-          ticketNumber: payload.receipt.ticketNumber,
-          plate: payload.receipt.plate,
-          previewLines: buildTicketPreviewForOperation(printPayload, "EXIT")
         });
       } else {
         playSuccess();
@@ -499,22 +505,25 @@ export default function SalidaCobroPage() {
         paymentMethod,
         total: totalDue
       });
-      const queued = await queueOfflineOperation("EXIT_RECORDED", {
-        ticketNumber: active.receipt.ticketNumber,
+      const isQueued = await handleOfflineExit(
+        active.receipt.ticketNumber,
         paymentMethod,
-        paymentBreakdown: paymentMethod === "MIXED" ? splitPayments : undefined,
-        occurredAtIso: new Date().toISOString(),
-        origin: "OFFLINE_PENDING_SYNC"
-      });
-      if (queued) {
-        clearIdempotencyKey("exit", idempotencyFingerprint);
-        toastSuccess("Sin internet: salida guardada. Se sincronizará automáticamente al reconectar.");
-        playSuccess();
-      } else {
-        const errMsg = "Error de red procesando salida";
-        setError(errMsg);
-        toastError(errMsg);
-        playError();
+        splitPayments,
+        idempotencyFingerprint,
+        playSuccess,
+        toastSuccess,
+        playError,
+        toastError,
+        setError
+      );
+      if (isQueued) {
+        setActive(null);
+        setTicketNumber("");
+        setPlate("");
+        setAgreementCode("");
+        setTimeout(() => {
+          ticketInputRef.current?.focus();
+        }, 100);
       }
     } finally {
       setProcessing(false);
@@ -764,61 +773,77 @@ export default function SalidaCobroPage() {
       <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="surface rounded-2xl p-4 sm:p-6 lg:col-span-2">
           <h2 className="text-lg font-semibold text-slate-900">Busqueda</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="relative">
-              <input
-                ref={ticketInputRef}
-                data-testid="ticket-number"
-                value={ticketNumber}
-                onChange={(event) => setTicketNumber(event.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    lookup();
-                  }
-                }}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
-                placeholder="Numero de ticket"
-                autoFocus
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
-                Enter
-              </span>
-            </div>
-            <div className="relative">
-              <input
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Input
+              ref={ticketInputRef}
+              label="Número de ticket"
+              variant="flat"
+              value={ticketNumber}
+              onValueChange={setTicketNumber}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleLookupClick();
+                }
+              }}
+              endContent={
+                <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
+                  Enter
+                </span>
+              }
+            />
+            <div className="space-y-1">
+              <Input
+                label="Placa"
+                variant="flat"
                 value={plate}
-                data-testid="plate"
-                onChange={(event) => setPlate(event.target.value.toUpperCase())}
+                onValueChange={(val) => setPlate(val.toUpperCase())}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    lookup();
+                    handleLookupClick();
                   }
                 }}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium uppercase focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
-                placeholder="Placa (ABC123)"
+                endContent={
+                  <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
+                    Placa
+                  </span>
+                }
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
-                Placa
-              </span>
+              {plate.startsWith("NP-") && (
+                <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                  Esta placa corresponde a un ingreso sin placa. Use el número de ticket para buscar.
+                </p>
+              )}
             </div>
           </div>
-          <div className="mt-3">
-            <button
-              type="button"
-              data-testid="search-session"
-              onClick={lookup}
-              disabled={searching || processing}
-              className="w-full sm:w-auto rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white px-6 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-            >
-              {searching ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Buscando...
-                </>
-              ) : (
-                <>
+          <div className="mt-4">
+            <Input
+              label="Código de convenio (opcional)"
+              placeholder="CONV-123"
+              variant="flat"
+              value={agreementCode}
+              onValueChange={setAgreementCode}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleLookupClick();
+                }
+              }}
+              classNames={{
+                input: "uppercase font-mono",
+              }}
+            />
+          </div>
+          <div className="mt-4">
+            <Button
+              color="primary"
+              className="font-bold w-full sm:w-auto"
+              onPress={handleLookupClick}
+              isLoading={searching}
+              isDisabled={processing}
+              startContent={
+                !searching && (
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
@@ -1028,23 +1053,27 @@ export default function SalidaCobroPage() {
           </div>
 
           {active && selectedPaymentMethod === "CASH" ? (
-            <div className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50 p-3 space-y-3">
+            <div className="mt-5 rounded-xl border border-emerald-200/80 bg-emerald-50/90 dark:border-emerald-800/50 dark:bg-emerald-950/30 p-3 space-y-3">
               <Input
                 label="Recibido en efectivo"
-                variant="flat"
+                variant="bordered"
                 type="number"
                 value={cashReceived}
                 onValueChange={setCashReceived}
                 placeholder={String(totalDue)}
               />
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-lg bg-white p-3 border border-emerald-100">
-                  <p className="text-xs uppercase text-slate-500">Cambio</p>
-                  <p className="text-lg font-bold text-emerald-700">${changeDue.toLocaleString("es-CO")}</p>
+                <div className="rounded-lg bg-white dark:bg-neutral-950 p-3 border border-emerald-200/80 dark:border-emerald-800/50">
+                  <p className="text-xs uppercase text-slate-500 dark:text-neutral-400">Cambio</p>
+                  <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                    ${changeDue.toLocaleString("es-CO")}
+                  </p>
                 </div>
-                <div className="rounded-lg bg-white p-3 border border-emerald-100">
-                  <p className="text-xs uppercase text-slate-500">Vuelto</p>
-                  <p className="text-lg font-bold text-emerald-700">${changeDue.toLocaleString("es-CO")}</p>
+                <div className="rounded-lg bg-white dark:bg-neutral-950 p-3 border border-emerald-200/80 dark:border-emerald-800/50">
+                  <p className="text-xs uppercase text-slate-500 dark:text-neutral-400">Vuelto</p>
+                  <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                    ${changeDue.toLocaleString("es-CO")}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1119,8 +1148,8 @@ export default function SalidaCobroPage() {
 
               <div className={`rounded-lg p-3 text-sm font-semibold ${
                 Math.abs(splitTotal - totalDue) <= 0.009
-                  ? "bg-white text-emerald-700 border border-emerald-100"
-                  : "bg-white text-amber-700 border border-amber-100"
+                  ? "bg-white dark:bg-neutral-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50"
+                  : "bg-white dark:bg-neutral-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50"
               }`}>
                 {Math.abs(splitTotal - totalDue) <= 0.009
                   ? "Pago dividido completo"
@@ -1128,13 +1157,17 @@ export default function SalidaCobroPage() {
               </div>
               {splitCashReceived > totalDue ? (
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="rounded-lg bg-white p-3 border border-teal-100">
-                    <p className="text-xs uppercase text-slate-500">Cambio</p>
-                    <p className="text-lg font-bold text-emerald-700">${changeDue.toLocaleString("es-CO")}</p>
+                  <div className="rounded-lg bg-white dark:bg-neutral-950 p-3 border border-teal-200 dark:border-teal-800/50">
+                    <p className="text-xs uppercase text-slate-500 dark:text-neutral-400">Cambio</p>
+                    <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                      ${changeDue.toLocaleString("es-CO")}
+                    </p>
                   </div>
-                  <div className="rounded-lg bg-white p-3 border border-teal-100">
-                    <p className="text-xs uppercase text-slate-500">Vuelto</p>
-                    <p className="text-lg font-bold text-emerald-700">${changeDue.toLocaleString("es-CO")}</p>
+                  <div className="rounded-lg bg-white dark:bg-neutral-950 p-3 border border-teal-200 dark:border-teal-800/50">
+                    <p className="text-xs uppercase text-slate-500 dark:text-neutral-400">Vuelto</p>
+                    <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                      ${changeDue.toLocaleString("es-CO")}
+                    </p>
                   </div>
                 </div>
               ) : null}
@@ -1142,8 +1175,10 @@ export default function SalidaCobroPage() {
           ) : null}
 
           <Button
-            className="mt-5 h-14 w-full font-bold bg-slate-900 text-white"
-            isDisabled={!active || searching || processing}
+            color="primary"
+            size="lg"
+            className="mt-5 h-14 w-full font-bold shadow-md"
+            isDisabled={!active || searching || processing || !!printWarning}
             isLoading={processing}
             onPress={() => processExit()}
           >

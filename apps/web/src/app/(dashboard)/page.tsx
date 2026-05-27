@@ -179,7 +179,7 @@ export default function DashboardPage() {
           variant="flat"
           color="primary"
           size="sm"
-          onPress={() => void load()}
+          onPress={() => { load().catch(console.error); }}
           className="font-semibold"
         >
           Actualizar datos
@@ -222,8 +222,8 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex gap-3 mb-6">
-            <Button size="sm" variant="flat" color="primary" onPress={() => void callOperationalAction("retry-sync")}>Reintentar Sync</Button>
-            <Button size="sm" variant="flat" color="primary" onPress={() => void callOperationalAction("test-printer")}>Probar Impresora</Button>
+            <Button size="sm" variant="flat" color="primary" onPress={() => { callOperationalAction("retry-sync").catch(console.error); }}>Reintentar Sync</Button>
+            <Button size="sm" variant="flat" color="primary" onPress={() => { callOperationalAction("test-printer").catch(console.error); }}>Probar Impresora</Button>
           </div>
 
           <DataTable
