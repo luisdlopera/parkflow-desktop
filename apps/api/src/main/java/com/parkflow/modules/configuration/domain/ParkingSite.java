@@ -10,7 +10,10 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "parking_sites")
+@Table(name = "parking_sites",
+    uniqueConstraints = @UniqueConstraint(
+        name = "parking_sites_company_code_key",
+        columnNames = {"company_id", "code"}))
 public class ParkingSite {
 
   @Id
@@ -21,7 +24,7 @@ public class ParkingSite {
   @JoinColumn(name = "company_id", nullable = false)
   private Company company;
 
-  @Column(nullable = false, unique = true, length = 20)
+  @Column(nullable = false, length = 20)
   private String code;
 
   @Column(nullable = false, length = 120)

@@ -16,7 +16,11 @@ export const vehicleEntrySchema = z.object({
   observations: z.string().optional().default(""),
   vehicleCondition: z.string().min(3, "Describe el estado del vehiculo"),
   conditionChecklist: z.string().optional().default(""),
-  conditionPhotoUrls: z.string().optional().default("")
+  conditionPhotoUrls: z.string().optional().default(""),
+  helmetDelivered: z.boolean().default(false),
+  helmetIdentifier: z.string().optional().default(""),
+  helmetObservations: z.string().optional().default(""),
+  helmetPhotoUrl: z.string().optional().default("")
 }).superRefine((data, ctx) => {
   if (data.noPlate) {
     if (!data.noPlateReason?.trim()) {
@@ -62,6 +66,14 @@ export const vehicleEntrySchema = z.object({
       code: z.ZodIssueCode.custom,
       message: result.errorMessage,
       path: ["plate"]
+    });
+  }
+}).superRefine((data, ctx) => {
+  if (data.type === "MOTORCYCLE" && data.helmetDelivered && !data.helmetIdentifier?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Número de casco obligatorio cuando se entrega casco",
+      path: ["helmetIdentifier"]
     });
   }
 });

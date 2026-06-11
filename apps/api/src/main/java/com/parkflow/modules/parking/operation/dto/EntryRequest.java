@@ -29,4 +29,59 @@ public record EntryRequest(
     @Size(max = 500) String entryImageUrl,
     @Size(max = 200) String vehicleCondition,
     List<@Size(max = 100) String> conditionChecklist,
-    List<@Size(max = 500) String> conditionPhotoUrls) {}
+    List<@Size(max = 500) String> conditionPhotoUrls,
+    // Custodied item (helmet) fields for motorcycle entries
+    Boolean helmetDelivered,
+    @Size(max = 100) String helmetIdentifier,
+    @Size(max = 500) String helmetObservations,
+    @Size(max = 500) String helmetPhotoUrl) {
+
+  public EntryRequest(
+      String idempotencyKey,
+      String plate,
+      String type,
+      String countryCode,
+      EntryMode entryMode,
+      Boolean noPlate,
+      String noPlateReason,
+      UUID rateId,
+      UUID operatorUserId,
+      OffsetDateTime entryAt,
+      String site,
+      String lane,
+      String booth,
+      String terminal,
+      UUID parkingSpaceId,
+      String observations,
+      String entryImageUrl,
+      String vehicleCondition,
+      List<String> conditionChecklist,
+      List<String> conditionPhotoUrls) {
+    this(
+        idempotencyKey,
+        plate,
+        type,
+        countryCode,
+        entryMode,
+        noPlate,
+        noPlateReason,
+        rateId,
+        operatorUserId,
+        entryAt,
+        site,
+        lane,
+        booth,
+        terminal,
+        parkingSpaceId,
+        observations,
+        entryImageUrl,
+        vehicleCondition,
+        conditionChecklist,
+        conditionPhotoUrls,
+        false, // helmetDelivered
+        null,  // helmetIdentifier
+        null,  // helmetObservations
+        null   // helmetPhotoUrl
+    );
+  }
+}

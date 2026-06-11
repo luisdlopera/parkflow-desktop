@@ -48,7 +48,7 @@ public class ParkingSiteManagementService implements ParkingSiteUseCase {
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Empresa no encontrada"));
     String code = req.code().trim().toUpperCase();
 
-    if (parkingSiteRepository.existsByCode(code)) {
+    if (parkingSiteRepository.existsByCodeAndCompany_Id(code, companyId)) {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe una sede con este código");
     }
 
@@ -81,7 +81,7 @@ public class ParkingSiteManagementService implements ParkingSiteUseCase {
     ParkingSite site = findById(id);
     String code = req.code().trim().toUpperCase();
 
-    if (!site.getCode().equalsIgnoreCase(code) && parkingSiteRepository.existsByCode(code)) {
+    if (!site.getCode().equalsIgnoreCase(code) && parkingSiteRepository.existsByCodeAndCompany_Id(code, site.getCompany().getId())) {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe una sede con este código");
     }
 

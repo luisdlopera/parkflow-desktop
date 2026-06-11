@@ -14,7 +14,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.audit.service.AuditService;
 
 @SpringBootTest

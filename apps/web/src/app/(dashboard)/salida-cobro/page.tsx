@@ -37,6 +37,18 @@ import {
 import { toUserMessageFromClientValidation, validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 
+type CustodiedItemInfo = {
+  id: string;
+  itemType: string;
+  identifier?: string | null;
+  status: string;
+  observations?: string | null;
+  receivedByName?: string | null;
+  receivedAt?: string | null;
+  returnedByName?: string | null;
+  returnedAt?: string | null;
+};
+
 type ActiveLookup = {
   sessionId: string;
   subtotal?: number | string | null;
@@ -63,6 +75,7 @@ type ActiveLookup = {
     monthlySession?: boolean;
     agreementCode?: string | null;
     prepaidMinutes?: number | null;
+    custodiedItems?: CustodiedItemInfo[];
   };
 };
 
@@ -222,6 +235,8 @@ export default function SalidaCobroPage() {
     { id: "split-2", method: "NEQUI", amount: "" }
   ]);
   const [cashReceived, setCashReceived] = useState("");
+  const [pendingCustodiedItems, setPendingCustodiedItems] = useState<CustodiedItemInfo[]>([]);
+  const [returnConfirmedIds, setReturnConfirmedIds] = useState<string[]>([]);
   const operationLock = useRef(false);
   const reprintLock = useRef(false);
   const ticketInputRef = useRef<HTMLInputElement>(null);
@@ -333,6 +348,11 @@ export default function SalidaCobroPage() {
       if (payload.receipt.agreementCode) {
         setAgreementCode(payload.receipt.agreementCode);
       }
+      const pending = (payload.receipt.custodiedItems ?? []).filter(
+        (item: CustodiedItemInfo) => item.status === "RECEIVED"
+      );
+      setPendingCustodiedItems(pending);
+      setReturnConfirmedIds(pending.map((item: CustodiedItemInfo) => item.id));
       playSuccess();
     } catch {
       setError("Error de red buscando sesion");
@@ -422,7 +442,9 @@ export default function SalidaCobroPage() {
           .split(",")
           .map((item) => item.trim())
           .filter(Boolean),
-        agreementCode: agreementCode.trim() || null
+        agreementCode: agreementCode.trim() || null,
+        returnedItemIds: pendingCustodiedItems.length > 0 ? returnConfirmedIds : undefined,
+        custodiedItemObservations: pendingCustodiedItems.length > 0 ? "Devuelto en salida" : null
       });
 
       const response = await fetch(`${apiBase}/exits`, {
@@ -531,7 +553,7 @@ export default function SalidaCobroPage() {
       setProcessing(false);
       operationLock.current = false;
     }
-  }, [active, apiBase, selectedPaymentMethod, splitPayments, splitTotal, totalDue, singleCashReceived, paymentObservation, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, playSuccess, playError, toastSuccess, toastError]);
+  }, [active, apiBase, selectedPaymentMethod, splitPayments, splitTotal, totalDue, singleCashReceived, paymentObservation, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, playSuccess, playError, toastSuccess, toastError, pendingCustodiedItems.length, printWarning, returnConfirmedIds]);
 
   // Keyboard shortcuts - definido después de processExit
   useExitShortcuts({
@@ -938,6 +960,43 @@ export default function SalidaCobroPage() {
                     <span className="font-medium ml-1">{active.receipt.reprintCount}</span>
                   </div>
                 </div>
+
+                {/* Custodied items alert */}
+                {pendingCustodiedItems.length > 0 && (
+                  <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="text-sm">
+                        <p className="font-semibold text-amber-800">Elementos custodiados pendientes de devolución</p>
+                        {pendingCustodiedItems.map((item) => (
+                          <div key={item.id} className="mt-2 flex items-start gap-2">
+                            <input
+                              type="checkbox"
+                              checked={returnConfirmedIds.includes(item.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setReturnConfirmedIds((prev) => [...prev, item.id]);
+                                } else {
+                                  setReturnConfirmedIds((prev) => prev.filter((id) => id !== item.id));
+                                }
+                              }}
+                              className="mt-1 rounded border-amber-300"
+                            />
+                            <div>
+                              <p className="font-medium text-amber-900">
+                                {item.itemType === "HELMET" ? "Casco" : item.itemType} {item.identifier ? `#${item.identifier}` : ""}
+                              </p>
+                              {item.observations && <p className="text-amber-700 text-xs">{item.observations}</p>}
+                              <p className="text-amber-600 text-xs">Recibido por {item.receivedByName ?? "N/A"} — {item.receivedAt ? new Date(item.receivedAt).toLocaleString("es-CO") : ""}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4">

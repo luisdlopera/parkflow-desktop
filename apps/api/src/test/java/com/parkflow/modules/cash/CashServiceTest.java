@@ -9,7 +9,6 @@ import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.cash.application.service.CashMovementManagementService;
 import com.parkflow.modules.cash.application.service.CashSessionManagementService;
 import com.parkflow.modules.cash.domain.*;
-import com.parkflow.modules.cash.domain.exception.CashSessionException;
 import com.parkflow.modules.cash.dto.*;
 import com.parkflow.modules.cash.repository.*;
 import com.parkflow.modules.cash.service.CashClosingOutboundNotifier;

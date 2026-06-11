@@ -24,6 +24,9 @@ export type PrinterProfileDescriptor = PrintStationConfig;
 
 export type VehicleType = "CAR" | "MOTORCYCLE" | "BICYCLE" | "VAN" | "TRUCK" | "BUS" | "ELECTRIC" | "OTHER";
 
+export type CustodiedItemType = "HELMET" | "JACKET" | "KEYS" | "ACCESSORY" | "OTHER";
+export type CustodiedItemStatus = "RECEIVED" | "RETURNED" | "CANCELED";
+
 export type PrintDocumentType =
   | "ENTRY"
   | "EXIT"

@@ -189,7 +189,8 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
   private Optional<OperationalParameter> resolveOperationalParameter(ParkingSession session) {
     String siteKey = session.getSite();
     if (siteKey == null || siteKey.isBlank()) return Optional.empty();
-    return parkingSiteRepository.findByCode(siteKey.trim())
+    UUID companyId = SecurityUtils.requireCompanyId();
+    return parkingSiteRepository.findByCodeAndCompanyId(siteKey.trim(), companyId)
         .or(() -> parkingSiteRepository.findByNameIgnoreCase(siteKey.trim()))
         .flatMap(site -> operationalParameterRepository.findBySite_Id(site.getId()));
   }
@@ -243,7 +244,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
         session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
-        null, null, null);
+        null, null, null, null);
   }
 
   private String blankToNull(String s) { return s == null || s.isBlank() ? null : s.trim(); }

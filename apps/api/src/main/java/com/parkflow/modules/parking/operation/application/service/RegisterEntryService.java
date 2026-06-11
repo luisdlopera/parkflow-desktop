@@ -1,4 +1,5 @@
 package com.parkflow.modules.parking.operation.application.service;
+import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
@@ -49,6 +50,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private final PlateValidator plateValidator;
   private final MonthlyContractRepository monthlyContractRepository;
   private final ParkingSpaceService parkingSpaceService;
+  private final CustodiedItemPort custodiedItemRepository;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
 
@@ -157,6 +159,8 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     saveVehicleCondition(session, ConditionStage.ENTRY, request.vehicleCondition(),
         request.conditionChecklist(), request.conditionPhotoUrls(), operator);
 
+    saveCustodiedItem(session, request, operator);
+
     operationAuditService.recordEvent(session, SessionEventType.ENTRY_RECORDED, operator, "Ingreso registrado");
     
     com.parkflow.modules.parking.spaces.domain.ParkingSpace assignedSpace = null;
@@ -231,6 +235,22 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     vehicleConditionReportRepository.save(report);
   }
 
+  private void saveCustodiedItem(ParkingSession session, EntryRequest request, AppUser operator) {
+    if (!Boolean.TRUE.equals(request.helmetDelivered())) return;
+    CustodiedItem item = CustodiedItem.builder()
+        .session(session)
+        .itemType(CustodiedItemType.HELMET)
+        .identifier(blankToNull(request.helmetIdentifier()))
+        .status(CustodiedItemStatus.RECEIVED)
+        .observations(blankToNull(request.helmetObservations()))
+        .photoUrl(blankToNull(request.helmetPhotoUrl()))
+        .receivedBy(operator)
+        .receivedAt(OffsetDateTime.now())
+        .companyId(SecurityUtils.requireCompanyId())
+        .build();
+    custodiedItemRepository.save(item);
+  }
+
   private Optional<OperationResultResponse> tryReplay(String key, IdempotentOperationType type) {
     if (isBlank(key)) return Optional.empty();
     return operationIdempotencyRepository.findByIdempotencyKey(key)
@@ -266,7 +286,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private void assertParkingCapacityAvailable(String site, UUID companyId) {
     if (isBlank(site)) return;
     UUID cid = companyId;
-    parkingSiteRepository.findByCodeOrNameForUpdate(site.trim())
+    parkingSiteRepository.findByCodeOrNameForUpdate(site.trim(), cid)
         .ifPresent(parkingSite -> {
           if (!parkingSite.isActive()) {
             throw new OperationException(HttpStatus.BAD_REQUEST, "La sede está inactiva");
@@ -286,6 +306,15 @@ public class RegisterEntryService implements RegisterEntryUseCase {
 
   private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration,
       com.parkflow.modules.parking.spaces.domain.ParkingSpace space) {
+    List<CustodiedItemResponse> items = custodiedItemRepository.findBySession(session).stream()
+        .map(item -> new CustodiedItemResponse(
+            item.getId(), item.getSession().getId(), item.getItemType(), item.getIdentifier(),
+            item.getStatus(), item.getObservations(), item.getPhotoUrl(),
+            item.getReceivedBy() != null ? item.getReceivedBy().getName() : null,
+            item.getReceivedAt(),
+            item.getReturnedBy() != null ? item.getReturnedBy().getName() : null,
+            item.getReturnedAt()))
+        .toList();
     return new ReceiptResponse(
         session.getTicketNumber(),
         session.getPlate(),
@@ -314,7 +343,8 @@ public class RegisterEntryService implements RegisterEntryUseCase {
         0,
         space != null ? space.getId() : null,
         space != null ? space.getCode() : null,
-        space != null ? space.getLabel() : null);
+        space != null ? space.getLabel() : null,
+        items);
   }
 
   private String normalizeCountryCode(String code) {

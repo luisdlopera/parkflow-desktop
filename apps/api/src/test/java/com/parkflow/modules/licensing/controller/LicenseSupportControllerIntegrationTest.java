@@ -13,7 +13,6 @@ import com.parkflow.modules.licensing.dto.LicenseDiagnosticsResponse;
 import com.parkflow.modules.licensing.enums.CompanyStatus;
 import com.parkflow.modules.licensing.enums.PlanType;
 import com.parkflow.modules.licensing.domain.repository.LicenseBlockEventPort;
-import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.audit.service.AuditService;
 import com.parkflow.modules.licensing.application.service.LicenseAuditService;
 import java.util.List;

@@ -34,7 +34,11 @@ export const operationEntryRequestSchema = z.object({
   observations: z.string().max(500).nullable().optional(),
   vehicleCondition: z.string().max(200).nullable().optional(),
   conditionChecklist: z.array(z.string().max(100)).optional(),
-  conditionPhotoUrls: z.array(z.string().max(500)).optional()
+  conditionPhotoUrls: z.array(z.string().max(500)).optional(),
+  helmetDelivered: z.boolean().optional(),
+  helmetIdentifier: z.string().max(100).nullable().optional(),
+  helmetObservations: z.string().max(500).nullable().optional(),
+  helmetPhotoUrl: z.string().max(500).nullable().optional()
 }).refine((v) => Boolean(v.noPlate) || Boolean(v.plate?.trim()), {
   message: "Placa obligatoria salvo ingreso especial sin placa",
   path: ["plate"]
@@ -52,7 +56,9 @@ export const operationExitRequestSchema = z
     observations: z.string().max(500).optional().nullable(),
     vehicleCondition: z.string().max(200).nullable().optional(),
     conditionChecklist: z.array(z.string().max(100)).optional(),
-    conditionPhotoUrls: z.array(z.string().max(500)).optional()
+    conditionPhotoUrls: z.array(z.string().max(500)).optional(),
+    returnedItemIds: z.array(z.string().uuid()).optional(),
+    custodiedItemObservations: z.string().max(500).nullable().optional()
   })
   .refine((v) => Boolean(v.ticketNumber?.trim() || v.plate?.trim()), {
     message: "ticketNumber o plate es obligatorio",

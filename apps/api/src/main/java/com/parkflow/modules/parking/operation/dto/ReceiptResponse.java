@@ -5,6 +5,7 @@ import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.domain.SessionSyncStatus;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record ReceiptResponse(
@@ -35,4 +36,5 @@ public record ReceiptResponse(
     Integer prepaidMinutes,
     UUID parkingSpaceId,
     String parkingSpaceCode,
-    String parkingSpaceLabel) {}
+    String parkingSpaceLabel,
+    List<CustodiedItemResponse> custodiedItems) {}

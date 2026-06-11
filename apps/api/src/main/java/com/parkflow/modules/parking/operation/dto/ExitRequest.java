@@ -22,7 +22,10 @@ public record ExitRequest(
     @Size(max = 500) String exitImageUrl,
     @Size(max = 200) String vehicleCondition,
     List<@Size(max = 100) String> conditionChecklist,
-    List<@Size(max = 500) String> conditionPhotoUrls) {
+    List<@Size(max = 500) String> conditionPhotoUrls,
+    // Custodied item (helmet) return fields
+    List<UUID> returnedItemIds,
+    @Size(max = 500) String custodiedItemObservations) {
 
   @AssertTrue(message = "ticketNumber o plate es obligatorio")
   public boolean hasLocator() {
