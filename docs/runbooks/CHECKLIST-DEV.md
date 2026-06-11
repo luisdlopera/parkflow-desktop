@@ -183,10 +183,10 @@ Cuando todo esté verificado, tendrás:
 
 ## 📚 Documentación Adicional
 
-- [README-DEV.md](README-DEV.md) - Guía completa de desarrollo
-- [docs/LICENSING_ARCHITECTURE.md](docs/LICENSING_ARCHITECTURE.md) - Arquitectura técnica
-- [docs/QUICK_SETUP.md](docs/QUICK_SETUP.md) - Setup rápido
-- [docs/SUPPORT_RUNBOOK.md](docs/SUPPORT_RUNBOOK.md) - **Runbook de soporte para bloqueos**
+- [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md) - Guía completa de desarrollo
+- [LICENSING_ARCHITECTURE.md](../LICENSING_ARCHITECTURE.md) - Arquitectura técnica
+- [QUICK_SETUP.md](../QUICK_SETUP.md) - Setup rápido
+- [SUPPORT_RUNBOOK.md](../SUPPORT_RUNBOOK.md) - **Runbook de soporte para bloqueos**
 
 ## 🆘 Soporte y Diagnóstico de Bloqueos (Nuevo)
 
@@ -272,6 +272,6 @@ Si encuentras problemas:
 1. Verificar logs del backend (console)
 2. Verificar logs del desktop (DevTools: Ctrl+Shift+I)
 3. Usar script de diagnóstico: `.\infra\scripts\diagnose-license.ps1`
-4. Revisar [docs/SUPPORT_RUNBOOK.md](docs/SUPPORT_RUNBOOK.md) para casos de bloqueo
-5. Revisar [README-DEV.md#troubleshooting](README-DEV.md#troubleshooting)
+4. Revisar [SUPPORT_RUNBOOK.md](../SUPPORT_RUNBOOK.md) para casos de bloqueo
+5. Revisar [DEVELOPER_GUIDE.md#troubleshooting](../DEVELOPER_GUIDE.md#troubleshooting)
 6. Crear issue en GitHub con logs y pasos para reproducir
