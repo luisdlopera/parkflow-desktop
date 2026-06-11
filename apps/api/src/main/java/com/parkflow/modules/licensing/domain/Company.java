@@ -163,6 +163,10 @@ public class Company {
   @Column(nullable = false, length = 20)
   private OperationMode operationMode = OperationMode.OFFLINE;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 30)
+  private OperationalProfile operationalProfile = OperationalProfile.MIXED;
+
   /**
    * Indica si permite sincronización de datos.
    */

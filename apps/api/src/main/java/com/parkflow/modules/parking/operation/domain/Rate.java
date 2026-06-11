@@ -1,7 +1,9 @@
 package com.parkflow.modules.parking.operation.domain;
 
 import jakarta.persistence.*;
-import com.parkflow.modules.configuration.entity.ParkingSite;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.RateFraction;
+import com.parkflow.modules.configuration.domain.RoundingMode;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -13,12 +15,15 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Entity
+@Entity(name = "ParkingRate")
 @Table(name = "rate")
 public class Rate {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
+
+  @Column(name = "company_id")
+  private UUID companyId;
 
   @Column(nullable = false)
   private String name;
@@ -131,7 +136,7 @@ public class Rate {
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.LAZY)
-  private List<com.parkflow.modules.configuration.entity.RateFraction> fractions =
+  private List<RateFraction> fractions =
       new ArrayList<>();
 
   // -----------------------------------------------------------------------

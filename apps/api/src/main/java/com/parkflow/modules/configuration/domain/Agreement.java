@@ -1,4 +1,4 @@
-package com.parkflow.modules.configuration.entity;
+package com.parkflow.modules.configuration.domain;
 
 import com.parkflow.modules.parking.operation.domain.Rate;
 import jakarta.persistence.*;
@@ -28,6 +28,9 @@ public class Agreement {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
+
+  @Column(name = "company_id")
+  private UUID companyId;
 
   /** Código único de convenio (se usa en caja para aplicarlo). */
   @Column(nullable = false, unique = true, length = 40)

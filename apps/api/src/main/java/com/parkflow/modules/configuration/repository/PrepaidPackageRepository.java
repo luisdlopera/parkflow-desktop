@@ -1,6 +1,6 @@
 package com.parkflow.modules.configuration.repository;
 
-import com.parkflow.modules.configuration.entity.PrepaidPackage;
+import com.parkflow.modules.configuration.domain.PrepaidPackage;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

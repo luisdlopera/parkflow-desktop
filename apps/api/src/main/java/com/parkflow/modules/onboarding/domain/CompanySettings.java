@@ -25,7 +25,7 @@ public class CompanySettings {
   private Company company;
 
   @JdbcTypeCode(SqlTypes.JSON)
-  @Column(name = "settings_json", nullable = false, columnDefinition = "jsonb")
+  @Column(name = "settings_json", nullable = false)
   private Map<String, Object> settingsJson;
 
   @Column(nullable = false)

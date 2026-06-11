@@ -1,7 +1,6 @@
 package com.parkflow.modules.configuration.domain;
 
 import jakarta.persistence.*;
-import com.parkflow.modules.configuration.domain.ParkingSite;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -13,7 +12,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Entity
+@Entity(name = "ConfigRate")
 @Table(name = "rate")
 public class Rate {
   @Id

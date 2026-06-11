@@ -28,11 +28,11 @@ public class CompanySettingsSnapshot {
   private int version;
 
   @JdbcTypeCode(SqlTypes.JSON)
-  @Column(name = "settings_json", nullable = false, columnDefinition = "jsonb")
+  @Column(name = "settings_json", nullable = false)
   private Map<String, Object> settingsJson;
 
   @JdbcTypeCode(SqlTypes.JSON)
-  @Column(name = "progress_data", nullable = false, columnDefinition = "jsonb")
+  @Column(name = "progress_data", nullable = false)
   private Map<String, Object> progressData;
 
   @Column(nullable = false)

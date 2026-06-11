@@ -15,6 +15,9 @@ public class Vehicle {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
+  @Column(name = "company_id", nullable = false)
+  private UUID companyId;
+
   @Column(nullable = false, unique = true, length = 20)
   private String plate;
 

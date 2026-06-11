@@ -1,8 +1,8 @@
 package com.parkflow.modules.tickets.repository;
 
-import com.parkflow.modules.tickets.entity.PrintDocumentType;
-import com.parkflow.modules.tickets.entity.PrintJob;
-import com.parkflow.modules.tickets.entity.PrintJobStatus;
+import com.parkflow.modules.tickets.domain.PrintDocumentType;
+import com.parkflow.modules.tickets.domain.PrintJob;
+import com.parkflow.modules.tickets.domain.PrintJobStatus;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;

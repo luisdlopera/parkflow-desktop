@@ -1,7 +1,7 @@
 package com.parkflow.modules.settings.application.mapper;
 
-import com.parkflow.modules.configuration.domain.Rate;
-import com.parkflow.modules.configuration.domain.RateCategory;
+import com.parkflow.modules.parking.operation.domain.Rate;
+import com.parkflow.modules.parking.operation.domain.RateCategory;
 import com.parkflow.modules.configuration.domain.RoundingMode;
 import com.parkflow.modules.settings.dto.RateResponse;
 import com.parkflow.modules.settings.dto.RateUpsertRequest;

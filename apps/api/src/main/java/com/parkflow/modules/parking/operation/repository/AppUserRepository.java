@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.operation.repository;
 
-import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.domain.UserRole;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.UserRole;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;

@@ -1,6 +1,6 @@
 package com.parkflow.modules.configuration.repository;
 
-import com.parkflow.modules.configuration.entity.ParkingSite;
+import com.parkflow.modules.configuration.domain.ParkingSite;
 import java.util.Optional;
 import java.util.UUID;
 import jakarta.persistence.LockModeType;

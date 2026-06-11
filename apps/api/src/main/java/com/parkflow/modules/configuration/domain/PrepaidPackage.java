@@ -1,4 +1,4 @@
-package com.parkflow.modules.configuration.entity;
+package com.parkflow.modules.configuration.domain;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -25,6 +25,9 @@ public class PrepaidPackage {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
+
+  @Column(name = "company_id")
+  private UUID companyId;
 
   @Column(nullable = false, length = 120)
   private String name;

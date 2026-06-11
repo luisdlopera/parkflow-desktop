@@ -2,7 +2,7 @@ package com.parkflow.modules.settings.dto;
 
 import com.parkflow.modules.parking.operation.domain.RateCategory;
 import com.parkflow.modules.parking.operation.domain.RateType;
-import com.parkflow.modules.parking.operation.domain.RoundingMode;
+import com.parkflow.modules.configuration.domain.RoundingMode;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;

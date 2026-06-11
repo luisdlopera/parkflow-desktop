@@ -1,6 +1,6 @@
 package com.parkflow.modules.configuration.repository;
 
-import com.parkflow.modules.configuration.entity.Agreement;
+import com.parkflow.modules.configuration.domain.Agreement;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;

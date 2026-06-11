@@ -38,7 +38,7 @@ public class OnboardingProgress {
   private OffsetDateTime skippedAt;
 
   @JdbcTypeCode(SqlTypes.JSON)
-  @Column(name = "progress_data", nullable = false, columnDefinition = "jsonb")
+  @Column(name = "progress_data", nullable = false)
   private Map<String, Object> progressData;
 
   @Column(nullable = false)
