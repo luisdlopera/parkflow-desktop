@@ -1,25 +1,25 @@
 package com.parkflow.modules.licensing.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.licensing.entity.Company;
-import com.parkflow.modules.licensing.repository.CompanyModuleRepository;
-import com.parkflow.modules.licensing.repository.CompanyRepository;
-import com.parkflow.modules.licensing.repository.LicenseAuditLogRepository;
-import com.parkflow.modules.licensing.repository.LicenseBlockEventRepository;
-import com.parkflow.modules.licensing.repository.LicensedDeviceRepository;
-import com.parkflow.modules.licensing.service.LicenseService;
+import com.parkflow.modules.audit.application.port.out.AuditPort;
+import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.licensing.domain.repository.CompanyModulePort;
+import com.parkflow.modules.licensing.domain.repository.CompanyPort;
+import com.parkflow.modules.licensing.domain.repository.LicenseAuditLogPort;
+import com.parkflow.modules.licensing.domain.repository.LicenseBlockEventPort;
+import com.parkflow.modules.licensing.domain.repository.LicensedDevicePort;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -30,14 +30,14 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("test")
 class LicensingControllerIntegrationTest {
 
+  @MockBean private AuditService auditService;
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
-  @Autowired private CompanyRepository companyRepository;
-  @Autowired private CompanyModuleRepository moduleRepository;
-  @Autowired private LicensedDeviceRepository deviceRepository;
-  @Autowired private LicenseAuditLogRepository auditLogRepository;
-  @Autowired private LicenseBlockEventRepository blockEventRepository;
-  @Autowired private LicenseService licenseService;
+  @Autowired private CompanyPort companyRepository;
+  @Autowired private CompanyModulePort moduleRepository;
+  @Autowired private LicensedDevicePort deviceRepository;
+  @Autowired private LicenseAuditLogPort auditLogRepository;
+  @Autowired private LicenseBlockEventPort blockEventRepository;
 
   @BeforeEach
   void clean() {

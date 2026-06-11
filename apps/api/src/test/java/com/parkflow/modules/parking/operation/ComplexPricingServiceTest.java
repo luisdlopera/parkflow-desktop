@@ -13,7 +13,8 @@ import com.parkflow.modules.configuration.domain.repository.MonthlyContractPort;
 import com.parkflow.modules.configuration.domain.repository.PrepaidBalancePort;
 import com.parkflow.modules.parking.operation.application.service.ComplexPricingService;
 import com.parkflow.modules.parking.operation.domain.*;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.configuration.domain.RoundingMode;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.parking.operation.domain.pricing.PricingCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -262,17 +263,18 @@ class ComplexPricingServiceTest {
   // -----------------------------------------------------------------------
 
   private ParkingSession session(Rate rate) {
-    ParkingSession s = new ParkingSession();
-    s.setId(UUID.randomUUID());
-    s.setPlate("ABC123");
-    s.setCompanyId(UUID.randomUUID());
-    s.setEntryAt(OffsetDateTime.now().minusMinutes(60));
-    s.setEntryMode(EntryMode.VISITOR);
     Vehicle v = new Vehicle();
     v.setPlate("ABC123");
     v.setType("CAR");
-    s.setVehicle(v);
-    s.setRate(rate);
+    ParkingSession s = ParkingSession.builder()
+        .id(UUID.randomUUID())
+        .plate("ABC123")
+        .companyId(UUID.randomUUID())
+        .entryAt(OffsetDateTime.now().minusMinutes(60))
+        .entryMode(EntryMode.VISITOR)
+        .vehicle(v)
+        .rate(rate)
+        .build();
     return s;
   }
 
