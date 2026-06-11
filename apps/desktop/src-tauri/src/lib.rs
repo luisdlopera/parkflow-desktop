@@ -243,7 +243,15 @@ fn sqlite_path() -> Result<std::path::PathBuf, String> {
 
 fn init_local_db() -> Result<Connection, String> {
   let db_path = sqlite_path()?;
-  init_local_db_with_path(&db_path)
+  match init_local_db_with_path(&db_path) {
+    Ok(conn) => Ok(conn),
+    Err(err) if err.contains("file is not a database") || err.contains("corrupt") => {
+      tracing::error!("Local database is corrupt: {}. Quarantining and creating fresh database.", err);
+      quarantine_corrupt_db(&db_path)?;
+      init_local_db_with_path(&db_path)
+    }
+    Err(err) => Err(err),
+  }
 }
 
 fn init_local_db_with_path(db_path: &Path) -> Result<Connection, String> {
@@ -383,6 +391,16 @@ fn compute_retry_delay_ms(retry_count: i32) -> i64 {
 #[tauri::command]
 fn ping() -> String {
   "pong".to_string()
+}
+
+#[tauri::command]
+async fn check_for_updates(app: tauri::AppHandle) -> Result<String, String> {
+  use tauri_plugin_updater::UpdaterExt;
+  match app.updater().map_err(|e| e.to_string())?.check().await {
+    Ok(Some(update)) => Ok(format!("Update available: {}", update.version)),
+    Ok(None) => Ok("No updates available".to_string()),
+    Err(e) => Err(format!("Failed to check for updates: {}", e)),
+  }
 }
 
 #[tauri::command]

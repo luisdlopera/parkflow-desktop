@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { server } from "../mocks/server";
+import type { AuthRole, Permission } from "@parkflow/types";
 
 const authBase = "http://localhost:6011/api/v1/auth";
 
@@ -12,10 +13,11 @@ function sampleLoginResponse(overrides: Record<string, unknown> = {}) {
     tokenType: "Bearer",
     user: {
       id: "user-1",
+      companyId: "company-1",
       name: "Admin",
       email: "admin@parkflow.local",
-      role: "ADMIN",
-      permissions: ["tickets:emitir", "configuracion:leer"],
+      role: "ADMIN" as AuthRole,
+      permissions: ["tickets:emitir", "configuracion:leer"] as Permission[],
       active: true,
       passwordChangedAtIso: null
     },
@@ -49,6 +51,7 @@ async function importAuth() {
 
 beforeEach(() => {
   window.localStorage.clear();
+  vi.stubEnv("NEXT_PUBLIC_API_KEY", "dev-api-key-123");
 });
 
 describe("auth client", () => {
@@ -79,7 +82,7 @@ describe("auth client", () => {
       offlineRequestedHours: 48
     });
 
-    expect(requestHeaders?.get("X-API-Key")).toBe("dev-api-key-123");
+    expect(requestHeaders!.get("X-API-Key")).toBe("dev-api-key-123");
     expect(session.accessToken).toBe("access-token");
     expect(await loadSession()).toEqual(session);
     expect(await currentUser()).toEqual(session.user);

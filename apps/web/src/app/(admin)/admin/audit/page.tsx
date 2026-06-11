@@ -290,11 +290,11 @@ export default function AuditPage() {
           },
           { key: "createdAt", label: "Fecha", type: "dateRange" },
         ]}
-        onFilterChange={(values) => {
+        onFilterChange={(values: Record<string, string>) => {
           setActionFilter(values.action ?? "");
           setDateRange({
-            start: values.createdAt?.from,
-            end: values.createdAt?.to,
+            start: values.createdAt ?? "",
+            end: values.createdAt ?? "",
           });
           setPage(1);
         }}
@@ -302,8 +302,8 @@ export default function AuditPage() {
           page,
           pageSize: 20,
           total: totalPages * 20,
-          onPageChange: setPage,
         }}
+        onPaginationChange={(p: number) => setPage(p)}
         actions={(log) => (
           <Button
             isIconOnly

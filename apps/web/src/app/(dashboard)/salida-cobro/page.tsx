@@ -228,6 +228,8 @@ export default function SalidaCobroPage() {
   const { playSuccess, playError } = useOperationSounds();
   const { success: toastSuccess, error: toastError } = useToast();
   const [reprintLoading, setReprintLoading] = useState(false);
+  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
+  const [printWarning, setPrintWarning] = useState<{ ticketNumber: string; plate: string; previewLines: string[] } | null>(null);
   const autoLookupDone = useRef(false);
 
   // Auto-focus en campo de ticket al cargar
@@ -755,13 +757,7 @@ export default function SalidaCobroPage() {
             }, 100);
           }}
           reprintLoading={reprintLoading}
-          title="Salida registrada, pero falta comprobante"
-          subtitle="Impresion no confirmada. Reintente o entregue copia manual."
-          confirmLabel="Confirmar entrega y continuar"
-          downloadLabel="Descargar copia"
-          reprintLabel="Reintentar impresión"
-          showDownload={true}
-          showReprint={true}
+
         />
       ) : null}
       <div>
@@ -1206,10 +1202,11 @@ export default function SalidaCobroPage() {
               type="button"
               disabled={!active || searching || processing}
               onClick={reprintTicket}
-              label="Reimprimir ticket"
-              tone="ghost"
+              variant="light"
               data-testid="reprint-ticket"
-            />
+            >
+              Reimprimir ticket
+            </Button>
             
             <input
               value={lostReason}
@@ -1221,10 +1218,11 @@ export default function SalidaCobroPage() {
               type="button"
               disabled={!active || searching || processing}
               onClick={lostTicket}
-              label="Procesar ticket perdido"
-              tone="ghost"
+              variant="light"
               data-testid="lost-ticket"
-            />
+            >
+              Procesar ticket perdido
+            </Button>
           </div>
         </div>
       </div>

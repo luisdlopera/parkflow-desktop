@@ -2171,13 +2171,13 @@ function vehicleTypeToForm(row: import("@/lib/settings-api").MasterVehicleTypeRo
   };
 }
 
-function MastersSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void; }) {
+function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void; canEdit: boolean; }) {
   const [rows, setRows] = useState<import("@/lib/settings-api").MasterVehicleTypeRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<import("@/lib/settings-api").MasterVehicleTypeRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ code: "", name: "" });
+  const [form, setForm] = useState<{ code: string; name: string; icon: string; color: string; displayOrder: number; requiresPlate: boolean; hasOwnRate: boolean; quickAccess: boolean; requiresPhoto: boolean }>({ code: "", name: "", icon: "", color: "#64748B", displayOrder: 0, requiresPlate: true, hasOwnRate: false, quickAccess: false, requiresPhoto: false });
 
   const load = useCallback(async () => {
     setLoading(true);

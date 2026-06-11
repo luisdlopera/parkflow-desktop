@@ -6,8 +6,6 @@ import { UserMenu } from "@/components/auth/UserMenu";
 
 import { QuickSearch } from "@/modules/search/components/QuickSearch";
 
-import { QuickSearch } from "@/modules/search/components/QuickSearch";
-
 interface HeaderProps {
   onMenuClick?: () => void;
 }

@@ -44,6 +44,8 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   useParkingShortcuts();
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
 
+  const [configExpanded, setConfigExpanded] = useState(false);
+
   const [uiSettings, setUiSettings] = useState<UISettings>({
     showSystemStatus: true,
     showKeyboardShortcuts: true
