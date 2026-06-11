@@ -2,7 +2,6 @@ package com.parkflow.modules.parking.operation.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.any;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.auth.security.AuthPrincipal;
@@ -25,7 +24,7 @@ import com.parkflow.modules.parking.operation.domain.repository.VehicleCondition
 import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 
 import java.time.OffsetDateTime;
-import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,7 +63,7 @@ class RegisterExitServiceTest {
   @BeforeEach
   void setUp() {
     SecurityContextHolder.getContext().setAuthentication(
-        new TestingAuthenticationToken(new AuthPrincipal(UUID.randomUUID(), UUID.randomUUID(), "x", "ADMIN", (Collection)java.util.List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))), null));
+        new TestingAuthenticationToken(new AuthPrincipal(UUID.randomUUID(), UUID.randomUUID(), "x", "ADMIN", List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))), null));
 
     service = new RegisterExitService(
         parkingSessionRepository, paymentRepository, appUserRepository, monthlyContractRepository,
@@ -79,7 +78,6 @@ class RegisterExitServiceTest {
     String key = "idem-exit";
     Vehicle vehicle = new Vehicle();
     vehicle.setType("CAR");
-    var entryAt = java.time.OffsetDateTime.now().minusHours(1);
     ParkingSession session = ParkingSession.builder()
         .id(UUID.randomUUID())
         .ticketNumber("T-200")

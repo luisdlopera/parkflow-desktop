@@ -37,7 +37,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
-import com.parkflow.modules.audit.service.AuditService;
+
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 
 import org.mockito.junit.jupiter.MockitoSettings;

@@ -64,7 +64,7 @@ import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.parking.operation.repository.VehicleRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
-import com.parkflow.modules.audit.service.AuditService;
+
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 
 @ExtendWith(MockitoExtension.class)

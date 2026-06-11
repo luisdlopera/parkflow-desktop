@@ -3,7 +3,7 @@ package com.parkflow.modules.licensing.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.parkflow.modules.licensing.enums.CompanyStatus;
-import com.parkflow.modules.licensing.enums.PlanType;
+
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 
