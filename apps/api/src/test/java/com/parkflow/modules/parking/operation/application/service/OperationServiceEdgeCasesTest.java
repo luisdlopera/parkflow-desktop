@@ -16,6 +16,7 @@ import com.parkflow.modules.parking.operation.repository.ParkingSessionRepositor
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
+import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 import com.parkflow.modules.parking.operation.repository.VehicleRepository;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
@@ -62,6 +63,7 @@ class OperationServiceEdgeCasesTest {
   @Mock private MonthlyContractRepository monthlyContractRepository;
   @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private Counter counter;
+  @Mock private CustodiedItemPort custodiedItemRepository;
 
   private RegisterEntryService registerEntryService;
 
@@ -84,7 +86,7 @@ class OperationServiceEdgeCasesTest {
         parkingSiteRepository, parkingSessionRepository, ticketCounterRepository,
         vehicleConditionReportRepository, operationIdempotencyRepository,
         auditService, operationPrintService,
-        plateValidator, monthlyContractRepository, parkingSpaceService, objectMapper, meterRegistry
+        plateValidator, monthlyContractRepository, parkingSpaceService, custodiedItemRepository, objectMapper, meterRegistry
     );
 
     TenantContext.setTenantId(companyId);

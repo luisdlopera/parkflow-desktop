@@ -7,7 +7,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.parkflow.config.CorrelationIdFilter;
-import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.audit.service.AuditService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

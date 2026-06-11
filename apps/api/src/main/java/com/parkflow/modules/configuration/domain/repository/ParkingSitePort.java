@@ -11,10 +11,10 @@ import java.util.UUID;
  * Puerto de salida para persistencia de sedes de parqueo.
  */
 public interface ParkingSitePort {
-  Optional<ParkingSite> findByCode(String code);
+  Optional<ParkingSite> findByCodeAndCompanyId(String code, UUID companyId);
   Optional<ParkingSite> findByNameIgnoreCase(String name);
-  Optional<ParkingSite> findByCodeOrNameForUpdate(String site);
-  boolean existsByCode(String code);
+  Optional<ParkingSite> findByCodeOrNameForUpdate(String site, UUID companyId);
+  boolean existsByCodeAndCompanyId(String code, UUID companyId);
   Page<ParkingSite> search(UUID companyId, String q, Boolean active, Pageable pageable);
   ParkingSite save(ParkingSite site);
   Optional<ParkingSite> findById(UUID id);

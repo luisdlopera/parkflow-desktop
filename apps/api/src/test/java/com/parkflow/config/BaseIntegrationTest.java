@@ -1,6 +1,4 @@
 package com.parkflow.config;
-import com.parkflow.modules.audit.application.port.out.AuditPort;
-import com.parkflow.modules.audit.service.AuditService;
 import com.parkflow.modules.parking.spaces.repository.ParkingSpaceRepository;
 
 import com.parkflow.modules.cash.domain.CashRegister;

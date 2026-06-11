@@ -3,10 +3,12 @@ package com.parkflow.modules.parking.operation.application.service;
 import com.parkflow.modules.parking.operation.application.port.in.ComplexPricingPort;
 import com.parkflow.modules.parking.operation.application.port.in.GetTicketUseCase;
 import com.parkflow.modules.parking.operation.domain.*;
+import com.parkflow.modules.parking.operation.dto.CustodiedItemResponse;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -22,6 +25,7 @@ public class GetTicketService implements GetTicketUseCase {
 
   private final ParkingSessionPort parkingSessionPort;
   private final ComplexPricingPort complexPricingPort;
+  private final CustodiedItemPort custodiedItemRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -55,6 +59,15 @@ public class GetTicketService implements GetTicketUseCase {
   }
 
   private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
+    List<CustodiedItemResponse> items = custodiedItemRepository.findBySession(session).stream()
+        .map(item -> new CustodiedItemResponse(
+            item.getId(), item.getSession().getId(), item.getItemType(), item.getIdentifier(),
+            item.getStatus(), item.getObservations(), item.getPhotoUrl(),
+            item.getReceivedBy() != null ? item.getReceivedBy().getName() : null,
+            item.getReceivedAt(),
+            item.getReturnedBy() != null ? item.getReturnedBy().getName() : null,
+            item.getReturnedAt()))
+        .toList();
     return new ReceiptResponse(
         session.getTicketNumber(), session.getPlate(),
         session.getVehicle().getType(),
@@ -70,6 +83,6 @@ public class GetTicketService implements GetTicketUseCase {
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
         session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
-        null, null, null);
+        null, null, null, items);
   }
 }

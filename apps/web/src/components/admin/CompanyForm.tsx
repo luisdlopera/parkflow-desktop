@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -56,7 +56,7 @@ export function CompanyForm({ onSubmit, isLoading }: CompanyFormProps) {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(companySchema),
@@ -77,7 +77,7 @@ export function CompanyForm({ onSubmit, isLoading }: CompanyFormProps) {
     },
   });
 
-  const selectedPlan = watch("plan");
+  const selectedPlan = useWatch({ control, name: "plan" });
   const features = getPlanFeatures(selectedPlan);
 
   const onFormSubmit = async (data: FormValues) => {
@@ -235,7 +235,7 @@ export function CompanyForm({ onSubmit, isLoading }: CompanyFormProps) {
 
         <Select
           label="Modo offline permitido"
-          selectedKeys={[watch("offlineModeAllowed") ? "true" : "false"]}
+          selectedKeys={[useWatch({ control, name: "offlineModeAllowed" }) ? "true" : "false"]}
           onSelectionChange={(keys) => {
             const allowed = Array.from(keys)[0] === "true";
             setValue("offlineModeAllowed", allowed);

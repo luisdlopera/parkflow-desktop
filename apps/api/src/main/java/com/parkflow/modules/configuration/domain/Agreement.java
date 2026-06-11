@@ -18,6 +18,9 @@ import lombok.Setter;
 @Entity
 @Table(
     name = "agreement",
+    uniqueConstraints = @UniqueConstraint(
+        name = "agreement_company_code_key",
+        columnNames = {"company_id", "code"}),
     indexes = {
       @Index(name = "idx_agreement_code", columnList = "code"),
       @Index(name = "idx_agreement_active", columnList = "is_active"),
@@ -32,8 +35,8 @@ public class Agreement {
   @Column(name = "company_id")
   private UUID companyId;
 
-  /** Código único de convenio (se usa en caja para aplicarlo). */
-  @Column(nullable = false, unique = true, length = 40)
+  /** Código único de convenio por empresa (se usa en caja para aplicarlo). */
+  @Column(nullable = false, length = 40)
   private String code;
 
   @Column(nullable = false, length = 200)

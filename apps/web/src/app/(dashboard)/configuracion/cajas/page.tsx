@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Input,
@@ -60,7 +60,7 @@ export default function CajasPage() {
     handleSubmit,
     reset,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<CashRegisterSchema>({ resolver: zodResolver(cashRegisterSchema), defaultValues: { site: "DEFAULT", terminal: "", active: true } });
   
@@ -123,7 +123,10 @@ export default function CajasPage() {
   const siteOptions = useMemo(() => sites.map((site) => ({ value: site.id, label: `${site.code} - ${site.name}`, code: site.code })), [sites]);
   const printerOptions = useMemo(() => printers.map((printer) => ({ value: printer.id, label: `${printer.name} (${printer.isDefault ? "Default" : "Secundaria"})` })), [printers]);
   const userOptions = useMemo(() => users.map((user) => ({ value: user.id, label: user.name })), [users]);
-  const currentSite = watch("site");
+  const currentSite = useWatch({ control, name: "site" });
+  const watchSiteId = useWatch({ control, name: "siteId" });
+  const watchPrinterId = useWatch({ control, name: "printerId" });
+  const watchResponsibleUserId = useWatch({ control, name: "responsibleUserId" });
 
   const onSubmit = async (values: CashRegisterSchema) => {
     setError(null);
@@ -224,7 +227,7 @@ export default function CajasPage() {
                 setValue("siteId", id);
                 setValue("site", selected?.code ?? "DEFAULT");
               }}
-              selectedKeys={watch("siteId") ? [watch("siteId") as string] : []}
+              selectedKeys={watchSiteId ? [watchSiteId as string] : []}
             >
               {siteOptions.map((site) => (
                 <SelectItem key={site.value} textValue={site.label}>{site.label}</SelectItem>
@@ -241,7 +244,7 @@ export default function CajasPage() {
             variant="flat"
             placeholder="Sin impresora"
             isDisabled={catalogLoading}
-            selectedKeys={watch("printerId") ? [watch("printerId") as string] : []}
+            selectedKeys={watchPrinterId ? [watchPrinterId as string] : []}
           >
             {printerOptions.map((printer) => (
               <SelectItem key={printer.value} textValue={printer.label}>{printer.label}</SelectItem>
@@ -254,7 +257,7 @@ export default function CajasPage() {
             variant="flat"
             placeholder="Sin responsable"
             isDisabled={catalogLoading}
-            selectedKeys={watch("responsibleUserId") ? [watch("responsibleUserId") as string] : []}
+            selectedKeys={watchResponsibleUserId ? [watchResponsibleUserId as string] : []}
           >
             {userOptions.map((user) => (
               <SelectItem key={user.value} textValue={user.label}>{user.label}</SelectItem>

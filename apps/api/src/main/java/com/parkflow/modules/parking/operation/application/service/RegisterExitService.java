@@ -1,4 +1,5 @@
 package com.parkflow.modules.parking.operation.application.service;
+import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
@@ -16,6 +17,7 @@ import com.parkflow.modules.configuration.repository.*;
 import com.parkflow.modules.configuration.application.port.in.PrepaidUseCase;
 import com.parkflow.modules.parking.operation.application.port.in.RegisterExitUseCase;
 import com.parkflow.modules.parking.operation.domain.*;
+import com.parkflow.modules.parking.operation.dto.CustodiedItemResponse;
 import com.parkflow.modules.parking.operation.dto.ExitRequest;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
@@ -59,6 +61,7 @@ public class RegisterExitService implements RegisterExitUseCase {
   private final VehicleConditionReportPort vehicleConditionReportRepository;
   private final OperationIdempotencyPort operationIdempotencyRepository;
   private final ParkingSpaceService parkingSpaceService;
+  private final CustodiedItemPort custodiedItemRepository;
   private final ObjectMapper objectMapper;
 
   @Override
@@ -80,6 +83,7 @@ public class RegisterExitService implements RegisterExitUseCase {
 
     assertExitPaymentPolicy(session, request.paymentMethod(), price);
     assertExitPhotoIfRequired(session, request.exitImageUrl());
+    processCustodiedItemReturn(session, request, operator);
 
     session.setExitAt(exitAt);
     session.setExitOperator(operator);
@@ -186,7 +190,7 @@ public class RegisterExitService implements RegisterExitUseCase {
     
     String effectiveAgreement = agreementCode != null && !agreementCode.isBlank() ? agreementCode.trim() : session.getAgreementCode();
     if (effectiveAgreement != null) {
-        Optional<Agreement> agreement = agreementRepository.findByCodeAndIsActiveTrue(effectiveAgreement);
+        Optional<Agreement> agreement = agreementRepository.findByCodeAndIsActiveTrueAndCompanyId(effectiveAgreement, session.getCompanyId());
         if (agreement.isPresent()) {
             Agreement a = agreement.get();
             session.setAgreementCode(a.getCode());
@@ -234,7 +238,7 @@ public class RegisterExitService implements RegisterExitUseCase {
   private Optional<OperationalParameter> resolveOperationalParameter(ParkingSession session) {
     String siteKey = session.getSite();
     if (siteKey == null || siteKey.isBlank()) return Optional.empty();
-    return parkingSiteRepository.findByCode(siteKey.trim())
+    return parkingSiteRepository.findByCodeAndCompany_Id(siteKey.trim(), session.getCompanyId())
         .or(() -> parkingSiteRepository.findByNameIgnoreCase(siteKey.trim()))
         .flatMap(site -> operationalParameterRepository.findBySite_Id(site.getId()));
   }
@@ -273,6 +277,36 @@ public class RegisterExitService implements RegisterExitUseCase {
       throw new OperationException(HttpStatus.BAD_REQUEST, "La sesión no tiene tarifa asignada");
     }
     return session.getRate();
+  }
+
+  private void processCustodiedItemReturn(ParkingSession session, ExitRequest request, AppUser operator) {
+    List<CustodiedItem> pending = custodiedItemRepository.findBySessionAndStatus(session, CustodiedItemStatus.RECEIVED);
+    if (pending.isEmpty()) return;
+
+    List<UUID> returnedIds = request.returnedItemIds();
+    if (returnedIds == null || returnedIds.isEmpty()) {
+      boolean hasOverride = org.springframework.security.core.context.SecurityContextHolder.getContext()
+          .getAuthentication().getAuthorities().stream()
+          .anyMatch(a -> a.getAuthority().equals("custodied_items:override"));
+      if (!hasOverride) {
+        throw new OperationException(HttpStatus.FORBIDDEN,
+            "Hay elementos pendientes de devolución. Debe devolverlos o tener permiso especial.");
+      }
+      return;
+    }
+
+    for (CustodiedItem item : pending) {
+      if (returnedIds.contains(item.getId())) {
+        item.setStatus(CustodiedItemStatus.RETURNED);
+        item.setReturnedBy(operator);
+        item.setReturnedAt(OffsetDateTime.now());
+        if (request.custodiedItemObservations() != null) {
+          String existing = item.getObservations();
+          item.setObservations(existing != null ? existing + " | " + request.custodiedItemObservations() : request.custodiedItemObservations());
+        }
+        custodiedItemRepository.save(item);
+      }
+    }
   }
 
   private Optional<OperationResultResponse> tryReplay(String key, IdempotentOperationType type) {
@@ -320,6 +354,15 @@ public class RegisterExitService implements RegisterExitUseCase {
   }
 
   private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
+    List<CustodiedItemResponse> items = custodiedItemRepository.findBySession(session).stream()
+        .map(item -> new CustodiedItemResponse(
+            item.getId(), item.getSession().getId(), item.getItemType(), item.getIdentifier(),
+            item.getStatus(), item.getObservations(), item.getPhotoUrl(),
+            item.getReceivedBy() != null ? item.getReceivedBy().getName() : null,
+            item.getReceivedAt(),
+            item.getReturnedBy() != null ? item.getReturnedBy().getName() : null,
+            item.getReturnedAt()))
+        .toList();
     return new ReceiptResponse(
         session.getTicketNumber(),
         session.getPlate(),
@@ -346,7 +389,7 @@ public class RegisterExitService implements RegisterExitUseCase {
         session.isMonthlySession(),
         session.getAgreementCode(),
         session.getAppliedPrepaidMinutes(),
-        null, null, null);
+        null, null, null, items);
   }
 
   private boolean isBlank(String s) { return s == null || s.isBlank(); }

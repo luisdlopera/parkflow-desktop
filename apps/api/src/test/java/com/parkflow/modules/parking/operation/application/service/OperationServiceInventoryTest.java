@@ -38,6 +38,7 @@ import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPo
 import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
 import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
+import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
 import io.micrometer.core.instrument.Counter;
@@ -98,6 +99,7 @@ class OperationServiceInventoryTest {
   @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private MeterRegistry meterRegistry;
   @Mock private Counter counter;
+  @Mock private CustodiedItemPort custodiedItemRepository;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -112,7 +114,7 @@ class OperationServiceInventoryTest {
         vehicleConditionReportRepository, operationIdempotencyRepository,
         legacyAuditService, legacyPrintService,
         new com.parkflow.modules.parking.operation.validation.PlateValidator(),
-        monthlyContractRepository, parkingSpaceService, objectMapper, meterRegistry
+        monthlyContractRepository, parkingSpaceService, custodiedItemRepository, objectMapper, meterRegistry
     );
 
     processLostTicketService = new ProcessLostTicketService(

@@ -13,15 +13,15 @@ import org.springframework.data.repository.query.Param;
 
 public interface ParkingSiteRepository extends JpaRepository<ParkingSite, UUID> {
 
-  Optional<ParkingSite> findByCode(String code);
+  Optional<ParkingSite> findByCodeAndCompany_Id(String code, UUID companyId);
 
   Optional<ParkingSite> findByNameIgnoreCase(String name);
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
-  @Query("SELECT s FROM ParkingSite s WHERE LOWER(s.code) = LOWER(:site) OR LOWER(s.name) = LOWER(:site)")
-  Optional<ParkingSite> findByCodeOrNameForUpdate(@Param("site") String site);
+  @Query("SELECT s FROM ParkingSite s WHERE s.company.id = :companyId AND (LOWER(s.code) = LOWER(:site) OR LOWER(s.name) = LOWER(:site))")
+  Optional<ParkingSite> findByCodeOrNameForUpdate(@Param("site") String site, @Param("companyId") UUID companyId);
 
-  boolean existsByCode(String code);
+  boolean existsByCodeAndCompany_Id(String code, UUID companyId);
 
   @Query("SELECT s FROM ParkingSite s WHERE s.company.id = :companyId AND (:q IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(s.code) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(s.city) LIKE LOWER(CONCAT('%', :q, '%'))) AND (:active IS NULL OR s.isActive = :active)")
   Page<ParkingSite> search(

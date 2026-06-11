@@ -56,7 +56,7 @@ class ParkingSiteServiceTest {
     Company company = new Company();
     company.setId(companyId);
     when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
-    when(parkingSiteRepository.existsByCode("MAIN")).thenReturn(false);
+    when(parkingSiteRepository.existsByCodeAndCompany_Id("MAIN", company.getId())).thenReturn(false);
     when(parkingSiteRepository.save(any(ParkingSite.class)))
         .thenAnswer(invocation -> {
           ParkingSite site = invocation.getArgument(0);
@@ -99,8 +99,11 @@ class ParkingSiteServiceTest {
     ParkingSite current = new ParkingSite();
     current.setId(UUID.randomUUID());
     current.setCode("MAIN");
+    Company company = new Company();
+    company.setId(UUID.randomUUID());
+    current.setCompany(company);
     when(parkingSiteRepository.findById(current.getId())).thenReturn(Optional.of(current));
-    when(parkingSiteRepository.existsByCode("SECOND")).thenReturn(true);
+    when(parkingSiteRepository.existsByCodeAndCompany_Id("SECOND", current.getCompany().getId())).thenReturn(true);
 
     ParkingSiteRequest req = new ParkingSiteRequest(" second ", "Sede 2", null, null, null, null, "UTC", "USD", 0, true);
 

@@ -26,36 +26,36 @@ export const handlers = [
   }),
 
   // Configuration
-  http.get('http://localhost:6011/api/v1/configuration/vehicle-types', () => {
+  http.get(/.*\/api\/v1\/configuration\/vehicle-types/, () => {
     return HttpResponse.json([
-      { id: "1", code: "CAR", name: "Carro", isActive: true, requiresPlate: true },
-      { id: "2", code: "MOTORCYCLE", name: "Moto", isActive: true, requiresPlate: true },
-      { id: "3", code: "BICYCLE", name: "Bicicleta", isActive: true, requiresPlate: false }
+      { id: "1", code: "CAR", name: "Carro", isActive: true, requiresPlate: true, quickAccess: true },
+      { id: "2", code: "MOTORCYCLE", name: "Moto", isActive: true, requiresPlate: true, quickAccess: true },
+      { id: "3", code: "BICYCLE", name: "Bicicleta", isActive: true, requiresPlate: false, quickAccess: true }
     ])
   }),
 
   // Operations
-  http.post('http://localhost:6011/api/v1/operations/entries', () => {
+  http.post(/.*\/api\/v1\/operations\/entries/, () => {
     return HttpResponse.json({
       sessionId: '123e4567-e89b-12d3-a456-426614174000',
       ticketNumber: 'TICKET001'
     })
   }),
 
-  http.post('http://localhost:6011/api/v1/operations/exits', () => {
+  http.post(/.*\/api\/v1\/operations\/exits/, () => {
     return HttpResponse.json({
       totalAmount: 5000,
       paymentMethod: 'CASH'
     })
   }),
 
-  http.get('http://localhost:6011/api/v1/operations/sessions/active-list', () => {
+  http.get(/.*\/api\/v1\/operations\/sessions\/active-list/, () => {
     return HttpResponse.json([
       { ticketNumber: 'TICKET001', plate: 'ABC123', entryAt: '2024-01-01T10:00:00Z' }
     ])
   }),
 
-  http.get('http://localhost:6011/api/v1/parking-spaces/summary', () => {
+  http.get(/.*\/api\/v1\/parking-spaces\/summary/, () => {
     return HttpResponse.json({
       availableSpaces: 100,
       activeSpaces: 10,
@@ -64,12 +64,12 @@ export const handlers = [
   }),
 
   // Print Agent
-  http.get('/api/print-agent/health', () => {
-    return HttpResponse.json({ status: "ok" })
+  http.get(/.*\/api\/print-agent\/health/, () => {
+    return HttpResponse.json({ ok: true })
   }),
 
-  http.post('/api/print-agent/print', () => {
-    return HttpResponse.json({ success: true, jobId: "1234" })
+  http.post(/.*\/api\/print-agent\/print/, () => {
+    return HttpResponse.json({ jobId: "1234", result: { status: "printed" } })
   }),
 
   // Cash

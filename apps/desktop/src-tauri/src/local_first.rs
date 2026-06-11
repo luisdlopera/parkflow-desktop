@@ -662,6 +662,24 @@ pub fn init_schema_tables(conn: &Connection) -> Result<(), rusqlite::Error> {
       setting_value TEXT NOT NULL,
       updated_at_unix_ms INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS local_custodied_items (
+      id TEXT PRIMARY KEY,
+      ticket_id TEXT NOT NULL,
+      item_type TEXT NOT NULL,
+      identifier TEXT,
+      status TEXT NOT NULL CHECK(status IN ('RECEIVED', 'RETURNED', 'CANCELED')),
+      observations TEXT,
+      photo_url TEXT,
+      received_by_name TEXT,
+      received_at_unix_ms INTEGER NOT NULL,
+      returned_by_name TEXT,
+      returned_at_unix_ms INTEGER,
+      company_id TEXT NOT NULL,
+      created_at_unix_ms INTEGER NOT NULL,
+      updated_at_unix_ms INTEGER NOT NULL,
+      FOREIGN KEY (ticket_id) REFERENCES local_tickets(id)
+    );
     ",
   )?;
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
 
@@ -15,6 +15,12 @@ export function SessionExpiredModal({ isOpen, onClose, onRenew }: SessionExpired
   const router = useRouter();
   const [isRenewing, setIsRenewing] = useState(false);
   const [countdown, setCountdown] = useState(30);
+
+  const handleLoginRedirect = React.useCallback(() => {
+    const currentPath = window.location.pathname;
+    router.push(`/login?expired=1&next=${encodeURIComponent(currentPath)}`);
+    onClose();
+  }, [router, onClose]);
 
   // Cuenta regresiva para redirección automática
   useEffect(() => {
@@ -32,13 +38,7 @@ export function SessionExpiredModal({ isOpen, onClose, onRenew }: SessionExpired
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isOpen]);
-
-  const handleLoginRedirect = () => {
-    const currentPath = window.location.pathname;
-    router.push(`/login?expired=1&next=${encodeURIComponent(currentPath)}`);
-    onClose();
-  };
+  }, [isOpen, handleLoginRedirect]);
 
   const handleRenew = async () => {
     if (!onRenew) {

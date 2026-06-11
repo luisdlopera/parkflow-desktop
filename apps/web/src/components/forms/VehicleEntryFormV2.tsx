@@ -44,7 +44,7 @@ function writePerfLog(operation: string, durationMs: number, details?: Record<st
     data: { operation, durationMs, ...details }
   };
   let logs: unknown[] = [];
-  console.log("onSubmit started with values:", values); try {
+  try {
     const parsed = JSON.parse(localStorage.getItem("perf_logs_0dd35a") || "[]");
     logs = Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -178,7 +178,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   const [occupancy, setOccupancy] = useState<{ availableSpaces: number; activeSpaces: number } | null>(null);
 
   const loadOccupancy = useCallback(async () => {
-    console.log("onSubmit started with values:", values); try {
+    try {
       const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
       const response = await fetch(`${api}/parking-spaces/summary`, {
         headers: await buildApiHeaders(),
@@ -205,7 +205,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("parkflow_operator_settings");
       if (saved) {
-        console.log("onSubmit started with values:", values); try {
+        try {
           return JSON.parse(saved);
         } catch {
           localStorage.removeItem("parkflow_operator_settings");
@@ -260,6 +260,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   const formValues = useWatch({ control: form.control });
   const selectedTypeCode = useWatch({ control: form.control, name: "type" });
   const noPlate = useWatch({ control: form.control, name: "noPlate" });
+  const helmetDelivered = useWatch({ control: form.control, name: "helmetDelivered" });
   const { clearAutoSave } = useAutoSave({
     key: "entry_form",
     data: formValues,
@@ -407,7 +408,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   const handleReprint = useCallback(async () => {
     if (!printWarning) return;
     setReprintLoading(true);
-    console.log("onSubmit started with values:", values); try {
+    try {
       const user = await currentUser();
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
       const body = validatePayloadOrThrow(
@@ -476,7 +477,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       entryMode: values.entryMode ?? ""
     });
 
-    console.log("onSubmit started with values:", values); try {
+    try {
       const user = await currentUser();
       if (!user?.id) {
         setError("Sesion requerida para registrar ingresos");
@@ -511,7 +512,11 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
             ? "Sin novedades"
             : values.vehicleCondition.trim(),
           conditionChecklist: values.conditionChecklist.split(",").map(i => i.trim()).filter(Boolean),
-          conditionPhotoUrls: values.conditionPhotoUrls.split(",").map(i => i.trim()).filter(Boolean)
+          conditionPhotoUrls: values.conditionPhotoUrls.split(",").map(i => i.trim()).filter(Boolean),
+          helmetDelivered: values.helmetDelivered,
+          helmetIdentifier: values.helmetIdentifier?.trim() || null,
+          helmetObservations: values.helmetObservations?.trim() || null,
+          helmetPhotoUrl: values.helmetPhotoUrl?.trim() || null
         },
         "Corrige los campos del ingreso antes de enviar"
       );
@@ -573,7 +578,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       setPreviewLines(generatedPreviewLines);
 
       let printWarning: string | null = null;
-      console.log("onSubmit started with values:", values); try {
+      try {
         printWarning = await printReceiptIfTauri(printPayload, "ENTRY");
       } catch (printError) {
         printWarning = printError instanceof Error 
@@ -625,7 +630,11 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         observations: "",
         vehicleCondition: settings.skipConditionCheck ? "" : "Sin novedades al ingreso",
         conditionChecklist: "",
-        conditionPhotoUrls: ""
+        conditionPhotoUrls: "",
+        helmetDelivered: false,
+        helmetIdentifier: "",
+        helmetObservations: "",
+        helmetPhotoUrl: ""
       });
 
       focusPlate();
@@ -871,77 +880,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
             )}
           />
 
-          {/* Tipo de Vehículo */}
-          <div>
-            <label className="text-sm font-semibold text-slate-700 mb-2 block">Tipo de Vehículo</label>
-            {loadingTypes ? (
-              <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />
-            ) : isExpert ? (
-              // Modo experto: Botones grandes - responsive grid
-              <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2">
-                {vehicleTypes.map((t, index) => {
-                  const config = VEHICLE_TYPE_CONFIG[t.code] || { label: t.name, color: "bg-slate-400", icon: "🚗" };
-                  const isSelected = form.watch("type") === t.code;
-                  return (
-                    <button
-                      key={t.code}
-                      type="button"
-                      onClick={() => form.setValue("type", t.code)}
-                      className={`
-                        relative rounded-xl p-2 sm:p-3 text-center transition-all
-                        ${isSelected
-                          ? `${config.color} text-white shadow-lg scale-105`
-                          : "bg-slate-100 hover:bg-slate-200 text-slate-600"}
-                      `}
-                    >
-                      <div className="text-xl sm:text-2xl mb-1">{config.icon}</div>
-                      <div className="text-xs font-medium">{config.label}</div>
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 shadow">
-                        {index + 1}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              // Modo principiante: Select
-              <Controller
-                name="type"
-                control={form.control}
-                render={({ field }) => {
-                  const validKeys = vehicleTypes.map(t => t.code);
-                  const selectedKey = validKeys.includes(field.value) ? field.value : undefined;
-                  return (
-                    <Select
-                      variant="flat"
-                      aria-label="Tipo de vehículo"
-                      data-testid="vehicle-type"
-                      selectedKeys={selectedKey ? [selectedKey] : []}
-                      isDisabled={vehicleTypes.length === 0 || loadingTypes}
-                      onSelectionChange={(keys) => {
-                        const selected = Array.from(keys)[0] as string;
-                        field.onChange(selected);
-                      }}
-                    >
-                      {vehicleTypes.map((t) => {
-                        const config = VEHICLE_TYPE_CONFIG[t.code] || { label: t.name, icon: "🚗" };
-                        return (
-                          <SelectItem key={t.code} textValue={config.label}>
-                            {config.icon} {config.label}
-                          </SelectItem>
-                        );
-                      })}
-                    </Select>
-                  );
-                }}
-              />
-            )}
-            {vehicleTypes.length === 0 && !loadingTypes && (
-              <div className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-2">
-                No hay tipos de vehículo disponibles. Verifique la conexión con el servidor.
-              </div>
-            )}
-          </div>
+
 
           {noPlate && (
             <Controller
@@ -1171,6 +1110,55 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
                       <Input {...field} label="Estado del vehículo" placeholder="Sin novedades al ingreso" variant="flat" size="sm" />
                     )}
                   />
+                )}
+
+                {/* Casco / custodied item */}
+                {selectedTypeCode === "MOTORCYCLE" && runtimeConfig?.operationConfiguration?.enableCustodiedItem !== false && (
+                  <>
+                    <div className="col-span-2 border-t pt-3 mt-1">
+                      <p className="text-sm font-medium text-zinc-700 mb-2">Información del Casco</p>
+                      <Controller
+                        name="helmetDelivered"
+                        control={form.control}
+                        render={({ field }) => (
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                              className="rounded border-zinc-300"
+                            />
+                            <span className="text-sm">¿Entrega casco al ingreso?</span>
+                          </label>
+                        )}
+                      />
+                    </div>
+                    {helmetDelivered && (
+                      <div className="col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <Controller
+                          name="helmetIdentifier"
+                          control={form.control}
+                          render={({ field }) => (
+                            <Input {...field} label="Número de Casco" placeholder="Ej: SHOEI-1234" variant="flat" size="sm" isRequired />
+                          )}
+                        />
+                        <Controller
+                          name="helmetObservations"
+                          control={form.control}
+                          render={({ field }) => (
+                            <Input {...field} label="Observaciones del casco" placeholder="Marca, color, etc." variant="flat" size="sm" />
+                          )}
+                        />
+                        <Controller
+                          name="helmetPhotoUrl"
+                          control={form.control}
+                          render={({ field }) => (
+                            <Input {...field} label="Foto del casco (URL)" placeholder="https://..." variant="flat" size="sm" />
+                          )}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Observaciones */}

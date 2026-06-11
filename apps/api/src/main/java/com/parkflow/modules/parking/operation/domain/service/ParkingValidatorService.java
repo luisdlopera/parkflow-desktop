@@ -25,7 +25,7 @@ public class ParkingValidatorService {
 
   public void assertCapacityAvailable(String site, UUID companyId) {
     if (site == null || site.isBlank()) return;
-    parkingSiteRepository.findByCodeOrNameForUpdate(site.trim())
+    parkingSiteRepository.findByCodeOrNameForUpdate(site.trim(), companyId)
         .ifPresent(parkingSite -> {
           if (!parkingSite.isActive()) {
             throw new OperationException(HttpStatus.BAD_REQUEST, "La sede está inactiva");

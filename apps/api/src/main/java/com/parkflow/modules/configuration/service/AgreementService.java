@@ -33,7 +33,8 @@ public class AgreementService implements AgreementUseCase {
   @Transactional(readOnly = true)
   public SettingsPageResponse<AgreementResponse> list(
       String site, String q, Boolean active, Pageable pageable) {
-    Page<Agreement> page = repo.search(site, q, active, pageable);
+    UUID companyId = com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId();
+    Page<Agreement> page = repo.search(site, q, active, companyId, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 
@@ -45,7 +46,8 @@ public class AgreementService implements AgreementUseCase {
   /** Resolución de convenio por código para uso en caja (GET público por código). */
   @Transactional(readOnly = true)
   public AgreementResponse resolveByCode(String code) {
-    Agreement a = repo.findByCodeAndIsActiveTrue(code)
+    UUID companyId = com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId();
+    Agreement a = repo.findByCodeAndIsActiveTrueAndCompanyId(code, companyId)
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND,
             "Convenio no encontrado o inactivo para el código: " + code));
     return toResponse(a);
@@ -53,11 +55,13 @@ public class AgreementService implements AgreementUseCase {
 
   @Transactional
   public AgreementResponse create(AgreementRequest req) {
-    if (repo.existsByCode(req.code())) {
+    UUID companyId = com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId();
+    if (repo.existsByCodeAndCompanyId(req.code(), companyId)) {
       throw new OperationException(HttpStatus.CONFLICT,
           "Ya existe un convenio con el código: " + req.code());
     }
     Agreement a = fromRequest(req, new Agreement());
+    a.setCompanyId(companyId);
     a = repo.save(a);
     try {
         globalAuditService.record(
@@ -77,7 +81,7 @@ public class AgreementService implements AgreementUseCase {
     String before = "";
     try { before = objectMapper.writeValueAsString(toResponse(a)); } catch(Exception e) {}
     
-    if (repo.existsByCodeAndIdNot(req.code(), id)) {
+    if (repo.existsByCodeAndIdNotAndCompanyId(req.code(), id, a.getCompanyId())) {
       throw new OperationException(HttpStatus.CONFLICT,
           "Ya existe otro convenio con el código: " + req.code());
     }
