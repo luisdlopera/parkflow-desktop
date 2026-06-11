@@ -1,24 +1,27 @@
 package com.parkflow.config;
+import com.parkflow.modules.audit.application.port.out.AuditPort;
+import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.parking.spaces.repository.ParkingSpaceRepository;
 
 import com.parkflow.modules.cash.domain.CashRegister;
-import com.parkflow.modules.cash.repository.CashRegisterRepository;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.licensing.entity.Company;
-import com.parkflow.modules.licensing.entity.Company.OperationMode;
+import com.parkflow.modules.cash.domain.repository.CashRegisterPort;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.licensing.domain.Company;
+import com.parkflow.modules.licensing.domain.Company.OperationMode;
 import com.parkflow.modules.licensing.enums.CompanyStatus;
 import com.parkflow.modules.licensing.enums.PlanType;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateType;
-import com.parkflow.modules.parking.operation.domain.RoundingMode;
-import com.parkflow.modules.parking.operation.domain.UserRole;
+import com.parkflow.modules.configuration.domain.RoundingMode;
+import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
-import com.parkflow.modules.settings.repository.MasterVehicleTypeRepository;
+import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -28,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -98,6 +102,9 @@ public abstract class BaseIntegrationTest {
 
     @Autowired
     protected ParkingSpaceRepository parkingSpaceRepository;
+
+    @MockBean
+    protected com.parkflow.modules.audit.service.AuditService auditService;
 
     @BeforeEach
     void cleanDatabase() {

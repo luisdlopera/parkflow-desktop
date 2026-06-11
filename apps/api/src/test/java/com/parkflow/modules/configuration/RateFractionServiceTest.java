@@ -6,12 +6,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.configuration.dto.RateFractionRequest;
-import com.parkflow.modules.configuration.entity.RateFraction;
-import com.parkflow.modules.configuration.repository.RateFractionRepository;
+import com.parkflow.modules.configuration.domain.RateFraction;
+import com.parkflow.modules.configuration.domain.repository.RateFractionPort;
 import com.parkflow.modules.configuration.application.service.RateFractionManagementService;
-import com.parkflow.modules.parking.operation.domain.Rate;
-import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.RatePort;
+import com.parkflow.modules.configuration.domain.Rate;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.configuration.domain.repository.RatePort;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
