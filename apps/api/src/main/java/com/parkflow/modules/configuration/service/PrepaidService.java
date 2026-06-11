@@ -4,18 +4,19 @@ import com.parkflow.modules.configuration.dto.PrepaidBalancePurchaseRequest;
 import com.parkflow.modules.configuration.dto.PrepaidBalanceResponse;
 import com.parkflow.modules.configuration.dto.PrepaidPackageRequest;
 import com.parkflow.modules.configuration.dto.PrepaidPackageResponse;
-import com.parkflow.modules.configuration.entity.PrepaidBalance;
-import com.parkflow.modules.configuration.entity.PrepaidPackage;
-import com.parkflow.modules.configuration.entity.ParkingSite;
+import com.parkflow.modules.configuration.domain.PrepaidBalance;
+import com.parkflow.modules.configuration.domain.PrepaidPackage;
+import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.repository.PrepaidBalanceRepository;
 import com.parkflow.modules.configuration.repository.PrepaidPackageRepository;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import com.parkflow.modules.configuration.application.port.in.PrepaidUseCase;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -24,12 +25,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class PrepaidService {
+public class PrepaidService implements PrepaidUseCase {
 
   private final PrepaidPackageRepository packageRepo;
   private final PrepaidBalanceRepository balanceRepo;
   private final ParkingSiteRepository siteRepository;
-  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
+  private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   // ===========================================================================

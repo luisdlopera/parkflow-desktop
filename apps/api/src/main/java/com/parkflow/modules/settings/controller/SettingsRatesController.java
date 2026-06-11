@@ -25,7 +25,7 @@ public class SettingsRatesController {
       @RequestParam(required = false) Boolean active,
       @RequestParam(required = false) String category,
       @PageableDefault(size = 20) Pageable pageable) {
-    return settingsRateService.list(site, q, active, category, pageable);
+    return rateManagementUseCase.list(site, q, active, category, pageable);
   }
 
   @GetMapping("/{id}")

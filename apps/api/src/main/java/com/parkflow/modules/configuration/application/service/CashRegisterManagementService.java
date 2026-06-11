@@ -5,12 +5,12 @@ import com.parkflow.modules.cash.repository.CashRegisterRepository;
 import com.parkflow.modules.configuration.application.port.in.CashRegisterUseCase;
 import com.parkflow.modules.configuration.dto.CashRegisterRequest;
 import com.parkflow.modules.configuration.dto.CashRegisterResponse;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.entity.Printer;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.Printer;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.configuration.repository.PrinterRepository;
-import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.configuration.domain.repository.PrinterPort;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +20,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +29,7 @@ public class CashRegisterManagementService implements CashRegisterUseCase {
 
   private final CashRegisterRepository cashRegisterRepository;
   private final ParkingSiteRepository parkingSiteRepository;
-  private final PrinterRepository printerRepository;
+  private final PrinterPort printerRepository;
   private final AppUserRepository appUserRepository;
 
   @Override

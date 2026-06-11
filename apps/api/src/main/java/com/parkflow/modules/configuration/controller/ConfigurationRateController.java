@@ -4,7 +4,11 @@ import com.parkflow.modules.settings.dto.RateResponse;
 import com.parkflow.modules.settings.dto.RateStatusRequest;
 import com.parkflow.modules.settings.dto.RateUpsertRequest;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
-import com.parkflow.modules.settings.application.service.SettingsRateService;
+import com.parkflow.modules.settings.application.port.in.ListRatesUseCase;
+import com.parkflow.modules.settings.application.port.in.GetRateUseCase;
+import com.parkflow.modules.settings.application.port.in.CreateRateUseCase;
+import com.parkflow.modules.settings.application.port.in.UpdateRateUseCase;
+import com.parkflow.modules.settings.application.port.in.PatchRateStatusUseCase;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +37,7 @@ public class ConfigurationRateController {
       @RequestParam(required = false) Boolean active,
       @RequestParam(required = false) String category,
       Pageable pageable) {
-    return ResponseEntity.ok(settingsRateService.list(site, q, active, category, pageable));
+    return ResponseEntity.ok(listRatesUseCase.list(site, q, active, category, pageable));
   }
 
   @GetMapping("/{id}")

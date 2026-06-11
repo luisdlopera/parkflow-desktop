@@ -3,16 +3,18 @@ package com.parkflow.modules.sync.application.service;
 import com.parkflow.modules.sync.dto.SyncEventResponse;
 import com.parkflow.modules.sync.dto.SyncPushRequest;
 import com.parkflow.modules.sync.dto.SyncReconcileRequest;
-import com.parkflow.modules.auth.entity.AuthAuditAction;
+import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.application.service.AuthAuditService;
-import com.parkflow.modules.sync.entity.SyncDirection;
+import com.parkflow.modules.sync.domain.SyncDirection;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.sync.entity.SyncEvent;
-import com.parkflow.modules.sync.repository.SyncEventRepository;
+import com.parkflow.modules.sync.application.port.in.SyncUseCase;
+import com.parkflow.modules.sync.domain.SyncEvent;
+import com.parkflow.modules.sync.domain.repository.SyncEventPort;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,14 +35,16 @@ public class SyncService implements SyncUseCase {
   @Override
   public SyncEventResponse push(SyncPushRequest request) {
     Objects.requireNonNull(request, "request");
+    UUID companyId = SecurityUtils.requireCompanyId();
     return syncEventRepository
         .findByIdempotencyKeyAndCompanyId(request.idempotencyKey(), companyId)
         .map(this::toResponse)
-        .orElseGet(() -> create(request, companyId));
+        .orElseGet(() -> create(request));
   }
 
   @Transactional(readOnly = true)
   public List<SyncEventResponse> pull(@Nullable OffsetDateTime after, int limit) {
+    UUID companyId = SecurityUtils.requireCompanyId();
     OffsetDateTime filter = after != null ? after : OffsetDateTime.parse("1970-01-01T00:00:00Z");
     return syncEventRepository.findByCompanyIdAndCreatedAtAfterOrderByCreatedAtAsc(companyId, filter).stream()
         .limit(Math.max(1, Math.min(limit, 500)))
@@ -84,6 +88,7 @@ public class SyncService implements SyncUseCase {
     String aggregateId = Objects.requireNonNull(request.aggregateId(), "aggregateId");
     String payloadJson = Objects.requireNonNull(request.payloadJson(), "payloadJson");
     SyncEvent event = new SyncEvent();
+    event.setCompanyId(SecurityUtils.requireCompanyId());
     event.setIdempotencyKey(idempotencyKey);
     event.setEventType(eventType);
     event.setAggregateId(aggregateId);

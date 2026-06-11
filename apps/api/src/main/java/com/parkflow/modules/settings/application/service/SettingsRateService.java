@@ -1,15 +1,14 @@
 package com.parkflow.modules.settings.application.service;
 
 import com.parkflow.modules.auth.domain.AuthAuditAction;
-import com.parkflow.modules.configuration.domain.ParkingSite;
-import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateCategory;
-import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
-import com.parkflow.modules.parking.operation.domain.repository.RatePort;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.settings.application.port.in.RateManagementUseCase;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
+import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.settings.dto.RateResponse;
 import com.parkflow.modules.settings.dto.RateStatusRequest;
 import com.parkflow.modules.settings.dto.RateUpsertRequest;
@@ -31,13 +30,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class SettingsRateService {
+public class SettingsRateService implements com.parkflow.modules.settings.application.port.in.RateManagementUseCase {
   private final RateRepository rateRepository;
   private final ParkingSessionRepository parkingSessionRepository;
   private final SettingsAuditService settingsAuditService;
   private final com.parkflow.modules.settings.repository.MasterVehicleTypeRepository vehicleTypeRepository;
   private final ParkingSiteRepository parkingSiteRepository;
-  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
+  private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   // =========================================================================
@@ -52,21 +51,11 @@ public class SettingsRateService {
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 
-  private RateCategory parseCategory(String category) {
-    if (category == null || category.isBlank()) {
-      return null;
-    }
-    try {
-      return RateCategory.valueOf(category.trim().toUpperCase());
-    } catch (IllegalArgumentException ex) {
-      throw new OperationException(HttpStatus.BAD_REQUEST, "Categoria de tarifa invalida");
-    }
-  }
 
   @Transactional(readOnly = true)
   public RateResponse get(UUID id) {
     Rate rate =
-        ratePort
+        rateRepository
             .findById(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
     return toResponse(rate);
@@ -81,7 +70,7 @@ public class SettingsRateService {
     Rate rate = fromRequest(req, new Rate());
     applyBusinessRules(rate, null);
     try {
-      rate = ratePort.save(rate);
+      rate = rateRepository.save(rate);
     } catch (DataIntegrityViolationException ex) {
       throw new OperationException(
           HttpStatus.CONFLICT, "Ya existe una tarifa activa con el mismo nombre en esta sede");
@@ -106,14 +95,14 @@ public class SettingsRateService {
   @Transactional
   public RateResponse update(UUID id, RateUpsertRequest req) {
     Rate rate =
-        ratePort
+        rateRepository
             .findById(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
     Map<String, Object> before = snapshot(rate);
     Rate updated = fromRequest(req, rate);
     applyBusinessRules(updated, id);
     try {
-      updated = ratePort.save(updated);
+      updated = rateRepository.save(updated);
     } catch (DataIntegrityViolationException ex) {
       throw new OperationException(
           HttpStatus.CONFLICT, "Ya existe una tarifa activa con el mismo nombre en esta sede");
@@ -138,14 +127,14 @@ public class SettingsRateService {
   @Transactional
   public RateResponse patchStatus(UUID id, RateStatusRequest req) {
     Rate rate =
-        ratePort
+        rateRepository
             .findById(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
     boolean previous = rate.isActive();
     rate.setActive(req.active());
     rate.setUpdatedAt(OffsetDateTime.now());
     applyBusinessRules(rate, id);
-    rate = ratePort.save(rate);
+    rate = rateRepository.save(rate);
     settingsAuditService.log(
         AuthAuditAction.SETTINGS_RATE_STATUS,
         "OK",
@@ -162,10 +151,10 @@ public class SettingsRateService {
   @Transactional
   public RateResponse delete(UUID id) {
     Rate rate =
-        ratePort
+        rateRepository
             .findById(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
-    long refs = parkingSessionPort.countByRate_IdAndCompanyId(id, SecurityUtils.requireCompanyId());
+    long refs = parkingSessionRepository.countByRate_IdAndCompanyId(id, SecurityUtils.requireCompanyId());
     if (refs > 0) {
       throw new OperationException(
           HttpStatus.CONFLICT,
@@ -227,7 +216,7 @@ public class SettingsRateService {
     }
     UUID ex = excludeId != null ? excludeId : UUID.randomUUID();
     UUID companyId = SecurityUtils.requireCompanyId();
-    var others = ratePort.findActiveForConflictCheck(rate.getSite(), rate.getVehicleType(), ex, companyId);
+    var others = rateRepository.findActiveForConflictCheck(rate.getSite(), rate.getVehicleType(), ex, companyId);
     Win win = toWindowOrFull(rate);
     for (Rate other : others) {
       if (!other.getRateType().equals(rate.getRateType())) {

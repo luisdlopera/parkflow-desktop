@@ -7,7 +7,9 @@ import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;
 import com.parkflow.modules.onboarding.domain.OnboardingProgress;
 import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.configuration.service.OperationalConfigurationService;
+import com.parkflow.modules.licensing.enums.OperationalProfile;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,7 +29,7 @@ public class OnboardingService implements OnboardingUseCase {
   private final CompanySettingsService companySettingsService;
   private final FeatureAccessService featureAccessService;
   private final com.parkflow.modules.onboarding.domain.repository.CompanySettingsSnapshotPort companySettingsSnapshotPort;
-  private final com.parkflow.modules.audit.service.AuditService auditService;
+  private final com.parkflow.modules.audit.application.port.out.AuditPort auditService;
   private final OperationalConfigurationService operationalConfigurationService;
 
   @Transactional(readOnly = true)

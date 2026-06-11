@@ -64,15 +64,5 @@ public class OnboardingController {
     return ResponseEntity.ok(onboardingUseCase.getCapabilities(companyId));
   }
 
-  @GetMapping("/companies/{companyId}/settings")
-  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
-  public ResponseEntity<Map<String, Object>> getCompanySettings(@PathVariable UUID companyId) {
-    return ResponseEntity.ok(onboardingService.getCompanySettings(companyId));
-  }
 
-  @GetMapping("/companies/{companyId}/capabilities")
-  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
-  public ResponseEntity<CompanyCapabilitiesResponse> getCapabilities(@PathVariable UUID companyId) {
-    return ResponseEntity.ok(onboardingService.getCapabilities(companyId));
-  }
 }

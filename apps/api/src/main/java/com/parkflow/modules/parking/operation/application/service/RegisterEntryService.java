@@ -1,22 +1,22 @@
 package com.parkflow.modules.parking.operation.application.service;
+import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
+import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
+import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
+import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import com.parkflow.modules.parking.operation.application.port.in.RegisterEntryUseCase;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.*;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.*;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.parking.operation.service.OperationAuditService;
-import com.parkflow.modules.parking.operation.service.OperationPrintService;
 import com.parkflow.modules.parking.operation.validation.PlateValidator;
-import com.parkflow.modules.tickets.entity.PrintDocumentType;
+import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -42,16 +41,16 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private final RateRepository rateRepository;
   private final ParkingSiteRepository parkingSiteRepository;
   private final ParkingSessionRepository parkingSessionRepository;
-  private final TicketCounterRepository ticketCounterRepository;
-  private final VehicleConditionReportRepository vehicleConditionReportRepository;
-  private final OperationIdempotencyRepository operationIdempotencyRepository;
+  private final TicketCounterPort ticketCounterRepository;
+  private final VehicleConditionReportPort vehicleConditionReportRepository;
+  private final OperationIdempotencyPort operationIdempotencyRepository;
   private final OperationAuditService operationAuditService;
   private final OperationPrintService operationPrintService;
   private final PlateValidator plateValidator;
   private final MonthlyContractRepository monthlyContractRepository;
+  private final ParkingSpaceService parkingSpaceService;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
-  private final AuditService globalAuditService;
 
   @Override
   @Transactional
@@ -98,7 +97,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
 
     AppUser operator = findRequiredOperator(request.operatorUserId());
 
-    Vehicle vehicle = vehicleRepository.findByPlateIgnoreCaseAndCompanyId(normalizedPlate, companyId)
+    Vehicle vehicle = vehicleRepository.findByPlateIgnoreCase(normalizedPlate)
         .map(v -> {
           v.setType(vehicleType);
           v.setUpdatedAt(OffsetDateTime.now());
@@ -124,28 +123,29 @@ public class RegisterEntryService implements RegisterEntryUseCase {
 
     Rate rate = resolveRate(request.rateId(), vehicleType, site, entryAt, companyId);
 
-    assertParkingCapacityAvailable(site);
+    assertParkingCapacityAvailable(site, companyId);
 
-    ParkingSession session = new ParkingSession();
-    session.setTicketNumber(nextTicketNumber(entryAt.toLocalDate(), companyId));
-    session.setPlate(normalizedPlate);
-    session.setCountryCode(countryCode);
-    session.setEntryMode(entryMode);
-    session.setMonthlySession(isMonthly);
-    session.setNoPlate(noPlateEntry);
-    session.setNoPlateReason(noPlateEntry ? request.noPlateReason().trim() : null);
-    session.setVehicle(vehicle);
-    session.setRate(rate);
-    session.setEntryOperator(operator);
-    session.setEntryAt(entryAt);
-    session.setSite(site);
-    session.setLane(request.lane());
-    session.setBooth(request.booth());
-    session.setTerminal(request.terminal());
-    session.setEntryNotes(request.observations());
-    session.setEntryImageUrl(blankToNull(request.entryImageUrl()));
-    session.setCompanyId(companyId);
-    session.setSyncStatus(SessionSyncStatus.SYNCED);
+    ParkingSession session = ParkingSession.builder()
+        .ticketNumber(nextTicketNumber(entryAt.toLocalDate(), companyId))
+        .plate(normalizedPlate)
+        .countryCode(countryCode)
+        .entryMode(entryMode)
+        .monthlySession(isMonthly)
+        .noPlate(noPlateEntry)
+        .noPlateReason(noPlateEntry ? request.noPlateReason().trim() : null)
+        .vehicle(vehicle)
+        .rate(rate)
+        .entryOperator(operator)
+        .entryAt(entryAt)
+        .site(site)
+        .lane(request.lane())
+        .booth(request.booth())
+        .terminal(request.terminal())
+        .entryNotes(request.observations())
+        .entryImageUrl(blankToNull(request.entryImageUrl()))
+        .companyId(companyId)
+        .syncStatus(SessionSyncStatus.SYNCED)
+        .build();
 
     try {
       session = parkingSessionRepository.save(session);
@@ -159,6 +159,13 @@ public class RegisterEntryService implements RegisterEntryUseCase {
 
     operationAuditService.recordEvent(session, SessionEventType.ENTRY_RECORDED, operator, "Ingreso registrado");
     
+    com.parkflow.modules.parking.spaces.domain.ParkingSpace assignedSpace = null;
+    if (request.parkingSpaceId() != null) {
+      assignedSpace = parkingSpaceService.assignSpecificSpace(companyId, request.parkingSpaceId(), session);
+    } else {
+      assignedSpace = parkingSpaceService.assignNextAvailableSpace(companyId, session);
+    }
+
     try {
       operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.ENTRY, "entry");
     } catch (Exception e) {
@@ -170,7 +177,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
 
     return new OperationResultResponse(
         session.getId().toString(),
-        toReceipt(session, 0L, "0h 0m"),
+        toReceipt(session, 0L, "0h 0m", assignedSpace),
         "Ingreso registrado",
         null, null, null, null, null);
   }
@@ -200,6 +207,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
           TicketCounter c = new TicketCounter();
           c.setCounterKey(key);
           c.setLastNumber(0);
+          c.setCompanyId(companyId);
           return c;
         });
     counter.setLastNumber(counter.getLastNumber() + 1);
@@ -231,9 +239,13 @@ public class RegisterEntryService implements RegisterEntryUseCase {
              throw new OperationException(HttpStatus.CONFLICT, "Clave de idempotencia ya usada con otra operacion");
            }
            ParkingSession session = i.getSession();
+           com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment existingAssignment =
+               parkingSpaceService.findAssignmentBySessionId(session.getId());
+           com.parkflow.modules.parking.spaces.domain.ParkingSpace space =
+               existingAssignment != null ? existingAssignment.getParkingSpace() : null;
            return new OperationResultResponse(
                session.getId().toString(),
-               toReceipt(session, 0L, "0h 0m"),
+               toReceipt(session, 0L, "0h 0m", space),
                "Ingreso (idempotente)",
                null, null, null, null, null);
         });
@@ -251,8 +263,9 @@ public class RegisterEntryService implements RegisterEntryUseCase {
 
 
 
-  private void assertParkingCapacityAvailable(String site) {
+  private void assertParkingCapacityAvailable(String site, UUID companyId) {
     if (isBlank(site)) return;
+    UUID cid = companyId;
     parkingSiteRepository.findByCodeOrNameForUpdate(site.trim())
         .ifPresent(parkingSite -> {
           if (!parkingSite.isActive()) {
@@ -260,7 +273,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
           }
           int maxCapacity = parkingSite.getMaxCapacity();
           if (maxCapacity <= 0) return;
-          long activeSessions = parkingSessionRepository.countByStatusAndSite(SessionStatus.ACTIVE, parkingSite.getName());
+          long activeSessions = parkingSessionRepository.countByStatusAndSiteAndCompanyId(SessionStatus.ACTIVE, parkingSite.getName(), cid);
           if (activeSessions >= maxCapacity) {
             throw new OperationException(HttpStatus.CONFLICT, "Parqueadero lleno para la sede");
           }
@@ -268,6 +281,11 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   }
 
   private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
+    return toReceipt(session, totalMinutes, duration, null);
+  }
+
+  private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration,
+      com.parkflow.modules.parking.spaces.domain.ParkingSpace space) {
     return new ReceiptResponse(
         session.getTicketNumber(),
         session.getPlate(),
@@ -293,7 +311,10 @@ public class RegisterEntryService implements RegisterEntryUseCase {
         session.getEntryMode(),
         session.isMonthlySession(),
         null,
-        0);
+        0,
+        space != null ? space.getId() : null,
+        space != null ? space.getCode() : null,
+        space != null ? space.getLabel() : null);
   }
 
   private String normalizeCountryCode(String code) {
