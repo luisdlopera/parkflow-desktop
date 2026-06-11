@@ -4,34 +4,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.*;
-import java.util.Collections;
+import static org.mockito.Mockito.when;
 
-
-import com.parkflow.modules.parking.operation.application.service.RegisterEntryService;
-import com.parkflow.modules.parking.operation.application.service.VoidSessionService;
-import com.parkflow.modules.parking.operation.application.service.ReprintTicketService;
-import com.parkflow.modules.parking.operation.application.service.ProcessLostTicketService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
-import com.parkflow.modules.configuration.domain.repository.MonthlyContractPort;
-import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
-import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
+import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.configuration.application.port.in.PrepaidUseCase;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.IdempotentOperationType;
 import com.parkflow.modules.parking.operation.domain.OperationIdempotency;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
-import com.parkflow.modules.configuration.domain.Rate;
-import com.parkflow.modules.configuration.domain.RateType;
+import com.parkflow.modules.parking.operation.domain.Rate;
+import com.parkflow.modules.parking.operation.domain.RateType;
 import com.parkflow.modules.configuration.domain.RoundingMode;
 import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.domain.SessionSyncStatus;
@@ -41,15 +31,15 @@ import com.parkflow.modules.parking.operation.dto.EntryRequest;
 import com.parkflow.modules.parking.operation.dto.LostTicketRequest;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
-import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
-import com.parkflow.modules.parking.operation.domain.repository.VehiclePort;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigDecimal;
@@ -60,7 +50,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -68,71 +57,72 @@ import org.mockito.quality.Strictness;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.http.HttpStatus;
+
+import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.repository.VehicleRepository;
+import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class OperationServiceInventoryTest {
 
-  @Mock private AppUserPort appUserRepository;
-  @Mock private VehiclePort vehicleRepository;
-  @Mock private RatePort rateRepository;
-  @Mock private ParkingSitePort parkingSiteRepository;
-  @Mock private OperationalParameterPort operationalParameterRepository;
-  @Mock private ParkingSessionPort parkingSessionRepository;
+  // JPA Repositories for RegisterEntryService
+  @Mock private AppUserRepository appUserRepository;
+  @Mock private VehicleRepository vehicleRepository;
+  @Mock private RateRepository rateRepository;
+  @Mock private ParkingSiteRepository parkingSiteRepository;
+  @Mock private ParkingSessionRepository parkingSessionRepository;
+  @Mock private MonthlyContractRepository monthlyContractRepository;
+
+  // Ports for ProcessLostTicketService
+  @Mock private AppUserPort appUserPort;
+  @Mock private ParkingSessionPort parkingSessionPort;
   @Mock private PaymentPort paymentRepository;
+  @Mock private ParkingSitePort parkingSitePort;
+  @Mock private OperationalParameterPort operationalParameterRepository;
+  @Mock private OperationIdempotencyPort operationIdempotencyRepository;
   @Mock private TicketCounterPort ticketCounterRepository;
   @Mock private VehicleConditionReportPort vehicleConditionReportRepository;
-  @Mock private OperationIdempotencyPort operationIdempotencyRepository;
-  @Mock private OperationAuditService auditService;
-  @Mock private OperationPrintService operationPrintService;
-  @Mock private CashMovementUseCase cashMovementUseCase;
-  @Mock private MeterRegistry meterRegistry;
-  @Mock private MonthlyContractPort monthlyContractRepository;
-  @Mock private PrepaidUseCase prepaidUseCase;
-  @Mock private Counter counter;
-  @Mock private com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
+  @Mock private com.parkflow.modules.audit.application.port.out.AuditPort globalAuditPort;
   @Mock private com.parkflow.modules.parking.operation.application.port.in.ComplexPricingPort complexPricingPort;
+  
+  @Mock private OperationAuditService legacyAuditService;
+  @Mock private OperationPrintService legacyPrintService;
+  @Mock private com.parkflow.modules.parking.operation.application.service.OperationAuditService auditService;
+  @Mock private com.parkflow.modules.parking.operation.application.service.OperationPrintService operationPrintService;
+  @Mock private CashMovementUseCase cashMovementUseCase;
+  @Mock private ParkingSpaceService parkingSpaceService;
+  @Mock private MeterRegistry meterRegistry;
+  @Mock private Counter counter;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   private RegisterEntryService registerEntryService;
-  private VoidSessionService voidSessionService;
-  private ReprintTicketService reprintTicketService;
   private ProcessLostTicketService processLostTicketService;
 
   @BeforeEach
   void setUp() {
-    idempotencyManager = new IdempotencyManager(operationIdempotencyRepository);
     registerEntryService = new RegisterEntryService(
         appUserRepository, vehicleRepository, rateRepository,
-        parkingSessionRepository, ticketCounterRepository, vehicleConditionReportRepository,
-        auditService, operationPrintService,
+        parkingSiteRepository, parkingSessionRepository, ticketCounterRepository,
+        vehicleConditionReportRepository, operationIdempotencyRepository,
+        legacyAuditService, legacyPrintService,
         new com.parkflow.modules.parking.operation.validation.PlateValidator(),
-        monthlyContractRepository, objectMapper, meterRegistry
+        monthlyContractRepository, parkingSpaceService, objectMapper, meterRegistry
     );
 
-    service =
-        new OperationService(
-            appUserRepository,
-            parkingSiteRepository,
-            operationalParameterRepository,
-            parkingSessionRepository,
-            paymentRepository,
-            operationIdempotencyRepository,
-            auditService,
-            operationPrintService,
-            cashMovementUseCase,
-            pricingCalculator,
-            monthlyContractRepository,
-            prepaidBalanceRepository,
-            agreementRepository,
-            prepaidUseCase,
-            meterRegistry,
-            globalAuditService);
+    processLostTicketService = new ProcessLostTicketService(
+        parkingSessionPort, appUserPort, paymentRepository, parkingSitePort,
+        operationalParameterRepository, operationIdempotencyRepository,
+        auditService, operationPrintService, complexPricingPort,
+        cashMovementUseCase, meterRegistry, globalAuditPort
+    );
+
     lenient().when(operationalParameterRepository.findBySite_Id(any())).thenReturn(Optional.empty());
-    lenient().when(operationalConfigurationService.getOperationalProfile(any())).thenReturn(OperationalProfile.MIXED);
-    lenient().when(operationalConfigurationService.resolveVehicleType(any(), anyString()))
-        .thenAnswer(invocation -> invocation.getArgument(1));
     lenient().when(meterRegistry.counter(anyString(), anyString(), anyString())).thenReturn(counter);
     lenient().when(complexPricingPort.calculate(any(), any(), any(), anyBoolean(), anyBoolean()))
         .thenReturn(
@@ -142,8 +132,7 @@ class OperationServiceInventoryTest {
     lenient().when(rateRepository.findFirstApplicableRate(any(), any(), any())).thenReturn(Optional.of(rate()));
     lenient().when(parkingSessionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     lenient().when(vehicleRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-    lenient().when(vehicleRepository.findByPlateAndCompanyId(anyString(), any())).thenReturn(Optional.empty());
-    lenient().when(vehicleRepository.findByPlateIgnoreCaseAndCompanyId(anyString(), any())).thenReturn(Optional.empty());
+    lenient().when(vehicleRepository.findByPlateIgnoreCase(anyString())).thenReturn(Optional.empty());
     lenient().when(ticketCounterRepository.findByIdForUpdate(any())).thenReturn(Optional.empty());
     lenient().when(ticketCounterRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     
@@ -180,29 +169,31 @@ class OperationServiceInventoryTest {
             "idemp-key",
             "abc123",
             "CAR",
-            null,
-            null,
-            null,
-            null,
-            null,
-            UUID.randomUUID(),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            "OK",
-            null,
-            null);
+            null, // countryCode
+            null, // entryMode
+            null, // noPlate
+            null, // noPlateReason
+            null, // rateId
+            UUID.randomUUID(), // operatorUserId
+            null, // entryAt
+            null, // site
+            null, // lane
+            null, // booth
+            null, // terminal
+            null, // parkingSpaceId
+            null, // observations
+            null, // entryImageUrl
+            "OK", // vehicleCondition
+            null, // conditionChecklist
+            null // conditionPhotoUrls
+        );
 
     ParkingSession existing = activeSession("ABC123");
-    doThrow(new OperationException(HttpStatus.CONFLICT, "El vehículo ya tiene una sesión activa"))
-        .when(parkingValidatorService).assertVehicleNotActive(eq("ABC123"), any());
+    when(parkingSessionRepository.findActiveByPlateForUpdate(any(), anyString(), any()))
+        .thenReturn(Optional.of(existing));
 
     assertThatThrownBy(() -> registerEntryService.execute(request))
-        .isInstanceOf(BusinessValidationException.class)
+        .isInstanceOf(OperationException.class)
         .hasMessageContaining("sesión activa");
 
     verify(parkingSessionRepository, never()).save(any());
@@ -235,6 +226,7 @@ class OperationServiceInventoryTest {
             null,
             null,
             UUID.randomUUID(),
+            null,
             null,
             null,
             null,
@@ -280,12 +272,14 @@ class OperationServiceInventoryTest {
             null,
             null,
             null,
+            null,
             "OK",
             null,
             null);
 
     assertThatThrownBy(() -> registerEntryService.execute(request))
-        .isInstanceOf(ConcurrentOperationException.class);
+        .isInstanceOf(OperationException.class)
+        .hasMessageContaining("ya usada");
   }
 
   @Test
@@ -304,7 +298,7 @@ class OperationServiceInventoryTest {
     stored.setSession(session);
 
     when(operationIdempotencyRepository.findByIdempotencyKey(key)).thenReturn(Optional.of(stored));
-    when(parkingSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+    when(parkingSessionPort.findById(sessionId)).thenReturn(Optional.of(session));
 
     LostTicketRequest request =
         new LostTicketRequest(key, null, "CLOSED1", UUID.randomUUID(), null, "perdido", null, null);
@@ -336,7 +330,7 @@ class OperationServiceInventoryTest {
     stored.setSession(session);
 
     when(operationIdempotencyRepository.findByIdempotencyKey(key)).thenReturn(Optional.of(stored));
-    when(parkingSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+    when(parkingSessionPort.findById(sessionId)).thenReturn(Optional.of(session));
 
     LostTicketRequest request =
         new LostTicketRequest(key, null, "LOST123", UUID.randomUUID(), null, "perdido", null, null);
@@ -347,7 +341,7 @@ class OperationServiceInventoryTest {
     assertThat(result.sessionId()).isEqualTo(sessionId.toString());
     assertThat(result.receipt().status()).isEqualTo(SessionStatus.LOST_TICKET);
     assertThat(result.receipt().lostTicket()).isTrue();
-    verify(parkingSessionRepository, never()).save(any());
+    verify(parkingSessionPort, never()).save(any());
   }
 
   private static ParkingSession activeSession(String plate) {

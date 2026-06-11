@@ -27,6 +27,6 @@ public record EntryRequest(
     UUID parkingSpaceId,
     @Size(max = 500) String observations,
     @Size(max = 500) String entryImageUrl,
-    @NotBlank @Size(max = 200) String vehicleCondition,
+    @Size(max = 200) String vehicleCondition,
     List<@Size(max = 100) String> conditionChecklist,
     List<@Size(max = 500) String> conditionPhotoUrls) {}

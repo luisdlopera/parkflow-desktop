@@ -39,7 +39,8 @@ public class IdempotencyManager {
                 session.getStatus(), session.isLostTicket(), session.getReprintCount(),
                 session.getEntryImageUrl(), session.getExitImageUrl(),
                 session.getSyncStatus(), session.getEntryMode(), session.isMonthlySession(),
-                session.getAgreementCode(), session.getAppliedPrepaidMinutes());
+                session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
+                null, null, null);
 
             return new OperationResultResponse(
                 session.getId().toString(),

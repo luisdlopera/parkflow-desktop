@@ -1,7 +1,6 @@
 package com.parkflow.controller;
 
 import com.parkflow.config.BaseIntegrationTest;
-import java.util.UUID;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -268,7 +267,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
     @Test
     void registerEntry_ShouldReturn409_WhenActiveSessionExists() throws Exception {
         String token = getAuthToken();
-        String plate = "DUPE99";
+        String plate = "DUP999";
         String baseRequest = """
             {
                 "idempotencyKey": "%s",
@@ -309,13 +308,12 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
         String entryRequest = """
             {
                 "idempotencyKey": "empty-cond-%s",
-                "plate": "COND00",
+                "plate": "CON100",
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
                 "site": "Test Site",
-                "terminal": "TERM1",
-                "observations": "Sin condicion"
+                "terminal": "TERM1"
             }
             """.formatted(System.currentTimeMillis(), rateId, adminUserId);
 
@@ -334,7 +332,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
         String entryRequest = """
             {
                 "idempotencyKey": "%s",
-                "plate": "RETRY1",
+                "plate": "RET001",
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
@@ -378,7 +376,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
         String entryRequest = """
             {
                 "idempotencyKey": "no-rate-id-%s",
-                "plate": "NORAT",
+                "plate": "NOR001",
                 "type": "CAR",
                 "operatorUserId": "%s",
                 "site": "Test Site",
