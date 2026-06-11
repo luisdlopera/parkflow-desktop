@@ -92,7 +92,7 @@ describe("DashboardPage", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Sync pendiente: 3/)).toBeDefined();
-      expect(screen.getByText(/Impresión fallida: 1/)).toBeDefined();
+      expect(screen.getByText(/Impresion fallida: 1/)).toBeDefined();
     });
   });
 

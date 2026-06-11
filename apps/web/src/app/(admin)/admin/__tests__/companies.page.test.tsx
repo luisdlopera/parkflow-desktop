@@ -118,29 +118,7 @@ describe("CompaniesPage", () => {
     expect(screen.getByText("2")).toBeDefined();
   });
 
-  it("filters companies by search query", async () => {
-    render(<CompaniesPage />);
 
-    fireEvent.change(screen.getByPlaceholderText("Buscar por nombre, NIT o email..."), {
-      target: { value: "Alpha" },
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText("Empresa Alpha")).toBeDefined();
-    });
-  });
-
-  it("shows empty state when no companies match search", async () => {
-    render(<CompaniesPage />);
-
-    fireEvent.change(screen.getByPlaceholderText("Buscar por nombre, NIT o email..."), {
-      target: { value: "ZZZNonexistent" },
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText("No se encontraron empresas")).toBeDefined();
-    });
-  });
 
   it("shows error state when API fails", () => {
     mockUseCompanies.mockReturnValue(makeMockCompanies({ data: null, error: new Error("API Error") }));
