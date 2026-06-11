@@ -105,6 +105,11 @@ public class ParkingSessionJpaAdapter implements ParkingSessionPort {
   }
 
   @Override
+  public List<ParkingSession> searchByPlateOrTicket(String query, UUID companyId, Pageable pageable) {
+    return jpaRepository.searchByPlateOrTicket(query, companyId, pageable);
+  }
+
+  @Override
   public ParkingSession save(ParkingSession session) {
     return jpaRepository.save(session);
   }
@@ -166,5 +171,11 @@ public class ParkingSessionJpaAdapter implements ParkingSessionPort {
 
     @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.syncStatus = 'PENDING' AND s.companyId = :cid")
     long countSyncPending(@Param("cid") UUID companyId);
+
+    @Query("SELECT s FROM ParkingSession s JOIN FETCH s.vehicle v LEFT JOIN FETCH s.rate r " +
+           "WHERE (LOWER(v.plate) LIKE LOWER(CONCAT('%', :q, '%')) " +
+           "OR LOWER(s.ticketNumber) LIKE LOWER(CONCAT('%', :q, '%'))) " +
+           "AND s.companyId = :cid ORDER BY s.entryAt DESC")
+    List<ParkingSession> searchByPlateOrTicket(@Param("q") String query, @Param("cid") UUID companyId, Pageable pageable);
   }
 }

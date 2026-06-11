@@ -1,6 +1,8 @@
 package com.parkflow.modules.cash.application.service;
 
-import com.parkflow.modules.auth.entity.AuthAuditAction;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
 import com.parkflow.modules.cash.domain.*;
@@ -15,7 +17,7 @@ import com.parkflow.modules.cash.service.CashPolicyResolver;
 import com.parkflow.modules.cash.support.CashHttpContext;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.parking.operation.domain.*;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import lombok.RequiredArgsConstructor;

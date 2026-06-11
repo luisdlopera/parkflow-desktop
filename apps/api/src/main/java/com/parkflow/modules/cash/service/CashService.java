@@ -1,18 +1,20 @@
 package com.parkflow.modules.cash.service;
 
-import com.parkflow.modules.auth.entity.AuthAuditAction;
-import com.parkflow.modules.auth.service.AuthAuditService;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.auth.domain.AuthAuditAction;
+import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.cash.domain.*;
 import com.parkflow.modules.cash.dto.*;
 import com.parkflow.modules.cash.repository.*;
 import com.parkflow.modules.cash.support.CashHttpContext;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.parking.operation.domain.*;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
-import com.parkflow.modules.settings.service.ParkingParametersService;
+import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -47,7 +49,7 @@ public class CashService {
   private final ParkingParametersService parkingParametersService;
   private final CashSequentialSupportService cashSequentialSupportService;
   private final CashClosingOutboundNotifier cashClosingOutboundNotifier;
-  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
+  private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
 
   @Transactional
   public CashSessionResponse open(OpenCashRequest request) {

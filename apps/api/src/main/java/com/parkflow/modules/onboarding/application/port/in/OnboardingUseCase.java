@@ -10,6 +10,7 @@ public interface OnboardingUseCase {
     OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data);
     OnboardingStatusResponse skipAndApplyDefaults(UUID companyId);
     OnboardingStatusResponse completeOnboarding(UUID companyId);
+    OnboardingStatusResponse resetOnboarding(UUID companyId, String reason);
     boolean isFeatureEnabled(UUID companyId, String featureKey);
     Map<String, Object> getCompanySettings(UUID companyId);
     CompanyCapabilitiesResponse getCapabilities(UUID companyId);

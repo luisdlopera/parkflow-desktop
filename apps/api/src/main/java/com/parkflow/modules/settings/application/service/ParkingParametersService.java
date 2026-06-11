@@ -4,11 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
-import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.settings.application.port.in.ParkingParametersUseCase;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
 import com.parkflow.modules.settings.dto.ParametersValidateResponse;
-import com.parkflow.modules.settings.entity.ParkingParameters;
+import com.parkflow.modules.settings.domain.ParkingParameters;
 import com.parkflow.modules.settings.domain.repository.ParkingParametersPort;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -23,11 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ParkingParametersService {
-  private final ParkingParametersRepository parkingParametersRepository;
+public class ParkingParametersService implements com.parkflow.modules.settings.application.port.in.ParkingParametersUseCase {
+  private final ParkingParametersPort parkingParametersRepository;
   private final SettingsAuditService settingsAuditService;
   private final ObjectMapper objectMapper;
-  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
+  private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
 
   @Transactional(readOnly = true)
   public ParkingParametersData get(String siteCode) {

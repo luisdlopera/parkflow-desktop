@@ -5,7 +5,7 @@ import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
 import com.parkflow.modules.cash.repository.CashSessionRepository;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
-import com.parkflow.modules.settings.service.ParkingParametersService;
+import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;

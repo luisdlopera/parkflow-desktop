@@ -3,11 +3,11 @@ package com.parkflow.modules.configuration.application.service;
 import com.parkflow.modules.configuration.application.port.in.RateFractionUseCase;
 import com.parkflow.modules.configuration.dto.RateFractionRequest;
 import com.parkflow.modules.configuration.dto.RateFractionResponse;
-import com.parkflow.modules.configuration.entity.RateFraction;
-import com.parkflow.modules.configuration.repository.RateFractionRepository;
-import com.parkflow.modules.parking.operation.domain.Rate;
-import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.configuration.domain.RateFraction;
+import com.parkflow.modules.configuration.domain.repository.RateFractionPort;
+import com.parkflow.modules.configuration.domain.Rate;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.configuration.domain.repository.RatePort;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -17,17 +17,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class RateFractionManagementService implements RateFractionUseCase {
 
-  private final RateFractionRepository rateFractionRepository;
-  private final RateRepository rateRepository;
+  private final RateFractionPort rateFractionRepository;
+  private final RatePort ratePort;
 
   @Override
   @Transactional(readOnly = true)
@@ -47,7 +42,7 @@ public class RateFractionManagementService implements RateFractionUseCase {
   @Override
   @Transactional
   public RateFractionResponse create(UUID rateId, RateFractionRequest req) {
-    Rate rate = rateRepository.findById(rateId)
+    Rate rate = ratePort.findById(rateId)
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
     validateFraction(rateId, req.fromMinute(), req.toMinute(), null);
 

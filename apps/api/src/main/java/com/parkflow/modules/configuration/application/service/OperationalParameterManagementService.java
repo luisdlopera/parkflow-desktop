@@ -3,11 +3,11 @@ package com.parkflow.modules.configuration.application.service;
 import com.parkflow.modules.configuration.application.port.in.OperationalParameterUseCase;
 import com.parkflow.modules.configuration.dto.OperationalParameterRequest;
 import com.parkflow.modules.configuration.dto.OperationalParameterResponse;
-import com.parkflow.modules.configuration.entity.OperationalParameter;
-import com.parkflow.modules.configuration.entity.ParkingSite;
-import com.parkflow.modules.configuration.repository.OperationalParameterRepository;
+import com.parkflow.modules.configuration.domain.OperationalParameter;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OperationalParameterManagementService implements OperationalParameterUseCase {
 
-  private final OperationalParameterRepository operationalParameterRepository;
+  private final OperationalParameterPort operationalParameterRepository;
   private final ParkingSiteRepository parkingSiteRepository;
 
   @Override

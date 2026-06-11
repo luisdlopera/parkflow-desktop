@@ -1,6 +1,6 @@
 package com.parkflow.modules.cash.application.service;
 
-import com.parkflow.modules.auth.entity.AuthAuditAction;
+import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.cash.application.port.in.CashConfigurationUseCase;
 import com.parkflow.modules.cash.domain.CashSession;
@@ -14,12 +14,12 @@ import com.parkflow.modules.cash.repository.CashSessionRepository;
 import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
 import com.parkflow.modules.cash.service.CashDomainAuditService;
 import com.parkflow.modules.cash.service.CashPolicyResolver;
-import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
-import com.parkflow.modules.settings.service.ParkingParametersService;
+import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

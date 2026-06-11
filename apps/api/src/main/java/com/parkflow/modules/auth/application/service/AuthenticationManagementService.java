@@ -2,19 +2,18 @@ package com.parkflow.modules.auth.application.service;
 
 import com.parkflow.modules.auth.application.port.in.AuthenticationUseCase;
 import com.parkflow.modules.auth.dto.*;
-import com.parkflow.modules.auth.entity.AuthAuditAction;
-import com.parkflow.modules.auth.entity.AuthPermission;
-import com.parkflow.modules.auth.entity.AuthSession;
-import com.parkflow.modules.auth.entity.AuthorizedDevice;
-import com.parkflow.modules.auth.repository.AuthSessionRepository;
-import com.parkflow.modules.auth.repository.AuthorizedDeviceRepository;
+import com.parkflow.modules.auth.domain.AuthAuditAction;
+import com.parkflow.modules.auth.domain.AuthPermission;
+import com.parkflow.modules.auth.domain.AuthSession;
+import com.parkflow.modules.auth.domain.AuthorizedDevice;
+import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
+import com.parkflow.modules.auth.domain.repository.AuthorizedDevicePort;
 import com.parkflow.modules.auth.security.JwtTokenService;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.RolePermissions;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.auth.application.service.AuthAuditService;
-import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import io.jsonwebtoken.Claims;
 import java.time.OffsetDateTime;
@@ -40,12 +39,12 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
       "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!.])(?=\\S+$).{8,}$");
 
   private final AppUserRepository appUserRepository;
-  private final AuthorizedDeviceRepository authorizedDeviceRepository;
-  private final AuthSessionRepository authSessionRepository;
+  private final AuthorizedDevicePort authorizedDeviceRepository;
+  private final AuthSessionPort authSessionRepository;
   private final JwtTokenService jwtTokenService;
   private final PasswordHashService passwordHashService;
   private final AuthAuditService authAuditService;
-  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
+  private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
 
   @Value("${app.security.offline-lease-hours:48}")
   private int defaultOfflineLeaseHours;

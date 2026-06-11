@@ -3,10 +3,10 @@ package com.parkflow.modules.settings.application.service;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.domain.UserRole;
-import com.parkflow.modules.parking.operation.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.settings.application.port.in.UserManagementUseCase;
 import com.parkflow.modules.settings.dto.*;
 import java.time.OffsetDateTime;
@@ -26,16 +26,16 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class SettingsUserService {
+public class SettingsUserService implements UserManagementUseCase {
   private final AppUserRepository appUserRepository;
   private final PasswordHashService passwordHashService;
   private final SettingsAuditService settingsAuditService;
-  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
+  private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   @Override
   @Transactional(readOnly = true)
-  public SettingsPageResponse<UserAdminResponse> list(String q, Boolean active, Pageable pageable) {
+  public SettingsPageResponse<UserAdminResponse> list(String q, Boolean active, UserRole role, Pageable pageable) {
     UUID companyId = SecurityUtils.requireCompanyId();
     Page<AppUser> page = appUserRepository.search(q, active, companyId, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
@@ -261,16 +261,6 @@ public class SettingsUserService {
         AuthAuditAction.SETTINGS_USER_PASSWORD_RESET,
         "OK",
         Map.of("userId", id.toString(), "email", user.getEmail()));
-  }
-
-  private void assertNotDemoteLastSuperAdmin(AppUser user, UserRole newRole) {
-    if (user.getRole() == UserRole.SUPER_ADMIN && newRole != UserRole.SUPER_ADMIN) {
-      long activeSupers = appUserRepository.countByRoleAndCompanyIdAndIsActiveTrue(UserRole.SUPER_ADMIN, user.getCompanyId());
-      if (user.isActive() && activeSupers <= 1) {
-        throw new OperationException(
-            HttpStatus.CONFLICT, "No puede cambiar el rol del unico super administrador activo");
-      }
-    }
   }
 
   private void assertCanAssignRole(UserRole actor, UserRole target) {

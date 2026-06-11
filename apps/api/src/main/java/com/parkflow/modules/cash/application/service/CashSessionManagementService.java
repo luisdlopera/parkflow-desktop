@@ -1,6 +1,6 @@
 package com.parkflow.modules.cash.application.service;
 
-import com.parkflow.modules.auth.entity.AuthAuditAction;
+import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
 import com.parkflow.modules.cash.domain.*;
@@ -9,12 +9,12 @@ import com.parkflow.modules.cash.repository.*;
 import com.parkflow.modules.cash.service.*;
 import com.parkflow.modules.cash.support.CashHttpContext;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.domain.UserRole;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
-import com.parkflow.modules.settings.service.ParkingParametersService;
+import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -48,7 +48,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
     private final ParkingParametersService parkingParametersService;
     private final CashSequentialSupportService cashSequentialSupportService;
     private final CashClosingOutboundNotifier cashClosingOutboundNotifier;
-    private final com.parkflow.modules.audit.service.AuditService globalAuditService;
+    private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
 
     @Override
     @Transactional

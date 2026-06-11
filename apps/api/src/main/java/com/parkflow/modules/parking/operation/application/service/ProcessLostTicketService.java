@@ -2,6 +2,8 @@ package com.parkflow.modules.parking.operation.application.service;
 
 import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.audit.domain.AuditAction;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
 import com.parkflow.modules.cash.domain.CashMovementType;
@@ -15,13 +17,11 @@ import com.parkflow.modules.parking.operation.dto.LostTicketRequest;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
-import com.parkflow.modules.parking.operation.application.service.OperationAuditService;
-import com.parkflow.modules.parking.operation.application.service.OperationPrintService;
 import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
@@ -242,7 +242,8 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
         session.getReprintCount(),
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
-        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes());
+        session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
+        null, null, null);
   }
 
   private String blankToNull(String s) { return s == null || s.isBlank() ? null : s.trim(); }

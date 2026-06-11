@@ -2,17 +2,18 @@ package com.parkflow.modules.configuration.service;
 
 import com.parkflow.modules.configuration.dto.MonthlyContractRequest;
 import com.parkflow.modules.configuration.dto.MonthlyContractResponse;
-import com.parkflow.modules.configuration.entity.MonthlyContract;
-import com.parkflow.modules.configuration.entity.ParkingSite;
+import com.parkflow.modules.configuration.domain.MonthlyContract;
+import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.parking.operation.domain.Rate;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import com.parkflow.modules.configuration.application.port.in.MonthlyContractUseCase;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -21,12 +22,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class MonthlyContractService {
+public class MonthlyContractService implements MonthlyContractUseCase {
 
   private final MonthlyContractRepository repo;
   private final RateRepository rateRepository;
   private final ParkingSiteRepository siteRepository;
-  private final com.parkflow.modules.audit.service.AuditService globalAuditService;
+  private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   @Transactional(readOnly = true)

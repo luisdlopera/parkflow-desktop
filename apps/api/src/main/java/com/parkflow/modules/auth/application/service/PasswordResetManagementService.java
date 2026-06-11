@@ -3,13 +3,12 @@ package com.parkflow.modules.auth.application.service;
 import com.parkflow.modules.auth.application.port.in.PasswordResetUseCase;
 import com.parkflow.modules.auth.dto.PasswordResetConfirmRequest;
 import com.parkflow.modules.auth.dto.PasswordResetRequest;
-import com.parkflow.modules.auth.entity.AuthAuditAction;
-import com.parkflow.modules.auth.entity.PasswordResetToken;
-import com.parkflow.modules.auth.repository.PasswordResetTokenRepository;
+import com.parkflow.modules.auth.domain.AuthAuditAction;
+import com.parkflow.modules.auth.domain.PasswordResetToken;
+import com.parkflow.modules.auth.domain.repository.PasswordResetTokenPort;
 import com.parkflow.modules.auth.security.PasswordHashService;
-import com.parkflow.modules.auth.application.service.AuthAuditService;
-import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
@@ -34,7 +33,7 @@ public class PasswordResetManagementService implements PasswordResetUseCase {
   private static final Pattern PASSWORD_PATTERN = Pattern.compile(
       "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!.])(?=\\S+$).{8,}$");
 
-  private final PasswordResetTokenRepository tokenRepository;
+  private final PasswordResetTokenPort tokenRepository;
   private final AppUserRepository userRepository;
   private final PasswordHashService passwordHashService;
   private final AuthAuditService authAuditService;

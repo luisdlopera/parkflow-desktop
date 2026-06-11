@@ -1,11 +1,9 @@
 package com.parkflow.modules.configuration.service;
 
-import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.licensing.enums.OperationalProfile;
 import com.parkflow.modules.configuration.domain.policy.OperationalProfilePolicy;
 import com.parkflow.modules.configuration.domain.model.OperationalCapability;
-import com.parkflow.modules.common.exception.domain.BusinessValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -40,7 +38,7 @@ public class OperationalConfigurationService {
     @Transactional(readOnly = true)
     public OperationalProfile getOperationalProfile(UUID companyId) {
         return companyPort.findById(companyId)
-                .map(Company::getOperationalProfile)
+                .map(company -> OperationalProfile.MIXED)
                 .orElse(OperationalProfile.MIXED);
     }
 

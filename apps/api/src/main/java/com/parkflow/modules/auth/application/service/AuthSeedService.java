@@ -1,8 +1,8 @@
 package com.parkflow.modules.auth.application.service;
 
 import com.parkflow.modules.auth.security.PasswordHashService;
-import com.parkflow.modules.parking.operation.domain.AppUser;
-import com.parkflow.modules.parking.operation.domain.UserRole;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

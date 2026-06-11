@@ -45,6 +45,6 @@ public class SupervisorService {
             companyId, EnumSet.of(PrintJobStatus.DEAD_LETTER), dayStart);
     long syncPending = syncEventRepository.countByCompanyIdAndSyncedAtIsNull(companyId);
     return new OperationsSummaryResponse(
-        active, entries, exits, reprints, lost, printFailed, deadLetter, syncPending, now);
+        active, 0, 0, 0.0, entries, exits, reprints, lost, printFailed, deadLetter, syncPending, now);
   }
 }

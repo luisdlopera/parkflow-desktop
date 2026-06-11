@@ -1,4 +1,4 @@
-package com.parkflow.modules.licensing.service;
+package com.parkflow.modules.licensing.application.service;
 import com.parkflow.modules.licensing.domain.repository.*;
 
 import com.parkflow.modules.licensing.dto.*;

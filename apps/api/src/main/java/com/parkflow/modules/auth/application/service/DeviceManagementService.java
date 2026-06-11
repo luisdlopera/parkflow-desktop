@@ -3,10 +3,10 @@ package com.parkflow.modules.auth.application.service;
 import com.parkflow.modules.auth.application.port.in.DeviceManagementUseCase;
 import com.parkflow.modules.auth.dto.DeviceDecisionRequest;
 import com.parkflow.modules.auth.dto.DeviceInfoResponse;
-import com.parkflow.modules.auth.entity.AuthAuditAction;
-import com.parkflow.modules.auth.entity.AuthorizedDevice;
-import com.parkflow.modules.auth.repository.AuthorizedDeviceRepository;
-import com.parkflow.modules.parking.operation.exception.OperationException;
+import com.parkflow.modules.auth.domain.AuthAuditAction;
+import com.parkflow.modules.auth.domain.AuthorizedDevice;
+import com.parkflow.modules.auth.domain.repository.AuthorizedDevicePort;
+import com.parkflow.modules.common.exception.OperationException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DeviceManagementService implements DeviceManagementUseCase {
 
-  private final AuthorizedDeviceRepository authorizedDeviceRepository;
+  private final AuthorizedDevicePort authorizedDeviceRepository;
   private final AuthAuditService authAuditService;
 
   @Override

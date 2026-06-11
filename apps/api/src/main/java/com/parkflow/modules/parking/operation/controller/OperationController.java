@@ -2,10 +2,8 @@ package com.parkflow.modules.parking.operation.controller;
 
 import com.parkflow.modules.common.debug.AgentDebugNdjson;
 import com.parkflow.modules.parking.operation.dto.*;
-import com.parkflow.modules.parking.operation.application.port.in.RegisterEntryUseCase;
-import com.parkflow.modules.parking.operation.application.port.in.RegisterExitUseCase;
-import com.parkflow.modules.parking.operation.service.OperationService;
-import com.parkflow.modules.parking.operation.service.SupervisorService;
+import com.parkflow.modules.parking.operation.application.port.in.*;
+import com.parkflow.modules.parking.operation.application.service.SupervisorService;
 import jakarta.validation.Valid;
 import java.time.ZoneId;
 import java.util.List;
@@ -16,21 +14,36 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/operations")
-@RequiredArgsConstructor
 public class OperationController {
   private final SupervisorService supervisorService;
   private final RegisterEntryUseCase registerEntryUseCase;
   private final RegisterExitUseCase registerExitUseCase;
+  private final ReprintTicketUseCase reprintTicketUseCase;
+  private final ProcessLostTicketUseCase processLostTicketUseCase;
+  private final VoidSessionUseCase voidSessionUseCase;
+  private final GetTicketUseCase getTicketUseCase;
+  private final ListActiveSessionsUseCase listActiveSessionsUseCase;
+  private final FindActiveSessionUseCase findActiveSessionUseCase;
 
   public OperationController(
-      OperationService operationService,
       SupervisorService supervisorService,
       RegisterEntryUseCase registerEntryUseCase,
-      RegisterExitUseCase registerExitUseCase) {
-    this.operationService = operationService;
+      RegisterExitUseCase registerExitUseCase,
+      ReprintTicketUseCase reprintTicketUseCase,
+      ProcessLostTicketUseCase processLostTicketUseCase,
+      VoidSessionUseCase voidSessionUseCase,
+      GetTicketUseCase getTicketUseCase,
+      ListActiveSessionsUseCase listActiveSessionsUseCase,
+      FindActiveSessionUseCase findActiveSessionUseCase) {
     this.supervisorService = supervisorService;
     this.registerEntryUseCase = registerEntryUseCase;
     this.registerExitUseCase = registerExitUseCase;
+    this.reprintTicketUseCase = reprintTicketUseCase;
+    this.processLostTicketUseCase = processLostTicketUseCase;
+    this.voidSessionUseCase = voidSessionUseCase;
+    this.getTicketUseCase = getTicketUseCase;
+    this.listActiveSessionsUseCase = listActiveSessionsUseCase;
+    this.findActiveSessionUseCase = findActiveSessionUseCase;
   }
 
   @GetMapping("/supervisor/summary")
@@ -63,7 +76,7 @@ public class OperationController {
                 "idempotencyPresent",
                 request.idempotencyKey() != null && !request.idempotencyKey().isBlank())));
     // #endregion
-    return operationService.registerEntry(request);
+    return registerEntryUseCase.execute(request);
   }
 
   @PostMapping("/exits")
@@ -90,19 +103,13 @@ public class OperationController {
     return voidSessionUseCase.execute(request);
   }
 
-  @PostMapping("/tickets/void")
-  @PreAuthorize("hasAuthority('anulaciones:crear')")
-  public OperationResultResponse voidTicket(@Valid @RequestBody VoidRequest request) {
-    return operationService.voidSession(request);
-  }
-
   @GetMapping("/sessions/active")
   @PreAuthorize("hasAuthority('tickets:emitir') or hasAuthority('cobros:registrar')")
   public OperationResultResponse active(
       @RequestParam(required = false) String ticketNumber,
       @RequestParam(required = false) String plate,
       @RequestParam(required = false) String agreementCode) {
-    return operationService.findActive(ticketNumber, plate, agreementCode);
+    return findActiveSessionUseCase.execute(ticketNumber, plate, agreementCode);
   }
 
   @GetMapping("/tickets/{ticketNumber}")

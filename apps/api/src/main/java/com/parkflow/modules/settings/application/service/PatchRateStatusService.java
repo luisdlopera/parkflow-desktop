@@ -2,8 +2,8 @@ package com.parkflow.modules.settings.application.service;
 
 import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.configuration.domain.Rate;
-import com.parkflow.modules.configuration.domain.repository.RatePort;
+import com.parkflow.modules.parking.operation.domain.Rate;
+import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.configuration.domain.service.RateDomainService;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.settings.application.mapper.RateMapper;
