@@ -399,17 +399,7 @@ export async function patchVehicleTypeStatus(id: string, active: boolean, auditR
   });
 }
 
-export async function patchVehicleTypeStatus(id: string, active: boolean, auditReason?: string): Promise<void> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/operations", "/configuration") ?? "http://localhost:6011/api/v1/configuration";
-  const res = await fetch(`${baseUrl}/vehicle-types/${id}/status?active=${active}`, {
-    method: "PATCH",
-    headers: await buildApiHeaders(hdr(auditReason))
-  });
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => null);
-    throw new Error(`Error cambiando estado del tipo de vehiculo (${res.status}): ${errorBody || res.statusText}`);
-  }
-}
+
 
 // #region Configuration API (new endpoints)
 

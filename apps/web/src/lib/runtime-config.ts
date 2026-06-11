@@ -9,6 +9,9 @@ export type RuntimeConfig = {
   sites?: Array<{ code: string; name: string }>;
   modules?: Record<string, boolean>;
   wizard?: Record<string, Record<string, unknown>>;
+  operationConfiguration?: Record<string, unknown>;
+  businessModel?: string;
+  operationalProfile?: string;
 };
 
 export async function fetchRuntimeConfig(): Promise<RuntimeConfig | null> {

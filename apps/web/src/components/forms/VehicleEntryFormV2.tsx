@@ -24,7 +24,7 @@ import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
 import { useToast } from "@/lib/toast/ToastContext";
 import { useAutoSave } from "@/lib/hooks/useAutoSave";
 import { CrashRecoveryDialog } from "@/components/ui/CrashRecoveryDialog";
-import { normalizePlate } from "@/lib/validation/plate-validator";
+import { normalizePlate, inferVehicleType } from "@/lib/validation/plate-validator";
 import type { VehicleType } from "@parkflow/types";
 import { fetchMasterVehicleTypes, type MasterVehicleTypeRow } from "@/lib/settings-api";
 import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
@@ -44,7 +44,7 @@ function writePerfLog(operation: string, durationMs: number, details?: Record<st
     data: { operation, durationMs, ...details }
   };
   let logs: unknown[] = [];
-  try {
+  console.log("onSubmit started with values:", values); try {
     const parsed = JSON.parse(localStorage.getItem("perf_logs_0dd35a") || "[]");
     logs = Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -172,11 +172,13 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   const [vehicleTypes, setVehicleTypes] = useState<MasterVehicleTypeRow[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [activeLookup, setActiveLookup] = useState<string | null>(null);
+  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
+  const [loadingConfig, setLoadingConfig] = useState(true);
   const submitLock = useRef(false);
   const [occupancy, setOccupancy] = useState<{ availableSpaces: number; activeSpaces: number } | null>(null);
 
   const loadOccupancy = useCallback(async () => {
-    try {
+    console.log("onSubmit started with values:", values); try {
       const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
       const response = await fetch(`${api}/parking-spaces/summary`, {
         headers: await buildApiHeaders(),
@@ -203,7 +205,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("parkflow_operator_settings");
       if (saved) {
-        try {
+        console.log("onSubmit started with values:", values); try {
           return JSON.parse(saved);
         } catch {
           localStorage.removeItem("parkflow_operator_settings");
@@ -275,7 +277,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
 
   useEffect(() => {
     if (runtimeConfig?.operationConfiguration) {
-      const { defaultVehicleType, defaultVisitorType } = runtimeConfig.operationConfiguration;
+      const { defaultVehicleType, defaultVisitorType } = runtimeConfig.operationConfiguration as Record<string, string>;
       if (defaultVehicleType && form.getValues("type") !== defaultVehicleType) {
         form.setValue("type", defaultVehicleType, { shouldValidate: true });
       }
@@ -405,7 +407,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   const handleReprint = useCallback(async () => {
     if (!printWarning) return;
     setReprintLoading(true);
-    try {
+    console.log("onSubmit started with values:", values); try {
       const user = await currentUser();
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
       const body = validatePayloadOrThrow(
@@ -474,7 +476,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       entryMode: values.entryMode ?? ""
     });
 
-    try {
+    console.log("onSubmit started with values:", values); try {
       const user = await currentUser();
       if (!user?.id) {
         setError("Sesion requerida para registrar ingresos");
@@ -571,7 +573,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       setPreviewLines(generatedPreviewLines);
 
       let printWarning: string | null = null;
-      try {
+      console.log("onSubmit started with values:", values); try {
         printWarning = await printReceiptIfTauri(printPayload, "ENTRY");
       } catch (printError) {
         printWarning = printError instanceof Error 
@@ -581,7 +583,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
 
       const plateLabel = payload?.receipt?.plate?.startsWith("NP-") ? "SIN PLACA" : payload?.receipt?.plate;
       if (printWarning) {
-        setPrintWarning({
+        console.log("Calling setPrintWarning! Warning is:", printWarning); setPrintWarning({
           ticketNumber: payload.receipt.ticketNumber,
           plate: plateLabel,
           previewLines: generatedPreviewLines
@@ -589,7 +591,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       } else {
         const spaceMsg = payload?.receipt?.parkingSpaceCode ? ` · Celda: ${payload.receipt.parkingSpaceCode}` : "";
         const plateMsg = plateLabel ? ` · Placa: ${plateLabel}` : "";
-        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${plateMsg}${spaceMsg}`, 5000);
+        console.log("Calling toastSuccess!"); toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${plateMsg}${spaceMsg}`, 5000);
       }
       
       playSuccess();

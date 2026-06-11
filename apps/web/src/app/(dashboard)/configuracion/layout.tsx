@@ -5,11 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
 import OfflineFeatureGate from "@/components/feedback/OfflineFeatureGate";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
-import OfflineFeatureGate from "@/components/feedback/OfflineFeatureGate";
-
 const NAV_GROUPS = [
   {
     label: "Administración",
@@ -48,16 +43,19 @@ export default function ConfiguracionLayout({ children }: { children: React.Reac
 
   const nav = useMemo(
     () =>
-      NAV.filter((item) => {
-        if (item.href === "/configuracion/sedes") {
-          const sites = runtimeConfig?.sites;
-          return Array.isArray(sites) ? sites.length > 1 : true;
-        }
-        if (item.href === "/configuracion/cajas") {
-          return shouldShowModule(runtimeConfig, "cash", true);
-        }
-        return true;
-      }),
+      NAV_GROUPS.map((group) => ({
+        ...group,
+        items: group.items.filter((item) => {
+          if (item.href === "/configuracion/sedes") {
+            const sites = runtimeConfig?.sites;
+            return Array.isArray(sites) ? sites.length > 1 : true;
+          }
+          if (item.href === "/configuracion/cajas") {
+            return shouldShowModule(runtimeConfig, "cash", true);
+          }
+          return true;
+        }),
+      })).filter((group) => group.items.length > 0),
     [runtimeConfig]
   );
 
@@ -65,7 +63,7 @@ export default function ConfiguracionLayout({ children }: { children: React.Reac
     <OfflineFeatureGate>
       <div className="space-y-4">
         <nav className="space-y-3 border-b border-slate-200 pb-4">
-          {navGroups.map((group) => (
+          {nav.map((group) => (
             <div key={group.label} className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{group.label}</p>
               <div className="flex flex-wrap gap-2">
