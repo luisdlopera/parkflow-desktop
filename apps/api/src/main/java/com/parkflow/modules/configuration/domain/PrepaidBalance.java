@@ -1,6 +1,6 @@
-package com.parkflow.modules.configuration.entity;
+package com.parkflow.modules.configuration.domain;
 
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.auth.domain.AppUser;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -26,6 +26,9 @@ public class PrepaidBalance {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
+
+  @Column(name = "company_id")
+  private UUID companyId;
 
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "package_id", nullable = false)

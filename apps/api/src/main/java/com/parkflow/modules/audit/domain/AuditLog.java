@@ -1,6 +1,6 @@
 package com.parkflow.modules.audit.domain;
 
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.auth.domain.AppUser;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -15,6 +15,9 @@ public class AuditLog {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Column(name = "company_id")
+    private UUID companyId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

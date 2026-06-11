@@ -1,6 +1,6 @@
 package com.parkflow.modules.configuration.repository;
 
-import com.parkflow.modules.configuration.entity.PrepaidBalance;
+import com.parkflow.modules.configuration.domain.PrepaidBalance;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;

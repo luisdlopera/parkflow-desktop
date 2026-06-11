@@ -1,7 +1,6 @@
 package com.parkflow.modules.parking.operation.domain;
 
 import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.configuration.domain.Rate;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -9,6 +8,7 @@ import java.util.UUID;
 import lombok.*;
 
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @Builder(toBuilder = true)
@@ -31,13 +31,16 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
   private String plate;
 
   @Column(nullable = false, length = 2)
+  @Builder.Default
   private String countryCode = "CO";
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
+  @Builder.Default
   private EntryMode entryMode = EntryMode.VISITOR;
 
   @Column(nullable = false)
+  @Builder.Default
   private boolean noPlate = false;
 
   @Column(length = 200)
@@ -98,9 +101,11 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
   private String agreementCode;
 
   @Column(name = "applied_prepaid_minutes")
+  @Builder.Default
   private Integer appliedPrepaidMinutes = 0;
 
   @Column(name = "is_monthly_session")
+  @Builder.Default
   private boolean monthlySession = false;
 
   private String site;
@@ -111,25 +116,15 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
 
   private String terminal;
 
-  @Column(name = "company_id")
+  @Column(name = "company_id", nullable = false)
   private UUID companyId;
 
   @Column(nullable = false)
-  private UUID companyId;
-
-  @Column(nullable = false)
-  private boolean isMonthlySession = false;
-
-  @Column(nullable = false)
+  @Builder.Default
   private int reprintCount = 0;
 
-  @Column(length = 50)
-  private String agreementCode;
-
   @Column(nullable = false)
-  private int appliedPrepaidMinutes = 0;
-
-  @Column(nullable = false)
+  @Builder.Default
   private OffsetDateTime createdAt = OffsetDateTime.now();
 
   @Column(nullable = false)

@@ -1,6 +1,6 @@
 package com.parkflow.modules.configuration.repository;
 
-import com.parkflow.modules.configuration.entity.MonthlyContract;
+import com.parkflow.modules.configuration.domain.MonthlyContract;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;

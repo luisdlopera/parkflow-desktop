@@ -18,10 +18,6 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
   
   // -- Primitive methods (require explicit companyId) --
 
-  long countByStatusAndSite(SessionStatus status, String site);
-
-  long countByRate_Id(UUID rateId);
-
   long countByStatusAndSiteAndCompanyId(SessionStatus status, String site, UUID companyId);
 
   long countByRate_IdAndCompanyId(UUID rateId, UUID companyId);
@@ -120,15 +116,7 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
     return findActiveByPlateForUpdate(status, plate, TenantContext.getTenantId());
   }
 
-  default long countByStatusAndSite(SessionStatus status, String site) {
-    return countByStatusAndSiteAndCompanyId(status, site, TenantContext.getTenantId());
-  }
-
   default Optional<ParkingSession> findByTicketNumberForUpdate(String ticketNumber) {
     return findByTicketNumberForUpdate(ticketNumber, TenantContext.getTenantId());
-  }
-
-  default long countByRate_Id(UUID rateId) {
-    return countByRate_IdAndCompanyId(rateId, TenantContext.getTenantId());
   }
 }

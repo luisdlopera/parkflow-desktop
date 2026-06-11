@@ -48,6 +48,8 @@ public interface ParkingSessionPort {
     return countLostTicketsInPeriod(start, end, null);
   }
   long countSyncPending(UUID companyId);
+
+  List<ParkingSession> searchByPlateOrTicket(String query, UUID companyId, Pageable pageable);
   
   ParkingSession save(ParkingSession session);
   Optional<ParkingSession> findById(UUID id);

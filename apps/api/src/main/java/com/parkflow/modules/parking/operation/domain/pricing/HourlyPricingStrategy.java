@@ -2,7 +2,7 @@ package com.parkflow.modules.parking.operation.domain.pricing;
 
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateType;
-import com.parkflow.modules.parking.operation.domain.RoundingMode;
+import com.parkflow.modules.configuration.domain.RoundingMode;
 import java.math.BigDecimal;
 import org.springframework.stereotype.Component;
 

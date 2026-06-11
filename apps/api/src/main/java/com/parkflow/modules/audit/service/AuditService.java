@@ -3,7 +3,7 @@ package com.parkflow.modules.audit.service;
 import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.audit.domain.AuditLog;
 import com.parkflow.modules.audit.repository.AuditLogRepository;
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.auth.domain.AppUser;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -14,11 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import com.parkflow.modules.audit.application.port.out.AuditPort;
 import java.time.OffsetDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class AuditService {
+public class AuditService implements AuditPort {
 
     private final AuditLogRepository auditLogRepository;
 
