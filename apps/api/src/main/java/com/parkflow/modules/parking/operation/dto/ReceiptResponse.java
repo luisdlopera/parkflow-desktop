@@ -5,6 +5,7 @@ import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.domain.SessionSyncStatus;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 public record ReceiptResponse(
     String ticketNumber,
@@ -31,4 +32,7 @@ public record ReceiptResponse(
     EntryMode entryMode,
     boolean monthlySession,
     String agreementCode,
-    Integer prepaidMinutes) {}
+    Integer prepaidMinutes,
+    UUID parkingSpaceId,
+    String parkingSpaceCode,
+    String parkingSpaceLabel) {}
