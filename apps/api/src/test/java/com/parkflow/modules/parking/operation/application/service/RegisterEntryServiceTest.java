@@ -11,16 +11,10 @@ import com.parkflow.modules.parking.operation.repository.ParkingSessionRepositor
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
 import com.parkflow.modules.parking.operation.repository.VehicleRepository;
-import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
-import com.parkflow.modules.parking.operation.repository.CustodiedItemRepository;
 import com.parkflow.modules.parking.operation.validation.PlateValidator;
 import com.parkflow.modules.parking.operation.dto.EntryRequest;
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
-import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
-import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,7 +51,7 @@ class RegisterEntryServiceTest {
   @BeforeEach
   void setUp() {
     SecurityContextHolder.getContext().setAuthentication(
-        new TestingAuthenticationToken(new AuthPrincipal(UUID.randomUUID(), UUID.randomUUID(), "x", "ADMIN", (Collection)java.util.List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))), null));
+        new TestingAuthenticationToken(new AuthPrincipal(UUID.randomUUID(), UUID.randomUUID(), "x", "ADMIN", (Collection<? extends org.springframework.security.core.GrantedAuthority>)java.util.List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))), null));
 
     service = new RegisterEntryService(
         appUserRepository, vehicleRepository, rateRepository, parkingSiteRepository, parkingSessionRepository,
@@ -92,7 +86,7 @@ class RegisterEntryServiceTest {
     String key = "idem-capacity";
     Vehicle vehicle = new Vehicle();
     vehicle.setType("CAR");
-    ParkingSession session = ParkingSession.builder().id(UUID.randomUUID()).ticketNumber("T-101").plate("ABC").companyId(UUID.randomUUID()).vehicle(vehicle).build();
+
     when(operationIdempotencyRepository.findByIdempotencyKey(key)).thenReturn(Optional.empty());
 
     // plate validation ok
