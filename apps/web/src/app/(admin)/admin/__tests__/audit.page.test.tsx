@@ -40,7 +40,7 @@ describe("AuditPage", () => {
     render(<AuditPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("Empresa Creada")).toBeDefined();
+      expect(screen.getByText("Company Created")).toBeDefined();
     });
   });
 });
