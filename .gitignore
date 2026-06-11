@@ -1,51 +1,86 @@
+# =====================================================
+# Environment & Secrets
+# =====================================================
 .env
 .env.*
-apps/web/.env.local
-apps/desktop/.env.local
 infra/keys/
+secrets/
 *.key
 *.pem
 *.p12
-secrets/
-dist/
-node_modules/
-target/
-/.idea
-.vscode
-/.DS_Store
 
+# =====================================================
+# Dependencies
+# =====================================================
+node_modules/
+.pnpm-store/
+
+# =====================================================
 # Build artifacts
+# =====================================================
+dist/
 build/
 bin/
+out/
+target/
 .gradle/
 .next/
 apps/web/out/
+apps/api/.gradle/
+apps/api/bin/
 tsconfig.tsbuildinfo
 coverage/
 
+# =====================================================
 # Logs
+# =====================================================
 *.log
 logs/
 
-# IDE and Editor
+# =====================================================
+# IDE & Editor
+# =====================================================
+.idea/
+.vscode/
 .cursor/
 .agents/
+*.iml
+*.ipr
+*.iws
 skills-lock.json
 
-# Security reports
-security/reports/
-*.sarif
+# Eclipse
+.settings/
+.project
+.classpath
+.factorypath
 
-# Test results
+# NetBeans
+nbproject/
+nb-configuration.xml
+
+# =====================================================
+# Testing
+# =====================================================
 test-results/
 playwright-report/
 playwright/.cache/
 
+# =====================================================
+# Security reports
+# =====================================================
+security/reports/
+*.sarif
+
+# =====================================================
 # OS specific
+# =====================================================
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# Local tooling / generated artifacts
-apps/api/.gradle/
-apps/api/bin/
-apps/web/.env.local
+# =====================================================
+# Temporary files
+# =====================================================
+*.patch
+test_out.txt

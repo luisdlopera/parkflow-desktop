@@ -375,7 +375,7 @@ ParkFlow incluye un sistema completo de licenciamiento para modelos de negocio S
 
 ### Documentación del Sistema de Licencias
 
-- **[Guía de Desarrollo](README-DEV.md)** - Setup completo para desarrolladores
+- **[Guía de Desarrollo](docs/DEVELOPER_GUIDE.md)** - Setup completo para desarrolladores
 - **[Arquitectura de Licensing](docs/LICENSING_ARCHITECTURE.md)** - Detalles técnicos
 - **[Setup Rápido](docs/QUICK_SETUP.md)** - Instrucciones de instalación
 
@@ -418,4 +418,4 @@ Para probar con un solo equipo:
 3. Usar la API para generar licencia con ese fingerprint
 4. Pegar licenseKey y signature en el desktop
 
-Ver [README-DEV.md](README-DEV.md#desarrollo-de-licencias-un-solo-equipo) para instrucciones detalladas.
+Ver [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md#desarrollo-de-licencias-un-solo-equipo) para instrucciones detalladas.

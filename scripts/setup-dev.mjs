@@ -136,7 +136,7 @@ async function main() {
   log("   - Terminal 2: pnpm dev:desktop\n", "cyan");
 
   log("Documentación:", "bright");
-  log("- README-DEV.md (guía completa)", "cyan");
+  log("- docs/DEVELOPER_GUIDE.md (guía completa)", "cyan");
   log("- docs/LICENSING_ARCHITECTURE.md", "cyan");
   log("- docs/QUICK_SETUP.md\n", "cyan");
 }

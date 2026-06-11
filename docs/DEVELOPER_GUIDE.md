@@ -346,7 +346,7 @@ parkflow-desktop/
 ├── docs/
 │   ├── LICENSING_ARCHITECTURE.md
 │   └── QUICK_SETUP.md
-└── README-DEV.md         # Este archivo
+└── DEVELOPER_GUIDE.md    # Este archivo
 ```
 
 ## Comandos Rápidos de Referencia
@@ -370,8 +370,8 @@ pnpm build:desktop    # Desktop installer
 
 ## Recursos Adicionales
 
-- [Documentación Arquitectura](docs/LICENSING_ARCHITECTURE.md)
-- [Setup Rápido](docs/QUICK_SETUP.md)
+- [Documentación Arquitectura](LICENSING_ARCHITECTURE.md)
+- [Setup Rápido](QUICK_SETUP.md)
 - [Spring Boot Docs](https://docs.spring.io/spring-boot/docs/current/reference/html/)
 - [Tauri Docs](https://tauri.app/v1/guides/)
 - [Next.js Docs](https://nextjs.org/docs)

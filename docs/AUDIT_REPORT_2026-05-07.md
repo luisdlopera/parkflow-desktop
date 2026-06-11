@@ -264,7 +264,7 @@ pnpm dev:api   # Start server
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| Troubleshooting Guide | [README-DEV.md](README-DEV.md#error-cannot-find-symbol-gradle-cache-corruption) | How to resolve cache issues |
+| Troubleshooting Guide | [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md#error-cannot-find-symbol-gradle-cache-corruption) | How to resolve cache issues |
 | Test Analysis | [docs/TEST_ANALYSIS_2026-05-07.md](docs/TEST_ANALYSIS_2026-05-07.md) | Detailed test results & solutions |
 | Build Scripts | [package.json](package.json) | npm scripts for API management |
 

@@ -116,7 +116,7 @@ function main() {
   log("\n[CHECK] Documentation", "cyan");
   if (check("LICENSING_ARCHITECTURE.md", "docs/LICENSING_ARCHITECTURE.md")) passed++; else failed++;
   if (check("QUICK_SETUP.md", "docs/QUICK_SETUP.md")) passed++; else failed++;
-  if (check("README-DEV.md", "README-DEV.md")) passed++; else failed++;
+  if (check("DEVELOPER_GUIDE.md", "docs/DEVELOPER_GUIDE.md")) passed++; else failed++;
 
   // Summary
   log("\n========================================", "cyan");
