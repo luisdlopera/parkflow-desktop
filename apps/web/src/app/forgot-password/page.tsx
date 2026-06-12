@@ -1,9 +1,8 @@
 "use client";
-
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { useState } from "react";
 import Link from "next/link";
-import { Input } from "@heroui/input";
-import { Button } from "@heroui/button";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -45,7 +44,7 @@ export default function ForgotPasswordPage() {
   if (success) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-        <div className="surface w-full space-y-4 rounded-2xl p-6 text-center">
+        <div className="surface w-full space-y-4 rounded-[2rem] p-8 sm:p-10 shadow-2xl shadow-slate-200/40 dark:shadow-black/40 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -85,7 +84,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-      <form onSubmit={onSubmit} className="surface w-full space-y-4 rounded-2xl p-6">
+      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 shadow-2xl shadow-slate-200/40 dark:shadow-black/40 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-amber-700/80">Parkflow</p>
           <h1 className="text-2xl font-semibold text-slate-900">Recuperar contraseña</h1>
@@ -94,16 +93,18 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
-        <Input
-          type="email"
-          label="Email"
-          value={email}
-          onValueChange={setEmail}
-          variant="flat"
-          placeholder="tu@email.com"
-          isRequired
-          autoComplete="email"
-        />
+        <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 shadow-sm space-y-4">
+          <Input
+            type="email"
+            label="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            
+            placeholder="tu@email.com"
+            isRequired
+            autoComplete="email"
+          />
+        </div>
 
         {error && <p className="text-sm text-rose-700">{error}</p>}
 

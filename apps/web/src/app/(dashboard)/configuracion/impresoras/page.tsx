@@ -3,15 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Input,
-  Button,
-  Select,
-  SelectItem,
-  Checkbox,
-  Card,
-  CardBody,
-} from "@heroui/react";
+import { ListBox } from "@heroui/react";
+import { Card } from "@/components/ui/Card";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
 import {
   fetchConfigurationPrinters,
   createConfigurationPrinter,
@@ -147,28 +144,38 @@ export default function ImpresorasPage() {
       <h1 className="text-2xl font-bold text-slate-900">Impresoras</h1>
       
       <Card shadow="sm" className="border border-slate-200 bg-slate-50/50">
-        <CardBody className="p-4 flex flex-col sm:flex-row sm:items-end gap-4">
+        <Card.Content className="p-4 flex flex-col sm:flex-row sm:items-end gap-4">
           <div className="flex-1">
             <Select
               label="Sede para nueva impresora"
               placeholder="Selecciona una sede"
-              variant="flat"
-              selectedKeys={siteId ? [siteId] : []}
-              onSelectionChange={(keys) => setSiteId(Array.from(keys)[0] as string)}
+              
+              value={siteId ? [siteId] : []}
+              onChange={(keys) => setSiteId(Array.from(keys)[0] as string)}
               isDisabled={catalogLoading || sites.length <= 1}
             >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
               {sites.map((site) => (
-                <SelectItem key={site.id} textValue={`${site.code} - ${site.name}`}>
+                <ListBox.Item key={site.id} textValue={`${site.code} - ${site.name}`}>
                   {`${site.code} - ${site.name}`}
-                </SelectItem>
+                </ListBox.Item>
               ))}
-            </Select>
+            
+        </ListBox>
+      </Select.Popover>
+    </Select>
           </div>
           <p className="text-xs text-slate-500 max-w-xs">
             La impresora nueva quedará asociada a: <span className="font-bold text-amber-700">{selectedSiteLabel}</span>. 
             {sites.length <= 1 && " Se ha seleccionado automáticamente."}
           </p>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       <DataTableSection
@@ -183,7 +190,7 @@ export default function ImpresorasPage() {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               color="primary"
               className="font-semibold"
               onPress={() => openEdit(row)}
@@ -207,7 +214,7 @@ export default function ImpresorasPage() {
           <Input
             {...register("name")}
             label="Nombre"
-            variant="flat"
+            
             errorMessage={errors.name?.message}
             isInvalid={!!errors.name}
           />
@@ -223,40 +230,70 @@ export default function ImpresorasPage() {
           <Select
             {...register("type")}
             label="Tipo"
-            variant="flat"
-            defaultSelectedKeys={["THERMAL"]}
+            
+            defaultSelectedKey={"THERMAL"}
           >
-            <SelectItem key="THERMAL" textValue="Térmica">Térmica</SelectItem>
-            <SelectItem key="PDF" textValue="PDF">PDF</SelectItem>
-            <SelectItem key="OS" textValue="Sistema">Sistema</SelectItem>
-          </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+            <ListBox.Item key="THERMAL" textValue="Térmica">Térmica</ListBox.Item>
+            <ListBox.Item key="PDF" textValue="PDF">PDF</ListBox.Item>
+            <ListBox.Item key="OS" textValue="Sistema">Sistema</ListBox.Item>
+          
+        </ListBox>
+      </Select.Popover>
+    </Select>
 
           <Select
             {...register("connection")}
             label="Conexión"
-            variant="flat"
-            defaultSelectedKeys={["USB"]}
+            
+            defaultSelectedKey={"USB"}
           >
-            <SelectItem key="USB" textValue="USB">USB</SelectItem>
-            <SelectItem key="NET" textValue="Red">Red</SelectItem>
-            <SelectItem key="BLUETOOTH" textValue="Bluetooth">Bluetooth</SelectItem>
-            <SelectItem key="LOCAL_AGENT" textValue="Agente local">Agente local</SelectItem>
-          </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+            <ListBox.Item key="USB" textValue="USB">USB</ListBox.Item>
+            <ListBox.Item key="NET" textValue="Red">Red</ListBox.Item>
+            <ListBox.Item key="BLUETOOTH" textValue="Bluetooth">Bluetooth</ListBox.Item>
+            <ListBox.Item key="LOCAL_AGENT" textValue="Agente local">Agente local</ListBox.Item>
+          
+        </ListBox>
+      </Select.Popover>
+    </Select>
 
           <Select
             {...register("paperWidthMm", { valueAsNumber: true })}
             label="Ancho papel (mm)"
-            variant="flat"
-            defaultSelectedKeys={["80"]}
+            
+            defaultSelectedKey={"80"}
           >
-            <SelectItem key="58" textValue="58">58</SelectItem>
-            <SelectItem key="80" textValue="80">80</SelectItem>
-          </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+            <ListBox.Item key="58" textValue="58">58</ListBox.Item>
+            <ListBox.Item key="80" textValue="80">80</ListBox.Item>
+          
+        </ListBox>
+      </Select.Popover>
+    </Select>
 
           <Input
             {...register("endpointOrDevice")}
             label="Endpoint / Dispositivo"
-            variant="flat"
+            
             placeholder="/dev/usb/lp0 or IP"
           />
 

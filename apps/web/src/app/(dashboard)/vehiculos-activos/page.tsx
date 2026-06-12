@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@heroui/react";
+import { Button } from "@/components/ui/Button";
 import DataTable from "@/components/ui/DataTable";
 import { buildApiHeaders } from "@/lib/api";
 import { cashCurrent } from "@/lib/cash/cash-api";
@@ -95,7 +95,7 @@ export default function VehiculosActivosPage() {
           </p>
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             color="primary"
             className="font-bold"
             onPress={() => { loadRows().catch(console.error); }}

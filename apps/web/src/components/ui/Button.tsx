@@ -1,34 +1,57 @@
-type ButtonProps = {
-  label: string;
-  tone?: "primary" | "ghost";
-  type?: "button" | "submit" | "reset";
+import React from "react";
+import { Button as HeroButton, ButtonProps as HeroButtonProps, Spinner } from "@heroui/react";
+
+export interface ButtonProps extends Omit<HeroButtonProps, "variant" | "color" | "isLoading" | "isDisabled"> {
+  variant?: "solid" | "bordered" | "light" | "flat" | "faded" | "shadow" | "ghost" | "primary" | "secondary" | "tertiary" | "outline" | "danger" | string;
+  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger" | string;
+  isLoading?: boolean;
+  isDisabled?: boolean;
   disabled?: boolean;
-  onClick?: () => void;
-  [key: string]: unknown;
-};
-
-const toneStyles = {
-  primary: "bg-brand-500 text-white hover:bg-brand-600 dark:bg-brand-600 dark:hover:bg-brand-500",
-  ghost: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-};
-
-export default function Button({
-  label,
-  tone = "primary",
-  type = "button",
-  disabled = false,
-  onClick,
-  ...rest
-}: ButtonProps) {
-  return (
-    <button
-      type={type}
-      disabled={disabled}
-      onClick={onClick}
-      {...rest}
-      className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${toneStyles[tone]}`}
-    >
-      {label}
-    </button>
-  );
+  startContent?: React.ReactNode;
+  endContent?: React.ReactNode;
+  as?: any;
+  href?: string;
+  fullWidth?: boolean;
 }
+
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ variant, color, isLoading, isDisabled, disabled, startContent, endContent, children, fullWidth, ...props }, ref) => {
+    // Map v2 color/variant to v3 variant
+    let mappedVariant: HeroButtonProps["variant"] = "primary";
+    
+    if (color === "danger" || variant === "danger") mappedVariant = "danger";
+    else if (color === "secondary" || variant === "secondary") mappedVariant = "secondary";
+    else if (variant === "ghost" || variant === "light" || variant === "flat") mappedVariant = "ghost";
+    else if (variant === "bordered" || variant === "faded" || variant === "outline") mappedVariant = "outline";
+    else if (color === "default" || variant === "tertiary") mappedVariant = "tertiary";
+    
+    return (
+      <HeroButton 
+        ref={ref} 
+        variant={mappedVariant} 
+        isPending={isLoading}
+        isDisabled={isDisabled || disabled}
+        className={fullWidth ? `w-full ${props.className || ""}` : props.className}
+        {...props as any} 
+      >
+        {typeof children === "function" ? (
+          children
+        ) : (
+          (renderProps: any) => {
+            const { isPending } = renderProps;
+            return (
+              <>
+                {isPending && <Spinner color="current" size="sm" />}
+                {startContent}
+                {children}
+                {endContent}
+              </>
+            );
+          }
+        )}
+      </HeroButton>
+    );
+  }
+);
+
+Button.displayName = "Button";

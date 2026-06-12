@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button, Checkbox, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Switch } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Switch } from "@/components/ui/Switch";
+import { Input } from "@/components/ui/Input";
 import { completeOnboarding, fetchOnboardingStatus, saveOnboardingStep, skipOnboarding, type OnboardingStatus } from "@/lib/onboarding-api";
 
 const STEP_TITLES = [
@@ -65,7 +69,7 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
                   <Checkbox
                     key={item}
                     isSelected={Array.isArray(stepData.vehicleTypes) && (stepData.vehicleTypes as string[]).includes(item)}
-                    onValueChange={(checked) => {
+                    onChange={(checked: any) => {
                       const prev = Array.isArray(stepData.vehicleTypes) ? (stepData.vehicleTypes as string[]) : [];
                       const next = checked ? [...prev, item] : prev.filter((v) => v !== item);
                       setStepData({ ...stepData, vehicleTypes: next });
@@ -79,20 +83,20 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
           )}
           {step === 2 && (
             <>
-              <Input type="number" label="Capacidad total" value={String(stepData.totalCapacity ?? "")} onValueChange={(v) => setStepData({ ...stepData, totalCapacity: Number(v) || 0 })} />
-              <Switch isSelected={Boolean(stepData.controlSlots)} onValueChange={(v) => setStepData({ ...stepData, controlSlots: v })}>¿Quieres controlar cupos?</Switch>
+              <Input type="number" label="Capacidad total" value={String(stepData.totalCapacity ?? "")} onChange={(v) => setStepData({ ...stepData, totalCapacity: Number(v.target.value) || 0 })} />
+              <Switch isSelected={Boolean(stepData.controlSlots)} onChange={(v) => setStepData({ ...stepData, controlSlots: v })}>¿Quieres controlar cupos?</Switch>
             </>
           )}
-          {step === 3 && <Input type="number" label="Valor base de tarifa" value={String(stepData.baseValue ?? "")} onValueChange={(v) => setStepData({ ...stepData, baseValue: Number(v) || 0, mode: "HOURLY" })} />}
-          {step === 4 && <Switch isSelected={Boolean(stepData.enabled)} onValueChange={(v) => setStepData({ ...stepData, enabled: v })}>¿Manejas caja por operador?</Switch>}
-          {step === 5 && <Switch isSelected={Boolean(stepData.enabled)} onValueChange={(v) => setStepData({ ...stepData, enabled: v })}>¿Trabajan por turnos?</Switch>}
+          {step === 3 && <Input type="number" label="Valor base de tarifa" value={String(stepData.baseValue ?? "")} onChange={(v) => setStepData({ ...stepData, baseValue: Number(v.target.value) || 0, mode: "HOURLY" })} />}
+          {step === 4 && <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })}>¿Manejas caja por operador?</Switch>}
+          {step === 5 && <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })}>¿Trabajan por turnos?</Switch>}
           {step === 6 && (
             <div className="grid gap-2 sm:grid-cols-2">
               {OPTIONS.payments.map((item) => (
                 <Checkbox
                   key={item}
                   isSelected={Array.isArray(stepData.paymentMethods) && (stepData.paymentMethods as string[]).includes(item)}
-                  onValueChange={(checked) => {
+                  onChange={(checked: any) => {
                     const prev = Array.isArray(stepData.paymentMethods) ? (stepData.paymentMethods as string[]) : [];
                     const next = checked ? [...prev, item] : prev.filter((v) => v !== item);
                     setStepData({ ...stepData, paymentMethods: next });
@@ -103,18 +107,18 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
               ))}
             </div>
           )}
-          {step === 7 && <Switch isSelected={Boolean(stepData.allowReprint)} onValueChange={(v) => setStepData({ ...stepData, allowReprint: v })}>Permitir reimpresión</Switch>}
-          {step === 8 && <Switch isSelected={Boolean(stepData.enabled)} onValueChange={(v) => setStepData({ ...stepData, enabled: v })}>¿Manejas clientes frecuentes o mensualidades?</Switch>}
-          {step === 9 && <Switch isSelected={Boolean(stepData.enabled)} onValueChange={(v) => setStepData({ ...stepData, enabled: v })}>¿Tienes convenios?</Switch>}
+          {step === 7 && <Switch isSelected={Boolean(stepData.allowReprint)} onChange={(v) => setStepData({ ...stepData, allowReprint: v })}>Permitir reimpresión</Switch>}
+          {step === 8 && <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })}>¿Manejas clientes frecuentes o mensualidades?</Switch>}
+          {step === 9 && <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })}>¿Tienes convenios?</Switch>}
           {step === 10 && (
             <div>
-              <Switch isSelected={Boolean(stepData.multiSite)} isDisabled={!canMultiSite} onValueChange={(v) => setStepData({ ...stepData, multiSite: v })}>¿Varias sedes?</Switch>
+              <Switch isSelected={Boolean(stepData.multiSite)} isDisabled={!canMultiSite} onChange={(v) => setStepData({ ...stepData, multiSite: v })}>¿Varias sedes?</Switch>
               {!canMultiSite && <p className="text-xs text-warning mt-1">Disponible en plan superior.</p>}
             </div>
           )}
           {step === 11 && (
             <div>
-              <Switch isSelected={Boolean(stepData.advanced)} isDisabled={!canAdvancedPermissions} onValueChange={(v) => setStepData({ ...stepData, advanced: v })}>Permisos avanzados</Switch>
+              <Switch isSelected={Boolean(stepData.advanced)} isDisabled={!canAdvancedPermissions} onChange={(v) => setStepData({ ...stepData, advanced: v })}>Permisos avanzados</Switch>
               {!canAdvancedPermissions && <p className="text-xs text-warning mt-1">Disponible en plan superior.</p>}
             </div>
           )}
@@ -122,7 +126,7 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
         </div>
 
         <div className="mt-6 flex flex-wrap gap-3">
-          <Button variant="light" onPress={() => persistStep(Math.max(1, step - 1))} isDisabled={step === 1}>Atrás</Button>
+          <Button variant="ghost" onPress={() => persistStep(Math.max(1, step - 1))} isDisabled={step === 1}>Atrás</Button>
           {step < 12 && <Button color="primary" onPress={() => persistStep(step + 1)}>Siguiente</Button>}
           {step === 12 && (
             <Button
@@ -136,19 +140,19 @@ export default function OnboardingWizard({ companyId, onDone }: { companyId: str
               Finalizar
             </Button>
           )}
-          <Button color="warning" variant="flat" onPress={() => setShowSkipModal(true)}>Omitir parametrización</Button>
+          <Button color="warning" variant="tertiary" onPress={() => setShowSkipModal(true)}>Omitir parametrización</Button>
         </div>
       </div>
 
-      <Modal isOpen={showSkipModal} onOpenChange={setShowSkipModal}>
-        <ModalContent>
-          <ModalHeader>Omitir parametrización</ModalHeader>
-          <ModalBody>Se aplicará una configuración estándar. Podrás modificarla luego desde Configuración.</ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={() => setShowSkipModal(false)}>Cancelar</Button>
+      <Modal state={ { isOpen: showSkipModal, setOpen: () => {}, open: () => {}, close: () => {}, toggle: () => {} } } onOpenChange={setShowSkipModal}>
+        <Modal.Content>
+          <Modal.Header>Omitir parametrización</Modal.Header>
+          <Modal.Body>Se aplicará una configuración estándar. Podrás modificarla luego desde Configuración.</Modal.Body>
+          <Modal.Footer>
+            <Button variant="ghost" onPress={() => setShowSkipModal(false)}>Cancelar</Button>
             <Button color="warning" onPress={async () => { await skipOnboarding(companyId); onDone(); }}>Confirmar omitir</Button>
-          </ModalFooter>
-        </ModalContent>
+          </Modal.Footer>
+        </Modal.Content>
       </Modal>
     </div>
   );

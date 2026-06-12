@@ -2,7 +2,8 @@
 
 import React from "react";
 import { Controller, useWatch, Control } from "react-hook-form";
-import { Input } from "@heroui/input";
+
+import { Input } from "@/components/ui/Input";
 import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
 
 interface HelmetSectionProps {
@@ -50,7 +51,7 @@ export function HelmetSection({ control, selectedVehicleType }: HelmetSectionPro
                 {...field}
                 label="Número de Casco"
                 placeholder="Ej: SHOEI-1234"
-                variant="flat"
+                
                 size="sm"
                 isInvalid={!!fieldState.error}
                 errorMessage={fieldState.error?.message}
@@ -66,7 +67,7 @@ export function HelmetSection({ control, selectedVehicleType }: HelmetSectionPro
                 {...field}
                 label="Observaciones del casco"
                 placeholder="Marca, color, etc."
-                variant="flat"
+                
                 size="sm"
                 isInvalid={!!fieldState.error}
                 errorMessage={fieldState.error?.message}
@@ -81,7 +82,7 @@ export function HelmetSection({ control, selectedVehicleType }: HelmetSectionPro
                 {...field}
                 label="Foto del casco (URL)"
                 placeholder="https://..."
-                variant="flat"
+                
                 size="sm"
                 isInvalid={!!fieldState.error}
                 errorMessage={fieldState.error?.message}

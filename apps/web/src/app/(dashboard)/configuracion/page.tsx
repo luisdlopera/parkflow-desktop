@@ -1,19 +1,13 @@
 "use client";
-
-import {
-  Input,
-  Select,
-  SelectItem,
-  Textarea,
-  Checkbox,
-  Button,
-  Switch,
-  RadioGroup,
-  Radio,
-} from "@heroui/react";
-
+import { RadioGroup, Radio, ListBox } from "@heroui/react";
+import { Card } from "@/components/ui/Card";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Switch } from "@/components/ui/Switch";
+import { Input } from "@/components/ui/Input";
+import { TextArea } from "@/components/ui/TextArea";
 import { useSearchParams } from "next/navigation";
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import DataTable from "@/components/ui/DataTable";
 import {
   createUser,
@@ -274,7 +268,7 @@ export default function ConfiguracionPage() {
 
       <Notice kind="info" text={config.info} />
 
-      <Textarea
+      <TextArea
         label="Motivo de auditoría"
         description="Opcional, hasta 500 caracteres. Se envía al servidor en cambios sensibles."
         maxLength={500}
@@ -354,10 +348,10 @@ function InterfaceSection({
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
+        <Card.Header>
           <h2 className="text-lg font-semibold text-slate-900">Personalización del Sidebar</h2>
-        </CardHeader>
-        <CardBody className="space-y-6">
+        </Card.Header>
+        <Card.Content className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-slate-800">Mostrar estado del sistema</p>
@@ -367,7 +361,7 @@ function InterfaceSection({
             </div>
             <Switch
               isSelected={settings.showSystemStatus}
-              onValueChange={(checked) => onUpdate("showSystemStatus", checked)}
+              onChange={(checked) => onUpdate("showSystemStatus", checked)}
               size="lg"
               color="primary"
             />
@@ -382,16 +376,16 @@ function InterfaceSection({
             </div>
             <Switch
               isSelected={settings.showKeyboardShortcuts}
-              onValueChange={(checked) => onUpdate("showKeyboardShortcuts", checked)}
+              onChange={(checked) => onUpdate("showKeyboardShortcuts", checked)}
               size="lg"
               color="primary"
             />
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       <Card className="bg-amber-50/50 border-amber-200">
-        <CardBody>
+        <Card.Content>
           <div className="flex items-start gap-3">
             <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -404,7 +398,7 @@ function InterfaceSection({
               </p>
             </div>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );
@@ -482,51 +476,67 @@ function RatesSection({
         <div className="flex flex-wrap items-end gap-3">
           <Input
             label="Sede"
-            variant="flat"
+            
             size="sm"
             value={site}
-            onValueChange={setSite}
+            onChange={(e) => setSite(e.target.value)}
           />
           <Input
             label="Buscar"
             placeholder="Nombre..."
-            variant="flat"
+            
             size="sm"
             value={q}
-            onValueChange={setQ}
+            onChange={(e) => setQ(e.target.value)}
           />
           <Select
             label="Estado"
-            variant="flat"
-            size="sm"
             className="max-w-[120px]"
-            selectedKeys={activeFilter === null ? [""] : [String(activeFilter)]}
-            onSelectionChange={(keys) => {
+            value={activeFilter === null ? [""] : [String(activeFilter)]}
+            onChange={(keys) => {
               const v = Array.from(keys)[0] as string;
               setActiveFilter(v === "" ? null : v === "true");
             }}
           >
-            <SelectItem key="">Todos</SelectItem>
-            <SelectItem key="true">Activas</SelectItem>
-            <SelectItem key="false">Inactivas</SelectItem>
-          </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+            <ListBox.Item key="">Todos</ListBox.Item>
+            <ListBox.Item key="true">Activas</ListBox.Item>
+            <ListBox.Item key="false">Inactivas</ListBox.Item>
+          
+        </ListBox>
+      </Select.Popover>
+    </Select>
           <Select
             label="Categoría"
-            variant="flat"
-            size="sm"
             className="max-w-[140px]"
-            selectedKeys={[categoryFilter]}
-            onSelectionChange={(keys) => setCategoryFilter(Array.from(keys)[0] as string)}
+            value={[categoryFilter]}
+            onChange={(keys) => setCategoryFilter(Array.from(keys)[0] as string)}
           >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
             {[
-              <SelectItem key="" textValue="Todas">Todas</SelectItem>,
+              <ListBox.Item key="" textValue="Todas">Todas</ListBox.Item>,
               ...RATE_CATEGORIES.map(c => (
-                <SelectItem key={c} textValue={RATE_CATEGORY_LABELS[c]}>{RATE_CATEGORY_LABELS[c]}</SelectItem>
+                <ListBox.Item key={c} textValue={RATE_CATEGORY_LABELS[c]}>{RATE_CATEGORY_LABELS[c]}</ListBox.Item>
               ))
             ]}
-          </Select>
+          
+        </ListBox>
+      </Select.Popover>
+    </Select>
           <Button
-            variant="bordered"
+            variant="outline"
             color="primary"
             size="md"
             className="font-semibold"
@@ -564,7 +574,7 @@ function RatesSection({
             <h3 className="font-semibold text-slate-900">Detalle tarifa</h3>
             <Button
               size="sm"
-              variant="light"
+              variant="ghost"
               color="primary"
               className="font-semibold"
               onPress={() => setRateDetail(null)}
@@ -645,7 +655,7 @@ function RatesSection({
                 <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"
-                    variant="light"
+                    variant="ghost"
                     color="primary"
                     className="font-semibold"
                     onPress={() =>
@@ -669,7 +679,7 @@ function RatesSection({
                   </Button>
                   <Button
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     color="primary"
                     className="font-semibold"
                     onPress={() => {
@@ -681,7 +691,7 @@ function RatesSection({
                   </Button>
                   <Button
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     color="primary"
                     className="font-semibold"
                     onPress={() =>
@@ -706,7 +716,7 @@ function RatesSection({
                   </Button>
                   <Button
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     color="danger"
                     className="font-semibold"
                     onPress={() => {
@@ -741,7 +751,7 @@ function RatesSection({
       <div className="flex items-center gap-4">
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           color="primary"
           isDisabled={page <= 0}
           onPress={() => setPage((p) => Math.max(0, p - 1))}
@@ -753,7 +763,7 @@ function RatesSection({
         </span>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           color="primary"
           isDisabled={page + 1 >= totalPages}
           onPress={() => setPage((p) => p + 1)}
@@ -851,135 +861,167 @@ function RateForm({
         {isEdit ? "Editar tarifa" : "Nueva tarifa"}
       </h2>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <Input label="Nombre" variant="flat" size="sm" value={name} onValueChange={setName} />
-        <Input label="Sede" variant="flat" size="sm" value={site} onValueChange={setSite} />
+        <Input label="Nombre"  size="sm" value={name} onChange={(e) => setName(e.target.value)} />
+        <Input label="Sede"  size="sm" value={site} onChange={(e) => setSite(e.target.value)} />
         <Select
           label="Categoría"
-          variant="flat"
-          size="sm"
-          selectedKeys={[category]}
-          onSelectionChange={(keys) => setCategory(Array.from(keys)[0] as RateCategory)}
+          value={[category]}
+          onChange={(keys) => setCategory(Array.from(keys)[0] as RateCategory)}
         >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
           {RATE_CATEGORIES.map((c) => (
-            <SelectItem key={c} textValue={RATE_CATEGORY_LABELS[c]}>
+            <ListBox.Item key={c} textValue={RATE_CATEGORY_LABELS[c]}>
               {RATE_CATEGORY_LABELS[c]}
-            </SelectItem>
+            </ListBox.Item>
           ))}
-        </Select>
+        
+        </ListBox>
+      </Select.Popover>
+    </Select>
         <Select
           label="Tipo vehículo"
           description="Vacío = todos"
-          variant="flat"
-          size="sm"
-          selectedKeys={[vehicleType]}
-          onSelectionChange={(keys) => setVehicleType(Array.from(keys)[0] as string)}
+          value={[vehicleType]}
+          onChange={(keys) => setVehicleType(Array.from(keys)[0] as string)}
         >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
           {[
-            <SelectItem key="" textValue="(Todos)">(Todos)</SelectItem>,
-            ...vehicleTypes.map((v) => (
-              <SelectItem key={v.code} textValue={v.name}>
+            <ListBox.Item key="" textValue="(Todos)">(Todos)</ListBox.Item>,
+            ...vehicleTypes.map((v: any) => (
+              <ListBox.Item key={v.code} textValue={v.name}>
                 {v.name} ({v.code})
-              </SelectItem>
+              </ListBox.Item>
             ))
           ]}
-        </Select>
+        
+        </ListBox>
+      </Select.Popover>
+    </Select>
         <Select
           label="Tipo tarifa"
-          variant="flat"
-          size="sm"
-          selectedKeys={[rateType]}
-          onSelectionChange={(keys) => setRateType(Array.from(keys)[0] as RateType)}
+          value={[rateType]}
+          onChange={(keys) => setRateType(Array.from(keys)[0] as RateType)}
         >
-          {RATE_TYPES.map((v) => (
-            <SelectItem key={v} textValue={RATE_TYPE_LABELS[v] ?? v}>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+          {RATE_TYPES.map((v: any) => (
+            <ListBox.Item key={v} textValue={RATE_TYPE_LABELS[v] ?? v}>
               {RATE_TYPE_LABELS[v] ?? v}
-            </SelectItem>
+            </ListBox.Item>
           ))}
-        </Select>
+        
+        </ListBox>
+      </Select.Popover>
+    </Select>
         <Input
           label="Valor"
-          variant="flat"
+          
           size="sm"
           type="number"
           step="0.01"
           min="0"
           value={amount}
-          onValueChange={setAmount}
+          onChange={(e) => setAmount(e.target.value)}
         />
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold text-slate-600">Minutos gracia / tolerancia / fraccion</p>
           <div className="flex gap-2">
             <Input
-              variant="flat"
+              
               size="sm"
               type="number"
               min="0"
               placeholder="Gracia"
               value={grace}
-              onValueChange={setGrace}
+              onChange={(e) => setGrace(e.target.value)}
             />
             <Input
-              variant="flat"
+              
               size="sm"
               type="number"
               min="0"
               placeholder="Tolerancia"
               value={tolerance}
-              onValueChange={setTolerance}
+              onChange={(e) => setTolerance(e.target.value)}
             />
             <Input
-              variant="flat"
+              
               size="sm"
               type="number"
               min="1"
               placeholder="Fracción"
               value={fraction}
-              onValueChange={setFraction}
+              onChange={(e) => setFraction(e.target.value)}
             />
           </div>
         </div>
         <Select
           label="Redondeo"
-          variant="flat"
-          size="sm"
-          selectedKeys={[rounding]}
-          onSelectionChange={(keys) => setRounding(Array.from(keys)[0] as "UP" | "DOWN" | "NEAREST")}
+          value={[rounding]}
+          onChange={(keys) => setRounding(Array.from(keys)[0] as "UP" | "DOWN" | "NEAREST")}
         >
-          {ROUNDING.map((v) => (
-            <SelectItem key={v} textValue={v}>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+          {ROUNDING.map((v: any) => (
+            <ListBox.Item key={v} textValue={v}>
               {v}
-            </SelectItem>
+            </ListBox.Item>
           ))}
-        </Select>
+        
+        </ListBox>
+      </Select.Popover>
+    </Select>
         <Input
           label="Recargo ticket perdido"
-          variant="flat"
+          
           size="sm"
           type="number"
           step="0.01"
           min="0"
           value={lost}
-          onValueChange={setLost}
+          onChange={(e) => setLost(e.target.value)}
         />
-        <Checkbox isSelected={active} onValueChange={setActive}>
+        <Checkbox isSelected={active} onChange={setActive}>
           Activa
         </Checkbox>
         <div className="flex flex-col gap-1">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Franja (opcional) HH:MM</span>
           <div className="flex gap-3">
             <Input
-              variant="flat"
+              
               size="sm"
               placeholder="08:00"
               value={wStart}
-              onValueChange={setWStart}
+              onChange={(e) => setWStart(e.target.value)}
             />
             <Input
-              variant="flat"
+              
               size="sm"
               placeholder="18:00"
               value={wEnd}
-              onValueChange={setWEnd}
+              onChange={(e) => setWEnd(e.target.value)}
             />
           </div>
         </div>
@@ -1017,71 +1059,71 @@ function RateForm({
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Topes de sesión (opcional)</span>
           <div className="flex gap-2">
             <Input
-              variant="flat"
+              
               size="sm"
               type="number"
               step="0.01"
               min="0"
               placeholder="Mínimo"
               value={minSession}
-              onValueChange={setMinSession}
+              onChange={(e) => setMinSession(e.target.value)}
             />
             <Input
-              variant="flat"
+              
               size="sm"
               type="number"
               step="0.01"
               min="0"
               placeholder="Máximo"
               value={maxSession}
-              onValueChange={setMaxSession}
+              onChange={(e) => setMaxSession(e.target.value)}
             />
           </div>
         </div>
         <Input
           label="Máximo diario (opcional)"
-          variant="flat"
+          
           size="sm"
           type="number"
           step="0.01"
           min="0"
           value={maxDaily}
-          onValueChange={setMaxDaily}
+          onChange={(e) => setMaxDaily(e.target.value)}
         />
         {/* Recargos nocturno y festivo */}
         <div className="flex flex-col gap-2">
-          <Checkbox isSelected={appliesNight} onValueChange={setAppliesNight}>
+          <Checkbox isSelected={appliesNight} onChange={setAppliesNight}>
             Aplica horario nocturno
           </Checkbox>
           {appliesNight && (
             <Input
               label="Recargo nocturno (%)"
-              variant="flat"
+              
               size="sm"
               type="number"
               step="0.01"
               min="0"
               max="100"
               value={nightPct}
-              onValueChange={setNightPct}
+              onChange={(e) => setNightPct(e.target.value)}
             />
           )}
         </div>
         <div className="flex flex-col gap-2">
-          <Checkbox isSelected={appliesHoliday} onValueChange={setAppliesHoliday}>
+          <Checkbox isSelected={appliesHoliday} onChange={setAppliesHoliday}>
             Aplica festivos
           </Checkbox>
           {appliesHoliday && (
             <Input
               label="Recargo festivo (%)"
-              variant="flat"
+              
               size="sm"
               type="number"
               step="0.01"
               min="0"
               max="100"
               value={holidayPct}
-              onValueChange={setHolidayPct}
+              onChange={(e) => setHolidayPct(e.target.value)}
             />
           )}
         </div>
@@ -1090,18 +1132,18 @@ function RateForm({
           <div className="flex flex-wrap gap-3">
             <Input
               type="datetime-local"
-              variant="flat"
+              
               size="sm"
               value={schedFrom}
-              onValueChange={setSchedFrom}
+              onChange={(e) => setSchedFrom(e.target.value)}
               className="min-w-[200px] flex-1"
             />
             <Input
               type="datetime-local"
-              variant="flat"
+              
               size="sm"
               value={schedTo}
-              onValueChange={setSchedTo}
+              onChange={(e) => setSchedTo(e.target.value)}
               className="min-w-[200px] flex-1"
             />
           </div>
@@ -1109,7 +1151,7 @@ function RateForm({
       </div>
       <div className="mt-6 flex justify-end gap-3">
         <Button
-          variant="light"
+          variant="ghost"
           color="primary"
           className="font-semibold"
           onPress={onCancel}
@@ -1224,29 +1266,37 @@ function UsersSection({
         <Input
           label="Buscar"
           placeholder="Nombre o correo..."
-          variant="flat"
+          
           size="sm"
           value={q}
-          onValueChange={setQ}
+          onChange={(e) => setQ(e.target.value)}
           className="max-w-xs"
         />
         <Select
           label="Estado"
-          variant="flat"
-          size="sm"
           className="max-w-[120px]"
-          selectedKeys={activeFilter === null ? [""] : [String(activeFilter)]}
-          onSelectionChange={(keys) => {
+          value={activeFilter === null ? [""] : [String(activeFilter)]}
+          onChange={(keys) => {
             const v = Array.from(keys)[0] as string;
             setActiveFilter(v === "" ? null : v === "true");
           }}
         >
-          <SelectItem key="">Todos</SelectItem>
-          <SelectItem key="true">Activos</SelectItem>
-          <SelectItem key="false">Inactivos</SelectItem>
-        </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+          <ListBox.Item key="">Todos</ListBox.Item>
+          <ListBox.Item key="true">Activos</ListBox.Item>
+          <ListBox.Item key="false">Inactivos</ListBox.Item>
+        
+        </ListBox>
+      </Select.Popover>
+    </Select>
         <Button
-          variant="bordered"
+          variant="outline"
           color="primary"
           size="md"
           className="font-semibold"
@@ -1277,7 +1327,7 @@ function UsersSection({
             <h3 className="font-semibold text-slate-900">Detalle usuario</h3>
             <Button
               size="sm"
-              variant="light"
+              variant="ghost"
               color="primary"
               className="font-semibold"
               onPress={() => setUserDetail(null)}
@@ -1332,7 +1382,7 @@ function UsersSection({
                 <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"
-                    variant="light"
+                    variant="ghost"
                     color="primary"
                     className="font-semibold"
                     onPress={() =>
@@ -1358,7 +1408,7 @@ function UsersSection({
                     <>
                       <Button
                         size="sm"
-                        variant="flat"
+                        variant="tertiary"
                         color="primary"
                         className="font-semibold"
                         onPress={() => setEditing(u)}
@@ -1367,7 +1417,7 @@ function UsersSection({
                       </Button>
                       <Button
                         size="sm"
-                        variant="flat"
+                        variant="tertiary"
                         color="primary"
                         className="font-semibold"
                         onPress={() =>
@@ -1389,7 +1439,7 @@ function UsersSection({
                       </Button>
                       <Button
                         size="sm"
-                        variant="flat"
+                        variant="tertiary"
                         color="primary"
                         className="font-semibold"
                         onPress={() => {
@@ -1425,7 +1475,7 @@ function UsersSection({
       <div className="flex items-center gap-4 text-xs text-slate-600">
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           color="primary"
           isDisabled={page <= 0}
           className="font-semibold"
@@ -1438,7 +1488,7 @@ function UsersSection({
         </span>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           color="primary"
           isDisabled={page + 1 >= totalPages}
           className="font-semibold"
@@ -1502,26 +1552,34 @@ function UserCreatePanel({
     <div className="surface rounded-2xl p-6">
       <h2 className="text-lg font-semibold text-slate-900">Nuevo usuario</h2>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <Input variant="flat" size="sm" placeholder="Nombre" value={name} onValueChange={setName} />
-        <Input variant="flat" size="sm" placeholder="Correo" value={email} onValueChange={setEmail} />
+        <Input  size="sm" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
+        <Input  size="sm" placeholder="Correo" value={email} onChange={(e) => setEmail(e.target.value)} />
         <Select
           label="Rol"
-          variant="flat"
-          size="sm"
-          selectedKeys={[role]}
-          onSelectionChange={(keys) => setRole(Array.from(keys)[0] as UserRole)}
+          value={[role]}
+          onChange={(keys) => setRole(Array.from(keys)[0] as UserRole)}
         >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
           {ROLES.map((r) => (
-            <SelectItem key={r} textValue={r}>
+            <ListBox.Item key={r} textValue={r}>
               {r}
-            </SelectItem>
+            </ListBox.Item>
           ))}
-        </Select>
-        <Input variant="flat" size="sm" placeholder="Contrasena inicial (min 8)" type="password" value={password} onValueChange={setPassword} />
-        <Input variant="flat" size="sm" placeholder="Documento (opcional)" value={document} onValueChange={setDocument} />
-        <Input variant="flat" size="sm" placeholder="Telefono" value={phone} onValueChange={setPhone} />
-        <Input variant="flat" size="sm" placeholder="Sede" value={site} onValueChange={setSite} />
-        <Input variant="flat" size="sm" placeholder="Terminal / caja" value={terminal} onValueChange={setTerminal} />
+        
+        </ListBox>
+      </Select.Popover>
+    </Select>
+        <Input  size="sm" placeholder="Contrasena inicial (min 8)" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Input  size="sm" placeholder="Documento (opcional)" value={document} onChange={(e) => setDocument(e.target.value)} />
+        <Input  size="sm" placeholder="Telefono" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Input  size="sm" placeholder="Sede" value={site} onChange={(e) => setSite(e.target.value)} />
+        <Input  size="sm" placeholder="Terminal / caja" value={terminal} onChange={(e) => setTerminal(e.target.value)} />
       </div>
       <div className="mt-4 flex gap-3">
         <div className="min-w-[120px]">
@@ -1567,7 +1625,7 @@ function UserCreatePanel({
           </Button>
         </div>
         <div className="min-w-[120px]">
-          <Button variant="light" color="primary" className="font-semibold w-full" onPress={onClose}>
+          <Button variant="ghost" color="primary" className="font-semibold w-full" onPress={onClose}>
             Cerrar
           </Button>
         </div>
@@ -1602,25 +1660,33 @@ function UserEditPanel({
       <h2 className="text-lg font-semibold text-slate-900">Editar usuario</h2>
       <p className="text-xs text-slate-500">{user.email}</p>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <Input variant="flat" size="sm" placeholder="Nombre" value={name} onValueChange={setName} />
-        <Input variant="flat" size="sm" placeholder="Correo" value={email} onValueChange={setEmail} />
+        <Input  size="sm" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
+        <Input  size="sm" placeholder="Correo" value={email} onChange={(e) => setEmail(e.target.value)} />
         <Select
           label="Rol"
-          variant="flat"
-          size="sm"
-          selectedKeys={[role]}
-          onSelectionChange={(keys) => setRole(Array.from(keys)[0] as UserRole)}
+          value={[role]}
+          onChange={(keys) => setRole(Array.from(keys)[0] as UserRole)}
         >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
           {ROLES.map((r) => (
-            <SelectItem key={r} textValue={r}>
+            <ListBox.Item key={r} textValue={r}>
               {r}
-            </SelectItem>
+            </ListBox.Item>
           ))}
-        </Select>
-        <Input variant="flat" size="sm" placeholder="Documento" value={document} onValueChange={setDocument} />
-        <Input variant="flat" size="sm" placeholder="Telefono" value={phone} onValueChange={setPhone} />
-        <Input variant="flat" size="sm" placeholder="Sede" value={site} onValueChange={setSite} />
-        <Input variant="flat" size="sm" placeholder="Terminal" value={terminal} onValueChange={setTerminal} />
+        
+        </ListBox>
+      </Select.Popover>
+    </Select>
+        <Input  size="sm" placeholder="Documento" value={document} onChange={(e) => setDocument(e.target.value)} />
+        <Input  size="sm" placeholder="Telefono" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Input  size="sm" placeholder="Sede" value={site} onChange={(e) => setSite(e.target.value)} />
+        <Input  size="sm" placeholder="Terminal" value={terminal} onChange={(e) => setTerminal(e.target.value)} />
       </div>
       <div className="mt-4 flex gap-3">
         <div className="min-w-[120px]">
@@ -1658,7 +1724,7 @@ function UserEditPanel({
           </Button>
         </div>
         <div className="min-w-[120px]">
-          <Button variant="light" color="primary" className="font-semibold w-full" onPress={onClose}>
+          <Button variant="ghost" color="primary" className="font-semibold w-full" onPress={onClose}>
             Cerrar
           </Button>
         </div>
@@ -1722,15 +1788,15 @@ function ParametersSection({
         <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 pb-4">
           <Input
             label="Codigo de sede (persistencia)"
-            variant="flat"
+            
             size="sm"
             className="max-w-xs"
             value={paramSite}
-            onValueChange={setParamSite}
+            onChange={(e) => setParamSite(e.target.value)}
             placeholder="DEFAULT"
           />
           <Button
-            variant="bordered"
+            variant="outline"
             color="primary"
             size="md"
             className="font-semibold"
@@ -1741,43 +1807,43 @@ function ParametersSection({
           </Button>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Field label="Nombre comercial" value={data.parkingName ?? ""} onChange={(v) => setField("parkingName", v)} />
-          <Field label="NIT" value={data.taxId ?? ""} onChange={(v) => setField("taxId", v)} />
+          <Field label="Nombre comercial" value={data.parkingName ?? ""} onChange={(v: any) => setField("parkingName", v)} />
+          <Field label="NIT" value={data.taxId ?? ""} onChange={(v: any) => setField("taxId", v)} />
           <Field
             label="DV NIT"
             value={data.taxIdCheckDigit ?? ""}
-            onChange={(v) => setField("taxIdCheckDigit", v)}
+            onChange={(v: any) => setField("taxIdCheckDigit", v)}
           />
           <Field
             label="Razon social (FE / tributario)"
             value={data.businessLegalName ?? ""}
-            onChange={(v) => setField("businessLegalName", v)}
+            onChange={(v: any) => setField("businessLegalName", v)}
           />
-          <Field label="Direccion" value={data.address ?? ""} onChange={(v) => setField("address", v)} />
-          <Field label="Telefono" value={data.phone ?? ""} onChange={(v) => setField("phone", v)} />
+          <Field label="Direccion" value={data.address ?? ""} onChange={(v: any) => setField("address", v)} />
+          <Field label="Telefono" value={data.phone ?? ""} onChange={(v: any) => setField("phone", v)} />
           <Field
             label="Etiqueta sede (config)"
             value={data.siteLabel ?? ""}
-            onChange={(v) => setField("siteLabel", v)}
+            onChange={(v: any) => setField("siteLabel", v)}
           />
-          <Field label="Moneda" value={data.currency ?? ""} onChange={(v) => setField("currency", v)} />
-          <Field label="Zona horaria" value={data.timeZone ?? ""} onChange={(v) => setField("timeZone", v)} />
-          <Field label="Logo / URL marca" value={data.logoUrl ?? ""} onChange={(v) => setField("logoUrl", v)} />
+          <Field label="Moneda" value={data.currency ?? ""} onChange={(v: any) => setField("currency", v)} />
+          <Field label="Zona horaria" value={data.timeZone ?? ""} onChange={(v: any) => setField("timeZone", v)} />
+          <Field label="Logo / URL marca" value={data.logoUrl ?? ""} onChange={(v: any) => setField("logoUrl", v)} />
           <Field
             label="Color marca"
             value={data.brandColor ?? ""}
-            onChange={(v) => setField("brandColor", v)}
+            onChange={(v: any) => setField("brandColor", v)}
           />
-          <Field label="Impuesto" value={data.taxName ?? ""} onChange={(v) => setField("taxName", v)} />
+          <Field label="Impuesto" value={data.taxName ?? ""} onChange={(v: any) => setField("taxName", v)} />
           <Field
             label="Impuesto (%)"
             value={data.taxRatePercent != null ? String(data.taxRatePercent) : ""}
-            onChange={(v) => setOptionalNumber("taxRatePercent", v)}
+            onChange={(v: any) => setOptionalNumber("taxRatePercent", v)}
           />
           <div className="flex items-center py-2">
             <Checkbox
               isSelected={data.pricesIncludeTax ?? true}
-              onValueChange={(v) => setField("pricesIncludeTax", v)}
+              onChange={(v: any) => setField("pricesIncludeTax", v)}
             >
               Tarifas incluyen impuesto
             </Checkbox>
@@ -1785,32 +1851,40 @@ function ParametersSection({
           <Field
             label="Minutos de gracia (defecto)"
             value={String(data.graceMinutesDefault ?? "")}
-            onChange={(v) => setOptionalNumber("graceMinutesDefault", v)}
+            onChange={(v: any) => setOptionalNumber("graceMinutesDefault", v)}
           />
           <Select
             label="Politica ticket perdido"
-            variant="flat"
-            size="sm"
-            selectedKeys={[data.lostTicketPolicy ?? "SURCHARGE_RATE"]}
-            onSelectionChange={(keys) => setField("lostTicketPolicy", Array.from(keys)[0] as string)}
+            value={[data.lostTicketPolicy ?? "SURCHARGE_RATE"]}
+            onChange={(keys) => setField("lostTicketPolicy", Array.from(keys)[0] as string)}
           >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
             {LOST_TICKET_POLICIES.map((p) => (
-              <SelectItem key={p.value} textValue={p.label}>
+              <ListBox.Item key={p.value} textValue={p.label}>
                 {p.label}
-              </SelectItem>
+              </ListBox.Item>
             ))}
-          </Select>
+          
+        </ListBox>
+      </Select.Popover>
+    </Select>
 
           <div className="flex flex-col gap-4 py-2">
             <Checkbox
               isSelected={Boolean(data.allowReprint)}
-              onValueChange={(v) => setField("allowReprint", v)}
+              onChange={(v: any) => setField("allowReprint", v)}
             >
               Permitir reimpresion
             </Checkbox>
             <Checkbox
               isSelected={Boolean(data.offlineModeEnabled)}
-              onValueChange={(v) => setField("offlineModeEnabled", v)}
+              onChange={(v: any) => setField("offlineModeEnabled", v)}
             >
               Modo offline habilitado
             </Checkbox>
@@ -1819,78 +1893,78 @@ function ParametersSection({
           <Field
             label="Max reimpresiones"
             value={String(data.maxReprints ?? "")}
-            onChange={(v) => setOptionalNumber("maxReprints", v)}
+            onChange={(v: any) => setOptionalNumber("maxReprints", v)}
           />
-          <Field label="Prefijo ticket" value={data.ticketPrefix ?? ""} onChange={(v) => setField("ticketPrefix", v)} />
-          <Field label="Formato ticket" value={data.ticketFormat ?? ""} onChange={(v) => setField("ticketFormat", v)} />
+          <Field label="Prefijo ticket" value={data.ticketPrefix ?? ""} onChange={(v: any) => setField("ticketPrefix", v)} />
+          <Field label="Formato ticket" value={data.ticketFormat ?? ""} onChange={(v: any) => setField("ticketFormat", v)} />
           <Field
             label="Ancho papel (mm)"
             value={String(data.defaultPaperWidthMm ?? "")}
-            onChange={(v) => setOptionalNumber("defaultPaperWidthMm", v)}
+            onChange={(v: any) => setOptionalNumber("defaultPaperWidthMm", v)}
           />
           <Field
             label="Impresora por defecto"
             value={data.defaultPrinterName ?? ""}
-            onChange={(v) => setField("defaultPrinterName", v)}
+            onChange={(v: any) => setField("defaultPrinterName", v)}
           />
 
           <Field
             label="Intervalo sync (seg)"
             value={String(data.syncIntervalSeconds ?? "")}
-            onChange={(v) => setOptionalNumber("syncIntervalSeconds", v)}
+            onChange={(v: any) => setOptionalNumber("syncIntervalSeconds", v)}
           />
           <Field
             label="Timeout impresion (seg)"
             value={String(data.printTimeoutSeconds ?? "")}
-            onChange={(v) => setOptionalNumber("printTimeoutSeconds", v)}
+            onChange={(v: any) => setOptionalNumber("printTimeoutSeconds", v)}
           />
-          <Field label="QR / codigo" value={data.qrConfig ?? ""} onChange={(v) => setField("qrConfig", v)} />
+          <Field label="QR / codigo" value={data.qrConfig ?? ""} onChange={(v: any) => setField("qrConfig", v)} />
 
           <div className="col-span-full grid gap-4 border-t border-slate-100 pt-6 md:grid-cols-2">
-            <Textarea
+            <TextArea
               label="Mensaje encabezado ticket"
-              variant="flat"
+              
               size="sm"
               minRows={2}
               value={data.ticketHeaderMessage ?? ""}
-              onValueChange={(v) => setField("ticketHeaderMessage", v)}
+              onChange={(v: any) => setField("ticketHeaderMessage", v.target.value)}
             />
-            <Textarea
+            <TextArea
               label="Mensaje pie ticket"
-              variant="flat"
+              
               size="sm"
               minRows={2}
               value={data.ticketFooterMessage ?? ""}
-              onValueChange={(v) => setField("ticketFooterMessage", v)}
+              onChange={(v: any) => setField("ticketFooterMessage", v.target.value)}
             />
-            <Textarea
+            <TextArea
               label="Mensaje legal ticket"
-              variant="flat"
+              
               size="sm"
               minRows={3}
               value={data.ticketLegalMessage ?? ""}
-              onValueChange={(v) => setField("ticketLegalMessage", v)}
+              onChange={(v: any) => setField("ticketLegalMessage", v.target.value)}
             />
-            <Textarea
+            <TextArea
               label="Reglas de operacion"
-              variant="flat"
+              
               size="sm"
               minRows={3}
               value={data.operationRulesMessage ?? ""}
-              onValueChange={(v) => setField("operationRulesMessage", v)}
+              onChange={(v: any) => setField("operationRulesMessage", v.target.value)}
             />
           </div>
 
           <div className="flex flex-col gap-4 py-2">
             <Checkbox
               isSelected={Boolean(data.manualExitAllowed)}
-              onValueChange={(v) => setField("manualExitAllowed", v)}
+              onChange={(v: any) => setField("manualExitAllowed", v)}
             >
               Salida manual permitida
             </Checkbox>
             <Checkbox
               isSelected={Boolean(data.allowOfflineEntryExit)}
-              onValueChange={(v) => setField("allowOfflineEntryExit", v)}
+              onChange={(v: any) => setField("allowOfflineEntryExit", v)}
             >
               Operacion offline ingreso/salida
             </Checkbox>
@@ -1909,37 +1983,37 @@ function ParametersSection({
               <Field
                 label="Prefijo autorizado (ej. SETP)"
                 value={data.dianInvoicePrefix ?? ""}
-                onChange={(v) => setField("dianInvoicePrefix", v)}
+                onChange={(v: any) => setField("dianInvoicePrefix", v)}
               />
               <Field
                 label="No. resolucion DIAN"
                 value={data.dianResolutionNumber ?? ""}
-                onChange={(v) => setField("dianResolutionNumber", v)}
+                onChange={(v: any) => setField("dianResolutionNumber", v)}
               />
               <Field
                 label="Fecha resolucion (YYYY-MM-DD)"
                 value={data.dianResolutionDate ?? ""}
-                onChange={(v) => setField("dianResolutionDate", v)}
+                onChange={(v: any) => setField("dianResolutionDate", v)}
               />
               <Field
                 label="Rango desde (consecutivo)"
                 value={data.dianRangeFrom ?? ""}
-                onChange={(v) => setField("dianRangeFrom", v)}
+                onChange={(v: any) => setField("dianRangeFrom", v)}
               />
               <Field
                 label="Rango hasta (consecutivo)"
                 value={data.dianRangeTo ?? ""}
-                onChange={(v) => setField("dianRangeTo", v)}
+                onChange={(v: any) => setField("dianRangeTo", v)}
               />
               <div className="sm:col-span-2 lg:col-span-3">
-                <Textarea
+                <TextArea
                   label="Clave tecnica (opcional)"
-                  variant="flat"
+                  
                   size="sm"
                   minRows={2}
                   placeholder="Si su PSC solicita persistirla en sede..."
                   value={data.dianTechnicalKey ?? ""}
-                  onValueChange={(v) => setField("dianTechnicalKey", v)}
+                  onChange={(v: any) => setField("dianTechnicalKey", v.target.value)}
                 />
               </div>
             </div>
@@ -1956,13 +2030,13 @@ function ParametersSection({
             <div className="flex flex-wrap gap-x-10 gap-y-3 py-1">
               <Checkbox
                 isSelected={Boolean(data.cashFeSequentialEnabled)}
-                onValueChange={(v) => setData((d) => ({ ...(d ?? {}), cashFeSequentialEnabled: v }))}
+                onChange={(v: any) => setData((d) => ({ ...(d ?? {}), cashFeSequentialEnabled: v }))}
               >
                 Consecutivo soporte al cierre
               </Checkbox>
               <Checkbox
                 isSelected={Boolean(data.cashFeSequencePerTerminal)}
-                onValueChange={(v) => setData((d) => ({ ...(d ?? {}), cashFeSequencePerTerminal: v }))}
+                onChange={(v: any) => setData((d) => ({ ...(d ?? {}), cashFeSequencePerTerminal: v }))}
               >
                 Llave correlativa por terminal
               </Checkbox>
@@ -1973,7 +2047,7 @@ function ParametersSection({
                 value={
                   data.cashFeSequenceDigits != null ? String(data.cashFeSequenceDigits) : ""
                 }
-                onChange={(v) =>
+                onChange={(v: any) =>
                   setData((d) => ({
                     ...(d ?? {}),
                     cashFeSequenceDigits: v.trim() === "" ? undefined : Number(v.replace(",", "."))
@@ -1984,19 +2058,19 @@ function ParametersSection({
                 <Field
                   label="Webhook URL PSC"
                   value={data.cashFeOutboundWebhookUrl ?? ""}
-                  onChange={(v) => setField("cashFeOutboundWebhookUrl", v)}
+                  onChange={(v: any) => setField("cashFeOutboundWebhookUrl", v)}
                 />
               </div>
             </div>
             <div className="mt-4">
-              <Textarea
+              <TextArea
                 label="Webhook Authorization (Bearer opcional)"
-                variant="flat"
+                
                 size="sm"
                 minRows={2}
                 placeholder="Ej. Bearer eyJ..."
                 value={data.cashFeOutboundWebhookBearer ?? ""}
-                onValueChange={(v) => setField("cashFeOutboundWebhookBearer", v)}
+                onChange={(v: any) => setField("cashFeOutboundWebhookBearer", v.target.value)}
               />
             </div>
           </div>
@@ -2006,10 +2080,8 @@ function ParametersSection({
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Select
                 label="Cobro exige caja abierta"
-                variant="flat"
-                size="sm"
-                selectedKeys={[data.cashRequireOpenForPayment === undefined ? "" : String(data.cashRequireOpenForPayment)]}
-                onSelectionChange={(keys) => {
+                value={[data.cashRequireOpenForPayment === undefined ? "" : String(data.cashRequireOpenForPayment)]}
+                onChange={(keys) => {
                   const v = Array.from(keys)[0] as string;
                   setData((d) => ({
                     ...(d ?? {}),
@@ -2017,17 +2089,25 @@ function ParametersSection({
                   }));
                 }}
               >
-                <SelectItem key="">Heredar servidor (app.cash)</SelectItem>
-                <SelectItem key="true">Si, exigir</SelectItem>
-                <SelectItem key="false">No exigir</SelectItem>
-              </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+                <ListBox.Item key="">Heredar servidor (app.cash)</ListBox.Item>
+                <ListBox.Item key="true">Si, exigir</ListBox.Item>
+                <ListBox.Item key="false">No exigir</ListBox.Item>
+              
+        </ListBox>
+      </Select.Popover>
+    </Select>
 
               <Select
                 label="Permitir cierre de caja offline"
-                variant="flat"
-                size="sm"
-                selectedKeys={[data.cashOfflineCloseAllowed === undefined ? "" : String(data.cashOfflineCloseAllowed)]}
-                onSelectionChange={(keys) => {
+                value={[data.cashOfflineCloseAllowed === undefined ? "" : String(data.cashOfflineCloseAllowed)]}
+                onChange={(keys) => {
                   const v = Array.from(keys)[0] as string;
                   setData((d) => ({
                     ...(d ?? {}),
@@ -2035,10 +2115,20 @@ function ParametersSection({
                   }));
                 }}
               >
-                <SelectItem key="">Heredar servidor</SelectItem>
-                <SelectItem key="true">Permitir</SelectItem>
-                <SelectItem key="false">No permitir</SelectItem>
-              </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+                <ListBox.Item key="">Heredar servidor</ListBox.Item>
+                <ListBox.Item key="true">Permitir</ListBox.Item>
+                <ListBox.Item key="false">No permitir</ListBox.Item>
+              
+        </ListBox>
+      </Select.Popover>
+    </Select>
 
               <Field
                 label="Tope manual offline (COP)"
@@ -2047,7 +2137,7 @@ function ParametersSection({
                     ? String(data.cashOfflineMaxManualMovement)
                     : ""
                 }
-                onChange={(v) =>
+                onChange={(v: any) =>
                   setData((d) => ({
                     ...(d ?? {}),
                     cashOfflineMaxManualMovement:
@@ -2094,7 +2184,7 @@ function ParametersSection({
               Guardar parametros
             </Button>
             <Button
-              variant="bordered"
+              variant="outline"
               color="primary"
               className="font-semibold"
               onPress={() => {
@@ -2139,10 +2229,10 @@ function Field({
   return (
     <Input
       label={label}
-      variant="flat"
+      
       size="sm"
       value={value}
-      onValueChange={onChange}
+      onChange={(e) => onChange(e.target.value)}
     />
   );
 }
@@ -2260,7 +2350,7 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
                 isDisabled={togglingId === r.id}
                 size="sm"
                 color={r.isActive ? "success" : "danger"}
-                onValueChange={() => toggleActive(r.id, r.isActive)}
+                onChange={() => toggleActive(r.id, r.isActive)}
                 aria-label={r.isActive ? "Desactivar tipo" : "Activar tipo"}
               />
             )
@@ -2268,7 +2358,7 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
           { key: "id", label: "", render: (r) => (
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               color="primary"
               className="font-semibold"
               onPress={() => { setEditing(r as any); setCreating(false); setForm(vehicleTypeToForm(r)); }}
@@ -2286,44 +2376,44 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <Input
               label="Código (ej. CAR)"
-              variant="flat"
+              
               size="sm"
               classNames={{ input: "uppercase" }}
               value={form.code}
-              onValueChange={(val) => setForm({ ...form, code: val.toUpperCase() })}
+              onChange={(val) => setForm({ ...form, code: val.target.value.toUpperCase() })}
               isDisabled={!!editing}
             />
             <Input
               label="Nombre (ej. Carro)"
-              variant="flat"
+              
               size="sm"
               value={form.name}
-              onValueChange={(val) => setForm({ ...form, name: val })}
+              onChange={(val) => setForm({ ...form, name: val.target.value })}
             />
             <Input
               label="Icono"
-              variant="flat"
+              
               size="sm"
               maxLength={40}
               value={form.icon}
-              onValueChange={(val) => setForm({ ...form, icon: val })}
+              onChange={(val) => setForm({ ...form, icon: val.target.value })}
             />
             <Input
               label="Color"
-              variant="flat"
+              
               size="sm"
               type="color"
               value={form.color}
-              onValueChange={(val) => setForm({ ...form, color: val.toUpperCase() })}
+              onChange={(val) => setForm({ ...form, color: val.target.value.toUpperCase() })}
             />
             <Input
               label="Orden"
-              variant="flat"
+              
               size="sm"
               type="number"
               min={0}
               value={String(form.displayOrder)}
-              onValueChange={(val) => setForm({ ...form, displayOrder: Number.parseInt(val || "0", 10) })}
+              onChange={(val) => setForm({ ...form, displayOrder: Number.parseInt(val.target.value || "0", 10) })}
             />
             <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
               <span
@@ -2341,35 +2431,35 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
           <div className="mt-4 grid gap-3 md:grid-cols-4">
             <Switch
               isSelected={form.requiresPlate}
-              onValueChange={(val) => setForm({ ...form, requiresPlate: val })}
+              onChange={(val) => setForm({ ...form, requiresPlate: val })}
               size="sm"
             >
               Requiere placa
             </Switch>
             <Switch
               isSelected={form.hasOwnRate}
-              onValueChange={(val) => setForm({ ...form, hasOwnRate: val })}
+              onChange={(val) => setForm({ ...form, hasOwnRate: val })}
               size="sm"
             >
               Tarifa propia
             </Switch>
             <Switch
               isSelected={form.quickAccess}
-              onValueChange={(val) => setForm({ ...form, quickAccess: val })}
+              onChange={(val) => setForm({ ...form, quickAccess: val })}
               size="sm"
             >
               Acceso rápido
             </Switch>
             <Switch
               isSelected={form.requiresPhoto}
-              onValueChange={(val) => setForm({ ...form, requiresPhoto: val })}
+              onChange={(val) => setForm({ ...form, requiresPhoto: val })}
               size="sm"
             >
               Requiere foto
             </Switch>
           </div>
           <div className="mt-6 flex justify-end gap-3">
-            <Button variant="light" color="primary" className="font-semibold" onPress={() => { setCreating(false); setEditing(null); }}>Cancelar</Button>
+            <Button variant="ghost" color="primary" className="font-semibold" onPress={() => { setCreating(false); setEditing(null); }}>Cancelar</Button>
             <Button
               color="success"
               className="font-semibold text-white"
@@ -2421,8 +2511,8 @@ function MonthlySection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex gap-3 items-end">
-        <Input label="Placa" variant="flat" size="sm" value={plate} onValueChange={setPlate} className="w-48" />
-        <Button color="primary" variant="bordered" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Buscar</Button>
+        <Input label="Placa"  size="sm" value={plate} onChange={(e) => setPlate(e.target.value)} className="w-48" />
+        <Button color="primary" variant="outline" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Buscar</Button>
       </div>
       <DataTable
         columns={[
@@ -2436,9 +2526,9 @@ function MonthlySection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
         rows={rows as any[]}
       />
       <div className="flex items-center gap-4">
-        <Button size="sm" variant="flat" color="primary" isDisabled={page <= 0} onPress={() => setPage(p => Math.max(0, p - 1))}>Anterior</Button>
+        <Button size="sm" variant="tertiary" color="primary" isDisabled={page <= 0} onPress={() => setPage(p => Math.max(0, p - 1))}>Anterior</Button>
         <span className="text-sm">Página {page + 1} de {Math.max(1, totalPages)}</span>
-        <Button size="sm" variant="flat" color="primary" isDisabled={page + 1 >= totalPages} onPress={() => setPage(p => p + 1)}>Siguiente</Button>
+        <Button size="sm" variant="tertiary" color="primary" isDisabled={page + 1 >= totalPages} onPress={() => setPage(p => p + 1)}>Siguiente</Button>
       </div>
     </div>
   );
@@ -2470,8 +2560,8 @@ function AgreementsSection({ canEdit, onNotify, auditReason }: { canEdit: boolea
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex gap-3 items-end">
-        <Input label="Buscar" variant="flat" size="sm" value={q} onValueChange={setQ} className="w-64" placeholder="Empresa o código..." />
-        <Button color="primary" variant="bordered" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Buscar</Button>
+        <Input label="Buscar"  size="sm" value={q} onChange={(e) => setQ(e.target.value)} className="w-64" placeholder="Empresa o código..." />
+        <Button color="primary" variant="outline" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Buscar</Button>
       </div>
       <DataTable
         columns={[
@@ -2510,7 +2600,7 @@ function PrepaidSection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex justify-between items-center">
         <h2 className="text-lg font-semibold text-slate-900">Paquetes Prepagados</h2>
-        <Button color="primary" variant="bordered" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Actualizar</Button>
+        <Button color="primary" variant="outline" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Actualizar</Button>
       </div>
       <DataTable
         columns={[
@@ -2532,10 +2622,10 @@ function OnboardingSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | 
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
+        <Card.Header>
           <h2 className="text-lg font-semibold text-slate-900">Parametrización Automática</h2>
-        </CardHeader>
-        <CardBody className="space-y-4">
+        </Card.Header>
+        <Card.Content className="space-y-4">
           <p className="text-sm text-slate-600">
             Puedes re-ejecutar el asistente inicial para configurar rápidamente los aspectos básicos de la operación de la empresa (Tipos de vehículo, métodos de pago, módulos, etc.).
           </p>
@@ -2562,7 +2652,7 @@ function OnboardingSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | 
               Ejecutar Parametrización Automática
             </Button>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

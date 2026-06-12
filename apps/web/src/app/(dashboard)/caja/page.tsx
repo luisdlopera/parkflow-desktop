@@ -1,21 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Input,
-  Select,
-  SelectItem,
-  Textarea,
-  Button,
-  Switch,
-  Tooltip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-} from "@heroui/react";
+import { ListBox } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import { Switch } from "@/components/ui/Switch";
+import { Input } from "@/components/ui/Input";
+import { TextArea } from "@/components/ui/TextArea";
 import DataTable from "@/components/ui/DataTable";
 import Badge from "@/components/ui/Badge";
 import {
@@ -515,40 +508,48 @@ export default function CajaPage() {
       <div className="grid gap-4 grid-cols-1 md:grid-cols-3 items-end">
         <Input
           label="Sede"
-          variant="flat"
+          
           size="sm"
           value={site}
-          onValueChange={setSite}
+          onChange={(e) => setSite(e.target.value)}
           isDisabled={closed}
         />
         <div className="flex flex-col gap-2">
           {registerRows.length > 0 && (
             <Select
               label="Terminal / caja"
-              variant="flat"
-              size="sm"
-              selectedKeys={registerRows.some((r) => r.terminal === terminal) ? [terminal] : []}
-              onSelectionChange={(keys) => setTerminal(Array.from(keys)[0] as string)}
+              value={registerRows.some((r) => r.terminal === terminal) ? [terminal] : []}
+              onChange={(keys) => setTerminal(Array.from(keys)[0] as string)}
               isDisabled={closed}
             >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
               {registerRows.map((r) => (
-                <SelectItem key={r.terminal} textValue={r.terminal}>
+                <ListBox.Item key={r.terminal} textValue={r.terminal}>
                   {(r.label ?? r.terminal) + ` (${r.terminal})`}
-                </SelectItem>
+                </ListBox.Item>
               ))}
-            </Select>
+            
+        </ListBox>
+      </Select.Popover>
+    </Select>
           )}
           <Input
             placeholder="Terminal manual"
-            variant="flat"
+            
             size="sm"
             value={terminal}
-            onValueChange={setTerminal}
+            onChange={(e) => setTerminal(e.target.value)}
             isDisabled={closed}
           />
         </div>
         <Button 
-          variant="bordered" 
+          variant="outline" 
           color="primary"
           className="font-semibold h-[48px]" 
           onPress={() => { load().catch(console.error); }} 
@@ -757,46 +758,62 @@ export default function CajaPage() {
           <div className="mt-4 flex flex-wrap gap-4 mb-6">
             <Select
               label="Filtrar por tipo"
-              variant="flat"
-              size="sm"
               className="max-w-[200px]"
-              selectedKeys={filterType ? [filterType] : [""]}
-              onSelectionChange={(keys) => setFilterType(Array.from(keys)[0] as string)}
+              value={filterType ? [filterType] : [""]}
+              onChange={(keys) => setFilterType(Array.from(keys)[0] as string)}
             >
-              <SelectItem key="">Todos los tipos</SelectItem>
-              <SelectItem key="PARKING_PAYMENT">Cobro parqueo</SelectItem>
-              <SelectItem key="MANUAL_INCOME">Ingreso manual</SelectItem>
-              <SelectItem key="MANUAL_EXPENSE">Egreso manual</SelectItem>
-              <SelectItem key="WITHDRAWAL">Retiro / Transferencia a Tesorería</SelectItem>
-              <SelectItem key="CUSTOMER_REFUND">Devolucion al cliente</SelectItem>
-              <SelectItem key="DISCOUNT">Descuento</SelectItem>
-              <SelectItem key="ADJUSTMENT">Ajuste</SelectItem>
-              <SelectItem key="LOST_TICKET_PAYMENT">Cobro ticket perdido</SelectItem>
-              <SelectItem key="REPRINT_FEE">Reimpresion cobrada</SelectItem>
-              <SelectItem key="VOID_OFFSET">Contrapartida anulacion</SelectItem>
-            </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+              <ListBox.Item key="">Todos los tipos</ListBox.Item>
+              <ListBox.Item key="PARKING_PAYMENT">Cobro parqueo</ListBox.Item>
+              <ListBox.Item key="MANUAL_INCOME">Ingreso manual</ListBox.Item>
+              <ListBox.Item key="MANUAL_EXPENSE">Egreso manual</ListBox.Item>
+              <ListBox.Item key="WITHDRAWAL">Retiro / Transferencia a Tesorería</ListBox.Item>
+              <ListBox.Item key="CUSTOMER_REFUND">Devolucion al cliente</ListBox.Item>
+              <ListBox.Item key="DISCOUNT">Descuento</ListBox.Item>
+              <ListBox.Item key="ADJUSTMENT">Ajuste</ListBox.Item>
+              <ListBox.Item key="LOST_TICKET_PAYMENT">Cobro ticket perdido</ListBox.Item>
+              <ListBox.Item key="REPRINT_FEE">Reimpresion cobrada</ListBox.Item>
+              <ListBox.Item key="VOID_OFFSET">Contrapartida anulacion</ListBox.Item>
+            
+        </ListBox>
+      </Select.Popover>
+    </Select>
             <Select
               label="Filtrar por medio"
-              variant="flat"
-              size="sm"
               className="max-w-[200px]"
-              selectedKeys={filterMethod ? [filterMethod] : [""]}
-              onSelectionChange={(keys) => setFilterMethod(Array.from(keys)[0] as string)}
+              value={filterMethod ? [filterMethod] : [""]}
+              onChange={(keys) => setFilterMethod(Array.from(keys)[0] as string)}
             >
-              <SelectItem key="">Todos los medios</SelectItem>
-              <SelectItem key="CASH">Efectivo</SelectItem>
-              <SelectItem key="DEBIT_CARD">Tarjeta débito</SelectItem>
-              <SelectItem key="CREDIT_CARD">Tarjeta crédito</SelectItem>
-              <SelectItem key="CARD">Tarjeta legacy</SelectItem>
-              <SelectItem key="QR">QR</SelectItem>
-              <SelectItem key="NEQUI">Nequi</SelectItem>
-              <SelectItem key="DAVIPLATA">Daviplata</SelectItem>
-              <SelectItem key="TRANSFER">Transferencia</SelectItem>
-              <SelectItem key="AGREEMENT">Convenio</SelectItem>
-              <SelectItem key="INTERNAL_CREDIT">Crédito interno</SelectItem>
-              <SelectItem key="OTHER">Otro</SelectItem>
-              <SelectItem key="MIXED">Mixto</SelectItem>
-            </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+              <ListBox.Item key="">Todos los medios</ListBox.Item>
+              <ListBox.Item key="CASH">Efectivo</ListBox.Item>
+              <ListBox.Item key="DEBIT_CARD">Tarjeta débito</ListBox.Item>
+              <ListBox.Item key="CREDIT_CARD">Tarjeta crédito</ListBox.Item>
+              <ListBox.Item key="CARD">Tarjeta legacy</ListBox.Item>
+              <ListBox.Item key="QR">QR</ListBox.Item>
+              <ListBox.Item key="NEQUI">Nequi</ListBox.Item>
+              <ListBox.Item key="DAVIPLATA">Daviplata</ListBox.Item>
+              <ListBox.Item key="TRANSFER">Transferencia</ListBox.Item>
+              <ListBox.Item key="AGREEMENT">Convenio</ListBox.Item>
+              <ListBox.Item key="INTERNAL_CREDIT">Crédito interno</ListBox.Item>
+              <ListBox.Item key="OTHER">Otro</ListBox.Item>
+              <ListBox.Item key="MIXED">Mixto</ListBox.Item>
+            
+        </ListBox>
+      </Select.Popover>
+    </Select>
           </div>
           
           <DataTable<CashMovementDto>
@@ -827,7 +844,7 @@ export default function CajaPage() {
                   m.status === "POSTED" && m.movementType !== "VOID_OFFSET" && canVoid ? (
                     <Button
                       size="sm"
-                      variant="flat"
+                      variant="tertiary"
                       color="danger"
                       onPress={() => setVoidTarget(m.id)}
                     >
@@ -849,56 +866,72 @@ export default function CajaPage() {
           <div className="mt-3 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 items-end">
             <Select
               label="Tipo de movimiento"
-              variant="flat"
-              size="sm"
-              selectedKeys={[manualType]}
-              onSelectionChange={(keys) => setManualType(Array.from(keys)[0] as string)}
+              value={[manualType]}
+              onChange={(keys) => setManualType(Array.from(keys)[0] as string)}
               isDisabled={!canMove}
             >
-              <SelectItem key="MANUAL_INCOME">Ingreso manual</SelectItem>
-              <SelectItem key="MANUAL_EXPENSE">Egreso manual</SelectItem>
-              <SelectItem key="WITHDRAWAL">Retiro / Transferencia a Tesorería</SelectItem>
-              <SelectItem key="CUSTOMER_REFUND">Devolucion al cliente</SelectItem>
-              <SelectItem key="DISCOUNT">Descuento</SelectItem>
-              <SelectItem key="ADJUSTMENT">Ajuste autorizado</SelectItem>
-              <SelectItem key="REPRINT_FEE">Reimpresion cobrada</SelectItem>
-            </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+              <ListBox.Item key="MANUAL_INCOME">Ingreso manual</ListBox.Item>
+              <ListBox.Item key="MANUAL_EXPENSE">Egreso manual</ListBox.Item>
+              <ListBox.Item key="WITHDRAWAL">Retiro / Transferencia a Tesorería</ListBox.Item>
+              <ListBox.Item key="CUSTOMER_REFUND">Devolucion al cliente</ListBox.Item>
+              <ListBox.Item key="DISCOUNT">Descuento</ListBox.Item>
+              <ListBox.Item key="ADJUSTMENT">Ajuste autorizado</ListBox.Item>
+              <ListBox.Item key="REPRINT_FEE">Reimpresion cobrada</ListBox.Item>
+            
+        </ListBox>
+      </Select.Popover>
+    </Select>
             <Select
               label="Medio de pago"
-              variant="flat"
-              size="sm"
-              selectedKeys={[manualMethod]}
-              onSelectionChange={(keys) => setManualMethod(Array.from(keys)[0] as string)}
+              value={[manualMethod]}
+              onChange={(keys) => setManualMethod(Array.from(keys)[0] as string)}
               isDisabled={!canMove}
             >
-              <SelectItem key="CASH">Efectivo</SelectItem>
-              <SelectItem key="DEBIT_CARD">Tarjeta débito</SelectItem>
-              <SelectItem key="CREDIT_CARD">Tarjeta crédito</SelectItem>
-              <SelectItem key="CARD">Tarjeta legacy</SelectItem>
-              <SelectItem key="QR">QR</SelectItem>
-              <SelectItem key="NEQUI">Nequi</SelectItem>
-              <SelectItem key="DAVIPLATA">Daviplata</SelectItem>
-              <SelectItem key="TRANSFER">Transferencia</SelectItem>
-              <SelectItem key="AGREEMENT">Convenio</SelectItem>
-              <SelectItem key="INTERNAL_CREDIT">Crédito interno</SelectItem>
-              <SelectItem key="OTHER">Otro</SelectItem>
-              <SelectItem key="MIXED">Mixto</SelectItem>
-            </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+              <ListBox.Item key="CASH">Efectivo</ListBox.Item>
+              <ListBox.Item key="DEBIT_CARD">Tarjeta débito</ListBox.Item>
+              <ListBox.Item key="CREDIT_CARD">Tarjeta crédito</ListBox.Item>
+              <ListBox.Item key="CARD">Tarjeta legacy</ListBox.Item>
+              <ListBox.Item key="QR">QR</ListBox.Item>
+              <ListBox.Item key="NEQUI">Nequi</ListBox.Item>
+              <ListBox.Item key="DAVIPLATA">Daviplata</ListBox.Item>
+              <ListBox.Item key="TRANSFER">Transferencia</ListBox.Item>
+              <ListBox.Item key="AGREEMENT">Convenio</ListBox.Item>
+              <ListBox.Item key="INTERNAL_CREDIT">Crédito interno</ListBox.Item>
+              <ListBox.Item key="OTHER">Otro</ListBox.Item>
+              <ListBox.Item key="MIXED">Mixto</ListBox.Item>
+            
+        </ListBox>
+      </Select.Popover>
+    </Select>
             <Input
               label="Valor"
-              variant="flat"
+              
               size="sm"
               type="number"
               value={manualAmount}
-              onValueChange={setManualAmount}
+              onChange={(e) => setManualAmount(e.target.value)}
               isDisabled={!canMove}
             />
             <Input
               label="Motivo"
-              variant="flat"
+              
               size="sm"
               value={manualReason}
-              onValueChange={setManualReason}
+              onChange={(e) => setManualReason(e.target.value)}
               isDisabled={!canMove}
             />
           </div>
@@ -906,7 +939,7 @@ export default function CajaPage() {
             <Button
               className="flex-1 font-bold"
               color="primary"
-              variant="flat"
+              variant="tertiary"
               isDisabled={busy || !canMove}
               isLoading={busy}
               onPress={() => { onAddManual().catch(console.error); }}
@@ -915,7 +948,7 @@ export default function CajaPage() {
             </Button>
             <Button
               className="flex-1 font-semibold"
-              variant="bordered"
+              variant="outline"
               color="primary"
               isDisabled={busy || movements.length === 0}
               onPress={() => { onPrintLastMovement().catch(console.error); }}
@@ -935,51 +968,51 @@ export default function CajaPage() {
           <div className="mt-6 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <Input
               label="Efectivo contado"
-              variant="flat"
+              
               size="sm"
               type="number"
               value={countCash}
-              onValueChange={setCountCash}
+              onChange={(e) => setCountCash(e.target.value)}
             />
             <Input
               label="Tarjetas"
-              variant="flat"
+              
               size="sm"
               type="number"
               value={countCard}
-              onValueChange={setCountCard}
+              onChange={(e) => setCountCard(e.target.value)}
             />
             <Input
               label="Transferencias"
-              variant="flat"
+              
               size="sm"
               type="number"
               value={countTransfer}
-              onValueChange={setCountTransfer}
+              onChange={(e) => setCountTransfer(e.target.value)}
             />
             <Input
               label="Otros"
-              variant="flat"
+              
               size="sm"
               type="number"
               value={countOther}
-              onValueChange={setCountOther}
+              onChange={(e) => setCountOther(e.target.value)}
             />
           </div>
           <div className="mt-4">
-            <Textarea
+            <TextArea
               label="Observaciones de arqueo"
               placeholder="Describa cualquier novedad..."
-              variant="flat"
+              
               value={countNotes}
-              onValueChange={setCountNotes}
+              onChange={(e) => setCountNotes(e.target.value)}
             />
           </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Button 
               className="flex-1 font-bold" 
               color="primary" 
-              variant="flat"
+              variant="tertiary"
               isDisabled={busy} 
               isLoading={busy}
               onPress={() => { onCount().catch(console.error); }}
@@ -988,7 +1021,7 @@ export default function CajaPage() {
             </Button>
             <Button
               className="flex-1 font-semibold"
-              variant="bordered"
+              variant="outline"
               color="primary"
               isDisabled={busy || !session.countedAt}
               onPress={() => { onPrintCount().catch(console.error); }}
@@ -1003,21 +1036,21 @@ export default function CajaPage() {
             para constancia física de testigo o supervisor.
           </p>
           <div className="mt-4">
-            <Textarea
+            <TextArea
               label="Notas de cierre"
               placeholder="Obligatorias si hay diferencia..."
-              variant="flat"
+              
               value={closeNotes}
-              onValueChange={setCloseNotes}
+              onChange={(e) => setCloseNotes(e.target.value)}
             />
           </div>
           <div className="mt-4">
             <Input
               label="Testigo / responsable firma (opcional)"
               placeholder="Nombre legible..."
-              variant="flat"
+              
               value={closingWitness}
-              onValueChange={setClosingWitness}
+              onChange={(e) => setClosingWitness(e.target.value)}
             />
           </div>
           {session && !session.countedAt ? (
@@ -1028,7 +1061,7 @@ export default function CajaPage() {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Button 
               color="danger" 
-              variant="flat" 
+              variant="tertiary" 
               className="flex-1 font-bold"
               isDisabled={busy || !session?.countedAt} 
               isLoading={busy}
@@ -1038,7 +1071,7 @@ export default function CajaPage() {
             </Button>
             <Button
               color="primary"
-              variant="flat"
+              variant="tertiary"
               className="flex-1 font-bold"
               isDisabled={busy || !session.countedAt}
               onPress={() => setShowShiftChangeModal(true)}
@@ -1067,54 +1100,54 @@ export default function CajaPage() {
         </div>
       ) : null}
 
-      <Modal isOpen={showShiftChangeModal} onClose={() => setShowShiftChangeModal(false)}>
-        <ModalContent>
-          <ModalHeader>Cambio de turno</ModalHeader>
-          <ModalBody>
+      <Modal state={ { isOpen: showShiftChangeModal, setOpen: (v: boolean) => { if(!v) setShowShiftChangeModal(false); }, open: () => {}, close: () => setShowShiftChangeModal(false), toggle: () => {} } }>
+        <Modal.Content>
+          <Modal.Header>Cambio de turno</Modal.Header>
+          <Modal.Body>
             <p className="text-sm text-slate-600 mb-4">
               Se cerrará la caja actual y se dejará lista para la apertura del siguiente operador.
             </p>
             <Input
               label="Monto base para siguiente turno"
-              variant="flat"
+              
               type="number"
               value={nextOpenAmount}
-              onValueChange={setNextOpenAmount}
+              onChange={(e) => setNextOpenAmount(e.target.value)}
             />
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={() => setShowShiftChangeModal(false)}>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="ghost" onPress={() => setShowShiftChangeModal(false)}>
               Cancelar
             </Button>
             <Button color="primary" isLoading={busy} onPress={() => { onShiftChange().catch(console.error); }}>
               Confirmar Cambio
             </Button>
-          </ModalFooter>
-        </ModalContent>
+          </Modal.Footer>
+        </Modal.Content>
       </Modal>
 
-      <Modal isOpen={!!voidTarget} onClose={() => setVoidTarget(null)}>
-        <ModalContent>
-          <ModalHeader>Anular movimiento</ModalHeader>
-          <ModalBody>
+      <Modal state={ { isOpen: !!voidTarget, setOpen: (v: boolean) => { if(!v) setVoidTarget(null); }, open: () => {}, close: () => setVoidTarget(null), toggle: () => {} } }>
+        <Modal.Content>
+          <Modal.Header>Anular movimiento</Modal.Header>
+          <Modal.Body>
             <p className="text-sm text-slate-600 mb-2">Motivo obligatorio (auditoria).</p>
-            <Textarea
+            <TextArea
               label="Motivo"
               placeholder="Describa la razón de la anulación..."
-              variant="flat"
+              
               value={voidReason}
-              onValueChange={setVoidReason}
+              onChange={(e) => setVoidReason(e.target.value)}
             />
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" color="primary" onPress={() => setVoidTarget(null)}>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="ghost" color="primary" onPress={() => setVoidTarget(null)}>
               Cancelar
             </Button>
             <Button color="danger" isLoading={busy} onPress={() => { onVoid().catch(console.error); }}>
               Confirmar anulacion
             </Button>
-          </ModalFooter>
-        </ModalContent>
+          </Modal.Footer>
+        </Modal.Content>
       </Modal>
     </div>
   );

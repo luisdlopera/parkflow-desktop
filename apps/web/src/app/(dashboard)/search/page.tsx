@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button, Card, CardBody, Chip, Input } from "@heroui/react";
+import { Chip } from "@/components/ui/Chip";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { ArrowRight, Car, Search, Ticket, User, Building2, Loader2 } from "lucide-react";
 import { useSearch } from "@/modules/search/hooks/useSearch";
 import type { SearchResult, SearchType } from "@/modules/search/types/search.types";
@@ -43,7 +46,7 @@ function ResultCard({ result, onSelect }: { result: SearchResult; onSelect: (res
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{result.title}</p>
-          {String(result.metadata?.status ?? "").toUpperCase() === "ACTIVE" ? <Chip size="sm" color="success" variant="flat">Activo</Chip> : null}
+          {String(result.metadata?.status ?? "").toUpperCase() === "ACTIVE" ? <Chip size="sm" color="success" variant="soft">Activo</Chip> : null}
         </div>
         <p className="truncate text-xs text-slate-500 dark:text-neutral-400">{result.subtitle}</p>
       </div>
@@ -94,7 +97,7 @@ export default function SearchPage() {
           <div className="w-full sm:max-w-md">
             <Input
               value={query}
-              onValueChange={setQuery}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar..."
               startContent={isLoading ? <Loader2 className="h-4 w-4 animate-spin text-orange-500" /> : <Search className="h-4 w-4 text-slate-400" />}
               classNames={{ inputWrapper: "h-12 rounded-2xl bg-white dark:bg-neutral-950/70" }}
@@ -125,7 +128,7 @@ export default function SearchPage() {
 
       {!query.trim() ? (
         <Card className="border border-slate-200/70 bg-white/70 dark:border-neutral-800/70 dark:bg-neutral-950/50">
-          <CardBody className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card.Content className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { title: "Ingresos", desc: "Buscar ticket, placa o vehículo" },
               { title: "Salidas", desc: "Cobros, reimpresiones y cierres" },
@@ -137,7 +140,7 @@ export default function SearchPage() {
                 <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">{item.desc}</p>
               </div>
             ))}
-          </CardBody>
+          </Card.Content>
         </Card>
       ) : total > 0 ? (
         <div className="space-y-6">
@@ -157,13 +160,13 @@ export default function SearchPage() {
         </div>
       ) : (
         <Card className="border border-dashed border-slate-300 bg-white/70 dark:border-neutral-700 dark:bg-neutral-950/40">
-          <CardBody className="py-14 text-center">
+          <Card.Content className="py-14 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-orange-50 text-orange-500 dark:bg-orange-950/20">
               <Search className="h-7 w-7" />
             </div>
             <p className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">No hay resultados</p>
             <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">Prueba con otra placa, ticket, usuario o abre una búsqueda más amplia.</p>
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
     </div>

@@ -1,13 +1,13 @@
 "use client";
-
+import { ListBox } from "@heroui/react";
+import { Card } from "@/components/ui/Card";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
 import { useRef, useState, useCallback, useEffect, useMemo, type KeyboardEvent } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Input } from "@heroui/input";
-import { Button } from "@heroui/button";
-import { Select, SelectItem } from "@heroui/select";
-import { Checkbox } from "@heroui/checkbox";
-import { Card, CardBody } from "@heroui/card";
 import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
 import { vehicleEntrySchema, VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
@@ -758,11 +758,10 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-500 whitespace-nowrap">Modo:</span>
           <Select
-            size="sm"
-            variant="flat"
+            
             aria-label="Modo de operación"
-            selectedKeys={[settings.mode]}
-            onSelectionChange={(keys) => {
+            value={[settings.mode]}
+            onChange={(keys) => {
               const selected = Array.from(keys)[0] as OperatorMode;
               setSettings(s => ({ ...s, mode: selected }));
             }}
@@ -771,14 +770,24 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
               trigger: "min-h-0 h-8",
             }}
           >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
             {modeOptions.map((option) => (
-              <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
+              <ListBox.Item key={option.key} textValue={option.label}>{option.label}</ListBox.Item>
             ))}
-          </Select>
+          
+        </ListBox>
+      </Select.Popover>
+    </Select>
           <Button
             isIconOnly
             size="sm"
-            variant="flat"
+            variant="tertiary"
             color="primary"
             aria-label="Configuración de operador"
             onPress={() => setShowSettings(!showSettings)}
@@ -795,19 +804,19 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       {/* Panel de configuración */}
       {showSettings && (
         <Card className="bg-slate-50">
-          <CardBody className="p-4 space-y-3">
+          <Card.Content className="p-4 space-y-3">
             <h4 className="text-sm font-semibold text-slate-700">Configuración de Operador</h4>
             <div className="flex flex-wrap gap-4">
               <Checkbox
                 isSelected={settings.rememberLocation}
-                onValueChange={(checked) => setSettings(s => ({ ...s, rememberLocation: checked }))}
+                onChange={(checked: any) => setSettings(s => ({ ...s, rememberLocation: checked }))}
                 size="sm"
               >
                 Recordar ubicación
               </Checkbox>
               <Checkbox
                 isSelected={settings.skipConditionCheck}
-                onValueChange={(checked) => setSettings(s => ({ ...s, skipConditionCheck: checked }))}
+                onChange={(checked: any) => setSettings(s => ({ ...s, skipConditionCheck: checked }))}
                 size="sm"
               >
                 Omitir estado vehículo
@@ -816,12 +825,11 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
             <div className="flex items-center gap-2">
               <label className="text-sm text-slate-600">Tipo por defecto:</label>
               <Select
-                size="sm"
-                variant="flat"
+                
                 aria-label="Tipo de vehículo por defecto"
-                selectedKeys={vehicleTypes.some((type) => type.code === settings.defaultVehicleType) ? [settings.defaultVehicleType] : []}
-                onSelectionChange={(keys) => {
-                  const selected = Array.from(keys)[0] as VehicleType;
+                value={vehicleTypes.some((type) => type.code === settings.defaultVehicleType) ? [settings.defaultVehicleType] : []}
+                onChange={(val) => {
+                  const selected = val as VehicleType;
                   if (selected) {
                     setSettings(s => ({ ...s, defaultVehicleType: selected }));
                     void form.trigger("plate");
@@ -829,15 +837,25 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
                 }}
                 className="w-40"
               >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
                 {vehicleTypes.map((type) => {
                   const config = vehicleTypeView(type);
                   return (
-                  <SelectItem key={type.code} textValue={config.label}>{config.icon} {config.label}</SelectItem>
+                  <ListBox.Item key={type.code} textValue={config.label}>{config.icon} {config.label}</ListBox.Item>
                   );
                 })}
-              </Select>
+              
+        </ListBox>
+      </Select.Popover>
+    </Select>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
@@ -848,7 +866,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
           {/* Placa */}
           <Controller
             name="plate"
-            control={form.control}
+            control={form.control as any}
             render={({ field, fieldState }) => (
               <Input
                 {...field}
@@ -892,13 +910,13 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
           {noPlate && (
             <Controller
               name="noPlateReason"
-              control={form.control}
+              control={form.control as any}
               render={({ field, fieldState }) => (
                 <Input
                   {...field}
                   label="Justificación sin placa"
                   placeholder="Caso especial autorizado"
-                  variant="flat"
+                  
                   size="sm"
                   isInvalid={!!fieldState.error}
                   errorMessage={fieldState.error?.message}
@@ -909,7 +927,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
 
           <Controller
             name="entryMode"
-            control={form.control}
+            control={form.control as any}
             render={({ field }) => {
               const opts = [{ key: "VISITOR", label: "Visitante" }, { key: "EMPLOYEE", label: "Empleado" }];
               if (runtimeConfig?.modules?.agreements) opts.push({ key: "AGREEMENT", label: "Convenio" });
@@ -919,16 +937,24 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
               }
               return (
               <Select
-                variant="flat"
-                size="sm"
                 aria-label="Tipo de ingreso"
-                selectedKeys={[field.value]}
-                onSelectionChange={(keys) => field.onChange(Array.from(keys)[0] as string)}
+                value={[field.value]}
+                onChange={(keys) => field.onChange(Array.from(keys)[0] as string)}
               >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
                 {opts.map((option) => (
-                  <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
+                  <ListBox.Item key={option.key} textValue={option.label}>{option.label}</ListBox.Item>
                 ))}
-              </Select>
+              
+        </ListBox>
+      </Select.Popover>
+    </Select>
               );
             }}
           />
@@ -973,32 +999,43 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
                 // Modo principiante: Select
                 <Controller
                   name="type"
-                  control={form.control}
+                  control={form.control as any}
                   render={({ field }) => {
                     const validKeys = vehicleTypes.map(t => t.code);
                     const selectedKey = validKeys.includes(field.value) ? field.value : undefined;
                     return (
                       <Select
-                        variant="flat"
+                        name="type"
                         aria-label="Tipo de vehículo"
                         data-testid="vehicle-type"
-                        selectedKeys={selectedKey ? [selectedKey] : []}
+                        value={selectedKey ? [selectedKey] : []}
                         isDisabled={vehicleTypes.length === 0 || loadingTypes}
-                          onSelectionChange={(keys) => {
-                            const selected = Array.from(keys)[0] as string;
+                          onChange={(keys) => {
+                            console.log("SELECT onChange", keys);
+                            const selected = Array.from(keys as Set<any>)[0] as string;
                             field.onChange(selected);
                             void form.trigger("plate");
                           }}
                       >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
                         {vehicleTypes.map((t) => {
                           const config = vehicleTypeView(t);
                           return (
-                            <SelectItem key={t.code} textValue={config.label}>
+                            <ListBox.Item key={t.code} id={t.code} textValue={config.label}>
                               {config.icon} {config.label}
-                            </SelectItem>
+                            </ListBox.Item>
                           );
                         })}
-                      </Select>
+                      
+        </ListBox>
+      </Select.Popover>
+    </Select>
                     );
                   }}
                 />
@@ -1056,45 +1093,53 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
                   {hasMultipleSites ? (
                     <Controller
                       name="site"
-                      control={form.control}
+                      control={form.control as any}
                       render={({ field }) => (
                         <Select
                           aria-label="Sede"
-                          selectedKeys={field.value ? [field.value] : []}
-                          variant="flat"
-                          size="sm"
-                          onSelectionChange={(keys) => {
+                          value={field.value ? [field.value] : []}
+                          onChange={(keys) => {
                             const selected = Array.from(keys)[0] as string | undefined;
                             if (selected) field.onChange(selected);
                           }}
                         >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
                           {configuredSites.map((site: any) => {
                             const key = String(site.code ?? site.name ?? "PRINCIPAL");
-                            return <SelectItem key={key}>{String(site.name ?? site.code ?? key)}</SelectItem>;
+                            return <ListBox.Item key={key}>{String(site.name ?? site.code ?? key)}</ListBox.Item>;
                           })}
-                        </Select>
+                        
+        </ListBox>
+      </Select.Popover>
+    </Select>
                       )}
                     />
                   ) : null}
                   <Controller
                     name="lane"
-                    control={form.control}
+                    control={form.control as any}
                     render={({ field }) => (
-                      <Input {...field} label="Carril" placeholder="1" variant="flat" size="sm" />
+                      <Input {...field} label="Carril" placeholder="1"  size="sm" />
                     )}
                   />
                   <Controller
                     name="booth"
-                    control={form.control}
+                    control={form.control as any}
                     render={({ field }) => (
-                      <Input {...field} label="Caja" placeholder="Caja 1" variant="flat" size="sm" />
+                      <Input {...field} label="Caja" placeholder="Caja 1"  size="sm" />
                     )}
                   />
                   <Controller
                     name="terminal"
-                    control={form.control}
+                    control={form.control as any}
                     render={({ field }) => (
-                      <Input {...field} label="Terminal" placeholder="T1" variant="flat" size="sm" />
+                      <Input {...field} label="Terminal" placeholder="T1"  size="sm" />
                     )}
                   />
                 </div>
@@ -1102,24 +1147,24 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
                 {/* Tarifa */}
                 <Controller
                   name="countryCode"
-                  control={form.control}
+                  control={form.control as any}
                   render={({ field }) => (
-                    <Input {...field} label="País placa" placeholder="CO" variant="flat" size="sm" maxLength={2} />
+                    <Input {...field} label="País placa" placeholder="CO"  size="sm" maxLength={2} />
                   )}
                 />
 
                 <Controller
                   name="rateId"
-                  control={form.control}
+                  control={form.control as any}
                   render={({ field }) => (
-                    <Input {...field} label="Tarifa (opcional)" placeholder="ID de tarifa específica" variant="flat" size="sm" />
+                    <Input {...field} label="Tarifa (opcional)" placeholder="ID de tarifa específica"  size="sm" />
                   )}
                 />
 
                 {/* Campos Dinámicos / Autogenerados por Configuración */}
                 <FormLayoutFactory
                   layout={ENTRY_FORM_LAYOUT}
-                  control={form.control}
+                  control={form.control as any}
                   selectedVehicleType={selectedTypeCode}
                   skipConditionCheck={settings.skipConditionCheck}
                 />

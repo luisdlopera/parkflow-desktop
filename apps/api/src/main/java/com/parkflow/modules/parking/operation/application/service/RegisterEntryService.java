@@ -300,10 +300,6 @@ public class RegisterEntryService implements RegisterEntryUseCase {
         });
   }
 
-  private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
-    return toReceipt(session, totalMinutes, duration, null);
-  }
-
   private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration,
       com.parkflow.modules.parking.spaces.domain.ParkingSpace space) {
     List<CustodiedItemResponse> items = custodiedItemRepository.findBySession(session).stream()

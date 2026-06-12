@@ -174,7 +174,7 @@ public class CashClosingOutboundNotifier {
         mapDecimalValues(sum.totalsByMovementType()));
     try {
       m.put("issuedAtUtc", java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toString());
-    } catch (@SuppressWarnings("unused") Exception ignored) {
+    } catch (Exception ignored) {
       //
     }
     return m;

@@ -2,7 +2,8 @@
 
 import React from "react";
 import { Controller, Control } from "react-hook-form";
-import { Input } from "@heroui/input";
+
+import { Input } from "@/components/ui/Input";
 import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
 
 interface ObservationsInputProps {
@@ -26,7 +27,7 @@ export function ObservationsInput({ control }: ObservationsInputProps) {
           {...field}
           label="Observaciones"
           placeholder="Notas adicionales"
-          variant="flat"
+          
           size="sm"
           isInvalid={!!fieldState.error}
           errorMessage={fieldState.error?.message}
