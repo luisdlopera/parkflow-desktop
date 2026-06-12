@@ -172,7 +172,7 @@ export default function LoginPage() {
       <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-2xl p-8 shadow-2xl border border-default-100 bg-white dark:bg-neutral-950">
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-700/80 mb-2">Parkflow</p>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             {isSetupMode ? "Configuración Inicial" : "¡Bienvenido!"}
           </h1>
           <p className="text-slate-500 text-sm mt-2">
@@ -220,7 +220,44 @@ export default function LoginPage() {
             startContent={<Mail size={18} className="text-slate-400" />}
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          {isSetupMode ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                data-testid="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                label="Contraseña"
+                placeholder="••••••••"
+                value={password}
+                onValueChange={setPassword}
+                autoComplete="current-password"
+                variant="flat"
+                size="md"
+                startContent={<Lock size={18} className="text-slate-400" />}
+                endContent={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors focus:outline-none"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                }
+              />
+              <Input
+                name="confirmPassword"
+                type={showPassword ? "text" : "password"}
+                label="Confirmar Contraseña"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onValueChange={setConfirmPassword}
+                variant="flat"
+                size="md"
+                startContent={<Lock size={18} className="text-slate-400" />}
+              />
+            </div>
+          ) : (
             <Input
               data-testid="password"
               name="password"
@@ -237,28 +274,14 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors focus:outline-none"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               }
             />
-
-            {isSetupMode && (
-              <Input
-                name="confirmPassword"
-                type={showPassword ? "text" : "password"}
-                label="Confirmar Contraseña"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onValueChange={setConfirmPassword}
-                variant="flat"
-                size="md"
-                startContent={<Lock size={18} className="text-slate-400" />}
-              />
-            )}
-          </div>
+          )}
 
           {isSetupMode && (
             <div className="space-y-4 pt-4 border-t border-default-100">
@@ -294,7 +317,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={loadDemoData}
-                  className="text-xs font-bold text-amber-700 hover:underline hover:text-amber-800 transition-colors"
+                  className="text-xs font-bold text-amber-700 hover:underline hover:text-amber-800 dark:text-amber-500 dark:hover:text-amber-400 transition-colors"
                 >
                   ⚡ Usar Datos Demo (Desarrollo)
                 </button>

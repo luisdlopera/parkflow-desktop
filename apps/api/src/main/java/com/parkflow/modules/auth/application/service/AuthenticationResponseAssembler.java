@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthenticationResponseAssembler {
 
-  public AuthUserResponse toUser(AppUser user) {
+  public AuthUserResponse toUser(AppUser user, boolean onboardingCompleted) {
     List<String> permissions =
         RolePermissions.permissionsFor(user.getRole()).stream().map(AuthPermission::authority).toList();
     return new AuthUserResponse(
@@ -26,7 +26,9 @@ public class AuthenticationResponseAssembler {
         user.getRole().name(),
         permissions,
         user.isActive(),
-        user.getPasswordChangedAt());
+        user.getPasswordChangedAt(),
+        user.isRequirePasswordChange(),
+        onboardingCompleted);
   }
 
   public SessionInfoResponse toSession(AuthSession session) {

@@ -11,4 +11,6 @@ public record AuthUserResponse(
     String role,
     List<String> permissions,
     boolean active,
-    OffsetDateTime passwordChangedAt) {}
+    OffsetDateTime passwordChangedAt,
+    boolean requirePasswordChange,
+    boolean onboardingCompleted) {}

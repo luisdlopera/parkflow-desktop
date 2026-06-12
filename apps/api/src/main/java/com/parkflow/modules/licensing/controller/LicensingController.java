@@ -103,6 +103,26 @@ public class LicensingController {
     return ResponseEntity.ok(companyManagementUseCase.updateCompany(companyId, request, performedBy));
   }
 
+  @DeleteMapping("/companies/{companyId}/deactivate")
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
+  public ResponseEntity<Void> deactivateCompany(
+      @PathVariable UUID companyId,
+      @RequestAttribute("currentUserEmail") String performedBy) {
+
+    companyManagementUseCase.deactivateCompany(companyId, performedBy);
+    return ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping("/companies/{companyId}")
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
+  public ResponseEntity<Void> deleteCompany(
+      @PathVariable UUID companyId,
+      @RequestAttribute("currentUserEmail") String performedBy) {
+
+    companyManagementUseCase.deleteCompany(companyId, performedBy);
+    return ResponseEntity.noContent().build();
+  }
+
   // ==================== ADMIN: LICENSE MANAGEMENT ====================
 
   /**

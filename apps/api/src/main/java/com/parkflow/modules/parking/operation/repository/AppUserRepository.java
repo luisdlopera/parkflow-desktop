@@ -2,6 +2,7 @@ package com.parkflow.modules.parking.operation.repository;
 
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,8 @@ import org.springframework.data.repository.query.Param;
 public interface AppUserRepository extends JpaRepository<AppUser, UUID> {
   @Query("SELECT u FROM AppUser u WHERE LOWER(u.email) = LOWER(:email)")
   Optional<AppUser> findGlobalByEmail(@Param("email") String email);
+
+  List<AppUser> findByCompanyId(UUID companyId);
 
   Optional<AppUser> findByEmailAndCompanyId(String email, UUID companyId);
 

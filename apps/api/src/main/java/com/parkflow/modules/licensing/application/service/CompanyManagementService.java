@@ -155,4 +155,45 @@ public class CompanyManagementService implements CompanyManagementUseCase {
 
         return companyResponseAssembler.assemble(company);
     }
+
+    @Override
+    @Transactional
+    public void deactivateCompany(UUID companyId, String performedBy) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+        
+        company.setStatus(com.parkflow.modules.licensing.enums.CompanyStatus.CANCELLED);
+        company.setCancelledAt(OffsetDateTime.now());
+        companyRepository.save(company);
+        
+        List<AppUser> users = appUserRepository.findByCompanyId(companyId);
+        users.forEach(u -> u.setActive(false));
+        appUserRepository.saveAll(users);
+        
+        LicenseAuditLog audit = LicenseAuditLog.create(company, "COMPANY_DEACTIVATED",
+                "Empresa y sus usuarios desactivados", performedBy);
+        auditLogRepository.save(audit);
+        
+        log.info("Compañía {} ({}) desactivada por {}", company.getName(), companyId, performedBy);
+    }
+
+    @Override
+    @Transactional
+    public void deleteCompany(UUID companyId, String performedBy) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+        
+        log.info("Iniciando hard delete de compañía {} ({}) por {}", company.getName(), companyId, performedBy);
+        
+        // Opcional: Eliminar usuarios asociados primero si no hay cascade
+        List<AppUser> users = appUserRepository.findByCompanyId(companyId);
+        appUserRepository.deleteAll(users);
+        
+        // Eliminar logs de auditoría asociados
+        // Nota: asume que LicenseAuditLog tiene FK a Company
+        // Aquí borramos la empresa, confiando en las reglas de cascade de la base de datos
+        // o en haber eliminado las dependencias directas como usuarios.
+        companyRepository.deleteById(companyId);
+        log.info("Compañía {} eliminada de manera permanente", companyId);
+    }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 
 type Theme = "light" | "dark" | "auto";
 
@@ -11,6 +11,11 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+function getSystemDark(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
@@ -23,45 +28,40 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const [isDark, setIsDark] = useState(false);
 
-  useEffect(() => {
+  const applyTheme = useCallback((shouldBeDark: boolean) => {
+    setIsDark(shouldBeDark);
     const root = document.documentElement;
-    
-    const updateTheme = () => {
-      let shouldBeDark: boolean;
-      
-      if (theme === "auto") {
-        // Auto-detect based on time (6pm - 6am = dark)
-        const hour = new Date().getHours();
-        shouldBeDark = hour >= 18 || hour < 6;
-      } else {
-        shouldBeDark = theme === "dark";
-      }
+    if (shouldBeDark) {
+      root.setAttribute("data-theme", "dark");
+      root.classList.add("dark");
+    } else {
+      root.removeAttribute("data-theme");
+      root.classList.remove("dark");
+    }
+  }, []);
 
-      setIsDark(shouldBeDark);
-      
-      if (shouldBeDark) {
-        root.setAttribute("data-theme", "dark");
-        root.classList.add("dark");
-      } else {
-        root.removeAttribute("data-theme");
-        root.classList.remove("dark");
-      }
-    };
+  useEffect(() => {
+    if (theme === "auto") {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      applyTheme(mq.matches);
 
-    updateTheme();
+      const handler = (e: MediaQueryListEvent) => applyTheme(e.matches);
+      mq.addEventListener("change", handler);
+      return () => mq.removeEventListener("change", handler);
+    }
 
-    // Check every minute for auto mode
-    const interval = setInterval(updateTheme, 60000);
-    return () => clearInterval(interval);
-  }, [theme]);
+    applyTheme(theme === "dark");
+  }, [theme, applyTheme]);
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem("parkflow-theme", newTheme);
   };
 
+  const value = { theme, setTheme, isDark };
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, isDark }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

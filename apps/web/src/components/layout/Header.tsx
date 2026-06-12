@@ -19,7 +19,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         <button
           onClick={onMenuClick}
           data-testid="mobile-menu"
-          className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+          className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600 dark:text-slate-400 dark:hover:bg-gray-800 transition-colors"
           aria-label="Abrir menú"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

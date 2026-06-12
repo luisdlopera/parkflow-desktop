@@ -70,7 +70,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
+              className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 dark:text-slate-400 dark:hover:bg-gray-800"
               aria-label="Cerrar menú"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

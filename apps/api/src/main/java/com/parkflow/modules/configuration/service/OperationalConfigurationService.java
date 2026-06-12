@@ -45,11 +45,11 @@ public class OperationalConfigurationService {
     @Transactional(readOnly = true)
     public Map<String, Object> getOperationConfiguration(UUID companyId) {
         OperationalProfile profile = getOperationalProfile(companyId);
-        log.info("[OperationalProfileResolver] Resolving operational configuration for company {} with profile {}", companyId, profile);
+        log.debug("[OperationalProfileResolver] Resolving operational configuration for company {} with profile {}", companyId, profile);
         
         OperationalProfilePolicy policy = getPolicyOrThrow(profile);
         Map<String, Object> config = policy.getDerivedConfiguration();
-        log.info("[EntryFlowConfiguration] Resolved operational flow settings: {}", config);
+        log.debug("[EntryFlowConfiguration] Resolved operational flow settings: {}", config);
         
         return config;
     }

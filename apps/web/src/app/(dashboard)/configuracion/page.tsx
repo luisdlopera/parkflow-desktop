@@ -11,8 +11,8 @@ import {
   RadioGroup,
   Radio,
 } from "@heroui/react";
-import { Chip } from "@heroui/chip";
-import { Tabs, Tab } from "@heroui/tabs";
+
+import { useSearchParams } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import DataTable from "@/components/ui/DataTable";
 import {
@@ -143,7 +143,8 @@ function Notice({
 }
 
 export default function ConfiguracionPage() {
-  const [tab, setTab] = useState<TabKey>("rates");
+  const searchParams = useSearchParams();
+  const section = searchParams.get("section") || "rates";
   const [notice, setNotice] = useState<{ kind: "ok" | "err" | "info"; text: string } | null>(null);
   const [auditReason, setAuditReason] = useState("");
   const [perm, setPerm] = useState<Record<string, boolean>>({});
@@ -200,22 +201,78 @@ export default function ConfiguracionPage() {
     [perm]
   );
 
+  const SECTION_CONFIG: Record<string, { label: string; title: string; description: string; info: string }> = {
+    rates: {
+      label: "Tarifas",
+      title: "Tarifas de estacionamiento",
+      description: "Configura las tarifas por tipo de vehículo, fracciones de tiempo y topes de cobro.",
+      info: "Las tarifas se aplican según el tipo de vehículo y duración de la estadía. Los cambios quedan auditados."
+    },
+    monthly: {
+      label: "Mensualidades",
+      title: "Mensualidades y contratos",
+      description: "Administra los contratos mensuales de estacionamiento para clientes recurrentes.",
+      info: "Los contratos mensuales tienen prioridad sobre tarifas estándar. Verifica las fechas de vigencia."
+    },
+    agreements: {
+      label: "Convenios",
+      title: "Convenios empresariales",
+      description: "Gestiona los convenios con empresas y organizaciones para tarifas preferenciales.",
+      info: "Los convenios aplican descuentos o tarifas fijas. Se facturan directamente a la empresa."
+    },
+    prepaid: {
+      label: "Prepagados",
+      title: "Paquetes prepagados",
+      description: "Administra los paquetes de horas prepagadas para clientes.",
+      info: "Los paquetes prepagados tienen fecha de vencimiento configurable. No son reembolsables."
+    },
+    users: {
+      label: "Usuarios",
+      title: "Usuarios del sistema",
+      description: "Administra los usuarios, roles y permisos del sistema de estacionamiento.",
+      info: "Los cambios de roles y permisos se aplican inmediatamente. Requiere motivo de auditoría."
+    },
+    parameters: {
+      label: "Parámetros",
+      title: "Parámetros del sistema",
+      description: "Configura los parámetros generales del parqueadero, facturación e integraciones.",
+      info: "Los parámetros se persisten por sede. La restauración de valores por defecto es irreversible."
+    },
+    interface: {
+      label: "Interfaz",
+      title: "Personalización de interfaz",
+      description: "Ajusta la apariencia y comportamiento de la interfaz de usuario.",
+      info: "Estas preferencias son locales y solo afectan a tu sesión actual."
+    },
+    onboarding: {
+      label: "Asistente Inicial",
+      title: "Parametrización automática",
+      description: "Ejecuta el asistente de configuración inicial para preparar el sistema.",
+      info: "Al re-ejecutar el asistente se reiniciará el progreso actual. Esta acción no es reversible."
+    },
+    masters: {
+      label: "Maestros",
+      title: "Tipos de vehículo",
+      description: "Administra los tipos de vehículo, íconos y colores del sistema.",
+      info: "Los tipos de vehículo se usan en todo el sistema. Desactivar un tipo no elimina datos históricos."
+    }
+  };
+
+  const config = SECTION_CONFIG[section] || SECTION_CONFIG.rates;
+
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Configuración</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Tarifas, usuarios y parámetros</h1>
+        <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">{config.label}</p>
+        <h1 className="text-3xl font-semibold text-slate-900">{config.title}</h1>
         <p className="mt-2 max-w-3xl text-sm text-slate-600">
-          Administracion operativa del parqueadero. Los cambios sensibles quedan auditados en el servidor.
+          {config.description}
         </p>
       </div>
 
       {notice ? <Notice kind={notice.kind} text={notice.text} /> : null}
 
-      <Notice
-        kind="info"
-        text="Politica offline-first: la edicion de tarifas, usuarios y parametros debe hacerse en linea; el cliente offline prioriza operacion de caja y sincronizacion (no encola cambios administrativos)."
-      />
+      <Notice kind="info" text={config.info} />
 
       <Textarea
         label="Motivo de auditoría"
@@ -228,108 +285,59 @@ export default function ConfiguracionPage() {
         className="max-w-2xl"
       />
 
-      <Tabs
-        selectedKey={tab}
-        onSelectionChange={(key) => setTab(key as TabKey)}
-        aria-label="Configuración"
-        color="primary"
-        variant="underlined"
-        classNames={{
-          tab: "px-4 py-2",
-          tabList: "gap-2 flex-wrap"
-        }}
-      >
-        <Tab
-          key="rates"
-          title={
-            <div className="flex items-center gap-2">
-              <span>Tarifas</span>
-              {!can.ratesRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
-            </div>
-          }
-          isDisabled={!can.ratesRead}
-        />
-        <Tab key="monthly" title={<span>Mensualidades</span>} isDisabled={!can.ratesRead} />
-        <Tab key="agreements" title={<span>Convenios</span>} isDisabled={!can.ratesRead} />
-        <Tab key="prepaid" title={<span>Prepagados</span>} isDisabled={!can.ratesRead} />
-        <Tab
-          key="users"
-          title={
-            <div className="flex items-center gap-2">
-              <span>Usuarios</span>
-              {!can.usersRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
-            </div>
-          }
-          isDisabled={!can.usersRead}
-        />
-        <Tab
-          key="parameters"
-          title={
-            <div className="flex items-center gap-2">
-              <span>Parámetros</span>
-              {!can.cfgRead && <Chip size="sm" color="danger" variant="flat">Sin permiso</Chip>}
-            </div>
-          }
-          isDisabled={!can.cfgRead}
-        />
-        <Tab key="interface" title={<div className="flex items-center gap-2"><span>Interfaz</span></div>} />
-        <Tab key="onboarding" title={<div className="flex items-center gap-2"><span>Asistente Inicial</span></div>} />
-        <Tab key="masters" title={<div className="flex items-center gap-2"><span>Maestros</span></div>} />
-      </Tabs>
-
-      {tab === "rates" && can.ratesRead ? (
+      {section === "rates" && can.ratesRead ? (
         <RatesSection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
       ) : null}
-      {tab === "rates" && !can.ratesRead ? (
+      {section === "rates" && !can.ratesRead ? (
         <p className="text-sm text-slate-600">No tiene permiso para ver tarifas.</p>
       ) : null}
 
-      {tab === "monthly" && can.ratesRead ? (
+      {section === "monthly" && can.ratesRead ? (
         <MonthlySection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
       ) : null}
-      {tab === "monthly" && !can.ratesRead ? (
+      {section === "monthly" && !can.ratesRead ? (
         <p className="text-sm text-slate-600">No tiene permiso para ver mensualidades.</p>
       ) : null}
 
-      {tab === "agreements" && can.ratesRead ? (
+      {section === "agreements" && can.ratesRead ? (
         <AgreementsSection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
       ) : null}
-      {tab === "agreements" && !can.ratesRead ? (
+      {section === "agreements" && !can.ratesRead ? (
         <p className="text-sm text-slate-600">No tiene permiso para ver convenios.</p>
       ) : null}
 
-      {tab === "prepaid" && can.ratesRead ? (
+      {section === "prepaid" && can.ratesRead ? (
         <PrepaidSection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
       ) : null}
-      {tab === "prepaid" && !can.ratesRead ? (
+      {section === "prepaid" && !can.ratesRead ? (
         <p className="text-sm text-slate-600">No tiene permiso para ver prepagados.</p>
       ) : null}
 
-      {tab === "users" && can.usersRead ? (
+      {section === "users" && can.usersRead ? (
         <UsersSection canEdit={can.usersEdit} onNotify={setNotice} auditReason={auditReason} />
       ) : null}
-      {tab === "users" && !can.usersRead ? (
+      {section === "users" && !can.usersRead ? (
         <p className="text-sm text-slate-600">No tiene permiso para ver usuarios.</p>
       ) : null}
 
-      {tab === "parameters" && can.cfgRead ? (
+      {section === "parameters" && can.cfgRead ? (
         <ParametersSection canEdit={can.cfgEdit} onNotify={setNotice} auditReason={auditReason} />
       ) : null}
-      {tab === "parameters" && !can.cfgRead ? (
+      {section === "parameters" && !can.cfgRead ? (
         <p className="text-sm text-slate-600">No tiene permiso para ver parametros.</p>
       ) : null}
 
-      {tab === "interface" ? <InterfaceSection settings={uiSettings} onUpdate={updateUiSetting} /> : null}
+      {section === "interface" ? <InterfaceSection settings={uiSettings} onUpdate={updateUiSetting} /> : null}
 
-      {tab === "onboarding" ? <OnboardingSection onNotify={setNotice} /> : null}
+      {section === "onboarding" ? <OnboardingSection onNotify={setNotice} /> : null}
 
-      {tab === "masters" && can.cfgRead ? <MastersSection onNotify={setNotice} canEdit={can.cfgEdit} /> : null}
-      {tab === "masters" && !can.cfgRead ? (
+      {section === "masters" && can.cfgRead ? <MastersSection onNotify={setNotice} canEdit={can.cfgEdit} /> : null}
+      {section === "masters" && !can.cfgRead ? (
         <p className="text-sm text-slate-600">No tienes permisos para ver esta sección. Contacta a un administrador.</p>
       ) : null}
 
-      {tab === "masters" && can.cfgRead ? <MastersSection onNotify={setNotice} canEdit={can.cfgEdit} /> : null}
-      {tab === "masters" && !can.cfgRead ? (
+      {section === "masters" && can.cfgRead ? <MastersSection onNotify={setNotice} canEdit={can.cfgEdit} /> : null}
+      {section === "masters" && !can.cfgRead ? (
         <p className="text-sm text-slate-600">No tienes permisos para ver esta sección. Contacta a un administrador.</p>
       ) : null}
     </div>
@@ -987,7 +995,7 @@ function RateForm({
                 className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-colors ${
                   isDayActive(bit)
                     ? "bg-primary text-white border-primary"
-                    : "bg-transparent text-slate-600 border-slate-300 hover:border-primary"
+                    : "bg-transparent text-slate-600 border-slate-300 hover:border-primary dark:text-slate-400 dark:border-slate-600 dark:hover:border-primary"
                 }`}
               >
                 {label}
@@ -997,7 +1005,7 @@ function RateForm({
               <button
                 type="button"
                 onClick={() => setDaysBitmap(null)}
-                className="px-3 py-1 rounded-lg text-xs font-semibold border border-slate-300 text-slate-500 hover:border-rose-400 hover:text-rose-500 transition-colors"
+                className="px-3 py-1 rounded-lg text-xs font-semibold border border-slate-300 text-slate-500 hover:border-rose-400 hover:text-rose-500 dark:border-slate-600 dark:text-slate-400 dark:hover:border-rose-400 dark:hover:text-rose-400 transition-colors"
               >
                 Todos
               </button>
