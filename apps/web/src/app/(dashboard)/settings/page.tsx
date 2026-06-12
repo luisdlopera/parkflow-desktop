@@ -1,8 +1,9 @@
 "use client";
-
+import { ListBox } from "@heroui/react";
+import { Card } from "@/components/ui/Card";
+import { Select } from "@/components/ui/Select";
+import { Switch } from "@/components/ui/Switch";
 import { useEffect, useState } from "react";
-import { Select, SelectItem, Switch } from "@heroui/react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import { PageBackButton } from "@/components/ui/PageBackButton";
 
 const UI_SETTINGS_KEY = "parkflow_ui_settings";
@@ -47,14 +48,24 @@ export default function SettingsPage() {
 
       <Select
         label="Seleccionar idioma"
-        variant="flat"
-        selectedKeys={[language]}
-        onSelectionChange={(keys) => setLanguage(Array.from(keys)[0] as string)}
+        
+        value={[language]}
+        onChange={(keys) => setLanguage(Array.from(keys)[0] as string)}
         data-testid="language-select"
       >
-        <SelectItem key="en">English</SelectItem>
-        <SelectItem key="es">Español</SelectItem>
-      </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+        <ListBox.Item key="en">English</ListBox.Item>
+        <ListBox.Item key="es">Español</ListBox.Item>
+      
+        </ListBox>
+      </Select.Popover>
+    </Select>
 
       <div className="surface rounded-2xl p-6 border border-slate-100 dark:border-neutral-800">
         <p data-testid="welcome-text" className="text-xl font-medium text-slate-800 dark:text-neutral-100">
@@ -76,12 +87,12 @@ export default function SettingsPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <Card.Header>
           <h3 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
             Personalización del Sidebar
           </h3>
-        </CardHeader>
-        <CardBody className="space-y-6">
+        </Card.Header>
+        <Card.Content className="space-y-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="font-medium text-slate-800 dark:text-neutral-200">Mostrar estado del sistema</p>
@@ -91,7 +102,7 @@ export default function SettingsPage() {
             </div>
             <Switch
               isSelected={uiSettings.showSystemStatus}
-              onValueChange={(checked) => updateUiSetting("showSystemStatus", checked)}
+              onChange={(checked) => updateUiSetting("showSystemStatus", checked)}
               size="lg"
               color="primary"
             />
@@ -106,12 +117,12 @@ export default function SettingsPage() {
             </div>
             <Switch
               isSelected={uiSettings.showKeyboardShortcuts}
-              onValueChange={(checked) => updateUiSetting("showKeyboardShortcuts", checked)}
+              onChange={(checked) => updateUiSetting("showKeyboardShortcuts", checked)}
               size="lg"
               color="primary"
             />
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

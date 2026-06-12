@@ -49,6 +49,8 @@ class LicenseServiceTest {
   @Mock private CompanyModulePort moduleRepository;
   @Mock private LicenseAuditLogPort auditLogRepository;
   @Mock private LicenseAuditService auditService;
+  @Mock private com.parkflow.modules.parking.operation.repository.AppUserRepository appUserRepository;
+  @Mock private com.parkflow.modules.auth.security.PasswordHashService passwordHashService;
 
   private TestLicenseFacade service;
 
@@ -61,7 +63,7 @@ class LicenseServiceTest {
     LicenseRemoteCommandPolicy remoteCommandPolicy = new LicenseRemoteCommandPolicy();
     CompanyResponseAssembler responseAssembler = new CompanyResponseAssembler(moduleRepository, deviceRepository);
     service = new TestLicenseFacade(
-        new CompanyManagementService(companyRepository, auditLogRepository, moduleProvisioner, responseAssembler),
+        new CompanyManagementService(companyRepository, auditLogRepository, moduleProvisioner, responseAssembler, appUserRepository, passwordHashService),
         new LicenseIssueService(companyRepository, deviceRepository, auditLogRepository, signatureService),
         new LicenseValidationService(companyRepository, deviceRepository, signatureService, auditService, moduleProvisioner),
         new LicenseHeartbeatService(

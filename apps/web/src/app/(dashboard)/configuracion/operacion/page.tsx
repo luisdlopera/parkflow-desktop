@@ -3,17 +3,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Input,
-  Button,
-  Textarea,
-  Switch,
-  Card,
-  CardBody,
-  Divider,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Separator, ListBox } from "@heroui/react";
+import { Card } from "@/components/ui/Card";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import { Switch } from "@/components/ui/Switch";
+import { Input } from "@/components/ui/Input";
+import { TextArea } from "@/components/ui/TextArea";
 import {
   fetchConfigurationSites,
   fetchConfigurationOperationalParameters,
@@ -130,18 +126,28 @@ export default function OperacionPage() {
         <Select
           label="Sede"
           placeholder="Selecciona una sede"
-          variant="flat"
+          
           className="max-w-xl"
-          selectedKeys={siteId ? [siteId] : []}
-          onSelectionChange={(keys) => setSiteId(Array.from(keys)[0] as string)}
+          value={siteId ? [siteId] : []}
+          onChange={(keys) => setSiteId(Array.from(keys)[0] as string)}
           isDisabled={catalogLoading || sites.length <= 1}
         >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
           {sites.map((site) => (
-            <SelectItem key={site.id} textValue={`${site.code} - ${site.name}`}>
+            <ListBox.Item key={site.id} textValue={`${site.code} - ${site.name}`}>
               {`${site.code} - ${site.name}`}
-            </SelectItem>
+            </ListBox.Item>
           ))}
-        </Select>
+        
+        </ListBox>
+      </Select.Popover>
+    </Select>
         <p className="mt-1 text-xs text-slate-500">
           Se editarán los parámetros de: <span className="font-medium text-slate-700">{selectedSiteLabel}</span>.
         </p>
@@ -161,7 +167,7 @@ export default function OperacionPage() {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Card shadow="sm" className="border border-slate-200">
-          <CardBody className="p-6 space-y-8">
+          <Card.Content className="p-6 space-y-8">
             <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-6">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Permisos y Funciones</h3>
@@ -175,7 +181,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Entrada sin impresora</p>
                         <p className="text-xs text-slate-500">Permitir ingreso si falla la impresión</p>
                       </div>
-                      <Switch isSelected={field.value} onValueChange={field.onChange} color="primary" />
+                      <Switch isSelected={field.value} onChange={field.onChange} />
                     </div>
                   )}
                 />
@@ -189,7 +195,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Salida sin pago</p>
                         <p className="text-xs text-slate-500">Para cortesías o convenios especiales</p>
                       </div>
-                      <Switch isSelected={field.value} onValueChange={field.onChange} color="primary" />
+                      <Switch isSelected={field.value} onChange={field.onChange} />
                     </div>
                   )}
                 />
@@ -203,7 +209,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Permitir reimpresión</p>
                         <p className="text-xs text-slate-500">Habilitar botón de copia de ticket</p>
                       </div>
-                      <Switch isSelected={field.value} onValueChange={field.onChange} color="primary" />
+                      <Switch isSelected={field.value} onChange={field.onChange} />
                     </div>
                   )}
                 />
@@ -217,7 +223,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Permitir anulación</p>
                         <p className="text-xs text-slate-500">Anular servicios ya registrados</p>
                       </div>
-                      <Switch isSelected={field.value} onValueChange={field.onChange} color="primary" />
+                      <Switch isSelected={field.value} onChange={field.onChange} />
                     </div>
                   )}
                 />
@@ -235,7 +241,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Foto en entrada</p>
                         <p className="text-xs text-slate-500">Obligatorio capturar imagen al ingresar</p>
                       </div>
-                      <Switch isSelected={field.value} onValueChange={field.onChange} color="primary" />
+                      <Switch isSelected={field.value} onChange={field.onChange} />
                     </div>
                   )}
                 />
@@ -249,7 +255,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Foto en salida</p>
                         <p className="text-xs text-slate-500">Obligatorio capturar imagen al salir</p>
                       </div>
-                      <Switch isSelected={field.value} onValueChange={field.onChange} color="primary" />
+                      <Switch isSelected={field.value} onChange={field.onChange} />
                     </div>
                   )}
                 />
@@ -263,21 +269,21 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Modo offline</p>
                         <p className="text-xs text-slate-500">Habilitar operación sin internet</p>
                       </div>
-                      <Switch isSelected={field.value} onValueChange={field.onChange} color="primary" />
+                      <Switch isSelected={field.value} onChange={field.onChange} />
                     </div>
                   )}
                 />
               </div>
             </div>
 
-            <Divider />
+            <Separator />
 
             <div className="grid gap-6 sm:grid-cols-2">
               <Input
                 {...register("toleranceMinutes", { valueAsNumber: true })}
                 label="Minutos de tolerancia"
                 type="number"
-                variant="flat"
+                
                 errorMessage={errors.toleranceMinutes?.message}
                 isInvalid={!!errors.toleranceMinutes}
               />
@@ -285,14 +291,14 @@ export default function OperacionPage() {
                 {...register("maxTimeNoCharge", { valueAsNumber: true })}
                 label="Tiempo máximo sin cobro (min)"
                 type="number"
-                variant="flat"
+                
               />
               <div className="col-span-full">
-                <Textarea
+                <TextArea
                   {...register("legalMessage")}
                   label="Mensaje legal en ticket"
                   placeholder="Este ticket es un contrato..."
-                  variant="flat"
+                  
                   rows={4}
                 />
               </div>
@@ -309,7 +315,7 @@ export default function OperacionPage() {
                 Guardar parámetros
               </Button>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </form>
     </div>

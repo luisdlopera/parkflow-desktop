@@ -18,7 +18,7 @@ function sampleLoginResponse(overrides: Record<string, unknown> = {}) {
       email: "admin@parkflow.local",
       role: "ADMIN" as AuthRole,
       permissions: ["tickets:emitir", "configuracion:leer"] as Permission[],
-      active: true,
+      active: true, requirePasswordChange: false, onboardingCompleted: true,
       passwordChangedAtIso: null
     },
     session: {

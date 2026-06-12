@@ -1,7 +1,8 @@
 "use client";
 
 import { useDesktopLicense, getLicenseStatusColor } from "@/lib/licensing/hooks";
-import { Alert, Button } from "@heroui/react";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { useState } from "react";
 import { LicenseActivationDialog } from "./LicenseActivationDialog";
 
@@ -53,7 +54,7 @@ export function LicenseBanner() {
               <Button
                 size="sm"
                 color="danger"
-                variant="flat"
+                variant="tertiary"
                 onPress={() => setShowActivation(true)}
               >
                 Renovar ahora
@@ -63,7 +64,7 @@ export function LicenseBanner() {
               <Button
                 size="sm"
                 color="primary"
-                variant="flat"
+                variant="tertiary"
                 onPress={() => setShowActivation(true)}
               >
                 Activar licencia

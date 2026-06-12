@@ -1,28 +1,20 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import {
-  Button,
-  Card,
-  CardBody,
-  Chip,
-  Input,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-  Alert,
-  Select,
-  SelectItem,
-  Switch,
-  Avatar,
-} from "@heroui/react";
+import { ListBox, useOverlayState } from "@heroui/react";
+import { Alert } from "@/components/ui/Alert";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { Chip } from "@/components/ui/Chip";
+import { DropdownTrigger } from "@/components/ui/Dropdown";
+import { Dropdown } from "@/components/ui/Dropdown";
+import { Avatar } from "@/components/ui/Avatar";
+import { DropdownMenu } from "@/components/ui/Dropdown";
+import { DropdownItem } from "@/components/ui/Dropdown";
+import { Card } from "@/components/ui/Card";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import { Switch } from "@/components/ui/Switch";
+import { Input } from "@/components/ui/Input";
 import {
   Users,
   Plus,
@@ -130,7 +122,7 @@ export default function AdminUsersPage() {
   const [formActive, setFormActive] = useState(true);
   const [formPermissions, setFormPermissions] = useState<string[]>([]);
 
-  const { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
+  const { isOpen: isModalOpen, open: onModalOpen, close: onModalClose } = useOverlayState();
 
   const filteredUsers = users.filter((user) => {
     const query = searchQuery.toLowerCase();
@@ -256,7 +248,7 @@ export default function AdminUsersPage() {
       header: "Rol",
       sortable: true,
       render: (user) => (
-        <Chip color={getRoleColor(user.role)} variant="flat" size="sm">
+        <Chip color={getRoleColor(user.role)} variant="soft" size="sm">
           {getRoleLabel(user.role)}
         </Chip>
       ),
@@ -268,7 +260,7 @@ export default function AdminUsersPage() {
       render: (user) => (
         <Switch
           isSelected={user.active}
-          onValueChange={() => handleToggleActive(user)}
+          onChange={() => handleToggleActive(user)}
           size="sm"
           color="success"
         />
@@ -280,12 +272,12 @@ export default function AdminUsersPage() {
       render: (user) => (
         <div className="flex flex-wrap gap-1">
           {user.permissions.slice(0, 3).map((perm) => (
-            <Chip key={perm} variant="flat" size="sm" className="text-xs">
+            <Chip key={perm} variant="soft" size="sm" className="text-xs">
               {perm.split(":")[0]}
             </Chip>
           ))}
           {user.permissions.length > 3 && (
-            <Chip variant="flat" size="sm" className="text-xs">
+            <Chip variant="soft" size="sm" className="text-xs">
               +{user.permissions.length - 3}
             </Chip>
           )}
@@ -332,7 +324,7 @@ export default function AdminUsersPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardBody className="flex items-center gap-3">
+          <Card.Content className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
               <Users className="w-5 h-5 text-primary" />
             </div>
@@ -340,11 +332,11 @@ export default function AdminUsersPage() {
               <p className="text-sm text-default-500">Total Usuarios</p>
               <p className="text-xl font-bold">{stats.total}</p>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         <Card>
-          <CardBody className="flex items-center gap-3">
+          <Card.Content className="flex items-center gap-3">
             <div className="p-2 bg-success/10 rounded-lg">
               <Check className="w-5 h-5 text-success" />
             </div>
@@ -352,11 +344,11 @@ export default function AdminUsersPage() {
               <p className="text-sm text-default-500">Activos</p>
               <p className="text-xl font-bold">{stats.active}</p>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         <Card>
-          <CardBody className="flex items-center gap-3">
+          <Card.Content className="flex items-center gap-3">
             <div className="p-2 bg-danger/10 rounded-lg">
               <Shield className="w-5 h-5 text-danger" />
             </div>
@@ -364,11 +356,11 @@ export default function AdminUsersPage() {
               <p className="text-sm text-default-500">Super Admins</p>
               <p className="text-xl font-bold">{stats.superAdmins}</p>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         <Card>
-          <CardBody className="flex items-center gap-3">
+          <Card.Content className="flex items-center gap-3">
             <div className="p-2 bg-success/10 rounded-lg">
               <div className="relative">
                 <Users className="w-5 h-5 text-success" />
@@ -379,7 +371,7 @@ export default function AdminUsersPage() {
               <p className="text-sm text-default-500">En Línea</p>
               <p className="text-xl font-bold">{stats.online}</p>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
 
@@ -408,7 +400,7 @@ export default function AdminUsersPage() {
         actions={(user) => (
           <Dropdown>
             <DropdownTrigger>
-              <Button isIconOnly variant="light" size="sm" aria-label="Más acciones">
+              <Button isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
                 <MoreVertical className="w-4 h-4" />
               </Button>
             </DropdownTrigger>
@@ -437,9 +429,9 @@ export default function AdminUsersPage() {
       />
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={isModalOpen} onClose={onModalClose} size="2xl">
-        <ModalContent>
-          <ModalHeader>
+      <Modal state={ { isOpen: isModalOpen, setOpen: (v: boolean) => { if(!v) onModalClose(); }, open: () => {}, close: onModalClose, toggle: () => {} } }>
+        <Modal.Content>
+          <Modal.Header>
             <div className="flex items-center gap-3">
               <Users className="w-6 h-6 text-primary" />
               <div>
@@ -448,8 +440,8 @@ export default function AdminUsersPage() {
                 </h2>
               </div>
             </div>
-          </ModalHeader>
-          <ModalBody>
+          </Modal.Header>
+          <Modal.Body>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <Input
@@ -470,20 +462,29 @@ export default function AdminUsersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <Select
                   label="Rol"
-                  selectedKeys={[formRole]}
+                  value={[formRole]}
                   onChange={(e) => setFormRole(e.target.value as AdminUser["role"])}
                 >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
                   {ROLES.map((role) => (
-                    <SelectItem key={role.value} textValue={role.label}>
+                    <ListBox.Item key={role.value} textValue={role.label}>
                       {role.label}
-                    </SelectItem>
+                    </ListBox.Item>
                   ))}
-                </Select>
+                
+        </ListBox>
+      </Select.Popover>
+    </Select>
                 <div className="flex items-center gap-2 pt-6">
                   <Switch
                     isSelected={formActive}
-                    onValueChange={setFormActive}
-                    color="success"
+                    onChange={setFormActive}
                   />
                   <span className="text-sm">Usuario activo</span>
                 </div>
@@ -496,7 +497,7 @@ export default function AdminUsersPage() {
                     <div key={perm.value} className="flex items-center gap-2">
                       <Switch
                         isSelected={formPermissions.includes(perm.value)}
-                        onValueChange={() => togglePermission(perm.value)}
+                        onChange={() => togglePermission(perm.value)}
                         size="sm"
                       />
                       <span className="text-sm">{perm.label}</span>
@@ -514,9 +515,9 @@ export default function AdminUsersPage() {
                 </Alert>
               )}
             </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={onModalClose}>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="tertiary" onPress={onModalClose}>
               Cancelar
             </Button>
             <Button
@@ -526,8 +527,8 @@ export default function AdminUsersPage() {
             >
               {isEditing ? "Guardar Cambios" : "Crear Usuario"}
             </Button>
-          </ModalFooter>
-        </ModalContent>
+          </Modal.Footer>
+        </Modal.Content>
       </Modal>
     </div>
   );

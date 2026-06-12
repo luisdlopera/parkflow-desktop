@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Input, Button } from "@heroui/react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import DataTable from "@/components/ui/DataTable";
 
 export type ColumnDef<T> = {
@@ -33,23 +34,27 @@ export function DataTableSection<T extends { id: string }>({
   onCreate,
   createLabel = "Nuevo",
   emptyMessage = "No hay registros",
-  actions
+  actions,
 }: DataTableSectionProps<T>) {
   const [q, setQ] = useState("");
 
   const finalColumns = [
-    ...columns.map(c => ({
+    ...columns.map((c) => ({
       key: String(c.key),
       label: c.label,
       render: c.render,
-      align: c.align
+      align: c.align,
     })),
-    ...(actions ? [{
-      key: "actions",
-      label: "Acciones",
-      render: (row: T) => actions(row),
-      align: "right" as const
-    }] : [])
+    ...(actions
+      ? [
+          {
+            key: "actions",
+            label: "Acciones",
+            render: (row: T) => actions(row),
+            align: "right" as const,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -61,17 +66,19 @@ export function DataTableSection<T extends { id: string }>({
             <Input
               type="text"
               placeholder="Buscar..."
-              variant="flat"
               size="sm"
               className="max-w-xs"
               value={q}
-              onValueChange={(val) => { setQ(val); onSearch(val); }}
+              onChange={(e) => {
+                setQ(e.target.value);
+                onSearch(e.target.value);
+              }}
             />
           )}
           {onCreate && (
             <Button
               color="primary"
-              size="md"
+              variant="solid"
               className="bg-brand-500 hover:bg-brand-600 font-semibold"
               onPress={onCreate}
             >

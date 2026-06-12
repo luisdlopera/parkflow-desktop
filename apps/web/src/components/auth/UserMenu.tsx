@@ -1,15 +1,12 @@
 "use client";
-
+import { DropdownSection } from "@/components/ui/Dropdown";
+import { DropdownTrigger } from "@/components/ui/Dropdown";
+import { Dropdown } from "@/components/ui/Dropdown";
+import { Avatar } from "@/components/ui/Avatar";
+import { DropdownMenu } from "@/components/ui/Dropdown";
+import { DropdownItem } from "@/components/ui/Dropdown";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Avatar } from "@heroui/avatar";
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  DropdownSection
-} from "@heroui/dropdown";
 import { clearSession, currentUser, canAccessSuperAdminPortal } from "@/lib/auth";
 import type { AuthUser } from "@parkflow/types";
 import { Shield } from "lucide-react";

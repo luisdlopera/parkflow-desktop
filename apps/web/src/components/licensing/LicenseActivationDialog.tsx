@@ -1,21 +1,14 @@
 "use client";
 
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  Tab,
-  Tabs,
-  Card,
-  CardBody,
-  Alert,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { ListBox } from "@heroui/react";
+import { Alert } from "@/components/ui/Alert";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { Card } from "@/components/ui/Card";
+import { Select } from "@/components/ui/Select";
+import { Tabs } from "@/components/ui/Tabs";
+import { Tab } from "@/components/ui/Tabs";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Steps, Step } from "@/components/ui/Steps";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -99,7 +92,7 @@ export function LicenseActivationDialog({
 
         await saveLicense(licenseData);
         await refresh();
-        onClose();
+        close();
       } catch (err) {
         // Error ya está en el hook
       }
@@ -107,10 +100,10 @@ export function LicenseActivationDialog({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl">
-      <ModalContent>
-        <ModalHeader>Activar Licencia</ModalHeader>
-        <ModalBody>
+    <Modal state={ { isOpen: isOpen, setOpen: (v: boolean) => { if(!v) onClose(); }, open: () => {}, close: onClose, toggle: () => {} } }>
+      <Modal.Content>
+        <Modal.Header>Activar Licencia</Modal.Header>
+        <Modal.Body>
           <Steps current={step}>
             <Step title="Método" description="Seleccione cómo activar" />
             <Step title="Datos" description="Ingrese información" />
@@ -119,10 +112,10 @@ export function LicenseActivationDialog({
 
           {step === 0 && (
             <div className="mt-6 space-y-4">
-              <Tabs selectedKey={method} onSelectionChange={(k) => setMethod(k as ActivationMethod)}>
+              <Tabs selectedKey={method} onChange={(k) => setMethod(k as ActivationMethod)}>
                 <Tab key="offline" title="Activación Offline">
                   <Card>
-                    <CardBody className="space-y-4">
+                    <Card.Content className="space-y-4">
                       <p className="text-sm text-default-500">
                         Para activación offline, necesita una licencia proporcionada
                         por el administrador del sistema.
@@ -133,12 +126,12 @@ export function LicenseActivationDialog({
                           {fingerprint || "Cargando..."}
                         </code>
                       </div>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 </Tab>
                 <Tab key="online" title="Activación Online">
                   <Card>
-                    <CardBody>
+                    <Card.Content>
                       <p className="text-sm text-default-500">
                         La activación online requiere conexión a internet y una
                         cuenta en el sistema ParkFlow Cloud.
@@ -146,7 +139,7 @@ export function LicenseActivationDialog({
                       <Alert color="warning" className="mt-4">
                         Activación online no implementada en versión desktop.
                       </Alert>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 </Tab>
               </Tabs>
@@ -157,17 +150,27 @@ export function LicenseActivationDialog({
             <div className="mt-6 space-y-4">
               <Select
                 label="Empresa"
-                selectedKeys={companyId ? [companyId] : []}
-                onSelectionChange={(keys) => setCompanyId(Array.from(keys)[0]?.toString() ?? "")}
+                value={companyId ? [companyId] : []}
+                onChange={(keys) => setCompanyId(Array.from(keys)[0]?.toString() ?? "")}
                 isDisabled={loadingCompanies}
                 placeholder="Selecciona una empresa"
               >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
                 {companies.map((company) => (
-                  <SelectItem key={company.id} textValue={company.name}>
+                  <ListBox.Item key={company.id} textValue={company.name}>
                     {company.name}
-                  </SelectItem>
+                  </ListBox.Item>
                 ))}
-              </Select>
+              
+        </ListBox>
+      </Select.Popover>
+    </Select>
               <Input
                 label="Clave de Licencia"
                 placeholder="Ingrese la clave proporcionada"
@@ -198,10 +201,10 @@ export function LicenseActivationDialog({
               {success && <Alert color="success">¡Licencia activada exitosamente!</Alert>}
             </div>
           )}
-        </ModalBody>
-        <ModalFooter>
+        </Modal.Body>
+        <Modal.Footer>
           {step > 0 && (
-            <Button variant="flat" onPress={() => setStep(step - 1)}>
+            <Button variant="tertiary" onPress={() => setStep(step - 1)}>
               Anterior
             </Button>
           )}
@@ -219,8 +222,8 @@ export function LicenseActivationDialog({
               Activar
             </Button>
           )}
-        </ModalFooter>
-      </ModalContent>
+        </Modal.Footer>
+      </Modal.Content>
     </Modal>
   );
 }

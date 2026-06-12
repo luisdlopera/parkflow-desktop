@@ -1,25 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Alert,
-  Badge,
-  Progress,
-  Tabs,
-  Tab,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-  Textarea,
-} from "@heroui/react";
+import { ListBox, useOverlayState } from "@heroui/react";
+import { Alert } from "@/components/ui/Alert";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { Chip } from "@/components/ui/Chip";
+import { Progress } from "@/components/ui/Progress";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { Tabs } from "@/components/ui/Tabs";
+import { Tab } from "@/components/ui/Tabs";
+import { Button } from "@/components/ui/Button";
+import { TextArea } from "@/components/ui/TextArea";
 import {
   BarChart3,
   RefreshCw,
@@ -81,7 +73,7 @@ export default function MonitoringPage() {
   const [selectedEvent, setSelectedEvent] = useState<BlockEvent | null>(null);
   const [resolveNotes, setResolveNotes] = useState("");
 
-  const { isOpen: isResolveOpen, onOpen: onResolveOpen, onClose: onResolveClose } = useDisclosure();
+  const { isOpen: isResolveOpen, open: onResolveOpen, close: onResolveClose } = useOverlayState();
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -190,7 +182,7 @@ export default function MonitoringPage() {
       header: "Severidad",
       sortable: true,
       render: (caseItem) => (
-        <Chip color={getSeverityColor(caseItem.severity)} variant="flat" size="sm">
+        <Chip color={getSeverityColor(caseItem.severity)} variant="soft" size="sm">
           {caseItem.severity}
         </Chip>
       ),
@@ -243,7 +235,7 @@ export default function MonitoringPage() {
       key: "eventType",
       header: "Tipo",
       render: (event) => (
-        <Chip variant="flat" size="sm">
+        <Chip variant="soft" size="sm">
           {event.eventType}
         </Chip>
       ),
@@ -308,7 +300,7 @@ export default function MonitoringPage() {
       {statistics && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
-            <CardBody className="flex items-center gap-3">
+            <Card.Content className="flex items-center gap-3">
               <div className="p-2 bg-danger/10 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-danger" />
               </div>
@@ -316,11 +308,11 @@ export default function MonitoringPage() {
                 <p className="text-sm text-default-500">Bloqueos Activos</p>
                 <p className="text-xl font-bold">{statistics.unresolvedBlocks}</p>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           <Card>
-            <CardBody className="flex items-center gap-3">
+            <Card.Content className="flex items-center gap-3">
               <div className="p-2 bg-success/10 rounded-lg">
                 <Check className="w-5 h-5 text-success" />
               </div>
@@ -328,11 +320,11 @@ export default function MonitoringPage() {
                 <p className="text-sm text-default-500">Resueltos (7d)</p>
                 <p className="text-xl font-bold">{statistics.resolvedBlocks}</p>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           <Card>
-            <CardBody className="flex items-center gap-3">
+            <Card.Content className="flex items-center gap-3">
               <div className="p-2 bg-warning/10 rounded-lg">
                 <Flag className="w-5 h-5 text-warning" />
               </div>
@@ -340,11 +332,11 @@ export default function MonitoringPage() {
                 <p className="text-sm text-default-500">Falsos Positivos</p>
                 <p className="text-xl font-bold">{statistics.falsePositives}</p>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           <Card>
-            <CardBody className="flex items-center gap-3">
+            <Card.Content className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Activity className="w-5 h-5 text-primary" />
               </div>
@@ -352,13 +344,13 @@ export default function MonitoringPage() {
                 <p className="text-sm text-default-500">Tiempo Promedio Resolución</p>
                 <p className="text-xl font-bold">{Math.round(statistics.averageResolutionTimeMinutes)}m</p>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         </div>
       )}
 
       {/* Tabs */}
-      <Tabs selectedKey={activeTab} onSelectionChange={(k) => setActiveTab(k as string)}>
+      <Tabs selectedKey={activeTab} onChange={(k) => setActiveTab(k as string)}>
         <Tab key="overview" title="Vista General" />
         <Tab key="cases" title={`Casos Prioritarios (${priorityCases.length})`} />
         <Tab key="blocks" title={`Bloqueos (${blockEvents.length})`} />
@@ -368,10 +360,10 @@ export default function MonitoringPage() {
       {activeTab === "overview" && statistics && (
         <div className="space-y-4">
           <Card>
-            <CardHeader>
+            <Card.Header>
               <h3 className="text-lg font-semibold">Bloqueos por Motivo</h3>
-            </CardHeader>
-            <CardBody>
+            </Card.Header>
+            <Card.Content>
               <div className="space-y-3">
                 {Object.entries(statistics.blocksByReason).map(([reason, count]) => (
                   <div key={reason} className="flex items-center gap-4">
@@ -387,14 +379,14 @@ export default function MonitoringPage() {
                   </div>
                 ))}
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           <Card>
-            <CardHeader>
+            <Card.Header>
               <h3 className="text-lg font-semibold">Tendencia (Últimos 7 días)</h3>
-            </CardHeader>
-            <CardBody>
+            </Card.Header>
+            <Card.Content>
               <div className="flex items-end gap-2 h-32">
                 {statistics.blocksByDay.map((day) => (
                   <div key={day.date} className="flex-1 flex flex-col items-center gap-2">
@@ -416,7 +408,7 @@ export default function MonitoringPage() {
                   </div>
                 ))}
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         </div>
       )}
@@ -465,7 +457,7 @@ export default function MonitoringPage() {
             <Button
               size="sm"
               color="success"
-              variant="flat"
+              variant="tertiary"
               startContent={<Check className="w-4 h-4" />}
               onPress={() => {
                 setSelectedEvent(event);
@@ -479,9 +471,9 @@ export default function MonitoringPage() {
       )}
 
       {/* Resolve Modal */}
-      <Modal isOpen={isResolveOpen} onClose={onResolveClose} size="md">
-        <ModalContent>
-          <ModalHeader>
+      <Modal state={ { isOpen: isResolveOpen, setOpen: (v: boolean) => { if(!v) onResolveClose(); }, open: () => {}, close: onResolveClose, toggle: () => {} } }>
+        <Modal.Content>
+          <Modal.Header>
             <div className="flex items-center gap-3">
               <Check className="w-6 h-6 text-success" />
               <div>
@@ -489,8 +481,8 @@ export default function MonitoringPage() {
                 <p className="text-sm text-default-500">{selectedEvent?.companyName}</p>
               </div>
             </div>
-          </ModalHeader>
-          <ModalBody>
+          </Modal.Header>
+          <Modal.Body>
             <div className="space-y-4">
               <div className="p-4 bg-default-50 rounded-lg">
                 <p className="text-sm text-default-500">Tipo</p>
@@ -498,26 +490,26 @@ export default function MonitoringPage() {
                 <p className="text-sm text-default-500 mt-2">Razón</p>
                 <p className="font-medium">{selectedEvent?.reasonDescription}</p>
               </div>
-              <Textarea
+              <TextArea
                 label="Notas de resolución"
                 placeholder="Describa cómo se resolvió el problema..."
                 value={resolveNotes}
                 onChange={(e) => setResolveNotes(e.target.value)}
               />
             </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={onResolveClose}>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="tertiary" onPress={onResolveClose}>
               Cancelar
             </Button>
-            <Button color="primary" variant="flat" onPress={handleFalsePositive}>
+            <Button color="primary" variant="tertiary" onPress={handleFalsePositive}>
               Falso Positivo
             </Button>
             <Button color="success" onPress={handleResolve}>
               Resolver
             </Button>
-          </ModalFooter>
-        </ModalContent>
+          </Modal.Footer>
+        </Modal.Content>
       </Modal>
     </div>
   );

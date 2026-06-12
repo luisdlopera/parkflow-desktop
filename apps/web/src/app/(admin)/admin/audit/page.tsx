@@ -1,21 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-  Accordion,
-  AccordionItem,
-} from "@heroui/react";
+import { useOverlayState } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { Chip } from "@/components/ui/Chip";
+import { AccordionItem } from "@/components/ui/Accordion";
+import { Accordion } from "@/components/ui/Accordion";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import {
   Receipt,
   RefreshCw,
@@ -71,7 +63,7 @@ export default function AuditPage() {
   const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
   const [dateRange, setDateRange] = useState<{ start?: string; end?: string }>({});
 
-  const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
+  const { isOpen: isDetailOpen, open: onDetailOpen, close: onDetailClose } = useOverlayState();
 
   const fetchLogs = useCallback(async () => {
     setIsLoading(true);
@@ -207,7 +199,7 @@ export default function AuditPage() {
       header: "Acción",
       sortable: true,
       render: (log) => (
-        <Chip color={getActionColor(log.action)} variant="flat" size="sm">
+        <Chip color={getActionColor(log.action)} variant="soft" size="sm">
           {formatActionName(log.action)}
         </Chip>
       ),
@@ -246,7 +238,7 @@ export default function AuditPage() {
         </div>
         <div className="flex gap-2">
           <Button
-            variant="flat"
+            variant="tertiary"
             startContent={<Download className="w-4 h-4" />}
             onPress={handleExport}
           >
@@ -307,7 +299,7 @@ export default function AuditPage() {
         actions={(log) => (
           <Button
             isIconOnly
-            variant="light"
+            variant="ghost"
             size="sm"
             aria-label="Ver detalle"
             onPress={() => handleViewDetail(log)}
@@ -318,9 +310,9 @@ export default function AuditPage() {
       />
 
       {/* Detail Modal */}
-      <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="2xl">
-        <ModalContent>
-          <ModalHeader>
+      <Modal state={ { isOpen: isDetailOpen, setOpen: (v: boolean) => { if(!v) onDetailClose(); }, open: () => {}, close: onDetailClose, toggle: () => {} } }>
+        <Modal.Content>
+          <Modal.Header>
             <div className="flex items-center gap-3">
               <Receipt className="w-6 h-6 text-primary" />
               <div>
@@ -328,52 +320,52 @@ export default function AuditPage() {
                 <p className="text-sm text-default-500 font-mono">{selectedLog?.id}</p>
               </div>
             </div>
-          </ModalHeader>
-          <ModalBody>
+          </Modal.Header>
+          <Modal.Body>
             {selectedLog && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Card>
-                    <CardBody>
+                    <Card.Content>
                       <p className="text-sm text-default-500">Fecha y Hora</p>
                       <p className="font-medium">
                         {new Date(selectedLog.createdAt).toLocaleString("es-CO")}
                       </p>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                   <Card>
-                    <CardBody>
+                    <Card.Content>
                       <p className="text-sm text-default-500">Acción</p>
-                      <Chip color={getActionColor(selectedLog.action)} variant="flat" size="sm">
+                      <Chip color={getActionColor(selectedLog.action)} variant="soft" size="sm">
                         {formatActionName(selectedLog.action)}
                       </Chip>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 </div>
 
                 {selectedLog.companyName && (
                   <Card>
-                    <CardHeader>
+                    <Card.Header>
                       <h3 className="text-lg font-semibold flex items-center gap-2">
                         <Building2 className="w-5 h-5" />
                         Empresa
                       </h3>
-                    </CardHeader>
-                    <CardBody>
+                    </Card.Header>
+                    <Card.Content>
                       <p className="font-medium">{selectedLog.companyName}</p>
                       <p className="text-sm text-default-500 font-mono">{selectedLog.companyId}</p>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 )}
 
                 <Card>
-                  <CardHeader>
+                  <Card.Header>
                     <h3 className="text-lg font-semibold flex items-center gap-2">
                       <User className="w-5 h-5" />
                       Información de Usuario
                     </h3>
-                  </CardHeader>
-                  <CardBody className="space-y-2">
+                  </Card.Header>
+                  <Card.Content className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-default-500">Realizado por:</span>
                       <span className="font-medium">{selectedLog.performedBy}</span>
@@ -386,15 +378,15 @@ export default function AuditPage() {
                       <span className="text-default-500">Sesión ID:</span>
                       <span className="font-mono text-sm">{selectedLog.sessionId || "N/A"}</span>
                     </div>
-                  </CardBody>
+                  </Card.Content>
                 </Card>
 
                 {(selectedLog.oldValue || selectedLog.newValue) && (
                   <Card>
-                    <CardHeader>
+                    <Card.Header>
                       <h3 className="text-lg font-semibold">Cambios Realizados</h3>
-                    </CardHeader>
-                    <CardBody>
+                    </Card.Header>
+                    <Card.Content>
                       <Accordion>
                         {[
                           selectedLog.oldValue ? (
@@ -415,29 +407,29 @@ export default function AuditPage() {
                           (node): node is NonNullable<typeof node> => node != null,
                         )}
                       </Accordion>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 )}
 
                 {selectedLog.description && (
                   <Card>
-                    <CardHeader>
+                    <Card.Header>
                       <h3 className="text-lg font-semibold">Descripción</h3>
-                    </CardHeader>
-                    <CardBody>
+                    </Card.Header>
+                    <Card.Content>
                       <p>{selectedLog.description}</p>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 )}
               </div>
             )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={onDetailClose}>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="tertiary" onPress={onDetailClose}>
               Cerrar
             </Button>
-          </ModalFooter>
-        </ModalContent>
+          </Modal.Footer>
+        </Modal.Content>
       </Modal>
     </div>
   );

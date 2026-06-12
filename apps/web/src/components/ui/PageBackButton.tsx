@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@heroui/react";
+import { Button } from "@/components/ui/Button";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -15,7 +15,7 @@ export function PageBackButton({ fallbackHref = "/", label = "Volver" }: PageBac
   return (
     <Button
       size="sm"
-      variant="flat"
+      variant="tertiary"
       color="default"
       startContent={<ArrowLeft className="w-4 h-4" aria-hidden />}
       onPress={() => {

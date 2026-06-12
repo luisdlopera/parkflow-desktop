@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Button, Card, CardBody, Divider } from "@heroui/react";
+import { Separator } from "@heroui/react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import KpiCard from "@/components/ui/KpiCard";
 import DataTable from "@/components/ui/DataTable";
 import Badge from "@/components/ui/Badge";
@@ -176,7 +178,7 @@ export default function DashboardPage() {
           </button>
         </div>
         <Button
-          variant="flat"
+          variant="tertiary"
           color="primary"
           size="sm"
           onPress={() => { load().catch(console.error); }}
@@ -222,8 +224,8 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex gap-3 mb-6">
-            <Button size="sm" variant="flat" color="primary" onPress={() => { callOperationalAction("retry-sync").catch(console.error); }}>Reintentar Sync</Button>
-            <Button size="sm" variant="flat" color="primary" onPress={() => { callOperationalAction("test-printer").catch(console.error); }}>Probar Impresora</Button>
+            <Button size="sm" variant="tertiary" color="primary" onPress={() => { callOperationalAction("retry-sync").catch(console.error); }}>Reintentar Sync</Button>
+            <Button size="sm" variant="tertiary" color="primary" onPress={() => { callOperationalAction("test-printer").catch(console.error); }}>Probar Impresora</Button>
           </div>
 
           <DataTable
