@@ -32,7 +32,7 @@ describe('LoginPage', () => {
 
   it('renders login form', () => {
     render(<LoginPage />);
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /entrar al sistema/i })).toBeInTheDocument();
   });
@@ -40,7 +40,7 @@ describe('LoginPage', () => {
   it('calls login function on submit', async () => {
     render(<LoginPage />);
 
-    const emailInput = screen.getByLabelText(/email/i);
+    const emailInput = screen.getByLabelText(/correo electrónico/i);
     const passwordInput = screen.getByLabelText(/contraseña/i);
     const submitButton = screen.getByRole('button', { name: /entrar al sistema/i });
 

@@ -9,6 +9,18 @@
 @theme inline {
   --color-background: var(--color-ash);
   --color-foreground: var(--color-ink);
+
+  /* Brand colors (orange/primary scale) — used by bg-brand-*, text-brand-*, etc. */
+  --color-brand-50: #fff7ed;
+  --color-brand-100: #ffedd5;
+  --color-brand-200: #fed7aa;
+  --color-brand-300: #fdba74;
+  --color-brand-400: #fb923c;
+  --color-brand-500: #f97316;
+  --color-brand-600: #ea580c;
+  --color-brand-700: #c2410c;
+  --color-brand-800: #9a3412;
+  --color-brand-900: #7c2d12;
 }
 
 :root {
@@ -26,6 +38,18 @@
   --color-sand: #18181b;
   --color-ember: #f97316;
   --color-moss: #fb923c;
+
+  /* Brand colors — dark mode adjustments */
+  --color-brand-50: #2d1a05;
+  --color-brand-100: #3d2208;
+  --color-brand-200: #5c330c;
+  --color-brand-300: #7a4410;
+  --color-brand-400: #c26f1a;
+  --color-brand-500: #f97316;
+  --color-brand-600: #fb923c;
+  --color-brand-700: #fdba74;
+  --color-brand-800: #fed7aa;
+  --color-brand-900: #ffedd5;
 }
 
 /* Invert slate scale in dark only — text-slate-900, bg-slate-50, border-slate-*, etc. */
@@ -432,6 +456,38 @@ input:-webkit-autofill:focus {
   background-color: hsl(var(--heroui-default-200)) !important;
 }
 
+/* Emerald utility classes — dark only */
+.dark .bg-emerald-50,
+[data-theme="dark"] .bg-emerald-50 {
+  background-color: rgba(5, 46, 22, 0.7) !important;
+}
+
+.dark .bg-emerald-100,
+[data-theme="dark"] .bg-emerald-100 {
+  background-color: rgba(20, 83, 45, 0.7) !important;
+}
+
+.dark .text-emerald-600,
+[data-theme="dark"] .text-emerald-600 {
+  color: #4ade80 !important;
+}
+
+.dark .text-emerald-700,
+[data-theme="dark"] .text-emerald-700 {
+  color: #86efac !important;
+}
+
+/* Red utility classes — dark only */
+.dark .bg-red-50,
+[data-theme="dark"] .bg-red-50 {
+  background-color: rgba(69, 10, 10, 0.7) !important;
+}
+
+.dark .text-red-700,
+[data-theme="dark"] .text-red-700 {
+  color: #fca5a5 !important;
+}
+
 /* Amber utility cards (config, tickets) — dark only */
 .dark .bg-amber-50,
 .dark .bg-amber-50\/50,
@@ -447,6 +503,16 @@ input:-webkit-autofill:focus {
 [data-theme="dark"] .border-amber-200,
 [data-theme="dark"] .border-amber-300 {
   border-color: rgba(251, 146, 60, 0.35) !important;
+}
+
+.dark .bg-amber-100,
+[data-theme="dark"] .bg-amber-100 {
+  background-color: rgba(120, 53, 15, 0.5) !important;
+}
+
+.dark .text-amber-600,
+[data-theme="dark"] .text-amber-600 {
+  color: #fbbf24 !important;
 }
 
 .dark .text-amber-700,

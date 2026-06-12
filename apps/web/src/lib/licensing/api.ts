@@ -146,3 +146,15 @@ export async function sendRemoteCommand(
     body: JSON.stringify(validatedRequest),
   });
 }
+
+export async function apiDeactivateCompany(companyId: string): Promise<void> {
+  return apiFetch<void>(`/licensing/companies/${companyId}/deactivate`, {
+    method: "DELETE",
+  });
+}
+
+export async function apiDeleteCompany(companyId: string): Promise<void> {
+  return apiFetch<void>(`/licensing/companies/${companyId}`, {
+    method: "DELETE",
+  });
+}

@@ -11,4 +11,6 @@ public interface CompanyManagementUseCase {
     CompanyResponse getCompany(UUID companyId);
     List<CompanyResponse> listAllCompanies();
     CompanyResponse updateCompany(UUID companyId, UpdateCompanyRequest request, String performedBy);
+    void deactivateCompany(UUID companyId, String performedBy);
+    void deleteCompany(UUID companyId, String performedBy);
 }

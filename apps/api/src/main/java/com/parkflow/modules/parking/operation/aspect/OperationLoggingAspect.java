@@ -31,12 +31,12 @@ public class OperationLoggingAspect {
         String methodName = joinPoint.getSignature().getName();
         long startTime = System.currentTimeMillis();
 
-        log.info("[{}] Starting operation: {}", correlationId, methodName);
+        log.debug("[{}] Starting operation: {}", correlationId, methodName);
 
         try {
             Object result = joinPoint.proceed();
             long elapsedTime = System.currentTimeMillis() - startTime;
-            log.info("[{}] Completed operation: {} in {}ms", correlationId, methodName, elapsedTime);
+            log.debug("[{}] Completed operation: {} in {}ms", correlationId, methodName, elapsedTime);
             return result;
         } catch (Exception ex) {
             long elapsedTime = System.currentTimeMillis() - startTime;

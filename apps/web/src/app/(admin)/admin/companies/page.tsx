@@ -43,6 +43,24 @@ import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 export default function CompaniesPage() {
   const { data: companies, isLoading, error, mutate } = useCompanies();
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [isDeactivating, setIsDeactivating] = useState(false);
+
+  const handleDelete = async (company: Company) => {
+    if (confirm(`¿Estás seguro que deseas eliminar permanentemente la empresa ${company.name}? Esta acción no se puede deshacer.`)) {
+      try {
+        setIsDeactivating(true);
+        const { apiDeleteCompany } = await import("@/lib/licensing/api");
+        await apiDeleteCompany(company.id);
+        mutate();
+      } catch (err) {
+        console.error("Error al eliminar empresa", err);
+        alert("Ocurrió un error al eliminar la empresa.");
+      } finally {
+        setIsDeactivating(false);
+      }
+    }
+  };
 
   const {
     isOpen: isLicenseOpen,
@@ -305,7 +323,13 @@ export default function CompaniesPage() {
               <DropdownItem key="view" textValue="Ver detalle" startContent={<Eye className="w-4 h-4" />}>
                 Ver detalle
               </DropdownItem>
-              <DropdownItem key="edit" textValue="Editar" startContent={<Pencil className="w-4 h-4" />}>
+              <DropdownItem 
+                key="edit" 
+                textValue="Editar" 
+                startContent={<Pencil className="w-4 h-4" />} 
+                href={`/admin/companies/${company.id}/edit`}
+                as="a"
+              >
                 Editar
               </DropdownItem>
               <DropdownItem
@@ -322,6 +346,7 @@ export default function CompaniesPage() {
                 className="text-danger"
                 color="danger"
                 startContent={<Trash2 className="w-4 h-4" />}
+                onPress={() => handleDelete(company)}
               >
                 Eliminar
               </DropdownItem>

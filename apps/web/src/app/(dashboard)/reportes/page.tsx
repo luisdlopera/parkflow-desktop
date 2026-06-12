@@ -365,7 +365,7 @@ export default function ReportesPage() {
             <button
               key={card.key}
               onClick={() => openReport(card.key)}
-              className="text-left bg-white rounded-2xl border border-slate-200 p-5 hover:border-amber-300 hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+              className="text-left bg-white rounded-2xl border border-slate-200 p-5 hover:border-amber-300 hover:shadow-md dark:border-slate-700 dark:hover:border-amber-600 transition-all duration-200 active:scale-[0.98]"
             >
               <div className="text-2xl mb-2">{CARD_ICONS[card.key]}</div>
               <h3 className="text-base font-semibold text-slate-900">{card.label}</h3>

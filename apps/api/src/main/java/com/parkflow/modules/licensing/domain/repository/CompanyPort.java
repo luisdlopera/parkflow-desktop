@@ -10,5 +10,6 @@ public interface CompanyPort {
     Company save(Company company);
     Optional<Company> findById(UUID id);
     List<Company> findAll();
+    void deleteById(UUID id);
     void deleteAll();
 }

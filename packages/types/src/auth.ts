@@ -30,6 +30,8 @@ export interface AuthUser {
   permissions: Permission[];
   active: boolean;
   passwordChangedAtIso: string | null;
+  requirePasswordChange: boolean;
+  onboardingCompleted: boolean;
 }
 
 export interface SessionInfo {

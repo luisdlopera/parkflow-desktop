@@ -170,7 +170,7 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => void load()}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:border-gray-700 dark:text-slate-300 dark:hover:bg-gray-800"
           >
             Actualizar
           </button>

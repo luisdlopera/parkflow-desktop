@@ -23,6 +23,18 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         return;
       }
       if (mounted) {
+        const isChangePasswordPage = pathname?.startsWith("/change-password");
+
+        if (user.requirePasswordChange && !isChangePasswordPage && user.role !== "SUPER_ADMIN") {
+          router.replace("/change-password");
+          return;
+        }
+
+        if (!user.requirePasswordChange && isChangePasswordPage) {
+          router.replace("/");
+          return;
+        }
+
         setReady(true);
       }
     })();

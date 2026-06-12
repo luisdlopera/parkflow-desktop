@@ -136,13 +136,10 @@ describe("CompaniesPage", () => {
     expect(mockMutate).toHaveBeenCalled();
   });
 
-  it("opens create company modal on button click", async () => {
+  it("renders create company navigation link", () => {
     render(<CompaniesPage />);
 
-    fireEvent.click(screen.getByText("Nueva Empresa"));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("mock-company-form")).toBeDefined();
-    });
+    const newButton = screen.getByText("Nueva Empresa");
+    expect(newButton.closest("a")).toHaveAttribute("href", "/admin/companies/new");
   });
 });

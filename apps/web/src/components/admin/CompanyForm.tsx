@@ -12,7 +12,7 @@ import {
   Textarea,
   Divider,
 } from "@heroui/react";
-import type { CreateCompanyRequest, PlanType } from "@/lib/licensing/types";
+import type { CreateCompanyRequest, PlanType, Company } from "@/lib/licensing/types";
 import { getPlanFeatures } from "@/lib/licensing/hooks";
 import { requiredString, emailSchema, positiveNumber, nonNegativeNumber } from "@/lib/validation";
 import { InlineFieldError } from "@/components/feedback/InlineFieldError";
@@ -50,7 +50,13 @@ const companySchema = z.object({
 
 type FormValues = z.infer<typeof companySchema>;
 
-export function CompanyForm({ onSubmit, isLoading }: CompanyFormProps) {
+interface CompanyFormProps {
+  onSubmit: (data: CreateCompanyRequest) => Promise<void>;
+  isLoading?: boolean;
+  initialData?: Company;
+}
+
+export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormProps) {
   const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   const {
@@ -61,7 +67,21 @@ export function CompanyForm({ onSubmit, isLoading }: CompanyFormProps) {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(companySchema),
-    defaultValues: {
+    defaultValues: initialData ? {
+      name: initialData.name,
+      nit: initialData.nit || "",
+      address: initialData.address || "",
+      city: initialData.city || "",
+      phone: initialData.phone || "",
+      email: initialData.email || "",
+      contactName: initialData.contactName || "",
+      plan: initialData.plan || "LOCAL",
+      maxDevices: initialData.maxDevices || 1,
+      maxLocations: initialData.maxLocations || 1,
+      maxUsers: initialData.maxUsers || 5,
+      trialDays: initialData.trialDays || 14,
+      offlineModeAllowed: initialData.offlineModeAllowed ?? true,
+    } : {
       name: "",
       nit: "",
       address: "",
@@ -257,7 +277,7 @@ export function CompanyForm({ onSubmit, isLoading }: CompanyFormProps) {
           isLoading={isLoading}
           className="font-bold px-8"
         >
-          {isLoading ? "Creando..." : "Crear Empresa"}
+          {isLoading ? "Guardando..." : (initialData ? "Actualizar Empresa" : "Crear Empresa")}
         </Button>
       </div>
     </form>

@@ -44,14 +44,14 @@ export function FormDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-gray-800 dark:text-gray-300"
+            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
           >
             ✕
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-6">
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/60 dark:text-red-400">
               {error}
             </div>
           )}
@@ -61,7 +61,7 @@ export function FormDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-gray-800"
           >
             {cancelLabel}
           </button>

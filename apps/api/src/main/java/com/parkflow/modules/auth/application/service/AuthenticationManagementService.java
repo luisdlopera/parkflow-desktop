@@ -45,6 +45,7 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
   private final PasswordHashService passwordHashService;
   private final AuthAuditService authAuditService;
   private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
+  private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
   @Value("${app.security.offline-lease-hours:48}")
   private int defaultOfflineLeaseHours;
@@ -331,6 +332,7 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
 
     user.setPasswordHash(passwordHashService.encodePassword(request.newPassword()));
     user.setPasswordChangedAt(OffsetDateTime.now());
+    user.setRequirePasswordChange(false);
     appUserRepository.save(user);
 
     int sessionsRevoked = 0;
@@ -441,6 +443,20 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
   }
 
   private AuthUserResponse toUser(AppUser user) {
+    boolean onboardingCompleted = false;
+    if (user.getCompanyId() != null) {
+      try {
+        Boolean completed = jdbcTemplate.queryForObject(
+            "SELECT onboarding_completed FROM companies WHERE id = ?",
+            Boolean.class,
+            user.getCompanyId()
+        );
+        if (completed != null) onboardingCompleted = completed;
+      } catch (Exception e) {
+        log.warn("Could not fetch onboarding status for company {}", user.getCompanyId());
+      }
+    }
+
     List<String> permissions =
         RolePermissions.permissionsFor(user.getRole()).stream().map(AuthPermission::authority).toList();
     return new AuthUserResponse(
@@ -450,7 +466,9 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
         user.getRole().name(),
         permissions,
         user.isActive(),
-        user.getPasswordChangedAt());
+        user.getPasswordChangedAt(),
+        user.isRequirePasswordChange(),
+        onboardingCompleted);
   }
 
   private SessionInfoResponse toSession(AuthSession session) {
