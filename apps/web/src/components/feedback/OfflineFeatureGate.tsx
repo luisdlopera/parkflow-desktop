@@ -1,10 +1,9 @@
 "use client";
-
+import { Spinner } from "@heroui/react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@heroui/button";
-import { Card, CardBody } from "@heroui/card";
-import { Spinner } from "@heroui/spinner";
 import { CloudOff, ArrowLeft, Home } from "lucide-react";
 import { motion } from "framer-motion";
 import { isLocalFirstMode } from "@/lib/local-first/config";
@@ -58,7 +57,7 @@ export default function OfflineFeatureGate({ children }: OfflineFeatureGateProps
         className="w-full max-w-lg"
       >
         <Card className="border border-amber-200/50 bg-white/70 dark:bg-neutral-900/60 dark:border-neutral-800/50 backdrop-blur-md shadow-xl rounded-3xl overflow-hidden">
-          <CardBody className="p-8 sm:p-10 flex flex-col items-center text-center">
+          <Card.Content className="p-8 sm:p-10 flex flex-col items-center text-center">
             {/* Animated Icon Container */}
             <motion.div
               initial={{ scale: 0.8, rotate: -10 }}
@@ -100,7 +99,7 @@ export default function OfflineFeatureGate({ children }: OfflineFeatureGateProps
               </Button>
               <Button
                 id="offline-gate-dashboard-btn"
-                variant="flat"
+                variant="tertiary"
                 color="default"
                 size="lg"
                 startContent={<Home size={18} />}
@@ -110,7 +109,7 @@ export default function OfflineFeatureGate({ children }: OfflineFeatureGateProps
                 Dashboard
               </Button>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </motion.div>
     </div>

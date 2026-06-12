@@ -12,7 +12,9 @@ import {
 } from "@/lib/settings-api";
 import { paymentMethodSchema, type PaymentMethodSchema } from "@/modules/settings/schemas";
 import type { PaymentMethodRow } from "@/modules/settings/types";
-import { Input, Button, Checkbox } from "@heroui/react";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/settings/FormDrawer";
@@ -115,7 +117,7 @@ export default function MetodosPagoPage() {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               color="primary"
               className="font-semibold"
               onPress={() => openEdit(row)}
@@ -139,7 +141,7 @@ export default function MetodosPagoPage() {
             {...register("code")}
             label="Código"
             placeholder="CASH"
-            variant="flat"
+            
             errorMessage={errors.code?.message}
             isInvalid={!!errors.code}
           />
@@ -147,7 +149,7 @@ export default function MetodosPagoPage() {
             {...register("name")}
             label="Nombre"
             placeholder="Efectivo"
-            variant="flat"
+            
             errorMessage={errors.name?.message}
             isInvalid={!!errors.name}
           />
@@ -155,7 +157,7 @@ export default function MetodosPagoPage() {
             {...register("displayOrder", { valueAsNumber: true })}
             label="Orden de visualización"
             type="number"
-            variant="flat"
+            
           />
           <Checkbox {...register("requiresReference")}>
             Requiere referencia

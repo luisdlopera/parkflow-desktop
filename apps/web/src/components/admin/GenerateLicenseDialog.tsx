@@ -1,20 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  Alert,
-  Chip,
-  Divider,
-  Card,
-  CardBody,
-} from "@heroui/react";
+import { Separator } from "@heroui/react";
+import { Alert } from "@/components/ui/Alert";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { Chip } from "@/components/ui/Chip";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import {
   Copy,
   Check,
@@ -61,7 +54,7 @@ export function GenerateLicenseDialog({
 
   const handleClose = () => {
     clearLicense();
-    onClose();
+    close();
   };
 
   const handleDownload = () => {
@@ -91,23 +84,23 @@ export function GenerateLicenseDialog({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="2xl">
-      <ModalContent>
-        <ModalHeader className="flex items-center gap-2">
+    <Modal state={ { isOpen: isOpen, setOpen: (v: boolean) => { if(!v) handleClose(); }, open: () => {}, close: handleClose, toggle: () => {} } }>
+      <Modal.Content>
+        <Modal.Header className="flex items-center gap-2">
           <FileBadge className="w-5 h-5" />
           Generar Licencia Offline
-        </ModalHeader>
-        <ModalBody className="space-y-4">
+        </Modal.Header>
+        <Modal.Body className="space-y-4">
           {/* Company Info */}
           <Card>
-            <CardBody className="space-y-2">
+            <Card.Content className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm text-default-500">Empresa:</span>
                 <span className="font-medium">{company.name}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-default-500">Plan:</span>
-                <Chip size="sm" color="primary" variant="flat">
+                <Chip size="sm" color="primary" variant="soft">
                   {company.plan}
                 </Chip>
               </div>
@@ -117,10 +110,10 @@ export function GenerateLicenseDialog({
                   {company.devices?.length || 0} / {company.maxDevices}
                 </span>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
-          <Divider />
+          <Separator />
 
           {!license ? (
             <>
@@ -144,7 +137,7 @@ export function GenerateLicenseDialog({
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     onPress={() => setDeviceFingerprint(currentFingerprint)}
                   >
                     Usar fingerprint de este dispositivo
@@ -174,7 +167,7 @@ export function GenerateLicenseDialog({
                     <Button
                       isIconOnly
                       size="sm"
-                      variant="light"
+                      variant="ghost"
                       onPress={() => handleCopy(license.licenseKey)}
                     >
                       {copied ? (
@@ -195,7 +188,7 @@ export function GenerateLicenseDialog({
                     <Button
                       isIconOnly
                       size="sm"
-                      variant="light"
+                      variant="ghost"
                       onPress={() => handleCopy(license.signature)}
                     >
                       <Copy className="w-4 h-4" />
@@ -215,11 +208,11 @@ export function GenerateLicenseDialog({
               </div>
             </>
           )}
-        </ModalBody>
-        <ModalFooter>
+        </Modal.Body>
+        <Modal.Footer>
           {!license ? (
             <>
-              <Button variant="flat" onPress={handleClose}>
+              <Button variant="tertiary" onPress={handleClose}>
                 Cancelar
               </Button>
               <Button
@@ -233,7 +226,7 @@ export function GenerateLicenseDialog({
             </>
           ) : (
             <>
-              <Button variant="flat" onPress={handleClose}>
+              <Button variant="tertiary" onPress={handleClose}>
                 Cerrar
               </Button>
               <Button color="primary" startContent={<Download className="w-4 h-4" />} onPress={handleDownload}>
@@ -241,8 +234,8 @@ export function GenerateLicenseDialog({
               </Button>
             </>
           )}
-        </ModalFooter>
-      </ModalContent>
+        </Modal.Footer>
+      </Modal.Content>
     </Modal>
   );
 }

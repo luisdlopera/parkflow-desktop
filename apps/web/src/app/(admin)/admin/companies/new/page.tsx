@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@heroui/react";
+import { Button } from "@/components/ui/Button";
 import { ArrowLeft } from "lucide-react";
 import { useCreateCompany } from "@/lib/licensing/hooks";
 import type { CreateCompanyRequest } from "@/lib/licensing/types";
@@ -29,7 +29,7 @@ export default function NewCompanyPage() {
       <div className="flex items-center gap-4">
         <Button
           isIconOnly
-          variant="light"
+          variant="ghost"
           onPress={() => router.push("/admin/companies")}
         >
           <ArrowLeft className="w-5 h-5" />

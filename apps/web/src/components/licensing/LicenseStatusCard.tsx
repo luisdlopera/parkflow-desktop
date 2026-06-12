@@ -6,15 +6,10 @@ import {
   translatePlan,
   translateStatus,
 } from "@/lib/licensing/hooks";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Button,
-  Divider,
-  Skeleton,
-} from "@heroui/react";
+import { Skeleton, Separator } from "@heroui/react";
+import { Chip } from "@/components/ui/Chip";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { useState } from "react";
 import { FileBadge, Fingerprint, Building2, Clock } from "lucide-react";
 import { LicenseActivationDialog } from "./LicenseActivationDialog";
@@ -30,12 +25,12 @@ export function LicenseStatusCard() {
   if (loading) {
     return (
       <Card>
-        <CardHeader className="pb-0">
+        <Card.Header className="pb-0">
           <Skeleton className="h-6 w-48 rounded" />
-        </CardHeader>
-        <CardBody>
+        </Card.Header>
+        <Card.Content>
           <Skeleton className="h-24 w-full rounded" />
-        </CardBody>
+        </Card.Content>
       </Card>
     );
   }
@@ -43,15 +38,15 @@ export function LicenseStatusCard() {
   if (error) {
     return (
       <Card>
-        <CardHeader>
+        <Card.Header>
           <h3 className="text-lg font-semibold">Licencia</h3>
-        </CardHeader>
-        <CardBody>
+        </Card.Header>
+        <Card.Content>
           <p className="text-danger">Error al cargar estado: {error}</p>
           <Button color="primary" onPress={refresh} className="mt-2">
             Reintentar
           </Button>
-        </CardBody>
+        </Card.Content>
       </Card>
     );
   }
@@ -60,10 +55,10 @@ export function LicenseStatusCard() {
     return (
       <>
         <Card>
-          <CardHeader>
+          <Card.Header>
             <h3 className="text-lg font-semibold">Licencia</h3>
-          </CardHeader>
-          <CardBody className="space-y-4">
+          </Card.Header>
+          <Card.Content className="space-y-4">
             <div className="flex items-center gap-3 text-warning">
               <FileBadge className="w-8 h-8" />
               <div>
@@ -77,7 +72,7 @@ export function LicenseStatusCard() {
               Activar licencia
             </Button>
 
-            <Divider />
+            <Separator />
 
             <div className="space-y-2">
               <p className="text-sm font-medium text-default-600">
@@ -88,7 +83,7 @@ export function LicenseStatusCard() {
                 {fingerprintLoading ? "Cargando..." : fingerprint}
               </code>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         <LicenseActivationDialog
@@ -108,13 +103,13 @@ export function LicenseStatusCard() {
   return (
     <>
       <Card>
-        <CardHeader className="flex justify-between items-center">
+        <Card.Header className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Licencia</h3>
-          <Chip color={statusColor} variant="flat">
+          <Chip color={statusColor} variant="soft">
             {translateStatus(status.isValid ? "ACTIVE" : "EXPIRED")}
           </Chip>
-        </CardHeader>
-        <CardBody className="space-y-4">
+        </Card.Header>
+        <Card.Content className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <p className="text-sm text-default-500">
@@ -126,7 +121,7 @@ export function LicenseStatusCard() {
 
             <div className="space-y-1">
               <p className="text-sm text-default-500">Plan</p>
-              <Chip size="sm" color="primary" variant="flat">
+              <Chip size="sm" color="primary" variant="soft">
                 {translatePlan(status.plan ?? "LOCAL")}
               </Chip>
             </div>
@@ -164,10 +159,10 @@ export function LicenseStatusCard() {
             </div>
           )}
 
-          <Divider />
+          <Separator />
 
           <div className="flex justify-between">
-            <Button variant="flat" onPress={refresh}>
+            <Button variant="tertiary" onPress={refresh}>
               Actualizar
             </Button>
             <Button color="primary" onPress={() => setShowActivation(true)}>
@@ -175,7 +170,7 @@ export function LicenseStatusCard() {
             </Button>
           </div>
 
-          <Divider />
+          <Separator />
 
           <div className="space-y-2">
             <p className="text-sm font-medium text-default-600">
@@ -186,7 +181,7 @@ export function LicenseStatusCard() {
               {fingerprintLoading ? "Cargando..." : fingerprint}
             </code>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       <LicenseActivationDialog

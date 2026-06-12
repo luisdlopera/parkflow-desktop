@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Button, Input, Chip, Progress } from "@heroui/react";
+import { Chip } from "@/components/ui/Chip";
+import { Progress } from "@/components/ui/Progress";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import DataTable from "@/components/ui/DataTable";
 import KpiCard from "@/components/ui/KpiCard";
 import { buildApiHeaders } from "@/lib/api";
@@ -338,13 +341,13 @@ export default function ReportesPage() {
         </div>
         {view ? (
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="flat" color="default" onPress={backToGrid}>
+            <Button size="sm" variant="tertiary" color="default" onPress={backToGrid}>
               ← Volver
             </Button>
-            <Button size="sm" variant="flat" color="primary" isDisabled={loading} isLoading={loading} onPress={() => loadReport(view).catch(console.error)}>
+            <Button size="sm" variant="tertiary" color="primary" isDisabled={loading} isLoading={loading} onPress={() => loadReport(view).catch(console.error)}>
               Actualizar
             </Button>
-            <Button size="sm" variant="bordered" color="primary" onPress={handleExport}>
+            <Button size="sm" variant="outline" color="primary" onPress={handleExport}>
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -379,9 +382,9 @@ export default function ReportesPage() {
       {view === "daily-operations" && (
         <>
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <Input type="date" variant="flat" size="sm" label="Desde" value={dateFrom} onValueChange={setDateFrom} className="w-[150px]" />
+            <Input type="date"  size="sm" label="Desde" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
             <span className="text-slate-400">—</span>
-            <Input type="date" variant="flat" size="sm" label="Hasta" value={dateTo} onValueChange={setDateTo} className="w-[150px]" />
+            <Input type="date"  size="sm" label="Hasta" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           </div>
           {dailyOps.length > 0 && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-4">
@@ -485,9 +488,9 @@ export default function ReportesPage() {
       {view === "paid-tickets" && (
         <>
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <Input type="date" variant="flat" size="sm" label="Desde" value={dateFrom} onValueChange={setDateFrom} className="w-[150px]" />
+            <Input type="date"  size="sm" label="Desde" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
             <span className="text-slate-400">—</span>
-            <Input type="date" variant="flat" size="sm" label="Hasta" value={dateTo} onValueChange={setDateTo} className="w-[150px]" />
+            <Input type="date"  size="sm" label="Hasta" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           </div>
           {paidTickets.length > 0 && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-3">
@@ -517,9 +520,9 @@ export default function ReportesPage() {
       {view === "voided-tickets" && (
         <>
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <Input type="date" variant="flat" size="sm" label="Desde" value={dateFrom} onValueChange={setDateFrom} className="w-[150px]" />
+            <Input type="date"  size="sm" label="Desde" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
             <span className="text-slate-400">—</span>
-            <Input type="date" variant="flat" size="sm" label="Hasta" value={dateTo} onValueChange={setDateTo} className="w-[150px]" />
+            <Input type="date"  size="sm" label="Hasta" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           </div>
           {voidedTickets.length > 0 && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-3">
@@ -550,9 +553,9 @@ export default function ReportesPage() {
       {view === "income-expense" && (
         <>
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <Input type="date" variant="flat" size="sm" label="Desde" value={dateFrom} onValueChange={setDateFrom} className="w-[150px]" />
+            <Input type="date"  size="sm" label="Desde" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
             <span className="text-slate-400">—</span>
-            <Input type="date" variant="flat" size="sm" label="Hasta" value={dateTo} onValueChange={setDateTo} className="w-[150px]" />
+            <Input type="date"  size="sm" label="Hasta" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           </div>
           {incomeExpense && (
             <>
@@ -582,7 +585,7 @@ export default function ReportesPage() {
                       key: "movementType", label: "Tipo", render: (r) => {
                         const isIncome = ["PARKING_PAYMENT", "LOST_TICKET_PAYMENT", "MANUAL_INCOME", "REPRINT_FEE"].includes(r.movementType);
                         return (
-                          <Chip size="sm" variant="flat" color={isIncome ? "success" : "danger"}>
+                          <Chip size="sm" variant="soft" color={isIncome ? "success" : "danger"}>
                             {isIncome ? "Ingreso" : "Egreso"}
                           </Chip>
                         );
@@ -641,9 +644,9 @@ export default function ReportesPage() {
       {view === "by-operator" && (
         <>
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <Input type="date" variant="flat" size="sm" label="Desde" value={dateFrom} onValueChange={setDateFrom} className="w-[150px]" />
+            <Input type="date"  size="sm" label="Desde" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
             <span className="text-slate-400">—</span>
-            <Input type="date" variant="flat" size="sm" label="Hasta" value={dateTo} onValueChange={setDateTo} className="w-[150px]" />
+            <Input type="date"  size="sm" label="Hasta" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           </div>
           {operators.length > 0 && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-4">
@@ -673,9 +676,9 @@ export default function ReportesPage() {
       {view === "by-payment-method" && (
         <>
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <Input type="date" variant="flat" size="sm" label="Desde" value={dateFrom} onValueChange={setDateFrom} className="w-[150px]" />
+            <Input type="date"  size="sm" label="Desde" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
             <span className="text-slate-400">—</span>
-            <Input type="date" variant="flat" size="sm" label="Hasta" value={dateTo} onValueChange={setDateTo} className="w-[150px]" />
+            <Input type="date"  size="sm" label="Hasta" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           </div>
           {paymentMethods.length > 0 && (
             <div className="flex flex-wrap gap-3">

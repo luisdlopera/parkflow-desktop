@@ -1,25 +1,20 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Input,
-  Switch,
-  Tabs,
-  Tab,
-  Select,
-  SelectItem,
-  Alert,
-  Divider,
-  Badge,
-  Accordion,
-  AccordionItem,
-  Slider,
-} from "@heroui/react";
+import { Separator, ListBox } from "@heroui/react";
+import { Alert } from "@/components/ui/Alert";
+import { Chip } from "@/components/ui/Chip";
+import { AccordionItem } from "@/components/ui/Accordion";
+import { Accordion } from "@/components/ui/Accordion";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { Select } from "@/components/ui/Select";
+import { Slider } from "@/components/ui/Slider";
+import { Tabs } from "@/components/ui/Tabs";
+import { Tab } from "@/components/ui/Tabs";
+import { Button } from "@/components/ui/Button";
+import { Switch } from "@/components/ui/Switch";
+import { Input } from "@/components/ui/Input";
 import {
   Settings,
   Shield,
@@ -135,7 +130,7 @@ export default function AdminSettingsPage() {
         </div>
         <div className="flex gap-2">
           <Button
-            variant="flat"
+            variant="tertiary"
             startContent={<RefreshCw className="w-4 h-4" />}
             onPress={handleReset}
           >
@@ -159,7 +154,7 @@ export default function AdminSettingsPage() {
       )}
 
       {/* Settings Tabs */}
-      <Tabs selectedKey={activeTab} onSelectionChange={(k) => setActiveTab(k as string)}>
+      <Tabs selectedKey={activeTab} onChange={(k) => setActiveTab(k as string)}>
         <Tab key="general" title="General" />
         <Tab key="security" title="Seguridad" />
         <Tab key="licensing" title="Licenciamiento" />
@@ -170,13 +165,13 @@ export default function AdminSettingsPage() {
       {/* General Settings */}
       {activeTab === "general" && (
         <Card>
-          <CardHeader>
+          <Card.Header>
             <div className="flex items-center gap-2">
               <Settings className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold">Configuración General</h3>
             </div>
-          </CardHeader>
-          <CardBody className="space-y-6">
+          </Card.Header>
+          <Card.Content className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Nombre del Sistema"
@@ -193,7 +188,7 @@ export default function AdminSettingsPage() {
               />
             </div>
 
-            <Divider />
+            <Separator />
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -205,7 +200,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <Switch
                   isSelected={settings.maintenanceMode}
-                  onValueChange={(v) => updateSetting("maintenanceMode", v)}
+                  onChange={(v) => updateSetting("maintenanceMode", v)}
                   color="warning"
                 />
               </div>
@@ -219,7 +214,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <Switch
                   isSelected={settings.debugMode}
-                  onValueChange={(v) => updateSetting("debugMode", v)}
+                  onChange={(v) => updateSetting("debugMode", v)}
                   color="primary"
                 />
               </div>
@@ -234,7 +229,7 @@ export default function AdminSettingsPage() {
                 </p>
               </Alert>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
@@ -242,13 +237,13 @@ export default function AdminSettingsPage() {
       {activeTab === "security" && (
         <div className="space-y-4">
           <Card>
-            <CardHeader>
+            <Card.Header>
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-danger" />
                 <h3 className="text-lg font-semibold">Seguridad de Sesiones</h3>
               </div>
-            </CardHeader>
-            <CardBody className="space-y-6">
+            </Card.Header>
+            <Card.Content className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm font-medium mb-2">Timeout de Sesión</p>
@@ -293,17 +288,17 @@ export default function AdminSettingsPage() {
                   />
                 </div>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           <Card>
-            <CardHeader>
+            <Card.Header>
               <div className="flex items-center gap-2">
                 <Key className="w-5 h-5 text-warning" />
                 <h3 className="text-lg font-semibold">Política de Contraseñas</h3>
               </div>
-            </CardHeader>
-            <CardBody className="space-y-6">
+            </Card.Header>
+            <Card.Content className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Requerir 2FA para Super Admins</p>
@@ -313,7 +308,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <Switch
                   isSelected={settings.requireTwoFactor}
-                  onValueChange={(v) => updateSetting("requireTwoFactor", v)}
+                  onChange={(v) => updateSetting("requireTwoFactor", v)}
                   color="warning"
                 />
               </div>
@@ -336,12 +331,12 @@ export default function AdminSettingsPage() {
                 <div className="flex items-center gap-2 pt-6">
                   <Switch
                     isSelected={settings.passwordRequireSpecialChars}
-                    onValueChange={(v) => updateSetting("passwordRequireSpecialChars", v)}
+                    onChange={(v) => updateSetting("passwordRequireSpecialChars", v)}
                   />
                   <span className="text-sm">Requerir caracteres especiales</span>
                 </div>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         </div>
       )}
@@ -350,13 +345,13 @@ export default function AdminSettingsPage() {
       {activeTab === "licensing" && (
         <div className="space-y-4">
           <Card>
-            <CardHeader>
+            <Card.Header>
               <div className="flex items-center gap-2">
                 <Lock className="w-5 h-5 text-primary" />
                 <h3 className="text-lg font-semibold">Configuración de Licencias</h3>
               </div>
-            </CardHeader>
-            <CardBody className="space-y-6">
+            </Card.Header>
+            <Card.Content className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium mb-2">Días de Prueba por Defecto</p>
@@ -386,7 +381,7 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
 
-              <Divider />
+              <Separator />
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -437,14 +432,14 @@ export default function AdminSettingsPage() {
                   </p>
                 </div>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           <Card>
-            <CardHeader>
+            <Card.Header>
               <h3 className="text-lg font-semibold">Límites por Plan</h3>
-            </CardHeader>
-            <CardBody>
+            </Card.Header>
+            <Card.Content>
               <Accordion>
                 <AccordionItem key="local" title="Plan Local">
                   <div className="space-y-2 text-sm">
@@ -479,7 +474,7 @@ export default function AdminSettingsPage() {
                   </div>
                 </AccordionItem>
               </Accordion>
-            </CardBody>
+            </Card.Content>
           </Card>
         </div>
       )}
@@ -487,13 +482,13 @@ export default function AdminSettingsPage() {
       {/* Notifications Settings */}
       {activeTab === "notifications" && (
         <Card>
-          <CardHeader>
+          <Card.Header>
             <div className="flex items-center gap-2">
               <Bell className="w-5 h-5 text-warning" />
               <h3 className="text-lg font-semibold">Configuración de Notificaciones</h3>
             </div>
-          </CardHeader>
-          <CardBody className="space-y-6">
+          </Card.Header>
+          <Card.Content className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">Notificaciones por Email</p>
@@ -503,7 +498,7 @@ export default function AdminSettingsPage() {
               </div>
               <Switch
                 isSelected={settings.emailNotificationsEnabled}
-                onValueChange={(v) => updateSetting("emailNotificationsEnabled", v)}
+                onChange={(v) => updateSetting("emailNotificationsEnabled", v)}
                 color="primary"
               />
             </div>
@@ -516,7 +511,7 @@ export default function AdminSettingsPage() {
               description="URL para enviar notificaciones a Slack"
             />
 
-            <Divider />
+            <Separator />
 
             <h4 className="font-medium">Eventos a Notificar</h4>
 
@@ -530,7 +525,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <Switch
                   isSelected={settings.notifyOnBlock}
-                  onValueChange={(v) => updateSetting("notifyOnBlock", v)}
+                  onChange={(v) => updateSetting("notifyOnBlock", v)}
                 />
               </div>
 
@@ -543,7 +538,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <Switch
                   isSelected={settings.notifyOnLicenseExpire}
-                  onValueChange={(v) => updateSetting("notifyOnLicenseExpire", v)}
+                  onChange={(v) => updateSetting("notifyOnLicenseExpire", v)}
                 />
               </div>
 
@@ -556,24 +551,24 @@ export default function AdminSettingsPage() {
                 </div>
                 <Switch
                   isSelected={settings.notifyAdminsOnNewCompany}
-                  onValueChange={(v) => updateSetting("notifyAdminsOnNewCompany", v)}
+                  onChange={(v) => updateSetting("notifyAdminsOnNewCompany", v)}
                 />
               </div>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
       {/* Backup Settings */}
       {activeTab === "backup" && (
         <Card>
-          <CardHeader>
+          <Card.Header>
             <div className="flex items-center gap-2">
               <Database className="w-5 h-5 text-success" />
               <h3 className="text-lg font-semibold">Configuración de Respaldos</h3>
             </div>
-          </CardHeader>
-          <CardBody className="space-y-6">
+          </Card.Header>
+          <Card.Content className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">Respaldo Automático</p>
@@ -583,7 +578,7 @@ export default function AdminSettingsPage() {
               </div>
               <Switch
                 isSelected={settings.autoBackupEnabled}
-                onValueChange={(v) => updateSetting("autoBackupEnabled", v)}
+                onChange={(v) => updateSetting("autoBackupEnabled", v)}
                 color="success"
               />
             </div>
@@ -641,16 +636,16 @@ export default function AdminSettingsPage() {
                 </Alert>
 
                 <div className="flex gap-2">
-                  <Button variant="flat" startContent={<Database className="w-4 h-4" />}>
+                  <Button variant="tertiary" startContent={<Database className="w-4 h-4" />}>
                     Respaldo Manual
                   </Button>
-                  <Button variant="flat" startContent={<RefreshCw className="w-4 h-4" />}>
+                  <Button variant="tertiary" startContent={<RefreshCw className="w-4 h-4" />}>
                     Restaurar Respaldo
                   </Button>
                 </div>
               </>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
     </div>

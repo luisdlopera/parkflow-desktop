@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Input, Button, Checkbox } from "@heroui/react";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
 import {
   fetchConfigurationRateFractions,
   createConfigurationRateFraction,
@@ -108,11 +110,11 @@ export default function FraccionesPage() {
         <Input
           type="text"
           placeholder="ID de tarifa"
-          variant="flat"
+          
           size="sm"
           className="max-w-xs"
           value={rateId}
-          onValueChange={setRateId}
+          onChange={(e) => setRateId(e.target.value)}
         />
         <Button 
           size="sm" 
@@ -135,7 +137,7 @@ export default function FraccionesPage() {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               color="primary"
               className="font-semibold"
               onPress={() => openEdit(row)}
@@ -144,7 +146,7 @@ export default function FraccionesPage() {
             </Button>
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               color="danger"
               className="font-semibold"
               onPress={() => handleDelete(row.id)}
@@ -167,7 +169,7 @@ export default function FraccionesPage() {
             {...register("fromMinute", { valueAsNumber: true })}
             label="Desde (minutos)"
             type="number"
-            variant="flat"
+            
             errorMessage={errors.fromMinute?.message}
             isInvalid={!!errors.fromMinute}
           />
@@ -175,7 +177,7 @@ export default function FraccionesPage() {
             {...register("toMinute", { valueAsNumber: true })}
             label="Hasta (minutos)"
             type="number"
-            variant="flat"
+            
             errorMessage={errors.toMinute?.message}
             isInvalid={!!errors.toMinute}
           />
@@ -184,7 +186,7 @@ export default function FraccionesPage() {
             label="Valor"
             type="number"
             step="0.01"
-            variant="flat"
+            
             errorMessage={errors.value?.message}
             isInvalid={!!errors.value}
           />

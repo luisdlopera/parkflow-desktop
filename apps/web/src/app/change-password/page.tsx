@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Card, CardBody, CardHeader, Divider } from "@heroui/react";
+import { Separator } from "@heroui/react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { currentUser, authHeaders } from "@/lib/auth";
-import type { AuthUser } from "@/types/auth";
+import type { AuthUser } from "@parkflow/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
 
@@ -82,21 +85,21 @@ export default function ChangePasswordPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="flex flex-col items-center pb-0 pt-6">
+        <Card.Header className="flex flex-col items-center pb-0 pt-6">
           <h1 className="text-2xl font-bold text-slate-800">Actualizar Contraseña</h1>
           <p className="text-slate-500 text-sm mt-1 text-center">
             Por seguridad, debes cambiar la contraseña por defecto antes de continuar.
           </p>
-        </CardHeader>
+        </Card.Header>
         
-        <Divider className="my-4" />
+        <Separator className="my-4" />
 
-        <CardBody className="pt-0 pb-6">
+        <Card.Content className="pt-0 pb-6">
           <form onSubmit={handleChangePassword} className="space-y-4">
             <Input
               label="Contraseña Actual"
               type="password"
-              variant="bordered"
+              
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               isRequired
@@ -104,7 +107,7 @@ export default function ChangePasswordPage() {
             <Input
               label="Nueva Contraseña"
               type="password"
-              variant="bordered"
+              
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               isRequired
@@ -112,7 +115,7 @@ export default function ChangePasswordPage() {
             <Input
               label="Confirmar Contraseña"
               type="password"
-              variant="bordered"
+              
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               isRequired
@@ -131,7 +134,7 @@ export default function ChangePasswordPage() {
               Cambiar y Continuar
             </Button>
           </form>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

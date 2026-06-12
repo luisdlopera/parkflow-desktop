@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useCrashRecovery } from "@/lib/hooks/useAutoSave";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/Button";
 
 interface CrashRecoveryDialogProps {
   formKey: string;
@@ -87,7 +87,7 @@ export function CrashRecoveryDialog({ formKey, onRestore, onDismiss }: CrashReco
             Recuperar datos
           </Button>
           <Button
-            variant="flat"
+            variant="tertiary"
             className="flex-1 font-semibold h-12 rounded-xl"
             onPress={handleDismiss}
           >

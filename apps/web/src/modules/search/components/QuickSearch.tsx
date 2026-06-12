@@ -1,11 +1,11 @@
 "use client";
-
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { Chip } from "@/components/ui/Chip";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@heroui/button";
-import { Card, CardBody } from "@heroui/card";
-import { Input } from "@heroui/input";
-import { Modal, ModalBody, ModalContent, Chip } from "@heroui/react";
 import { ChevronRight, Clock3, Loader2, Search, Ticket, Car, User, Building2, CreditCard, Bell, Wand2, Sparkles, ArrowRight } from "lucide-react";
 import { cn } from "@heroui/theme";
 import { useSearch } from "../hooks/useSearch";
@@ -64,7 +64,7 @@ function SearchResultRow({ result, selected, onSelect }: { result: SearchResult;
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{result.title}</p>
           {String(result.metadata?.status ?? "").toUpperCase() === "ACTIVE" ? (
-            <Chip size="sm" variant="flat" color="success">Activo</Chip>
+            <Chip size="sm" variant="soft" color="success">Activo</Chip>
           ) : null}
         </div>
         <p className="truncate text-xs text-slate-500 dark:text-neutral-400">{result.subtitle}</p>
@@ -185,7 +185,7 @@ export function QuickSearch() {
     <>
       <Button
         className="hidden h-10 min-w-0 flex-1 max-w-md items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/70 px-4 text-slate-500 shadow-sm backdrop-blur transition-colors hover:bg-slate-50 dark:border-neutral-800/70 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:bg-neutral-900/70 sm:flex"
-        variant="flat"
+        variant="tertiary"
         onPress={openPalette}
       >
         <span className="flex items-center gap-2 truncate text-sm">
@@ -199,21 +199,21 @@ export function QuickSearch() {
 
       <Button
         className="h-10 w-10 min-w-10 rounded-xl border border-slate-200/80 bg-white/70 text-slate-500 shadow-sm backdrop-blur transition-colors hover:bg-slate-50 dark:border-neutral-800/70 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:bg-neutral-900/70 sm:hidden"
-        variant="flat"
+        variant="tertiary"
         onPress={openPalette}
         aria-label="Buscar"
       >
         <Search className="h-4 w-4" />
       </Button>
 
-      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} size="4xl" scrollBehavior="inside" placement="top" hideCloseButton>
-        <ModalContent className="overflow-hidden border border-slate-200/70 bg-white/95 shadow-2xl dark:border-neutral-800/70 dark:bg-neutral-950/95">
-          <ModalBody className="p-0">
+      <Modal state={ { isOpen: isOpen, setOpen: (v: boolean) => { if(!v) setIsOpen(false); }, open: () => {}, close: () => setIsOpen(false), toggle: () => {} } } size="4xl" scrollBehavior="inside" placement="top" hideCloseButton>
+        <Modal.Content className="overflow-hidden border border-slate-200/70 bg-white/95 shadow-2xl dark:border-neutral-800/70 dark:bg-neutral-950/95">
+          <Modal.Body className="p-0">
             <div className="border-b border-slate-200/70 px-4 py-4 dark:border-neutral-800/70">
               <Input
                 ref={inputRef}
                 value={query}
-                onValueChange={setQuery}
+                onChange={(e) => setQuery(e.target.value)}
                 placeholder="Busca placas, tickets, usuarios, sedes..."
                 startContent={isLoading ? <Loader2 className="h-4 w-4 animate-spin text-orange-500" /> : <Search className="h-4 w-4 text-slate-400" />}
                 classNames={{ inputWrapper: "h-12 rounded-2xl bg-slate-50 shadow-none dark:bg-neutral-900/80" }}
@@ -229,7 +229,7 @@ export function QuickSearch() {
               {query.trim().length < 2 ? (
                 <div className="grid gap-4 p-3 sm:grid-cols-[1.3fr_1fr]">
                   <Card className="border border-slate-200/70 bg-slate-50/80 shadow-none dark:border-neutral-800/70 dark:bg-neutral-900/40">
-                    <CardBody className="space-y-3">
+                    <Card.Content className="space-y-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Acceso rápido</p>
                       <div className="grid gap-2 sm:grid-cols-2">
                         {[
@@ -249,11 +249,11 @@ export function QuickSearch() {
                           </button>
                         ))}
                       </div>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
 
                   <Card className="border border-slate-200/70 bg-white shadow-none dark:border-neutral-800/70 dark:bg-neutral-950/50">
-                    <CardBody className="space-y-3">
+                    <Card.Content className="space-y-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Recientes</p>
                       <div className="space-y-2">
                         {recentSearches.length > 0 ? recentSearches.map((item) => (
@@ -272,7 +272,7 @@ export function QuickSearch() {
                           </button>
                         )) : <p className="text-sm text-slate-500 dark:text-neutral-400">Todavía no hay búsquedas recientes.</p>}
                       </div>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 </div>
               ) : flatResults.length > 0 ? (
@@ -287,12 +287,12 @@ export function QuickSearch() {
                         <span className="text-xs text-slate-400">{items.length} resultados</span>
                       </div>
                       <Card className="overflow-hidden border border-slate-200/70 shadow-none dark:border-neutral-800/70">
-                        <CardBody className="p-0">
+                        <Card.Content className="p-0">
                           {items.map((item) => {
                             const isSelected = flatResults[selectedIndex]?.id === item.id;
                             return <SearchResultRow key={item.id} result={item} selected={isSelected} onSelect={handleSelect} />;
                           })}
-                        </CardBody>
+                        </Card.Content>
                       </Card>
                     </section>
                   ))}
@@ -309,14 +309,14 @@ export function QuickSearch() {
                   <Button color="primary" className="rounded-xl bg-orange-500 font-semibold text-white" onPress={handleSearchPage}>
                     Ver búsqueda completa
                   </Button>
-                  <Button color="secondary" variant="flat" className="rounded-xl font-semibold" onPress={handleQuickEntry}>
+                  <Button color="secondary" variant="tertiary" className="rounded-xl font-semibold" onPress={handleQuickEntry}>
                     Alta rápida con esta placa
                   </Button>
                 </div>
               )}
             </div>
-          </ModalBody>
-        </ModalContent>
+          </Modal.Body>
+        </Modal.Content>
       </Modal>
     </>
   );

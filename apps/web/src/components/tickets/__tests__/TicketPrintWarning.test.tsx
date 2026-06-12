@@ -65,7 +65,7 @@ describe("TicketPrintWarning", () => {
     render(<TicketPrintWarning {...MOCK_PROPS} reprintLoading={true} />);
 
     const reprintBtn = screen.getByRole("button", { name: /reimprimir/i });
-    expect(reprintBtn).toHaveAttribute("data-loading", "true");
+    expect(reprintBtn).toHaveAttribute("data-pending", "true");
   });
 
   it("renders without preview when lines array is empty", () => {

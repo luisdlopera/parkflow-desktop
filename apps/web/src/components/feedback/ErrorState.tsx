@@ -1,8 +1,7 @@
 "use client";
-
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import React from "react";
-import { Button } from "@heroui/button";
-import { Card, CardBody } from "@heroui/card";
 import { AlertCircle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -75,7 +74,7 @@ export function ErrorState({
                   className="overflow-hidden"
                 >
                   <Card className="mt-4 max-w-lg border-none bg-default-50 shadow-none">
-                    <CardBody className="p-4 text-left font-mono text-[10px] text-default-500 leading-relaxed">
+                    <Card.Content className="p-4 text-left font-mono text-[10px] text-default-500 leading-relaxed">
                       {errorCode && (
                         <div className="mb-1">
                           <span className="font-bold text-default-700">CODE:</span> {errorCode}
@@ -91,7 +90,7 @@ export function ErrorState({
                           {technicalDetails}
                         </div>
                       )}
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 </motion.div>
               )}

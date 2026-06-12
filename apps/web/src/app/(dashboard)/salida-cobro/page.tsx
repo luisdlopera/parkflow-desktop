@@ -2,13 +2,11 @@
 
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  Input,
-  Button,
-  Textarea,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { ListBox } from "@heroui/react";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { TextArea } from "@/components/ui/TextArea";
 import Badge from "@/components/ui/Badge";
 import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { ChangeCalculator } from "@/components/ui/ChangeCalculator";
@@ -796,9 +794,9 @@ export default function SalidaCobroPage() {
             <Input
               ref={ticketInputRef}
               label="Número de ticket"
-              variant="flat"
+              
               value={ticketNumber}
-              onValueChange={setTicketNumber}
+              onChange={(e) => setTicketNumber(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -814,9 +812,9 @@ export default function SalidaCobroPage() {
             <div className="space-y-1">
               <Input
                 label="Placa"
-                variant="flat"
+                
                 value={plate}
-                onValueChange={(val) => setPlate(val.toUpperCase())}
+                onChange={(val) => setPlate(val.target.value.toUpperCase())}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -840,9 +838,9 @@ export default function SalidaCobroPage() {
             <Input
               label="Código de convenio (opcional)"
               placeholder="CONV-123"
-              variant="flat"
+              
               value={agreementCode}
-              onValueChange={setAgreementCode}
+              onChange={(e) => setAgreementCode(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -1002,12 +1000,12 @@ export default function SalidaCobroPage() {
 
               {enableVehicleCondition && (
                 <div className="mt-4">
-                  <Textarea
+                  <TextArea
                     label="Estado del vehículo"
                     placeholder="Sin novedades a la salida..."
-                    variant="flat"
+                    
                     value={vehicleCondition}
-                    onValueChange={setVehicleCondition}
+                    onChange={(e) => setVehicleCondition(e.target.value)}
                   />
                 </div>
               )}
@@ -1114,10 +1112,10 @@ export default function SalidaCobroPage() {
             <div className="mt-5 rounded-xl border border-emerald-200/80 bg-emerald-50/90 dark:border-emerald-800/50 dark:bg-emerald-950/30 p-3 space-y-3">
               <Input
                 label="Recibido en efectivo"
-                variant="bordered"
+                
                 type="number"
                 value={cashReceived}
-                onValueChange={setCashReceived}
+                onChange={(e) => setCashReceived(e.target.value)}
                 placeholder={String(totalDue)}
               />
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -1148,7 +1146,7 @@ export default function SalidaCobroPage() {
                 </div>
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="tertiary"
                   onPress={() =>
                     setSplitPayments((rows) => [
                       ...rows,
@@ -1165,10 +1163,9 @@ export default function SalidaCobroPage() {
                 <div key={row.id} className="grid grid-cols-[1fr_120px_auto] gap-2 items-end">
                   <Select
                     label="Medio"
-                    size="sm"
-                    variant="flat"
-                    selectedKeys={[row.method]}
-                    onSelectionChange={(keys) => {
+                    
+                    value={[row.method]}
+                    onChange={(keys) => {
                       const next = Array.from(keys)[0] as SplitPaymentRow["method"] | undefined;
                       if (!next) return;
                       setSplitPayments((rows) =>
@@ -1176,25 +1173,34 @@ export default function SalidaCobroPage() {
                       );
                     }}
                   >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
                     {SPLIT_METHODS.filter(m => hasPaymentMethod(m.code)).map((method) => (
-                      <SelectItem key={method.code}>{method.label}</SelectItem>
+                      <ListBox.Item key={method.code}>{method.label}</ListBox.Item>
                     ))}
-                  </Select>
+                  
+        </ListBox>
+      </Select.Popover>
+    </Select>
                   <Input
                     label="Valor"
                     size="sm"
-                    variant="flat"
+                    
                     type="number"
                     value={row.amount}
-                    onValueChange={(value) =>
-                      setSplitPayments((rows) =>
-                        rows.map((item) => (item.id === row.id ? { ...item, amount: value } : item))
+                    onChange={(value) => setSplitPayments((rows) =>
+                        rows.map((item) => (item.id === row.id ? { ...item, amount: value.target.value } : item))
                       )
                     }
                   />
                   <Button
                     size="sm"
-                    variant="light"
+                    variant="ghost"
                     color="danger"
                     isDisabled={splitPayments.length <= 2}
                     onPress={() => setSplitPayments((rows) => rows.filter((item) => item.id !== row.id))}
@@ -1264,7 +1270,7 @@ export default function SalidaCobroPage() {
               type="button"
               disabled={!active || searching || processing}
               onClick={reprintTicket}
-              variant="light"
+              variant="ghost"
               data-testid="reprint-ticket"
             >
               Reimprimir ticket
@@ -1280,7 +1286,7 @@ export default function SalidaCobroPage() {
               type="button"
               disabled={!active || searching || processing}
               onClick={lostTicket}
-              variant="light"
+              variant="ghost"
               data-testid="lost-ticket"
             >
               Procesar ticket perdido
