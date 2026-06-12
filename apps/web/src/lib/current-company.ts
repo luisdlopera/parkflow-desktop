@@ -1,8 +1,11 @@
 import { listCompanies } from "@/lib/licensing/api";
+import { loadSession } from "@/lib/auth";
 
 const STORAGE_KEY = "parkflow.current_company_id";
 
 export async function resolveCurrentCompanyId(): Promise<string | null> {
+  const session = await loadSession();
+  if (!session) return null;
   const companies = await listCompanies();
   if (companies.length === 0) return null;
   if (typeof window === "undefined") return companies[0].id;

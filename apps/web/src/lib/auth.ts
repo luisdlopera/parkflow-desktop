@@ -125,6 +125,11 @@ export async function logoutAndRedirectToLogin(reason = "expired"): Promise<void
     return;
   }
   redirectInProgress = true;
+  
+  if (window.location.pathname.startsWith("/login")) {
+    return;
+  }
+
   const next = encodeURIComponent(window.location.pathname + window.location.search);
   window.location.replace(`/login?reason=${encodeURIComponent(reason)}&next=${next}`);
 }

@@ -101,7 +101,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
   return (
     <aside data-testid="desktop-sidebar" className={`
-      hidden md:flex h-screen border-r border-slate-200/70 bg-white/60 dark:bg-gray-900/60 dark:border-gray-700/70 backdrop-blur
+      hidden md:flex h-screen border-r border-slate-200/70 bg-white/60 dark:bg-black/60 dark:border-gray-800/70 backdrop-blur
       flex-col transition-all duration-300 ease-in-out
       ${collapsed ? "w-[72px] px-2" : "w-[260px] px-4"}
     `}>

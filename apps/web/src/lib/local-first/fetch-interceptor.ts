@@ -752,6 +752,16 @@ export async function handleLocalFirstFetch(
         return jsonResponse(result);
       }
 
+      if (pathname.endsWith("/reset") && method === "POST") {
+        return new Response(
+          JSON.stringify({
+            code: "OFFLINE_NOT_SUPPORTED",
+            error: "No se puede reiniciar el onboarding en modo sin conexión.",
+          }),
+          { status: 503, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
       if (pathname.endsWith("/capabilities") && method === "GET") {
         const result = {
           onboardingCompleted: true,
@@ -776,6 +786,20 @@ export async function handleLocalFirstFetch(
         return jsonResponse(result);
       }
     }
+
+    // Vehicle types fallback for offline mode
+    if (pathname.endsWith("/configuration/vehicle-types") && method === "GET") {
+      const result = [
+        { id: "CAR", code: "CAR", name: "Automóvil", icon: "Car", isActive: true, displayOrder: 1 },
+        { id: "MOTORCYCLE", code: "MOTORCYCLE", name: "Motocicleta", icon: "Bike", isActive: true, displayOrder: 2 },
+        { id: "VAN", code: "VAN", name: "Camioneta", icon: "Bus", isActive: true, displayOrder: 3 },
+        { id: "TRUCK", code: "TRUCK", name: "Camión", icon: "Truck", isActive: true, displayOrder: 4 },
+        { id: "BICYCLE", code: "BICYCLE", name: "Bicicleta", icon: "Activity", isActive: true, displayOrder: 5 },
+        { id: "OTHER", code: "OTHER", name: "Otro", icon: "HelpCircle", isActive: true, displayOrder: 6 },
+      ];
+      return jsonResponse(result);
+    }
+
   } catch (err) {
     console.error("Local first interceptor error matching path:", pathname, err);
     return new Response(JSON.stringify({ error: String(err) }), {

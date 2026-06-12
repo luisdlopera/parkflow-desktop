@@ -37,6 +37,10 @@ public class AuthSeedService implements CommandLineRunner {
       user.setRole(UserRole.SUPER_ADMIN);
     }
 
+    if (user.getCompanyId() == null) {
+      user.setCompanyId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"));
+    }
+
     String expectedPrefix = "$2";
     String currentHash = user.getPasswordHash();
     boolean shouldRehash = currentHash == null

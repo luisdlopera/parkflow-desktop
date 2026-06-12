@@ -104,6 +104,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
           new UsernamePasswordAuthenticationToken(principal, null, authorities);
       SecurityContextHolder.getContext().setAuthentication(authentication);
       
+      request.setAttribute("currentUserEmail", email);
+      request.setAttribute("currentUserId", userId.toString());
+      
       TenantContext.setTenantId(companyId);
     } catch (Exception ignored) {
       SecurityContextHolder.clearContext();

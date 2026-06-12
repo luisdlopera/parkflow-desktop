@@ -62,7 +62,8 @@ export default function LoginPage() {
     // Check if initial admin setup is required
     void (async () => {
       try {
-        const response = await fetch("/api/v1/auth/setup-required");
+        const authBaseUrl = (process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "http://localhost:6011/api/v1/auth").replace(/\/$/, "");
+        const response = await fetch(`${authBaseUrl}/setup-required`);
         if (response.ok) {
           const data = await response.json();
           if (data.setupRequired) {
@@ -126,7 +127,8 @@ export default function LoginPage() {
           return;
         }
 
-        const response = await fetch("/api/v1/auth/setup", {
+        const authBaseUrl = (process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "http://localhost:6011/api/v1/auth").replace(/\/$/, "");
+        const response = await fetch(`${authBaseUrl}/setup`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

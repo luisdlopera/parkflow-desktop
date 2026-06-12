@@ -42,33 +42,13 @@ import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 
 export default function CompaniesPage() {
   const { data: companies, isLoading, error, mutate } = useCompanies();
-  const { createCompany, isLoading: isCreating } = useCreateCompany();
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-
-  const {
-    isOpen: isCreateOpen,
-    onOpen: onCreateOpen,
-    onClose: onCreateClose,
-  } = useDisclosure();
 
   const {
     isOpen: isLicenseOpen,
     onOpen: onLicenseOpen,
     onClose: onLicenseClose,
   } = useDisclosure();
-
-  const handleCreateCompany = useCallback(
-    async (data: CreateCompanyRequest) => {
-      try {
-        await createCompany(data);
-        onCreateClose();
-        mutate();
-      } catch (err) {
-        // Error manejado en el hook
-      }
-    },
-    [createCompany, onCreateClose, mutate]
-  );
 
   const handleGenerateLicense = useCallback((company: Company) => {
     setSelectedCompany(company);
@@ -193,7 +173,8 @@ export default function CompaniesPage() {
         <Button
           color="primary"
           startContent={<Plus className="w-4 h-4" />}
-          onPress={onCreateOpen}
+          as="a"
+          href="/admin/companies/new"
         >
           Nueva Empresa
         </Button>
@@ -348,16 +329,6 @@ export default function CompaniesPage() {
           </Dropdown>
         )}
       />
-
-      {/* Create Company Modal */}
-      <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="2xl">
-        <ModalContent>
-          <ModalHeader>Crear Nueva Empresa</ModalHeader>
-          <ModalBody>
-            <CompanyForm onSubmit={handleCreateCompany} isLoading={isCreating} />
-          </ModalBody>
-        </ModalContent>
-      </Modal>
 
       {/* Generate License Modal */}
       {selectedCompany && (
