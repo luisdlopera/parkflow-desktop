@@ -2,7 +2,8 @@
 
 import React from "react";
 import { Controller, Control } from "react-hook-form";
-import { Input } from "@heroui/input";
+
+import { Input } from "@/components/ui/Input";
 import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
 
 interface VehicleConditionInputProps {
@@ -27,7 +28,7 @@ export function VehicleConditionInput({ control, skipConditionCheck = false }: V
           {...field}
           label="Estado del vehículo"
           placeholder="Sin novedades al ingreso"
-          variant="flat"
+          
           size="sm"
           isInvalid={!!fieldState.error}
           errorMessage={fieldState.error?.message}

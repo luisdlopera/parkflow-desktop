@@ -1,10 +1,9 @@
 "use client";
-
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Input } from "@heroui/input";
-import { Button } from "@heroui/button";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -89,7 +88,7 @@ function ResetPasswordForm() {
   if (success) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-        <div className="surface w-full space-y-4 rounded-2xl p-6 text-center">
+        <div className="surface w-full space-y-4 rounded-[2rem] p-8 sm:p-10 shadow-2xl shadow-slate-200/40 dark:shadow-black/40 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -138,7 +137,7 @@ function ResetPasswordForm() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-      <form onSubmit={onSubmit} className="surface w-full space-y-4 rounded-2xl p-6">
+      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 shadow-2xl shadow-slate-200/40 dark:shadow-black/40 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-amber-700/80">Parkflow</p>
           <h1 className="text-2xl font-semibold text-slate-900">Nueva contraseña</h1>
@@ -147,22 +146,24 @@ function ResetPasswordForm() {
           </p>
         </div>
 
-        <Input
-          label="Código de recuperación"
-          value={token}
-          onValueChange={setToken}
-          variant="flat"
-          placeholder="Ingresa el código"
-          isRequired
-        />
+        <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 shadow-sm space-y-4">
+          <Input
+            label="Código de recuperación"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            
+            placeholder="Ingresa el código"
+            isRequired
+          />
+        </div>
 
-        <div>
+        <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 shadow-sm space-y-4">
           <Input
             label="Nueva contraseña"
             type={showPassword ? "text" : "password"}
             value={password}
-            onValueChange={handlePasswordChange}
-            variant="flat"
+            onChange={(e) => handlePasswordChange(e.target.value)}
+            
             placeholder="Mínimo 8 caracteres"
             isRequired
             endContent={
@@ -199,15 +200,13 @@ function ResetPasswordForm() {
           <p className="mt-1 text-xs text-slate-500">
             Debe contener: mayúscula, minúscula, número y carácter especial (@#$%^&+=!.)
           </p>
-        </div>
 
-        <div>
           <Input
             label="Confirmar contraseña"
             type={showConfirmPassword ? "text" : "password"}
             value={confirmPassword}
-            onValueChange={setConfirmPassword}
-            variant="flat"
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            
             placeholder="Repite la contraseña"
             isRequired
             isInvalid={confirmPassword.length > 0 && password !== confirmPassword}
@@ -264,7 +263,7 @@ function ResetPasswordForm() {
 function LoadingFallback() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-      <div className="surface w-full rounded-2xl p-6 text-center">
+      <div className="surface w-full rounded-[2rem] p-8 sm:p-10 shadow-2xl shadow-slate-200/40 dark:shadow-black/40 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90 text-center">
         <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900"></div>
         <p className="mt-4 text-sm text-slate-600">Cargando...</p>
       </div>

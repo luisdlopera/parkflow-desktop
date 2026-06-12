@@ -1,22 +1,15 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import {
-  Button,
-  Card,
-  CardBody,
-  Chip,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  useDisclosure,
-  Skeleton,
-} from "@heroui/react";
+import { Skeleton, useOverlayState } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { Chip } from "@/components/ui/Chip";
+import { DropdownTrigger } from "@/components/ui/Dropdown";
+import { Dropdown } from "@/components/ui/Dropdown";
+import { DropdownMenu } from "@/components/ui/Dropdown";
+import { DropdownItem } from "@/components/ui/Dropdown";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import {
   Building2,
   Plus,
@@ -64,9 +57,9 @@ export default function CompaniesPage() {
 
   const {
     isOpen: isLicenseOpen,
-    onOpen: onLicenseOpen,
-    onClose: onLicenseClose,
-  } = useDisclosure();
+    open: onLicenseOpen,
+    close: onLicenseClose,
+  } = useOverlayState();
 
   const handleGenerateLicense = useCallback((company: Company) => {
     setSelectedCompany(company);
@@ -113,7 +106,7 @@ export default function CompaniesPage() {
       header: "Plan",
       sortable: true,
       render: (company) => (
-        <Chip color={getPlanColor(company.plan)} variant="flat" size="sm">
+        <Chip color={getPlanColor(company.plan)} variant="soft" size="sm">
           {translatePlan(company.plan)}
         </Chip>
       ),
@@ -123,7 +116,7 @@ export default function CompaniesPage() {
       header: "Estado",
       sortable: true,
       render: (company) => (
-        <Chip color={getStatusColor(company.status)} variant="flat" size="sm">
+        <Chip color={getStatusColor(company.status)} variant="soft" size="sm">
           {translateStatus(company.status)}
         </Chip>
       ),
@@ -188,20 +181,20 @@ export default function CompaniesPage() {
             Gestione las empresas licenciadas en el sistema
           </p>
         </div>
-        <Button
-          color="primary"
-          startContent={<Plus className="w-4 h-4" />}
-          as="a"
-          href="/admin/companies/new"
-        >
-          Nueva Empresa
-        </Button>
+        <a href="/admin/companies/new">
+          <Button
+            color="primary"
+            startContent={<Plus className="w-4 h-4" />}
+          >
+            Nueva Empresa
+          </Button>
+        </a>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardBody className="flex items-center gap-3">
+          <Card.Content className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
               <Building2 className="w-5 h-5 text-primary" />
             </div>
@@ -211,11 +204,11 @@ export default function CompaniesPage() {
                 {isLoading ? <Skeleton className="w-8 h-6 rounded-md" /> : <span>{companies?.length ?? 0}</span>}
               </div>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         <Card>
-          <CardBody className="flex items-center gap-3">
+          <Card.Content className="flex items-center gap-3">
             <div className="p-2 bg-success/10 rounded-lg">
               <FileBadge className="w-5 h-5 text-success" />
             </div>
@@ -229,11 +222,11 @@ export default function CompaniesPage() {
                 )}
               </div>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         <Card>
-          <CardBody className="flex items-center gap-3">
+          <Card.Content className="flex items-center gap-3">
             <div className="p-2 bg-warning/10 rounded-lg">
               <FileBadge className="w-5 h-5 text-warning" />
             </div>
@@ -255,11 +248,11 @@ export default function CompaniesPage() {
                 )}
               </div>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         <Card>
-          <CardBody className="flex items-center gap-3">
+          <Card.Content className="flex items-center gap-3">
             <div className="p-2 bg-danger/10 rounded-lg">
               <FileBadge className="w-5 h-5 text-danger" />
             </div>
@@ -277,7 +270,7 @@ export default function CompaniesPage() {
                 )}
               </div>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
 
@@ -315,7 +308,7 @@ export default function CompaniesPage() {
         actions={(company) => (
           <Dropdown>
             <DropdownTrigger>
-              <Button isIconOnly variant="light" size="sm" aria-label="Más acciones">
+              <Button isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
                 <MoreVertical className="w-4 h-4" />
               </Button>
             </DropdownTrigger>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useIsMobile } from "@/lib/hooks/useMediaQuery";
-import { Inbox } from "lucide-react";
+import { Pagination, Table, cn, type SortDescriptor } from "@heroui/react";
+import { ChevronUp, Inbox } from "lucide-react";
 
 export type DataTableColumn<T> = {
   key: keyof T | string;
@@ -40,7 +40,7 @@ export type DataTableProps<T> = {
   actions?: (row: T) => React.ReactNode;
   selectable?: boolean;
   selectedKeys?: Set<string>;
-  onSelectionChange?: (keys: Set<string>) => void;
+  onChange?: (keys: Set<string>) => void;
   pagination?: {
     page: number;
     pageSize: number;
@@ -50,6 +50,54 @@ export type DataTableProps<T> = {
   onPaginationChange?: (page: number, pageSize: number) => void;
 };
 
+function SortableHeader({
+  children,
+  sortDirection,
+}: {
+  children: React.ReactNode;
+  sortDirection?: "ascending" | "descending";
+}) {
+  return (
+    <span className="flex items-center gap-1">
+      {children}
+      {!!sortDirection && (
+        <ChevronUp
+          className={cn(
+            "size-3 transform transition-transform duration-100 ease-out",
+            sortDirection === "descending" ? "rotate-180" : "",
+          )}
+        />
+      )}
+    </span>
+  );
+}
+
+function getDisplayLabel<T>(column: DataTableColumn<T>) {
+  return column.label ?? column.header ?? String(column.key);
+}
+
+function getAlignClass(align?: "left" | "center" | "right") {
+  switch (align) {
+    case "center":
+      return "text-center";
+    case "right":
+      return "text-right";
+    default:
+      return "text-left";
+  }
+}
+
+function getPriorityClass(priority?: "high" | "medium" | "low") {
+  switch (priority) {
+    case "low":
+      return "hidden lg:table-cell";
+    case "medium":
+      return "hidden md:table-cell";
+    default:
+      return "";
+  }
+}
+
 export default function DataTable<T extends object>({
   columns,
   data,
@@ -58,174 +106,186 @@ export default function DataTable<T extends object>({
   rowKey = (_, index) => index,
   getRowKey,
   isLoading = false,
-  error,
+  actions,
+  pagination: paginationConfig,
+  onPaginationChange,
 }: DataTableProps<T>) {
-  const isMobile = useIsMobile();
+  const source = useMemo(() => data ?? rows ?? [], [data, rows]);
+  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>();
 
-  const source = data ?? rows ?? [];
+  const displayColumns = useMemo(() => {
+    if (!actions) return columns;
+    return [
+      ...columns,
+      { key: "_actions" as const, label: "Acciones", align: "right" as const },
+    ];
+  }, [columns, actions]);
 
-  const getAlignmentClass = (align?: "left" | "center" | "right") => {
-    switch (align) {
-      case "center":
-        return "text-center";
-      case "right":
-        return "text-right";
-      default:
-        return "text-left";
-    }
+  const sortedSource = useMemo(() => {
+    if (!sortDescriptor?.column || !sortDescriptor?.direction) return source;
+    return [...source].sort((a, b) => {
+      const key = sortDescriptor.column as keyof T;
+      const aVal = String(a[key] ?? "");
+      const bVal = String(b[key] ?? "");
+      let cmp = aVal.localeCompare(bVal, undefined, { numeric: true });
+      if (sortDescriptor.direction === "descending") cmp *= -1;
+      return cmp;
+    });
+  }, [source, sortDescriptor]);
+
+  const getKey = (row: T, index: number) =>
+    getRowKey ? getRowKey(row) : String(rowKey(row, index));
+
+  const renderCell = (col: DataTableColumn<T>, row: T) => {
+    if (col.key === "_actions" && actions) return actions(row);
+    if (col.render) return col.render(row);
+    return String(row[col.key as keyof T] ?? "");
   };
 
-  const getDisplayLabel = (column: DataTableColumn<T>) =>
-    column.label ?? column.header ?? String(column.key);
+  const skeletonRow = (skKey: string) => (
+    <Table.Row key={skKey}>
+      {displayColumns.map((col) => (
+        <Table.Cell key={String(col.key)} className="py-4">
+          <div className="h-4 w-full rounded bg-slate-100 animate-pulse" />
+        </Table.Cell>
+      ))}
+    </Table.Row>
+  );
 
-  const renderCell = (column: DataTableColumn<T>, row: T) => {
-    if (column.render) return column.render(row);
-    return String(row[column.key as keyof T] ?? "");
-  };
-
-  // Mobile view - card-based layout
-  if (isMobile) {
-    return (
-      <div className="space-y-4 md:hidden animate-in fade-in slide-in-from-bottom-2 duration-500">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center p-12 space-y-4 rounded-3xl border border-slate-200/60 bg-white/50 dark:bg-gray-800/60 dark:border-gray-700/50 backdrop-blur-sm">
-            <div className="w-10 h-10 border-4 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
-            <p className="text-sm font-medium text-slate-500 dark:text-gray-300">Cargando datos...</p>
-          </div>
-        ) : source.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 space-y-3 rounded-3xl border border-dashed border-slate-300 bg-slate-50/50 dark:bg-gray-800/50 dark:border-gray-700 backdrop-blur-sm">
-            <Inbox className="w-10 h-10 text-slate-300 dark:text-gray-400" />
-            <p className="text-sm font-medium text-slate-500 dark:text-gray-300">{emptyMessage}</p>
-          </div>
-        ) : (
-          source.map((row, rowIndex) => {
-            const displayKey = getRowKey ? getRowKey(row) : String(rowKey(row, rowIndex));
-            const highPriorityColumns = columns.filter((c) => c.priority === "high" || !c.priority);
-            const mediumPriorityColumns = columns.filter((c) => c.priority === "medium");
-
-            return (
-              <div
-                key={displayKey}
-                className="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white dark:bg-gray-800 shadow-sm dark:border-gray-700 transition-all hover:shadow-md active:scale-[0.98]"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-50/0 to-amber-50/50 opacity-0 transition-opacity group-hover:opacity-100" />
-
-                <div className="relative p-5 space-y-4">
-                  {/* Primary field - header style */}
-                  {highPriorityColumns[0] && (
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-gray-400 uppercase tracking-widest">
-                          {getDisplayLabel(highPriorityColumns[0])}
-                        </span>
-                        <div className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
-                          {renderCell(highPriorityColumns[0], row)}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Other high priority fields in a grid */}
-                  {highPriorityColumns.length > 1 && (
-                    <div className="grid grid-cols-2 gap-4">
-                      {highPriorityColumns.slice(1).map((column) => (
-                        <div key={String(column.key)} className="space-y-1">
-                          <span className="text-[10px] font-bold text-slate-400 dark:text-neutral-400 uppercase tracking-widest">
-                            {getDisplayLabel(column)}
-                          </span>
-                          <div className="text-sm font-medium text-slate-700 dark:text-neutral-300">
-                            {renderCell(column, row)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Medium priority fields - subtle footer */}
-                  {mediumPriorityColumns.length > 0 && (
-                    <div className="pt-3 border-t border-slate-100 dark:border-gray-700 flex flex-wrap gap-x-4 gap-y-2">
-                      {mediumPriorityColumns.map((column) => (
-                        <div key={String(column.key)} className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-semibold text-slate-400 dark:text-gray-400 uppercase tracking-tight">
-                            {getDisplayLabel(column)}:
-                          </span>
-                          <span className="text-xs font-medium text-slate-600 dark:text-gray-300">
-                            {renderCell(column, row)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    );
-  }
-
-  // Desktop view - elegant table layout
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white/80 dark:bg-gray-800/80 dark:border-gray-700/60 backdrop-blur-md shadow-sm hidden md:block animate-in fade-in duration-700">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-slate-700 dark:text-gray-300 min-w-[800px] border-separate border-spacing-0">
-          <thead>
-            <tr className="bg-slate-50/50 dark:bg-gray-800/50">
-              {columns.map((column, idx) => (
-                <th
-                  key={String(column.key)}
-                  className={`px-6 py-4 font-bold text-[11px] uppercase tracking-[0.15em] text-slate-500 dark:text-gray-400 border-b border-slate-100 dark:border-gray-700 ${getAlignmentClass(column.align)} ${idx === 0 ? "pl-8" : ""} ${idx === columns.length - 1 ? "pr-8" : ""}`}
-                >
-                  {getDisplayLabel(column)}
-                </th>
+    <Table>
+      <Table.ScrollContainer>
+        <Table.Content
+          aria-label="Data table"
+          sortDescriptor={sortDescriptor}
+          onSortChange={setSortDescriptor}
+        >
+          <Table.Header>
+            {displayColumns.map((col, idx) => (
+              <Table.Column
+                key={String(col.key)}
+                id={String(col.key)}
+                allowsSorting={col.sortable}
+                isRowHeader={idx === 0 && col.key !== "_actions"}
+                className={cn(
+                  "text-[11px] font-bold uppercase tracking-[0.15em]",
+                  getAlignClass(col.align),
+                  getPriorityClass(col.priority),
+                )}
+              >
+                {col.sortable
+                  ? ({
+                      sortDirection,
+                    }: {
+                      sortDirection?: "ascending" | "descending";
+                    }) => (
+                      <SortableHeader sortDirection={sortDirection}>
+                        {getDisplayLabel(col)}
+                      </SortableHeader>
+                    )
+                  : getDisplayLabel(col)}
+              </Table.Column>
+            ))}
+          </Table.Header>
+
+          {isLoading && source.length === 0 ? (
+            <Table.Body>
+              {skeletonRow("sk-1")}
+              {skeletonRow("sk-2")}
+              {skeletonRow("sk-3")}
+            </Table.Body>
+          ) : (
+            <Table.Body
+              renderEmptyState={() => (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="mb-4 rounded-full border border-slate-100 bg-slate-50 p-4">
+                    <Inbox className="size-8 text-slate-300" />
+                  </div>
+                  <p className="text-base font-medium text-slate-500">
+                    {emptyMessage}
+                  </p>
+                </div>
+              )}
+            >
+              {sortedSource.map((row, index) => (
+                <Table.Row key={getKey(row, index)}>
+                  {displayColumns.map((col) => (
+                    <Table.Cell
+                      key={String(col.key)}
+                      className={cn(
+                        getAlignClass(col.align),
+                        getPriorityClass(col.priority),
+                      )}
+                    >
+                      {renderCell(col, row)}
+                    </Table.Cell>
+                  ))}
+                </Table.Row>
               ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50 dark:divide-gray-700">
-            {isLoading ? (
-              <tr>
-                <td colSpan={columns.length} className="px-6 py-20">
-                  <div className="flex flex-col items-center justify-center space-y-4">
-                    <div className="w-8 h-8 border-3 border-amber-100 border-t-amber-500 rounded-full animate-spin" />
-                    <p className="text-sm font-medium text-slate-400 dark:text-gray-300">Sincronizando datos...</p>
-                  </div>
-                </td>
-              </tr>
-            ) : source.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="px-6 py-24">
-                  <div className="flex flex-col items-center justify-center space-y-4 opacity-60">
-                    <div className="p-4 rounded-full bg-slate-50 border border-slate-100 dark:bg-gray-800 dark:border-gray-700">
-                      <Inbox className="w-8 h-8 text-slate-300 dark:text-gray-400" />
-                    </div>
-                    <p className="text-base font-medium text-slate-500 dark:text-gray-300">{emptyMessage}</p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              source.map((row, rowIndex) => {
-                const displayKey = getRowKey ? getRowKey(row) : String(rowKey(row, rowIndex));
-                return (
-                  <tr
-                    key={displayKey}
-                    className="group hover:bg-slate-50/80 dark:hover:bg-gray-800/60 transition-all duration-200 ease-out"
-                  >
-                    {columns.map((column, idx) => (
-                      <td
-                        key={String(column.key)}
-                        className={`px-6 py-4.5 whitespace-nowrap transition-colors group-hover:text-slate-900 dark:group-hover:text-white ${getAlignmentClass(column.align)} ${idx === 0 ? "pl-8 font-semibold" : ""} ${idx === columns.length - 1 ? "pr-8" : ""}`}
-                      >
-                        {renderCell(column, row)}
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </Table.Body>
+          )}
+        </Table.Content>
+      </Table.ScrollContainer>
+
+      {paginationConfig && onPaginationChange && (
+        <TableFooterContent
+          config={paginationConfig}
+          onChange={onPaginationChange}
+        />
+      )}
+    </Table>
+  );
+}
+
+function TableFooterContent({
+  config,
+  onChange,
+}: {
+  config: NonNullable<DataTableProps<unknown>["pagination"]>;
+  onChange: NonNullable<DataTableProps<unknown>["onPaginationChange"]>;
+}) {
+  const totalPages = Math.ceil(config.total / config.pageSize);
+  const start = (config.page - 1) * config.pageSize + 1;
+  const end = Math.min(config.page * config.pageSize, config.total);
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+  return (
+    <Table.Footer>
+      <Pagination size="sm">
+        <Pagination.Summary>
+          {start} a {end} de {config.total} resultados
+        </Pagination.Summary>
+        <Pagination.Content>
+          <Pagination.Item>
+            <Pagination.Previous
+              isDisabled={config.page === 1}
+              onPress={() => onChange(config.page - 1, config.pageSize)}
+            >
+              <Pagination.PreviousIcon />
+              Anterior
+            </Pagination.Previous>
+          </Pagination.Item>
+          {pages.map((p) => (
+            <Pagination.Item key={p}>
+              <Pagination.Link
+                isActive={p === config.page}
+                onPress={() => onChange(p, config.pageSize)}
+              >
+                {p}
+              </Pagination.Link>
+            </Pagination.Item>
+          ))}
+          <Pagination.Item>
+            <Pagination.Next
+              isDisabled={config.page === totalPages}
+              onPress={() => onChange(config.page + 1, config.pageSize)}
+            >
+              Siguiente
+              <Pagination.NextIcon />
+            </Pagination.Next>
+          </Pagination.Item>
+        </Pagination.Content>
+      </Pagination>
+    </Table.Footer>
   );
 }

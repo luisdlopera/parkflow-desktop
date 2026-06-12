@@ -1,19 +1,33 @@
-type BadgeProps = {
-  label: string;
-  tone?: "success" | "warning" | "neutral";
-  [key: string]: unknown;
-};
+import React from "react";
+import { Badge as HeroBadge, BadgeProps as HeroBadgeProps } from "@heroui/react";
 
-const toneStyles = {
-  success: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
-  warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
-  neutral: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-};
-
-export default function Badge({ label, tone = "neutral", ...rest }: BadgeProps) {
-  return (
-    <span {...rest} className={`rounded-full px-3 py-1 text-xs font-semibold ${toneStyles[tone]}`}>
-      {label}
-    </span>
-  );
+export interface BadgeProps extends Omit<HeroBadgeProps, "color" | "content"> {
+  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger" | "accent" | string;
+  tone?: "success" | "warning" | "neutral" | string; // V2 internal badge compatibility
+  label?: string; // V2 internal badge compatibility
+  content?: React.ReactNode;
 }
+
+export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
+  ({ color, tone, label, content, children, ...props }, ref) => {
+    let mappedColor: HeroBadgeProps["color"] = "default";
+    
+    // Support internal v2 tone
+    if (tone === "success") mappedColor = "success";
+    else if (tone === "warning") mappedColor = "warning";
+    else if (tone === "neutral") mappedColor = "default";
+    else if (color === "success" || color === "warning" || color === "danger" || color === "default") {
+      mappedColor = color as HeroBadgeProps["color"];
+    } else if (color === "primary" || color === "secondary" || color === "accent") {
+      mappedColor = "danger"; // Accent not supported, map to danger or default
+    }
+
+    // Support internal v2 label
+    const innerContent = label || content || children;
+
+    return <HeroBadge ref={ref} color={mappedColor} content={content as any} {...props}>{innerContent}</HeroBadge>;
+  }
+);
+Badge.displayName = "Badge";
+
+export default Badge;

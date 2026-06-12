@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Button, Input } from "@heroui/react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Calculator, ChevronDown, ChevronUp, RotateCcw, Banknote } from "lucide-react";
 
 interface ChangeCalculatorProps {
@@ -118,7 +119,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
   if (!expanded) {
     return (
       <Button
-        variant="flat"
+        variant="tertiary"
         color="primary"
         className="w-full font-medium"
         startContent={<Calculator className="w-4 h-4" />}
@@ -151,7 +152,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
           <Button
             isIconOnly
             size="sm"
-            variant="light"
+            variant="ghost"
             aria-label="Limpiar calculadora"
             onPress={reset}
           >
@@ -160,7 +161,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
           <Button
             isIconOnly
             size="sm"
-            variant="light"
+            variant="ghost"
             aria-label="Ocultar calculadora"
             onPress={() => {
               setExpanded(false);
@@ -273,10 +274,10 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
 
         {/* Acciones rápidas */}
         <div className="flex flex-wrap gap-2">
-          <Button color="primary" variant="flat" className="flex-1 min-w-[140px] font-semibold" onPress={setExactAmount}>
+          <Button color="primary" variant="tertiary" className="flex-1 min-w-[140px] font-semibold" onPress={setExactAmount}>
             Monto exacto
           </Button>
-          <Button variant="bordered" className="font-medium" onPress={reset}>
+          <Button variant="outline" className="font-medium" onPress={reset}>
             Limpiar
           </Button>
         </div>
@@ -290,7 +291,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
               <Button
                 key={amount}
                 size="sm"
-                variant="bordered"
+                variant="outline"
                 className="font-semibold tabular-nums"
                 onPress={() => applyQuickReceive(amount)}
               >
@@ -303,10 +304,10 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
         <div className="flex gap-2 items-end">
           <Input
             label="Otro monto recibido"
-            variant="bordered"
+            
             size="sm"
             value={customAmount}
-            onValueChange={setCustomAmount}
+            onChange={(e) => setCustomAmount(e.target.value)}
             placeholder="Ej: 85000"
             classNames={{
               input: "tabular-nums",

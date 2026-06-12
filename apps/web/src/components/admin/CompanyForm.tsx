@@ -4,14 +4,11 @@ import React from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Textarea,
-  Divider,
-} from "@heroui/react";
+import { Separator, ListBox } from "@heroui/react";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { TextArea } from "@/components/ui/TextArea";
 import type { CreateCompanyRequest, PlanType, Company } from "@/lib/licensing/types";
 import { getPlanFeatures } from "@/lib/licensing/hooks";
 import { requiredString, emailSchema, positiveNumber, nonNegativeNumber } from "@/lib/validation";
@@ -79,7 +76,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
       maxDevices: initialData.maxDevices || 1,
       maxLocations: initialData.maxLocations || 1,
       maxUsers: initialData.maxUsers || 5,
-      trialDays: initialData.trialDays || 14,
+      trialDays: (initialData as any).trialDays || 14,
       offlineModeAllowed: initialData.offlineModeAllowed ?? true,
     } : {
       name: "",
@@ -186,7 +183,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
       </div>
 
       <div>
-        <Textarea
+        <TextArea
           label="Dirección *"
           placeholder="Dirección física de la empresa"
           {...register("address")}
@@ -195,22 +192,32 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
         <InlineFieldError message={errors.address?.message} />
       </div>
 
-      <Divider className="my-2" />
+      <Separator className="my-2" />
 
       <Select
         label="Plan *"
-        selectedKeys={[selectedPlan]}
-        onSelectionChange={(keys) => {
+        value={[selectedPlan]}
+        onChange={(keys) => {
           const plan = Array.from(keys)[0] as PlanType;
           setValue("plan", plan);
         }}
       >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
         {plans.map((plan) => (
-          <SelectItem key={plan.value} textValue={plan.label}>
+          <ListBox.Item key={plan.value} textValue={plan.label}>
             {plan.label}
-          </SelectItem>
+          </ListBox.Item>
         ))}
-      </Select>
+      
+        </ListBox>
+      </Select.Popover>
+    </Select>
 
       <div className="p-3 bg-default-50 border border-default-200 rounded-xl">
         <p className="text-xs font-bold text-default-700 uppercase tracking-wider mb-2">Características del plan:</p>
@@ -224,7 +231,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
         </ul>
       </div>
 
-      <Divider className="my-2" />
+      <Separator className="my-2" />
 
       <div className="grid grid-cols-3 gap-4">
         <Input
@@ -259,15 +266,25 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
 
         <Select
           label="Modo offline permitido"
-          selectedKeys={[useWatch({ control, name: "offlineModeAllowed" }) ? "true" : "false"]}
-          onSelectionChange={(keys) => {
+          value={[useWatch({ control, name: "offlineModeAllowed" }) ? "true" : "false"]}
+          onChange={(keys) => {
             const allowed = Array.from(keys)[0] === "true";
             setValue("offlineModeAllowed", allowed);
           }}
         >
-          <SelectItem key="true" textValue="Sí">Sí</SelectItem>
-          <SelectItem key="false" textValue="No">No</SelectItem>
-        </Select>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
+          <ListBox.Item key="true" textValue="Sí">Sí</ListBox.Item>
+          <ListBox.Item key="false" textValue="No">No</ListBox.Item>
+        
+        </ListBox>
+      </Select.Popover>
+    </Select>
       </div>
 
       <div className="flex justify-end gap-2 pt-4">

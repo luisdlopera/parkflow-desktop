@@ -3,15 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Input,
-  Button,
-  Select,
-  SelectItem,
-  Checkbox,
-  Card,
-  CardBody,
-} from "@heroui/react";
+import { ListBox } from "@heroui/react";
+import { Card } from "@/components/ui/Card";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
 import {
   fetchConfigurationSites,
   createConfigurationSite,
@@ -158,28 +155,38 @@ export default function SedesPage() {
       <h1 className="text-2xl font-bold text-slate-900">Sedes / Parqueaderos</h1>
       
       <Card shadow="sm" className="border border-slate-200 bg-slate-50/50">
-        <CardBody className="p-4 flex flex-col sm:flex-row sm:items-end gap-4">
+        <Card.Content className="p-4 flex flex-col sm:flex-row sm:items-end gap-4">
           <div className="flex-1">
             <Select
               label="Empresa"
               placeholder="Selecciona una empresa"
-              variant="flat"
-              selectedKeys={companyId ? [companyId] : []}
-              onSelectionChange={(keys) => setCompanyId(Array.from(keys)[0] as string)}
+              
+              value={companyId ? [companyId] : []}
+              onChange={(keys) => setCompanyId(Array.from(keys)[0] as string)}
               isDisabled={catalogLoading || companies.length <= 1}
             >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
               {companies.map((company) => (
-                <SelectItem key={company.id} textValue={`${company.name} ${company.status ? `(${company.status})` : ""}`}>
+                <ListBox.Item key={company.id} textValue={`${company.name} ${company.status ? `(${company.status})` : ""}`}>
                   {`${company.name} ${company.status ? `(${company.status})` : ""}`}
-                </SelectItem>
+                </ListBox.Item>
               ))}
-            </Select>
+            
+        </ListBox>
+      </Select.Popover>
+    </Select>
           </div>
           <p className="text-xs text-slate-500 max-w-xs">
             La nueva sede quedará asociada a: <span className="font-bold text-amber-700">{selectedCompanyLabel}</span>. 
             {companies.length <= 1 && " Se ha seleccionado automáticamente."}
           </p>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       <DataTableSection
@@ -194,7 +201,7 @@ export default function SedesPage() {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               color="primary"
               className="font-semibold"
               onPress={() => openEdit(row)}
@@ -218,14 +225,14 @@ export default function SedesPage() {
           <Input
             {...register("code")}
             label="Código"
-            variant="flat"
+            
             errorMessage={errors.code?.message}
             isInvalid={!!errors.code}
           />
           <Input
             {...register("name")}
             label="Nombre"
-            variant="flat"
+            
             errorMessage={errors.name?.message}
             isInvalid={!!errors.name}
           />
@@ -233,34 +240,34 @@ export default function SedesPage() {
             <Input
               {...register("city")}
               label="Ciudad"
-              variant="flat"
+              
             />
             <Input
               {...register("phone")}
               label="Teléfono"
-              variant="flat"
+              
             />
           </div>
           <Input
             {...register("address")}
             label="Dirección"
-            variant="flat"
+            
           />
           <Input
             {...register("managerName")}
             label="Responsable"
-            variant="flat"
+            
           />
           <div className="grid grid-cols-2 gap-4">
             <Input
               {...register("timezone")}
               label="Zona horaria"
-              variant="flat"
+              
             />
             <Input
               {...register("currency")}
               label="Moneda"
-              variant="flat"
+              
             />
           </div>
           <Input
@@ -269,7 +276,7 @@ export default function SedesPage() {
             min={0}
             label="Aforo máximo"
             description="0 deja la sede sin límite operativo de cupos"
-            variant="flat"
+            
             errorMessage={errors.maxCapacity?.message}
             isInvalid={!!errors.maxCapacity}
           />

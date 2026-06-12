@@ -1,9 +1,10 @@
 "use client";
-
+import { Separator } from "@heroui/react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Divider } from "@heroui/react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import { changePassword, fetchProfile, updateProfile, type UserProfile } from "@/lib/profile-api";
 import { clearSession, patchSessionUser } from "@/lib/auth";
 import type { UserRole } from "@/modules/users/types";
@@ -171,52 +172,52 @@ export default function ProfilePage() {
       ) : null}
 
       <Card>
-        <CardHeader>
+        <Card.Header>
           <h2 className="text-lg font-semibold text-slate-900">Datos personales</h2>
-        </CardHeader>
-        <CardBody className="space-y-4">
+        </Card.Header>
+        <Card.Content className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <Input
               label="Nombre completo"
-              variant="flat"
+              
               value={name}
-              onValueChange={setName}
+              onChange={(e) => setName(e.target.value)}
               isRequired
             />
             <Input
               label="Correo electrónico"
               type="email"
-              variant="flat"
+              
               value={email}
-              onValueChange={setEmail}
+              onChange={(e) => setEmail(e.target.value)}
               isRequired
             />
             <Input
               label="Documento"
-              variant="flat"
+              
               value={document}
-              onValueChange={setDocument}
+              onChange={(e) => setDocument(e.target.value)}
               placeholder="Opcional"
             />
             <Input
               label="Teléfono"
-              variant="flat"
+              
               value={phone}
-              onValueChange={setPhone}
+              onChange={(e) => setPhone(e.target.value)}
               placeholder="Opcional"
             />
             <Input
               label="Sede"
-              variant="flat"
+              
               value={site}
-              onValueChange={setSite}
+              onChange={(e) => setSite(e.target.value)}
               placeholder="Opcional"
             />
             <Input
               label="Terminal"
-              variant="flat"
+              
               value={terminal}
-              onValueChange={setTerminal}
+              onChange={(e) => setTerminal(e.target.value)}
               placeholder="Opcional"
             />
           </div>
@@ -226,15 +227,15 @@ export default function ProfilePage() {
               Guardar cambios
             </Button>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       <Card>
-        <CardHeader>
+        <Card.Header>
           <h2 className="text-lg font-semibold text-slate-900">Información de la cuenta</h2>
           <p className="text-sm text-slate-500">Solo lectura — gestionada por un administrador</p>
-        </CardHeader>
-        <CardBody>
+        </Card.Header>
+        <Card.Content>
           <dl className="grid gap-3 sm:grid-cols-2 text-sm">
             <div>
               <dt className="text-slate-500">Rol</dt>
@@ -271,57 +272,57 @@ export default function ProfilePage() {
               </dd>
             </div>
           </dl>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       <Card>
-        <CardHeader>
+        <Card.Header>
           <h2 className="text-lg font-semibold text-slate-900">Cambiar contraseña</h2>
           <p className="text-sm text-slate-500">
             Al cambiar la contraseña se cerrarán todas las sesiones activas.
           </p>
-        </CardHeader>
-        <CardBody className="space-y-4">
+        </Card.Header>
+        <Card.Content className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <Input
               label="Contraseña actual"
               type="password"
-              variant="flat"
+              
               value={currentPassword}
-              onValueChange={setCurrentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
               autoComplete="current-password"
             />
             <div className="hidden md:block" />
             <Input
               label="Nueva contraseña"
               type="password"
-              variant="flat"
+              
               value={newPassword}
-              onValueChange={setNewPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
               autoComplete="new-password"
               description="Mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial"
             />
             <Input
               label="Confirmar nueva contraseña"
               type="password"
-              variant="flat"
+              
               value={confirmPassword}
-              onValueChange={setConfirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               autoComplete="new-password"
             />
           </div>
-          <Divider />
+          <Separator />
           <div className="flex justify-end">
             <Button
               color="warning"
-              variant="flat"
+              variant="tertiary"
               isLoading={changingPassword}
               onPress={() => void handleChangePassword()}
             >
               Cambiar contraseña
             </Button>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

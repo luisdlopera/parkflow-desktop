@@ -1,9 +1,13 @@
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { server } from "@/mocks/server";
 import { ToastProvider } from "@/lib/toast/ToastContext";
 import VehicleEntryFormV2 from "@/components/forms/VehicleEntryFormV2";
+
+if (typeof window !== "undefined" && typeof window.PointerEvent === "undefined") {
+  (window as any).PointerEvent = class PointerEvent extends MouseEvent {};
+}
 
 import { vi } from "vitest";
 import { fetchRuntimeConfig } from "@/lib/runtime-config";
@@ -182,6 +186,13 @@ describe("VehicleEntryFormV2", () => {
   });
 
   it("allows special entry without plate when a reason is provided", async () => {
+    localStorage.setItem("parkflow_operator_settings", JSON.stringify({
+      mode: "beginner",
+      defaultVehicleType: "BICYCLE",
+      rememberLocation: true,
+      skipConditionCheck: false,
+      platePrefix: ""
+    }));
     let capturedBody: unknown = null;
     server.use(
       http.post(/.*\/api\/v1\/operations\/entries/, async ({ request }) => {
@@ -191,7 +202,7 @@ describe("VehicleEntryFormV2", () => {
           receipt: {
             ticketNumber: "T-20260513-000077",
             plate: "SIN-123456789ABC",
-            vehicleType: "CAR",
+            vehicleType: "BICYCLE",
             site: "Test Site",
             entryAt: "2026-05-13T10:00:00Z",
           },
@@ -202,14 +213,6 @@ describe("VehicleEntryFormV2", () => {
 
     renderWithProviders(<VehicleEntryFormV2 />);
     await flushPromises();
-
-    // Open vehicle type select dropdown
-    const typeSelect = screen.getByTestId("vehicle-type");
-    await userEvent.click(typeSelect);
-
-    // Select "Bicicleta" option
-    const optionBicycle = await screen.findByRole("option", { name: /Bicicleta/i });
-    await userEvent.click(optionBicycle);
 
     // Clear and type the justification
     const justificationInput = await screen.findByLabelText(/Justificación sin placa/i);
@@ -511,6 +514,13 @@ describe("VehicleEntryFormV2", () => {
   });
 
   it("sends NP- plate (not null) when noPlate is checked", async () => {
+    localStorage.setItem("parkflow_operator_settings", JSON.stringify({
+      mode: "beginner",
+      defaultVehicleType: "BICYCLE",
+      rememberLocation: true,
+      skipConditionCheck: false,
+      platePrefix: ""
+    }));
     let capturedBody: unknown = null;
     server.use(
       http.post(/.*\/api\/v1\/operations\/entries/, async ({ request }) => {
@@ -520,7 +530,7 @@ describe("VehicleEntryFormV2", () => {
           receipt: {
             ticketNumber: "T-20260526-000099",
             plate: "NP-TEST1234",
-            vehicleType: "CAR",
+            vehicleType: "BICYCLE",
             site: "Test Site",
             entryAt: "2026-05-26T10:00:00Z",
           },
@@ -531,14 +541,6 @@ describe("VehicleEntryFormV2", () => {
 
     renderWithProviders(<VehicleEntryFormV2 />);
     await flushPromises();
-
-    // Open vehicle type select dropdown
-    const typeSelect = screen.getByTestId("vehicle-type");
-    await userEvent.click(typeSelect);
-
-    // Select "Bicicleta" option
-    const optionBicycle = await screen.findByRole("option", { name: /Bicicleta/i });
-    await userEvent.click(optionBicycle);
 
     // Clear and type the justification
     const justificationInput = await screen.findByLabelText(/Justificación sin placa/i);

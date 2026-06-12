@@ -1,27 +1,19 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-  Alert,
-  Tabs,
-  Tab,
-  Badge,
-} from "@heroui/react";
+import { useOverlayState } from "@heroui/react";
+import { Alert } from "@/components/ui/Alert";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { Chip } from "@/components/ui/Chip";
+import { DropdownTrigger } from "@/components/ui/Dropdown";
+import { Dropdown } from "@/components/ui/Dropdown";
+import { DropdownMenu } from "@/components/ui/Dropdown";
+import { DropdownItem } from "@/components/ui/Dropdown";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Tabs } from "@/components/ui/Tabs";
+import { Tab } from "@/components/ui/Tabs";
+import { Button } from "@/components/ui/Button";
 import {
   Monitor,
   MoreVertical,
@@ -51,15 +43,15 @@ export default function DevicesPage() {
 
   const {
     isOpen: isDetailOpen,
-    onOpen: onDetailOpen,
-    onClose: onDetailClose,
-  } = useDisclosure();
+    open: onDetailOpen,
+    close: onDetailClose,
+  } = useOverlayState();
 
   const {
     isOpen: isCommandOpen,
-    onOpen: onCommandOpen,
-    onClose: onCommandClose,
-  } = useDisclosure();
+    open: onCommandOpen,
+    close: onCommandClose,
+  } = useOverlayState();
 
   // Flatten all devices from all companies
   const allDevices = useMemo(() => {
@@ -161,7 +153,7 @@ export default function DevicesPage() {
       header: "Estado",
       sortable: true,
       render: (device) => (
-        <Chip color={device.isCurrentlyOnline ? "success" : "default"} variant="flat" size="sm">
+        <Chip color={device.isCurrentlyOnline ? "success" : "default"} variant="soft" size="sm">
           {device.isCurrentlyOnline ? "En línea" : "Desconectado"}
         </Chip>
       ),
@@ -229,7 +221,7 @@ export default function DevicesPage() {
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
-            <CardBody className="flex items-center gap-3">
+            <Card.Content className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Monitor className="w-5 h-5 text-primary" />
               </div>
@@ -237,11 +229,11 @@ export default function DevicesPage() {
                 <p className="text-sm text-default-500">Total Dispositivos</p>
                 <p className="text-xl font-bold">{stats.total}</p>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           <Card>
-            <CardBody className="flex items-center gap-3">
+            <Card.Content className="flex items-center gap-3">
               <div className="p-2 bg-success/10 rounded-lg">
                 <Play className="w-5 h-5 text-success" />
               </div>
@@ -249,11 +241,11 @@ export default function DevicesPage() {
                 <p className="text-sm text-default-500">En Línea</p>
                 <p className="text-xl font-bold">{stats.online}</p>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           <Card>
-            <CardBody className="flex items-center gap-3">
+            <Card.Content className="flex items-center gap-3">
               <div className="p-2 bg-default/10 rounded-lg">
                 <Pause className="w-5 h-5 text-default-500" />
               </div>
@@ -261,11 +253,11 @@ export default function DevicesPage() {
                 <p className="text-sm text-default-500">Desconectados</p>
                 <p className="text-xl font-bold">{stats.offline}</p>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           <Card>
-            <CardBody className="flex items-center gap-3">
+            <Card.Content className="flex items-center gap-3">
               <div className="p-2 bg-warning/10 rounded-lg">
                 <RefreshCw className="w-5 h-5 text-warning" />
               </div>
@@ -273,13 +265,13 @@ export default function DevicesPage() {
                 <p className="text-sm text-default-500">Sync Pendiente</p>
                 <p className="text-xl font-bold">{stats.withSyncPending}</p>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         </div>
       )}
 
       <div className="space-y-4">
-        <Tabs selectedKey={activeTab} onSelectionChange={(k) => setActiveTab(k as string)}>
+        <Tabs selectedKey={activeTab} onChange={(k) => setActiveTab(k as string)}>
           <Tab key="all" title={`Todos (${stats?.total || 0})`} />
           <Tab key="online" title={`En Línea (${stats?.online || 0})`} />
           <Tab key="offline" title={`Desconectados (${stats?.offline || 0})`} />
@@ -304,7 +296,7 @@ export default function DevicesPage() {
           actions={(device) => (
             <Dropdown>
               <DropdownTrigger>
-                <Button isIconOnly variant="light" size="sm" aria-label="Más acciones">
+                <Button isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </DropdownTrigger>
@@ -335,9 +327,9 @@ export default function DevicesPage() {
       </div>
 
       {/* Device Detail Modal */}
-      <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="2xl">
-        <ModalContent>
-          <ModalHeader>
+      <Modal state={ { isOpen: isDetailOpen, setOpen: (v: boolean) => { if(!v) onDetailClose(); }, open: () => {}, close: onDetailClose, toggle: () => {} } }>
+        <Modal.Content>
+          <Modal.Header>
             <div className="flex items-center gap-3">
               <Monitor className="w-6 h-6 text-primary" />
               <div>
@@ -349,74 +341,74 @@ export default function DevicesPage() {
                 </p>
               </div>
             </div>
-          </ModalHeader>
-          <ModalBody>
+          </Modal.Header>
+          <Modal.Body>
             {selectedDevice && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Card>
-                    <CardBody>
+                    <Card.Content>
                       <p className="text-sm text-default-500">Empresa</p>
                       <p className="font-medium">{selectedDevice.companyName}</p>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                   <Card>
-                    <CardBody>
+                    <Card.Content>
                       <p className="text-sm text-default-500">Estado</p>
                       <Chip
                         color={selectedDevice.isCurrentlyOnline ? "success" : "default"}
-                        variant="flat"
+                        variant="soft"
                         size="sm"
                       >
                         {selectedDevice.isCurrentlyOnline ? "En línea" : "Desconectado"}
                       </Chip>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <Card>
-                    <CardBody>
+                    <Card.Content>
                       <p className="text-sm text-default-500">Sistema Operativo</p>
                       <p className="font-medium">{selectedDevice.operatingSystem || "Desconocido"}</p>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                   <Card>
-                    <CardBody>
+                    <Card.Content>
                       <p className="text-sm text-default-500">Versión App</p>
                       <p className="font-medium">{selectedDevice.appVersion || "Desconocida"}</p>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <Card>
-                    <CardBody>
+                    <Card.Content>
                       <p className="text-sm text-default-500">Último Heartbeat</p>
                       <p className="font-medium">
                         {selectedDevice.lastHeartbeatAt
                           ? new Date(selectedDevice.lastHeartbeatAt).toLocaleString("es-CO")
                           : "Nunca"}
                       </p>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                   <Card>
-                    <CardBody>
+                    <Card.Content>
                       <p className="text-sm text-default-500">Última Conexión</p>
                       <p className="font-medium">
                         {selectedDevice.lastSeenAt
                           ? new Date(selectedDevice.lastSeenAt).toLocaleString("es-CO")
                           : "Nunca"}
                       </p>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 </div>
 
                 <Card>
-                  <CardHeader>
+                  <Card.Header>
                     <h3 className="text-lg font-semibold">Estadísticas de Sincronización</h3>
-                  </CardHeader>
-                  <CardBody>
+                  </Card.Header>
+                  <Card.Content>
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
                         <p className="text-2xl font-bold">{selectedDevice.heartbeatCount || 0}</p>
@@ -431,18 +423,18 @@ export default function DevicesPage() {
                         <p className="text-sm text-default-500">Sincronizados</p>
                       </div>
                     </div>
-                  </CardBody>
+                  </Card.Content>
                 </Card>
 
                 <Card>
-                  <CardHeader>
+                  <Card.Header>
                     <h3 className="text-lg font-semibold">Información de Licencia</h3>
-                  </CardHeader>
-                  <CardBody>
+                  </Card.Header>
+                  <Card.Content>
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-default-500">Estado de Licencia:</span>
-                        <Chip variant="flat" size="sm">{selectedDevice.status}</Chip>
+                        <Chip variant="soft" size="sm">{selectedDevice.status}</Chip>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-default-500">Vencimiento:</span>
@@ -461,23 +453,23 @@ export default function DevicesPage() {
                         </span>
                       </div>
                     </div>
-                  </CardBody>
+                  </Card.Content>
                 </Card>
               </div>
             )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" color="primary" onPress={onDetailClose}>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="tertiary" color="primary" onPress={onDetailClose}>
               Cerrar
             </Button>
-          </ModalFooter>
-        </ModalContent>
+          </Modal.Footer>
+        </Modal.Content>
       </Modal>
 
       {/* Send Command Modal */}
-      <Modal isOpen={isCommandOpen} onClose={onCommandClose} size="md">
-        <ModalContent>
-          <ModalHeader>
+      <Modal state={ { isOpen: isCommandOpen, setOpen: (v: boolean) => { if(!v) onCommandClose(); }, open: () => {}, close: onCommandClose, toggle: () => {} } }>
+        <Modal.Content>
+          <Modal.Header>
             <div className="flex items-center gap-3">
               <Send className="w-6 h-6 text-primary" />
               <div>
@@ -485,12 +477,12 @@ export default function DevicesPage() {
                 <p className="text-sm text-default-500">{selectedDevice?.hostname}</p>
               </div>
             </div>
-          </ModalHeader>
-          <ModalBody>
+          </Modal.Header>
+          <Modal.Body>
             <div className="space-y-3">
               <Button
                 fullWidth
-                variant="flat"
+                variant="tertiary"
                 color="primary"
                 startContent={<Ban className="w-4 h-4" />}
               >
@@ -498,7 +490,7 @@ export default function DevicesPage() {
               </Button>
               <Button
                 fullWidth
-                variant="flat"
+                variant="tertiary"
                 color="primary"
                 startContent={<Pause className="w-4 h-4" />}
               >
@@ -506,7 +498,7 @@ export default function DevicesPage() {
               </Button>
               <Button
                 fullWidth
-                variant="flat"
+                variant="tertiary"
                 color="primary"
                 startContent={<RefreshCw className="w-4 h-4" />}
               >
@@ -514,20 +506,20 @@ export default function DevicesPage() {
               </Button>
               <Button
                 fullWidth
-                variant="flat"
+                variant="tertiary"
                 color="primary"
                 startContent={<Send className="w-4 h-4" />}
               >
                 Solicitar Renovación
               </Button>
             </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" color="primary" onPress={onCommandClose}>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="tertiary" color="primary" onPress={onCommandClose}>
               Cancelar
             </Button>
-          </ModalFooter>
-        </ModalContent>
+          </Modal.Footer>
+        </Modal.Content>
       </Modal>
     </div>
   );

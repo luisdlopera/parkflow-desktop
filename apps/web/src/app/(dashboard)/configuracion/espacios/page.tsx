@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Input } from "@heroui/react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import DataTable from "@/components/ui/DataTable";
 import { buildApiHeaders } from "@/lib/api";
 
@@ -136,7 +137,7 @@ export default function EspaciosPage() {
           <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80 font-medium">Configuración</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Espacios del parqueadero</h1>
         </div>
-        <Button size="sm" color="primary" variant="flat" onPress={() => { load().catch(console.error); }} isLoading={loading}>Actualizar</Button>
+        <Button size="sm" color="primary" variant="tertiary" onPress={() => { load().catch(console.error); }} isLoading={loading}>Actualizar</Button>
       </div>
 
       {error ? <p className="text-sm text-rose-700 font-medium">{error}</p> : null}
@@ -157,7 +158,7 @@ export default function EspaciosPage() {
           min={0}
           label="Capacidad activa"
           value={capacity}
-          onValueChange={setCapacity}
+          onChange={(e) => setCapacity(e.target.value)}
           className="max-w-xs"
         />
         <Button color="primary" onPress={() => { onResize().catch(console.error); }} isDisabled={!canReduce || loading}>Guardar capacidad</Button>
@@ -176,9 +177,9 @@ export default function EspaciosPage() {
             priority: "high",
             render: (row) => (
               <div className="flex gap-2">
-                <Button size="sm" variant="flat" onPress={() => { patchSpace(row.id, { status: "MAINTENANCE" }).catch(console.error); }} isDisabled={row.occupied}>Mantenimiento</Button>
-                <Button size="sm" variant="flat" onPress={() => { patchSpace(row.id, { status: "ACTIVE" }).catch(console.error); }}>Activar</Button>
-                <Button size="sm" variant="flat" onPress={() => { patchSpace(row.id, { status: "INACTIVE" }).catch(console.error); }} isDisabled={row.occupied}>Desactivar</Button>
+                <Button size="sm" variant="tertiary" onPress={() => { patchSpace(row.id, { status: "MAINTENANCE" }).catch(console.error); }} isDisabled={row.occupied}>Mantenimiento</Button>
+                <Button size="sm" variant="tertiary" onPress={() => { patchSpace(row.id, { status: "ACTIVE" }).catch(console.error); }}>Activar</Button>
+                <Button size="sm" variant="tertiary" onPress={() => { patchSpace(row.id, { status: "INACTIVE" }).catch(console.error); }} isDisabled={row.occupied}>Desactivar</Button>
               </div>
             )
           },

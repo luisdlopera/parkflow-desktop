@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Checkbox, Input, Button } from "@heroui/react";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
 import { currentUser, loadSession, login, saveSession } from "@/lib/auth";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
@@ -169,7 +171,7 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-lg items-center justify-center px-6 py-10">
-      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-2xl p-8 shadow-2xl border border-default-100 bg-white dark:bg-neutral-950">
+      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 shadow-2xl shadow-slate-200/40 dark:shadow-black/40 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90">
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-700/80 mb-2">Parkflow</p>
           <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -189,7 +191,7 @@ export default function LoginPage() {
 
         <div className="space-y-4">
           {isSetupMode && (
-            <div className="space-y-4 border-b border-default-100 pb-4 mb-4">
+            <div className="space-y-4 bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 shadow-sm mb-4">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Datos del Administrador</p>
               
               <Input
@@ -198,24 +200,25 @@ export default function LoginPage() {
                 label="Nombre Completo"
                 placeholder="Nombre del Administrador"
                 value={adminName}
-                onValueChange={setAdminName}
-                variant="flat"
+                onChange={(e) => setAdminName(e.target.value)}
+                
                 size="md"
                 startContent={<User size={18} className="text-slate-400" />}
               />
             </div>
           )}
 
-          <Input
+          <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 shadow-sm space-y-4">
+            <Input
             data-testid="username"
             name="email"
             type="email"
             label="Correo Electrónico"
             placeholder="ejemplo@parkflow.com"
             value={email}
-            onValueChange={setEmail}
+            onChange={(e) => setEmail(e.target.value)}
             autoComplete="username"
-            variant="flat"
+            
             size="md"
             startContent={<Mail size={18} className="text-slate-400" />}
           />
@@ -229,9 +232,9 @@ export default function LoginPage() {
                 label="Contraseña"
                 placeholder="••••••••"
                 value={password}
-                onValueChange={setPassword}
+                onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                variant="flat"
+                
                 size="md"
                 startContent={<Lock size={18} className="text-slate-400" />}
                 endContent={
@@ -251,8 +254,8 @@ export default function LoginPage() {
                 label="Confirmar Contraseña"
                 placeholder="••••••••"
                 value={confirmPassword}
-                onValueChange={setConfirmPassword}
-                variant="flat"
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                
                 size="md"
                 startContent={<Lock size={18} className="text-slate-400" />}
               />
@@ -265,9 +268,9 @@ export default function LoginPage() {
               label="Contraseña"
               placeholder="••••••••"
               value={password}
-              onValueChange={setPassword}
+              onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
-              variant="flat"
+              
               size="md"
               startContent={<Lock size={18} className="text-slate-400" />}
               endContent={
@@ -282,9 +285,10 @@ export default function LoginPage() {
               }
             />
           )}
+          </div>
 
           {isSetupMode && (
-            <div className="space-y-4 pt-4 border-t border-default-100">
+            <div className="space-y-4 bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 shadow-sm mt-6">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Datos de la Empresa / Parqueadero</p>
               
               <div className="grid gap-4 sm:grid-cols-2">
@@ -294,8 +298,8 @@ export default function LoginPage() {
                   label="Nombre del Parqueadero"
                   placeholder="Mi Parqueadero Local"
                   value={companyName}
-                  onValueChange={setCompanyName}
-                  variant="flat"
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  
                   size="md"
                   startContent={<Building size={18} className="text-slate-400" />}
                 />
@@ -306,8 +310,8 @@ export default function LoginPage() {
                   label="NIT / Registro Tributario"
                   placeholder="900123456"
                   value={companyNit}
-                  onValueChange={setCompanyNit}
-                  variant="flat"
+                  onChange={(e) => setCompanyNit(e.target.value)}
+                  
                   size="md"
                   startContent={<Landmark size={18} className="text-slate-400" />}
                 />

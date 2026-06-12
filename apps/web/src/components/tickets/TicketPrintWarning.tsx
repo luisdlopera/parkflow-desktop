@@ -1,8 +1,6 @@
 "use client";
-
-import { Button } from "@heroui/button";
-import { Card, CardBody, CardFooter, CardHeader } from "@heroui/card";
-
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 type Props = {
   ticketNumber: string;
   plate: string;
@@ -24,7 +22,7 @@ export default function TicketPrintWarning({
 }: Props) {
   return (
     <Card className="border-2 border-amber-300 bg-amber-50/80 shadow-lg">
-      <CardHeader className="flex items-center gap-3 pb-2">
+      <Card.Header className="flex items-center gap-3 pb-2">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
           <svg className="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -34,9 +32,9 @@ export default function TicketPrintWarning({
           <h3 className="text-base font-semibold text-emerald-800">Ingreso registrado correctamente</h3>
           <p className="text-sm text-amber-700">No se pudo imprimir el ticket</p>
         </div>
-      </CardHeader>
+      </Card.Header>
 
-      <CardBody className="pb-2 pt-0">
+      <Card.Content className="pb-2 pt-0">
         <p className="text-xs text-slate-600">
           Ticket <strong>{ticketNumber}</strong> &middot; Placa <strong>{plate}</strong>
         </p>
@@ -50,12 +48,12 @@ export default function TicketPrintWarning({
             {previewLines.join("\n")}
           </pre>
         )}
-      </CardBody>
+      </Card.Content>
 
-      <CardFooter className="flex flex-wrap gap-2 border-t border-amber-200 pt-3">
+      <Card.Footer className="flex flex-wrap gap-2 border-t border-amber-200 pt-3">
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           color="warning"
           onPress={onDownload}
           startContent={
@@ -68,7 +66,7 @@ export default function TicketPrintWarning({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           color="primary"
           onPress={onReprint}
           isLoading={reprintLoading}
@@ -84,13 +82,13 @@ export default function TicketPrintWarning({
         </Button>
         <Button
           size="sm"
-          variant="light"
+          variant="ghost"
           color="default"
           onPress={onClose}
         >
           Cerrar
         </Button>
-      </CardFooter>
+      </Card.Footer>
     </Card>
   );
 }

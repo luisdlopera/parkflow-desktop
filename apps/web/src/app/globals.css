@@ -1,9 +1,10 @@
 @import "tailwindcss";
+@import "@heroui/styles";
 
 /* Class-based dark mode (HeroUI utilities + Tailwind dark: variants) */
 @custom-variant dark (&:where(.dark, .dark *));
 
-@plugin "../lib/theme/hero.ts";
+
 @source "../../node_modules/@heroui/theme/dist/**/*.js";
 
 @theme inline {

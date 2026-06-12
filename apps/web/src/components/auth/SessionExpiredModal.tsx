@@ -1,9 +1,8 @@
 "use client";
-
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
-import { Button } from "@heroui/button";
 
 interface SessionExpiredModalProps {
   isOpen: boolean;
@@ -19,7 +18,7 @@ export function SessionExpiredModal({ isOpen, onClose, onRenew }: SessionExpired
   const handleLoginRedirect = React.useCallback(() => {
     const currentPath = window.location.pathname;
     router.push(`/login?expired=1&next=${encodeURIComponent(currentPath)}`);
-    onClose();
+    close();
   }, [router, onClose]);
 
   // Cuenta regresiva para redirección automática
@@ -50,7 +49,7 @@ export function SessionExpiredModal({ isOpen, onClose, onRenew }: SessionExpired
     try {
       await onRenew();
       setCountdown(30);
-      onClose();
+      close();
     } catch {
       // Si falla la renovación, ir al login
       handleLoginRedirect();
@@ -60,17 +59,17 @@ export function SessionExpiredModal({ isOpen, onClose, onRenew }: SessionExpired
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isDismissable={false} hideCloseButton>
-      <ModalContent>
-        <ModalHeader className="flex flex-col gap-1 text-amber-700">
+    <Modal state={ { isOpen: isOpen, setOpen: (v: boolean) => { if(!v) onClose(); }, open: () => {}, close: onClose, toggle: () => {} } } isDismissable={false} hideCloseButton>
+      <Modal.Content>
+        <Modal.Header className="flex flex-col gap-1 text-amber-700">
           <div className="flex items-center gap-2">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Sesión Expirada
           </div>
-        </ModalHeader>
-        <ModalBody>
+        </Modal.Header>
+        <Modal.Body>
           <p className="text-slate-600">
             Tu sesión ha expirado por inactividad o el token ha caducado.
           </p>
@@ -82,12 +81,12 @@ export function SessionExpiredModal({ isOpen, onClose, onRenew }: SessionExpired
               <strong>Consejo:</strong> Para evitar esto, mantén la actividad o configura un tiempo de sesión más largo en los parámetros del sistema.
             </p>
           </div>
-        </ModalBody>
-        <ModalFooter className="flex gap-2">
+        </Modal.Body>
+        <Modal.Footer className="flex gap-2">
           {onRenew && (
             <Button
               color="primary"
-              variant="flat"
+              variant="tertiary"
               onPress={handleRenew}
               isLoading={isRenewing}
               className="bg-amber-100 text-amber-800 hover:bg-amber-200"
@@ -98,8 +97,8 @@ export function SessionExpiredModal({ isOpen, onClose, onRenew }: SessionExpired
           <Button color="primary" onPress={handleLoginRedirect}>
             Ir al login ahora
           </Button>
-        </ModalFooter>
-      </ModalContent>
+        </Modal.Footer>
+      </Modal.Content>
     </Modal>
   );
 }

@@ -3,13 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Input,
-  Button,
-  Select,
-  SelectItem,
-  Checkbox,
-} from "@heroui/react";
+import { ListBox } from "@heroui/react";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
 import {
   fetchConfigurationCashRegisters,
   createConfigurationCashRegister,
@@ -168,7 +166,7 @@ export default function CajasPage() {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               color="primary"
               className="font-semibold"
               onPress={() => openEdit(row)}
@@ -191,26 +189,26 @@ export default function CajasPage() {
           <Input
             {...register("code")}
             label="Código"
-            variant="flat"
+            
             errorMessage={errors.code?.message}
             isInvalid={!!errors.code}
           />
           <Input
             {...register("name")}
             label="Nombre"
-            variant="flat"
+            
           />
           <Input
             {...register("terminal")}
             label="Terminal"
-            variant="flat"
+            
             errorMessage={errors.terminal?.message}
             isInvalid={!!errors.terminal}
           />
           <Input
             {...register("label")}
             label="Etiqueta"
-            variant="flat"
+            
           />
           
           <div className="space-y-1">
@@ -218,21 +216,31 @@ export default function CajasPage() {
             <Select
               {...siteIdField}
               label="Sede"
-              variant="flat"
+              
               placeholder="Sin sede vinculada"
               isDisabled={catalogLoading}
-              onSelectionChange={(keys) => {
+              onChange={(keys) => {
                 const id = Array.from(keys)[0] as string;
                 const selected = sites.find((site) => site.id === id);
                 setValue("siteId", id);
                 setValue("site", selected?.code ?? "DEFAULT");
               }}
-              selectedKeys={watchSiteId ? [watchSiteId as string] : []}
+              selectedKey={(watchSiteId ? watchSiteId : undefined) as any}
             >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
               {siteOptions.map((site) => (
-                <SelectItem key={site.value} textValue={site.label}>{site.label}</SelectItem>
+                <ListBox.Item key={site.value} textValue={site.label}>{site.label}</ListBox.Item>
               ))}
-            </Select>
+            
+        </ListBox>
+      </Select.Popover>
+    </Select>
             <p className="px-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
               Código operativo: {currentSite || "DEFAULT"}
             </p>
@@ -241,28 +249,48 @@ export default function CajasPage() {
           <Select
             {...register("printerId")}
             label="Impresora"
-            variant="flat"
+            
             placeholder="Sin impresora"
             isDisabled={catalogLoading}
-            selectedKeys={watchPrinterId ? [watchPrinterId as string] : []}
+            value={watchPrinterId ? [watchPrinterId as string] : []}
           >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
             {printerOptions.map((printer) => (
-              <SelectItem key={printer.value} textValue={printer.label}>{printer.label}</SelectItem>
+              <ListBox.Item key={printer.value} textValue={printer.label}>{printer.label}</ListBox.Item>
             ))}
-          </Select>
+          
+        </ListBox>
+      </Select.Popover>
+    </Select>
 
           <Select
             {...register("responsibleUserId")}
             label="Responsable"
-            variant="flat"
+            
             placeholder="Sin responsable"
             isDisabled={catalogLoading}
-            selectedKeys={watchResponsibleUserId ? [watchResponsibleUserId as string] : []}
+            value={watchResponsibleUserId ? [watchResponsibleUserId as string] : []}
           >
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+
             {userOptions.map((user) => (
-              <SelectItem key={user.value} textValue={user.label}>{user.label}</SelectItem>
+              <ListBox.Item key={user.value} textValue={user.label}>{user.label}</ListBox.Item>
             ))}
-          </Select>
+          
+        </ListBox>
+      </Select.Popover>
+    </Select>
 
           <Checkbox {...register("active")}>
             Activa

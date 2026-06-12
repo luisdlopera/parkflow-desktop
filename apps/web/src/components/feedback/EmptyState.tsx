@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/Button";
 import { Search } from "lucide-react";
 
 interface EmptyStateProps {
@@ -36,7 +36,7 @@ export function EmptyState({
       {actionLabel && onAction && (
         <Button
           color="primary"
-          variant="flat"
+          variant="tertiary"
           onClick={onAction}
           className="font-medium"
         >
