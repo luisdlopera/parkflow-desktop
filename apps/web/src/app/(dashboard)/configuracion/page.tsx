@@ -58,9 +58,10 @@ import {
   type PrepaidBalanceRow,
   type RateCategory
 } from "@/lib/settings-api";
+import { resetOnboarding } from "@/lib/onboarding-api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type TabKey = "rates" | "users" | "parameters" | "interface" | "masters" | "monthly" | "agreements" | "prepaid";
+type TabKey = "rates" | "users" | "parameters" | "interface" | "masters" | "monthly" | "agreements" | "prepaid" | "onboarding";
 
 const VEHICLE_TYPES: VehicleType[] = ["CAR", "MOTORCYCLE", "BICYCLE", "TRUCK", "BUS", "VAN", "ELECTRIC", "OTHER"];
 const RATE_TYPES: RateType[] = ["PER_MINUTE", "HOURLY", "DAILY", "FLAT"];
@@ -272,6 +273,7 @@ export default function ConfiguracionPage() {
           isDisabled={!can.cfgRead}
         />
         <Tab key="interface" title={<div className="flex items-center gap-2"><span>Interfaz</span></div>} />
+        <Tab key="onboarding" title={<div className="flex items-center gap-2"><span>Asistente Inicial</span></div>} />
         <Tab key="masters" title={<div className="flex items-center gap-2"><span>Maestros</span></div>} />
       </Tabs>
 
@@ -316,6 +318,10 @@ export default function ConfiguracionPage() {
       {tab === "parameters" && !can.cfgRead ? (
         <p className="text-sm text-slate-600">No tiene permiso para ver parametros.</p>
       ) : null}
+
+      {tab === "interface" ? <InterfaceSection settings={uiSettings} onUpdate={updateUiSetting} /> : null}
+
+      {tab === "onboarding" ? <OnboardingSection onNotify={setNotice} /> : null}
 
       {tab === "masters" && can.cfgRead ? <MastersSection onNotify={setNotice} canEdit={can.cfgEdit} /> : null}
       {tab === "masters" && !can.cfgRead ? (
@@ -2508,6 +2514,48 @@ function PrepaidSection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
         ]}
         rows={rows as any[]}
       />
+    </div>
+  );
+}
+
+function OnboardingSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void }) {
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-slate-900">Parametrización Automática</h2>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Puedes re-ejecutar el asistente inicial para configurar rápidamente los aspectos básicos de la operación de la empresa (Tipos de vehículo, métodos de pago, módulos, etc.).
+          </p>
+          <p className="text-sm text-slate-600">
+            Al confirmar, se reiniciará el progreso y serás redirigido al asistente inicial.
+          </p>
+          <div>
+            <Button
+              color="primary"
+              isLoading={loading}
+              onPress={async () => {
+                if (!confirm("¿Seguro que deseas re-ejecutar la parametrización inicial?")) return;
+                setLoading(true);
+                try {
+                  const compId = "00000000-0000-0000-0000-000000000001"; // Default for current tenant context if multi-tenant not strictly used
+                  await resetOnboarding(compId, "Reinicio desde configuración");
+                  window.location.reload();
+                } catch (e) {
+                  setLoading(false);
+                  onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error reiniciando" });
+                }
+              }}
+            >
+              Ejecutar Parametrización Automática
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
     </div>
   );
 }

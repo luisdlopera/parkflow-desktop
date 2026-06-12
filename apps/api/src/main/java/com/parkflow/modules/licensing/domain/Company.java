@@ -196,7 +196,7 @@ public class Company {
   /**
    * Fecha de última actualización.
    */
-  private OffsetDateTime updatedAt;
+  private OffsetDateTime updatedAt = OffsetDateTime.now();
 
   /**
    * Fecha de cancelación (si aplica).

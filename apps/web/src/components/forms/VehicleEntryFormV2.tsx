@@ -29,6 +29,14 @@ import type { VehicleType } from "@parkflow/types";
 import { fetchMasterVehicleTypes, type MasterVehicleTypeRow } from "@/lib/settings-api";
 import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 import { currentUser } from "@/lib/auth";
+import { FormLayoutFactory } from "@/components/forms/dynamic/FormLayoutFactory";
+import { type RegisteredFieldKey } from "@/components/forms/dynamic/form-registry";
+
+const ENTRY_FORM_LAYOUT: RegisteredFieldKey[] = [
+  "vehicle_condition",
+  "helmet_section",
+  "observations",
+];
 import { operationEntryRequestSchema, operationReprintRequestSchema } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow, toUserMessageFromClientValidation } from "@/lib/validation/request-guard";
 import { normalizeApiError } from "@/lib/errors/normalize-api-error";
@@ -260,7 +268,6 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   const formValues = useWatch({ control: form.control });
   const selectedTypeCode = useWatch({ control: form.control, name: "type" });
   const noPlate = useWatch({ control: form.control, name: "noPlate" });
-  const helmetDelivered = useWatch({ control: form.control, name: "helmetDelivered" });
   const { clearAutoSave } = useAutoSave({
     key: "entry_form",
     data: formValues,
@@ -903,7 +910,14 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
           <Controller
             name="entryMode"
             control={form.control}
-            render={({ field }) => (
+            render={({ field }) => {
+              const opts = [{ key: "VISITOR", label: "Visitante" }, { key: "EMPLOYEE", label: "Empleado" }];
+              if (runtimeConfig?.modules?.agreements) opts.push({ key: "AGREEMENT", label: "Convenio" });
+              if (runtimeConfig?.modules?.clients || runtimeConfig?.modules?.monthly) opts.push({ key: "SUBSCRIBER", label: "Abonado" });
+              if (opts.length <= 2 && !runtimeConfig?.modules?.agreements && !runtimeConfig?.modules?.clients) {
+                return <></>; // Hide if only basic modes and modules are explicitly disabled
+              }
+              return (
               <Select
                 variant="flat"
                 size="sm"
@@ -911,11 +925,12 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
                 selectedKeys={[field.value]}
                 onSelectionChange={(keys) => field.onChange(Array.from(keys)[0] as string)}
               >
-                {entryModeOptions.map((option) => (
+                {opts.map((option) => (
                   <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
                 ))}
               </Select>
-            )}
+              );
+            }}
           />
 
           {/* Tipo de Vehículo */}
@@ -1101,76 +1116,14 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
                   )}
                 />
 
-                {/* Estado del vehículo */}
-                {!settings.skipConditionCheck && runtimeConfig?.operationConfiguration?.enableVehicleCondition !== false && (
-                  <Controller
-                    name="vehicleCondition"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input {...field} label="Estado del vehículo" placeholder="Sin novedades al ingreso" variant="flat" size="sm" />
-                    )}
-                  />
-                )}
+                {/* Campos Dinámicos / Autogenerados por Configuración */}
+                <FormLayoutFactory
+                  layout={ENTRY_FORM_LAYOUT}
+                  control={form.control}
+                  selectedVehicleType={selectedTypeCode}
+                  skipConditionCheck={settings.skipConditionCheck}
+                />
 
-                {/* Casco / custodied item */}
-                {selectedTypeCode === "MOTORCYCLE" && runtimeConfig?.operationConfiguration?.enableCustodiedItem !== false && (
-                  <>
-                    <div className="col-span-2 border-t pt-3 mt-1">
-                      <p className="text-sm font-medium text-zinc-700 mb-2">Información del Casco</p>
-                      <Controller
-                        name="helmetDelivered"
-                        control={form.control}
-                        render={({ field }) => (
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={field.value}
-                              onChange={(e) => field.onChange(e.target.checked)}
-                              className="rounded border-zinc-300"
-                            />
-                            <span className="text-sm">¿Entrega casco al ingreso?</span>
-                          </label>
-                        )}
-                      />
-                    </div>
-                    {helmetDelivered && (
-                      <div className="col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <Controller
-                          name="helmetIdentifier"
-                          control={form.control}
-                          render={({ field }) => (
-                            <Input {...field} label="Número de Casco" placeholder="Ej: SHOEI-1234" variant="flat" size="sm" isRequired />
-                          )}
-                        />
-                        <Controller
-                          name="helmetObservations"
-                          control={form.control}
-                          render={({ field }) => (
-                            <Input {...field} label="Observaciones del casco" placeholder="Marca, color, etc." variant="flat" size="sm" />
-                          )}
-                        />
-                        <Controller
-                          name="helmetPhotoUrl"
-                          control={form.control}
-                          render={({ field }) => (
-                            <Input {...field} label="Foto del casco (URL)" placeholder="https://..." variant="flat" size="sm" />
-                          )}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Observaciones */}
-                {runtimeConfig?.operationConfiguration?.enableObservations !== false && (
-                  <Controller
-                    name="observations"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input {...field} label="Observaciones" placeholder="Notas adicionales" variant="flat" size="sm" />
-                    )}
-                  />
-                )}
               </div>
             )}
           </div>

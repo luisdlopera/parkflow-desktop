@@ -24,6 +24,9 @@ export const handlers = [
   http.get('http://localhost:6011/api/v1/auth/me', () => {
     return HttpResponse.json({ user: { id: 1, name: 'Test User', role: 'SUPER_ADMIN' } })
   }),
+  http.get(/.*\/api\/v1\/auth\/setup-required/, () => {
+    return HttpResponse.json({ setupRequired: false })
+  }),
 
   // Configuration
   http.get(/.*\/api\/v1\/configuration\/vehicle-types/, () => {

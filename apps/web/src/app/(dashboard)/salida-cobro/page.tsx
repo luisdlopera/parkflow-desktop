@@ -35,7 +35,8 @@ import {
   operationReprintRequestSchema
 } from "@/lib/validation/contracts";
 import { toUserMessageFromClientValidation, validatePayloadOrThrow } from "@/lib/validation/request-guard";
-import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
+import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
+import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 
 type CustodiedItemInfo = {
   id: string;
@@ -243,9 +244,13 @@ export default function SalidaCobroPage() {
   const { playSuccess, playError } = useOperationSounds();
   const { success: toastSuccess, error: toastError } = useToast();
   const [reprintLoading, setReprintLoading] = useState(false);
-  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
+  const { getOperationConfigValue } = useTenantConfig();
+  const enableVehicleCondition = getOperationConfigValue<boolean>("enableVehicleCondition", true);
+  const enableCustodiedItem = getOperationConfigValue<boolean>("enableCustodiedItem", true);
   const [printWarning, setPrintWarning] = useState<{ ticketNumber: string; plate: string; previewLines: string[] } | null>(null);
   const autoLookupDone = useRef(false);
+
+  const { hasPaymentMethod } = useRuntimeConfig();
 
   // Auto-focus en campo de ticket al cargar
   useEffect(() => {
@@ -253,10 +258,6 @@ export default function SalidaCobroPage() {
       ticketInputRef.current?.focus();
     }, 100);
     return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
   }, []);
 
   useEffect(() => {
@@ -962,7 +963,7 @@ export default function SalidaCobroPage() {
                 </div>
 
                 {/* Custodied items alert */}
-                {pendingCustodiedItems.length > 0 && (
+                {enableCustodiedItem && pendingCustodiedItems.length > 0 && (
                   <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
                     <div className="flex items-start gap-2">
                       <svg className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -999,15 +1000,17 @@ export default function SalidaCobroPage() {
                 )}
               </div>
 
-              <div className="mt-4">
-                <Textarea
-                  label="Estado del vehículo"
-                  placeholder="Sin novedades a la salida..."
-                  variant="flat"
-                  value={vehicleCondition}
-                  onValueChange={setVehicleCondition}
-                />
-              </div>
+              {enableVehicleCondition && (
+                <div className="mt-4">
+                  <Textarea
+                    label="Estado del vehículo"
+                    placeholder="Sin novedades a la salida..."
+                    variant="flat"
+                    value={vehicleCondition}
+                    onValueChange={setVehicleCondition}
+                  />
+                </div>
+              )}
             </>
           ) : null}
 
@@ -1085,7 +1088,7 @@ export default function SalidaCobroPage() {
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-2">
-            {PAYMENT_METHODS.map((method, index) => (
+            {PAYMENT_METHODS.filter(m => hasPaymentMethod(m.code) || m.code === "MIXED").map((method, index) => (
               <Button
                 key={method.code}
                 className={`min-h-14 justify-start text-left font-bold ${
@@ -1173,7 +1176,7 @@ export default function SalidaCobroPage() {
                       );
                     }}
                   >
-                    {SPLIT_METHODS.map((method) => (
+                    {SPLIT_METHODS.filter(m => hasPaymentMethod(m.code)).map((method) => (
                       <SelectItem key={method.code}>{method.label}</SelectItem>
                     ))}
                   </Select>

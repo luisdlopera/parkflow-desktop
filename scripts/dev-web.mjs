@@ -5,10 +5,12 @@
  */
 
 import { spawn } from 'child_process';
-import { resolvePort, PORT_CONFIG } from './port-utils.mjs';
+import { resolvePort, PORT_CONFIG, isPortFree } from './port-utils.mjs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync, existsSync } from 'fs';
+import { createConnection } from 'net';
+import { setTimeout as delay } from 'timers/promises';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -60,6 +62,33 @@ function loadEnvFile(envPath) {
   return vars;
 }
 
+function waitForTcpPort(port, host = '127.0.0.1', timeoutMs = 60000) {
+  const start = Date.now();
+
+  return new Promise((resolve, reject) => {
+    const attempt = () => {
+      const socket = createConnection({ port, host });
+
+      socket.once('connect', () => {
+        socket.end();
+        resolve();
+      });
+
+      socket.once('error', async () => {
+        socket.destroy();
+        if (Date.now() - start >= timeoutMs) {
+          reject(new Error(`Timeout waiting for ${host}:${port}`));
+          return;
+        }
+        await delay(1000);
+        attempt();
+      });
+    };
+
+    attempt();
+  });
+}
+
 async function main() {
   const label = '[Parkflow Web]';
 
@@ -97,6 +126,51 @@ async function main() {
     }
     console.log('');
 
+    // Check if the API is running
+    const apiPort = PORT_CONFIG.api.primary;
+    const apiPortFree = await isPortFree(apiPort);
+    const fallbackApiPort = PORT_CONFIG.api.fallback;
+    const fallbackApiPortFree = await isPortFree(fallbackApiPort);
+
+    let apiProcess = null;
+    if (apiPortFree && fallbackApiPortFree) {
+      // Check if DB is running
+      const dbPort = PORT_CONFIG.db.host;
+      const dbPortFree = await isPortFree(dbPort);
+      if (dbPortFree) {
+        console.log(`${label} Database is not running on port ${dbPort}. Starting it automatically via Docker...`);
+        // Start DB
+        const dbProcess = spawn('pnpm', ['db:up'], {
+          cwd: repoRoot,
+          stdio: 'inherit',
+          shell: process.platform === 'win32',
+        });
+        await new Promise((resolve) => {
+          dbProcess.on('exit', resolve);
+          dbProcess.on('error', resolve);
+        });
+
+        console.log(`${label} Waiting for PostgreSQL to be ready on port ${dbPort}...`);
+        try {
+          await waitForTcpPort(dbPort);
+        } catch (dbErr) {
+          console.error(`${label} Timeout waiting for database: %s`, dbErr.message);
+        }
+      }
+
+      console.log(`${label} API server is not running on port ${apiPort}. Starting it automatically...`);
+      apiProcess = spawn('pnpm', ['dev:api'], {
+        cwd: repoRoot,
+        stdio: 'inherit',
+        shell: process.platform === 'win32',
+      });
+
+      apiProcess.on('error', (err) => {
+        console.error(`${label} Failed to start API automatically: %s`, err.message);
+      });
+    }
+
+
     // Start Next.js
     // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
     const nextDev = spawn('pnpm', ['next', 'dev', '-p', port.toString()], {
@@ -112,6 +186,9 @@ async function main() {
     });
 
     nextDev.on('exit', (code) => {
+      if (apiProcess) {
+        apiProcess.kill('SIGINT');
+      }
       process.exit(code ?? 0);
     });
 
@@ -119,11 +196,18 @@ async function main() {
     process.on('SIGINT', () => {
       console.log(`\n${label} Shutting down...`);
       nextDev.kill('SIGINT');
+      if (apiProcess) {
+        apiProcess.kill('SIGINT');
+      }
     });
 
     process.on('SIGTERM', () => {
       nextDev.kill('SIGTERM');
+      if (apiProcess) {
+        apiProcess.kill('SIGTERM');
+      }
     });
+
 
   } catch (error) {
     console.error(`[Parkflow Web] Error:`, error.message);

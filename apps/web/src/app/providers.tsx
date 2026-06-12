@@ -6,6 +6,8 @@ import { ToastProvider, useToast } from "@/lib/toast/ToastContext";
 import { useRouter } from "next/navigation";
 import { handleAuthFailureStatus } from "@/lib/auth";
 
+import { TenantConfigProvider } from "@/lib/providers/TenantConfigProvider";
+
 interface ProvidersProps {
   children: React.ReactNode;
 }
@@ -16,8 +18,10 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <HeroUIProvider navigate={router.push}>
       <ToastProvider>
-        <GlobalAuthEffects />
-        {children}
+        <TenantConfigProvider>
+          <GlobalAuthEffects />
+          {children}
+        </TenantConfigProvider>
       </ToastProvider>
     </HeroUIProvider>
   );

@@ -32,12 +32,18 @@ public class AuditService implements AuditPort {
         if (user != null) {
             log.setUser(user);
             log.setUsername(user.getEmail());
+            if (user.getCompanyId() != null) {
+                log.setCompanyId(user.getCompanyId());
+            }
         } else {
             // Try to get from security context
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth != null && auth.getPrincipal() instanceof AppUser currentUser) {
                 log.setUser(currentUser);
                 log.setUsername(currentUser.getEmail());
+                if (currentUser.getCompanyId() != null) {
+                    log.setCompanyId(currentUser.getCompanyId());
+                }
             } else {
                 log.setUsername("SYSTEM");
             }

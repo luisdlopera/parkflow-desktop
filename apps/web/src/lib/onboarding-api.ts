@@ -45,3 +45,7 @@ export async function skipOnboarding(companyId: string): Promise<OnboardingStatu
 export async function completeOnboarding(companyId: string): Promise<OnboardingStatus> {
   return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}/complete`, { method: "POST" });
 }
+
+export async function resetOnboarding(companyId: string, reason: string = "Reinicio manual"): Promise<OnboardingStatus> {
+  return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}/reset?reason=${encodeURIComponent(reason)}`, { method: "POST" });
+}

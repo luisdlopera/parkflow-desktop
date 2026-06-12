@@ -18,6 +18,7 @@ import { requiredString, emailSchema, positiveNumber, nonNegativeNumber } from "
 import { InlineFieldError } from "@/components/feedback/InlineFieldError";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
+import { useToast } from "@/lib/toast/ToastContext";
 
 interface CompanyFormProps {
   onSubmit: (data: CreateCompanyRequest) => Promise<void>;
@@ -33,7 +34,7 @@ const plans: { value: PlanType; label: string }[] = [
 
 const companySchema = z.object({
   name: requiredString("Ingresa el nombre de la empresa."),
-  nit: requiredString("Ingresa el NIT de la empresa."),
+  nit: z.string().optional().or(z.literal("")),
   email: emailSchema("Ingresa un correo electrónico válido."),
   phone: requiredString("Ingresa un número de teléfono."),
   city: requiredString("Ingresa la ciudad."),
@@ -80,6 +81,8 @@ export function CompanyForm({ onSubmit, isLoading }: CompanyFormProps) {
   const selectedPlan = useWatch({ control, name: "plan" });
   const features = getPlanFeatures(selectedPlan);
 
+  const { error: toastError } = useToast();
+
   const onFormSubmit = async (data: FormValues) => {
     try {
       setSubmitError(null);
@@ -87,6 +90,7 @@ export function CompanyForm({ onSubmit, isLoading }: CompanyFormProps) {
     } catch (err) {
       const userError = getUserErrorMessage(err, "companies.create");
       setSubmitError(`${userError.title}: ${userError.description}`);
+      toastError(`${userError.title}: ${userError.description}`);
     }
   };
 
@@ -107,7 +111,7 @@ export function CompanyForm({ onSubmit, isLoading }: CompanyFormProps) {
 
         <div>
           <Input
-            label="NIT *"
+            label="NIT (Opcional)"
             placeholder="Ej: 900.123.456-7"
             {...register("nit")}
             isInvalid={!!errors.nit}

@@ -17,6 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.parkflow.modules.auth.security.PasswordHashService;
+import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.licensing.application.service.CompanyResponseAssembler;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -26,17 +32,20 @@ public class CompanyManagementService implements CompanyManagementUseCase {
     private final LicenseAuditLogPort auditLogRepository;
     private final LicenseModuleProvisioner moduleProvisioner;
     private final CompanyResponseAssembler companyResponseAssembler;
+    private final AppUserRepository appUserRepository;
+    private final PasswordHashService passwordHashService;
 
     @Override
     @Transactional
     public CompanyResponse createCompany(CreateCompanyRequest request, String performedBy) {
-        if (request.getNit() != null && companyRepository.existsByNit(request.getNit())) {
+        String nit = request.getNit() != null && !request.getNit().isBlank() ? request.getNit() : null;
+        if (nit != null && companyRepository.existsByNit(nit)) {
             throw new IllegalArgumentException("Ya existe una empresa con ese NIT");
         }
 
         Company company = new Company();
         company.setName(request.getName());
-        company.setNit(request.getNit());
+        company.setNit(nit);
         company.setAddress(request.getAddress());
         company.setCity(request.getCity());
         company.setPhone(request.getPhone());
@@ -64,6 +73,20 @@ public class CompanyManagementService implements CompanyManagementUseCase {
 
         company = companyRepository.save(company);
         moduleProvisioner.createDefaultModules(company);
+
+        // Generar las credenciales iniciales para el administrador de la empresa (MVP requirement)
+        AppUser adminUser = new AppUser();
+        adminUser.setCompanyId(company.getId());
+        adminUser.setEmail(company.getEmail());
+        adminUser.setName(company.getContactName() != null && !company.getContactName().isBlank() ? company.getContactName() : "Administrador");
+        adminUser.setRole(UserRole.ADMIN);
+        adminUser.setPasswordHash(passwordHashService.encodePassword("Qwert.12345"));
+        adminUser.setRequirePasswordChange(true);
+        adminUser.setCanVoidTickets(true);
+        adminUser.setCanReprintTickets(true);
+        adminUser.setCanCloseCash(true);
+        adminUser.setActive(true);
+        appUserRepository.save(adminUser);
 
         auditLogRepository.save(LicenseAuditLog.create(
                 company, "COMPANY_CREATED",
@@ -98,7 +121,13 @@ public class CompanyManagementService implements CompanyManagementUseCase {
         String oldValues = String.format("plan=%s, status=%s", company.getPlan(), company.getStatus());
 
         if (request.getName() != null) company.setName(request.getName());
-        if (request.getNit() != null) company.setNit(request.getNit());
+        if (request.getNit() != null) {
+            String nit = request.getNit().isBlank() ? null : request.getNit();
+            if (nit != null && !nit.equals(company.getNit()) && companyRepository.existsByNit(nit)) {
+                throw new IllegalArgumentException("Ya existe una empresa con ese NIT");
+            }
+            company.setNit(nit);
+        }
         if (request.getAddress() != null) company.setAddress(request.getAddress());
         if (request.getCity() != null) company.setCity(request.getCity());
         if (request.getPhone() != null) company.setPhone(request.getPhone());

@@ -62,7 +62,7 @@ function clearLocalStorage() {
   localStorage.clear();
 }
 
-describe.skip("VehicleEntryFormV2", () => {
+describe("VehicleEntryFormV2", () => {
   beforeEach(() => {
     setupLocalStorage();
     vi.mocked(fetchRuntimeConfig).mockResolvedValue({});
