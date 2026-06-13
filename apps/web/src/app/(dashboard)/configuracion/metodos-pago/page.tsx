@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@heroui/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +19,7 @@ import { Input } from "@/components/ui/Input";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/settings/FormDrawer";
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 
 const COLS: ColumnDef<PaymentMethodRow>[] = [
   { key: "code", label: "Código" },
@@ -59,7 +61,7 @@ export default function MetodosPagoPage() {
       const page = await fetchConfigurationPaymentMethods({ q, page: 0, size: 50 });
       setData(page);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error cargando métodos de pago");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
     } finally {
       setLoading(false);
     }
@@ -89,7 +91,7 @@ export default function MetodosPagoPage() {
       setDrawerOpen(false);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error guardando");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
     }
   };
 
@@ -98,7 +100,7 @@ export default function MetodosPagoPage() {
       await patchConfigurationPaymentMethodStatus(row.id, !row.isActive);
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error cambiando estado");
+      toast.danger(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
     }
   };
 

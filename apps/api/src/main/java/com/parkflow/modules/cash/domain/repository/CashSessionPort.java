@@ -19,5 +19,6 @@ public interface CashSessionPort {
     
     CashSession save(CashSession session);
     Optional<CashSession> findById(UUID id);
+    Optional<CashSession> findByIdWithLock(UUID id);
     void delete(CashSession session);
 }

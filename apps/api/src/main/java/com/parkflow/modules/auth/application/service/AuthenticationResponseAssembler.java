@@ -21,6 +21,7 @@ public class AuthenticationResponseAssembler {
         RolePermissions.permissionsFor(user.getRole()).stream().map(AuthPermission::authority).toList();
     return new AuthUserResponse(
         user.getId(),
+        user.getCompanyId(),
         user.getName(),
         user.getEmail(),
         user.getRole().name(),

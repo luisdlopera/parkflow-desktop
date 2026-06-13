@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@heroui/react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +23,7 @@ import type { ParkingSiteRow, PrinterRow } from "@/modules/settings/types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/settings/FormDrawer";
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 
 const COLS: ColumnDef<PrinterRow>[] = [
   { key: "name", label: "Nombre" },
@@ -77,7 +79,7 @@ export default function ImpresorasPage() {
           setSiteId(activeSites[0].id);
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Error cargando sedes");
+        setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
       } finally {
         setCatalogLoading(false);
       }
@@ -92,7 +94,7 @@ export default function ImpresorasPage() {
       const page = await fetchConfigurationPrinters({ q, page: 0, size: 50 });
       setData(page);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error cargando impresoras");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
     } finally {
       setLoading(false);
     }
@@ -126,7 +128,7 @@ export default function ImpresorasPage() {
       setDrawerOpen(false);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error guardando");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
     }
   };
 
@@ -135,7 +137,7 @@ export default function ImpresorasPage() {
       await patchConfigurationPrinterStatus(row.id, !row.isActive);
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error cambiando estado");
+      toast.danger(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
     }
   };
 
@@ -143,7 +145,7 @@ export default function ImpresorasPage() {
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <h1 className="text-2xl font-bold text-slate-900">Impresoras</h1>
       
-      <Card shadow="sm" className="border border-slate-200 bg-slate-50/50">
+      <Card border border-default-200="sm" className="border border-slate-200 bg-slate-50/50">
         <Card.Content className="p-4 flex flex-col sm:flex-row sm:items-end gap-4">
           <div className="flex-1">
             <Select

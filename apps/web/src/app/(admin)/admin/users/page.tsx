@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ListBox, useOverlayState } from "@heroui/react";
+import { ListBox, useOverlayState, Button as HeroButton } from "@heroui/react";
 import { Alert } from "@/components/ui/Alert";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { useDialog } from "@/components/ui/DialogProvider";
 import { Chip } from "@/components/ui/Chip";
-import { DropdownTrigger } from "@/components/ui/Dropdown";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { Avatar } from "@/components/ui/Avatar";
 import { DropdownMenu } from "@/components/ui/Dropdown";
@@ -121,6 +121,7 @@ export default function AdminUsersPage() {
   const [formRole, setFormRole] = useState<AdminUser["role"]>("ADMIN");
   const [formActive, setFormActive] = useState(true);
   const [formPermissions, setFormPermissions] = useState<string[]>([]);
+  const { confirm } = useDialog();
 
   const { isOpen: isModalOpen, open: onModalOpen, close: onModalClose } = useOverlayState();
 
@@ -186,8 +187,8 @@ export default function AdminUsersPage() {
     onModalClose();
   };
 
-  const handleDelete = (userId: string) => {
-    if (confirm("¿Está seguro de eliminar este usuario?")) {
+  const handleDelete = async (userId: string) => {
+    if (await confirm("¿Está seguro de eliminar este usuario?")) {
       setUsers((prev) => prev.filter((u) => u.id !== userId));
     }
   };
@@ -305,6 +306,11 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
+      <div className="mb-4">
+        <Alert color="warning" title="Disponible próximamente">
+          La gestión de usuarios administrativos se encuentra en desarrollo y estará completamente disponible en futuras actualizaciones. Actualmente utiliza datos de prueba.
+        </Alert>
+      </div>
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Usuarios Administrativos</h1>
@@ -399,11 +405,9 @@ export default function AdminUsersPage() {
         ]}
         actions={(user) => (
           <Dropdown>
-            <DropdownTrigger>
-              <Button isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownTrigger>
+            <HeroButton isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
+              <MoreVertical className="w-4 h-4" />
+            </HeroButton>
             <DropdownMenu aria-label="Acciones">
               <DropdownItem
                 key="edit"

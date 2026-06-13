@@ -388,12 +388,14 @@ export default function MonitoringPage() {
             </Card.Header>
             <Card.Content>
               <div className="flex items-end gap-2 h-32">
-                {statistics.blocksByDay.map((day) => (
+                {(statistics?.blocksByDay?.length ?? 0) > 0 ? statistics.blocksByDay!.map((day) => {
+                  const maxCount = Math.max(...statistics!.blocksByDay!.map((d) => d.count), 1);
+                  return (
                   <div key={day.date} className="flex-1 flex flex-col items-center gap-2">
                     <div
                       className="w-full bg-primary/20 rounded-t"
                       style={{
-                        height: `${(day.count / Math.max(...statistics.blocksByDay.map((d) => d.count))) * 100}%`,
+                        height: `${(day.count / maxCount) * 100}%`,
                         minHeight: day.count > 0 ? "4px" : "0",
                       }}
                     >
@@ -406,7 +408,10 @@ export default function MonitoringPage() {
                     </span>
                     <span className="text-xs font-medium">{day.count}</span>
                   </div>
-                ))}
+                  );
+                }) : (
+                  <p className="text-sm text-default-400 w-full text-center">Sin datos de tendencia</p>
+                )}
               </div>
             </Card.Content>
           </Card>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Skeleton, useOverlayState } from "@heroui/react";
+import { toast } from "@heroui/react";
+import { useState, useCallback, useMemo } from "react";
+import { Skeleton, useOverlayState, AlertDialog, Button as HeroButton } from "@heroui/react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Chip } from "@/components/ui/Chip";
 import { DropdownTrigger } from "@/components/ui/Dropdown";
@@ -38,20 +39,84 @@ export default function CompaniesPage() {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [isDeactivating, setIsDeactivating] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
+  const [isPurging, setIsPurging] = useState(false);
 
-  const handleDelete = async (company: Company) => {
-    if (confirm(`¿Estás seguro que deseas eliminar permanentemente la empresa ${company.name}? Esta acción no se puede deshacer.`)) {
-      try {
-        setIsDeactivating(true);
-        const { apiDeleteCompany } = await import("@/lib/licensing/api");
-        await apiDeleteCompany(company.id);
-        mutate();
-      } catch (err) {
-        console.error("Error al eliminar empresa", err);
-        alert("Ocurrió un error al eliminar la empresa.");
-      } finally {
-        setIsDeactivating(false);
+  // DataTable States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Filter and paginate data
+  const processedCompanies = useMemo(() => {
+    if (!companies) return [];
+    
+    let filtered = [...companies];
+    
+    // 1. Search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(c => 
+        c.name.toLowerCase().includes(query) || 
+        (c.nit && c.nit.toLowerCase().includes(query)) ||
+        (c.email && c.email.toLowerCase().includes(query))
+      );
+    }
+    
+    // 2. Filters
+    if (activeFilters.plan) {
+      const selectedPlans = activeFilters.plan.split(',');
+      filtered = filtered.filter(c => selectedPlans.includes(c.plan));
+    }
+    if (activeFilters.status) {
+      const selectedStatuses = activeFilters.status.split(',');
+      filtered = filtered.filter(c => selectedStatuses.includes(c.status));
+    }
+    
+    return filtered;
+  }, [companies, searchQuery, activeFilters]);
+
+  const paginatedCompanies = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return processedCompanies.slice(start, start + pageSize);
+  }, [processedCompanies, page, pageSize]);
+
+  const handleDelete = (company: Company) => {
+    setCompanyToDelete(company);
+    setIsPurging(false);
+  };
+
+  const handlePurge = (company: Company) => {
+    setCompanyToDelete(company);
+    setIsPurging(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!companyToDelete) return;
+    try {
+      setIsDeactivating(true);
+      const { apiDeleteCompany, apiPurgeCompany } = await import("@/lib/licensing/api");
+      
+      const apiCall = isPurging ? apiPurgeCompany : apiDeleteCompany;
+      
+      if (companyToDelete.id === "bulk") {
+        await Promise.all(Array.from(selectedKeys).map(id => apiCall(id)));
+      } else {
+        await apiCall(companyToDelete.id);
       }
+
+      mutate();
+      setCompanyToDelete(null);
+      setSelectedKeys(new Set()); // Clear selection if deleted
+      toast.success("Eliminación exitosa");
+    } catch (err: any) {
+      console.error("Error al eliminar empresa", err);
+      const isUnauthorized = err?.status === 401 || err?.status === 403;
+      toast.danger(isUnauthorized ? "No tienes permisos suficientes (SUPER_ADMIN) o tu sesión expiró." : "Ocurrió un error al eliminar.");
+    } finally {
+      setIsDeactivating(false);
     }
   };
 
@@ -274,16 +339,54 @@ export default function CompaniesPage() {
         </Card>
       </div>
 
+      {selectedKeys.size > 0 && (
+        <div className="flex items-center justify-between bg-danger-50 dark:bg-danger-900/20 p-4 rounded-xl border border-danger-100 dark:border-danger-800 transition-all mb-4">
+          <span className="text-danger-700 dark:text-danger-300 font-medium">
+            {selectedKeys.size} {selectedKeys.size === 1 ? "empresa seleccionada" : "empresas seleccionadas"}
+          </span>
+          <div className="flex gap-2">
+            <Button color="danger" variant="flat" onPress={() => {
+              setCompanyToDelete({ id: "bulk", name: `${selectedKeys.size} empresas` } as any);
+              setIsPurging(false);
+            }}>
+              Eliminar seleccionadas
+            </Button>
+            <Button color="danger" variant="bordered" onPress={() => {
+              setCompanyToDelete({ id: "bulk", name: `${selectedKeys.size} empresas` } as any);
+              setIsPurging(true);
+            }}>
+              Purgar seleccionadas
+            </Button>
+          </div>
+        </div>
+      )}
+
       <DataTable
         title="Empresas licenciadas"
         description="Busca, filtra y revisa el estado de cada empresa."
         columns={columns}
-        data={companies ?? []}
+        data={paginatedCompanies}
         getRowKey={(company) => company.id}
         isLoading={isLoading}
         emptyMessage="No se encontraron empresas"
+        selectable
+        selectedKeys={selectedKeys}
+        onRowSelectionChange={setSelectedKeys}
         searchable
         searchPlaceholder="Buscar por nombre, NIT o email..."
+        onSearchChange={setSearchQuery}
+        onFilterChange={setActiveFilters}
+        pagination={{
+          page,
+          pageSize,
+          total: processedCompanies.length,
+        }}
+        onPaginationChange={(newPage, newPageSize) => {
+          setPage(newPage);
+          if (newPageSize !== pageSize) {
+            setPageSize(newPageSize);
+          }
+        }}
         filters={[
           {
             key: "plan",
@@ -307,11 +410,9 @@ export default function CompaniesPage() {
         ]}
         actions={(company) => (
           <Dropdown>
-            <DropdownTrigger>
-              <Button isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownTrigger>
+            <HeroButton isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
+              <MoreVertical className="w-4 h-4" />
+            </HeroButton>
             <DropdownMenu aria-label="Acciones">
               <DropdownItem key="view" textValue="Ver detalle" startContent={<Eye className="w-4 h-4" />}>
                 Ver detalle
@@ -320,7 +421,7 @@ export default function CompaniesPage() {
                 key="edit" 
                 textValue="Editar" 
                 startContent={<Pencil className="w-4 h-4" />} 
-                href={`/admin/companies/${company.id}/edit`}
+                href={`/admin/companies/edit?id=${company.id}`}
                 as="a"
               >
                 Editar
@@ -336,12 +437,20 @@ export default function CompaniesPage() {
               <DropdownItem
                 key="delete"
                 textValue="Eliminar"
-                className="text-danger"
-                color="danger"
                 startContent={<Trash2 className="w-4 h-4" />}
                 onPress={() => handleDelete(company)}
               >
                 Eliminar
+              </DropdownItem>
+              <DropdownItem
+                key="purge"
+                textValue="Purgar"
+                className="text-danger"
+                color="danger"
+                startContent={<Trash2 className="w-4 h-4" />}
+                onPress={() => handlePurge(company)}
+              >
+                Purgar (Hard Delete)
               </DropdownItem>
             </DropdownMenu>
           </Dropdown>
@@ -356,6 +465,36 @@ export default function CompaniesPage() {
           company={selectedCompany}
         />
       )}
+
+      {/* Delete Confirmation Alert */}
+      <AlertDialog>
+        <AlertDialog.Backdrop isOpen={!!companyToDelete} onOpenChange={(open) => !open && setCompanyToDelete(null)}>
+          <AlertDialog.Container>
+            <AlertDialog.Dialog className="sm:max-w-[400px]">
+              <AlertDialog.Header>
+                <AlertDialog.Icon status="danger" />
+                <AlertDialog.Heading>¿{isPurging ? "Purgar" : "Eliminar"} empresa?</AlertDialog.Heading>
+              </AlertDialog.Header>
+              <AlertDialog.Body>
+                <p>
+                  {isPurging 
+                    ? <>Esto eliminará <strong>permanentemente</strong> la empresa <strong>{companyToDelete?.name}</strong> y todos sus datos de la base de datos. Esta acción no se puede deshacer.</>
+                    : <>Esto ocultará la empresa <strong>{companyToDelete?.name}</strong> (Soft Delete) deteniendo sus licencias y acceso a la plataforma.</>
+                  }
+                </p>
+              </AlertDialog.Body>
+              <AlertDialog.Footer>
+                <HeroButton variant="tertiary" onPress={() => setCompanyToDelete(null)}>
+                  Cancelar
+                </HeroButton>
+                <Button className="bg-danger text-white hover:bg-danger/90" onPress={confirmDelete as any} isLoading={isDeactivating}>
+                  Eliminar
+                </Button>
+              </AlertDialog.Footer>
+            </AlertDialog.Dialog>
+          </AlertDialog.Container>
+        </AlertDialog.Backdrop>
+      </AlertDialog>
     </div>
   );
 }

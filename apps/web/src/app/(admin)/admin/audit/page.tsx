@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useOverlayState } from "@heroui/react";
+import { Alert } from "@/components/ui/Alert";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Chip } from "@/components/ui/Chip";
 import { AccordionItem } from "@/components/ui/Accordion";
@@ -229,6 +230,11 @@ export default function AuditPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
+      <div className="mb-4">
+        <Alert color="warning" title="Disponible próximamente">
+          La funcionalidad de registro de auditoría completo se encuentra en desarrollo. Actualmente puede mostrar datos de prueba en caso de falta de conexión.
+        </Alert>
+      </div>
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Auditoría</h1>

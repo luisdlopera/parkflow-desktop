@@ -52,6 +52,8 @@ class LicenseServiceTest {
   @Mock private com.parkflow.modules.parking.operation.repository.AppUserRepository appUserRepository;
   @Mock private com.parkflow.modules.auth.security.PasswordHashService passwordHashService;
 
+  @Mock private com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
+
   private TestLicenseFacade service;
 
   @BeforeEach
@@ -63,7 +65,7 @@ class LicenseServiceTest {
     LicenseRemoteCommandPolicy remoteCommandPolicy = new LicenseRemoteCommandPolicy();
     CompanyResponseAssembler responseAssembler = new CompanyResponseAssembler(moduleRepository, deviceRepository);
     service = new TestLicenseFacade(
-        new CompanyManagementService(companyRepository, auditLogRepository, moduleProvisioner, responseAssembler, appUserRepository, passwordHashService),
+        new CompanyManagementService(companyRepository, auditLogRepository, moduleProvisioner, responseAssembler, appUserRepository, passwordHashService, authSessionPort),
         new LicenseIssueService(companyRepository, deviceRepository, auditLogRepository, signatureService),
         new LicenseValidationService(companyRepository, deviceRepository, signatureService, auditService, moduleProvisioner),
         new LicenseHeartbeatService(
@@ -104,7 +106,7 @@ class LicenseServiceTest {
     when(companyRepository.existsByNit("900123456")).thenReturn(true);
 
     assertThatThrownBy(() -> service.createCompany(request, "admin@parkflow.local"))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(com.parkflow.modules.common.exception.domain.BusinessValidationException.class)
         .hasMessageContaining("NIT");
 
     verify(companyRepository, never()).save(any());

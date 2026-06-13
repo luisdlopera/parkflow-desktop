@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { useOverlayState } from "@heroui/react";
+import { useOverlayState, Button as HeroButton } from "@heroui/react";
 import { Alert } from "@/components/ui/Alert";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Chip } from "@/components/ui/Chip";
-import { DropdownTrigger } from "@/components/ui/Dropdown";
 import { Dropdown } from "@/components/ui/Dropdown";
-import { Accordion } from "@/components/ui/Accordion";
 import { DropdownMenu } from "@/components/ui/Dropdown";
 import { DropdownItem } from "@/components/ui/Dropdown";
 import { Card } from "@/components/ui/Card";
+import { Accordion } from "@/components/ui/Accordion";
 import { AccordionItem } from "@/components/ui/Accordion";
 import { Tabs } from "@/components/ui/Tabs";
 import { Tab } from "@/components/ui/Tabs";
@@ -354,11 +353,9 @@ export default function LicensesPage() {
           ]}
           actions={(company) => (
             <Dropdown>
-              <DropdownTrigger>
-                <Button isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
-              </DropdownTrigger>
+              <HeroButton isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
+                <MoreVertical className="w-4 h-4" />
+              </HeroButton>
               <DropdownMenu aria-label="Acciones">
                 <DropdownItem
                   key="view"

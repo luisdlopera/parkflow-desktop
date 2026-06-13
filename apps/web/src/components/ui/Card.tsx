@@ -6,11 +6,12 @@ import {
 
 export interface CardProps extends Omit<HeroCardProps, "shadow"> {
   shadow?: "none" | "sm" | "md" | "lg" | string;
+  border?: boolean;
 }
 
 export const CardBase = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ shadow, className, ...props }, ref) => {
-    const shadowClass = shadow === "none" ? "shadow-none" : shadow === "sm" ? "shadow-sm" : shadow === "md" ? "shadow-md" : shadow === "lg" ? "shadow-lg" : "";
+  ({ shadow, border, className, ...props }, ref) => {
+    const shadowClass = shadow === "none" ? "shadow-none" : shadow ? "border border-default-200" : "";
     return (
       <HeroCard ref={ref as any} className={`${shadowClass} ${className || ""}`} {...props as any} />
     );

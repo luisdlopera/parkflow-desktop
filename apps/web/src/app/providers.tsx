@@ -2,11 +2,12 @@
 
 import { useEffect } from "react";
 import { HeroUIProvider } from "@heroui/system";
-import { ToastProvider, useToast } from "@/lib/toast/ToastContext";
+import { Toast, toast } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { handleAuthFailureStatus } from "@/lib/auth";
 
 import { TenantConfigProvider } from "@/lib/providers/TenantConfigProvider";
+import { DialogProvider } from "@/components/ui/DialogProvider";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -17,19 +18,18 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <HeroUIProvider navigate={router.push}>
-      <ToastProvider>
-        <TenantConfigProvider>
+      <Toast.Provider placement="top end" />
+      <TenantConfigProvider>
+        <DialogProvider>
           <GlobalAuthEffects />
           {children}
-        </TenantConfigProvider>
-      </ToastProvider>
+        </DialogProvider>
+      </TenantConfigProvider>
     </HeroUIProvider>
   );
 }
 
 function GlobalAuthEffects() {
-  const { warning } = useToast();
-
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -84,7 +84,7 @@ function GlobalAuthEffects() {
         const key = `${response.status}:${requestMethod}:${new URL(response.url).pathname}`;
         await handleAuthFailureStatus(response.status);
         if (response.status === 403 && shouldToast(key)) {
-          warning("No tienes permisos para realizar esta accion");
+          toast.warning("No tienes permisos para realizar esta accion");
         }
       }
       return response;
@@ -100,7 +100,7 @@ function GlobalAuthEffects() {
         window.fetch = window.__parkflowNativeFetch;
       }
     };
-  }, [warning]);
+  }, []);
 
   return null;
 }

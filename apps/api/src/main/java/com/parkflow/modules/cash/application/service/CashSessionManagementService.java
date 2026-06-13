@@ -9,6 +9,7 @@ import com.parkflow.modules.cash.repository.*;
 import com.parkflow.modules.cash.service.*;
 import com.parkflow.modules.cash.support.CashHttpContext;
 import com.parkflow.modules.auth.security.SecurityUtils;
+import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.common.exception.OperationException;
@@ -97,6 +98,15 @@ public class CashSessionManagementService implements CashSessionUseCase {
         }
 
         CashSession session = new CashSession();
+        session.setCompanyId(
+            TenantContext.getTenantId() != null
+                ? TenantContext.getTenantId()
+                : operator.getCompanyId() != null
+                    ? operator.getCompanyId()
+                    : null);
+        if (session.getCompanyId() == null) {
+            throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía no identificado");
+        }
         session.setCashRegister(register);
         session.setOperator(operator);
         session.setStatus(CashSessionStatus.OPEN);
@@ -283,11 +293,22 @@ public class CashSessionManagementService implements CashSessionUseCase {
                             new OperationException(
                                 HttpStatus.BAD_REQUEST,
                                 "Indique terminal o envie header X-Parkflow-Terminal"));
-        CashSession session =
-            cashSessionRepository
-                .findOpenForSiteTerminal(site, terminal, CashSessionStatus.OPEN)
-                .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "No hay caja abierta"));
-        return toSessionResponse(session);
+        // Try 1: lookup by site+terminal JOIN (standard path)
+        Optional<CashSession> bySiteTerminal =
+            cashSessionRepository.findOpenForSiteTerminal(site, terminal, CashSessionStatus.OPEN);
+        if (bySiteTerminal.isPresent()) {
+            return toSessionResponse(bySiteTerminal.get());
+        }
+        // Try 2: fallback via register ID (catches duplicate-register edge cases)
+        Optional<CashRegister> register = cashRegisterRepository.findBySiteAndTerminal(site, terminal);
+        if (register.isPresent()) {
+            Optional<CashSession> byRegister =
+                cashSessionRepository.findByRegisterAndStatus(register.get().getId(), CashSessionStatus.OPEN);
+            if (byRegister.isPresent()) {
+                return toSessionResponse(byRegister.get());
+            }
+        }
+        throw new OperationException(HttpStatus.NOT_FOUND, "No hay caja abierta");
     }
 
     @Override

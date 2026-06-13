@@ -69,6 +69,9 @@ export default function ChangePasswordPage() {
         throw new Error("Error al cambiar la contraseña");
       }
       
+      // Limpiar flag de omitir si existía
+      localStorage.removeItem("parkflow_skip_password_change");
+      
       // Redirigir al inicio para continuar con el onboarding normal
       window.location.href = "/";
     } catch (err: any) {
@@ -78,13 +81,32 @@ export default function ChangePasswordPage() {
     }
   };
 
+  const handleSkip = async () => {
+    // Guardar en localStorage que el usuario omitió el cambio
+    localStorage.setItem("parkflow_skip_password_change", "true");
+    // También intentar actualizar en el servidor (best effort)
+    try {
+      const headers = await authHeaders();
+      await fetch(`${API_BASE}/auth/skip-password-change`, {
+        method: "POST",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json"
+        }
+      });
+    } catch {
+      // Si falla, localStorage ya tiene el flag
+    }
+    window.location.href = "/";
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
   }
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-lg">
+      <Card className="w-full max-w-md border border-default-200">
         <Card.Header className="flex flex-col items-center pb-0 pt-6">
           <h1 className="text-2xl font-bold text-slate-800">Actualizar Contraseña</h1>
           <p className="text-slate-500 text-sm mt-1 text-center">
@@ -132,6 +154,17 @@ export default function ChangePasswordPage() {
               isLoading={isChangingPassword}
             >
               Cambiar y Continuar
+            </Button>
+            
+            <Button 
+              type="button"
+              variant="ghost"
+              color="primary"
+              className="w-full"
+              onPress={handleSkip}
+              isDisabled={isChangingPassword}
+            >
+              Omitir por ahora
             </Button>
           </form>
         </Card.Content>

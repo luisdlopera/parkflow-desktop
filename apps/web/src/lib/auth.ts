@@ -24,6 +24,19 @@ type StoredSession = {
 let memorySession: StoredSession | null = null;
 let redirectInProgress = false;
 
+/** Extrae el companyId del token JWT claim "cid" (fallback si no está en user). */
+export function extractCompanyIdFromToken(accessToken: string): string | null {
+  try {
+    const payload = accessToken.split(".")[1];
+    if (!payload) return null;
+    const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))) as Record<string, unknown>;
+    const cid = decoded.cid;
+    return typeof cid === "string" ? cid : null;
+  } catch {
+    return null;
+  }
+}
+
 export type AuthHeaderOptions = {
   /** Optional note stored in server audit metadata for sensitive settings changes. */
   auditReason?: string;
@@ -265,7 +278,16 @@ export async function isOfflineLeaseValid(): Promise<boolean> {
 
 export async function currentUser(): Promise<AuthUser | null> {
   const session = await loadSession();
-  return session?.user ?? null;
+  if (!session) return null;
+  const user = session.user;
+  // Fallback: si companyId no está en user, extraerlo del token JWT claim "cid"
+  if (user && !user.companyId && session.accessToken) {
+    const cid = extractCompanyIdFromToken(session.accessToken);
+    if (cid) {
+      return { ...user, companyId: cid };
+    }
+  }
+  return user ?? null;
 }
 
 /** Updates the cached user in the active session (e.g. after profile edit). */

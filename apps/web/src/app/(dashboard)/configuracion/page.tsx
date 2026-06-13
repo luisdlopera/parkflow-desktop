@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/Switch";
 import { Input } from "@/components/ui/Input";
 import { TextArea } from "@/components/ui/TextArea";
 import { useSearchParams } from "next/navigation";
+import { useDialog } from "@/components/ui/DialogProvider";
 import DataTable from "@/components/ui/DataTable";
 import {
   createUser,
@@ -53,7 +54,13 @@ import {
   type RateCategory
 } from "@/lib/settings-api";
 import { resetOnboarding } from "@/lib/onboarding-api";
+import { currentUser } from "@/lib/auth";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DropdownTrigger, Dropdown, DropdownMenu, DropdownItem } from "@/components/ui/Dropdown";
+import { MoreVertical, Pencil, Trash2, Car } from "lucide-react";
+import { VehicleTypeIcon } from "@/components/vehicles/VehicleTypeIcon";
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { type DataTableColumn } from "@/components/ui/DataTable";
 
 type TabKey = "rates" | "users" | "parameters" | "interface" | "masters" | "monthly" | "agreements" | "prepaid" | "onboarding";
 
@@ -266,19 +273,6 @@ export default function ConfiguracionPage() {
 
       {notice ? <Notice kind={notice.kind} text={notice.text} /> : null}
 
-      <Notice kind="info" text={config.info} />
-
-      <TextArea
-        label="Motivo de auditoría"
-        description="Opcional, hasta 500 caracteres. Se envía al servidor en cambios sensibles."
-        maxLength={500}
-        value={auditReason}
-        onChange={(e) => setAuditReason(e.target.value)}
-        placeholder="Ej. Ajuste acordado con administración..."
-        variant="flat"
-        className="max-w-2xl"
-      />
-
       {section === "rates" && can.ratesRead ? (
         <RatesSection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
       ) : null}
@@ -324,11 +318,6 @@ export default function ConfiguracionPage() {
       {section === "interface" ? <InterfaceSection settings={uiSettings} onUpdate={updateUiSetting} /> : null}
 
       {section === "onboarding" ? <OnboardingSection onNotify={setNotice} /> : null}
-
-      {section === "masters" && can.cfgRead ? <MastersSection onNotify={setNotice} canEdit={can.cfgEdit} /> : null}
-      {section === "masters" && !can.cfgRead ? (
-        <p className="text-sm text-slate-600">No tienes permisos para ver esta sección. Contacta a un administrador.</p>
-      ) : null}
 
       {section === "masters" && can.cfgRead ? <MastersSection onNotify={setNotice} canEdit={can.cfgEdit} /> : null}
       {section === "masters" && !can.cfgRead ? (
@@ -426,6 +415,7 @@ function RatesSection({
   const [creating, setCreating] = useState(false);
   const [rateDetail, setRateDetail] = useState<RateRow | null>(null);
   const [rateDetailLoading, setRateDetailLoading] = useState(false);
+  const { confirm } = useDialog();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -435,7 +425,7 @@ function RatesSection({
       setRows(res.content);
       setTotalPages(res.totalPages);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error cargando tarifas");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
       setRows([]);
     } finally {
       setLoading(false);
@@ -667,7 +657,7 @@ function RatesSection({
                         } catch (e) {
                           onNotify({
                             kind: "err",
-                            text: e instanceof Error ? e.message : "No se pudo cargar el detalle"
+                            text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA)
                           });
                         } finally {
                           setRateDetailLoading(false);
@@ -706,7 +696,7 @@ function RatesSection({
                         } catch (e) {
                           onNotify({
                             kind: "err",
-                            text: e instanceof Error ? e.message : "No se pudo cambiar estado"
+                            text: getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS)
                           });
                         }
                       })()
@@ -719,22 +709,20 @@ function RatesSection({
                     variant="tertiary"
                     color="danger"
                     className="font-semibold"
-                    onPress={() => {
-                      if (!confirm("Eliminar tarifa? Solo permitido si no hay sesiones asociadas.")) {
+                    onPress={async () => {
+                      if (!(await confirm("Eliminar tarifa? Solo permitido si no hay sesiones asociadas."))) {
                         return;
                       }
-                      void (async () => {
-                        try {
+                      try {
                           await deleteRate(r.id, auditReason);
                           onNotify({ kind: "ok", text: "Tarifa eliminada." });
                           await load();
                         } catch (e) {
                           onNotify({
                             kind: "err",
-                            text: e instanceof Error ? e.message : "No se pudo eliminar"
+                            text: getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA)
                           });
                         }
-                      })();
                     }}
                   >
                     Eliminar
@@ -944,7 +932,7 @@ function RateForm({
           <p className="text-xs font-semibold text-slate-600">Minutos gracia / tolerancia / fraccion</p>
           <div className="flex gap-2">
             <Input
-              
+              aria-label="Minutos de gracia"
               size="sm"
               type="number"
               min="0"
@@ -953,7 +941,7 @@ function RateForm({
               onChange={(e) => setGrace(e.target.value)}
             />
             <Input
-              
+              aria-label="Minutos de tolerancia"
               size="sm"
               type="number"
               min="0"
@@ -962,7 +950,7 @@ function RateForm({
               onChange={(e) => setTolerance(e.target.value)}
             />
             <Input
-              
+              aria-label="Fracción de facturación"
               size="sm"
               type="number"
               min="1"
@@ -1010,14 +998,14 @@ function RateForm({
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Franja (opcional) HH:MM</span>
           <div className="flex gap-3">
             <Input
-              
+              aria-label="Inicio de jornada"
               size="sm"
               placeholder="08:00"
               value={wStart}
               onChange={(e) => setWStart(e.target.value)}
             />
             <Input
-              
+              aria-label="Fin de jornada"
               size="sm"
               placeholder="18:00"
               value={wEnd}
@@ -1059,7 +1047,7 @@ function RateForm({
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Topes de sesión (opcional)</span>
           <div className="flex gap-2">
             <Input
-              
+              aria-label="Tope mínimo de sesión"
               size="sm"
               type="number"
               step="0.01"
@@ -1069,7 +1057,7 @@ function RateForm({
               onChange={(e) => setMinSession(e.target.value)}
             />
             <Input
-              
+              aria-label="Tope máximo de sesión"
               size="sm"
               type="number"
               step="0.01"
@@ -1132,7 +1120,7 @@ function RateForm({
           <div className="flex flex-wrap gap-3">
             <Input
               type="datetime-local"
-              
+              aria-label="Vigencia desde"
               size="sm"
               value={schedFrom}
               onChange={(e) => setSchedFrom(e.target.value)}
@@ -1140,7 +1128,7 @@ function RateForm({
             />
             <Input
               type="datetime-local"
-              
+              aria-label="Vigencia hasta"
               size="sm"
               value={schedTo}
               onChange={(e) => setSchedTo(e.target.value)}
@@ -1203,7 +1191,7 @@ function RateForm({
                 );
                 await onSaved();
               } catch (e) {
-                onError(e instanceof Error ? e.message : "Error guardando");
+                onError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
               }
             })()
           }
@@ -1235,6 +1223,7 @@ function UsersSection({
   const [showCreate, setShowCreate] = useState(false);
   const [userDetail, setUserDetail] = useState<UserAdminRow | null>(null);
   const [userDetailLoading, setUserDetailLoading] = useState(false);
+  const { prompt } = useDialog();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1249,7 +1238,7 @@ function UsersSection({
       setRows(res.content);
       setTotalPages(res.totalPages);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error cargando usuarios");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
       setRows([]);
     } finally {
       setLoading(false);
@@ -1394,7 +1383,7 @@ function UsersSection({
                         } catch (e) {
                           onNotify({
                             kind: "err",
-                            text: e instanceof Error ? e.message : "No se pudo cargar el detalle"
+                            text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA)
                           });
                         } finally {
                           setUserDetailLoading(false);
@@ -1429,7 +1418,7 @@ function UsersSection({
                             } catch (e) {
                               onNotify({
                                 kind: "err",
-                                text: e instanceof Error ? e.message : "Error"
+                                text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA)
                               });
                             }
                           })()
@@ -1442,22 +1431,20 @@ function UsersSection({
                         variant="tertiary"
                         color="primary"
                         className="font-semibold"
-                        onPress={() => {
-                          const p = window.prompt("Nueva contrasena (min 8 caracteres)");
+                        onPress={async () => {
+                          const p = await prompt("Nueva contrasena (min 8 caracteres)");
                           if (!p || p.length < 8) {
                             return;
                           }
-                          void (async () => {
-                            try {
+                          try {
                               await resetUserPassword(u.id, p, auditReason);
                               onNotify({ kind: "ok", text: "Contrasena restablecida." });
                             } catch (e) {
                               onNotify({
                                 kind: "err",
-                                text: e instanceof Error ? e.message : "Error"
+                                text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA)
                               });
                             }
-                          })();
                         }}
                       >
                         Reset clave
@@ -1552,8 +1539,8 @@ function UserCreatePanel({
     <div className="surface rounded-2xl p-6">
       <h2 className="text-lg font-semibold text-slate-900">Nuevo usuario</h2>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <Input  size="sm" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
-        <Input  size="sm" placeholder="Correo" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input aria-label="Nombre" size="sm" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
+        <Input aria-label="Correo" size="sm" placeholder="Correo" value={email} onChange={(e) => setEmail(e.target.value)} />
         <Select
           label="Rol"
           value={[role]}
@@ -1575,11 +1562,11 @@ function UserCreatePanel({
         </ListBox>
       </Select.Popover>
     </Select>
-        <Input  size="sm" placeholder="Contrasena inicial (min 8)" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <Input  size="sm" placeholder="Documento (opcional)" value={document} onChange={(e) => setDocument(e.target.value)} />
-        <Input  size="sm" placeholder="Telefono" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        <Input  size="sm" placeholder="Sede" value={site} onChange={(e) => setSite(e.target.value)} />
-        <Input  size="sm" placeholder="Terminal / caja" value={terminal} onChange={(e) => setTerminal(e.target.value)} />
+        <Input aria-label="Contraseña inicial" size="sm" placeholder="Contrasena inicial (min 8)" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Input aria-label="Documento" size="sm" placeholder="Documento (opcional)" value={document} onChange={(e) => setDocument(e.target.value)} />
+        <Input aria-label="Teléfono" size="sm" placeholder="Telefono" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Input aria-label="Sede" size="sm" placeholder="Sede" value={site} onChange={(e) => setSite(e.target.value)} />
+        <Input aria-label="Terminal o caja" size="sm" placeholder="Terminal / caja" value={terminal} onChange={(e) => setTerminal(e.target.value)} />
       </div>
       <div className="mt-4 flex gap-3">
         <div className="min-w-[120px]">
@@ -1616,7 +1603,7 @@ function UserCreatePanel({
                   );
                   await onCreated();
                 } catch (e) {
-                  onError(e instanceof Error ? e.message : "Error");
+                  onError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
                 }
               })()
             }
@@ -1660,8 +1647,8 @@ function UserEditPanel({
       <h2 className="text-lg font-semibold text-slate-900">Editar usuario</h2>
       <p className="text-xs text-slate-500">{user.email}</p>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <Input  size="sm" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
-        <Input  size="sm" placeholder="Correo" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input aria-label="Nombre" size="sm" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
+        <Input aria-label="Correo" size="sm" placeholder="Correo" value={email} onChange={(e) => setEmail(e.target.value)} />
         <Select
           label="Rol"
           value={[role]}
@@ -1715,7 +1702,7 @@ function UserEditPanel({
                   );
                   await onSaved();
                 } catch (e) {
-                  onError(e instanceof Error ? e.message : "Error");
+                  onError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
                 }
               })()
             }
@@ -1743,6 +1730,7 @@ function ParametersSection({
   auditReason: string;
 }) {
   const [paramSite, setParamSite] = useState("DEFAULT");
+  const { confirm } = useDialog();
   const [data, setData] = useState<ParkingParametersPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1753,7 +1741,7 @@ function ParametersSection({
     try {
       setData(await fetchParameters(paramSite.trim() || "DEFAULT"));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
       setData(null);
     } finally {
       setLoading(false);
@@ -2175,7 +2163,7 @@ function ParametersSection({
                   } catch (e) {
                     onNotify({
                       kind: "err",
-                      text: e instanceof Error ? e.message : "Error al guardar"
+                      text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA)
                     });
                   }
                 })()
@@ -2187,10 +2175,9 @@ function ParametersSection({
               variant="outline"
               color="primary"
               className="font-semibold"
-              onPress={() => {
-                if (!confirm("Restaurar parametros por defecto en el servidor?")) return;
-                void (async () => {
-                  try {
+              onPress={async () => {
+                if (!(await confirm("Restaurar parametros por defecto en el servidor?"))) return;
+                try {
                     const saved = await resetParameters(
                       paramSite.trim() || "DEFAULT",
                       auditReason
@@ -2200,10 +2187,9 @@ function ParametersSection({
                   } catch (e) {
                     onNotify({
                       kind: "err",
-                      text: e instanceof Error ? e.message : "Error"
+                      text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA)
                     });
                   }
-                })();
               }}
             >
               Restaurar valores por defecto
@@ -2252,7 +2238,7 @@ type VehicleTypeFormState = {
 const defaultVehicleTypeForm: VehicleTypeFormState = {
   code: "",
   name: "",
-  icon: "🚗",
+  icon: "",
   color: "#2563EB",
   requiresPlate: true,
   hasOwnRate: true,
@@ -2265,7 +2251,7 @@ function vehicleTypeToForm(row: import("@/lib/settings-api").MasterVehicleTypeRo
   return {
     code: row.code,
     name: row.name,
-    icon: row.icon ?? "🚗",
+    icon: row.icon ?? "",
     color: row.color ?? "#2563EB",
     requiresPlate: row.requiresPlate ?? true,
     hasOwnRate: row.hasOwnRate ?? true,
@@ -2280,8 +2266,14 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<import("@/lib/settings-api").MasterVehicleTypeRow | null>(null);
   const [creating, setCreating] = useState(false);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [form, setForm] = useState<{ code: string; name: string; icon: string; color: string; displayOrder: number; requiresPlate: boolean; hasOwnRate: boolean; quickAccess: boolean; requiresPhoto: boolean }>({ code: "", name: "", icon: "", color: "#64748B", displayOrder: 0, requiresPlate: true, hasOwnRate: false, quickAccess: false, requiresPhoto: false });
+  const { confirm } = useDialog();
+
+  // DataTable advanced states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -2289,7 +2281,7 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
       const { fetchMasterVehicleTypes } = await import("@/lib/settings-api");
       setRows(await fetchMasterVehicleTypes());
     } catch (e) {
-      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error cargando maestros" });
+      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA) });
     } finally {
       setLoading(false);
     }
@@ -2298,76 +2290,170 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
   useEffect(() => { load().catch(console.error); }, [load]);
 
   const toggleActive = useCallback(async (id: string, current: boolean) => {
-    setTogglingId(id);
     try {
       const { patchVehicleTypeStatus } = await import("@/lib/settings-api");
       await patchVehicleTypeStatus(id, !current);
       setRows(prev => prev.map(r => r.id === id ? { ...r, isActive: !current } : r));
       onNotify({ kind: "ok", text: current ? "Tipo desactivado" : "Tipo activado" });
     } catch (e) {
-      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error cambiando estado" });
-    } finally {
-      setTogglingId(null);
+      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS) });
     }
   }, [onNotify]);
 
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center surface rounded-2xl p-4">
-        <h2 className="text-lg font-semibold text-slate-900">Tipos de Vehículo</h2>
-        <Button
-          color="primary"
-          size="md"
-          className="font-semibold"
-          onPress={() => { setCreating(true); setEditing(null); setForm(defaultVehicleTypeForm); }}
+  const handleDelete = useCallback(async (id: string) => {
+    if (!(await confirm("¿Eliminar este tipo de vehículo?"))) return;
+    try {
+      const { deleteVehicleType } = await import("@/lib/settings-api");
+      await deleteVehicleType(id);
+      setRows(prev => prev.filter(r => r.id !== id));
+      onNotify({ kind: "ok", text: "Tipo eliminado" });
+    } catch (e) {
+      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA) });
+    }
+  }, [onNotify]);
+
+  // Filter and paginate
+  const processedRows = useMemo(() => {
+    let filtered = [...rows];
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(r =>
+        r.name.toLowerCase().includes(q) ||
+        r.code.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [rows, searchQuery]);
+
+  const paginatedRows = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return processedRows.slice(start, start + pageSize);
+  }, [processedRows, page, pageSize]);
+
+  const columns: DataTableColumn<import("@/lib/settings-api").MasterVehicleTypeRow>[] = [
+    {
+      key: "icon",
+      header: "",
+      render: (r) => (
+        <span
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white border border-default-200"
+          style={{ backgroundColor: r.color ?? "#64748B" }}
         >
-          Nuevo tipo
-        </Button>
+          <VehicleTypeIcon code={r.code} className="w-5 h-5" />
+        </span>
+      )
+    },
+    {
+      key: "code",
+      header: "Código",
+      sortable: true,
+    },
+    {
+      key: "name",
+      header: "Nombre",
+      sortable: true,
+    },
+    {
+      key: "isActive",
+      header: "Activo",
+      render: (r) => (
+        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+          {r.isActive ? "Sí" : "No"}
+        </span>
+      )
+    },
+    {
+      key: "requiresPlate",
+      header: "Placa",
+      render: (r) => (r.requiresPlate ? "Sí" : "No")
+    },
+    {
+      key: "quickAccess",
+      header: "Rápido",
+      render: (r) => (r.quickAccess ? "Sí" : "No")
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Tipos de Vehículo</h2>
+          <p className="text-sm text-slate-500">Administra los tipos de vehículo disponibles en el sistema</p>
+        </div>
+        {canEdit && (
+          <Button
+            color="primary"
+            size="md"
+            className="font-semibold"
+            onPress={() => { setCreating(true); setEditing(null); setForm(defaultVehicleTypeForm); }}
+          >
+            Nuevo tipo
+          </Button>
+        )}
       </div>
 
       <DataTable
-        columns={[
-          {
-            key: "icon",
-            label: "",
-            render: (r) => (
-              <span
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-lg text-white shadow-sm"
-                style={{ backgroundColor: r.color ?? "#64748B" }}
-              >
-                {r.icon ?? "🚗"}
-              </span>
-            )
-          },
-          { key: "code", label: "Código" },
-          { key: "name", label: "Nombre" },
-          {
-            key: "isActive",
-            label: "Activo",
-            render: (r) => (
-              <Switch
-                isSelected={r.isActive}
-                isDisabled={togglingId === r.id}
-                size="sm"
-                color={r.isActive ? "success" : "danger"}
-                onChange={() => toggleActive(r.id, r.isActive)}
-                aria-label={r.isActive ? "Desactivar tipo" : "Activar tipo"}
-              />
-            )
-          },
-          { key: "id", label: "", render: (r) => (
-            <Button
-              size="sm"
-              variant="tertiary"
-              color="primary"
-              className="font-semibold"
-              onPress={() => { setEditing(r as any); setCreating(false); setForm(vehicleTypeToForm(r)); }}
-            >
-              Editar
+        title="Tipos de vehículo"
+        description="Lista de tipos de vehículo configurados"
+        columns={columns}
+        data={paginatedRows}
+        getRowKey={(r) => r.id}
+        isLoading={loading}
+        emptyMessage="No hay tipos de vehículo registrados"
+        selectable
+        selectedKeys={selectedKeys}
+        onRowSelectionChange={setSelectedKeys}
+        searchable
+        searchPlaceholder="Buscar por nombre o código..."
+        onSearchChange={setSearchQuery}
+        pagination={{
+          page,
+          pageSize,
+          total: processedRows.length,
+        }}
+        onPaginationChange={(newPage, newPageSize) => {
+          setPage(newPage);
+          if (newPageSize !== pageSize) {
+            setPageSize(newPageSize);
+          }
+        }}
+        actions={(row) => (
+          <Dropdown>
+            <Button isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
+              <MoreVertical className="w-4 h-4" />
             </Button>
-          ) }
-        ]}
-        rows={rows as any[]}
+            <DropdownMenu aria-label="Acciones">
+              <DropdownItem
+                key="edit"
+                textValue="Editar"
+                startContent={<Pencil className="w-4 h-4" />}
+                onPress={() => { setEditing(row); setCreating(false); setForm(vehicleTypeToForm(row)); }}
+              >
+                Editar
+              </DropdownItem>
+              <DropdownItem
+                key="toggle"
+                textValue={row.isActive ? "Desactivar" : "Activar"}
+                onPress={() => toggleActive(row.id, row.isActive)}
+              >
+                {row.isActive ? "Desactivar" : "Activar"}
+              </DropdownItem>
+              {canEdit && (
+                <DropdownItem
+                  key="delete"
+                  textValue="Eliminar"
+                  className="text-danger"
+                  color="danger"
+                  startContent={<Trash2 className="w-4 h-4" />}
+                  onPress={() => handleDelete(row.id)}
+                >
+                  Eliminar
+                </DropdownItem>
+              )}
+            </DropdownMenu>
+          </Dropdown>
+        )}
       />
 
       {(creating || editing) && canEdit ? (
@@ -2376,7 +2462,6 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <Input
               label="Código (ej. CAR)"
-              
               size="sm"
               classNames={{ input: "uppercase" }}
               value={form.code}
@@ -2385,14 +2470,12 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
             />
             <Input
               label="Nombre (ej. Carro)"
-              
               size="sm"
               value={form.name}
               onChange={(val) => setForm({ ...form, name: val.target.value })}
             />
             <Input
               label="Icono"
-              
               size="sm"
               maxLength={40}
               value={form.icon}
@@ -2400,7 +2483,6 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
             />
             <Input
               label="Color"
-              
               size="sm"
               type="color"
               value={form.color}
@@ -2408,7 +2490,6 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
             />
             <Input
               label="Orden"
-              
               size="sm"
               type="number"
               min={0}
@@ -2417,10 +2498,10 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
             />
             <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
               <span
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-xl text-white"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white"
                 style={{ backgroundColor: form.color || "#64748B" }}
               >
-                {form.icon || "🚗"}
+                <VehicleTypeIcon code={form.code || "CAR"} className="w-5 h-5" />
               </span>
               <div>
                 <p className="text-sm font-semibold text-slate-900">{form.name || "Vista previa"}</p>
@@ -2472,7 +2553,7 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
                   setEditing(null);
                   load();
                 } catch(e) {
-                  onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error" });
+                  onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA) });
                 }
               }}
             >
@@ -2500,7 +2581,7 @@ function MonthlySection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
       setRows(res.content);
       setTotalPages(res.totalPages);
     } catch (e) {
-      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error cargando" });
+      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA) });
     } finally {
       setLoading(false);
     }
@@ -2549,7 +2630,7 @@ function AgreementsSection({ canEdit, onNotify, auditReason }: { canEdit: boolea
       setRows(res.content);
       setTotalPages(res.totalPages);
     } catch (e) {
-      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error cargando" });
+      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA) });
     } finally {
       setLoading(false);
     }
@@ -2588,7 +2669,7 @@ function PrepaidSection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
       const res = await fetchPrepaidPackages({ size: 50 });
       setRows(res.content);
     } catch (e) {
-      onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error cargando" });
+      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA) });
     } finally {
       setLoading(false);
     }
@@ -2618,6 +2699,7 @@ function PrepaidSection({ canEdit, onNotify, auditReason }: { canEdit: boolean; 
 
 function OnboardingSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void }) {
   const [loading, setLoading] = useState(false);
+  const { confirm } = useDialog();
 
   return (
     <div className="space-y-6">
@@ -2637,15 +2719,21 @@ function OnboardingSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | 
               color="primary"
               isLoading={loading}
               onPress={async () => {
-                if (!confirm("¿Seguro que deseas re-ejecutar la parametrización inicial?")) return;
+                if (!(await confirm("¿Seguro que deseas re-ejecutar la parametrización inicial?"))) return;
                 setLoading(true);
                 try {
-                  const compId = "00000000-0000-0000-0000-000000000001"; // Default for current tenant context if multi-tenant not strictly used
+                  const user = await currentUser();
+                  const compId = user?.companyId;
+                  if (!compId) {
+                    setLoading(false);
+                    onNotify({ kind: "err", text: "No se pudo identificar la empresa actual" });
+                    return;
+                  }
                   await resetOnboarding(compId, "Reinicio desde configuración");
                   window.location.reload();
                 } catch (e) {
                   setLoading(false);
-                  onNotify({ kind: "err", text: e instanceof Error ? e.message : "Error reiniciando" });
+                  onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA) });
                 }
               }}
             >

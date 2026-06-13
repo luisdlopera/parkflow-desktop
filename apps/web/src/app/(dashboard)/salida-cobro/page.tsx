@@ -1,5 +1,7 @@
 "use client";
 
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { ListBox } from "@heroui/react";
@@ -23,7 +25,7 @@ import {
 import type { VehicleType } from "@parkflow/types";
 import { useExitShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
 import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
-import { useToast } from "@/lib/toast/ToastContext";
+import { toast } from "@heroui/react";
 import { currentUser } from "@/lib/auth";
 import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
 import { downloadTicketAsHtml } from "@/lib/print/ticket-download";
@@ -99,17 +101,17 @@ type SplitPaymentRow = {
 };
 
 const PAYMENT_METHODS: Array<{ code: PaymentMethodCode; label: string; hint: string; tone: string }> = [
-  { code: "CASH", label: "Efectivo", hint: "Cambio / vuelto", tone: "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30" },
-  { code: "DEBIT_CARD", label: "Tarjeta débito", hint: "Datáfono débito", tone: "bg-sky-500 hover:bg-sky-600 shadow-sky-500/30" },
-  { code: "CREDIT_CARD", label: "Tarjeta crédito", hint: "Datáfono crédito", tone: "bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/30" },
-  { code: "QR", label: "QR", hint: "Código QR", tone: "bg-slate-700 hover:bg-slate-800 shadow-slate-500/30" },
-  { code: "NEQUI", label: "Nequi", hint: "Referencia requerida", tone: "bg-fuchsia-500 hover:bg-fuchsia-600 shadow-fuchsia-500/30" },
-  { code: "DAVIPLATA", label: "Daviplata", hint: "Referencia requerida", tone: "bg-rose-500 hover:bg-rose-600 shadow-rose-500/30" },
-  { code: "TRANSFER", label: "Transferencia", hint: "Banco / referencia", tone: "bg-cyan-600 hover:bg-cyan-700 shadow-cyan-500/30" },
-  { code: "AGREEMENT", label: "Convenio", hint: "Empresa aliada", tone: "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30" },
-  { code: "INTERNAL_CREDIT", label: "Crédito interno", hint: "Cartera interna", tone: "bg-violet-500 hover:bg-violet-600 shadow-violet-500/30" },
-  { code: "OTHER", label: "Otro", hint: "Caso especial", tone: "bg-zinc-500 hover:bg-zinc-600 shadow-zinc-500/30" },
-  { code: "MIXED", label: "Mixto", hint: "Pago dividido", tone: "bg-teal-600 hover:bg-teal-700 shadow-teal-500/30" },
+  { code: "CASH", label: "Efectivo", hint: "Cambio / vuelto", tone: "bg-emerald-500 hover:bg-emerald-600 border border-default-200" },
+  { code: "DEBIT_CARD", label: "Tarjeta débito", hint: "Datáfono débito", tone: "bg-sky-500 hover:bg-sky-600 border border-default-200" },
+  { code: "CREDIT_CARD", label: "Tarjeta crédito", hint: "Datáfono crédito", tone: "bg-indigo-500 hover:bg-indigo-600 border border-default-200" },
+  { code: "QR", label: "QR", hint: "Código QR", tone: "bg-slate-700 hover:bg-slate-800 border border-default-200" },
+  { code: "NEQUI", label: "Nequi", hint: "Referencia requerida", tone: "bg-fuchsia-500 hover:bg-fuchsia-600 border border-default-200" },
+  { code: "DAVIPLATA", label: "Daviplata", hint: "Referencia requerida", tone: "bg-rose-500 hover:bg-rose-600 border border-default-200" },
+  { code: "TRANSFER", label: "Transferencia", hint: "Banco / referencia", tone: "bg-cyan-600 hover:bg-cyan-700 border border-default-200" },
+  { code: "AGREEMENT", label: "Convenio", hint: "Empresa aliada", tone: "bg-amber-500 hover:bg-amber-600 border border-default-200" },
+  { code: "INTERNAL_CREDIT", label: "Crédito interno", hint: "Cartera interna", tone: "bg-violet-500 hover:bg-violet-600 border border-default-200" },
+  { code: "OTHER", label: "Otro", hint: "Caso especial", tone: "bg-zinc-500 hover:bg-zinc-600 border border-default-200" },
+  { code: "MIXED", label: "Mixto", hint: "Pago dividido", tone: "bg-teal-600 hover:bg-teal-700 border border-default-200" },
 ];
 
 const SPLIT_METHODS = PAYMENT_METHODS.filter((method) => method.code !== "MIXED") as Array<{
@@ -240,7 +242,8 @@ export default function SalidaCobroPage() {
   const reprintLock = useRef(false);
   const ticketInputRef = useRef<HTMLInputElement>(null);
   const { playSuccess, playError } = useOperationSounds();
-  const { success: toastSuccess, error: toastError } = useToast();
+  const toastSuccess = toast.success;
+  const toastError = toast.danger;
   const [reprintLoading, setReprintLoading] = useState(false);
   const { getOperationConfigValue } = useTenantConfig();
   const enableVehicleCondition = getOperationConfigValue<boolean>("enableVehicleCondition", true);
@@ -353,8 +356,8 @@ export default function SalidaCobroPage() {
       setPendingCustodiedItems(pending);
       setReturnConfirmedIds(pending.map((item: CustodiedItemInfo) => item.id));
       playSuccess();
-    } catch {
-      setError("Error de red buscando sesion");
+    } catch (err) {
+      setError(getUserFriendlyErrorMessage(err, FrontendActionError.LOAD_DATA));
       playError();
     } finally {
       setSearching(false);
@@ -412,7 +415,7 @@ export default function SalidaCobroPage() {
       try {
         const cs = await cashCurrent(site, term || undefined);
         cashSessionId = cs.id;
-      } catch {
+      } catch (err) {
         setError("Debe abrir caja en este terminal antes de procesar salidas");
         setProcessing(false);
         operationLock.current = false;
@@ -459,7 +462,7 @@ export default function SalidaCobroPage() {
             const site = active.receipt.site ?? undefined;
             const pol = await cashPolicy(site ?? null);
             errMsg = `${errMsg} ${pol.operationsHint}`.trim();
-          } catch {
+          } catch (err) {
             /* keep base message */
           }
         }
@@ -484,10 +487,7 @@ export default function SalidaCobroPage() {
         });
       } else {
         playSuccess();
-        toastSuccess(
-          `Salida registrada. Total: $${Number(payload.total ?? 0).toLocaleString("es-CO")}`,
-          6000
-        );
+        toast.success(`Salida registrada. Total: $${Number(payload.total ?? 0).toLocaleString("es-CO")}`);
         setActive(null);
         setTicketNumber("");
         setPlate("");
@@ -498,28 +498,11 @@ export default function SalidaCobroPage() {
           ticketInputRef.current?.focus();
         }, 100);
       }
-      
-      playSuccess();
-      toastSuccess(
-        `Salida registrada. Total: $${Number(payload.total ?? 0).toLocaleString("es-CO")}${
-          printWarning ? `. ${printWarning}` : ""
-        }`,
-        6000
-      );
-      setActive(null);
-      setTicketNumber("");
-      setPlate("");
-      setAgreementCode("");
-      
-      // Re-focus para siguiente operación
-      setTimeout(() => {
-        ticketInputRef.current?.focus();
-      }, 100);
     } catch (err) {
       const validationMessage = toUserMessageFromClientValidation(err);
       if (validationMessage) {
         setError(validationMessage);
-        toastError(validationMessage);
+        toast.danger(validationMessage);
         playError();
         return;
       }
@@ -534,9 +517,9 @@ export default function SalidaCobroPage() {
         splitPayments,
         idempotencyFingerprint,
         playSuccess,
-        toastSuccess,
+        toast.success,
         playError,
-        toastError,
+        toast.danger,
         setError
       );
       if (isQueued) {
@@ -552,7 +535,7 @@ export default function SalidaCobroPage() {
       setProcessing(false);
       operationLock.current = false;
     }
-  }, [active, apiBase, selectedPaymentMethod, splitPayments, splitTotal, totalDue, singleCashReceived, paymentObservation, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, playSuccess, playError, toastSuccess, toastError, pendingCustodiedItems.length, printWarning, returnConfirmedIds]);
+  }, [active, apiBase, selectedPaymentMethod, splitPayments, splitTotal, totalDue, singleCashReceived, paymentObservation, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, playSuccess, playError, toast.success, toast.danger, pendingCustodiedItems.length, printWarning, returnConfirmedIds]);
 
   // Keyboard shortcuts - definido después de processExit
   useExitShortcuts({
@@ -640,10 +623,10 @@ export default function SalidaCobroPage() {
       });
       if (queued) {
         clearIdempotencyKey("reprint", idempotencyFingerprint);
-        setMessage("Sin internet: reimpresion en cola offline.");
+        toast.danger("Recibo guardado offline, pero no se pudo contactar a la impresora. Verifique la conexión.");
         playSuccess();
       } else {
-        setError("Error de red en reimpresion");
+        setError(getUserFriendlyErrorMessage(err, FrontendActionError.PRINT_ACTION));
         playError();
       }
     } finally {
@@ -745,7 +728,7 @@ export default function SalidaCobroPage() {
         setMessage("Sin internet: operacion de ticket perdido en cola offline.");
         playSuccess();
       } else {
-        setError("Error de red procesando ticket perdido");
+        setError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
         playError();
       }
     } finally {
@@ -962,17 +945,18 @@ export default function SalidaCobroPage() {
 
                 {/* Custodied items alert */}
                 {enableCustodiedItem && pendingCustodiedItems.length > 0 && (
-                  <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <div className="mt-4 bg-red-100 border border-red-400 rounded-xl p-4 shadow-sm animate-pulse">
                     <div className="flex items-start gap-2">
-                      <svg className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-red-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <div className="text-sm">
-                        <p className="font-semibold text-amber-800">Elementos custodiados pendientes de devolución</p>
+                        <p className="font-bold text-red-900 text-lg uppercase">¡ATENCIÓN! Elementos custodiados</p>
                         {pendingCustodiedItems.map((item) => (
                           <div key={item.id} className="mt-2 flex items-start gap-2">
                             <input
                               type="checkbox"
+                              aria-label={`Confirmar devolución de ${item.itemType === "HELMET" ? "Casco" : item.itemType}${item.identifier ? ` #${item.identifier}` : ""}`}
                               checked={returnConfirmedIds.includes(item.id)}
                               onChange={(e) => {
                                 if (e.target.checked) {
@@ -981,14 +965,14 @@ export default function SalidaCobroPage() {
                                   setReturnConfirmedIds((prev) => prev.filter((id) => id !== item.id));
                                 }
                               }}
-                              className="mt-1 rounded border-amber-300"
+                              className="mt-1 rounded border-red-300"
                             />
                             <div>
-                              <p className="font-medium text-amber-900">
-                                {item.itemType === "HELMET" ? "Casco" : item.itemType} {item.identifier ? `#${item.identifier}` : ""}
+                              <p className="font-bold text-red-900">
+                                {item.itemType === "HELMET" ? "Casco" : item.itemType} {item.identifier ? `— #${item.identifier}` : ""}
                               </p>
-                              {item.observations && <p className="text-amber-700 text-xs">{item.observations}</p>}
-                              <p className="text-amber-600 text-xs">Recibido por {item.receivedByName ?? "N/A"} — {item.receivedAt ? new Date(item.receivedAt).toLocaleString("es-CO") : ""}</p>
+                              {item.observations && <p className="text-xs text-red-700 italic font-semibold">{item.observations}</p>}
+                              <p className="text-red-600 text-xs">Recibido por {item.receivedByName ?? "N/A"} — {item.receivedAt ? new Date(item.receivedAt).toLocaleString("es-CO") : ""}</p>
                             </div>
                           </div>
                         ))}
@@ -1040,7 +1024,7 @@ export default function SalidaCobroPage() {
                 w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
                 flex items-center gap-3
                 ${active && !processing
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30" 
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white border border-default-200 -500/30" 
                   : "bg-slate-200 text-slate-400 cursor-not-allowed"}
               `}
             >
@@ -1068,7 +1052,7 @@ export default function SalidaCobroPage() {
                 w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
                 flex items-center gap-3
                 ${active && !processing
-                  ? "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30" 
+                  ? "bg-blue-500 hover:bg-blue-600 text-white border border-default-200 -500/30" 
                   : "bg-slate-200 text-slate-400 cursor-not-allowed"}
               `}
             >
@@ -1091,7 +1075,7 @@ export default function SalidaCobroPage() {
                 key={method.code}
                 className={`min-h-14 justify-start text-left font-bold ${
                   active && !processing
-                    ? `${method.tone} text-white shadow-md`
+                    ? `${method.tone} text-white border border-default-200`
                     : "bg-slate-200 text-slate-400"
                 } ${selectedPaymentMethod === method.code ? "ring-2 ring-offset-2 ring-slate-900" : ""}`}
                 isDisabled={!active || searching || processing}
@@ -1241,7 +1225,7 @@ export default function SalidaCobroPage() {
           <Button
             color="primary"
             size="lg"
-            className="mt-5 h-14 w-full font-bold shadow-md"
+            className="mt-5 h-14 w-full font-bold border border-default-200"
             isDisabled={!active || searching || processing || !!printWarning}
             isLoading={processing}
             onPress={() => processExit()}
@@ -1262,6 +1246,7 @@ export default function SalidaCobroPage() {
           <div className="mt-6 pt-4 border-t border-slate-200 space-y-3">
             <input
               value={reprintReason}
+              aria-label="Motivo de reimpresión"
               onChange={(event) => setReprintReason(event.target.value)}
               className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
               placeholder="Motivo reimpresion"
@@ -1278,6 +1263,7 @@ export default function SalidaCobroPage() {
             
             <input
               value={lostReason}
+              aria-label="Motivo de ticket perdido"
               onChange={(event) => setLostReason(event.target.value)}
               className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
               placeholder="Motivo ticket perdido"

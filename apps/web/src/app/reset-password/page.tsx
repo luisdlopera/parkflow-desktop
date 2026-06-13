@@ -88,7 +88,7 @@ function ResetPasswordForm() {
   if (success) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-        <div className="surface w-full space-y-4 rounded-[2rem] p-8 sm:p-10 shadow-2xl shadow-slate-200/40 dark:shadow-black/40 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90 text-center">
+        <div className="surface w-full space-y-4 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -137,7 +137,7 @@ function ResetPasswordForm() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 shadow-2xl shadow-slate-200/40 dark:shadow-black/40 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90">
+      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-amber-700/80">Parkflow</p>
           <h1 className="text-2xl font-semibold text-slate-900">Nueva contraseña</h1>
@@ -146,7 +146,7 @@ function ResetPasswordForm() {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 border border-default-200 space-y-4">
           <Input
             label="Código de recuperación"
             value={token}
@@ -157,7 +157,7 @@ function ResetPasswordForm() {
           />
         </div>
 
-        <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 border border-default-200 space-y-4">
           <Input
             label="Nueva contraseña"
             type={showPassword ? "text" : "password"}
@@ -169,6 +169,7 @@ function ResetPasswordForm() {
             endContent={
               <button
                 type="button"
+                aria-label="Mostrar contraseña"
                 onClick={() => setShowPassword(!showPassword)}
                 className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                 tabIndex={-1}
@@ -214,6 +215,7 @@ function ResetPasswordForm() {
             endContent={
               <button
                 type="button"
+                aria-label="Mostrar confirmación de contraseña"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                 tabIndex={-1}
@@ -263,7 +265,7 @@ function ResetPasswordForm() {
 function LoadingFallback() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-      <div className="surface w-full rounded-[2rem] p-8 sm:p-10 shadow-2xl shadow-slate-200/40 dark:shadow-black/40 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90 text-center">
+      <div className="surface w-full rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90 text-center">
         <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900"></div>
         <p className="mt-4 text-sm text-slate-600">Cargando...</p>
       </div>

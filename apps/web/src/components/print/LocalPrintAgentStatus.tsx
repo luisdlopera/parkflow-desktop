@@ -45,7 +45,7 @@ export default function LocalPrintAgentStatus() {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-900 border border-amber-200 shadow-sm">
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-900 border border-amber-200 border border-default-200">
       <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
       <span className="font-medium">Sin agente local</span>
       <span className="hidden sm:inline text-amber-700">- Usando Tauri o cola offline</span>

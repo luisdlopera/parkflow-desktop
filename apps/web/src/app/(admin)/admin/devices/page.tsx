@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { useOverlayState } from "@heroui/react";
+import { useOverlayState, Button as HeroButton } from "@heroui/react";
 import { Alert } from "@/components/ui/Alert";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Chip } from "@/components/ui/Chip";
-import { DropdownTrigger } from "@/components/ui/Dropdown";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { DropdownMenu } from "@/components/ui/Dropdown";
 import { DropdownItem } from "@/components/ui/Dropdown";
@@ -295,11 +294,9 @@ export default function DevicesPage() {
           ]}
           actions={(device) => (
             <Dropdown>
-              <DropdownTrigger>
-                <Button isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
-              </DropdownTrigger>
+              <HeroButton isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
+                <MoreVertical className="w-4 h-4" />
+              </HeroButton>
               <DropdownMenu aria-label="Acciones">
                 <DropdownItem
                   key="view"

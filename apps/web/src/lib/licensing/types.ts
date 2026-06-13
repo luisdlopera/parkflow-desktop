@@ -62,6 +62,7 @@ export interface Company {
   maxDevices: number;
   maxLocations: number;
   maxUsers: number;
+  trialDays?: number;
   offlineModeAllowed: boolean;
   offlineLeaseHours: number;
   onboardingCompleted?: boolean;

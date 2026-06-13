@@ -8,6 +8,7 @@ import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.auth.security.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,16 @@ public class OperationalParameterManagementService implements OperationalParamet
 
     OperationalParameter params = operationalParameterRepository.findBySite_Id(siteId)
         .orElse(new OperationalParameter());
+
+    params.setCompanyId(
+        TenantContext.getTenantId() != null
+            ? TenantContext.getTenantId()
+            : site.getCompany() != null
+                ? site.getCompany().getId()
+                : null);
+    if (params.getCompanyId() == null) {
+        throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía no identificado");
+    }
 
     params.setSite(site);
     params.setAllowEntryWithoutPrinter(req.allowEntryWithoutPrinter());

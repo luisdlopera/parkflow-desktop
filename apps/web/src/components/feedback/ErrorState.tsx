@@ -46,7 +46,7 @@ export function ErrorState({
         {onRetry && (
           <Button
             color="primary"
-            variant="shadow"
+            variant="border border-default-200"
             size="lg"
             startContent={<RefreshCw size={18} />}
             onClick={onRetry}

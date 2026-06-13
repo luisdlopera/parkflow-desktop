@@ -16,6 +16,7 @@ import com.parkflow.modules.cash.service.CashDomainAuditService;
 import com.parkflow.modules.cash.service.CashPolicyResolver;
 import com.parkflow.modules.cash.support.CashHttpContext;
 import com.parkflow.modules.auth.security.SecurityUtils;
+import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
@@ -106,6 +107,15 @@ public class CashMovementManagementService implements CashMovementUseCase {
         }
 
         CashMovement m = new CashMovement();
+        m.setCompanyId(
+            TenantContext.getTenantId() != null
+                ? TenantContext.getTenantId()
+                : actor.getCompanyId() != null
+                    ? actor.getCompanyId()
+                    : null);
+        if (m.getCompanyId() == null) {
+            throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía no identificado");
+        }
         m.setCashSession(session);
         m.setMovementType(request.type());
         m.setPaymentMethod(request.paymentMethod());
@@ -181,6 +191,15 @@ public class CashMovementManagementService implements CashMovementUseCase {
         cashMovementRepository.save(m);
 
         CashMovement offset = new CashMovement();
+        offset.setCompanyId(
+            TenantContext.getTenantId() != null
+                ? TenantContext.getTenantId()
+                : actor.getCompanyId() != null
+                    ? actor.getCompanyId()
+                    : null);
+        if (offset.getCompanyId() == null) {
+            throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía no identificado");
+        }
         offset.setCashSession(session);
         offset.setMovementType(CashMovementType.VOID_OFFSET);
         offset.setPaymentMethod(m.getPaymentMethod());
@@ -302,6 +321,15 @@ public class CashMovementManagementService implements CashMovementUseCase {
         }
 
         CashMovement m = new CashMovement();
+        m.setCompanyId(
+            TenantContext.getTenantId() != null
+                ? TenantContext.getTenantId()
+                : operator.getCompanyId() != null
+                    ? operator.getCompanyId()
+                    : null);
+        if (m.getCompanyId() == null) {
+            throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía no identificado");
+        }
         m.setCashSession(cashSession);
         m.setMovementType(movementType);
         m.setPaymentMethod(payment.getMethod());

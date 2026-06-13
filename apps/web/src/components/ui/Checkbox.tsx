@@ -1,7 +1,7 @@
 import React from "react";
-import { Checkbox as HeroCheckbox, CheckboxProps as HeroCheckboxProps } from "@heroui/react";
+import { Checkbox as HeroCheckbox, Label, CheckboxProps as HeroCheckboxProps } from "@heroui/react";
 
-export interface CheckboxProps extends Omit<HeroCheckboxProps, "onChange" | "isSelected" | "defaultSelected" | "color" | "size" | "name" | "onBlur"> {
+export interface CheckboxProps extends Omit<HeroCheckboxProps, "onChange" | "children" | "color" | "size" | "name" | "onBlur"> {
   isSelected?: boolean;
   defaultSelected?: boolean;
   onChange?: ((checked: boolean) => void) | React.ChangeEventHandler<HTMLInputElement> | any;
@@ -10,22 +10,19 @@ export interface CheckboxProps extends Omit<HeroCheckboxProps, "onChange" | "isS
   size?: "sm" | "md" | "lg" | string;
   name?: string;
   onBlur?: any;
+  children?: React.ReactNode;
 }
 
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ isSelected, defaultSelected, onChange, onValueChange, color, size, name, onBlur, ...props }, ref) => {
-    // HeroUI v3 Checkbox does not support color or size props, we map or ignore them
-    // For size we could use a custom class, but for now we just ignore
-    let mappedClassName = props.className || "";
+  ({ isSelected, defaultSelected, onChange, onValueChange, color, size, name, onBlur, children, className, ...props }, ref) => {
+    // HeroUI v3 Checkbox does not support color or size props directly, we map or ignore them
+    let mappedClassName = className || "";
     if (size === "sm") mappedClassName += " scale-90";
     if (size === "lg") mappedClassName += " scale-110";
 
     const handleChange = (checked: boolean) => {
       if (onValueChange) onValueChange(checked);
       if (onChange) {
-        // if onChange expects event, we can't easily mock it without target
-        // but react hook form uses onChange for standard inputs.
-        // We just pass checked.
         onChange(checked as any); 
       }
     };
@@ -35,12 +32,21 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         ref={ref}
         isSelected={isSelected}
         defaultSelected={defaultSelected}
-        onValueChange={handleChange}
+        onChange={handleChange}
         className={mappedClassName}
         name={name}
         onBlur={onBlur}
         {...(props as any)}
-      />
+      >
+        <HeroCheckbox.Control>
+          <HeroCheckbox.Indicator />
+        </HeroCheckbox.Control>
+        {children && (
+          <HeroCheckbox.Content>
+            <Label className="text-sm">{children}</Label>
+          </HeroCheckbox.Content>
+        )}
+      </HeroCheckbox>
     );
   }
 );

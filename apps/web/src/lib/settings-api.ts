@@ -399,6 +399,13 @@ export async function patchVehicleTypeStatus(id: string, active: boolean, auditR
   });
 }
 
+export async function deleteVehicleType(id: string, auditReason?: string): Promise<void> {
+  await apiFetch<void>(`${cfgBase()}/vehicle-types/${id}`, {
+    method: "DELETE",
+    headers: await buildApiHeaders(hdr(auditReason))
+  });
+}
+
 
 
 // #region Configuration API (new endpoints)

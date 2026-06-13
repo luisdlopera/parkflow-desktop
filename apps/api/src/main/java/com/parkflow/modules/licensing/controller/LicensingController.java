@@ -123,6 +123,16 @@ public class LicensingController {
     return ResponseEntity.noContent().build();
   }
 
+  @DeleteMapping({"/companies/{companyId:[0-9a-fA-F\\-]+}/purge", "/companies/{companyId:[0-9a-fA-F\\-]+}/purge/"})
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
+  public ResponseEntity<Void> purgeCompany(
+      @PathVariable UUID companyId,
+      @RequestAttribute("currentUserEmail") String performedBy) {
+
+    companyManagementUseCase.purgeCompany(companyId, performedBy);
+    return ResponseEntity.noContent().build();
+  }
+
   // ==================== ADMIN: LICENSE MANAGEMENT ====================
 
   /**

@@ -67,6 +67,7 @@ export function DataTableSection<T extends { id: string }>({
               type="text"
               placeholder="Buscar..."
               size="sm"
+              aria-label="Buscar en la tabla"
               className="max-w-xs"
               value={q}
               onChange={(e) => {

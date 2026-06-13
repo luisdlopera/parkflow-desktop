@@ -25,6 +25,8 @@ export interface AlertProps {
   endContent?: React.ReactNode;
   /** Main content — treated as the alert title. */
   children?: React.ReactNode;
+  /** Title text, rendered as the alert heading. */
+  title?: React.ReactNode;
   className?: string;
 }
 
@@ -33,13 +35,14 @@ export interface AlertProps {
  * (v2-style) while rendering HeroUI v3 compound components internally.
  */
 export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
-  ({ color, hideIcon, description, endContent, children, className, ...props }, ref) => {
+  ({ color, hideIcon, description, endContent, children, title, className, ...props }, ref) => {
     const status = mapColorToStatus(color);
 
     return (
       <HeroAlert ref={ref} status={status} className={className} data-slot="alert-root" color={color} {...(props as Record<string, unknown>)}>
         {!hideIcon && <HeroAlert.Indicator />}
         <HeroAlert.Content>
+          {title && <HeroAlert.Title>{title}</HeroAlert.Title>}
           {children && <HeroAlert.Title>{children}</HeroAlert.Title>}
           {description && (
             <HeroAlert.Description>{description}</HeroAlert.Description>

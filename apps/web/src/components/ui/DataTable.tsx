@@ -1,8 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Pagination, Table, cn, type SortDescriptor } from "@heroui/react";
-import { ChevronUp, Inbox } from "lucide-react";
+import { Pagination, Table, ListBox, cn, type SortDescriptor } from "@heroui/react";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { ChevronUp, Inbox, Search } from "lucide-react";
+import { useTableSelection } from "@/hooks/useTableSelection";
+import { CircularCheckbox } from "./CircularCheckbox";
 
 export type DataTableColumn<T> = {
   key: keyof T | string;
@@ -40,7 +44,8 @@ export type DataTableProps<T> = {
   actions?: (row: T) => React.ReactNode;
   selectable?: boolean;
   selectedKeys?: Set<string>;
-  onChange?: (keys: Set<string>) => void;
+  onRowSelectionChange?: (keys: Set<string>) => void;
+  onSelectAll?: (keys: Set<string>) => void;
   pagination?: {
     page: number;
     pageSize: number;
@@ -109,17 +114,18 @@ export default function DataTable<T extends object>({
   actions,
   pagination: paginationConfig,
   onPaginationChange,
+  searchable,
+  searchPlaceholder = "Buscar...",
+  onSearchChange,
+  filters,
+  onFilterChange,
+  selectable,
+  selectedKeys: controlledSelectedKeys,
+  onRowSelectionChange,
+  onSelectAll,
 }: DataTableProps<T>) {
   const source = useMemo(() => data ?? rows ?? [], [data, rows]);
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>();
-
-  const displayColumns = useMemo(() => {
-    if (!actions) return columns;
-    return [
-      ...columns,
-      { key: "_actions" as const, label: "Acciones", align: "right" as const },
-    ];
-  }, [columns, actions]);
 
   const sortedSource = useMemo(() => {
     if (!sortDescriptor?.column || !sortDescriptor?.direction) return source;
@@ -136,7 +142,41 @@ export default function DataTable<T extends object>({
   const getKey = (row: T, index: number) =>
     getRowKey ? getRowKey(row) : String(rowKey(row, index));
 
-  const renderCell = (col: DataTableColumn<T>, row: T) => {
+  const {
+    selectedKeys,
+    toggleRow,
+    toggleAll,
+    isAllVisibleSelected,
+    isIndeterminate,
+    selectionCount
+  } = useTableSelection({
+    items: sortedSource,
+    getKey: (row, i) => getKey(row, i),
+    selectedKeys: controlledSelectedKeys,
+    onSelectionChange: onRowSelectionChange,
+    onSelectAll
+  });
+
+  const displayColumns = useMemo(() => {
+    const cols = [...columns];
+    if (selectable) {
+      cols.unshift({ key: "_selection", label: "", sortable: false, priority: "high" });
+    }
+    if (actions) {
+      cols.push({ key: "_actions", label: "Acciones", align: "right" });
+    }
+    return cols;
+  }, [columns, actions, selectable]);
+
+  const renderCell = (col: DataTableColumn<T>, row: T, index: number) => {
+    if (col.key === "_selection") {
+      return (
+        <CircularCheckbox 
+          checked={selectedKeys.has(getKey(row, index))}
+          onChange={(checked, e) => toggleRow(index, e.shiftKey)}
+        />
+      );
+    }
     if (col.key === "_actions" && actions) return actions(row);
     if (col.render) return col.render(row);
     return String(row[col.key as keyof T] ?? "");
@@ -152,25 +192,85 @@ export default function DataTable<T extends object>({
     </Table.Row>
   );
 
+  const topContent = useMemo(() => {
+    const hasSearch = searchable && onSearchChange;
+    const hasFilters = filters && filters.length > 0 && onFilterChange;
+    if (!hasSearch && !hasFilters) return null;
+
+    return (
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4">
+        {hasSearch && (
+          <Input
+            isClearable
+            className="w-full sm:max-w-[44%]"
+            placeholder={searchPlaceholder}
+            aria-label="Buscar en la tabla"
+            startContent={<Search className="text-default-300 size-4" />}
+            onChange={(e) => onSearchChange(e.target.value)}
+            size="sm"
+          />
+        )}
+        <div className="flex w-full sm:w-auto items-center gap-3">
+          {hasFilters &&
+            filters.map((filter) => {
+              if (filter.type === "select" && filter.options) {
+                return (
+                  <Select
+                    key={filter.key}
+                    className="w-full sm:w-48"
+                    placeholder={filter.label}
+                    aria-label={filter.label}
+                    size="sm"
+                    onChange={(keys: any) => {
+                      const value = Array.isArray(keys) ? keys.join(",") : Array.from(keys as Set<any>).join(",");
+                      onFilterChange({ [filter.key]: value });
+                    }}
+                  >
+                    <Select.Trigger>
+                      <Select.Value />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {filter.options.map((opt) => (
+                          <ListBox.Item key={opt.value} id={opt.value} textValue={opt.label}>
+                            {opt.label}
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                );
+              }
+              return null;
+            })}
+        </div>
+      </div>
+    );
+  }, [searchable, searchPlaceholder, onSearchChange, filters, onFilterChange]);
+
   return (
-    <Table>
-      <Table.ScrollContainer>
-        <Table.Content
-          aria-label="Data table"
-          sortDescriptor={sortDescriptor}
-          onSortChange={setSortDescriptor}
-        >
+    <div className="flex flex-col gap-4">
+      {topContent}
+      <Table>
+        <Table.ScrollContainer>
+          <Table.Content
+            aria-label="Data table"
+            sortDescriptor={sortDescriptor}
+            onSortChange={setSortDescriptor}
+          >
           <Table.Header>
             {displayColumns.map((col, idx) => (
               <Table.Column
                 key={String(col.key)}
                 id={String(col.key)}
                 allowsSorting={col.sortable}
-                isRowHeader={idx === 0 && col.key !== "_actions"}
+                aria-label={col.key === "_selection" ? "Selection" : undefined}
+                isRowHeader={idx === (selectable ? 1 : 0) && col.key !== "_actions" && col.key !== "_selection"}
                 className={cn(
                   "text-[11px] font-bold uppercase tracking-[0.15em]",
                   getAlignClass(col.align),
                   getPriorityClass(col.priority),
+                  col.key === "_actions" ? "sticky right-0 z-20 bg-default-100 dark:bg-zinc-800/60 border-l border-default-200 dark:border-zinc-700" : ""
                 )}
               >
                 {col.sortable
@@ -183,6 +283,12 @@ export default function DataTable<T extends object>({
                         {getDisplayLabel(col)}
                       </SortableHeader>
                     )
+                  : col.key === "_selection" 
+                  ? <CircularCheckbox 
+                      checked={isAllVisibleSelected} 
+                      indeterminate={isIndeterminate} 
+                      onChange={toggleAll} 
+                    />
                   : getDisplayLabel(col)}
               </Table.Column>
             ))}
@@ -207,21 +313,33 @@ export default function DataTable<T extends object>({
                 </div>
               )}
             >
-              {sortedSource.map((row, index) => (
-                <Table.Row key={getKey(row, index)}>
+              {sortedSource.map((row, index) => {
+                const isRowSelected = selectedKeys.has(getKey(row, index));
+                return (
+                <Table.Row 
+                  key={getKey(row, index)} 
+                  id={getKey(row, index)}
+                  className={cn(
+                    isRowSelected ? "bg-blue-50/40 dark:bg-blue-900/20" : ""
+                  )}
+                >
                   {displayColumns.map((col) => (
                     <Table.Cell
                       key={String(col.key)}
                       className={cn(
                         getAlignClass(col.align),
                         getPriorityClass(col.priority),
+                        isRowSelected ? "bg-blue-50/40 dark:bg-blue-900/20" : "bg-white dark:bg-zinc-950",
+                        col.key === "_actions" ? "sticky right-0 z-10 border-l border-default-200 dark:border-zinc-700" : "",
+                        col.key === "_actions" && !isRowSelected ? "bg-white dark:bg-zinc-900" : ""
                       )}
                     >
-                      {renderCell(col, row)}
+                      {renderCell(col, row, index)}
                     </Table.Cell>
                   ))}
                 </Table.Row>
-              ))}
+                );
+              })}
             </Table.Body>
           )}
         </Table.Content>
@@ -231,18 +349,22 @@ export default function DataTable<T extends object>({
         <TableFooterContent
           config={paginationConfig}
           onChange={onPaginationChange}
+          selectionCount={selectable ? selectionCount : undefined}
         />
       )}
-    </Table>
+      </Table>
+    </div>
   );
 }
 
 function TableFooterContent({
   config,
   onChange,
+  selectionCount,
 }: {
   config: NonNullable<DataTableProps<unknown>["pagination"]>;
   onChange: NonNullable<DataTableProps<unknown>["onPaginationChange"]>;
+  selectionCount?: number;
 }) {
   const totalPages = Math.ceil(config.total / config.pageSize);
   const start = (config.page - 1) * config.pageSize + 1;
@@ -251,10 +373,19 @@ function TableFooterContent({
 
   return (
     <Table.Footer>
-      <Pagination size="sm">
-        <Pagination.Summary>
-          {start} a {end} de {config.total} resultados
-        </Pagination.Summary>
+      <div className="flex w-full items-center justify-between">
+        {selectionCount !== undefined && selectionCount > 0 ? (
+          <div className="text-sm text-blue-600 font-medium">
+            {selectionCount === config.total 
+              ? "Todos los registros seleccionados" 
+              : `${selectionCount} de ${config.total} registros seleccionados`}
+          </div>
+        ) : <div />}
+        
+        <Pagination size="sm">
+          <Pagination.Summary>
+            {start} a {end} de {config.total} resultados
+          </Pagination.Summary>
         <Pagination.Content>
           <Pagination.Item>
             <Pagination.Previous
@@ -286,6 +417,7 @@ function TableFooterContent({
           </Pagination.Item>
         </Pagination.Content>
       </Pagination>
+      </div>
     </Table.Footer>
   );
 }

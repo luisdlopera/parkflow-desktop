@@ -21,7 +21,7 @@ import {
 } from "@/lib/tauri-print";
 import { downloadTicketAsHtml } from "@/lib/print/ticket-download";
 import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
-import { useToast } from "@/lib/toast/ToastContext";
+import { toast } from "@heroui/react";
 import { useAutoSave } from "@/lib/hooks/useAutoSave";
 import { CrashRecoveryDialog } from "@/components/ui/CrashRecoveryDialog";
 import { normalizePlate, inferVehicleType } from "@/lib/validation/plate-validator";
@@ -31,6 +31,8 @@ import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 import { currentUser } from "@/lib/auth";
 import { FormLayoutFactory } from "@/components/forms/dynamic/FormLayoutFactory";
 import { type RegisteredFieldKey } from "@/components/forms/dynamic/form-registry";
+import { MotorcycleEntryFormUI } from "@/components/forms/motorcycle/MotorcycleEntryFormUI";
+import { VehicleTypeIcon } from "@/components/vehicles/VehicleTypeIcon";
 
 const ENTRY_FORM_LAYOUT: RegisteredFieldKey[] = [
   "vehicle_condition",
@@ -73,17 +75,6 @@ interface OperatorSettings {
   platePrefix: string;
 }
 
-const VEHICLE_TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-  CAR: { label: "Carro", color: "bg-blue-500", icon: "🚗" },
-  MOTORCYCLE: { label: "Moto", color: "bg-emerald-500", icon: "🏍️" },
-  BICYCLE: { label: "Bicicleta", color: "bg-green-600", icon: "🚲" },
-  VAN: { label: "Van", color: "bg-purple-500", icon: "🚐" },
-  TRUCK: { label: "Camión", color: "bg-orange-500", icon: "🚛" },
-  BUS: { label: "Bus", color: "bg-yellow-600", icon: "🚌" },
-  ELECTRIC: { label: "Eléctrico", color: "bg-teal-600", icon: "⚡" },
-  OTHER: { label: "Otro", color: "bg-slate-500", icon: "🚙" }
-};
-
 function sortedActiveTypes(types: MasterVehicleTypeRow[]) {
   return types
     .filter((type) => type.isActive)
@@ -91,10 +82,8 @@ function sortedActiveTypes(types: MasterVehicleTypeRow[]) {
 }
 
 function vehicleTypeView(type: MasterVehicleTypeRow) {
-  const fallback = VEHICLE_TYPE_CONFIG[type.code] || { label: type.name, color: "bg-slate-500", icon: "🚗" };
   return {
-    label: type.name || fallback.label,
-    icon: type.icon || fallback.icon,
+    label: type.name || type.code,
     color: type.color || ""
   };
 }
@@ -206,7 +195,8 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   const plateInputRef = useRef<HTMLInputElement>(null);
   const idempotencyKeyRef = useRef(newIdempotencyKey());
   const { playSuccess, playError } = useOperationSounds();
-  const { success: toastSuccess, error: toastError } = useToast();
+  const toastSuccess = toast.success;
+  const toastError = toast.danger;
 
   // Modo experto con persistencia
   const [settings, setSettings] = useState<OperatorSettings>(() => {
@@ -285,15 +275,23 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
 
   useEffect(() => {
     if (runtimeConfig?.operationConfiguration) {
-      const { defaultVehicleType, defaultVisitorType } = runtimeConfig.operationConfiguration as Record<string, string>;
+      const { defaultVehicleType, defaultVisitorType, countryCode, platePrefix } = runtimeConfig.operationConfiguration as Record<string, string>;
       if (defaultVehicleType && form.getValues("type") !== defaultVehicleType) {
         form.setValue("type", defaultVehicleType, { shouldValidate: true });
       }
       if (defaultVisitorType && form.getValues("entryMode") !== defaultVisitorType) {
         form.setValue("entryMode", defaultVisitorType as "VISITOR" | "AGREEMENT" | "SUBSCRIBER" | "EMPLOYEE", { shouldValidate: true });
       }
+      // Actualizar countryCode desde runtimeConfig
+      if (countryCode && form.getValues("countryCode") !== countryCode) {
+        form.setValue("countryCode", countryCode, { shouldValidate: true });
+      }
+      // Actualizar platePrefix desde runtimeConfig
+      if (platePrefix && settings.platePrefix !== platePrefix) {
+        setSettings(s => ({ ...s, platePrefix }));
+      }
     }
-  }, [runtimeConfig, form]);
+  }, [runtimeConfig, form, settings.platePrefix]);
 
   useEffect(() => {
     let cancelled = false;
@@ -306,7 +304,15 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
           setLoadingTypes(false);
           return;
         }
-        const activeTypes = sortedActiveTypes(types);
+        let activeTypes = sortedActiveTypes(types);
+        
+        // Filtrar por runtimeConfig.vehicleTypes si está configurado
+        if (runtimeConfig?.vehicleTypes && runtimeConfig.vehicleTypes.length > 0) {
+          const allowedCodes = runtimeConfig.vehicleTypes;
+          activeTypes = activeTypes.filter(t => allowedCodes.includes(t.code));
+          console.log("Vehicle types filtered by runtimeConfig:", activeTypes.map(t => t.code));
+        }
+        
         setVehicleTypes(activeTypes);
         const typeCodes = activeTypes.map(t => t.code);
         const currentType = form.getValues("type");
@@ -324,7 +330,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       .catch(err => {
         if (cancelled) return;
         console.error("Error fetching vehicle types:", err);
-        const fallbackTypes = [
+        let fallbackTypes = [
           { id: "fallback-car", code: "CAR", name: "Carro", isActive: true },
           { id: "fallback-moto", code: "MOTORCYCLE", name: "Moto", isActive: true },
           { id: "fallback-bicycle", code: "BICYCLE", name: "Bicicleta", isActive: true, requiresPlate: false },
@@ -334,6 +340,11 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
           { id: "fallback-electric", code: "ELECTRIC", name: "Eléctrico", isActive: true },
           { id: "fallback-other", code: "OTHER", name: "Otro", isActive: true },
         ];
+        // Filtrar fallback types por runtimeConfig si está disponible
+        if (runtimeConfig?.vehicleTypes && runtimeConfig.vehicleTypes.length > 0) {
+          const allowedCodes = runtimeConfig.vehicleTypes;
+          fallbackTypes = fallbackTypes.filter(t => allowedCodes.includes(t.code));
+        }
         setVehicleTypes(fallbackTypes);
         setLoadingTypes(false);
       });
@@ -342,6 +353,9 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
 
   const selectedVehicleType = vehicleTypes.find((type) => type.code === selectedTypeCode);
   const requiresPlate = selectedVehicleType?.requiresPlate ?? true;
+  const isMotorcycleOnly = vehicleTypes.length === 1 && vehicleTypes[0]?.code === "MOTORCYCLE";
+  const selectedTypeName = selectedVehicleType?.name?.toLowerCase() || selectedTypeCode?.toLowerCase() || "";
+  const isCarroOrMoto = selectedTypeName.includes("moto") || selectedTypeName.includes("carro") || selectedTypeName.includes("auto") || selectedTypeCode === "CAR";
   const configuredSites = useMemo(() => {
     return Array.isArray(runtimeConfig?.sites) ? runtimeConfig.sites : [];
   }, [runtimeConfig]);
@@ -370,10 +384,23 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
     }
   }, [requiresPlate, form]);
 
+  useEffect(() => {
+    if (!isMotorcycleOnly) return;
+    form.setValue("vehicleCondition", "Sin novedades al ingreso", { shouldValidate: true, shouldDirty: false });
+    if (!form.getValues("observations")?.trim()) {
+      form.setValue("observations", "Sin observaciones", { shouldValidate: true, shouldDirty: false });
+    }
+  }, [isMotorcycleOnly, form]);
+
   // Persistir settings
   useEffect(() => {
     localStorage.setItem("parkflow_operator_settings", JSON.stringify(settings));
   }, [settings]);
+
+  useEffect(() => {
+    if (!settings.skipConditionCheck) return;
+    form.setValue("vehicleCondition", "Sin novedades al ingreso", { shouldValidate: true, shouldDirty: false });
+  }, [settings.skipConditionCheck, form]);
 
   // Auto-focus en campo de placa al cargar
   useEffect(() => {
@@ -437,7 +464,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         const text = await response.text().catch(() => null);
         throw new Error(text || `Error ${response.status}`);
       }
-      toastSuccess("Solicitud de reimpresion enviada", 3000);
+      toastSuccess("Solicitud de reimpresion enviada");
       setPrintWarning(null);
     } catch (err) {
       toastError(err instanceof Error ? err.message : "Error al reimprimir");
@@ -603,7 +630,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       } else {
         const spaceMsg = payload?.receipt?.parkingSpaceCode ? ` · Celda: ${payload.receipt.parkingSpaceCode}` : "";
         const plateMsg = plateLabel ? ` · Placa: ${plateLabel}` : "";
-        console.log("Calling toastSuccess!"); toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${plateMsg}${spaceMsg}`, 5000);
+        toastSuccess(`Ingreso registrado - Ticket: ${payload.receipt.ticketNumber}${plateMsg}${spaceMsg}`);
       }
       
       playSuccess();
@@ -715,7 +742,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
           onRestore={(data) => {
             const recovered = data as VehicleEntryFormValues;
             form.reset(recovered);
-            toastSuccess("Datos recuperados correctamente");
+            toast.success("Datos recuperados correctamente");
             setShowRecovery(true);
           }}
           onDismiss={() => setShowRecovery(false)}
@@ -735,7 +762,8 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         />
       )}
 
-      {/* Header con stats y modo - Responsive */}
+      {/* Header con stats y modo - Solo para modo multi-tipo */}
+      {!isMotorcycleOnly && (
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {/* Stats - en móvil se muestran en fila, en desktop también */}
         <div className="flex items-center gap-2 sm:gap-3">
@@ -746,8 +774,8 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
             <span className="text-xs text-slate-600 font-medium whitespace-nowrap">Sesión: {stats.session}</span>
           </div>
           {occupancy && (
-            <div className={`${occupancy.availableSpaces <= 0 ? "bg-rose-50 border border-rose-100" : "bg-emerald-50 border border-emerald-100"} rounded-xl px-3 py-2`}>
-              <span className={`text-xs ${occupancy.availableSpaces <= 0 ? "text-rose-700 font-bold" : "text-emerald-700 font-medium"} whitespace-nowrap`}>
+            <div className={`${occupancy.availableSpaces <= 0 ? "bg-rose-50 border border-rose-100" : "bg-primary-50 border border-primary-100"} rounded-xl px-3 py-2`}>
+              <span className={`text-xs ${occupancy.availableSpaces <= 0 ? "text-rose-700 font-bold" : "text-primary-700 font-medium"} whitespace-nowrap`}>
                 Disponibles: {occupancy.availableSpaces} / {occupancy.activeSpaces}
               </span>
             </div>
@@ -800,9 +828,10 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
           </Button>
         </div>
       </div>
+      )}
 
-      {/* Panel de configuración */}
-      {showSettings && (
+      {/* Panel de configuración - Solo para modo multi-tipo */}
+      {!isMotorcycleOnly && showSettings && (
         <Card className="bg-slate-50">
           <Card.Content className="p-4 space-y-3">
             <h4 className="text-sm font-semibold text-slate-700">Configuración de Operador</h4>
@@ -847,7 +876,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
                 {vehicleTypes.map((type) => {
                   const config = vehicleTypeView(type);
                   return (
-                  <ListBox.Item key={type.code} textValue={config.label}>{config.icon} {config.label}</ListBox.Item>
+                  <ListBox.Item key={type.code} textValue={config.label}><VehicleTypeIcon code={type.code} size={16} className="inline w-4 h-4 mr-1" /> {config.label}</ListBox.Item>
                   );
                 })}
               
@@ -859,9 +888,54 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         </Card>
       )}
 
+      {/* Título dinámico */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm uppercase tracking-[0.3em] text-brand-600/80 font-semibold">
+            Nuevo ingreso
+          </p>
+          <h1 className="text-3xl font-bold text-slate-900">
+            {isMotorcycleOnly ? "Registrar entrada de moto" : "Registrar entrada de vehículo"}
+          </h1>
+          {!isMotorcycleOnly && !(selectedTypeCode && isCarroOrMoto) && (
+            <p className="mt-2 text-sm text-slate-500">
+              Modo experto disponible. Presione F1 en cualquier momento para volver a esta pantalla.
+            </p>
+          )}
+        </div>
+        {isMotorcycleOnly && occupancy && (
+          <p className={`text-sm font-medium px-3 py-1.5 rounded-full ${
+            occupancy.availableSpaces <= 0 ? "bg-rose-100 text-rose-700" : "bg-brand-100 text-brand-700"
+          }`}>
+            {occupancy.availableSpaces <= 0
+              ? "Sin celdas disponibles"
+              : `${occupancy.availableSpaces} celdas disponibles`}
+          </p>
+        )}
+      </div>
+
       {/* Formulario Principal */}
-      <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown} className="surface rounded-2xl p-6 space-y-4">
-        {/* Sección Principal - Siempre visible */}
+      <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown} className={`rounded-2xl space-y-4 ${isMotorcycleOnly ? "p-4 sm:p-8 border-none shadow-none bg-transparent" : "p-6"}`}>
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MODO SOLO MOTOS — Vista separada UI                          */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {isMotorcycleOnly ? (
+          <MotorcycleEntryFormUI
+            form={form}
+            onSubmit={form.handleSubmit(onSubmit)}
+            onKeyDown={handleFormKeyDown}
+            plateInputRef={plateInputRef as React.MutableRefObject<HTMLInputElement | null>}
+            occupancy={occupancy}
+            stats={stats}
+            isSubmitDisabled={!!printWarning || (occupancy !== null && occupancy.availableSpaces <= 0) || !form.formState.isValid}
+            platePrefix={settings.platePrefix}
+            noPlate={noPlate}
+          />
+        ) : (
+        /* ═══════════════════════════════════════════════════════════════ */
+        /* MODO MULTI-TIPO — Vista completa original                     */
+        /* ═══════════════════════════════════════════════════════════════ */
         <div className="space-y-4">
           {/* Placa */}
           <Controller
@@ -981,14 +1055,14 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
                         className={`
                           relative rounded-xl p-2 sm:p-3 text-center transition-all
                           ${isSelected
-                            ? "text-white shadow-lg scale-105"
+                            ? "text-white border border-default-200 scale-105"
                             : "bg-slate-100 hover:bg-slate-200 text-slate-600"}
                         `}
                         style={isSelected && config.color ? { backgroundColor: config.color } : undefined}
                       >
-                        <div className="text-xl sm:text-2xl mb-1">{config.icon}</div>
+                        <div className="text-xl sm:text-2xl mb-1"><VehicleTypeIcon code={t.code} className="mx-auto w-6 h-6" /></div>
                         <div className="text-xs font-medium">{config.label}</div>
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 shadow">
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 border border-default-200">
                           {index + 1}
                         </div>
                       </button>
@@ -1028,7 +1102,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
                           const config = vehicleTypeView(t);
                           return (
                             <ListBox.Item key={t.code} id={t.code} textValue={config.label}>
-                              {config.icon} {config.label}
+                              <VehicleTypeIcon code={t.code} size={16} className="inline w-4 h-4 mr-1" /> {config.label}
                             </ListBox.Item>
                           );
                         })}
@@ -1050,20 +1124,20 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
           <div className="pt-2">
             <Button
               type="submit"
-              color="primary"
               size={isSpeed ? "lg" : "md"}
               isLoading={form.formState.isSubmitting}
-              isDisabled={!!printWarning}
-              className={`w-full font-bold ${isSpeed ? "text-lg shadow-xl" : ""}`}
+              isDisabled={!!printWarning || !form.formState.isValid}
+              className={`w-full font-bold bg-orange-500 text-white hover:bg-orange-600 ${isSpeed ? "text-lg border border-default-200" : ""}`}
               data-testid="register-entry"
             >
               {form.formState.isSubmitting ? "Registrando..." : isSpeed ? "REGISTRAR INGRESO (Enter)" : "Registrar Ingreso"}
             </Button>
           </div>
         </div>
+        )}
 
-        {/* Sección Avanzada - Colapsable */}
-        {!isSpeed && runtimeConfig?.operationConfiguration?.showAdvancedSection !== false && (
+        {/* Sección Avanzada - Colapsable — Solo para modo multi-tipo */}
+        {!isMotorcycleOnly && !isSpeed && runtimeConfig?.operationConfiguration?.showAdvancedSection !== false && (
           <div className="border-t border-slate-200 pt-4">
             <button
               type="button"
@@ -1176,7 +1250,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
 
         {/* Mensajes */}
         {message && (
-          <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-3">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -1198,17 +1272,20 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         )}
       </form>
 
-      {/* Tips según modo */}
+      {/* Tips según modo — Solo para modo multi-tipo */}
+      {!isMotorcycleOnly && (
       <div className="bg-brand-50/50 rounded-xl p-4 text-sm">
-        <p className="font-semibold text-brand-800 mb-1">
-          💡 Modo {settings.mode === "beginner" ? "Principiante" : settings.mode === "expert" ? "Experto" : "Velocidad"}
+        <p className="font-semibold text-brand-800 mb-1 flex items-center gap-1">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+          Modo {settings.mode === "beginner" ? "Principiante" : settings.mode === "expert" ? "Experto" : "Velocidad"}
         </p>
         <p className="text-brand-700">
           {settings.mode === "beginner" && "Todos los campos disponibles. Use este modo mientras aprende el sistema."}
           {settings.mode === "expert" && "Campos avanzados colapsados. Use botones rápidos para tipo de vehículo. Acceso rápido con teclas 1-5."}
-          {settings.mode === "speed" && "Máxima velocidad: Solo placa es obligatoria. Presione Enter para guardar inmediatamente. Tipo por defecto: " + VEHICLE_TYPE_CONFIG[settings.defaultVehicleType].label}
+          {settings.mode === "speed" && "Máxima velocidad: Solo placa es obligatoria. Presione Enter para guardar inmediatamente. Tipo por defecto: " + (vehicleTypes.find(t => t.code === settings.defaultVehicleType)?.name || settings.defaultVehicleType)}
         </p>
       </div>
+      )}
     </div>
   );
 }

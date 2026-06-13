@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public record AuthUserResponse(
     UUID id,
+    UUID companyId,
     String name,
     String email,
     String role,

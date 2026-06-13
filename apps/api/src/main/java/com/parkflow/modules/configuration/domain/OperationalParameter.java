@@ -16,6 +16,9 @@ public class OperationalParameter {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
+  @Column(name = "company_id", nullable = false)
+  private UUID companyId;
+
   @OneToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "site_id", nullable = false, unique = true)
   private ParkingSite site;

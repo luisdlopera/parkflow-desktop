@@ -23,9 +23,17 @@ export async function normalizeApiError(response: Response): Promise<ApiError> {
   const message =
     body?.userMessage ||
     body?.message ||
-    (status === 403
-      ? "No tienes permisos para realizar esta accion."
-      : `No pudimos completar tu solicitud (${status}).`);
+    (status === 409
+      ? "Conflicto con los datos actuales. Es posible que el registro ya exista o haya sido modificado."
+      : status === 403
+        ? "No tienes permisos para realizar esta accion."
+        : status === 401
+          ? "Tu sesión ha expirado o credenciales incorrectas."
+          : status === 404
+            ? "El recurso solicitado no existe o fue eliminado."
+            : status === 400
+              ? "Datos inválidos o incompletos. Por favor, revisa la información ingresada."
+              : `No pudimos completar tu solicitud (${status}).`);
 
   const path = body?.path || response.url;
   const correlationId = body?.correlationId;

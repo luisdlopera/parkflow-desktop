@@ -64,6 +64,11 @@ public class AuthSessionJpaAdapter implements AuthSessionPort {
     jpaRepository.deleteAll(sessions);
   }
 
+  @Override
+  public void deleteByUserIn(List<AppUser> users) {
+    jpaRepository.deleteByUserIn(users);
+  }
+
   @Repository
   interface AuthSessionJpaRepository extends JpaRepository<AuthSession, UUID> {
     Optional<AuthSession> findByIdAndActiveTrue(UUID id);
@@ -71,5 +76,6 @@ public class AuthSessionJpaAdapter implements AuthSessionPort {
     Optional<AuthSession> findByRefreshTokenHashAndActiveTrue(String refreshTokenHash);
     List<AuthSession> findByUserAndActiveTrue(AppUser user);
     long deleteByActiveFalseAndCreatedAtBefore(OffsetDateTime before);
+    void deleteByUserIn(List<AppUser> users);
   }
 }

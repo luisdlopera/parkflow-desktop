@@ -17,4 +17,5 @@ public interface AuthSessionPort {
   Optional<AuthSession> findById(UUID id);
   void delete(AuthSession session);
   void deleteAll(Iterable<? extends AuthSession> sessions);
+  void deleteByUserIn(List<AppUser> users);
 }

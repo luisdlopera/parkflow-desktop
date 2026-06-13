@@ -19,7 +19,7 @@ export function FormErrorSummary({ message, className, testId }: FormErrorSummar
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className={`flex items-start gap-3 rounded-xl border border-danger-200 bg-danger-50 p-4 text-danger-700 shadow-sm ${className}`}
+          className={`flex items-start gap-3 rounded-xl border border-danger-200 bg-danger-50 p-4 text-danger-700 border border-default-200 ${className}`}
         >
           <AlertCircle size={20} className="mt-0.5 shrink-0" />
           <div className="flex flex-col gap-1">

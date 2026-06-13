@@ -85,7 +85,7 @@ export function AdminMobileSidebar({ isOpen, onClose }: AdminMobileSidebarProps)
           {/* Header with close button */}
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 text-white grid place-content-center shadow-lg shadow-indigo-500/30">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 text-white grid place-content-center border border-default-200 -500/30">
                 <Shield className="w-5 h-5" />
               </div>
               <div>
@@ -126,7 +126,7 @@ export function AdminMobileSidebar({ isOpen, onClose }: AdminMobileSidebarProps)
                     flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
                     ${
                       isActive
-                        ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/20"
+                        ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white border border-default-200 -500/20"
                         : "text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800/35 hover:text-slate-900 dark:hover:text-white"
                     }
                   `}

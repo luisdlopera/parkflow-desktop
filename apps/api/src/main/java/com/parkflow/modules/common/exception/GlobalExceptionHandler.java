@@ -17,6 +17,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import static com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY;
 
@@ -237,6 +238,27 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(
+            NoResourceFoundException ex, HttpServletRequest request) {
+
+        String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
+        String path = request.getRequestURI();
+
+        log.warn("No resource found [correlationId={}, path={}]", correlationId, path);
+
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.NOT_FOUND.value(),
+            "NOT_FOUND",
+            "El recurso solicitado no existe o no esta disponible.",
+            ex.getClass().getName() + ": " + ex.getMessage(),
+            path,
+            correlationId
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

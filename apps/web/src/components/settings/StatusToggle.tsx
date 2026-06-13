@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 type StatusToggleProps = {
   active: boolean;
@@ -11,11 +12,15 @@ type StatusToggleProps = {
 
 export function StatusToggle({ active, onChange, disabled, confirmMessage }: StatusToggleProps) {
   const [pending, setPending] = useState(false);
+  const { confirm } = useDialog();
 
   const handleClick = async () => {
     if (disabled || pending) return;
     const next = !active;
-    if (confirmMessage && !window.confirm(confirmMessage)) return;
+    if (confirmMessage) {
+      const ok = await confirm(confirmMessage);
+      if (!ok) return;
+    }
     setPending(true);
     try {
       await onChange(next);

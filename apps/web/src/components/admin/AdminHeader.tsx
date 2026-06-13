@@ -25,7 +25,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-sm shadow-indigo-500/20">
+          <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 text-white border border-default-200 -500/20">
             <Shield className="w-4 h-4" />
           </div>
           <div>

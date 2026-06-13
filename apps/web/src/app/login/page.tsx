@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { currentUser, loadSession, login, saveSession } from "@/lib/auth";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
-import { Eye, EyeOff, Lock, Mail, User, Building, Landmark } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, User, Building, Landmark, Zap } from "lucide-react";
 
 const fallbackDeviceId = process.env.NEXT_PUBLIC_DEVICE_ID ?? "desktop-default";
 const deviceName = process.env.NEXT_PUBLIC_DEVICE_NAME ?? "Caja principal";
@@ -171,7 +171,7 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-lg items-center justify-center px-6 py-10">
-      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 shadow-2xl shadow-slate-200/40 dark:shadow-black/40 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90">
+      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90">
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-700/80 mb-2">Parkflow</p>
           <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -191,7 +191,7 @@ export default function LoginPage() {
 
         <div className="space-y-4">
           {isSetupMode && (
-            <div className="space-y-4 bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 shadow-sm mb-4">
+            <div className="space-y-4 bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 border border-default-200 mb-4">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Datos del Administrador</p>
               
               <Input
@@ -208,7 +208,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 shadow-sm space-y-4">
+          <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 border border-default-200 space-y-4">
             <Input
             data-testid="username"
             name="email"
@@ -240,6 +240,7 @@ export default function LoginPage() {
                 endContent={
                   <button
                     type="button"
+                    aria-label="Mostrar contraseña"
                     onClick={() => setShowPassword(!showPassword)}
                     className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors focus:outline-none"
                     tabIndex={-1}
@@ -276,6 +277,7 @@ export default function LoginPage() {
               endContent={
                 <button
                   type="button"
+                  aria-label="Mostrar contraseña"
                   onClick={() => setShowPassword(!showPassword)}
                   className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors focus:outline-none"
                   tabIndex={-1}
@@ -288,7 +290,7 @@ export default function LoginPage() {
           </div>
 
           {isSetupMode && (
-            <div className="space-y-4 bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 shadow-sm mt-6">
+            <div className="space-y-4 bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 border border-default-200 mt-6">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Datos de la Empresa / Parqueadero</p>
               
               <div className="grid gap-4 sm:grid-cols-2">
@@ -323,7 +325,7 @@ export default function LoginPage() {
                   onClick={loadDemoData}
                   className="text-xs font-bold text-amber-700 hover:underline hover:text-amber-800 dark:text-amber-500 dark:hover:text-amber-400 transition-colors"
                 >
-                  ⚡ Usar Datos Demo (Desarrollo)
+                  <Zap className="inline w-3 h-3 mr-0.5" /> Usar Datos Demo (Desarrollo)
                 </button>
               </div>
             </div>
@@ -344,7 +346,7 @@ export default function LoginPage() {
           type="submit"
           color={isSetupMode ? "success" : "primary"}
           size="lg"
-          className="w-full font-bold shadow-xl text-white"
+          className="w-full font-bold border border-default-200 text-white"
           isLoading={loading}
         >
           {isSetupMode ? "Completar Configuración Inicial" : "Entrar al Sistema"}

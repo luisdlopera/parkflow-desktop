@@ -21,6 +21,10 @@ public interface CashSessionRepository extends JpaRepository<CashSession, UUID> 
 
   Optional<CashSession> findByCloseIdempotencyKey(String closeIdempotencyKey);
 
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT s FROM CashSession s WHERE s.id = :id")
+  Optional<CashSession> findByIdWithPessimisticLock(@Param("id") UUID id);
+
   Page<CashSession> findAllByOrderByOpenedAtDesc(Pageable pageable);
 
   @Query(

@@ -67,6 +67,11 @@ public class CashSessionJpaAdapter implements CashSessionPort {
     }
 
     @Override
+    public Optional<CashSession> findByIdWithLock(UUID id) {
+        return jpaRepository.findByIdWithLock(id);
+    }
+
+    @Override
     public void delete(CashSession session) {
         jpaRepository.delete(session);
     }
@@ -86,6 +91,10 @@ public class CashSessionJpaAdapter implements CashSessionPort {
 
         @Query("SELECT s FROM CashSession s JOIN FETCH s.cashRegister WHERE s.id = :id")
         Optional<CashSession> fetchForClosingWebhook(@Param("id") UUID id);
+
+        @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+        @Query("SELECT s FROM CashSession s WHERE s.id = :id")
+        Optional<CashSession> findByIdWithLock(@Param("id") UUID id);
 
         long countByStatus(CashSessionStatus status);
 
