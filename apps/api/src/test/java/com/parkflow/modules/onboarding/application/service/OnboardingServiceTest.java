@@ -13,7 +13,7 @@ import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.domain.OnboardingProgress;
 import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
 import com.parkflow.modules.onboarding.domain.repository.CompanySettingsSnapshotPort;
-import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.configuration.service.OperationalConfigurationService;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 
@@ -37,8 +37,9 @@ class OnboardingServiceTest {
   @Mock private OnboardingProgressPort onboardingProgressPort;
   @Mock private CompanySettingsService companySettingsService;
   @Mock private CompanySettingsSnapshotPort companySettingsSnapshotPort;
-  @Mock private AuditService auditService;
+  @Mock private AuditPort auditService;
   @Mock private OperationalConfigurationService operationalConfigurationService;
+  @Mock private OnboardingQuestionConfigService onboardingQuestionConfigService;
 
   private OnboardingService onboardingService;
   private UUID companyId;
@@ -61,7 +62,9 @@ class OnboardingServiceTest {
         new FeatureAccessService(),
         companySettingsSnapshotPort,
         auditService,
-        operationalConfigurationService
+        operationalConfigurationService,
+        onboardingQuestionConfigService,
+        new OnboardingSettingsMapper(new FeatureAccessService())
     );
 
     company = new Company();

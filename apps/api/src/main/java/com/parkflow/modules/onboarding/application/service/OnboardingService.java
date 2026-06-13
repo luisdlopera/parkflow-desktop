@@ -31,11 +31,14 @@ public class OnboardingService implements OnboardingUseCase {
   private final com.parkflow.modules.onboarding.domain.repository.CompanySettingsSnapshotPort companySettingsSnapshotPort;
   private final com.parkflow.modules.audit.application.port.out.AuditPort auditService;
   private final OperationalConfigurationService operationalConfigurationService;
+  private final OnboardingQuestionConfigService onboardingQuestionConfigService;
+  private final OnboardingSettingsMapper settingsMapper;
 
   @Transactional(readOnly = true)
   public OnboardingStatusResponse status(UUID companyId) {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
+    List<Integer> enabledSteps = computeEnabledSteps(company);
     return new OnboardingStatusResponse(
         company.getId(),
         company.getPlan(),
@@ -43,14 +46,36 @@ public class OnboardingService implements OnboardingUseCase {
         progress.getCurrentStep(),
         progress.isSkipped(),
         progress.getProgressData(),
-        featureAccessService.getAvailableOptionsByPlan(company.getPlan()));
+        featureAccessService.getAvailableOptionsByPlan(company.getPlan()),
+        enabledSteps);
+  }
+
+  private List<Integer> computeEnabledSteps(Company company) {
+    var globalConfig = onboardingQuestionConfigService.findAllEnabled();
+    Map<String, Object> planOptions = featureAccessService.getAvailableOptionsByPlan(company.getPlan());
+    List<Integer> steps = new java.util.ArrayList<>();
+    for (var question : globalConfig) {
+      int step = question.stepNumber();
+      // Si está restringida por plan, verificar que el plan lo permita
+      if (question.planRestricted()) {
+        boolean allowed = switch (step) {
+          case 8, 9 -> Boolean.TRUE.equals(planOptions.get("allowAgreementsAndMonthly"));
+          case 10 -> Boolean.TRUE.equals(planOptions.get("allowMultiLocation"));
+          case 11 -> Boolean.TRUE.equals(planOptions.get("allowAdvancedPermissions"));
+          default -> true;
+        };
+        if (!allowed) continue;
+      }
+      steps.add(step);
+    }
+    return steps.stream().sorted().distinct().toList();
   }
 
   @Transactional
   public OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data) {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
-    Map<String, Object> sanitized = sanitizeStepDataByPlan(company, step, data);
+    Map<String, Object> sanitized = settingsMapper.sanitizeStepDataByPlan(company, step, data);
     Map<String, Object> merged = new LinkedHashMap<>(progress.getProgressData());
     merged.put("step_" + step, sanitized);
     progress.setProgressData(merged);
@@ -66,7 +91,7 @@ public class OnboardingService implements OnboardingUseCase {
     OnboardingProgress progress = findOrCreateProgress(company);
     company.setOperationalProfile(OperationalProfile.MIXED);
     companyRepository.save(company);
-    companySettingsService.upsertSettings(company, defaultConfiguration(company));
+    companySettingsService.upsertSettings(company, settingsMapper.defaultConfiguration(company));
     progress.setSkipped(true);
     progress.setCompleted(true);
     progress.setCurrentStep(12);
@@ -82,9 +107,9 @@ public class OnboardingService implements OnboardingUseCase {
   public OnboardingStatusResponse completeOnboarding(UUID companyId) {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
-    Map<String, Object> finalSettings = buildSettingsFromProgress(company, progress.getProgressData());
+    Map<String, Object> finalSettings = settingsMapper.buildSettingsFromProgress(company, progress.getProgressData());
     
-    Map<String, Object> step1 = stepMap(progress.getProgressData(), 1);
+    Map<String, Object> step1 = settingsMapper.stepMap(progress.getProgressData(), 1);
     String opStr = String.valueOf(step1.getOrDefault("operationalProfile", step1.getOrDefault("businessModel", "MIXED")));
     try {
       company.setOperationalProfile(OperationalProfile.valueOf(opStr));
@@ -125,13 +150,15 @@ public class OnboardingService implements OnboardingUseCase {
     Company company = getCompany(companyId);
     Map<String, Object> plan = featureAccessService.getAvailableOptionsByPlan(company.getPlan());
     Map<String, Object> settings = companySettingsService.getSettingsOrDefault(company);
-    List<String> vehicleTypes = asStringList(settings.get("vehicleTypes"), List.of("MOTO", "CARRO"));
-    List<String> paymentMethods = asStringList(settings.get("paymentMethods"), List.of("EFECTIVO"));
-    int siteCount = extractSitesCount(settings.get("sites"));
-    boolean cashEnabled = moduleEnabled(settings, "cash", true);
-    boolean shiftsEnabled = moduleEnabled(settings, "shifts", false);
-    boolean clientsEnabled = moduleEnabled(settings, "clients", false);
-    boolean agreementsEnabled = moduleEnabled(settings, "agreements", false);
+    List<String> rawVehicleTypes = settingsMapper.asStringList(settings.get("vehicleTypes"), List.of("MOTO", "CARRO"));
+    List<String> vehicleTypes = rawVehicleTypes.stream().map(settingsMapper::mapVehicleTypeCode).toList();
+    List<String> rawPaymentMethods = settingsMapper.asStringList(settings.get("paymentMethods"), List.of("EFECTIVO"));
+    List<String> paymentMethods = rawPaymentMethods.stream().map(settingsMapper::mapPaymentMethodCode).toList();
+    int siteCount = settingsMapper.extractSitesCount(settings.get("sites"));
+    boolean cashEnabled = settingsMapper.moduleEnabled(settings, "cash", true);
+    boolean shiftsEnabled = settingsMapper.moduleEnabled(settings, "shifts", false);
+    boolean clientsEnabled = settingsMapper.moduleEnabled(settings, "clients", false);
+    boolean agreementsEnabled = settingsMapper.moduleEnabled(settings, "agreements", false);
     return new CompanyCapabilitiesResponse(
         Boolean.TRUE.equals(company.getOnboardingCompleted()),
         Boolean.TRUE.equals(plan.get("allowMultiLocation")),
@@ -169,140 +196,7 @@ public class OnboardingService implements OnboardingUseCase {
         });
   }
 
-  private Map<String, Object> sanitizeStepDataByPlan(Company company, int step, Map<String, Object> data) {
-    Map<String, Object> out = new LinkedHashMap<>(data);
-    Map<String, Object> access = featureAccessService.getAvailableOptionsByPlan(company.getPlan());
-    if (step == 6) {
-      List<String> allowedPayments = asStringList(access.get("paymentMethods"), List.of("EFECTIVO"));
-      List<String> current = asStringList(out.get("paymentMethods"), List.of("EFECTIVO"));
-      out.put("paymentMethods", current.stream().filter(allowedPayments::contains).toList());
-    }
-    if ((step == 8 || step == 9) && Boolean.FALSE.equals(access.get("allowAgreementsAndMonthly"))) {
-      out.put("enabled", false);
-    }
-    if (step == 10 && Boolean.FALSE.equals(access.get("allowMultiLocation"))) {
-      out.put("multiSite", false);
-    }
-    if (step == 11 && Boolean.FALSE.equals(access.get("allowAdvancedPermissions"))) {
-      out.put("advanced", false);
-    }
-    return out;
-  }
 
-  private Map<String, Object> buildSettingsFromProgress(Company company, Map<String, Object> progressData) {
-    if (progressData == null || progressData.isEmpty()) {
-      return defaultConfiguration(company);
-    }
-    Map<String, Object> step1 = stepMap(progressData, 1);
-    Map<String, Object> step6 = stepMap(progressData, 6);
-    Map<String, Object> step10 = stepMap(progressData, 10);
-
-    String opStr = String.valueOf(step1.getOrDefault("operationalProfile", step1.getOrDefault("businessModel", "MIXED")));
-    OperationalProfile op = OperationalProfile.MIXED;
-    try {
-      op = OperationalProfile.valueOf(opStr);
-    } catch (Exception e) {
-      // ignore
-    }
-
-    List<String> vehicleTypes;
-    if (op == OperationalProfile.MOTORCYCLE_ONLY) {
-      vehicleTypes = List.of("MOTORCYCLE");
-    } else if (op == OperationalProfile.CAR_ONLY) {
-      vehicleTypes = List.of("CAR");
-    } else {
-      vehicleTypes = asStringList(step1.get("vehicleTypes"), List.of("MOTO", "CARRO"));
-    }
-
-    List<String> paymentMethods = asStringList(step6.get("paymentMethods"), List.of("EFECTIVO"));
-    boolean multiSite = Boolean.TRUE.equals(step10.get("multiSite"));
-    List<Map<String, String>> sites = multiSite
-        ? List.of(Map.of("code", "PRINCIPAL", "name", "Sede principal"), Map.of("code", "SECUNDARIA", "name", "Sede secundaria"))
-        : List.of(Map.of("code", "PRINCIPAL", "name", "Sede principal"));
-
-    Map<String, Object> settings = new LinkedHashMap<>();
-    settings.put("plan", company.getPlan().name());
-    settings.put("vehicleTypes", vehicleTypes);
-    settings.put("paymentMethods", paymentMethods);
-    settings.put("sites", sites);
-    settings.put("wizard", progressData);
-    settings.put("modules", inferModules(progressData));
-    return settings;
-  }
-
-  private Map<String, Object> stepMap(Map<String, Object> progressData, int step) {
-    Object raw = progressData.get("step_" + step);
-    if (raw instanceof Map<?, ?> map) {
-      Map<String, Object> out = new LinkedHashMap<>();
-      map.forEach((k, v) -> out.put(String.valueOf(k), v));
-      return out;
-    }
-    return Map.of();
-  }
-
-  private int extractSitesCount(Object rawSites) {
-    if (!(rawSites instanceof List<?> sites)) return 1;
-    return Math.max(1, sites.size());
-  }
-
-  private boolean moduleEnabled(Map<String, Object> settings, String key, boolean fallback) {
-    Object raw = settings.get("modules");
-    if (raw instanceof Map<?, ?> map) {
-      Object value = map.get(key);
-      if (value instanceof Boolean b) return b;
-    }
-    return fallback;
-  }
-
-  private List<String> asStringList(Object raw, List<String> fallback) {
-    if (!(raw instanceof List<?> list)) return fallback;
-    List<String> out = list.stream().map(String::valueOf).map(String::trim).filter(s -> !s.isBlank()).toList();
-    return out.isEmpty() ? fallback : out;
-  }
-
-  private Map<String, Object> inferModules(Map<String, Object> progressData) {
-    boolean shifts = containsYes(progressData.get("step_5"));
-    boolean clients = containsYes(progressData.get("step_8"));
-    boolean agreements = containsYes(progressData.get("step_9"));
-    return Map.of(
-        "cash", true,
-        "shifts", shifts,
-        "clients", clients,
-        "monthly", clients,
-        "agreements", agreements,
-        "advancedAudit", true);
-  }
-
-  private boolean containsYes(Object rawStep) {
-    if (!(rawStep instanceof Map<?, ?> map)) {
-      return false;
-    }
-    Object v = map.get("enabled");
-    if (v instanceof Boolean b) {
-      return b;
-    }
-    return false;
-  }
-
-  private Map<String, Object> defaultConfiguration(Company company) {
-    return Map.of(
-        "plan", company.getPlan().name(),
-        "vehicleTypes", List.of("MOTO", "CARRO"),
-        "capacity", Map.of("controlSlots", false, "total", 0),
-        "rates", List.of(Map.of("type", "HOURLY", "baseValue", 0, "active", true)),
-        "paymentMethods", List.of("EFECTIVO"),
-        "tickets", Map.of("delivery", List.of("PRINT"), "thermalPrinter", false, "allowReprint", true),
-        "modules", Map.of(
-            "cash", true,
-            "shifts", false,
-            "clients", false,
-            "monthly", false,
-            "agreements", false,
-            "advancedAudit", true),
-        "sites", List.of(Map.of("code", "PRINCIPAL", "name", "Sede principal")),
-        "roles", List.of("ADMIN", "OPERADOR"),
-        "criticalAudit", List.of("COBROS", "ANULACIONES", "CIERRE_CAJA"));
-  }
 
   @Override
   @Transactional
@@ -355,6 +249,7 @@ public class OnboardingService implements OnboardingUseCase {
 
     auditService.record(
         com.parkflow.modules.audit.domain.AuditAction.REINICIAR_ONBOARDING,
+        companyId,
         appUser,
         "onboardingCompleted=true, currentStep=" + progress.getCurrentStep(),
         "onboardingCompleted=false, currentStep=1",
