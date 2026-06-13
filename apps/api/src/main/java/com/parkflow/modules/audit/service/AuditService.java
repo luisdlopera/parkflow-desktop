@@ -24,15 +24,19 @@ public class AuditService implements AuditPort {
     private final AuditLogRepository auditLogRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void record(AuditAction action, AppUser user, String previousPayload, String newPayload, String metadata) {
+    public void record(AuditAction action, java.util.UUID companyId, AppUser user, String previousPayload, String newPayload, String metadata) {
         AuditLog log = new AuditLog();
         log.setAction(action);
         log.setCreatedAt(OffsetDateTime.now());
         
+        if (companyId != null) {
+            log.setCompanyId(companyId);
+        }
+        
         if (user != null) {
             log.setUser(user);
             log.setUsername(user.getEmail());
-            if (user.getCompanyId() != null) {
+            if (companyId == null && user.getCompanyId() != null) {
                 log.setCompanyId(user.getCompanyId());
             }
         } else {
@@ -41,7 +45,7 @@ public class AuditService implements AuditPort {
             if (auth != null && auth.getPrincipal() instanceof AppUser currentUser) {
                 log.setUser(currentUser);
                 log.setUsername(currentUser.getEmail());
-                if (currentUser.getCompanyId() != null) {
+                if (companyId == null && currentUser.getCompanyId() != null) {
                     log.setCompanyId(currentUser.getCompanyId());
                 }
             } else {
@@ -60,6 +64,10 @@ public class AuditService implements AuditPort {
         log.setMetadata(metadata);
 
         auditLogRepository.save(log);
+    }
+
+    public void record(AuditAction action, AppUser user, String previousPayload, String newPayload, String metadata) {
+        record(action, null, user, previousPayload, newPayload, metadata);
     }
 
     public void record(AuditAction action, String previousPayload, String newPayload, String metadata) {

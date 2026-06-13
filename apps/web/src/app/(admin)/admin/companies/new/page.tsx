@@ -18,7 +18,8 @@ export default function NewCompanyPage() {
         await createCompany(data);
         router.push("/admin/companies");
       } catch (err) {
-        // Error manejado en el form / hook
+        // Relanzar para que el formulario maneje el error y muestre feedback al usuario
+        throw err;
       }
     },
     [createCompany, router]
@@ -30,6 +31,7 @@ export default function NewCompanyPage() {
         <Button
           isIconOnly
           variant="ghost"
+          aria-label="Volver a empresas"
           onPress={() => router.push("/admin/companies")}
         >
           <ArrowLeft className="w-5 h-5" />

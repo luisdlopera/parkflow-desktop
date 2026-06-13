@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { changePassword, fetchProfile, updateProfile, type UserProfile } from "@/lib/profile-api";
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { clearSession, patchSessionUser } from "@/lib/auth";
 import type { UserRole } from "@/modules/users/types";
 import { PageBackButton } from "@/components/ui/PageBackButton";
@@ -68,7 +69,7 @@ export default function ProfilePage() {
       } catch (e) {
         setMessage({
           kind: "err",
-          text: e instanceof Error ? e.message : "No se pudo cargar el perfil"
+          text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA)
         });
       } finally {
         setLoading(false);
@@ -98,7 +99,7 @@ export default function ProfilePage() {
     } catch (e) {
       setMessage({
         kind: "err",
-        text: e instanceof Error ? e.message : "No se pudo guardar el perfil"
+        text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA)
       });
     } finally {
       setSaving(false);
@@ -123,7 +124,7 @@ export default function ProfilePage() {
     } catch (e) {
       setMessage({
         kind: "err",
-        text: e instanceof Error ? e.message : "No se pudo cambiar la contraseña"
+        text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA)
       });
     } finally {
       setChangingPassword(false);

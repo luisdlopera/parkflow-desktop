@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@heroui/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,7 +16,9 @@ import {
 import { rateFractionSchema, type RateFractionSchema } from "@/modules/settings/schemas";
 import type { RateFractionRow } from "@/modules/settings/types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { FormDrawer } from "@/components/settings/FormDrawer";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 const COLS: ColumnDef<RateFractionRow>[] = [
   { key: "fromMinute", label: "Desde (min)" },
@@ -44,6 +47,7 @@ export default function FraccionesPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<RateFractionRow | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { confirm } = useDialog();
 
   const {
     register,
@@ -59,7 +63,7 @@ export default function FraccionesPage() {
       const list = await fetchConfigurationRateFractions(rateId);
       setRows(list);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error cargando fracciones");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
     } finally {
       setLoading(false);
     }
@@ -89,17 +93,17 @@ export default function FraccionesPage() {
       setDrawerOpen(false);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error guardando");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("¿Eliminar esta fracción?")) return;
+    if (!(await confirm("¿Eliminar esta fracción?"))) return;
     try {
       await deleteConfigurationRateFraction(id);
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error eliminando");
+      toast.danger(getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA));
     }
   };
 

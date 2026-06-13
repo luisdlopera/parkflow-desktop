@@ -12,6 +12,7 @@ import {
   Receipt,
   Shield,
   ChevronsLeft,
+  HelpCircle,
 } from "lucide-react";
 
 const adminNavItems = [
@@ -29,6 +30,11 @@ const adminNavItems = [
     label: "Dispositivos",
     href: "/admin/devices",
     icon: Monitor,
+  },
+  {
+    label: "Onboarding",
+    href: "/admin/onboarding",
+    icon: HelpCircle,
   },
   {
     label: "Monitoreo",
@@ -77,7 +83,7 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
       >
         <div
           className={`
-            rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-white grid place-content-center font-bold shadow-lg shadow-indigo-500/30
+            rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-white grid place-content-center font-bold border border-default-200 -500/30
             ${collapsed ? "h-10 w-10 text-lg" : "h-12 w-12 text-xl"}
           `}
         >
@@ -153,7 +159,7 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
                 flex items-center rounded-xl font-medium transition-all
                 ${
                   isActive
-                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/20"
+                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white border border-default-200 -500/20"
                     : "text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800/35 hover:text-slate-900 dark:hover:text-white"
                 }
                 ${

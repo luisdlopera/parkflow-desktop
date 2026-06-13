@@ -17,6 +17,7 @@ import {
 } from "@/lib/settings-api";
 import { operationalParameterSchema, type OperationalParameterSchema } from "@/modules/settings/schemas";
 import type { ParkingSiteRow } from "@/modules/settings/types";
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 
 export default function OperacionPage() {
   const [loading, setLoading] = useState(false);
@@ -50,7 +51,7 @@ export default function OperacionPage() {
           setSiteId(activeSites[0].id);
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Error cargando sedes");
+        setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
       } finally {
         setCatalogLoading(false);
       }
@@ -80,7 +81,7 @@ export default function OperacionPage() {
           offlineModeEnabled: row.offlineModeEnabled,
         });
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Error cargando parámetros");
+        setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
       } finally {
         setLoading(false);
       }
@@ -100,7 +101,7 @@ export default function OperacionPage() {
       await putConfigurationOperationalParameters(siteId, { ...values } as Record<string, unknown>);
       setSuccess(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error guardando");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
     } finally {
       setSaving(false);
     }
@@ -166,7 +167,7 @@ export default function OperacionPage() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Card shadow="sm" className="border border-slate-200">
+        <Card border border-default-200="sm" className="border border-slate-200">
           <Card.Content className="p-6 space-y-8">
             <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-6">

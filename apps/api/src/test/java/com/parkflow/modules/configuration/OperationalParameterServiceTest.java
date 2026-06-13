@@ -48,6 +48,9 @@ class OperationalParameterServiceTest {
     UUID siteId = UUID.randomUUID();
     ParkingSite site = new ParkingSite();
     site.setId(siteId);
+    com.parkflow.modules.licensing.domain.Company company = new com.parkflow.modules.licensing.domain.Company();
+    company.setId(UUID.randomUUID());
+    site.setCompany(company);
     when(parkingSiteRepository.findById(siteId)).thenReturn(Optional.of(site));
     when(operationalParameterRepository.findBySite_Id(siteId)).thenReturn(Optional.empty());
     when(operationalParameterRepository.save(any(OperationalParameter.class)))

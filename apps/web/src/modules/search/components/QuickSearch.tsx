@@ -184,7 +184,7 @@ export function QuickSearch() {
   return (
     <>
       <Button
-        className="hidden h-10 min-w-0 flex-1 max-w-md items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/70 px-4 text-slate-500 shadow-sm backdrop-blur transition-colors hover:bg-slate-50 dark:border-neutral-800/70 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:bg-neutral-900/70 sm:flex"
+        className="hidden h-10 min-w-0 flex-1 max-w-md items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/70 px-4 text-slate-500 border border-default-200 backdrop-blur transition-colors hover:bg-slate-50 dark:border-neutral-800/70 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:bg-neutral-900/70 sm:flex"
         variant="tertiary"
         onPress={openPalette}
       >
@@ -198,7 +198,7 @@ export function QuickSearch() {
       </Button>
 
       <Button
-        className="h-10 w-10 min-w-10 rounded-xl border border-slate-200/80 bg-white/70 text-slate-500 shadow-sm backdrop-blur transition-colors hover:bg-slate-50 dark:border-neutral-800/70 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:bg-neutral-900/70 sm:hidden"
+        className="h-10 w-10 min-w-10 rounded-xl border border-slate-200/80 bg-white/70 text-slate-500 border border-default-200 backdrop-blur transition-colors hover:bg-slate-50 dark:border-neutral-800/70 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:bg-neutral-900/70 sm:hidden"
         variant="tertiary"
         onPress={openPalette}
         aria-label="Buscar"
@@ -207,7 +207,7 @@ export function QuickSearch() {
       </Button>
 
       <Modal state={ { isOpen: isOpen, setOpen: (v: boolean) => { if(!v) setIsOpen(false); }, open: () => {}, close: () => setIsOpen(false), toggle: () => {} } } size="4xl" scrollBehavior="inside" placement="top" hideCloseButton>
-        <Modal.Content className="overflow-hidden border border-slate-200/70 bg-white/95 shadow-2xl dark:border-neutral-800/70 dark:bg-neutral-950/95">
+        <Modal.Content className="overflow-hidden border border-slate-200/70 bg-white/95 border border-default-200 dark:border-neutral-800/70 dark:bg-neutral-950/95">
           <Modal.Body className="p-0">
             <div className="border-b border-slate-200/70 px-4 py-4 dark:border-neutral-800/70">
               <Input

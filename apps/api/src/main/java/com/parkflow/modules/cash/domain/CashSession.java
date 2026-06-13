@@ -17,6 +17,9 @@ public class CashSession {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
+  @Column(name = "company_id", nullable = false)
+  private UUID companyId;
+
   @ManyToOne(optional = false)
   @JoinColumn(name = "cash_register_id")
   private CashRegister cashRegister;

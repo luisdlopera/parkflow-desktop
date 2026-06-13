@@ -38,7 +38,7 @@ function ResultCard({ result, onSelect }: { result: SearchResult; onSelect: (res
     <button
       type="button"
       onClick={() => onSelect(result)}
-      className="flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-950/50 dark:hover:border-orange-900/50"
+      className="flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left border border-default-200 transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:border border-default-200 dark:border-neutral-800 dark:bg-neutral-950/50 dark:hover:border-orange-900/50"
     >
       <div className="rounded-2xl bg-orange-50 p-3 text-orange-600 dark:bg-orange-950/20">
         {TYPE_META[result.type]?.icon ?? <Search className="h-4 w-4" />}
@@ -97,6 +97,7 @@ export default function SearchPage() {
           <div className="w-full sm:max-w-md">
             <Input
               value={query}
+              aria-label="Buscar"
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar..."
               startContent={isLoading ? <Loader2 className="h-4 w-4 animate-spin text-orange-500" /> : <Search className="h-4 w-4 text-slate-400" />}

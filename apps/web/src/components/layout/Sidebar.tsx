@@ -24,6 +24,7 @@ const CONFIG_SUBITEMS = [
   { key: "interface", label: "Interfaz", icon: "M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" },
   { key: "onboarding", label: "Asistente Inicial", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
   { key: "masters", label: "Maestros", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
+  { key: "espacios", label: "Espacios", icon: "M3 3h18v18H3z M3 9h18 M3 15h18 M9 3v18 M15 3v18" },
 ];
 
 export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
@@ -63,7 +64,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
           ${collapsed ? "py-6 justify-center" : "py-6"}
         `}>
           <div className={`
-            rounded-2xl bg-orange-500 text-white grid place-content-center font-bold shadow-lg shadow-orange-500/30
+            rounded-2xl bg-orange-500 text-white grid place-content-center font-bold border border-default-200 -500/30
             ${collapsed ? "h-10 w-10 text-lg" : "h-12 w-12 text-xl"}
           `}>
             P
@@ -135,7 +136,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                       className={`
                         flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
                         ${subActive
-                          ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                          ? "bg-orange-500 text-white border border-default-200 -500/20"
                           : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
                       `}
                     >
@@ -163,7 +164,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                         className={`
                           w-full flex items-center rounded-xl font-medium transition-all
                           ${pathname?.startsWith("/configuracion")
-                            ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                            ? "bg-orange-500 text-white border border-default-200 -500/20"
                             : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
                           ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
                         `}
@@ -192,7 +193,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                     className={`
                       flex items-center rounded-xl font-medium transition-all
                       ${active
-                        ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                        ? "bg-orange-500 text-white border border-default-200 -500/20"
                         : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
                       ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
                     `}

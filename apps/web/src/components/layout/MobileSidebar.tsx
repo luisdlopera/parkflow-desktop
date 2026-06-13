@@ -60,7 +60,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
           {/* Header with close button */}
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-orange-500 text-white grid place-content-center font-bold text-lg shadow-lg shadow-orange-500/30">
+              <div className="h-10 w-10 rounded-xl bg-orange-500 text-white grid place-content-center font-bold text-lg border border-default-200 -500/30">
                 P
               </div>
               <div>
@@ -99,7 +99,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                   className={`
                     flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
                     ${active
-                      ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                      ? "bg-orange-500 text-white border border-default-200 -500/20"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-gray-800 dark:hover:text-white"}
                   `}
                 >

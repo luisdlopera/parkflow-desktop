@@ -1,4 +1,6 @@
 import { authHeaders } from "@/lib/auth";
+import { normalizeApiError } from "@/lib/errors/normalize-api-error";
+import { ApiError } from "@/lib/errors/api-error";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
 
@@ -10,6 +12,7 @@ export type OnboardingStatus = {
   skipped: boolean;
   progressData: Record<string, unknown>;
   availableOptionsByPlan: Record<string, unknown>;
+  enabledSteps: number[];
 };
 
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -18,11 +21,13 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
     ...options,
     headers: {
       ...headers,
+      "X-Parkflow-Auth-Toast-Silent": "1",
       ...options?.headers
     }
   });
   if (!response.ok) {
-    throw new Error(`Error ${response.status}`);
+    const apiError = await normalizeApiError(response);
+    throw apiError;
   }
   return (await response.json()) as T;
 }

@@ -158,3 +158,9 @@ export async function apiDeleteCompany(companyId: string): Promise<void> {
     method: "DELETE",
   });
 }
+
+export async function apiPurgeCompany(companyId: string): Promise<void> {
+  return apiFetch<void>(`/licensing/companies/${companyId}/purge`, {
+    method: "DELETE",
+  });
+}

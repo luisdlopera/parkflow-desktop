@@ -9,6 +9,18 @@ import DataTable from "@/components/ui/DataTable";
 import KpiCard from "@/components/ui/KpiCard";
 import { buildApiHeaders } from "@/lib/api";
 import { hasPermission } from "@/lib/auth";
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import {
+  BarChart3,
+  Lock,
+  Car,
+  Receipt,
+  Ban,
+  DollarSign,
+  TrendingUp,
+  User,
+  CreditCard,
+} from "lucide-react";
 
 type ReportView =
   | "daily-operations"
@@ -107,16 +119,16 @@ function toCsv(headers: string[], rows: string[][], filename: string) {
   URL.revokeObjectURL(a.href);
 }
 
-const CARD_ICONS: Record<ReportView, string> = {
-  "daily-operations": "📊",
-  "cash-session": "🔒",
-  "vehicle-type": "🚗",
-  "paid-tickets": "🧾",
-  "voided-tickets": "🚫",
-  "income-expense": "💰",
-  "occupancy": "📈",
-  "by-operator": "👤",
-  "by-payment-method": "💳",
+const CARD_ICONS: Record<ReportView, React.ReactNode> = {
+  "daily-operations": <BarChart3 className="w-6 h-6" />,
+  "cash-session": <Lock className="w-6 h-6" />,
+  "vehicle-type": <Car className="w-6 h-6" />,
+  "paid-tickets": <Receipt className="w-6 h-6" />,
+  "voided-tickets": <Ban className="w-6 h-6" />,
+  "income-expense": <DollarSign className="w-6 h-6" />,
+  "occupancy": <TrendingUp className="w-6 h-6" />,
+  "by-operator": <User className="w-6 h-6" />,
+  "by-payment-method": <CreditCard className="w-6 h-6" />,
 };
 
 type CardDef = { key: ReportView; label: string; desc: string };
@@ -221,7 +233,7 @@ export default function ReportesPage() {
         setPaymentMethods(data);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al cargar reporte");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.REPORT_ACTION));
     } finally {
       setLoading(false);
     }
@@ -368,7 +380,7 @@ export default function ReportesPage() {
             <button
               key={card.key}
               onClick={() => openReport(card.key)}
-              className="text-left bg-white rounded-2xl border border-slate-200 p-5 hover:border-amber-300 hover:shadow-md dark:border-slate-700 dark:hover:border-amber-600 transition-all duration-200 active:scale-[0.98]"
+              className="text-left bg-white rounded-2xl border border-slate-200 p-5 hover:border-amber-300 hover:border border-default-200 dark:border-slate-700 dark:hover:border-amber-600 transition-all duration-200 active:scale-[0.98]"
             >
               <div className="text-2xl mb-2">{CARD_ICONS[card.key]}</div>
               <h3 className="text-base font-semibold text-slate-900">{card.label}</h3>

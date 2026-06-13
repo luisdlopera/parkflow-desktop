@@ -14,14 +14,18 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
+import com.parkflow.modules.common.exception.domain.BusinessValidationException;
+import com.parkflow.modules.common.exception.domain.EntityNotFoundException;
 
 @Slf4j
 @Service
@@ -34,13 +38,17 @@ public class CompanyManagementService implements CompanyManagementUseCase {
     private final CompanyResponseAssembler companyResponseAssembler;
     private final AppUserRepository appUserRepository;
     private final PasswordHashService passwordHashService;
+    private final AuthSessionPort authSessionPort;
 
     @Override
     @Transactional
     public CompanyResponse createCompany(CreateCompanyRequest request, String performedBy) {
         String nit = request.getNit() != null && !request.getNit().isBlank() ? request.getNit() : null;
         if (nit != null && companyRepository.existsByNit(nit)) {
-            throw new IllegalArgumentException("Ya existe una empresa con ese NIT");
+            throw new BusinessValidationException("COMPANY_ALREADY_EXISTS", "Ya existe una empresa con ese NIT");
+        }
+        if (companyRepository.existsByName(request.getName())) {
+            throw new BusinessValidationException("COMPANY_ALREADY_EXISTS", "Ya existe una empresa con ese nombre");
         }
 
         Company company = new Company();
@@ -75,9 +83,14 @@ public class CompanyManagementService implements CompanyManagementUseCase {
         moduleProvisioner.createDefaultModules(company);
 
         // Generar las credenciales iniciales para el administrador de la empresa (MVP requirement)
+        String adminEmail = company.getEmail() != null ? company.getEmail() : performedBy;
+        if (appUserRepository.existsByEmail(adminEmail)) {
+            throw new BusinessValidationException("USER_EMAIL_ALREADY_EXISTS",
+                "El correo electrónico " + adminEmail + " ya está registrado como usuario. Use un email diferente para la empresa.");
+        }
         AppUser adminUser = new AppUser();
         adminUser.setCompanyId(company.getId());
-        adminUser.setEmail(company.getEmail());
+        adminUser.setEmail(adminEmail);
         adminUser.setName(company.getContactName() != null && !company.getContactName().isBlank() ? company.getContactName() : "Administrador");
         adminUser.setRole(UserRole.ADMIN);
         adminUser.setPasswordHash(passwordHashService.encodePassword("Qwert.12345"));
@@ -100,14 +113,29 @@ public class CompanyManagementService implements CompanyManagementUseCase {
     @Transactional(readOnly = true)
     public CompanyResponse getCompany(UUID companyId) {
         Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Company", companyId.toString()));
         return companyResponseAssembler.assemble(company);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<CompanyResponse> listAllCompanies() {
-        return companyRepository.findAll().stream()
+        return companyRepository.findByStatusNot(CompanyStatus.CANCELLED).stream()
+                .map(companyResponseAssembler::assemble)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<CompanyResponse> listAllCompaniesPaginated(Pageable pageable) {
+        return companyRepository.findAll(pageable)
+                .map(companyResponseAssembler::assemble);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CompanyResponse> searchCompanies(String query) {
+        return companyRepository.findByNameContainingIgnoreCase(query).stream()
                 .map(companyResponseAssembler::assemble)
                 .toList();
     }
@@ -116,15 +144,20 @@ public class CompanyManagementService implements CompanyManagementUseCase {
     @Transactional
     public CompanyResponse updateCompany(UUID companyId, UpdateCompanyRequest request, String performedBy) {
         Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Company", companyId.toString()));
 
         String oldValues = String.format("plan=%s, status=%s", company.getPlan(), company.getStatus());
 
-        if (request.getName() != null) company.setName(request.getName());
+        if (request.getName() != null) {
+            if (!request.getName().equals(company.getName()) && companyRepository.existsByName(request.getName())) {
+                throw new BusinessValidationException("COMPANY_ALREADY_EXISTS", "Ya existe una empresa con ese nombre");
+            }
+            company.setName(request.getName());
+        }
         if (request.getNit() != null) {
             String nit = request.getNit().isBlank() ? null : request.getNit();
             if (nit != null && !nit.equals(company.getNit()) && companyRepository.existsByNit(nit)) {
-                throw new IllegalArgumentException("Ya existe una empresa con ese NIT");
+                throw new BusinessValidationException("COMPANY_ALREADY_EXISTS", "Ya existe una empresa con ese NIT");
             }
             company.setNit(nit);
         }
@@ -160,7 +193,7 @@ public class CompanyManagementService implements CompanyManagementUseCase {
     @Transactional
     public void deactivateCompany(UUID companyId, String performedBy) {
         Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Company", companyId.toString()));
         
         company.setStatus(com.parkflow.modules.licensing.enums.CompanyStatus.CANCELLED);
         company.setCancelledAt(OffsetDateTime.now());
@@ -181,19 +214,54 @@ public class CompanyManagementService implements CompanyManagementUseCase {
     @Transactional
     public void deleteCompany(UUID companyId, String performedBy) {
         Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Company", companyId.toString()));
         
-        log.info("Iniciando hard delete de compañía {} ({}) por {}", company.getName(), companyId, performedBy);
+        log.info("Iniciando soft delete (cancelación) de compañía {} ({}) por {}", company.getName(), companyId, performedBy);
         
-        // Opcional: Eliminar usuarios asociados primero si no hay cascade
+        // Bloquear acceso de usuarios asociados eliminando sus sesiones activas
         List<AppUser> users = appUserRepository.findByCompanyId(companyId);
-        appUserRepository.deleteAll(users);
         
-        // Eliminar logs de auditoría asociados
-        // Nota: asume que LicenseAuditLog tiene FK a Company
-        // Aquí borramos la empresa, confiando en las reglas de cascade de la base de datos
-        // o en haber eliminado las dependencias directas como usuarios.
+        // Evitar que el SuperAdmin que realiza la acción se auto-cierre la sesión
+        List<AppUser> usersToDeleteSessions = users.stream()
+                .filter(u -> !u.getEmail().equalsIgnoreCase(performedBy))
+                .toList();
+                
+        if (!usersToDeleteSessions.isEmpty()) {
+            authSessionPort.deleteByUserIn(usersToDeleteSessions);
+        }
+        
+        // Soft Delete: Marcar la empresa como CANCELLED
+        company.setStatus(CompanyStatus.CANCELLED);
+        companyRepository.save(company);
+        
+        // Registrar la acción en los logs de auditoría
+        auditLogRepository.save(
+            LicenseAuditLog.create(
+                company,
+                "COMPANY_SOFT_DELETED",
+                "La empresa fue marcada como cancelada a través del proceso de eliminación.",
+                performedBy
+            )
+        );
+        
+        log.info("Compañía {} marcada como cancelada (Soft Delete)", companyId);
+    }
+
+    @Override
+    @Transactional
+    public void purgeCompany(UUID companyId, String performedBy) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new EntityNotFoundException("Company", companyId.toString()));
+        
+        log.warn("Iniciando purga (Hard Delete) de compañía {} ({}) por {}", company.getName(), companyId, performedBy);
+        
+        List<AppUser> users = appUserRepository.findByCompanyId(companyId);
+        if (!users.isEmpty()) {
+            authSessionPort.deleteByUserIn(users);
+            appUserRepository.deleteAll(users);
+        }
+        
         companyRepository.deleteById(companyId);
-        log.info("Compañía {} eliminada de manera permanente", companyId);
+        log.info("Compañía {} eliminada físicamente (Purge) de la base de datos", companyId);
     }
 }

@@ -1353,3 +1353,32 @@ CREATE INDEX IF NOT EXISTS idx_custodied_item_session ON custodied_item(session_
 CREATE INDEX IF NOT EXISTS idx_custodied_item_status ON custodied_item(status);
 CREATE INDEX IF NOT EXISTS idx_custodied_item_type ON custodied_item(item_type);
 CREATE INDEX IF NOT EXISTS idx_custodied_item_company ON custodied_item(company_id);
+
+
+-- V002
+ALTER TABLE payment_methods ADD COLUMN company_id UUID;
+ALTER TABLE payment_methods ADD CONSTRAINT fk_payment_methods_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
+
+-- V003
+ALTER TABLE printers ADD COLUMN company_id UUID;
+ALTER TABLE printers ADD CONSTRAINT fk_printers_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
+
+-- V004
+ALTER TABLE rate ALTER COLUMN applies_days_bitmap TYPE INTEGER;
+
+-- V005
+ALTER TABLE auth_audit_log DROP CONSTRAINT auth_audit_log_user_id_fkey;
+ALTER TABLE auth_audit_log ADD CONSTRAINT auth_audit_log_user_id_fkey FOREIGN KEY (user_id) REFERENCES app_user(id) ON DELETE CASCADE;
+
+-- V006
+CREATE TABLE IF NOT EXISTS onboarding_question_config (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    step_number INTEGER NOT NULL UNIQUE,
+    title VARCHAR(200) NOT NULL,
+    description VARCHAR(500),
+    enabled BOOLEAN NOT NULL DEFAULT true,
+    required BOOLEAN NOT NULL DEFAULT false,
+    plan_restricted BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

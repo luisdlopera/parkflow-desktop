@@ -56,14 +56,14 @@ export default function OfflineFeatureGate({ children }: OfflineFeatureGateProps
         transition={{ duration: 0.4, ease: "easeOut" }}
         className="w-full max-w-lg"
       >
-        <Card className="border border-amber-200/50 bg-white/70 dark:bg-neutral-900/60 dark:border-neutral-800/50 backdrop-blur-md shadow-xl rounded-3xl overflow-hidden">
+        <Card className="border border-amber-200/50 bg-white/70 dark:bg-neutral-900/60 dark:border-neutral-800/50 backdrop-blur-md border border-default-200 rounded-3xl overflow-hidden">
           <Card.Content className="p-8 sm:p-10 flex flex-col items-center text-center">
             {/* Animated Icon Container */}
             <motion.div
               initial={{ scale: 0.8, rotate: -10 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-              className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-orange-500/20"
+              className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white border border-default-200 -500/20"
             >
               <CloudOff size={38} className="animate-pulse" />
             </motion.div>
@@ -89,11 +89,11 @@ export default function OfflineFeatureGate({ children }: OfflineFeatureGateProps
               <Button
                 id="offline-gate-back-btn"
                 color="warning"
-                variant="shadow"
+                variant="border border-default-200"
                 size="lg"
                 startContent={<ArrowLeft size={18} />}
                 onPress={() => router.back()}
-                className="font-bold text-white shadow-lg shadow-amber-500/20"
+                className="font-bold text-white border border-default-200 -500/20"
               >
                 Volver
               </Button>

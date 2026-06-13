@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useToast } from "@/lib/toast/ToastContext";
+import { toast } from "@heroui/react";
+import { Monitor, Globe, CheckCircle, XCircle, AlertTriangle, CircleHelp } from "lucide-react";
 
 interface PrinterStatus {
   isOnline: boolean;
@@ -39,7 +40,9 @@ export function PrintStatusMonitor() {
   const [hasAlerted, setHasAlerted] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const { warning, error, success } = useToast();
+  const warning = toast.warning;
+  const error = toast.danger;
+  const success = toast.success;
 
   // Calcular posición del dropdown cuando se abre
   useEffect(() => {
@@ -179,7 +182,7 @@ export function PrintStatusMonitor() {
 
   const dropdownContent = (
     <div
-      className="fixed w-72 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 animate-in fade-in slide-in-from-top-2 duration-200 dark:bg-gray-800 dark:border-gray-700"
+      className="fixed w-72 bg-white rounded-xl border border-default-200 border border-slate-200 p-4 animate-in fade-in slide-in-from-top-2 duration-200 dark:bg-gray-800 dark:border-gray-700"
       style={{
         top: `${dropdownPos.top}px`,
         right: `${dropdownPos.right}px`,
@@ -200,7 +203,7 @@ export function PrintStatusMonitor() {
           <span className={`text-sm font-medium ${
             status.isTauri ? "text-emerald-600" : "text-slate-600"
           }`}>
-            {status.isTauri ? "🖥️ Tauri" : "🌐 Web"}
+            {status.isTauri ? <span className="flex items-center gap-1"><Monitor className="w-4 h-4" /> Tauri</span> : <span className="flex items-center gap-1"><Globe className="w-4 h-4" /> Web</span>}
           </span>
         </div>
 
@@ -210,9 +213,9 @@ export function PrintStatusMonitor() {
             !status.isChecked ? "text-slate-400" :
             status.isOnline ? "text-emerald-600" : "text-rose-600"
           }`}>
-            {!status.isChecked && "⏳ Verificando..."}
-            {status.isChecked && status.isOnline && "🟢 Online"}
-            {status.isChecked && !status.isOnline && "🔴 Offline"}
+            {!status.isChecked && "Verificando..."}
+            {status.isChecked && status.isOnline && <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-emerald-600" /> Online</span>}
+            {status.isChecked && !status.isOnline && <span className="flex items-center gap-1"><XCircle className="w-4 h-4 text-rose-600" /> Offline</span>}
           </span>
         </div>
 
@@ -224,10 +227,10 @@ export function PrintStatusMonitor() {
             status.paperStatus === "out" ? "text-rose-600" :
             "text-slate-400"
           }`}>
-            {status.paperStatus === "ok" && "✅ OK"}
-            {status.paperStatus === "low" && "⚠️ Bajo"}
-            {status.paperStatus === "out" && "❌ Vacío"}
-            {status.paperStatus === "unknown" && "❓ Desconocido"}
+            {status.paperStatus === "ok" && <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-emerald-600" /> OK</span>}
+            {status.paperStatus === "low" && <span className="flex items-center gap-1"><AlertTriangle className="w-4 h-4 text-amber-600" /> Bajo</span>}
+            {status.paperStatus === "out" && <span className="flex items-center gap-1"><XCircle className="w-4 h-4 text-rose-600" /> Vacío</span>}
+            {status.paperStatus === "unknown" && <span className="flex items-center gap-1"><CircleHelp className="w-4 h-4 text-slate-400" /> Desconocido</span>}
           </span>
         </div>
 
@@ -255,7 +258,7 @@ export function PrintStatusMonitor() {
         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-gray-700 flex gap-2">
         <button
           onClick={checkPrinterStatus}
-          className="flex-1 py-2 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+          className="flex-1 py-2 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors border border-default-200"
         >
           Verificar ahora
         </button>

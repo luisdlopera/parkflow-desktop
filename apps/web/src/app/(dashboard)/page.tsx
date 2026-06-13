@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { currentUser, canAccessSuperAdminPortal } from "@/lib/auth";
 import { Separator } from "@heroui/react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -54,6 +55,7 @@ export default function DashboardPage() {
   const [sessionsError, setSessionsError] = useState<string | null>(null);
   const [operational, setOperational] = useState<OperationalHealth | null>(null);
   const [opsMessage, setOpsMessage] = useState<string | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
 
   const base = useCallback(() => {
     const raw = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
@@ -63,6 +65,12 @@ export default function DashboardPage() {
   const load = useCallback(async () => {
     setSummaryError(null);
     setSessionsError(null);
+
+    try {
+      const user = await currentUser();
+      setIsSuperAdmin(canAccessSuperAdminPortal(user));
+    } catch {}
+
     try {
       const sRes = await fetch(`${base()}/supervisor/summary`, { headers: await buildApiHeaders() });
       if (!sRes.ok) {
@@ -177,15 +185,6 @@ export default function DashboardPage() {
             Actualizar
           </button>
         </div>
-        <Button
-          variant="tertiary"
-          color="primary"
-          size="sm"
-          onPress={() => { load().catch(console.error); }}
-          className="font-semibold"
-        >
-          Actualizar datos
-        </Button>
       </section>
 
       <section className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
@@ -194,52 +193,53 @@ export default function DashboardPage() {
         ))}
       </section>
 
-      <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-900">Salud Operacional</h2>
-          {opsMessage ? <Badge label={opsMessage} tone="warning" /> : null}
-        </div>
+      {isSuperAdmin && (
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-slate-900">Salud Operacional</h2>
+            {opsMessage ? <Badge label={opsMessage} tone="warning" /> : null}
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {[
-            ["Estado API", operational?.apiStatus],
-            ["Estado base de datos", operational?.databaseStatus],
-            ["Estado impresora", operational?.printerStatus],
-            ["Outbox pendiente", String(operational?.outboxPending ?? "—")],
-            ["Dead-letter", String(operational?.deadLetter ?? "—")],
-          ].map(([label, value]) => (
-            <div key={label} className="surface rounded-2xl p-5 border border-slate-100">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">{label}</p>
-              <p className={`text-xl font-bold ${tone(String(value))}`}>{value ?? "—"}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              ["Estado API", operational?.apiStatus],
+              ["Estado base de datos", operational?.databaseStatus],
+              ["Estado impresora", operational?.printerStatus],
+              ["Outbox pendiente", String(operational?.outboxPending ?? "—")],
+              ["Dead-letter", String(operational?.deadLetter ?? "—")],
+            ].map(([label, value]) => (
+              <div key={label} className="surface rounded-2xl p-5 border border-slate-100">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">{label}</p>
+                <p className={`text-xl font-bold ${tone(String(value))}`}>{value ?? "—"}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="surface rounded-2xl p-6 border border-slate-100">
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600 mb-6">
+              <p><span className="text-slate-400">Heartbeat:</span> {operational?.lastHeartbeat ? new Date(operational.lastHeartbeat).toLocaleString("es-CO") : "Sin datos"}</p>
+              <p><span className="text-slate-400">Último Sync:</span> {operational?.lastSuccessfulSync ? new Date(operational.lastSuccessfulSync).toLocaleString("es-CO") : "Sin datos"}</p>
+              <p><span className="text-slate-400">Cajas:</span> {operational?.openCashRegisters ?? "—"}</p>
+              <p><span className="text-slate-400">Fallos:</span> {operational?.failedEvents ?? "—"}</p>
             </div>
-          ))}
-        </div>
 
-        <div className="surface rounded-2xl p-6 border border-slate-100">
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600 mb-6">
-            <p><span className="text-slate-400">Heartbeat:</span> {operational?.lastHeartbeat ? new Date(operational.lastHeartbeat).toLocaleString("es-CO") : "Sin datos"}</p>
-            <p><span className="text-slate-400">Último Sync:</span> {operational?.lastSuccessfulSync ? new Date(operational.lastSuccessfulSync).toLocaleString("es-CO") : "Sin datos"}</p>
-            <p><span className="text-slate-400">Cajas:</span> {operational?.openCashRegisters ?? "—"}</p>
-            <p><span className="text-slate-400">Fallos:</span> {operational?.failedEvents ?? "—"}</p>
+            <div className="flex gap-3 mb-6">
+              <Button size="sm" variant="tertiary" color="primary" onPress={() => { callOperationalAction("retry-sync").catch(console.error); }}>Reintentar Sync</Button>
+              <Button size="sm" variant="tertiary" color="primary" onPress={() => { callOperationalAction("test-printer").catch(console.error); }}>Probar Impresora</Button>
+            </div>
+
+            <DataTable
+              columns={errorColumns}
+              rows={operational?.recentErrors ?? []}
+              emptyMessage="Sin errores recientes detectados."
+            />
           </div>
-
-          <div className="flex gap-3 mb-6">
-            <Button size="sm" variant="tertiary" color="primary" onPress={() => { callOperationalAction("retry-sync").catch(console.error); }}>Reintentar Sync</Button>
-            <Button size="sm" variant="tertiary" color="primary" onPress={() => { callOperationalAction("test-printer").catch(console.error); }}>Probar Impresora</Button>
-          </div>
-
-          <DataTable
-            columns={errorColumns}
-            rows={operational?.recentErrors ?? []}
-            emptyMessage="Sin errores recientes detectados."
-          />
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-slate-900">Vehículos en Patio</h2>
-          <Badge label="En vivo" tone="success" />
         </div>
         {sessionsError ? <p className="text-sm text-amber-800">{sessionsError}</p> : null}
         <DataTable

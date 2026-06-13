@@ -106,7 +106,6 @@ body {
 .surface {
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(20, 20, 20, 0.06);
-  box-shadow: 0 24px 60px rgba(18, 18, 18, 0.08);
   backdrop-filter: blur(12px);
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
@@ -114,7 +113,6 @@ body {
 [data-theme="dark"] .surface {
   background: rgba(39, 39, 42, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
 }
 
 .grid-dots {
@@ -178,7 +176,6 @@ select:focus-visible {
   outline-color: transparent !important;
   outline-style: none !important;
   outline-width: 0 !important;
-  box-shadow: none !important;
   --tw-ring-color: transparent !important;
   --tw-ring-shadow: 0 0 #0000 !important;
   --tw-ring-offset-shadow: 0 0 #0000 !important;
@@ -211,19 +208,71 @@ select:focus-visible {
   background: rgba(161, 161, 170, 0.55);
 }
 
-/* Input autofill styling */
+/* Input autofill styling — match input background (#f4f4f5) */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
-input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px white inset;
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #f4f4f5 inset;
+  -webkit-text-fill-color: var(--color-ink);
   transition: background-color 5000s ease-in-out 0s;
 }
 
 [data-theme="dark"] input:-webkit-autofill,
 [data-theme="dark"] input:-webkit-autofill:hover,
-[data-theme="dark"] input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px #18181b inset;
+[data-theme="dark"] input:-webkit-autofill:focus,
+[data-theme="dark"] textarea:-webkit-autofill,
+[data-theme="dark"] textarea:-webkit-autofill:hover,
+[data-theme="dark"] textarea:-webkit-autofill:focus,
+[data-theme="dark"] select:-webkit-autofill,
+[data-theme="dark"] select:-webkit-autofill:hover,
+[data-theme="dark"] select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #27272a inset;
   -webkit-text-fill-color: #fafafa;
+}
+
+/* ── Input Bordered-Subtle: hover & focus states (light mode) ── */
+input:not([type="checkbox"]):not([type="radio"]):hover,
+textarea:hover,
+[data-slot="input-wrapper"]:hover,
+[data-slot="trigger"]:hover {
+  border-color: #cbd5e1 !important; /* slate-300 */
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus-within,
+textarea:focus-within,
+[data-slot="input-wrapper"]:focus-within,
+[data-slot="trigger"]:focus-within {
+  border-color: var(--color-brand-500, #f97316) !important;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.08) !important;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]):hover,
+.dark textarea:hover,
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):hover,
+[data-theme="dark"] textarea:hover,
+.dark [data-slot="input-wrapper"]:hover,
+[data-theme="dark"] [data-slot="input-wrapper"]:hover,
+.dark [data-slot="trigger"]:hover,
+[data-theme="dark"] [data-slot="trigger"]:hover {
+  border-color: #52525b !important; /* neutral-600 */
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]):focus-within,
+.dark textarea:focus-within,
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):focus-within,
+[data-theme="dark"] textarea:focus-within,
+.dark [data-slot="input-wrapper"]:focus-within,
+[data-theme="dark"] [data-slot="input-wrapper"]:focus-within,
+.dark [data-slot="trigger"]:focus-within,
+[data-theme="dark"] [data-slot="trigger"]:focus-within {
+  border-color: var(--color-brand-500, #f97316) !important;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15) !important;
 }
 
 /* ── HeroUI: dark mode only (html.dark / data-theme=dark) ── */
@@ -243,8 +292,8 @@ input:-webkit-autofill:focus {
 
 .dark [data-slot="input-wrapper"],
 [data-theme="dark"] [data-slot="input-wrapper"] {
-  background-color: hsl(var(--heroui-default-100)) !important;
-  border-color: hsl(var(--heroui-default-200)) !important;
+  background-color: rgba(39, 39, 42, 0.6) !important; /* zinc-800/60 */
+  border-color: #3f3f46 !important; /* neutral-700 */
 }
 
 .dark [data-slot="input-wrapper"]:hover,
@@ -259,8 +308,8 @@ input:-webkit-autofill:focus {
 
 .dark [data-slot="trigger"],
 [data-theme="dark"] [data-slot="trigger"] {
-  background-color: hsl(var(--heroui-default-100)) !important;
-  border-color: hsl(var(--heroui-default-200)) !important;
+  background-color: rgba(39, 39, 42, 0.6) !important; /* zinc-800/60 */
+  border-color: #3f3f46 !important; /* neutral-700 */
   color: hsl(var(--heroui-foreground)) !important;
 }
 
@@ -406,9 +455,9 @@ input:-webkit-autofill:focus {
 }
 
 .dark [data-slot="base"][data-slot="base"].bg-content1,
-.dark [data-slot="base"].shadow-medium,
+.dark [data-slot="base"].border border-default-200,
 [data-theme="dark"] [data-slot="base"].bg-content1,
-[data-theme="dark"] [data-slot="base"].shadow-medium {
+[data-theme="dark"] [data-slot="base"].border border-default-200 {
   background-color: hsl(var(--heroui-content1)) !important;
   color: hsl(var(--heroui-foreground)) !important;
 }
@@ -442,12 +491,12 @@ input:-webkit-autofill:focus {
 }
 
 /* HeroUI Card — ensure dark surfaces inside admin/operational shells */
-.dark [data-slot="base"].shadow-small,
-.dark [data-slot="base"].shadow-medium,
-.dark [data-slot="base"].shadow-large,
-[data-theme="dark"] [data-slot="base"].shadow-small,
-[data-theme="dark"] [data-slot="base"].shadow-medium,
-[data-theme="dark"] [data-slot="base"].shadow-large {
+.dark [data-slot="base"].border border-default-200,
+.dark [data-slot="base"].border border-default-200,
+.dark [data-slot="base"].border border-default-200,
+[data-theme="dark"] [data-slot="base"].border border-default-200,
+[data-theme="dark"] [data-slot="base"].border border-default-200,
+[data-theme="dark"] [data-slot="base"].border border-default-200 {
   background-color: hsl(var(--heroui-content1)) !important;
   color: hsl(var(--heroui-foreground)) !important;
 }
@@ -523,7 +572,7 @@ input:-webkit-autofill:focus {
   color: #fdba74 !important;
 }
 
-/* HeroUI Input - Remove orange ring/border */
+/* HeroUI Input - Remove default ring/outline (keep our custom focus glow) */
 .group[data-focus="true"] [data-slot="input-wrapper"],
 .group[data-focus-visible="true"] [data-slot="input-wrapper"],
 [data-slot="input-wrapper"][data-focus="true"],
@@ -535,7 +584,6 @@ input:-webkit-autofill:focus {
   --tw-ring-color: transparent !important;
   --tw-ring-shadow: 0 0 #0000 !important;
   --tw-ring-offset-shadow: 0 0 #0000 !important;
-  box-shadow: none !important;
   outline: 0 !important;
   outline-color: transparent !important;
   outline-style: none !important;
@@ -552,7 +600,6 @@ input:-webkit-autofill:focus {
   outline-color: transparent !important;
   outline-style: none !important;
   outline-width: 0 !important;
-  box-shadow: none !important;
   --tw-ring-color: transparent !important;
   --tw-ring-shadow: 0 0 #0000 !important;
   --tw-ring-offset-shadow: 0 0 #0000 !important;
@@ -575,4 +622,13 @@ input:-webkit-autofill:focus {
 .dark [data-slot="input"]::placeholder,
 [data-theme="dark"] [data-slot="input"]::placeholder {
   color: hsl(var(--heroui-default-500) / 0.75) !important;
+}
+
+@layer components {
+  /* Asterisco rosado para labels requeridos de HeroUI */
+  .label--required::after,
+  [data-required="true"] > .label::after,
+  [data-slot="label"][data-required="true"]::after {
+    color: theme('colors.pink.500') !important;
+  }
 }

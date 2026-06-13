@@ -103,8 +103,8 @@ export default function ConfigSidebar() {
                   href={item.href}
                   className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${
                     isActive
-                      ? "border-orange-200 bg-orange-50 shadow-sm"
-                      : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                      ? "border-orange-200 bg-orange-50 border border-default-200"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:border border-default-200"
                   }`}
                 >
                   <div

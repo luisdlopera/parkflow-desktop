@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@heroui/react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,8 +23,9 @@ import {
 import { cashRegisterSchema, type CashRegisterSchema } from "@/modules/settings/schemas";
 import type { CashRegisterRow, ParkingSiteRow, PrinterRow } from "@/modules/settings/types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
-import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/settings/FormDrawer";
+import { StatusToggle } from "@/components/settings/StatusToggle";
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 
 const COLS: ColumnDef<CashRegisterRow>[] = [
   { key: "code", label: "Código" },
@@ -90,7 +92,7 @@ export default function CajasPage() {
       const page = await fetchConfigurationCashRegisters({ q, page: 0, size: 50 });
       setData(page);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error cargando cajas");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
     } finally {
       setLoading(false);
     }
@@ -138,7 +140,7 @@ export default function CajasPage() {
       setDrawerOpen(false);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error guardando");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
     }
   };
 
@@ -147,7 +149,7 @@ export default function CajasPage() {
       await patchConfigurationCashRegisterStatus(row.id, !row.active);
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error cambiando estado");
+      toast.danger(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
     }
   };
 

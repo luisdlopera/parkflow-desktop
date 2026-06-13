@@ -40,7 +40,7 @@ export function CrashRecoveryDialog({ formKey, onRestore, onDismiss }: CrashReco
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200 dark:bg-gray-800 dark:shadow-lg">
+      <div className="bg-white rounded-2xl border border-default-200 p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200 dark:bg-gray-800 dark:border border-default-200">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
             <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

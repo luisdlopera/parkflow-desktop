@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@heroui/react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,6 +24,7 @@ import type { Company } from "@/lib/licensing/types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/settings/FormDrawer";
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 
 const SITE_COLUMNS: ColumnDef<ParkingSiteRow>[] = [
   { key: "code", label: "Código" },
@@ -77,7 +79,7 @@ export default function SedesPage() {
           setCompanyId(companyList[0].id);
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Error cargando empresas");
+        setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
       } finally {
         setCatalogLoading(false);
       }
@@ -92,7 +94,7 @@ export default function SedesPage() {
       const page = await fetchConfigurationSites({ q, page: 0, size: 50 });
       setData(page);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error cargando sedes");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
     } finally {
       setLoading(false);
     }
@@ -137,7 +139,7 @@ export default function SedesPage() {
       setDrawerOpen(false);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error guardando");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
     }
   };
 
@@ -146,7 +148,7 @@ export default function SedesPage() {
       await patchConfigurationSiteStatus(row.id, !row.isActive);
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error cambiando estado");
+      toast.danger(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
     }
   };
 
@@ -154,7 +156,7 @@ export default function SedesPage() {
     <div className="mx-auto max-w-6xl space-y-6 p-6">
       <h1 className="text-2xl font-bold text-slate-900">Sedes / Parqueaderos</h1>
       
-      <Card shadow="sm" className="border border-slate-200 bg-slate-50/50">
+      <Card border border-default-200="sm" className="border border-slate-200 bg-slate-50/50">
         <Card.Content className="p-4 flex flex-col sm:flex-row sm:items-end gap-4">
           <div className="flex-1">
             <Select

@@ -54,7 +54,7 @@ export function GenerateLicenseDialog({
 
   const handleClose = () => {
     clearLicense();
-    close();
+    onClose();
   };
 
   const handleDownload = () => {
@@ -168,6 +168,7 @@ export function GenerateLicenseDialog({
                       isIconOnly
                       size="sm"
                       variant="ghost"
+                      aria-label="Copiar license key"
                       onPress={() => handleCopy(license.licenseKey)}
                     >
                       {copied ? (
@@ -189,6 +190,7 @@ export function GenerateLicenseDialog({
                       isIconOnly
                       size="sm"
                       variant="ghost"
+                      aria-label="Copiar signature"
                       onPress={() => handleCopy(license.signature)}
                     >
                       <Copy className="w-4 h-4" />

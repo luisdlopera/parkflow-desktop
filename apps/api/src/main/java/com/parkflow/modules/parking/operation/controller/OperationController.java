@@ -24,6 +24,7 @@ public class OperationController {
   private final GetTicketUseCase getTicketUseCase;
   private final ListActiveSessionsUseCase listActiveSessionsUseCase;
   private final FindActiveSessionUseCase findActiveSessionUseCase;
+  private final UpdatePlateUseCase updatePlateUseCase;
 
   public OperationController(
       SupervisorService supervisorService,
@@ -34,7 +35,8 @@ public class OperationController {
       VoidSessionUseCase voidSessionUseCase,
       GetTicketUseCase getTicketUseCase,
       ListActiveSessionsUseCase listActiveSessionsUseCase,
-      FindActiveSessionUseCase findActiveSessionUseCase) {
+      FindActiveSessionUseCase findActiveSessionUseCase,
+      UpdatePlateUseCase updatePlateUseCase) {
     this.supervisorService = supervisorService;
     this.registerEntryUseCase = registerEntryUseCase;
     this.registerExitUseCase = registerExitUseCase;
@@ -44,6 +46,7 @@ public class OperationController {
     this.getTicketUseCase = getTicketUseCase;
     this.listActiveSessionsUseCase = listActiveSessionsUseCase;
     this.findActiveSessionUseCase = findActiveSessionUseCase;
+    this.updatePlateUseCase = updatePlateUseCase;
   }
 
   @GetMapping("/supervisor/summary")
@@ -122,5 +125,11 @@ public class OperationController {
   @PreAuthorize("hasAuthority('reportes:leer') or hasAuthority('tickets:emitir')")
   public List<ReceiptResponse> activeList() {
     return listActiveSessionsUseCase.execute();
+  }
+
+  @PatchMapping("/sessions/{id}/plate")
+  @PreAuthorize("hasAuthority('anulaciones:crear') or hasAuthority('tickets:emitir')")
+  public void updatePlate(@PathVariable java.util.UUID id, @Valid @RequestBody UpdatePlateRequest request) {
+    updatePlateUseCase.execute(id, request);
   }
 }

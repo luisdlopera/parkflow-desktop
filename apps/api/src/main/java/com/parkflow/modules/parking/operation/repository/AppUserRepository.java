@@ -33,4 +33,6 @@ public interface AppUserRepository extends JpaRepository<AppUser, UUID> {
   boolean existsByDocumentIgnoreCaseAndCompanyIdAndIdNot(String document, UUID companyId, UUID id);
 
   boolean existsByDocumentIgnoreCaseAndCompanyId(String document, UUID companyId);
+
+  boolean existsByEmail(String email);
 }

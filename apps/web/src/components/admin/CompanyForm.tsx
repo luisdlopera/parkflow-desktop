@@ -15,12 +15,7 @@ import { requiredString, emailSchema, positiveNumber, nonNegativeNumber } from "
 import { InlineFieldError } from "@/components/feedback/InlineFieldError";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
-import { useToast } from "@/lib/toast/ToastContext";
-
-interface CompanyFormProps {
-  onSubmit: (data: CreateCompanyRequest) => Promise<void>;
-  isLoading?: boolean;
-}
+import { toast } from "@heroui/react";
 
 const plans: { value: PlanType; label: string }[] = [
   { value: "LOCAL", label: "Local / Offline" },
@@ -32,11 +27,11 @@ const plans: { value: PlanType; label: string }[] = [
 const companySchema = z.object({
   name: requiredString("Ingresa el nombre de la empresa."),
   nit: z.string().optional().or(z.literal("")),
-  email: emailSchema("Ingresa un correo electrónico válido."),
-  phone: requiredString("Ingresa un número de teléfono."),
-  city: requiredString("Ingresa la ciudad."),
-  contactName: requiredString("Ingresa el nombre del administrador."),
-  address: requiredString("Ingresa la dirección física."),
+  email: z.string().email({ message: "Ingresa un correo electrónico válido." }).optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  city: z.string().optional().or(z.literal("")),
+  contactName: z.string().optional().or(z.literal("")),
+  address: z.string().optional().or(z.literal("")),
   plan: z.enum(["LOCAL", "SYNC", "PRO", "ENTERPRISE"] as const),
   maxDevices: positiveNumber("Mínimo 1 dispositivo."),
   maxLocations: positiveNumber("Mínimo 1 sede."),
@@ -61,24 +56,11 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
     handleSubmit,
     setValue,
     control,
+    reset,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(companySchema),
-    defaultValues: initialData ? {
-      name: initialData.name,
-      nit: initialData.nit || "",
-      address: initialData.address || "",
-      city: initialData.city || "",
-      phone: initialData.phone || "",
-      email: initialData.email || "",
-      contactName: initialData.contactName || "",
-      plan: initialData.plan || "LOCAL",
-      maxDevices: initialData.maxDevices || 1,
-      maxLocations: initialData.maxLocations || 1,
-      maxUsers: initialData.maxUsers || 5,
-      trialDays: (initialData as any).trialDays || 14,
-      offlineModeAllowed: initialData.offlineModeAllowed ?? true,
-    } : {
+    defaultValues: {
       name: "",
       nit: "",
       address: "",
@@ -95,10 +77,32 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
     },
   });
 
+  // Reset form values when editing (initialData changes asynchronously)
+  React.useEffect(() => {
+    if (initialData) {
+      reset({
+        name: initialData.name,
+        nit: initialData.nit || "",
+        address: initialData.address || "",
+        city: initialData.city || "",
+        phone: initialData.phone || "",
+        email: initialData.email || "",
+        contactName: initialData.contactName || "",
+        plan: initialData.plan || "LOCAL",
+        maxDevices: initialData.maxDevices || 1,
+        maxLocations: initialData.maxLocations || 1,
+        maxUsers: initialData.maxUsers || 5,
+        trialDays: initialData.trialDays ?? 14,
+        offlineModeAllowed: initialData.offlineModeAllowed ?? true,
+      });
+    }
+  }, [initialData, reset]);
+
   const selectedPlan = useWatch({ control, name: "plan" });
+  const offlineModeAllowed = useWatch({ control, name: "offlineModeAllowed" });
   const features = getPlanFeatures(selectedPlan);
 
-  const { error: toastError } = useToast();
+  const toastError = toast.danger;
 
   const onFormSubmit = async (data: FormValues) => {
     try {
@@ -140,7 +144,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Input
-            label="Email *"
+            label="Email"
             placeholder="contacto@empresa.com"
             type="email"
             {...register("email")}
@@ -151,7 +155,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
 
         <div>
           <Input
-            label="Teléfono *"
+            label="Teléfono"
             placeholder="Ej: +57 300 123 4567"
             {...register("phone")}
             isInvalid={!!errors.phone}
@@ -163,7 +167,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Input
-            label="Ciudad *"
+            label="Ciudad"
             placeholder="Ej: Bogotá"
             {...register("city")}
             isInvalid={!!errors.city}
@@ -173,7 +177,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
 
         <div>
           <Input
-            label="Nombre de contacto *"
+            label="Nombre de contacto"
             placeholder="Nombre del administrador"
             {...register("contactName")}
             isInvalid={!!errors.contactName}
@@ -184,7 +188,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
 
       <div>
         <TextArea
-          label="Dirección *"
+          label="Dirección"
           placeholder="Dirección física de la empresa"
           {...register("address")}
           isInvalid={!!errors.address}
@@ -210,7 +214,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
         <ListBox>
 
         {plans.map((plan) => (
-          <ListBox.Item key={plan.value} textValue={plan.label}>
+          <ListBox.Item id={plan.value} key={plan.value} textValue={plan.label}>
             {plan.label}
           </ListBox.Item>
         ))}
@@ -266,7 +270,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
 
         <Select
           label="Modo offline permitido"
-          value={[useWatch({ control, name: "offlineModeAllowed" }) ? "true" : "false"]}
+          value={[offlineModeAllowed ? "true" : "false"]}
           onChange={(keys) => {
             const allowed = Array.from(keys)[0] === "true";
             setValue("offlineModeAllowed", allowed);
@@ -279,8 +283,8 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
       <Select.Popover>
         <ListBox>
 
-          <ListBox.Item key="true" textValue="Sí">Sí</ListBox.Item>
-          <ListBox.Item key="false" textValue="No">No</ListBox.Item>
+          <ListBox.Item id="true" textValue="Sí">Sí</ListBox.Item>
+          <ListBox.Item id="false" textValue="No">No</ListBox.Item>
         
         </ListBox>
       </Select.Popover>

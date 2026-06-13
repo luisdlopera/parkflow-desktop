@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Separator, ListBox } from "@heroui/react";
 import { Alert } from "@/components/ui/Alert";
+import { useDialog } from "@/components/ui/DialogProvider";
 import { Chip } from "@/components/ui/Chip";
 import { AccordionItem } from "@/components/ui/Accordion";
 import { Accordion } from "@/components/ui/Accordion";
@@ -93,6 +94,7 @@ export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const { confirm } = useDialog();
 
   const updateSetting = useCallback(<K extends keyof SystemSettings>(
     key: K,
@@ -111,8 +113,8 @@ export default function AdminSettingsPage() {
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
-  const handleReset = () => {
-    if (confirm("¿Está seguro de restaurar la configuración por defecto?")) {
+  const handleReset = async () => {
+    if (await confirm("¿Está seguro de restaurar la configuración por defecto?")) {
       setSettings(DEFAULT_SETTINGS);
       setSaveSuccess(false);
     }
@@ -121,6 +123,11 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
+      <div className="mb-4">
+        <Alert color="warning" title="Disponible próximamente">
+          Esta funcionalidad de configuración global se encuentra en desarrollo y estará disponible en futuras actualizaciones. Actualmente opera con simulaciones.
+        </Alert>
+      </div>
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Configuración del Sistema</h1>

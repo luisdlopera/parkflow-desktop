@@ -44,6 +44,14 @@ export const CONTEXT_ERROR_MESSAGES: Record<string, Record<string, Partial<UserF
       title: "La empresa ya existe",
       description: "Ya hay una empresa registrada con este NIT o nombre.",
     },
+    [ErrorCode.USER_EMAIL_ALREADY_EXISTS]: {
+      title: "Email ya registrado",
+      description: "El correo electrónico de la empresa ya está registrado como usuario en el sistema. Usa un email diferente o contacta al administrador.",
+    },
+    [ErrorCode.DATABASE_CONSTRAINT_ERROR]: {
+      title: "Email ya registrado",
+      description: "El correo electrónico de la empresa ya está registrado como usuario en el sistema. Usa un email diferente o contacta al administrador.",
+    },
     fallback: {
       title: "No fue posible crear la empresa",
       description: "Revisa los datos e intenta nuevamente.",
@@ -94,3 +102,58 @@ export const CONTEXT_ERROR_MESSAGES: Record<string, Record<string, Partial<UserF
     },
   },
 };
+
+export enum FrontendActionError {
+  LOAD_DATA = "LOAD_DATA",
+  SAVE_DATA = "SAVE_DATA",
+  DELETE_DATA = "DELETE_DATA",
+  CHANGE_STATUS = "CHANGE_STATUS",
+  AUTH_ACTION = "AUTH_ACTION",
+  PRINT_ACTION = "PRINT_ACTION",
+  CASH_OPERATION = "CASH_OPERATION",
+  REPORT_ACTION = "REPORT_ACTION",
+  UNKNOWN = "UNKNOWN"
+}
+
+export const FallbackActionMessages: Record<FrontendActionError, string> = {
+  [FrontendActionError.LOAD_DATA]: "No se pudo cargar la información.",
+  [FrontendActionError.SAVE_DATA]: "No se pudieron guardar los cambios.",
+  [FrontendActionError.DELETE_DATA]: "No se pudo eliminar el registro.",
+  [FrontendActionError.CHANGE_STATUS]: "No se pudo cambiar el estado.",
+  [FrontendActionError.AUTH_ACTION]: "Hubo un error de autenticación.",
+  [FrontendActionError.PRINT_ACTION]: "No se pudo completar la impresión.",
+  [FrontendActionError.CASH_OPERATION]: "No se pudo completar la operación de caja.",
+  [FrontendActionError.REPORT_ACTION]: "No se pudo generar el reporte.",
+  [FrontendActionError.UNKNOWN]: "Ha ocurrido un error inesperado."
+};
+
+/**
+ * Obtiene un mensaje amigable combinando GLOBAL_ERROR_MESSAGES o mensajes por defecto basados en HTTP.
+ */
+export function getUserFriendlyErrorMessage(error: unknown, fallbackAction: FrontendActionError = FrontendActionError.UNKNOWN): string {
+  if (error instanceof Error) {
+    const apiError = error as any;
+    
+    if (apiError.code && GLOBAL_ERROR_MESSAGES[apiError.code]) {
+      return GLOBAL_ERROR_MESSAGES[apiError.code].description || GLOBAL_ERROR_MESSAGES[apiError.code].title || FallbackActionMessages[fallbackAction];
+    }
+
+    if (apiError.status) {
+      switch (apiError.status) {
+        case 400: return "Datos inválidos o incompletos. Por favor, revisa la información ingresada.";
+        case 401: return "Tu sesión ha expirado o credenciales incorrectas.";
+        case 403: return "No tienes permisos suficientes para realizar esta acción.";
+        case 404: return "El recurso solicitado no existe o fue eliminado.";
+        case 409: return "Conflicto con los datos actuales. Es posible que el registro ya exista o haya sido modificado.";
+        case 500: return "Ocurrió un error interno en el servidor. Por favor, intenta de nuevo más tarde.";
+      }
+    }
+
+    // Usar el userMessage si no contiene texto técnico.
+    if (error.message && error.message.trim().length > 0 && !error.message.includes("status code") && !error.message.includes("Unexpected token")) {
+      return error.message;
+    }
+  }
+
+  return FallbackActionMessages[fallbackAction];
+}

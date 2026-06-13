@@ -1,10 +1,12 @@
 "use client";
 
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import DataTable from "@/components/ui/DataTable";
 import { buildApiHeaders } from "@/lib/api";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 type Space = {
   id: string;
@@ -32,6 +34,7 @@ export default function EspaciosPage() {
   const [capacity, setCapacity] = useState("0");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { confirm } = useDialog();
 
   const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
 
@@ -55,8 +58,8 @@ export default function EspaciosPage() {
       setSummary(sumPayload);
       setSpaces(spacesPayload);
       setCapacity(String(sumPayload.activeSpaces ?? 0));
-    } catch {
-      setError("Error de red cargando espacios del parqueadero.");
+    } catch (err) {
+      setError(getUserFriendlyErrorMessage(err, FrontendActionError.LOAD_DATA));
     } finally {
       setLoading(false);
     }
@@ -83,7 +86,7 @@ export default function EspaciosPage() {
       return;
     }
     if (summary && next < summary.activeSpaces) {
-      const ok = globalThis.confirm("Vas a reducir capacidad. Las celdas libres de mayor número se desactivarán. ¿Continuar?");
+      const ok = await confirm("Vas a reducir capacidad. Las celdas libres de mayor número se desactivarán. ¿Continuar?");
       if (!ok) return;
     }
 
@@ -101,8 +104,8 @@ export default function EspaciosPage() {
         return;
       }
       await load();
-    } catch {
-      setError("Error de red actualizando capacidad.");
+    } catch (err) {
+      setError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
     } finally {
       setLoading(false);
     }
@@ -123,8 +126,8 @@ export default function EspaciosPage() {
         return;
       }
       await load();
-    } catch {
-      setError("Error de red actualizando celda.");
+    } catch (err) {
+      setError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
     } finally {
       setLoading(false);
     }

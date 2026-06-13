@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { TextArea } from "@/components/ui/TextArea";
 import DataTable from "@/components/ui/DataTable";
 import Badge from "@/components/ui/Badge";
+import { useDialog } from "@/components/ui/DialogProvider";
 import {
   cashAddMovement,
   cashClose,
@@ -37,6 +38,7 @@ import { flushCashMovementOutbox } from "@/lib/cash/cash-sync";
 import { currentUser, hasPermission } from "@/lib/auth";
 import { printCashThermalReceipt } from "@/lib/print/print-service";
 import { startLocalPrintQueueWorker } from "@/lib/print/print-service";
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import type { TicketDocument } from "@parkflow/types";
 
 function defaultSite(): string {
@@ -121,6 +123,7 @@ export default function CajaPage() {
   const [closingWitness, setClosingWitness] = useState("");
   const [showShiftChangeModal, setShowShiftChangeModal] = useState(false);
   const [nextOpenAmount, setNextOpenAmount] = useState("0");
+  const { confirm } = useDialog();
 
   // PERFORMANCE: Constant value, no need for useMemo
   const parkingName = process.env.NEXT_PUBLIC_PARKING_NAME ?? "Parkflow";
@@ -157,7 +160,7 @@ export default function CajaPage() {
       setSession(null);
       setMovements([]);
       setSummary(null);
-      if (e instanceof Error && !e.message.includes("404")) {
+      if (e instanceof Error && !e.message.includes("404") && !e.message.includes("409")) {
         const friendly = friendlyCashError(e.message);
         if (!friendly.includes("No hay")) {
           setError(friendly);
@@ -259,7 +262,11 @@ export default function CajaPage() {
       setOpenNotes("");
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al abrir");
+      if (e instanceof Error && (e.message.includes("409") || e.message.includes("Conflict"))) {
+        await load();
+        return;
+      }
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
     } finally {
       setBusy(false);
     }
@@ -313,7 +320,7 @@ export default function CajaPage() {
         setError("Sin conexion: movimiento guardado en cola local para sincronizar.");
         refreshOutbox().catch(console.error);
       } else {
-        setError(e instanceof Error ? e.message : "Error al registrar");
+        setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
       }
     } finally {
       setBusy(false);
@@ -336,7 +343,7 @@ export default function CajaPage() {
       });
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error en arqueo");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
     } finally {
       setBusy(false);
     }
@@ -361,7 +368,11 @@ export default function CajaPage() {
       );
       return;
     }
-    if (!confirm("Confirma cierre de caja? No se podran agregar movimientos despues.")) {
+    if (outboxCount > 0) {
+      setError("NO PUEDE CERRAR LA CAJA. Tiene movimientos locales (offline) pendientes de sincronización. Debe conectarse a internet para que se sincronicen antes de poder hacer el cierre ciego.");
+      return;
+    }
+    if (!(await confirm("Confirma cierre de caja? No se podran agregar movimientos despues."))) {
       return;
     }
     setBusy(true);
@@ -376,7 +387,7 @@ export default function CajaPage() {
       setClosingWitness("");
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al cerrar");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
     } finally {
       setBusy(false);
     }
@@ -393,7 +404,7 @@ export default function CajaPage() {
       const ticket = closingDocToTicket(p.ticketDocument);
       await printCashThermalReceipt(ticket, "CASH_CLOSING");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al imprimir");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.PRINT_ACTION));
     } finally {
       setBusy(false);
     }
@@ -410,7 +421,7 @@ export default function CajaPage() {
       const ticket = buildCashMovementTicket(session, movements[0], parkingName);
       await printCashThermalReceipt(ticket, "CASH_MOVEMENT");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al imprimir movimiento");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.PRINT_ACTION));
     } finally {
       setBusy(false);
     }
@@ -426,7 +437,7 @@ export default function CajaPage() {
     try {
       await printCashThermalReceipt(buildCashCountTicket(session, summary, parkingName), "CASH_COUNT");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al imprimir arqueo");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.PRINT_ACTION));
     } finally {
       setBusy(false);
     }
@@ -452,7 +463,7 @@ export default function CajaPage() {
       setError("Turno cerrado con éxito. Indique base para el nuevo turno.");
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error en cambio de turno");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
     } finally {
       setBusy(false);
     }
@@ -470,7 +481,7 @@ export default function CajaPage() {
       setVoidReason("");
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al anular");
+      setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
     } finally {
       setBusy(false);
     }
@@ -484,9 +495,13 @@ export default function CajaPage() {
         <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Caja</p>
         <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">Cierre de caja</h1>
         {outboxCount > 0 ? (
-          <p className="mt-2 text-sm text-amber-800">
-            {outboxCount} movimiento(s) pendiente(s) de sincronizar (cola local).
-          </p>
+          <div className="mt-2 rounded-xl border border-red-400 bg-red-100 px-4 py-3 text-red-900">
+            <p className="font-bold uppercase text-red-800">¡Alerta de Sincronización!</p>
+            <p className="mt-1">
+              Tiene <strong>{outboxCount}</strong> movimiento(s) pendiente(s) de sincronizar en la cola local.
+              <strong> No podrá cerrar la caja hasta que se restablezca la conexión a internet y se sincronicen todos los movimientos.</strong>
+            </p>
+          </div>
         ) : null}
         {policy ? (
           <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
@@ -541,7 +556,7 @@ export default function CajaPage() {
           )}
           <Input
             placeholder="Terminal manual"
-            
+            label="Terminal manual"
             size="sm"
             value={terminal}
             onChange={(e) => setTerminal(e.target.value)}
@@ -731,6 +746,7 @@ export default function CajaPage() {
             <span className="text-slate-600">Monto inicial</span>
             <input
               data-testid="initial-amount"
+              aria-label="Monto inicial"
               className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
               value={openAmount}
               onChange={(e) => setOpenAmount(e.target.value)}
