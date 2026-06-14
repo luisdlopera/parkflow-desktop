@@ -128,6 +128,7 @@ public abstract class BaseIntegrationTest {
         company.setStatus(CompanyStatus.ACTIVE);
         company.setOperationMode(OperationMode.OFFLINE);
         company.setAllowSync(true);
+        company.setOnboardingCompleted(true);
         company.setCreatedAt(OffsetDateTime.now());
         company = companyRepository.save(company);
         companyId = company.getId();

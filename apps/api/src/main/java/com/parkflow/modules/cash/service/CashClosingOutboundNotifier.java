@@ -19,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
@@ -77,6 +79,10 @@ public class CashClosingOutboundNotifier {
     }
   }
 
+  @Retryable(
+      retryFor = {Exception.class},
+      maxAttempts = 5,
+      backoff = @Backoff(delay = 5000, multiplier = 2.0))
   private void postClosingWebhook(
       java.util.UUID cashSessionId, String parkingParamSiteLabel, ParkingParametersData params) {
     String urltrim = params.getCashFeOutboundWebhookUrl().trim();
@@ -114,17 +120,15 @@ public class CashClosingOutboundNotifier {
       HttpResponse<String> resp = client.send(rq.build(), HttpResponse.BodyHandlers.ofString());
       int code = resp.statusCode();
       if (code < 200 || code >= 300) {
-        log.warn(
-            "webhook PSC cierre {} codigo HTTP {} respuesta {}",
-            cashSessionId,
-            code,
-            shorten(resp.body(), 280));
+        log.warn("webhook PSC cierre {} codigo HTTP {} respuesta {}", cashSessionId, code, shorten(resp.body(), 280));
+        throw new RuntimeException("HTTP Status " + code);
       }
     } catch (InterruptedException ie) {
       Thread.currentThread().interrupt();
       log.warn("webhook PSC interrupt sesion {}", cashSessionId);
     } catch (Exception e) {
       log.warn("webhook PSC fallo sesion {}: {}", cashSessionId, e.toString());
+      throw new RuntimeException(e);
     }
   }
 

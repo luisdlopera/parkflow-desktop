@@ -28,8 +28,8 @@ public class ParkingSiteJpaAdapter implements ParkingSitePort {
   }
 
   @Override
-  public Optional<ParkingSite> findByNameIgnoreCase(String name) {
-    return jpaRepository.findByNameIgnoreCase(name);
+  public Optional<ParkingSite> findByNameIgnoreCase(String name, UUID companyId) {
+    return jpaRepository.findByNameIgnoreCaseAndCompany_Id(name, companyId);
   }
 
   @Override
@@ -61,7 +61,7 @@ public class ParkingSiteJpaAdapter implements ParkingSitePort {
   interface ParkingSiteJpaRepository extends JpaRepository<ParkingSite, UUID> {
     Optional<ParkingSite> findByCodeAndCompany_Id(String code, UUID companyId);
 
-    Optional<ParkingSite> findByNameIgnoreCase(String name);
+    Optional<ParkingSite> findByNameIgnoreCaseAndCompany_Id(String name, UUID companyId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM ParkingSite s WHERE s.company.id = :companyId AND (LOWER(s.code) = LOWER(:site) OR LOWER(s.name) = LOWER(:site))")

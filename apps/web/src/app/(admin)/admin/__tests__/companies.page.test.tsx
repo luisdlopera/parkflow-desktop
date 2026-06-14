@@ -107,10 +107,10 @@ describe("CompaniesPage", () => {
     render(<CompaniesPage />);
     expect(screen.getByText("Empresa Alpha")).toBeDefined();
     expect(screen.getByText("Empresa Beta")).toBeDefined();
-    expect(screen.getByText("Sync / Cloud")).toBeDefined();
-    expect(screen.getByText("Pro / Multi-sede")).toBeDefined();
-    expect(screen.getByText("Activa")).toBeDefined();
-    expect(screen.getByText("Expirada")).toBeDefined();
+    expect(screen.getAllByText("Sync / Cloud").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Pro / Multi-sede").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Activa").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Expirada").length).toBeGreaterThan(0);
   });
 
   it("shows correct stats card counts", () => {

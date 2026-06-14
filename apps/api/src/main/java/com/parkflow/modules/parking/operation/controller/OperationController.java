@@ -6,7 +6,6 @@ import com.parkflow.modules.parking.operation.application.port.in.*;
 import com.parkflow.modules.parking.operation.application.service.SupervisorService;
 import jakarta.validation.Valid;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -123,8 +122,14 @@ public class OperationController {
 
   @GetMapping("/sessions/active-list")
   @PreAuthorize("hasAuthority('reportes:leer') or hasAuthority('tickets:emitir')")
-  public List<ReceiptResponse> activeList() {
-    return listActiveSessionsUseCase.execute();
+  public com.parkflow.modules.parking.operation.dto.PaginatedResponse<ReceiptResponse> activeList(
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "25") int limit,
+      @RequestParam(required = false) String search,
+      @RequestParam(defaultValue = "entryAt") String sortBy,
+      @RequestParam(defaultValue = "desc") String sortDir
+  ) {
+    return listActiveSessionsUseCase.execute(page, limit, search, sortBy, sortDir);
   }
 
   @PatchMapping("/sessions/{id}/plate")

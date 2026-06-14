@@ -63,24 +63,28 @@ vi.mock("@/components/ui/Select", async () => {
 vi.mock("@/components/ui/Input", async () => {
   const React = await import("react");
   return {
-    Input: React.forwardRef(({ label, type, isInvalid, ...props }: any, ref: any) => (
-      <div>
-        <label>{label}</label>
-        <input ref={ref} type={type || "text"} data-testid={props["data-testid"] || props.name} {...props} />
-      </div>
-    )),
+    Input: React.forwardRef(function MockInput({ label, type, isInvalid, ...props }: any, ref: any) {
+      return (
+        <div>
+          <label>{label}</label>
+          <input ref={ref} type={type || "text"} data-testid={props["data-testid"] || props.name} {...props} />
+        </div>
+      );
+    }),
   };
 });
 
 vi.mock("@/components/ui/TextArea", async () => {
   const React = await import("react");
   return {
-    TextArea: React.forwardRef(({ label, isInvalid, ...props }: any, ref: any) => (
-      <div>
-        <label>{label}</label>
-        <textarea ref={ref} data-testid={props["data-testid"] || props.name} {...props} />
-      </div>
-    )),
+    TextArea: React.forwardRef(function MockTextArea({ label, isInvalid, ...props }: any, ref: any) {
+      return (
+        <div>
+          <label>{label}</label>
+          <textarea ref={ref} data-testid={props["data-testid"] || props.name} {...props} />
+        </div>
+      );
+    }),
   };
 });
 

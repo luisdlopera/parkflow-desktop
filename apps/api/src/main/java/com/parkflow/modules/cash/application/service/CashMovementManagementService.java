@@ -54,6 +54,8 @@ public class CashMovementManagementService implements CashMovementUseCase {
     @Transactional
     public CashMovementResponse addMovement(UUID sessionId, CashMovementRequest request) {
         CashSession session = requireOpenSession(sessionId);
+        validateOperator(session.getOperator().getId());
+        
         if (request.type() == CashMovementType.PARKING_PAYMENT
             || request.type() == CashMovementType.VOID_OFFSET) {
             throw new OperationException(HttpStatus.BAD_REQUEST, "Tipo de movimiento no permitido en API");
@@ -155,6 +157,8 @@ public class CashMovementManagementService implements CashMovementUseCase {
     @Transactional
     public CashMovementResponse voidMovement(UUID sessionId, UUID movementId, VoidMovementRequest request) {
         CashSession session = requireOpenSession(sessionId);
+        validateOperator(session.getOperator().getId());
+        
         CashMovement m =
             cashMovementRepository
                 .findById(movementId)
@@ -395,9 +399,14 @@ public class CashMovementManagementService implements CashMovementUseCase {
     }
 
     private CashSession requireSession(UUID id) {
-        return cashSessionRepository
+        CashSession session = cashSessionRepository
             .findById(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
+            
+        if (TenantContext.getTenantId() != null && !session.getCompanyId().equals(TenantContext.getTenantId())) {
+            throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a esta sesión");
+        }
+        return session;
     }
 
     private CashSession requireOpenSession(UUID id) {
@@ -439,5 +448,15 @@ public class CashMovementManagementService implements CashMovementUseCase {
             m.getCreatedAt(),
             m.getTerminal(),
             m.getIdempotencyKey());
+    }
+
+    private void validateOperator(UUID operatorUserId) {
+        UUID actor = SecurityUtils.requireUserId();
+        UserRole role = SecurityUtils.requireUserRole();
+        if (!operatorUserId.equals(actor)
+            && role != UserRole.ADMIN
+            && role != UserRole.SUPER_ADMIN) {
+            throw new OperationException(HttpStatus.FORBIDDEN, "Solo puede operar caja como su usuario");
+        }
     }
 }

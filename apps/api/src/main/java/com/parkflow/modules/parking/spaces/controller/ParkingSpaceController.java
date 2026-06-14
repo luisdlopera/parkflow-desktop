@@ -22,21 +22,21 @@ public class ParkingSpaceController {
   private final ParkingSpaceService parkingSpaceService;
 
   @GetMapping
-  @PreAuthorize("hasAuthority('configuracion:actualizar') or hasAuthority('reportes:leer')")
+  @PreAuthorize("hasAuthority('configuracion:editar') or hasAuthority('reportes:leer')")
   public ResponseEntity<List<ParkingSpaceDto>> listSpaces() {
     UUID companyId = SecurityUtils.requireCompanyId();
     return ResponseEntity.ok(parkingSpaceService.listSpaces(companyId));
   }
 
   @GetMapping("/summary")
-  @PreAuthorize("hasAuthority('configuracion:actualizar') or hasAuthority('reportes:leer')")
+  @PreAuthorize("hasAuthority('configuracion:editar') or hasAuthority('reportes:leer')")
   public ResponseEntity<ParkingSpaceOccupancySummaryResponse> summary() {
     UUID companyId = SecurityUtils.requireCompanyId();
     return ResponseEntity.ok(parkingSpaceService.getOccupancySummary(companyId));
   }
 
   @PutMapping("/capacity")
-  @PreAuthorize("hasAuthority('configuracion:actualizar')")
+  @PreAuthorize("hasAuthority('configuracion:editar')")
   public ResponseEntity<ParkingSpaceOccupancySummaryResponse> resize(
       @Valid @RequestBody ResizeCapacityRequest request) {
     UUID companyId = SecurityUtils.requireCompanyId();
@@ -44,7 +44,7 @@ public class ParkingSpaceController {
   }
 
   @PatchMapping("/{id}")
-  @PreAuthorize("hasAuthority('configuracion:actualizar')")
+  @PreAuthorize("hasAuthority('configuracion:editar')")
   public ResponseEntity<ParkingSpaceDto> patch(
       @PathVariable UUID id, @Valid @RequestBody PatchParkingSpaceRequest request) {
     UUID companyId = SecurityUtils.requireCompanyId();

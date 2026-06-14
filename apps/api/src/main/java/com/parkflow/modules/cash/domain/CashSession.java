@@ -20,6 +20,9 @@ public class CashSession {
   @Column(name = "company_id", nullable = false)
   private UUID companyId;
 
+  @Version
+  private Long version;
+
   @ManyToOne(optional = false)
   @JoinColumn(name = "cash_register_id")
   private CashRegister cashRegister;

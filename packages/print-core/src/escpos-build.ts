@@ -1,11 +1,66 @@
 import type { PrintDocumentType, TicketDocument } from "@parkflow/types";
-import { ticketTitleForDocument } from "@parkflow/types";
+import {
+  ticketTitleForDocument,
+  formatDateNatural,
+  formatTimeNatural,
+  vehicleTypeLabel,
+  buildTicketQrPayload,
+} from "@parkflow/types";
 import type { EscPosProfileResolved } from "./escpos-profile";
 
 function lineWidthChars(paperMm: number): number {
   return paperMm >= 80 ? 48 : 32;
 }
 
+function lineWidthBigChars(paperMm: number, scale: number): number {
+  return Math.floor(lineWidthChars(paperMm) / scale);
+}
+
+/** Push raw text bytes to buffer. */
+function pushText(buf: number[], text: string): void {
+  for (let i = 0; i < text.length; i++) {
+    buf.push(text.charCodeAt(i) & 0xff);
+  }
+}
+
+/** Push linefeed. */
+function pushLF(buf: number[]): void {
+  buf.push(0x0a);
+}
+
+/** Center alignment: ESC a 1 */
+function setAlign(buf: number[], align: "left" | "center" | "right"): void {
+  const mode = align === "center" ? 0x01 : align === "right" ? 0x02 : 0x00;
+  buf.push(0x1b, 0x61, mode);
+}
+
+/** Select character size: GS ! n (bits 0-3=width, 4-7=height). */
+function setCharSize(buf: number[], widthMul: number, heightMul: number): void {
+  const n = ((widthMul - 1) & 0x0f) | (((heightMul - 1) & 0x0f) << 4);
+  buf.push(0x1d, 0x21, n);
+}
+
+/** Reset to normal size. */
+function resetCharSize(buf: number[]): void {
+  buf.push(0x1d, 0x21, 0x00);
+}
+
+/** Bold: ESC ! (bit 3). Pass true/false. */
+function setBold(buf: number[], on: boolean): void {
+  if (on) {
+    buf.push(0x1b, 0x21, 0x08);
+  } else {
+    buf.push(0x1b, 0x21, 0x00);
+  }
+}
+
+/** Reset all print modes to normal. */
+function resetModes(buf: number[]): void {
+  buf.push(0x1b, 0x21, 0x00);
+  buf.push(0x1d, 0x21, 0x00);
+}
+
+/** Push a centered line in current font/size. */
 function pushLineCentered(buf: number[], text: string, width: number): void {
   const t = text.trim();
   if (t.length <= width) {
@@ -13,18 +68,21 @@ function pushLineCentered(buf: number[], text: string, width: number): void {
     for (let i = 0; i < Math.min(pad, 24); i++) {
       buf.push(0x20);
     }
-    for (let i = 0; i < t.length; i++) {
-      buf.push(t.charCodeAt(i) & 0xff);
-    }
-    buf.push(0x0a);
+    pushText(buf, t);
+    pushLF(buf);
     return;
   }
-  for (let i = 0; i < t.length; i++) {
-    buf.push(t.charCodeAt(i) & 0xff);
-  }
-  buf.push(0x0a);
+  pushText(buf, t);
+  pushLF(buf);
 }
 
+/** Push a visual separator line using '=' characters. */
+function pushSeparatorLine(buf: number[], width: number): void {
+  pushText(buf, "=".repeat(width));
+  pushLF(buf);
+}
+
+/** Push QR code (Model 2). */
 function pushQrModel2(buf: number[], data: string): void {
   const bytes = new TextEncoder().encode(data);
   if (bytes.length > 1800) {
@@ -42,7 +100,26 @@ function pushQrModel2(buf: number[], data: string): void {
 }
 
 /**
- * ESC/POS bytes aligned with `apps/desktop/src-tauri/src/escpos.rs::build_receipt`.
+ * ESC/POS bytes for human-friendly tickets.
+ *
+ * REDESIGNED (visual hierarchy + natural language):
+ *   1. Title (centered, bold)
+ *   2. Parking name (centered)
+ *   3. Separator
+ *   4. PLATE (HUGE, centered, 3x3 + bold)
+ *   5. Separator
+ *   6. Date (natural, 2x2 + bold)
+ *   7. Time (natural, 2x2 + bold)
+ *   8. Separator
+ *   9. Price (HUGE, 3x3 + bold) — if present
+ *  10. Separator
+ *  11. Friendly metadata (left-aligned, normal)
+ *  12. Separator
+ *  13. QR code (centered) — preferred over barcode
+ *  14. Separator
+ *  15. Legal message (centered, normal)
+ *  16. Detail lines
+ *  17. Cut
  */
 export function buildEscPosReceiptBytes(
   documentType: PrintDocumentType,
@@ -52,64 +129,188 @@ export function buildEscPosReceiptBytes(
   const paper = ticket.paperWidthMm ?? 58;
   const w = lineWidthChars(paper);
   const buf: number[] = [];
-  buf.push(0x1b, 0x40, 0x1b, 0x61, 0x01);
 
+  // Initialize printer
+  buf.push(0x1b, 0x40);
+
+  // ── 1. TITLE ──
+  setAlign(buf, "center");
   const title = ticketTitleForDocument(documentType);
-  pushLineCentered(buf, title, w);
-  buf.push(0x1b, 0x61, 0x00);
+  setBold(buf, true);
+  pushText(buf, title);
+  pushLF(buf);
+  resetModes(buf);
+
+  // ── 2. PARKING NAME ──
   pushLineCentered(buf, ticket.parkingName, w);
-  buf.push(0x0a);
-  pushLineCentered(buf, `No: ${ticket.ticketNumber}`, w);
-  pushLineCentered(buf, `Placa: ${ticket.plate}`, w);
-  pushLineCentered(buf, `Id: ${ticket.ticketId}`, w);
-  if (ticket.templateVersion) {
-    pushLineCentered(buf, `Tpl: ${ticket.templateVersion}`, w);
+  pushLF(buf);
+
+  // ── 3. SEPARATOR ──
+  pushSeparatorLine(buf, w);
+
+  // ── 4. PLATE (BIGGEST) ──
+  setAlign(buf, "center");
+  setBold(buf, true);
+  pushText(buf, "PLACA");
+  pushLF(buf);
+  resetModes(buf);
+
+  const plateScale = 3;
+  const plateW = lineWidthBigChars(paper, plateScale);
+  setAlign(buf, "center");
+  setCharSize(buf, plateScale, plateScale);
+  setBold(buf, true);
+  pushLineCentered(buf, ticket.plate.toUpperCase(), plateW);
+  resetModes(buf);
+  pushLF(buf);
+
+  // ── 5. SEPARATOR ──
+  pushSeparatorLine(buf, w);
+
+  // ── 6 & 7. DATE / TIME (natural language) ──
+  const dateStr = formatDateNatural(ticket.issuedAtIso);
+  const timeStr = formatTimeNatural(ticket.issuedAtIso);
+
+  setAlign(buf, "center");
+  setBold(buf, true);
+  pushText(buf, "FECHA");
+  pushLF(buf);
+  resetModes(buf);
+
+  setAlign(buf, "center");
+  setCharSize(buf, 2, 2);
+  setBold(buf, true);
+  const dateW = lineWidthBigChars(paper, 2);
+  pushLineCentered(buf, dateStr, dateW);
+  resetModes(buf);
+  pushLF(buf);
+
+  setAlign(buf, "center");
+  setBold(buf, true);
+  pushText(buf, "HORA");
+  pushLF(buf);
+  resetModes(buf);
+
+  setAlign(buf, "center");
+  setCharSize(buf, 2, 2);
+  setBold(buf, true);
+  pushLineCentered(buf, timeStr, dateW);
+  resetModes(buf);
+  pushLF(buf);
+
+  // ── 8. SEPARATOR ──
+  pushSeparatorLine(buf, w);
+
+  // ── 9. PRICE (if present) ──
+  if (ticket.price) {
+    setAlign(buf, "center");
+    setBold(buf, true);
+    pushText(buf, "TOTAL A PAGAR");
+    pushLF(buf);
+    resetModes(buf);
+
+    setAlign(buf, "center");
+    setCharSize(buf, plateScale, plateScale);
+    setBold(buf, true);
+    pushLineCentered(buf, ticket.price, plateW);
+    resetModes(buf);
+    pushLF(buf);
+
+    // ── 10. SEPARATOR ──
+    pushSeparatorLine(buf, w);
   }
-  pushLineCentered(buf, `Fecha: ${ticket.issuedAtIso}`, w);
+
+  // ── 11. FRIENDLY METADATA (left-aligned, no technical jargon) ──
+  setAlign(buf, "left");
+  resetModes(buf);
+
+  pushText(buf, `Numero: ${ticket.ticketNumber}`);
+  pushLF(buf);
+
+  if (ticket.vehicleType) {
+    pushText(buf, `Vehiculo: ${vehicleTypeLabel(ticket.vehicleType)}`);
+    pushLF(buf);
+  }
   if (ticket.operatorName) {
-    pushLineCentered(buf, `Operador: ${ticket.operatorName}`, w);
+    pushText(buf, `Atendido por: ${ticket.operatorName}`);
+    pushLF(buf);
   }
   if (ticket.site) {
-    pushLineCentered(buf, `Sede: ${ticket.site}`, w);
+    pushText(buf, `Sede: ${ticket.site}`);
+    pushLF(buf);
   }
   if (ticket.lane) {
-    pushLineCentered(buf, `Carril: ${ticket.lane}`, w);
+    pushText(buf, `Carril: ${ticket.lane}`);
+    pushLF(buf);
   }
   if (ticket.booth) {
-    pushLineCentered(buf, `Cabina: ${ticket.booth}`, w);
-  }
-  if (ticket.terminal) {
-    pushLineCentered(buf, `Terminal: ${ticket.terminal}`, w);
+    pushText(buf, `Cabina: ${ticket.booth}`);
+    pushLF(buf);
   }
   if (ticket.parkingSpaceCode) {
-    pushLineCentered(buf, `Celda: ${ticket.parkingSpaceCode}`, w);
+    pushText(buf, `Celda: ${ticket.parkingSpaceCode}`);
+    pushLF(buf);
   }
-  if (ticket.copyNumber != null) {
-    pushLineCentered(buf, `Copia: ${ticket.copyNumber}`, w);
+  if (ticket.copyNumber != null && ticket.copyNumber > 1) {
+    pushText(buf, `Copia: ${ticket.copyNumber}`);
+    pushLF(buf);
   }
+
+  // ── 12. SEPARATOR ──
+  pushSeparatorLine(buf, w);
+
+  // ── 13. QR CODE (preferred) or BARCODE ──
+  // Auto-generate QR payload if not provided, so every ticket gets a QR.
+  const qrPayload = ticket.qrPayload ?? buildTicketQrPayload(ticket);
+  if (qrPayload) {
+    setAlign(buf, "center");
+    setBold(buf, true);
+    pushText(buf, "ESCANEA PARA SALIR");
+    pushLF(buf);
+    resetModes(buf);
+    pushQrModel2(buf, qrPayload);
+    pushLF(buf);
+  } else if (ticket.barcodePayload) {
+    setAlign(buf, "center");
+    setBold(buf, true);
+    pushText(buf, "CODIGO:");
+    pushLF(buf);
+    resetModes(buf);
+    pushText(buf, ticket.barcodePayload);
+    pushLF(buf);
+  }
+
+  // ── 14. SEPARATOR ──
+  pushSeparatorLine(buf, w);
+
+  // ── 15. LEGAL MESSAGE ──
   if (ticket.legalMessage?.trim()) {
-    buf.push(0x0a);
+    setAlign(buf, "center");
+    resetModes(buf);
     const lines = ticket.legalMessage.split(/\r?\n/);
     for (const row of lines) {
-      for (let i = 0; i < row.length; i++) {
-        buf.push(row.charCodeAt(i) & 0xff);
-      }
-      buf.push(0x0a);
+      pushText(buf, row);
+      pushLF(buf);
     }
+    pushLF(buf);
   }
-  if (ticket.qrPayload) {
-    buf.push(0x0a);
-    pushQrModel2(buf, ticket.qrPayload);
-  } else if (ticket.barcodePayload) {
-    buf.push(0x0a);
-    const line = `Codigo: ${ticket.barcodePayload}\n`;
-    for (let i = 0; i < line.length; i++) {
-      buf.push(line.charCodeAt(i) & 0xff);
+
+  // ── 16. DETAIL LINES (for exit/cash reports) ──
+  if (ticket.detailLines?.length) {
+    for (const line of ticket.detailLines) {
+      pushText(buf, line);
+      pushLF(buf);
     }
+    pushLF(buf);
   }
-  buf.push(0x0a, 0x0a, 0x0a);
+
+  // ── 17. CUT ──
+  pushLF(buf);
+  pushLF(buf);
+  pushLF(buf);
   for (let i = 0; i < profile.cutBytes.length; i++) {
     buf.push(profile.cutBytes[i]!);
   }
+
   return new Uint8Array(buf);
 }

@@ -41,7 +41,15 @@ export const SelectBase = React.forwardRef<any, SelectProps>(
     const handleSelectionChange = (keys: any) => {
       if (onSelectionChange) onSelectionChange(keys);
       if (onChange) {
-        onChange(keys);
+        // HeroUI v3 Select normaliza onChange a Key | Key[] | null
+        // Para compatibilidad con código existente que usa Array.from(keys)[0],
+        // convertimos a Set como en HeroUI v2
+        const isMultiple = (props as any).selectionMode === "multiple";
+        if (isMultiple) {
+          onChange(Array.isArray(keys) ? new Set(keys) : new Set(keys ? [keys] : []));
+        } else {
+          onChange(keys !== null && keys !== undefined ? new Set([keys]) : new Set());
+        }
       }
     };
 

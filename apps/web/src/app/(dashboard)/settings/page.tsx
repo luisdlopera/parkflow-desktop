@@ -60,8 +60,8 @@ export default function SettingsPage() {
       <Select.Popover>
         <ListBox>
 
-        <ListBox.Item key="en">English</ListBox.Item>
-        <ListBox.Item key="es">Español</ListBox.Item>
+        <ListBox.Item key="en" textValue="English">English</ListBox.Item>
+        <ListBox.Item key="es" textValue="Español">Español</ListBox.Item>
       
         </ListBox>
       </Select.Popover>

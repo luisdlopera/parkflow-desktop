@@ -56,18 +56,24 @@ export async function fetchRuntimeConfig(): Promise<RuntimeConfig | null> {
   const companyId = await resolveCurrentCompanyId();
   if (!companyId) return null;
   const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/onboarding/companies/${companyId}/settings`, {
-    headers: {
-      ...headers,
-      "X-Parkflow-Auth-Toast-Silent": "1"
-    },
-    cache: "no-store"
-  });
-  if (!res.ok) return null;
-  return (await res.json()) as RuntimeConfig;
+  try {
+    const res = await fetch(`${API_BASE}/onboarding/companies/${companyId}/settings`, {
+      headers: {
+        ...headers,
+        "X-Parkflow-Auth-Toast-Silent": "1"
+      },
+      cache: "no-store"
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as RuntimeConfig;
+  } catch (err) {
+    // Silently swallow network errors (API not ready, CORS, etc.)
+    console.warn("[RuntimeConfig] Failed to fetch config, returning null:", err);
+    return null;
+  }
 }
 
-export function shouldShowModule(config: RuntimeConfig | null, key: string, defaultValue = true): boolean {
+export function shouldShowModule(config: RuntimeConfig | null, key: string, defaultValue = false): boolean {
   if (!config?.modules) return defaultValue;
   const value = config.modules[key];
   return typeof value === "boolean" ? value : defaultValue;

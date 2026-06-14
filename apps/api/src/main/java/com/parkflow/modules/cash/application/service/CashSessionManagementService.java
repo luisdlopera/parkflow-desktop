@@ -65,29 +65,40 @@ public class CashSessionManagementService implements CashSessionUseCase {
 
         String site = normalizeSite(request.site());
         String terminal = request.terminal().trim();
-        CashRegister register =
-            cashRegisterRepository
-                .findBySiteAndTerminal(site, terminal)
-                .orElseGet(
-                    () -> {
-                        CashRegister r = new CashRegister();
-                        r.setSite(site);
-                        r.setTerminal(terminal);
-                        r.setLabel(
-                            StringUtils.hasText(request.registerLabel())
-                                ? request.registerLabel().trim()
-                                : terminal);
-                        r.setUpdatedAt(OffsetDateTime.now());
-                        return cashRegisterRepository.save(r);
-                    });
+        CashRegister register;
+        try {
+            register = cashRegisterRepository
+                    .findBySiteAndTerminal(site, terminal)
+                    .orElseGet(
+                        () -> {
+                            CashRegister r = new CashRegister();
+                            r.setSite(site);
+                            r.setTerminal(terminal);
+                            r.setLabel(
+                                StringUtils.hasText(request.registerLabel())
+                                    ? request.registerLabel().trim()
+                                    : terminal);
+                            r.setUpdatedAt(OffsetDateTime.now());
+                            return cashRegisterRepository.save(r);
+                        });
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // Concurrency handling for new terminal
+            register = cashRegisterRepository
+                    .findBySiteAndTerminal(site, terminal)
+                    .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "Error concurrente creando caja"));
+        }
 
-        cashSessionRepository
-            .findByRegisterAndStatus(register.getId(), CashSessionStatus.OPEN)
-            .ifPresent(
-                s -> {
-                    throw new OperationException(
-                        HttpStatus.CONFLICT, "Ya existe una caja abierta en esta sede/terminal");
-                });
+        Optional<CashSession> existingOpen =
+            cashSessionRepository.findByRegisterAndStatus(register.getId(), CashSessionStatus.OPEN);
+        if (existingOpen.isPresent()) {
+            log.warn(
+                "Register {} ({}/{}) already has open session {}, returning existing",
+                register.getId(),
+                site,
+                terminal,
+                existingOpen.get().getId());
+            return toSessionResponse(existingOpen.get());
+        }
 
         AppUser operator =
             appUserRepository
@@ -97,16 +108,23 @@ public class CashSessionManagementService implements CashSessionUseCase {
             throw new OperationException(HttpStatus.FORBIDDEN, "Operador inactivo");
         }
 
-        CashSession session = new CashSession();
-        session.setCompanyId(
-            TenantContext.getTenantId() != null
+        log.info("CASH_DIAGNOSTICO: Entrando a open(). TenantContext={}", TenantContext.getTenantId());
+        log.info("CASH_DIAGNOSTICO: Operador evaluado: user_id={}, company_id={}", operator.getId(), operator.getCompanyId());
+
+        UUID resolvedCompanyId = TenantContext.getTenantId() != null
                 ? TenantContext.getTenantId()
-                : operator.getCompanyId() != null
-                    ? operator.getCompanyId()
-                    : null);
-        if (session.getCompanyId() == null) {
+                : operator.getCompanyId();
+
+        if (resolvedCompanyId == null) {
+            log.error("CASH_DIAGNOSTICO: ERROR! Contexto de compañía no identificado. Tenant={} OperatorCompany={}", 
+                      TenantContext.getTenantId(), operator.getCompanyId());
             throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía no identificado");
         }
+
+        log.info("CASH_DIAGNOSTICO: resolvedCompanyId asignado a la sesión: {}", resolvedCompanyId);
+
+        CashSession session = new CashSession();
+        session.setCompanyId(resolvedCompanyId);
         session.setCashRegister(register);
         session.setOperator(operator);
         session.setStatus(CashSessionStatus.OPEN);
@@ -117,7 +135,11 @@ public class CashSessionManagementService implements CashSessionUseCase {
             session.setOpenIdempotencyKey(request.openIdempotencyKey().trim());
         }
         session.setUpdatedAt(OffsetDateTime.now());
-        session = cashSessionRepository.save(session);
+        try {
+            session = cashSessionRepository.save(session);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new OperationException(HttpStatus.CONFLICT, "El operador o la terminal ya tienen una caja abierta");
+        }
 
         Map<String, Object> meta = baseMeta(session);
         meta.put("openingAmount", session.getOpeningAmount().toPlainString());
@@ -126,6 +148,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
 
         globalAuditService.record(
             com.parkflow.modules.audit.domain.AuditAction.ABRIR_CAJA,
+            resolvedCompanyId,
             operator,
             null,
             "Opening amount: " + session.getOpeningAmount(),
@@ -138,6 +161,8 @@ public class CashSessionManagementService implements CashSessionUseCase {
     @Transactional
     public CashSessionResponse submitCount(UUID sessionId, CashCountRequest request) {
         CashSession session = requireOpenSession(sessionId);
+        validateOperator(session.getOperator().getId());
+        
         AppUser actor =
             appUserRepository
                 .findById(SecurityUtils.requireUserId())
@@ -194,11 +219,17 @@ public class CashSessionManagementService implements CashSessionUseCase {
             Optional<CashSession> done =
                 cashSessionRepository.findByCloseIdempotencyKey(request.closeIdempotencyKey().trim());
             if (done.isPresent() && done.get().getStatus() == CashSessionStatus.CLOSED) {
+                // Ensure same tenant on idempotency hit
+                if (!done.get().getCompanyId().equals(TenantContext.getTenantId())) {
+                    throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a esta sesión");
+                }
                 return toSessionResponse(done.get());
             }
         }
 
         CashSession session = requireOpenSession(sessionId);
+        validateOperator(session.getOperator().getId());
+        
         if (session.getCountedAt() == null) {
             throw new OperationException(HttpStatus.BAD_REQUEST, "Debe registrar arqueo antes de cerrar");
         }
@@ -297,7 +328,11 @@ public class CashSessionManagementService implements CashSessionUseCase {
         Optional<CashSession> bySiteTerminal =
             cashSessionRepository.findOpenForSiteTerminal(site, terminal, CashSessionStatus.OPEN);
         if (bySiteTerminal.isPresent()) {
-            return toSessionResponse(bySiteTerminal.get());
+            CashSession s = bySiteTerminal.get();
+            if (TenantContext.getTenantId() != null && !s.getCompanyId().equals(TenantContext.getTenantId())) {
+                 throw new OperationException(HttpStatus.NOT_FOUND, "No hay caja abierta");
+            }
+            return toSessionResponse(s);
         }
         // Try 2: fallback via register ID (catches duplicate-register edge cases)
         Optional<CashRegister> register = cashRegisterRepository.findBySiteAndTerminal(site, terminal);
@@ -305,7 +340,11 @@ public class CashSessionManagementService implements CashSessionUseCase {
             Optional<CashSession> byRegister =
                 cashSessionRepository.findByRegisterAndStatus(register.get().getId(), CashSessionStatus.OPEN);
             if (byRegister.isPresent()) {
-                return toSessionResponse(byRegister.get());
+                CashSession s = byRegister.get();
+                if (TenantContext.getTenantId() != null && !s.getCompanyId().equals(TenantContext.getTenantId())) {
+                     throw new OperationException(HttpStatus.NOT_FOUND, "No hay caja abierta");
+                }
+                return toSessionResponse(s);
             }
         }
         throw new OperationException(HttpStatus.NOT_FOUND, "No hay caja abierta");
@@ -314,6 +353,9 @@ public class CashSessionManagementService implements CashSessionUseCase {
     @Override
     @Transactional(readOnly = true)
     public Page<CashSessionResponse> listSessions(Pageable pageable) {
+        if (TenantContext.getTenantId() != null) {
+            return cashSessionRepository.findByCompanyIdOrderByOpenedAtDesc(TenantContext.getTenantId(), pageable).map(this::toSessionResponse);
+        }
         return cashSessionRepository.findAllByOrderByOpenedAtDesc(pageable).map(this::toSessionResponse);
     }
 
@@ -397,9 +439,14 @@ public class CashSessionManagementService implements CashSessionUseCase {
     }
 
     private CashSession requireSession(UUID id) {
-        return cashSessionRepository
+        CashSession session = cashSessionRepository
             .findById(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
+            
+        if (TenantContext.getTenantId() != null && !session.getCompanyId().equals(TenantContext.getTenantId())) {
+            throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a esta sesión");
+        }
+        return session;
     }
 
     private CashSession requireOpenSession(UUID id) {

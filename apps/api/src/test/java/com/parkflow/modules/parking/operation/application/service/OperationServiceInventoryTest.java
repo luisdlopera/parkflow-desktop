@@ -100,6 +100,7 @@ class OperationServiceInventoryTest {
   @Mock private MeterRegistry meterRegistry;
   @Mock private Counter counter;
   @Mock private CustodiedItemPort custodiedItemRepository;
+  @Mock private com.parkflow.modules.parking.helmet.domain.repository.HelmetLockerPort helmetLockerPort;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -114,7 +115,7 @@ class OperationServiceInventoryTest {
         vehicleConditionReportRepository, operationIdempotencyRepository,
         legacyAuditService, legacyPrintService,
         new com.parkflow.modules.parking.operation.validation.PlateValidator(),
-        monthlyContractRepository, parkingSpaceService, custodiedItemRepository, objectMapper, meterRegistry
+        monthlyContractRepository, parkingSpaceService, custodiedItemRepository, helmetLockerPort, objectMapper, meterRegistry
     );
 
     processLostTicketService = new ProcessLostTicketService(

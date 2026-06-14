@@ -47,6 +47,10 @@ public class OnboardingProgress {
   @Column(nullable = false)
   private OffsetDateTime updatedAt = OffsetDateTime.now();
 
+  @Version
+  @Column(nullable = false)
+  private Long version = 0L;
+
   @PreUpdate
   public void preUpdate() {
     this.updatedAt = OffsetDateTime.now();

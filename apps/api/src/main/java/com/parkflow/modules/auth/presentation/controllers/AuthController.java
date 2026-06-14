@@ -4,9 +4,11 @@ import com.parkflow.modules.auth.dto.*;
 import com.parkflow.modules.auth.application.port.in.AuthenticationUseCase;
 import com.parkflow.modules.auth.application.port.in.DeviceManagementUseCase;
 import com.parkflow.modules.auth.application.port.in.PasswordResetUseCase;
+import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -17,14 +19,23 @@ public class AuthController {
   private final AuthenticationUseCase authenticationUseCase;
   private final DeviceManagementUseCase deviceManagementUseCase;
   private final PasswordResetUseCase passwordResetUseCase;
+  private final AppUserRepository appUserRepository;
 
   public AuthController(
       AuthenticationUseCase authenticationUseCase,
       DeviceManagementUseCase deviceManagementUseCase,
-      PasswordResetUseCase passwordResetUseCase) {
+      PasswordResetUseCase passwordResetUseCase,
+      AppUserRepository appUserRepository) {
     this.authenticationUseCase = authenticationUseCase;
     this.deviceManagementUseCase = deviceManagementUseCase;
     this.passwordResetUseCase = passwordResetUseCase;
+    this.appUserRepository = appUserRepository;
+  }
+
+  @GetMapping("/setup-required")
+  public Map<String, Boolean> setupRequired() {
+    boolean required = appUserRepository.count() == 0;
+    return Map.of("setupRequired", required);
   }
 
   @PostMapping("/login")

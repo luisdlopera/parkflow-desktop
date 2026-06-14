@@ -9,6 +9,7 @@ import com.parkflow.modules.licensing.dto.CompanyResponse;
 import com.parkflow.modules.licensing.dto.CreateCompanyRequest;
 import com.parkflow.modules.licensing.dto.UpdateCompanyRequest;
 import com.parkflow.modules.licensing.enums.CompanyStatus;
+import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -88,12 +89,13 @@ public class CompanyManagementService implements CompanyManagementUseCase {
             throw new BusinessValidationException("USER_EMAIL_ALREADY_EXISTS",
                 "El correo electrónico " + adminEmail + " ya está registrado como usuario. Use un email diferente para la empresa.");
         }
+        String rawPassword = generateRandomPassword();
         AppUser adminUser = new AppUser();
         adminUser.setCompanyId(company.getId());
         adminUser.setEmail(adminEmail);
         adminUser.setName(company.getContactName() != null && !company.getContactName().isBlank() ? company.getContactName() : "Administrador");
         adminUser.setRole(UserRole.ADMIN);
-        adminUser.setPasswordHash(passwordHashService.encodePassword("Qwert.12345"));
+        adminUser.setPasswordHash(passwordHashService.encodePassword(rawPassword));
         adminUser.setRequirePasswordChange(true);
         adminUser.setCanVoidTickets(true);
         adminUser.setCanReprintTickets(true);
@@ -106,7 +108,9 @@ public class CompanyManagementService implements CompanyManagementUseCase {
                 "Empresa creada con plan " + request.getPlan(),
                 performedBy));
 
-        return companyResponseAssembler.assemble(company);
+        CompanyResponse response = companyResponseAssembler.assemble(company);
+        response.setAdminPassword(rawPassword);
+        return response;
     }
 
     @Override
@@ -263,5 +267,32 @@ public class CompanyManagementService implements CompanyManagementUseCase {
         
         companyRepository.deleteById(companyId);
         log.info("Compañía {} eliminada físicamente (Purge) de la base de datos", companyId);
+    }
+
+    private String generateRandomPassword() {
+        String upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String lower = "abcdefghijklmnopqrstuvwxyz";
+        String digits = "0123456789";
+        String special = "@#$%&!.";
+        String all = upper + lower + digits + special;
+        SecureRandom random = new SecureRandom();
+        StringBuilder password = new StringBuilder(14);
+        // Garantizar al menos uno de cada tipo
+        password.append(upper.charAt(random.nextInt(upper.length())));
+        password.append(lower.charAt(random.nextInt(lower.length())));
+        password.append(digits.charAt(random.nextInt(digits.length())));
+        password.append(special.charAt(random.nextInt(special.length())));
+        for (int i = 4; i < 14; i++) {
+            password.append(all.charAt(random.nextInt(all.length())));
+        }
+        // Mezclar caracteres
+        char[] chars = password.toString().toCharArray();
+        for (int i = chars.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            char temp = chars[i];
+            chars[i] = chars[j];
+            chars[j] = temp;
+        }
+        return new String(chars);
     }
 }

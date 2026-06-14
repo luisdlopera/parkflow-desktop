@@ -16,6 +16,7 @@ export type ActiveSessionDto = {
   rateName: string | null;
   parkingSpaceCode?: string | null;
   parkingSpaceLabel?: string | null;
+  custodiedItems?: { identifier: string; observations?: string }[];
 };
 
 export type ParkingSummaryDto = {
@@ -23,8 +24,44 @@ export type ParkingSummaryDto = {
   activeSpaces: number;
 };
 
-export async function fetchActiveSessions(): Promise<ActiveSessionDto[]> {
-  const res = await fetch(`${getOperationsApiBase().replace(/\/$/, "")}/sessions/active-list`, {
+export type ParkingSpaceDto = {
+  id: string;
+  code: string;
+  label?: string | null;
+  type: string;
+  status: string;
+  occupied: boolean;
+};
+
+export type PaginatedResponse<T> = {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+};
+
+export type GetActiveSessionsQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
+};
+
+export async function fetchActiveSessions(params?: GetActiveSessionsQuery): Promise<PaginatedResponse<ActiveSessionDto> | ActiveSessionDto[]> {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.set("page", params.page.toString());
+  if (params?.limit) queryParams.set("limit", params.limit.toString());
+  if (params?.search) queryParams.set("search", params.search);
+  if (params?.sortBy) queryParams.set("sortBy", params.sortBy);
+  if (params?.sortDir) queryParams.set("sortDir", params.sortDir);
+
+  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
+  
+  const res = await fetch(`${getOperationsApiBase().replace(/\/$/, "")}/sessions/active-list${queryString}`, {
     headers: await buildApiHeaders()
   });
   if (!res.ok) {
@@ -41,6 +78,17 @@ export async function fetchParkingSummary(): Promise<ParkingSummaryDto> {
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
     throw new Error(payload.error ?? "No se pudo cargar el resumen de celdas");
+  }
+  return res.json();
+}
+
+export async function fetchParkingSpaces(): Promise<ParkingSpaceDto[]> {
+  const res = await fetch(`${getCoreApiBase().replace(/\/$/, "")}/parking-spaces`, {
+    headers: await buildApiHeaders()
+  });
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}));
+    throw new Error(payload.error ?? "No se pudieron cargar las celdas de parqueo");
   }
   return res.json();
 }

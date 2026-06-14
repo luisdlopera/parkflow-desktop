@@ -40,6 +40,9 @@ class OnboardingServiceTest {
   @Mock private AuditPort auditService;
   @Mock private OperationalConfigurationService operationalConfigurationService;
   @Mock private OnboardingQuestionConfigService onboardingQuestionConfigService;
+  @Mock private com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort parkingSessionPort;
+  @Mock private com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
+  @Mock private com.parkflow.modules.parking.operation.repository.AppUserRepository appUserRepository;
 
   private OnboardingService onboardingService;
   private UUID companyId;
@@ -64,7 +67,10 @@ class OnboardingServiceTest {
         auditService,
         operationalConfigurationService,
         onboardingQuestionConfigService,
-        new OnboardingSettingsMapper(new FeatureAccessService())
+        new OnboardingSettingsMapper(new FeatureAccessService()),
+        parkingSessionPort,
+        authSessionPort,
+        appUserRepository
     );
 
     company = new Company();
@@ -86,7 +92,7 @@ class OnboardingServiceTest {
     progress.setProgressData(new LinkedHashMap<>());
     when(onboardingProgressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
 
-    OnboardingStatusResponse response = onboardingService.saveOnboardingStep(companyId, 1, Map.of("operationalProfile", "MIXED"));
+    OnboardingStatusResponse response = onboardingService.saveOnboardingStep(companyId, 1, Map.of("operationalProfile", "MIXED"), null);
 
     assertEquals(2, response.currentStep());
     assertTrue(response.progressData().containsKey("step_1"));

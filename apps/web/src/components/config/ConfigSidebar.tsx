@@ -13,6 +13,7 @@ import {
   Wallet,
   Cog,
   Grid3x3,
+  Tags,
   type LucideIcon,
 } from "lucide-react";
 
@@ -60,6 +61,7 @@ const GRID_GROUPS: { label: string; items: GridItem[] }[] = [
     label: "Estacionamiento",
     items: [
       { href: "/configuracion/espacios", label: "Espacios", icon: Grid3x3, description: "Distribución de espacios" },
+      { href: "/configuracion/fichas", label: "Fichas", icon: Tags, description: "Casilleros y fichas de cascos" },
     ],
   },
 ];

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildTicketPreviewLines,
+  formatDateNatural,
+  formatTimeNatural,
   lineWidthChars,
-  ticketTitleForDocument
+  ticketTitleForDocument,
+  vehicleTypeLabel
 } from '@parkflow/types'
 
 describe('ticket layout', () => {
@@ -13,9 +16,24 @@ describe('ticket layout', () => {
     expect(ticketTitleForDocument('CASH_CLOSING')).toBe('CIERRE DE CAJA')
   })
 
-  it('builds preview lines with optional sections', () => {
+  it('formats date and time in natural language', () => {
+    const date = formatDateNatural('2026-05-08T10:00:00Z')
+    const time = formatTimeNatural('2026-05-08T10:00:00Z')
+    expect(date.toLowerCase()).toContain('8 de mayo')
+    expect(date.toLowerCase()).toContain('2026')
+    expect(time).toMatch(/10:00/)
+    expect(time.toUpperCase()).toContain('M')
+  })
+
+  it('maps vehicle types to friendly labels', () => {
+    expect(vehicleTypeLabel('CAR')).toBe('Carro')
+    expect(vehicleTypeLabel('MOTORCYCLE')).toBe('Moto')
+    expect(vehicleTypeLabel('BICYCLE')).toBe('Bicicleta')
+  })
+
+  it('builds preview lines with optional sections and natural language', () => {
     const lines = buildTicketPreviewLines({
-      documentKind: 'REPRINT',
+      documentKind: 'ENTRY',
       paperWidthMm: 58,
       ticketNumber: 'T-100',
       parkingName: 'Parkflow',
@@ -32,10 +50,27 @@ describe('ticket layout', () => {
       legalMessage: 'Line 1\nLine 2',
       qrPayload: 'QR:100',
       barcodePayload: null,
-      detailLines: ['Detail A', 'Detail B']
+      detailLines: ['Detail A', 'Detail B'],
+      price: '$15,000',
+      vehicleType: 'CAR'
     })
 
-    expect(lines).toContain('[QR] QR:100')
+    // Verify human-friendly labels exist
+    expect(lines.some(l => l.includes('Numero:'))).toBe(true)
+    expect(lines.some(l => l.includes('Atendido por:'))).toBe(true)
+    expect(lines.some(l => l.includes('Vehiculo:'))).toBe(true)
+    expect(lines.some(l => l.includes('Carro'))).toBe(true)
+    expect(lines.some(l => l.includes('TOTAL A PAGAR'))).toBe(true)
+    expect(lines.some(l => l.includes('$15,000'))).toBe(true)
+
+    // Verify natural date and time
+    expect(lines.some(l => l.includes('FECHA'))).toBe(true)
+    expect(lines.some(l => l.includes('HORA'))).toBe(true)
+
+    // Verify QR section
+    expect(lines.some(l => l.includes('ESCANEA PARA SALIR'))).toBe(true)
+    expect(lines.some(l => l.includes('[CODIGO QR]'))).toBe(true)
+
     expect(lines).toContain('Line 1')
     expect(lines).toContain('Detail B')
     expect(lines.at(-1)).toBe('--- corte ---')

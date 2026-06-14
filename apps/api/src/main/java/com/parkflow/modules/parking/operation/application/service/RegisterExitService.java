@@ -4,6 +4,8 @@ import com.parkflow.modules.parking.operation.domain.repository.OperationIdempot
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
 import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
+import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
+import com.parkflow.modules.cash.domain.CashMovementType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.audit.application.port.out.AuditPort;
@@ -63,6 +65,7 @@ public class RegisterExitService implements RegisterExitUseCase {
   private final ParkingSpaceService parkingSpaceService;
   private final CustodiedItemPort custodiedItemRepository;
   private final ObjectMapper objectMapper;
+  private final CashMovementUseCase cashMovementUseCase;
 
   @Override
   @Transactional
@@ -96,6 +99,7 @@ public class RegisterExitService implements RegisterExitUseCase {
     parkingSessionRepository.save(session);
 
     if (price.total().compareTo(BigDecimal.ZERO) > 0 && request.paymentMethod() != null) {
+      cashMovementUseCase.assertCashOpenForParkingPayment(session);
       Payment payment = new Payment();
       payment.setSession(session);
       payment.setMethod(request.paymentMethod());
@@ -103,6 +107,8 @@ public class RegisterExitService implements RegisterExitUseCase {
       payment.setPaidAt(exitAt);
       payment.setCompanyId(companyId);
       paymentRepository.save(payment);
+      cashMovementUseCase.recordParkingPayment(
+          session, payment, operator, request.idempotencyKey(), CashMovementType.PARKING_PAYMENT);
     }
 
     saveVehicleCondition(session, ConditionStage.EXIT, request.vehicleCondition(),
@@ -239,7 +245,7 @@ public class RegisterExitService implements RegisterExitUseCase {
     String siteKey = session.getSite();
     if (siteKey == null || siteKey.isBlank()) return Optional.empty();
     return parkingSiteRepository.findByCodeAndCompany_Id(siteKey.trim(), session.getCompanyId())
-        .or(() -> parkingSiteRepository.findByNameIgnoreCase(siteKey.trim()))
+        .or(() -> parkingSiteRepository.findByNameIgnoreCaseAndCompany_Id(siteKey.trim(), session.getCompanyId()))
         .flatMap(site -> operationalParameterRepository.findBySite_Id(site.getId()));
   }
 
@@ -389,7 +395,7 @@ public class RegisterExitService implements RegisterExitUseCase {
         session.isMonthlySession(),
         session.getAgreementCode(),
         session.getAppliedPrepaidMinutes(),
-        null, null, null, items);
+        null, null, null, session.isHasHelmet(), items);
   }
 
   private boolean isBlank(String s) { return s == null || s.isBlank(); }

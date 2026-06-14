@@ -13,4 +13,6 @@ public interface CustodiedItemPort {
   Optional<CustodiedItem> findById(UUID id);
   CustodiedItem save(CustodiedItem item);
   List<CustodiedItem> findBySessionAndItemType(ParkingSession session, String itemType);
+  boolean existsActiveHelmetByIdentifierAndCompany(String identifier, UUID companyId);
+  boolean existsActiveByLockerId(UUID lockerId);
 }

@@ -10,7 +10,7 @@ import { createConnection } from 'net';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { setTimeout as delay } from 'timers/promises';
-import { resolvePort, PORT_CONFIG } from './port-utils.mjs';
+import { resolvePort, PORT_CONFIG, killProcessOnPort } from './port-utils.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -78,6 +78,12 @@ async function main() {
   process.on('SIGTERM', () => shutdown(0));
 
   try {
+    // Kill any existing processes on the ports we need
+    console.log(`${label} Checking for existing processes on API port ${PORT_CONFIG.api.primary}...`);
+    await killProcessOnPort(PORT_CONFIG.api.primary);
+    console.log(`${label} Checking for existing processes on Web port ${PORT_CONFIG.web.primary}...`);
+    await killProcessOnPort(PORT_CONFIG.web.primary);
+
     console.log(`${label} Starting database...`);
     await run('pnpm', ['db:up']);
     console.log(`${label} Waiting for PostgreSQL on port ${PORT_CONFIG.db.host}...`);
@@ -95,21 +101,42 @@ async function main() {
       service: 'Web',
     }).then(({ port }) => port);
 
-    console.log(`${label} Starting API on ${apiPort} and Web on ${webPort}...`);
+    console.log(`${label} Starting API on ${apiPort} (waiting for it to be ready before starting Web)...`);
     console.log(`${label} Seed runs automatically during API startup.`);
 
     const sharedEnv = {
       ...process.env,
       PARKFLOW_API_PORT: apiPort.toString(),
       PARKFLOW_WEB_PORT: webPort.toString(),
+      PARKFLOW_DEV_ALL: 'true',
     };
 
+    // Start API first and wait for it to be ready
     const api = spawn('pnpm', ['dev:api'], {
       cwd: repoRoot,
       env: sharedEnv,
       stdio: 'inherit',
       shell: process.platform === 'win32',
     });
+
+    children.add(api);
+
+    api.on('error', (err) => {
+      console.error(`${label} API failed to start:`, err.message);
+      shutdown(1);
+    });
+
+    // Wait for the API to be listening before starting Web
+    console.log(`${label} Waiting for API to be ready on port ${apiPort}...`);
+    try {
+      await waitForTcpPort(apiPort);
+    } catch (err) {
+      console.error(`${label} Timeout waiting for API:`, err.message);
+      shutdown(1);
+      return;
+    }
+
+    console.log(`${label} API is ready. Starting Web on ${webPort}...`);
 
     const web = spawn('pnpm', ['dev:web'], {
       cwd: repoRoot,
@@ -118,29 +145,21 @@ async function main() {
       shell: process.platform === 'win32',
     });
 
-    children.add(api);
     children.add(web);
-
-    const terminateOthers = (source, code) => {
-      children.delete(source);
-      for (const child of children) {
-        child.kill('SIGINT');
-      }
-      process.exit(code ?? 0);
-    };
-
-    api.on('error', (err) => {
-      console.error(`${label} API failed to start:`, err.message);
-      terminateOthers(api, 1);
-    });
 
     web.on('error', (err) => {
       console.error(`${label} Web failed to start:`, err.message);
-      terminateOthers(web, 1);
+      shutdown(1);
     });
 
-    api.on('exit', (code) => terminateOthers(api, code ?? 0));
-    web.on('exit', (code) => terminateOthers(web, code ?? 0));
+    api.on('exit', (code) => {
+      console.log(`${label} API exited (code: ${code}). Shutting down...`);
+      shutdown(code ?? 0);
+    });
+    web.on('exit', (code) => {
+      console.log(`${label} Web exited (code: ${code}). Shutting down...`);
+      shutdown(code ?? 0);
+    });
   } catch (error) {
     console.error(`${label} Error:`, error.message);
     shutdown(1);

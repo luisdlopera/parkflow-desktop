@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Separator, ListBox } from "@heroui/react";
@@ -52,7 +52,6 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
   const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   const {
-    register,
     handleSubmit,
     setValue,
     control,
@@ -121,21 +120,33 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Input
-            label="Nombre de la empresa *"
-            placeholder="Ej: Parqueadero El Centro"
-            {...register("name")}
-            isInvalid={!!errors.name}
+          <Controller
+            name="name"
+            control={control}
+            render={({ field }) => (
+              <Input
+                label="Nombre de la empresa *"
+                placeholder="Ej: Parqueadero El Centro"
+                {...field}
+                isInvalid={!!errors.name}
+              />
+            )}
           />
           <InlineFieldError message={errors.name?.message} />
         </div>
 
         <div>
-          <Input
-            label="NIT (Opcional)"
-            placeholder="Ej: 900.123.456-7"
-            {...register("nit")}
-            isInvalid={!!errors.nit}
+          <Controller
+            name="nit"
+            control={control}
+            render={({ field }) => (
+              <Input
+                label="NIT (Opcional)"
+                placeholder="Ej: 900.123.456-7"
+                {...field}
+                isInvalid={!!errors.nit}
+              />
+            )}
           />
           <InlineFieldError message={errors.nit?.message} />
         </div>
@@ -143,22 +154,34 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Input
-            label="Email"
-            placeholder="contacto@empresa.com"
-            type="email"
-            {...register("email")}
-            isInvalid={!!errors.email}
+          <Controller
+            name="email"
+            control={control}
+            render={({ field }) => (
+              <Input
+                label="Email"
+                placeholder="contacto@empresa.com"
+                type="email"
+                {...field}
+                isInvalid={!!errors.email}
+              />
+            )}
           />
           <InlineFieldError message={errors.email?.message} />
         </div>
 
         <div>
-          <Input
-            label="Teléfono"
-            placeholder="Ej: +57 300 123 4567"
-            {...register("phone")}
-            isInvalid={!!errors.phone}
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              <Input
+                label="Teléfono"
+                placeholder="Ej: +57 300 123 4567"
+                {...field}
+                isInvalid={!!errors.phone}
+              />
+            )}
           />
           <InlineFieldError message={errors.phone?.message} />
         </div>
@@ -166,32 +189,50 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Input
-            label="Ciudad"
-            placeholder="Ej: Bogotá"
-            {...register("city")}
-            isInvalid={!!errors.city}
+          <Controller
+            name="city"
+            control={control}
+            render={({ field }) => (
+              <Input
+                label="Ciudad"
+                placeholder="Ej: Bogotá"
+                {...field}
+                isInvalid={!!errors.city}
+              />
+            )}
           />
           <InlineFieldError message={errors.city?.message} />
         </div>
 
         <div>
-          <Input
-            label="Nombre de contacto"
-            placeholder="Nombre del administrador"
-            {...register("contactName")}
-            isInvalid={!!errors.contactName}
+          <Controller
+            name="contactName"
+            control={control}
+            render={({ field }) => (
+              <Input
+                label="Nombre de contacto"
+                placeholder="Nombre del administrador"
+                {...field}
+                isInvalid={!!errors.contactName}
+              />
+            )}
           />
           <InlineFieldError message={errors.contactName?.message} />
         </div>
       </div>
 
       <div>
-        <TextArea
-          label="Dirección"
-          placeholder="Dirección física de la empresa"
-          {...register("address")}
-          isInvalid={!!errors.address}
+        <Controller
+          name="address"
+          control={control}
+          render={({ field }) => (
+            <TextArea
+              label="Dirección"
+              placeholder="Dirección física de la empresa"
+              {...field}
+              isInvalid={!!errors.address}
+            />
+          )}
         />
         <InlineFieldError message={errors.address?.message} />
       </div>
@@ -238,34 +279,62 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
       <Separator className="my-2" />
 
       <div className="grid grid-cols-3 gap-4">
-        <Input
-          label="Máx. dispositivos"
-          type="number"
-          {...register("maxDevices", { valueAsNumber: true })}
-          isInvalid={!!errors.maxDevices}
+        <Controller
+          name="maxDevices"
+          control={control}
+          render={({ field }) => (
+            <Input
+              label="Máx. dispositivos"
+              type="number"
+              {...field}
+              onChange={(e) => field.onChange(Number(e.target.value))}
+              isInvalid={!!errors.maxDevices}
+            />
+          )}
         />
 
-        <Input
-          label="Máx. sedes"
-          type="number"
-          {...register("maxLocations", { valueAsNumber: true })}
-          isInvalid={!!errors.maxLocations}
+        <Controller
+          name="maxLocations"
+          control={control}
+          render={({ field }) => (
+            <Input
+              label="Máx. sedes"
+              type="number"
+              {...field}
+              onChange={(e) => field.onChange(Number(e.target.value))}
+              isInvalid={!!errors.maxLocations}
+            />
+          )}
         />
 
-        <Input
-          label="Máx. usuarios"
-          type="number"
-          {...register("maxUsers", { valueAsNumber: true })}
-          isInvalid={!!errors.maxUsers}
+        <Controller
+          name="maxUsers"
+          control={control}
+          render={({ field }) => (
+            <Input
+              label="Máx. usuarios"
+              type="number"
+              {...field}
+              onChange={(e) => field.onChange(Number(e.target.value))}
+              isInvalid={!!errors.maxUsers}
+            />
+          )}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Input
-          label="Días de prueba"
-          type="number"
-          {...register("trialDays", { valueAsNumber: true })}
-          isInvalid={!!errors.trialDays}
+        <Controller
+          name="trialDays"
+          control={control}
+          render={({ field }) => (
+            <Input
+              label="Días de prueba"
+              type="number"
+              {...field}
+              onChange={(e) => field.onChange(Number(e.target.value))}
+              isInvalid={!!errors.trialDays}
+            />
+          )}
         />
 
         <Select

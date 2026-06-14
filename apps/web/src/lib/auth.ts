@@ -291,7 +291,7 @@ export async function currentUser(): Promise<AuthUser | null> {
 }
 
 /** Updates the cached user in the active session (e.g. after profile edit). */
-export async function patchSessionUser(patch: Pick<AuthUser, "name" | "email">): Promise<void> {
+export async function patchSessionUser(patch: Partial<AuthUser>): Promise<void> {
   const session = await loadSession();
   if (!session) return;
   await saveSession({

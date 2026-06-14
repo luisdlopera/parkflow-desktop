@@ -60,6 +60,7 @@ export interface Company {
   expiresAt?: string;
   graceUntil?: string;
   maxDevices: number;
+  adminPassword?: string;
   maxLocations: number;
   maxUsers: number;
   trialDays?: number;

@@ -20,7 +20,7 @@ public class OnboardingController {
   private final OnboardingUseCase onboardingUseCase;
 
   @GetMapping("/companies/{companyId}")
-  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
+  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<OnboardingStatusResponse> status(@PathVariable UUID companyId) {
     return ResponseEntity.ok(onboardingUseCase.status(companyId));
   }
@@ -30,7 +30,7 @@ public class OnboardingController {
   public ResponseEntity<OnboardingStatusResponse> saveStep(
       @PathVariable UUID companyId,
       @Valid @RequestBody SaveOnboardingStepRequest request) {
-    return ResponseEntity.ok(onboardingUseCase.saveOnboardingStep(companyId, request.step(), request.data()));
+    return ResponseEntity.ok(onboardingUseCase.saveOnboardingStep(companyId, request.step(), request.data(), request.targetStep()));
   }
 
   @PostMapping("/companies/{companyId}/skip")
@@ -54,20 +54,20 @@ public class OnboardingController {
   }
 
   @GetMapping("/companies/{companyId}/features/{featureKey}/enabled")
-  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
+  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<Map<String, Boolean>> isFeatureEnabled(
       @PathVariable UUID companyId, @PathVariable String featureKey) {
     return ResponseEntity.ok(Map.of("enabled", onboardingUseCase.isFeatureEnabled(companyId, featureKey)));
   }
 
   @GetMapping("/companies/{companyId}/settings")
-  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
+  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<Map<String, Object>> getCompanySettings(@PathVariable UUID companyId) {
     return ResponseEntity.ok(onboardingUseCase.getCompanySettings(companyId));
   }
 
   @GetMapping("/companies/{companyId}/capabilities")
-  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
+  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<CompanyCapabilitiesResponse> getCapabilities(@PathVariable UUID companyId) {
     return ResponseEntity.ok(onboardingUseCase.getCapabilities(companyId));
   }

@@ -1,13 +1,17 @@
 "use client";
 
-import React, { KeyboardEvent } from "react";
-import { UseFormReturn, Controller, useWatch } from "react-hook-form";
+import React, { KeyboardEvent, useEffect, useState } from "react";
+import { UseFormReturn, Controller, useWatch, useFieldArray } from "react-hook-form";
 import { VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, HardHat } from "lucide-react";
+import { User } from "lucide-react";
+import { MotorRacingHelmet } from "@/components/ui/MotorRacingHelmet";
+import { ListBox } from "@heroui/react";
+import { fetchAvailableHelmetLockers } from "@/services/helmet-lockers.service";
 
 interface MotorcycleEntryFormUIProps {
   form: UseFormReturn<VehicleEntryFormValues>;
@@ -35,8 +39,22 @@ export function MotorcycleEntryFormUI({
   const { getOperationConfigValue } = useTenantConfig();
   const enableCustodiedItem = getOperationConfigValue<boolean>("enableCustodiedItem", true);
 
-  // Watch the helmetDelivered state to toggle the cards and show/hide extra fields
-  const helmetDelivered = useWatch({ control: form.control, name: "helmetDelivered" });
+  const [availableLockers, setAvailableLockers] = useState<{ id: string; code: string }[]>([]);
+
+  useEffect(() => {
+    if (enableCustodiedItem) {
+      fetchAvailableHelmetLockers()
+        .then((lockers) => setAvailableLockers(lockers.map((l) => ({ id: l.id, code: l.code }))))
+        .catch(() => setAvailableLockers([]));
+    }
+  }, [enableCustodiedItem]);
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "custodiedItems",
+  });
+
+  const helmetDelivered = fields.length > 0;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -93,11 +111,11 @@ export function MotorcycleEntryFormUI({
       {/* Sección de Casco Interactiva */}
       {enableCustodiedItem && (
         <div className="space-y-3 pt-2">
-          <p className="text-sm font-semibold text-slate-600">Gestión de Casco</p>
+          <p className="text-sm font-semibold text-slate-600">Gestión de Cascos</p>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => form.setValue("helmetDelivered", false, { shouldValidate: true })}
+              onClick={() => form.setValue("custodiedItems", [], { shouldValidate: true })}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 !helmetDelivered
                   ? "border-slate-800 bg-slate-800 text-white border border-default-200 scale-[1.02]"
@@ -113,15 +131,19 @@ export function MotorcycleEntryFormUI({
 
             <button
               type="button"
-              onClick={() => form.setValue("helmetDelivered", true, { shouldValidate: true })}
+              onClick={() => {
+                if (!helmetDelivered) {
+                  form.setValue("custodiedItems", [{ identifier: "", observations: "", photoUrl: "" }], { shouldValidate: true });
+                }
+              }}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 helmetDelivered
                   ? "border-brand-500 bg-brand-500 text-white border border-default-200 scale-[1.02]"
                   : "border-slate-200 bg-white text-slate-500 hover:border-brand-200 hover:bg-brand-50/30"
               }`}
             >
-              <HardHat className="w-7 h-7 mb-2 text-current" />
-              <span className="font-bold text-sm sm:text-base">Deja Casco</span>
+              <MotorRacingHelmet className="w-7 h-7 mb-2 text-current" />
+              <span className="font-bold text-sm sm:text-base">Deja Casco(s)</span>
               {helmetDelivered && (
                 <motion.div layoutId="helmet-indicator" className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white border border-default-200" />
               )}
@@ -137,63 +159,102 @@ export function MotorcycleEntryFormUI({
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className="overflow-hidden"
               >
-                <div className="bg-brand-50/50 border border-brand-100 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
-                  <Controller
-                    name="helmetIdentifier"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Input
-                        {...field}
-                        label="Número/Ficha"
-                        placeholder="Ej: Ficha 12"
-                        size="sm"
-                        isInvalid={!!fieldState.error}
-                        errorMessage={fieldState.error?.message}
-                        isRequired
-                        classNames={{
-                          inputWrapper: "bg-white",
-                          input: "font-semibold text-lg"
-                        }}
-                      />
-                    )}
-                  />
-                  <Controller
-                    name="helmetObservations"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Input
-                        {...field}
-                        label="Color/Marca"
-                        placeholder="Negro Mate, SHAFT..."
-                        size="sm"
-                        isInvalid={!!fieldState.error}
-                        errorMessage={fieldState.error?.message}
-                        classNames={{
-                          inputWrapper: "bg-white"
-                        }}
-                      />
-                    )}
-                  />
+                <div className="bg-brand-50/50 border border-brand-100 rounded-2xl p-4 flex flex-col gap-4 mt-3">
+                  
                   {/* Selector rápido de cantidad */}
-                  <div className="col-span-1 sm:col-span-2 flex items-center justify-between mt-2 bg-white rounded-xl p-2 border border-slate-200">
-                    <span className="text-sm font-medium text-slate-600 px-2">Cantidad:</span>
+                  <div className="flex items-center justify-between bg-white rounded-xl p-2 border border-slate-200">
+                    <span className="text-sm font-medium text-slate-600 px-2">Cantidad a guardar:</span>
                     <div className="flex gap-2">
                       {[1, 2].map(num => (
                         <button
                           key={num}
                           type="button"
                           onClick={() => {
-                            const currentObs = form.getValues("helmetObservations") || "";
-                            const baseObs = currentObs.replace(/(?:\s*-\s*\d+\s*casco\(s\))/i, '');
-                            form.setValue("helmetObservations", `${baseObs} - ${num} casco(s)`, { shouldValidate: true });
+                            const currentLen = fields.length;
+                            if (num > currentLen) {
+                              for (let i = 0; i < num - currentLen; i++) {
+                                append({ identifier: "", observations: "", photoUrl: "" });
+                              }
+                            } else if (num < currentLen) {
+                              for (let i = currentLen - 1; i >= num; i--) {
+                                remove(i);
+                              }
+                            }
                           }}
-                          className="px-4 py-1.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors"
+                          className={`px-4 py-1.5 rounded-lg border text-sm font-bold transition-colors ${
+                            fields.length === num 
+                              ? "bg-brand-100 border-brand-300 text-brand-800" 
+                              : "border-slate-200 text-slate-700 hover:bg-brand-50"
+                          }`}
                         >
                           {num} {num === 1 ? 'Casco' : 'Cascos'}
                         </button>
                       ))}
                     </div>
                   </div>
+
+                  {fields.map((field, index) => (
+                    <div key={field.id} className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-brand-100/50 first:border-0 first:pt-0">
+                      <div className="col-span-1 sm:col-span-2">
+                        <span className="text-xs font-bold text-brand-600 uppercase">Datos Casco #{index + 1}</span>
+                      </div>
+                      <Controller
+                        name={`custodiedItems.${index}.identifier`}
+                        control={form.control}
+                        render={({ field: cField, fieldState }) => (
+                          <Select
+                            label="Número/Ficha"
+                            placeholder={availableLockers.length === 0 ? "Sin fichas disponibles" : "Seleccionar ficha"}
+                            size="sm"
+                            isInvalid={!!fieldState.error}
+                            errorMessage={fieldState.error?.message}
+                            isRequired
+                            isDisabled={availableLockers.length === 0}
+                            selectedKeys={cField.value ? [cField.value] : []}
+                            onSelectionChange={(keys: any) => {
+                              const val = Array.from(keys as Set<string>)[0] || "";
+                              cField.onChange(val);
+                            }}
+                            classNames={{
+                              trigger: "bg-white",
+                            }}
+                          >
+                            <Select.Trigger>
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                              <ListBox>
+                                {availableLockers.map((locker) => (
+                                  <ListBox.Item key={locker.code} textValue={locker.code}>
+                                    {locker.code}
+                                  </ListBox.Item>
+                                ))}
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                        )}
+                      />
+                      <Controller
+                        name={`custodiedItems.${index}.observations`}
+                        control={form.control}
+                        render={({ field: cField, fieldState }) => (
+                          <Input
+                            {...cField}
+                            label="Color/Marca"
+                            placeholder="Negro Mate, SHAFT..."
+                            size="sm"
+                            isInvalid={!!fieldState.error}
+                            errorMessage={fieldState.error?.message}
+                            classNames={{
+                              inputWrapper: "bg-white"
+                            }}
+                          />
+                        )}
+                      />
+                    </div>
+                  ))}
+
                 </div>
               </motion.div>
             )}

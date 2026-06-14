@@ -25,7 +25,8 @@ public record ExitRequest(
     List<@Size(max = 500) String> conditionPhotoUrls,
     // Custodied item (helmet) return fields
     List<UUID> returnedItemIds,
-    @Size(max = 500) String custodiedItemObservations) {
+    @Size(max = 500) String custodiedItemObservations,
+    UUID cashSessionId) {
 
   @AssertTrue(message = "ticketNumber o plate es obligatorio")
   public boolean hasLocator() {

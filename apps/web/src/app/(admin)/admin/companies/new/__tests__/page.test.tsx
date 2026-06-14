@@ -53,9 +53,15 @@ describe("NewCompanyPage", () => {
     expect(screen.getByTestId("company-form")).toBeInTheDocument();
   });
 
-  it("calls createCompany and redirects on success", async () => {
+  it("creates company and shows credential dialog before redirecting", async () => {
     const user = userEvent.setup();
-    mockCreateCompany.mockResolvedValueOnce({ id: "c1", name: "Test Company" });
+    mockCreateCompany.mockResolvedValueOnce({
+      id: "c1",
+      name: "Test Company",
+      email: "admin@test.com",
+      adminPassword: "secret123",
+      plan: "SYNC",
+    });
 
     render(<NewCompanyPage />);
     await user.click(screen.getByTestId("mock-form-submit"));
@@ -64,7 +70,17 @@ describe("NewCompanyPage", () => {
       expect(mockCreateCompany).toHaveBeenCalledTimes(1);
     });
     expect(mockCreateCompany).toHaveBeenCalledWith(expect.objectContaining({ name: "Test Company", plan: "SYNC" }));
-    expect(mockPush).toHaveBeenCalledWith("/admin/companies");
+
+    expect(screen.getByText("Empresa Creada Exitosamente")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Mostrar contraseña" }));
+    expect(screen.getByText("secret123")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Ir a empresas" }));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/admin/companies");
+    });
   });
 
   it("propagates error to CompanyForm when createCompany fails", async () => {
@@ -85,7 +101,7 @@ describe("NewCompanyPage", () => {
     render(<NewCompanyPage />);
 
     // El botón de atrás no tiene texto; buscamos el primer button icon-only
-    const backButton = screen.getByRole("button", { name: "" });
+    const backButton = screen.getByRole("button", { name: "Volver a empresas" });
     expect(backButton).toBeInTheDocument();
     await user.click(backButton);
     expect(mockPush).toHaveBeenCalledWith("/admin/companies");

@@ -1,29 +1,35 @@
 "use client";
 
-import { useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft } from "lucide-react";
 import { useCreateCompany } from "@/lib/licensing/hooks";
-import type { CreateCompanyRequest } from "@/lib/licensing/types";
+import type { CreateCompanyRequest, Company } from "@/lib/licensing/types";
 import { CompanyForm } from "@/components/admin/CompanyForm";
+import { CompanyCreatedDialog } from "@/components/admin/CompanyCreatedDialog";
 
 export default function NewCompanyPage() {
   const router = useRouter();
   const { createCompany, isLoading } = useCreateCompany();
+  const [createdCompany, setCreatedCompany] = useState<Company | null>(null);
 
   const handleCreateCompany = useCallback(
     async (data: CreateCompanyRequest) => {
       try {
-        await createCompany(data);
-        router.push("/admin/companies");
+        const company = await createCompany(data);
+        setCreatedCompany(company);
       } catch (err) {
-        // Relanzar para que el formulario maneje el error y muestre feedback al usuario
         throw err;
       }
     },
-    [createCompany, router]
+    [createCompany]
   );
+
+  const handleDialogClose = useCallback(() => {
+    setCreatedCompany(null);
+    router.push("/admin/companies");
+  }, [router]);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -47,6 +53,14 @@ export default function NewCompanyPage() {
       <div className="p-6 bg-white dark:bg-default-50 border border-default-200 rounded-xl">
         <CompanyForm onSubmit={handleCreateCompany} isLoading={isLoading} />
       </div>
+
+      {createdCompany && (
+        <CompanyCreatedDialog
+          isOpen={!!createdCompany}
+          company={createdCompany}
+          onClose={handleDialogClose}
+        />
+      )}
     </div>
   );
 }

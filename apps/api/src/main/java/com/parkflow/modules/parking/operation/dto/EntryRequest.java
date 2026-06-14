@@ -30,11 +30,8 @@ public record EntryRequest(
     @Size(max = 200) String vehicleCondition,
     List<@Size(max = 100) String> conditionChecklist,
     List<@Size(max = 500) String> conditionPhotoUrls,
-    // Custodied item (helmet) fields for motorcycle entries
-    Boolean helmetDelivered,
-    @Size(max = 100) String helmetIdentifier,
-    @Size(max = 500) String helmetObservations,
-    @Size(max = 500) String helmetPhotoUrl) {
+    // Custodied items (helmets) for motorcycle entries
+    List<CustodiedItemRequest> custodiedItems) {
 
   public EntryRequest(
       String idempotencyKey,
@@ -78,10 +75,7 @@ public record EntryRequest(
         vehicleCondition,
         conditionChecklist,
         conditionPhotoUrls,
-        false, // helmetDelivered
-        null,  // helmetIdentifier
-        null,  // helmetObservations
-        null   // helmetPhotoUrl
+        java.util.Collections.emptyList()
     );
   }
 }

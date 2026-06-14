@@ -15,7 +15,7 @@ public interface ParkingSiteRepository extends JpaRepository<ParkingSite, UUID> 
 
   Optional<ParkingSite> findByCodeAndCompany_Id(String code, UUID companyId);
 
-  Optional<ParkingSite> findByNameIgnoreCase(String name);
+  Optional<ParkingSite> findByNameIgnoreCaseAndCompany_Id(String name, UUID companyId);
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("SELECT s FROM ParkingSite s WHERE s.company.id = :companyId AND (LOWER(s.code) = LOWER(:site) OR LOWER(s.name) = LOWER(:site))")

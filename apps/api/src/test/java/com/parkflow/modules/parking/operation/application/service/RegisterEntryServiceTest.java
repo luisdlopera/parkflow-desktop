@@ -44,6 +44,7 @@ class RegisterEntryServiceTest {
   @Mock private MonthlyContractRepository monthlyContractRepository;
   @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort custodiedItemRepository;
+  @Mock private com.parkflow.modules.parking.helmet.domain.repository.HelmetLockerPort helmetLockerPort;
   @Mock private org.springframework.core.metrics.ApplicationStartup applicationStartup; // unused
 
   private RegisterEntryService service;
@@ -57,7 +58,7 @@ class RegisterEntryServiceTest {
         appUserRepository, vehicleRepository, rateRepository, parkingSiteRepository, parkingSessionRepository,
         ticketCounterRepository, vehicleConditionReportRepository, operationIdempotencyRepository,
         operationAuditService, operationPrintService, plateValidator, monthlyContractRepository,
-        parkingSpaceService, custodiedItemRepository, new com.fasterxml.jackson.databind.ObjectMapper(), new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+        parkingSpaceService, custodiedItemRepository, helmetLockerPort, new com.fasterxml.jackson.databind.ObjectMapper(), new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
   }
 
   @Test

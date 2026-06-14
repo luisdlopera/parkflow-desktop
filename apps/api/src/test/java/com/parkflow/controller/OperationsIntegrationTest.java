@@ -186,7 +186,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/v1/operations/sessions/active-list")
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$.data").isArray());
     }
 
     @Test

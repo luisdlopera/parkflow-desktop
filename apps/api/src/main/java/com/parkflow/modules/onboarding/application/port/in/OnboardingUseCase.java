@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public interface OnboardingUseCase {
     OnboardingStatusResponse status(UUID companyId);
-    OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data);
+    OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data, Integer targetStep);
     OnboardingStatusResponse skipAndApplyDefaults(UUID companyId);
     OnboardingStatusResponse completeOnboarding(UUID companyId);
     OnboardingStatusResponse resetOnboarding(UUID companyId, String reason);

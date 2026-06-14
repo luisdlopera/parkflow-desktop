@@ -1,12 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Pagination, Table, ListBox, cn, type SortDescriptor } from "@heroui/react";
+import { useMemo, useState, useCallback } from "react";
+import {
+  Pagination,
+  Table,
+  ListBox,
+  EmptyState,
+  Checkbox as HeroCheckbox,
+  cn,
+  type SortDescriptor,
+  type Selection,
+} from "@heroui/react";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ChevronUp, Inbox, Search } from "lucide-react";
-import { useTableSelection } from "@/hooks/useTableSelection";
-import { CircularCheckbox } from "./CircularCheckbox";
 
 export type DataTableColumn<T> = {
   key: keyof T | string;
@@ -14,8 +21,12 @@ export type DataTableColumn<T> = {
   header?: string;
   priority?: "high" | "medium" | "low";
   sortable?: boolean;
+  sortType?: "string" | "number" | "date" | "boolean";
   render?: (row: T) => React.ReactNode;
   align?: "left" | "center" | "right";
+  resizable?: boolean;
+  width?: number | string;
+  minWidth?: number;
 };
 
 type FilterConfig = {
@@ -46,6 +57,7 @@ export type DataTableProps<T> = {
   selectedKeys?: Set<string>;
   onRowSelectionChange?: (keys: Set<string>) => void;
   onSelectAll?: (keys: Set<string>) => void;
+  resizable?: boolean;
   pagination?: {
     page: number;
     pageSize: number;
@@ -53,6 +65,9 @@ export type DataTableProps<T> = {
     pageSizeOptions?: number[];
   };
   onPaginationChange?: (page: number, pageSize: number) => void;
+  sortDescriptor?: SortDescriptor;
+  onSortChange?: (descriptor: SortDescriptor) => void;
+  serverSide?: boolean;
 };
 
 function SortableHeader({
@@ -123,44 +138,82 @@ export default function DataTable<T extends object>({
   selectedKeys: controlledSelectedKeys,
   onRowSelectionChange,
   onSelectAll,
+  resizable = false,
+  sortDescriptor: controlledSortDescriptor,
+  onSortChange: controlledOnSortChange,
+  serverSide = false,
 }: DataTableProps<T>) {
   const source = useMemo(() => data ?? rows ?? [], [data, rows]);
-  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>();
+  const [internalSortDescriptor, setInternalSortDescriptor] = useState<SortDescriptor>();
+  
+  const sortDescriptor = controlledSortDescriptor ?? internalSortDescriptor;
+  const setSortDescriptor = controlledOnSortChange ?? setInternalSortDescriptor;
 
   const sortedSource = useMemo(() => {
-    if (!sortDescriptor?.column || !sortDescriptor?.direction) return source;
+    if (serverSide || !sortDescriptor?.column || !sortDescriptor?.direction) return source;
     return [...source].sort((a, b) => {
+      const col = columns.find((c) => String(c.key) === sortDescriptor.column);
       const key = sortDescriptor.column as keyof T;
-      const aVal = String(a[key] ?? "");
-      const bVal = String(b[key] ?? "");
-      let cmp = aVal.localeCompare(bVal, undefined, { numeric: true });
+      let cmp = 0;
+
+      const aVal = a[key];
+      const bVal = b[key];
+
+      if (col?.sortType === "number") {
+        cmp = (Number(aVal) || 0) - (Number(bVal) || 0);
+      } else if (col?.sortType === "date") {
+        cmp =
+          new Date(String(aVal || 0)).getTime() -
+          new Date(String(bVal || 0)).getTime();
+      } else if (col?.sortType === "boolean") {
+        cmp = aVal === bVal ? 0 : aVal ? -1 : 1;
+      } else {
+        cmp = String(aVal ?? "").localeCompare(String(bVal ?? ""), undefined, {
+          numeric: true,
+        });
+      }
+
       if (sortDescriptor.direction === "descending") cmp *= -1;
       return cmp;
     });
-  }, [source, sortDescriptor]);
+  }, [source, sortDescriptor, columns]);
 
   const getKey = (row: T, index: number) =>
     getRowKey ? getRowKey(row) : String(rowKey(row, index));
 
-  const {
-    selectedKeys,
-    toggleRow,
-    toggleAll,
-    isAllVisibleSelected,
-    isIndeterminate,
-    selectionCount
-  } = useTableSelection({
-    items: sortedSource,
-    getKey: (row, i) => getKey(row, i),
-    selectedKeys: controlledSelectedKeys,
-    onSelectionChange: onRowSelectionChange,
-    onSelectAll
-  });
+  const selection = useMemo<Selection>(() => {
+    if (!selectable) return new Set();
+    if (controlledSelectedKeys) return controlledSelectedKeys;
+    return new Set<string>();
+  }, [selectable, controlledSelectedKeys]);
+
+  const handleSelectionChange = useCallback(
+    (keys: Selection) => {
+      if (keys === "all") {
+        const allKeys = new Set(
+          sortedSource.map((row, i) => getKey(row, i)),
+        );
+        onRowSelectionChange?.(allKeys);
+        onSelectAll?.(allKeys);
+      } else {
+        const setKeys = keys as Set<string>;
+        onRowSelectionChange?.(setKeys);
+        onSelectAll?.(setKeys);
+      }
+    },
+    [sortedSource, getKey, onRowSelectionChange, onSelectAll],
+  );
 
   const displayColumns = useMemo(() => {
     const cols = [...columns];
     if (selectable) {
-      cols.unshift({ key: "_selection", label: "", sortable: false, priority: "high" });
+      cols.unshift({
+        key: "_selection",
+        label: "",
+        sortable: false,
+        priority: "high",
+        width: 48,
+      });
     }
     if (actions) {
       cols.push({ key: "_actions", label: "Acciones", align: "right" });
@@ -171,10 +224,15 @@ export default function DataTable<T extends object>({
   const renderCell = (col: DataTableColumn<T>, row: T, index: number) => {
     if (col.key === "_selection") {
       return (
-        <CircularCheckbox 
-          checked={selectedKeys.has(getKey(row, index))}
-          onChange={(checked, e) => toggleRow(index, e.shiftKey)}
-        />
+        <HeroCheckbox
+          aria-label={`Seleccionar fila ${getKey(row, index)}`}
+          slot="selection"
+          variant="secondary"
+        >
+          <HeroCheckbox.Control>
+            <HeroCheckbox.Indicator />
+          </HeroCheckbox.Control>
+        </HeroCheckbox>
       );
     }
     if (col.key === "_actions" && actions) return actions(row);
@@ -222,7 +280,9 @@ export default function DataTable<T extends object>({
                     aria-label={filter.label}
                     size="sm"
                     onChange={(keys: any) => {
-                      const value = Array.isArray(keys) ? keys.join(",") : Array.from(keys as Set<any>).join(",");
+                      const value = Array.isArray(keys)
+                        ? keys.join(",")
+                        : Array.from(keys as Set<any>).join(",");
                       onFilterChange({ [filter.key]: value });
                     }}
                   >
@@ -232,7 +292,11 @@ export default function DataTable<T extends object>({
                     <Select.Popover>
                       <ListBox>
                         {filter.options.map((opt) => (
-                          <ListBox.Item key={opt.value} id={opt.value} textValue={opt.label}>
+                          <ListBox.Item
+                            key={opt.value}
+                            id={opt.value}
+                            textValue={opt.label}
+                          >
                             {opt.label}
                           </ListBox.Item>
                         ))}
@@ -248,110 +312,142 @@ export default function DataTable<T extends object>({
     );
   }, [searchable, searchPlaceholder, onSearchChange, filters, onFilterChange]);
 
+  const tableContent = (
+    <Table.Content
+      aria-label="Data table"
+      sortDescriptor={sortDescriptor}
+      onSortChange={setSortDescriptor}
+      selectionMode={selectable ? "multiple" : "none"}
+      selectedKeys={selectable ? selection : undefined}
+      onSelectionChange={selectable ? handleSelectionChange : undefined}
+      className="min-w-full"
+    >
+      <Table.Header>
+        {displayColumns.map((col, idx) => (
+          <Table.Column
+            key={String(col.key)}
+            id={String(col.key)}
+            allowsSorting={col.sortable}
+            aria-label={col.key === "_selection" ? "Selection" : undefined}
+            isRowHeader={
+              idx === (selectable ? 1 : 0) &&
+              col.key !== "_actions" &&
+              col.key !== "_selection"
+            }
+            defaultWidth={col.width ? String(col.width) : col.resizable ? "1fr" : undefined as any}
+            minWidth={col.minWidth}
+            className={cn(
+              "text-[11px] font-bold uppercase tracking-[0.15em]",
+              getAlignClass(col.align),
+              getPriorityClass(col.priority),
+              col.key === "_actions"
+                ? "sticky right-0 z-20 bg-default-100 dark:bg-zinc-800/60 border-l border-default-200 dark:border-zinc-700"
+                : "",
+              col.key === "_selection" ? "w-[48px]" : "",
+            )}
+          >
+            {col.sortable
+              ? ({
+                  sortDirection,
+                }: {
+                  sortDirection?: "ascending" | "descending";
+                }) => (
+                  <SortableHeader sortDirection={sortDirection}>
+                    {getDisplayLabel(col)}
+                    {col.resizable && <Table.ColumnResizer />}
+                  </SortableHeader>
+                )
+              : col.key === "_selection"
+                ? (
+                  <HeroCheckbox
+                    aria-label="Seleccionar todas"
+                    slot="selection"
+                    variant="secondary"
+                  >
+                    <HeroCheckbox.Control>
+                      <HeroCheckbox.Indicator />
+                    </HeroCheckbox.Control>
+                  </HeroCheckbox>
+                )
+                : (
+                  <span className="flex items-center gap-1">
+                    {getDisplayLabel(col)}
+                    {col.resizable && <Table.ColumnResizer />}
+                  </span>
+                )}
+          </Table.Column>
+        ))}
+      </Table.Header>
+
+      {isLoading && source.length === 0 ? (
+        <Table.Body>
+          {skeletonRow("sk-1")}
+          {skeletonRow("sk-2")}
+          {skeletonRow("sk-3")}
+        </Table.Body>
+      ) : (
+        <Table.Body
+          renderEmptyState={() => (
+            <EmptyState className="flex h-full w-full flex-col items-center justify-center gap-4 text-center py-16">
+              <div className="mb-2 rounded-full border border-slate-100 bg-slate-50 p-4">
+                <Inbox className="size-8 text-slate-300" />
+              </div>
+              <span className="text-base font-medium text-slate-500">
+                {emptyMessage}
+              </span>
+            </EmptyState>
+          )}
+        >
+          {sortedSource.map((row, index) => (
+            <Table.Row
+              key={getKey(row, index)}
+              id={getKey(row, index)}
+            >
+              {displayColumns.map((col) => (
+                <Table.Cell
+                  key={String(col.key)}
+                  className={cn(
+                    getAlignClass(col.align),
+                    getPriorityClass(col.priority),
+                    col.key === "_actions"
+                      ? "sticky right-0 z-10 border-l border-default-200 dark:border-zinc-700"
+                      : "",
+                  )}
+                >
+                  {renderCell(col, row, index)}
+                </Table.Cell>
+              ))}
+            </Table.Row>
+          ))}
+        </Table.Body>
+      )}
+    </Table.Content>
+  );
+
   return (
     <div className="flex flex-col gap-4">
       {topContent}
-      <Table>
+      <Table variant="primary">
         <Table.ScrollContainer>
-          <Table.Content
-            aria-label="Data table"
-            sortDescriptor={sortDescriptor}
-            onSortChange={setSortDescriptor}
-          >
-          <Table.Header>
-            {displayColumns.map((col, idx) => (
-              <Table.Column
-                key={String(col.key)}
-                id={String(col.key)}
-                allowsSorting={col.sortable}
-                aria-label={col.key === "_selection" ? "Selection" : undefined}
-                isRowHeader={idx === (selectable ? 1 : 0) && col.key !== "_actions" && col.key !== "_selection"}
-                className={cn(
-                  "text-[11px] font-bold uppercase tracking-[0.15em]",
-                  getAlignClass(col.align),
-                  getPriorityClass(col.priority),
-                  col.key === "_actions" ? "sticky right-0 z-20 bg-default-100 dark:bg-zinc-800/60 border-l border-default-200 dark:border-zinc-700" : ""
-                )}
-              >
-                {col.sortable
-                  ? ({
-                      sortDirection,
-                    }: {
-                      sortDirection?: "ascending" | "descending";
-                    }) => (
-                      <SortableHeader sortDirection={sortDirection}>
-                        {getDisplayLabel(col)}
-                      </SortableHeader>
-                    )
-                  : col.key === "_selection" 
-                  ? <CircularCheckbox 
-                      checked={isAllVisibleSelected} 
-                      indeterminate={isIndeterminate} 
-                      onChange={toggleAll} 
-                    />
-                  : getDisplayLabel(col)}
-              </Table.Column>
-            ))}
-          </Table.Header>
-
-          {isLoading && source.length === 0 ? (
-            <Table.Body>
-              {skeletonRow("sk-1")}
-              {skeletonRow("sk-2")}
-              {skeletonRow("sk-3")}
-            </Table.Body>
+          {resizable ? (
+            <Table.ResizableContainer>{tableContent}</Table.ResizableContainer>
           ) : (
-            <Table.Body
-              renderEmptyState={() => (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <div className="mb-4 rounded-full border border-slate-100 bg-slate-50 p-4">
-                    <Inbox className="size-8 text-slate-300" />
-                  </div>
-                  <p className="text-base font-medium text-slate-500">
-                    {emptyMessage}
-                  </p>
-                </div>
-              )}
-            >
-              {sortedSource.map((row, index) => {
-                const isRowSelected = selectedKeys.has(getKey(row, index));
-                return (
-                <Table.Row 
-                  key={getKey(row, index)} 
-                  id={getKey(row, index)}
-                  className={cn(
-                    isRowSelected ? "bg-blue-50/40 dark:bg-blue-900/20" : ""
-                  )}
-                >
-                  {displayColumns.map((col) => (
-                    <Table.Cell
-                      key={String(col.key)}
-                      className={cn(
-                        getAlignClass(col.align),
-                        getPriorityClass(col.priority),
-                        isRowSelected ? "bg-blue-50/40 dark:bg-blue-900/20" : "bg-white dark:bg-zinc-950",
-                        col.key === "_actions" ? "sticky right-0 z-10 border-l border-default-200 dark:border-zinc-700" : "",
-                        col.key === "_actions" && !isRowSelected ? "bg-white dark:bg-zinc-900" : ""
-                      )}
-                    >
-                      {renderCell(col, row, index)}
-                    </Table.Cell>
-                  ))}
-                </Table.Row>
-                );
-              })}
-            </Table.Body>
+            tableContent
           )}
-        </Table.Content>
-      </Table.ScrollContainer>
+        </Table.ScrollContainer>
 
-      {paginationConfig && onPaginationChange && (
-        <TableFooterContent
-          config={paginationConfig}
-          onChange={onPaginationChange}
-          selectionCount={selectable ? selectionCount : undefined}
-        />
-      )}
+        {paginationConfig && onPaginationChange && (
+          <Table.Footer>
+            <TableFooterContent
+              config={paginationConfig}
+              onChange={onPaginationChange}
+              selectionCount={
+                selectable ? (controlledSelectedKeys?.size ?? 0) : undefined
+              }
+              totalItems={source.length}
+            />
+          </Table.Footer>
+        )}
       </Table>
     </div>
   );
@@ -361,10 +457,12 @@ function TableFooterContent({
   config,
   onChange,
   selectionCount,
+  totalItems,
 }: {
   config: NonNullable<DataTableProps<unknown>["pagination"]>;
   onChange: NonNullable<DataTableProps<unknown>["onPaginationChange"]>;
   selectionCount?: number;
+  totalItems: number;
 }) {
   const totalPages = Math.ceil(config.total / config.pageSize);
   const start = (config.page - 1) * config.pageSize + 1;
@@ -372,20 +470,21 @@ function TableFooterContent({
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   return (
-    <Table.Footer>
-      <div className="flex w-full items-center justify-between">
-        {selectionCount !== undefined && selectionCount > 0 ? (
-          <div className="text-sm text-blue-600 font-medium">
-            {selectionCount === config.total 
-              ? "Todos los registros seleccionados" 
-              : `${selectionCount} de ${config.total} registros seleccionados`}
-          </div>
-        ) : <div />}
-        
-        <Pagination size="sm">
-          <Pagination.Summary>
-            {start} a {end} de {config.total} resultados
-          </Pagination.Summary>
+    <div className="flex w-full items-center justify-between">
+      {selectionCount !== undefined && selectionCount > 0 ? (
+        <div className="text-sm text-blue-600 font-medium">
+          {selectionCount === totalItems
+            ? "Todos los registros seleccionados"
+            : `${selectionCount} de ${totalItems} registros seleccionados`}
+        </div>
+      ) : (
+        <div />
+      )}
+
+      <Pagination size="sm">
+        <Pagination.Summary>
+          {start} a {end} de {config.total} resultados
+        </Pagination.Summary>
         <Pagination.Content>
           <Pagination.Item>
             <Pagination.Previous
@@ -417,7 +516,6 @@ function TableFooterContent({
           </Pagination.Item>
         </Pagination.Content>
       </Pagination>
-      </div>
-    </Table.Footer>
+    </div>
   );
 }

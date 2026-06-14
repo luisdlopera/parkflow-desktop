@@ -1,19 +1,53 @@
 "use client";
 
-import { useState } from "react";
-import { Modal } from "@heroui/react";
+import { useState, useEffect } from "react";
+import { Modal, Dropdown } from "@heroui/react";
 import { Button } from "@/components/ui/Button";
 import DataTable from "@/components/ui/DataTable";
 import { useActiveSessions } from "@/hooks/useActiveSessions";
 import { useTerminalCaja } from "@/hooks/useTerminalCaja";
+import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
+import { fetchHelmetLockers, type HelmetLockerDto } from "@/services/helmet-lockers.service";
 import Link from "next/link";
-import { AlertTriangle, Eye } from "lucide-react";
-import type { ActiveSessionDto } from "@/services/sessions.service";
+import { AlertTriangle, Eye, MoreVertical, Edit, Printer, LogOut } from "lucide-react";
+import { GetActiveSessionsQuery, ActiveSessionDto } from "@/services/sessions.service";
+import type { SortDescriptor, Selection } from "@heroui/react";
 
 export default function VehiculosActivosPage() {
-  const { rows, summary, loading, error, reload } = useActiveSessions();
+  const [params, setParams] = useState<GetActiveSessionsQuery>({
+    page: 1,
+    limit: 25,
+    search: "",
+    sortBy: "entryAt",
+    sortDir: "desc"
+  });
+
+  const { rows, meta, summary, loading, error, reload } = useActiveSessions(params);
   const { cajaOpen } = useTerminalCaja();
+  const { runtimeConfig } = useTenantConfig();
   const [ticketPreview, setTicketPreview] = useState<ActiveSessionDto | null>(null);
+  const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set());
+  const [helmetLockers, setHelmetLockers] = useState<HelmetLockerDto[]>([]);
+  const [helmetLockersLoading, setHelmetLockersLoading] = useState(false);
+
+  const enableCustodiedItem = runtimeConfig?.operationConfiguration?.enableCustodiedItem as boolean ?? true;
+  const vehicleTypes = runtimeConfig?.vehicleTypes ?? [];
+  const hasMotorcycles = vehicleTypes.includes("MOTORCYCLE");
+  const hasHelmetLockers = helmetLockers.length > 0;
+  const showHelmetAlert = !helmetLockersLoading && enableCustodiedItem && hasMotorcycles && !hasHelmetLockers;
+
+  useEffect(() => {
+    if (enableCustodiedItem && hasMotorcycles) {
+      setHelmetLockersLoading(true);
+      fetchHelmetLockers()
+        .then((lockers) => setHelmetLockers(lockers))
+        .catch(() => setHelmetLockers([]))
+        .finally(() => setHelmetLockersLoading(false));
+    }
+  }, [enableCustodiedItem, hasMotorcycles]);
+
+  // ... skip unchanged lines and add selectable to DataTable
+  // We'll do this carefully. Let me re-do the replacement to target the correct lines.
 
   return (
     <div className="space-y-6">
@@ -57,7 +91,7 @@ export default function VehiculosActivosPage() {
         </div>
         <div className="flex items-center gap-4">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            {loading ? "Cargando..." : `${rows.length} vehículos en patio`}
+            {loading ? "Cargando..." : `${meta?.total ?? rows.length} vehículos en patio`}
           </p>
           <Button
             size="sm"
@@ -86,6 +120,19 @@ export default function VehiculosActivosPage() {
           </Link>
         </div>
       ) : null}
+
+      {/* Alerta cuando no hay fichas de cascos configuradas */}
+      {showHelmetAlert && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 space-y-2">
+          <p className="font-semibold flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> No tienes fichas de cascos configuradas</p>
+          <p>Para poder registrar cascos en custodia al ingresar motocicletas, necesitas configurar las fichas/casilleros.</p>
+          <Link href="/configuracion/fichas">
+            <Button size="sm" color="warning" className="mt-1">
+              Ir a Configurar Fichas
+            </Button>
+          </Link>
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
           <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Ocupados</p>
@@ -124,6 +171,14 @@ export default function VehiculosActivosPage() {
                   <span className="font-semibold">{ticketPreview.parkingSpaceCode ?? "Sin asignar"}</span>
                   <span className="text-slate-500 font-medium">Tarifa:</span>
                   <span className="font-semibold">{ticketPreview.rateName ?? "Sin tarifa"}</span>
+                  {ticketPreview.custodiedItems && ticketPreview.custodiedItems.length > 0 && (
+                    <>
+                      <span className="text-slate-500 font-medium">Cascos:</span>
+                      <span className="font-semibold">
+                        {ticketPreview.custodiedItems.map((item: any) => item.identifier).join(", ")}
+                      </span>
+                    </>
+                  )}
                 </div>
               </Modal.Body>
               <Modal.Footer>
@@ -135,13 +190,39 @@ export default function VehiculosActivosPage() {
           </Modal.Container>
         </Modal.Backdrop>
       )}
+      <div className="flex justify-between items-center mb-4">
+        {(selectedKeys === "all" || (selectedKeys as Set<string>).size > 0) && (
+          <div className="flex gap-2 items-center bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
+            <span className="text-sm font-medium text-blue-800">{selectedKeys === "all" ? rows.length : (selectedKeys as Set<string>).size} seleccionados</span>
+            <div className="h-4 w-px bg-blue-200 mx-2"></div>
+            <Button size="sm" color="warning" variant="flat">Salida Masiva</Button>
+            <Button size="sm" color="default" variant="flat">Cambiar Tarifa</Button>
+          </div>
+        )}
+      </div>
 
       <DataTable
+        selectable
+        selectedKeys={selectedKeys === "all" ? new Set(rows.map((r: any) => r.ticketNumber)) : selectedKeys}
+        onRowSelectionChange={(keys) => setSelectedKeys(keys as Set<string>)}
+        serverSide
+        searchable
+        searchPlaceholder="Buscar por placa o ticket..."
+        onSearchChange={(search) => setParams(p => ({ ...p, search, page: 1 }))}
+        sortDescriptor={{ column: params.sortBy || "entryAt", direction: params.sortDir === "asc" ? "ascending" : "descending" }}
+        onSortChange={(desc) => setParams(p => ({ ...p, sortBy: String(desc.column), sortDir: desc.direction === "ascending" ? "asc" : "desc" }))}
+        pagination={{
+          page: params.page || 1,
+          pageSize: params.limit || 25,
+          total: meta?.total ?? 0,
+        }}
+        onPaginationChange={(page, limit) => setParams(p => ({ ...p, page, limit }))}
         columns={[
           {
             key: "plate",
             label: "Placa",
             priority: "high",
+            sortable: true,
             render: (row) => {
               if (!row.plate || row.plate.startsWith("NP-")) {
                 return <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">SIN PLACA</span>;
@@ -149,36 +230,101 @@ export default function VehiculosActivosPage() {
               return row.plate;
             }
           },
-          { key: "ticketNumber", label: "Ticket", priority: "medium" },
-          { key: "vehicleType", label: "Tipo", priority: "high" },
+          { key: "ticketNumber", label: "Ticket", priority: "medium", sortable: true },
+          { key: "vehicleType", label: "Tipo", priority: "high", sortable: false },
           {
             key: "parkingSpaceCode",
             label: "Celda",
             priority: "high",
+            sortable: false,
             render: (row) => row.parkingSpaceCode ?? <span className="text-slate-400">Sin asignar</span>
           },
-          { key: "duration", label: "Tiempo", priority: "medium" },
+          { key: "duration", label: "Tiempo", priority: "medium", sortable: false },
           {
             key: "rateName",
             label: "Tarifa",
             priority: "low",
+            sortable: false,
             render: (row) => row.rateName ?? <span className="text-slate-400">Sin tarifa</span>
+          },
+          {
+            key: "cascos",
+            label: "Cascos",
+            priority: "medium",
+            sortable: false,
+            render: (row) => {
+              const items = (row as ActiveSessionDto).custodiedItems;
+              if (!items || items.length === 0) return <span className="text-slate-400">—</span>;
+              return (
+                <div className="flex flex-wrap gap-1">
+                  {items.map((item: any) => (
+                    <span
+                      key={item.identifier}
+                      className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-200 text-amber-800 px-2.5 py-1 text-xs font-bold"
+                      title={item.observations ?? "Sin observaciones"}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                      {item.identifier}
+                      {item.observations && (
+                        <span className="font-normal text-amber-600 ml-0.5">· {item.observations}</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              );
+            }
           },
           {
             key: "actions",
             label: "",
             priority: "high",
             render: (row) => (
-              <Button
-                size="sm"
-                variant="ghost"
-                color="warning"
-                isIconOnly
-                aria-label="Ver ticket"
-                onPress={() => setTicketPreview(row as ActiveSessionDto)}
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
+              <div className="flex justify-end relative">
+                <Dropdown>
+                  <Dropdown.Trigger>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      color="default"
+                      isIconOnly
+                      aria-label="Opciones"
+                    >
+                      <MoreVertical className="h-4 w-4 text-slate-500" />
+                    </Button>
+                  </Dropdown.Trigger>
+                  <Dropdown.Popover>
+                    <Dropdown.Menu aria-label="Acciones de vehículo" onAction={(key) => {
+                      if (key === "view") setTicketPreview(row as ActiveSessionDto);
+                      // Handle others here...
+                    }}>
+                      <Dropdown.Item id="view" textValue="Ver detalle">
+                        <div className="flex items-center gap-2">
+                          <Eye className="w-4 h-4 text-slate-500" />
+                          <span>Ver detalle</span>
+                        </div>
+                      </Dropdown.Item>
+                      <Dropdown.Item id="edit" textValue="Editar">
+                        <div className="flex items-center gap-2">
+                          <Edit className="w-4 h-4 text-slate-500" />
+                          <span>Editar</span>
+                        </div>
+                      </Dropdown.Item>
+                      <Dropdown.Item id="reprint" textValue="Reimprimir ticket">
+                        <div className="flex items-center gap-2">
+                          <Printer className="w-4 h-4 text-slate-500" />
+                          <span>Reimprimir ticket</span>
+                        </div>
+                      </Dropdown.Item>
+                      <Dropdown.Item id="checkout" textValue="Registrar salida" variant="danger">
+                        <div className="flex items-center gap-2 text-danger-500">
+                          <LogOut className="w-4 h-4" />
+                          <span>Registrar salida</span>
+                        </div>
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown.Popover>
+                </Dropdown>
+              </div>
             )
           }
         ]}

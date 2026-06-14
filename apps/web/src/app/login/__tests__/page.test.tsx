@@ -33,7 +33,7 @@ describe('LoginPage', () => {
   it('renders login form', () => {
     render(<LoginPage />);
     expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
+    expect(screen.getByLabelText("Contraseña")).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /entrar al sistema/i })).toBeInTheDocument();
   });
 
@@ -41,7 +41,7 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/correo electrónico/i);
-    const passwordInput = screen.getByLabelText(/contraseña/i);
+    const passwordInput = screen.getByLabelText("Contraseña");
     const submitButton = screen.getByRole('button', { name: /entrar al sistema/i });
 
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
@@ -61,7 +61,7 @@ describe('LoginPage', () => {
 
     render(<LoginPage />);
 
-    const passwordInput = screen.getByLabelText(/contraseña/i);
+    const passwordInput = screen.getByLabelText("Contraseña");
     const submitButton = screen.getByRole('button', { name: /entrar al sistema/i });
 
     fireEvent.change(passwordInput, { target: { value: 'wrong' } });

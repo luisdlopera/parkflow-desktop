@@ -7,12 +7,14 @@ import "./globals.css";
 
 const displayFont = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-display"
+  variable: "--font-display",
+  preload: false
 });
 
 const bodyFont = Instrument_Sans({
   subsets: ["latin"],
-  variable: "--font-body"
+  variable: "--font-body",
+  preload: false
 });
 
 export const metadata: Metadata = {

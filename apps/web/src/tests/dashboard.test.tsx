@@ -6,6 +6,11 @@ vi.mock("@/lib/api", () => ({
   buildApiHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token", "X-API-Key": "test-key" }),
 }));
 
+vi.mock("@/lib/auth", () => ({
+  currentUser: vi.fn().mockResolvedValue({ id: "123", role: "ADMIN" }),
+  canAccessSuperAdminPortal: vi.fn().mockReturnValue(true),
+}));
+
 const now = new Date("2026-05-26T10:00:00Z").toISOString();
 
 function buildSummary(overrides = {}) {

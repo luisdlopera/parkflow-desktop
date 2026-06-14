@@ -535,7 +535,7 @@ export default function SalidaCobroPage() {
       setProcessing(false);
       operationLock.current = false;
     }
-  }, [active, apiBase, selectedPaymentMethod, splitPayments, splitTotal, totalDue, singleCashReceived, paymentObservation, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, playSuccess, playError, toast.success, toast.danger, pendingCustodiedItems.length, printWarning, returnConfirmedIds]);
+  }, [active, apiBase, selectedPaymentMethod, splitPayments, splitTotal, totalDue, singleCashReceived, paymentObservation, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, playSuccess, playError, toastError, pendingCustodiedItems.length, returnConfirmedIds]);
 
   // Keyboard shortcuts - definido después de processExit
   useExitShortcuts({
@@ -1015,58 +1015,62 @@ export default function SalidaCobroPage() {
 
           {/* Botones de cobro grandes */}
           <div className="mt-4 space-y-3">
-            <button
-              type="button"
-              data-testid="payment-cash"
-              disabled={!active || searching || processing}
-              onClick={() => processExit("CASH")}
-              className={`
-                w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
-                flex items-center gap-3
-                ${active && !processing
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white border border-default-200 -500/30" 
-                  : "bg-slate-200 text-slate-400 cursor-not-allowed"}
-              `}
-            >
-              <div className={`
-                w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
-                ${active && !processing ? "bg-white/20" : "bg-slate-300"}
-              `}>
-                1
-              </div>
-              <div className="flex-1">
-                <div className="text-lg">Efectivo</div>
-                <div className="text-xs opacity-80 font-normal">Tecla 1</div>
-              </div>
-              {processing && (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              )}
-            </button>
+            {hasPaymentMethod("CASH") && (
+              <button
+                type="button"
+                data-testid="payment-cash"
+                disabled={!active || searching || processing}
+                onClick={() => processExit("CASH")}
+                className={`
+                  w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
+                  flex items-center gap-3
+                  ${active && !processing
+                    ? "bg-emerald-500 hover:bg-emerald-600 text-white border border-default-200 -500/30" 
+                    : "bg-slate-200 text-slate-400 cursor-not-allowed"}
+                `}
+              >
+                <div className={`
+                  w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
+                  ${active && !processing ? "bg-white/20" : "bg-slate-300"}
+                `}>
+                  1
+                </div>
+                <div className="flex-1">
+                  <div className="text-lg">Efectivo</div>
+                  <div className="text-xs opacity-80 font-normal">Tecla 1</div>
+                </div>
+                {processing && (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                )}
+              </button>
+            )}
 
-            <button
-              type="button"
-              data-testid="payment-card"
-              disabled={!active || searching || processing}
-              onClick={() => processExit("CARD")}
-              className={`
-                w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
-                flex items-center gap-3
-                ${active && !processing
-                  ? "bg-blue-500 hover:bg-blue-600 text-white border border-default-200 -500/30" 
-                  : "bg-slate-200 text-slate-400 cursor-not-allowed"}
-              `}
-            >
-              <div className={`
-                w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
-                ${active && !processing ? "bg-white/20" : "bg-slate-300"}
-              `}>
-                2
-              </div>
-              <div className="flex-1">
-                <div className="text-lg">Tarjeta</div>
-                <div className="text-xs opacity-80 font-normal">Tecla 2</div>
-              </div>
-            </button>
+            {(hasPaymentMethod("CARD") || hasPaymentMethod("DEBIT_CARD") || hasPaymentMethod("CREDIT_CARD")) && (
+              <button
+                type="button"
+                data-testid="payment-card"
+                disabled={!active || searching || processing}
+                onClick={() => processExit("DEBIT_CARD")}
+                className={`
+                  w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
+                  flex items-center gap-3
+                  ${active && !processing
+                    ? "bg-blue-500 hover:bg-blue-600 text-white border border-default-200 -500/30" 
+                    : "bg-slate-200 text-slate-400 cursor-not-allowed"}
+                `}
+              >
+                <div className={`
+                  w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
+                  ${active && !processing ? "bg-white/20" : "bg-slate-300"}
+                `}>
+                  2
+                </div>
+                <div className="flex-1">
+                  <div className="text-lg">Tarjeta</div>
+                  <div className="text-xs opacity-80 font-normal">Tecla 2</div>
+                </div>
+              </button>
+            )}
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-2">
@@ -1165,7 +1169,7 @@ export default function SalidaCobroPage() {
         <ListBox>
 
                     {SPLIT_METHODS.filter(m => hasPaymentMethod(m.code)).map((method) => (
-                      <ListBox.Item key={method.code}>{method.label}</ListBox.Item>
+                      <ListBox.Item key={method.code} textValue="{method.label}">{method.label}</ListBox.Item>
                     ))}
                   
         </ListBox>
