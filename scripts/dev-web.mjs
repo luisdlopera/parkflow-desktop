@@ -126,48 +126,52 @@ async function main() {
     }
     console.log('');
 
-    // Check if the API is running
-    const apiPort = PORT_CONFIG.api.primary;
-    const apiPortFree = await isPortFree(apiPort);
-    const fallbackApiPort = PORT_CONFIG.api.fallback;
-    const fallbackApiPortFree = await isPortFree(fallbackApiPort);
-
+    // Check if the API is running (skip if dev-all.mjs is managing the stack)
     let apiProcess = null;
-    if (apiPortFree && fallbackApiPortFree) {
-      // Check if DB is running
-      const dbPort = PORT_CONFIG.db.host;
-      const dbPortFree = await isPortFree(dbPort);
-      if (dbPortFree) {
-        console.log(`${label} Database is not running on port ${dbPort}. Starting it automatically via Docker...`);
-        // Start DB
-        const dbProcess = spawn('pnpm', ['db:up'], {
+    if (process.env.PARKFLOW_DEV_ALL !== 'true') {
+      const apiPort = PORT_CONFIG.api.primary;
+      const apiPortFree = await isPortFree(apiPort);
+      const fallbackApiPort = PORT_CONFIG.api.fallback;
+      const fallbackApiPortFree = await isPortFree(fallbackApiPort);
+
+      if (apiPortFree && fallbackApiPortFree) {
+        // Check if DB is running
+        const dbPort = PORT_CONFIG.db.host;
+        const dbPortFree = await isPortFree(dbPort);
+        if (dbPortFree) {
+          console.log(`${label} Database is not running on port ${dbPort}. Starting it automatically via Docker...`);
+          // Start DB
+          const dbProcess = spawn('pnpm', ['db:up'], {
+            cwd: repoRoot,
+            stdio: 'inherit',
+            shell: process.platform === 'win32',
+          });
+          await new Promise((resolve) => {
+            dbProcess.on('exit', resolve);
+            dbProcess.on('error', resolve);
+          });
+
+          console.log(`${label} Waiting for PostgreSQL to be ready on port ${dbPort}...`);
+          try {
+            await waitForTcpPort(dbPort);
+          } catch (dbErr) {
+            console.error(`${label} Timeout waiting for database: %s`, dbErr.message);
+          }
+        }
+
+        console.log(`${label} API server is not running on port ${apiPort}. Starting it automatically...`);
+        apiProcess = spawn('pnpm', ['dev:api'], {
           cwd: repoRoot,
           stdio: 'inherit',
           shell: process.platform === 'win32',
         });
-        await new Promise((resolve) => {
-          dbProcess.on('exit', resolve);
-          dbProcess.on('error', resolve);
+
+        apiProcess.on('error', (err) => {
+          console.error(`${label} Failed to start API automatically: %s`, err.message);
         });
-
-        console.log(`${label} Waiting for PostgreSQL to be ready on port ${dbPort}...`);
-        try {
-          await waitForTcpPort(dbPort);
-        } catch (dbErr) {
-          console.error(`${label} Timeout waiting for database: %s`, dbErr.message);
-        }
       }
-
-      console.log(`${label} API server is not running on port ${apiPort}. Starting it automatically...`);
-      apiProcess = spawn('pnpm', ['dev:api'], {
-        cwd: repoRoot,
-        stdio: 'inherit',
-        shell: process.platform === 'win32',
-      });
-
-      apiProcess.on('error', (err) => {
-        console.error(`${label} Failed to start API automatically: %s`, err.message);
-      });
+    } else {
+      console.log(`${label} Running under dev-all — API lifecycle managed externally.`);
     }
 
 

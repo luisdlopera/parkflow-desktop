@@ -6,7 +6,7 @@ import { Separator } from "@heroui/react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { currentUser, authHeaders } from "@/lib/auth";
+import { currentUser, authHeaders, loadSession, saveSession } from "@/lib/auth";
 import type { AuthUser } from "@parkflow/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
@@ -66,13 +66,22 @@ export default function ChangePasswordPage() {
         body: JSON.stringify({ currentPassword, newPassword })
       });
       if (!res.ok) {
-        throw new Error("Error al cambiar la contraseña");
+        const body = await res.text().catch(() => "");
+        let detail = "Error al cambiar la contraseña";
+        if (res.status === 400) detail = "La contraseña actual no es correcta o la nueva no cumple los requisitos";
+        else if (res.status === 401) detail = "Sesión expirada. Inicia sesión nuevamente.";
+        else if (body) detail = body;
+        throw new Error(detail);
       }
-      
-      // Limpiar flag de omitir si existía
-      localStorage.removeItem("parkflow_skip_password_change");
-      
-      // Redirigir al inicio para continuar con el onboarding normal
+
+      // Actualizar sesión para reflejar que la contraseña fue cambiada
+      const session = await loadSession();
+      if (session) {
+        await saveSession({
+          ...session,
+          user: { ...session.user, requirePasswordChange: false }
+        });
+      }
       window.location.href = "/";
     } catch (err: any) {
       setPasswordError(err.message || "Error al cambiar la contraseña");
@@ -82,20 +91,12 @@ export default function ChangePasswordPage() {
   };
 
   const handleSkip = async () => {
-    // Guardar en localStorage que el usuario omitió el cambio
-    localStorage.setItem("parkflow_skip_password_change", "true");
-    // También intentar actualizar en el servidor (best effort)
-    try {
-      const headers = await authHeaders();
-      await fetch(`${API_BASE}/auth/skip-password-change`, {
-        method: "POST",
-        headers: {
-          ...headers,
-          "Content-Type": "application/json"
-        }
+    const session = await loadSession();
+    if (session) {
+      await saveSession({
+        ...session,
+        user: { ...session.user, requirePasswordChange: false }
       });
-    } catch {
-      // Si falla, localStorage ya tiene el flag
     }
     window.location.href = "/";
   };
@@ -155,17 +156,17 @@ export default function ChangePasswordPage() {
             >
               Cambiar y Continuar
             </Button>
-            
-            <Button 
-              type="button"
-              variant="ghost"
-              color="primary"
-              className="w-full"
-              onPress={handleSkip}
-              isDisabled={isChangingPassword}
-            >
-              Omitir por ahora
-            </Button>
+            <div className="text-center">
+              <Button
+                variant="light"
+                color="primary"
+                className="text-sm"
+                isDisabled={isChangingPassword}
+                onPress={handleSkip}
+              >
+                Omitir por ahora
+              </Button>
+            </div>
           </form>
         </Card.Content>
       </Card>

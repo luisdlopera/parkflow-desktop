@@ -18,7 +18,7 @@ export function SessionExpiredModal({ isOpen, onClose, onRenew }: SessionExpired
   const handleLoginRedirect = React.useCallback(() => {
     const currentPath = window.location.pathname;
     router.push(`/login?expired=1&next=${encodeURIComponent(currentPath)}`);
-    close();
+    onClose();
   }, [router, onClose]);
 
   // Cuenta regresiva para redirección automática

@@ -36,10 +36,10 @@ export async function fetchOnboardingStatus(companyId: string): Promise<Onboardi
   return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}`);
 }
 
-export async function saveOnboardingStep(companyId: string, step: number, data: Record<string, unknown>): Promise<OnboardingStatus> {
+export async function saveOnboardingStep(companyId: string, step: number, data: Record<string, unknown>, targetStep?: number): Promise<OnboardingStatus> {
   return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}/steps`, {
     method: "PUT",
-    body: JSON.stringify({ step, data })
+    body: JSON.stringify({ step, data, targetStep })
   });
 }
 

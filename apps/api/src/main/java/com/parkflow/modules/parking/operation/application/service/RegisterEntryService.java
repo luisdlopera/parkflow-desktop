@@ -13,6 +13,8 @@ import com.parkflow.modules.parking.operation.application.port.in.RegisterEntryU
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.parking.helmet.domain.HelmetLocker;
+import com.parkflow.modules.parking.helmet.domain.repository.HelmetLockerPort;
 import com.parkflow.modules.parking.operation.repository.*;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.parking.operation.validation.PlateValidator;
@@ -51,6 +53,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private final MonthlyContractRepository monthlyContractRepository;
   private final ParkingSpaceService parkingSpaceService;
   private final CustodiedItemPort custodiedItemRepository;
+  private final HelmetLockerPort helmetLockerPort;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
 
@@ -144,6 +147,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
         .booth(request.booth())
         .terminal(request.terminal())
         .entryNotes(request.observations())
+        .hasHelmet(request.custodiedItems() != null && !request.custodiedItems().isEmpty())
         .entryImageUrl(blankToNull(request.entryImageUrl()))
         .companyId(companyId)
         .syncStatus(SessionSyncStatus.SYNCED)
@@ -236,19 +240,36 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   }
 
   private void saveCustodiedItem(ParkingSession session, EntryRequest request, AppUser operator) {
-    if (!Boolean.TRUE.equals(request.helmetDelivered())) return;
-    CustodiedItem item = CustodiedItem.builder()
-        .session(session)
-        .itemType(CustodiedItemType.HELMET)
-        .identifier(blankToNull(request.helmetIdentifier()))
-        .status(CustodiedItemStatus.RECEIVED)
-        .observations(blankToNull(request.helmetObservations()))
-        .photoUrl(blankToNull(request.helmetPhotoUrl()))
-        .receivedBy(operator)
-        .receivedAt(OffsetDateTime.now())
-        .companyId(SecurityUtils.requireCompanyId())
-        .build();
-    custodiedItemRepository.save(item);
+    if (request.custodiedItems() == null || request.custodiedItems().isEmpty()) return;
+    UUID companyId = SecurityUtils.requireCompanyId();
+    for (CustodiedItemRequest itemReq : request.custodiedItems()) {
+        String identifier = blankToNull(itemReq.identifier());
+        if (identifier != null && custodiedItemRepository.existsActiveHelmetByIdentifierAndCompany(identifier, companyId)) {
+          throw new OperationException(HttpStatus.CONFLICT, "HELMET_IDENTIFIER_IN_USE",
+              "La ficha " + identifier + " ya está asignada a otro vehículo activo.");
+        }
+
+        HelmetLocker locker = null;
+        if (identifier != null) {
+          locker = helmetLockerPort.findActiveByCompanyId(companyId).stream()
+              .filter(l -> l.getCode().equals(identifier))
+              .findFirst().orElse(null);
+        }
+
+        CustodiedItem item = CustodiedItem.builder()
+            .session(session)
+            .itemType(CustodiedItemType.HELMET)
+            .identifier(identifier)
+            .locker(locker)
+            .status(CustodiedItemStatus.RECEIVED)
+            .observations(blankToNull(itemReq.observations()))
+            .photoUrl(blankToNull(itemReq.photoUrl()))
+            .receivedBy(operator)
+            .receivedAt(OffsetDateTime.now())
+            .companyId(companyId)
+            .build();
+        custodiedItemRepository.save(item);
+    }
   }
 
   private Optional<OperationResultResponse> tryReplay(String key, IdempotentOperationType type) {
@@ -340,6 +361,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
         space != null ? space.getId() : null,
         space != null ? space.getCode() : null,
         space != null ? space.getLabel() : null,
+        session.isHasHelmet(),
         items);
   }
 

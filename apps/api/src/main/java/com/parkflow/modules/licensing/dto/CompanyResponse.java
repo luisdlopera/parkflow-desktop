@@ -5,6 +5,8 @@ import com.parkflow.modules.licensing.enums.PlanType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import lombok.Builder;
 import lombok.Data;
 
@@ -60,4 +62,8 @@ public class CompanyResponse {
   private OffsetDateTime updatedAt;
 
   private String customerMessage;
+
+  /** Contraseña generada para el administrador (solo se retorna en creación). */
+  @JsonInclude(Include.NON_NULL)
+  private String adminPassword;
 }

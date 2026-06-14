@@ -1,3 +1,7 @@
+/**
+ * @deprecated This hook is deprecated. DataTable now uses native HeroUI selection via selectionMode="multiple".
+ * Kept for backward compatibility. Do not use in new code.
+ */
 import { useCallback, useState } from 'react';
 
 export interface UseTableSelectionProps<T> {

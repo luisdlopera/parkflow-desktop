@@ -27,6 +27,7 @@ public class FindActiveSessionService implements FindActiveSessionUseCase {
   private final ParkingSessionPort parkingSessionPort;
   private final ComplexPricingPort complexPricingPort;
   private final CustodiedItemPort custodiedItemRepository;
+  private final com.parkflow.modules.parking.spaces.service.ParkingSpaceService parkingSpaceService;
 
   @Override
   @Transactional(readOnly = true)
@@ -36,9 +37,14 @@ public class FindActiveSessionService implements FindActiveSessionUseCase {
         complexPricingPort.calculate(session, OffsetDateTime.now(), agreementCode, false, true);
     estimated = complexPricingPort.applyCourtesy(session, estimated, false);
 
+    com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment assignment =
+        parkingSpaceService.findAssignmentBySessionId(session.getId());
+    com.parkflow.modules.parking.spaces.domain.ParkingSpace space =
+        assignment != null ? assignment.getParkingSpace() : null;
+
     return new OperationResultResponse(
         session.getId().toString(),
-        toReceipt(session, Duration.between(session.getEntryAt(), OffsetDateTime.now()).toMinutes(), "0h 0m"),
+        toReceipt(session, Duration.between(session.getEntryAt(), OffsetDateTime.now()).toMinutes(), "0h 0m", space),
         "Sesion activa",
         estimated.subtotal(), estimated.surcharge(), estimated.discount(),
         estimated.deductedMinutes(), estimated.total());
@@ -65,7 +71,7 @@ public class FindActiveSessionService implements FindActiveSessionUseCase {
     throw new OperationException(HttpStatus.BAD_REQUEST, "ticketNumber o plate es obligatorio");
   }
 
-  private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration) {
+  private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration, com.parkflow.modules.parking.spaces.domain.ParkingSpace space) {
     List<CustodiedItemResponse> items = custodiedItemRepository.findBySession(session).stream()
         .map(item -> new CustodiedItemResponse(
             item.getId(), item.getSession().getId(), item.getItemType(), item.getIdentifier(),
@@ -90,6 +96,9 @@ public class FindActiveSessionService implements FindActiveSessionUseCase {
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
         session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
-        null, null, null, items);
+        space != null ? space.getId() : null,
+        space != null ? space.getCode() : null,
+        space != null ? space.getLabel() : null,
+        session.isHasHelmet(), items);
   }
 }

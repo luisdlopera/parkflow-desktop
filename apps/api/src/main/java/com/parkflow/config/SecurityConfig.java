@@ -45,10 +45,12 @@ public class SecurityConfig {
   private int passwordEncoderStrength;
 
   private final JwtAuthFilter jwtAuthFilter;
+  private final com.parkflow.modules.auth.security.OnboardingSecurityFilter onboardingSecurityFilter;
   private final ObjectMapper objectMapper;
 
-  public SecurityConfig(JwtAuthFilter jwtAuthFilter, ObjectMapper objectMapper) {
+  public SecurityConfig(JwtAuthFilter jwtAuthFilter, com.parkflow.modules.auth.security.OnboardingSecurityFilter onboardingSecurityFilter, ObjectMapper objectMapper) {
     this.jwtAuthFilter = jwtAuthFilter;
+    this.onboardingSecurityFilter = onboardingSecurityFilter;
     this.objectMapper = objectMapper;
   }
 
@@ -73,14 +75,16 @@ public class SecurityConfig {
                         "/api/v1/auth/login",
                         "/api/v1/auth/refresh",
                         "/api/v1/auth/password-reset/request",
-                        "/api/v1/auth/password-reset/confirm")
+                        "/api/v1/auth/password-reset/confirm",
+                        "/api/v1/auth/setup-required")
                     .permitAll()
                     .requestMatchers(swaggerMatchers())
                     .permitAll()
                     .anyRequest()
                     .authenticated())
         .addFilterBefore(new ApiKeyAuthFilter(apiKey), UsernamePasswordAuthenticationFilter.class)
-        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+        .addFilterAfter(onboardingSecurityFilter, JwtAuthFilter.class);
     return http.build();
   }
 

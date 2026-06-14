@@ -37,4 +37,5 @@ public record ReceiptResponse(
     UUID parkingSpaceId,
     String parkingSpaceCode,
     String parkingSpaceLabel,
+    boolean hasHelmet,
     List<CustodiedItemResponse> custodiedItems) {}

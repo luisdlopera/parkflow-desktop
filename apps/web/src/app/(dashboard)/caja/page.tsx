@@ -262,10 +262,6 @@ export default function CajaPage() {
       setOpenNotes("");
       await load();
     } catch (e) {
-      if (e instanceof Error && (e.message.includes("409") || e.message.includes("Conflict"))) {
-        await load();
-        return;
-      }
       setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
     } finally {
       setBusy(false);
@@ -785,17 +781,17 @@ export default function CajaPage() {
       <Select.Popover>
         <ListBox>
 
-              <ListBox.Item key="">Todos los tipos</ListBox.Item>
-              <ListBox.Item key="PARKING_PAYMENT">Cobro parqueo</ListBox.Item>
-              <ListBox.Item key="MANUAL_INCOME">Ingreso manual</ListBox.Item>
-              <ListBox.Item key="MANUAL_EXPENSE">Egreso manual</ListBox.Item>
-              <ListBox.Item key="WITHDRAWAL">Retiro / Transferencia a Tesorería</ListBox.Item>
-              <ListBox.Item key="CUSTOMER_REFUND">Devolucion al cliente</ListBox.Item>
-              <ListBox.Item key="DISCOUNT">Descuento</ListBox.Item>
-              <ListBox.Item key="ADJUSTMENT">Ajuste</ListBox.Item>
-              <ListBox.Item key="LOST_TICKET_PAYMENT">Cobro ticket perdido</ListBox.Item>
-              <ListBox.Item key="REPRINT_FEE">Reimpresion cobrada</ListBox.Item>
-              <ListBox.Item key="VOID_OFFSET">Contrapartida anulacion</ListBox.Item>
+              <ListBox.Item key="" textValue="Todos los tipos">Todos los tipos</ListBox.Item>
+              <ListBox.Item key="PARKING_PAYMENT" textValue="Cobro parqueo">Cobro parqueo</ListBox.Item>
+              <ListBox.Item key="MANUAL_INCOME" textValue="Ingreso manual">Ingreso manual</ListBox.Item>
+              <ListBox.Item key="MANUAL_EXPENSE" textValue="Egreso manual">Egreso manual</ListBox.Item>
+              <ListBox.Item key="WITHDRAWAL" textValue="Retiro / Transferencia a Tesorería">Retiro / Transferencia a Tesorería</ListBox.Item>
+              <ListBox.Item key="CUSTOMER_REFUND" textValue="Devolucion al cliente">Devolucion al cliente</ListBox.Item>
+              <ListBox.Item key="DISCOUNT" textValue="Descuento">Descuento</ListBox.Item>
+              <ListBox.Item key="ADJUSTMENT" textValue="Ajuste">Ajuste</ListBox.Item>
+              <ListBox.Item key="LOST_TICKET_PAYMENT" textValue="Cobro ticket perdido">Cobro ticket perdido</ListBox.Item>
+              <ListBox.Item key="REPRINT_FEE" textValue="Reimpresion cobrada">Reimpresion cobrada</ListBox.Item>
+              <ListBox.Item key="VOID_OFFSET" textValue="Contrapartida anulacion">Contrapartida anulacion</ListBox.Item>
             
         </ListBox>
       </Select.Popover>
@@ -813,19 +809,19 @@ export default function CajaPage() {
       <Select.Popover>
         <ListBox>
 
-              <ListBox.Item key="">Todos los medios</ListBox.Item>
-              <ListBox.Item key="CASH">Efectivo</ListBox.Item>
-              <ListBox.Item key="DEBIT_CARD">Tarjeta débito</ListBox.Item>
-              <ListBox.Item key="CREDIT_CARD">Tarjeta crédito</ListBox.Item>
-              <ListBox.Item key="CARD">Tarjeta legacy</ListBox.Item>
-              <ListBox.Item key="QR">QR</ListBox.Item>
-              <ListBox.Item key="NEQUI">Nequi</ListBox.Item>
-              <ListBox.Item key="DAVIPLATA">Daviplata</ListBox.Item>
-              <ListBox.Item key="TRANSFER">Transferencia</ListBox.Item>
-              <ListBox.Item key="AGREEMENT">Convenio</ListBox.Item>
-              <ListBox.Item key="INTERNAL_CREDIT">Crédito interno</ListBox.Item>
-              <ListBox.Item key="OTHER">Otro</ListBox.Item>
-              <ListBox.Item key="MIXED">Mixto</ListBox.Item>
+              <ListBox.Item key="" textValue="Todos los medios">Todos los medios</ListBox.Item>
+              <ListBox.Item key="CASH" textValue="Efectivo">Efectivo</ListBox.Item>
+              <ListBox.Item key="DEBIT_CARD" textValue="Tarjeta débito">Tarjeta débito</ListBox.Item>
+              <ListBox.Item key="CREDIT_CARD" textValue="Tarjeta crédito">Tarjeta crédito</ListBox.Item>
+              <ListBox.Item key="CARD" textValue="Tarjeta legacy">Tarjeta legacy</ListBox.Item>
+              <ListBox.Item key="QR" textValue="QR">QR</ListBox.Item>
+              <ListBox.Item key="NEQUI" textValue="Nequi">Nequi</ListBox.Item>
+              <ListBox.Item key="DAVIPLATA" textValue="Daviplata">Daviplata</ListBox.Item>
+              <ListBox.Item key="TRANSFER" textValue="Transferencia">Transferencia</ListBox.Item>
+              <ListBox.Item key="AGREEMENT" textValue="Convenio">Convenio</ListBox.Item>
+              <ListBox.Item key="INTERNAL_CREDIT" textValue="Crédito interno">Crédito interno</ListBox.Item>
+              <ListBox.Item key="OTHER" textValue="Otro">Otro</ListBox.Item>
+              <ListBox.Item key="MIXED" textValue="Mixto">Mixto</ListBox.Item>
             
         </ListBox>
       </Select.Popover>
@@ -893,13 +889,13 @@ export default function CajaPage() {
       <Select.Popover>
         <ListBox>
 
-              <ListBox.Item key="MANUAL_INCOME">Ingreso manual</ListBox.Item>
-              <ListBox.Item key="MANUAL_EXPENSE">Egreso manual</ListBox.Item>
-              <ListBox.Item key="WITHDRAWAL">Retiro / Transferencia a Tesorería</ListBox.Item>
-              <ListBox.Item key="CUSTOMER_REFUND">Devolucion al cliente</ListBox.Item>
-              <ListBox.Item key="DISCOUNT">Descuento</ListBox.Item>
-              <ListBox.Item key="ADJUSTMENT">Ajuste autorizado</ListBox.Item>
-              <ListBox.Item key="REPRINT_FEE">Reimpresion cobrada</ListBox.Item>
+              <ListBox.Item key="MANUAL_INCOME" textValue="Ingreso manual">Ingreso manual</ListBox.Item>
+              <ListBox.Item key="MANUAL_EXPENSE" textValue="Egreso manual">Egreso manual</ListBox.Item>
+              <ListBox.Item key="WITHDRAWAL" textValue="Retiro / Transferencia a Tesorería">Retiro / Transferencia a Tesorería</ListBox.Item>
+              <ListBox.Item key="CUSTOMER_REFUND" textValue="Devolucion al cliente">Devolucion al cliente</ListBox.Item>
+              <ListBox.Item key="DISCOUNT" textValue="Descuento">Descuento</ListBox.Item>
+              <ListBox.Item key="ADJUSTMENT" textValue="Ajuste autorizado">Ajuste autorizado</ListBox.Item>
+              <ListBox.Item key="REPRINT_FEE" textValue="Reimpresion cobrada">Reimpresion cobrada</ListBox.Item>
             
         </ListBox>
       </Select.Popover>
@@ -917,18 +913,18 @@ export default function CajaPage() {
       <Select.Popover>
         <ListBox>
 
-              <ListBox.Item key="CASH">Efectivo</ListBox.Item>
-              <ListBox.Item key="DEBIT_CARD">Tarjeta débito</ListBox.Item>
-              <ListBox.Item key="CREDIT_CARD">Tarjeta crédito</ListBox.Item>
-              <ListBox.Item key="CARD">Tarjeta legacy</ListBox.Item>
-              <ListBox.Item key="QR">QR</ListBox.Item>
-              <ListBox.Item key="NEQUI">Nequi</ListBox.Item>
-              <ListBox.Item key="DAVIPLATA">Daviplata</ListBox.Item>
-              <ListBox.Item key="TRANSFER">Transferencia</ListBox.Item>
-              <ListBox.Item key="AGREEMENT">Convenio</ListBox.Item>
-              <ListBox.Item key="INTERNAL_CREDIT">Crédito interno</ListBox.Item>
-              <ListBox.Item key="OTHER">Otro</ListBox.Item>
-              <ListBox.Item key="MIXED">Mixto</ListBox.Item>
+              <ListBox.Item key="CASH" textValue="Efectivo">Efectivo</ListBox.Item>
+              <ListBox.Item key="DEBIT_CARD" textValue="Tarjeta débito">Tarjeta débito</ListBox.Item>
+              <ListBox.Item key="CREDIT_CARD" textValue="Tarjeta crédito">Tarjeta crédito</ListBox.Item>
+              <ListBox.Item key="CARD" textValue="Tarjeta legacy">Tarjeta legacy</ListBox.Item>
+              <ListBox.Item key="QR" textValue="QR">QR</ListBox.Item>
+              <ListBox.Item key="NEQUI" textValue="Nequi">Nequi</ListBox.Item>
+              <ListBox.Item key="DAVIPLATA" textValue="Daviplata">Daviplata</ListBox.Item>
+              <ListBox.Item key="TRANSFER" textValue="Transferencia">Transferencia</ListBox.Item>
+              <ListBox.Item key="AGREEMENT" textValue="Convenio">Convenio</ListBox.Item>
+              <ListBox.Item key="INTERNAL_CREDIT" textValue="Crédito interno">Crédito interno</ListBox.Item>
+              <ListBox.Item key="OTHER" textValue="Otro">Otro</ListBox.Item>
+              <ListBox.Item key="MIXED" textValue="Mixto">Mixto</ListBox.Item>
             
         </ListBox>
       </Select.Popover>

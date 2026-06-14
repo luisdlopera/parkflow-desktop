@@ -7,4 +7,5 @@ import java.util.Map;
 
 public record SaveOnboardingStepRequest(
     @NotNull @Min(1) @Max(12) Integer step,
-    @NotNull Map<String, Object> data) {}
+    @NotNull Map<String, Object> data,
+    @Min(1) @Max(12) Integer targetStep) {}

@@ -14,17 +14,17 @@ export default function OnboardingGate() {
     void (async () => {
       try {
         const user = await currentUser();
-        if (!mounted || !user) {
+        if (!mounted) return;
+        if (!user) {
           setLoading(false);
           return;
         }
-        // El usuario ya trae onboardingCompleted desde el login
         if (!user.onboardingCompleted) {
           setCompanyId(user.companyId);
           setShowWizard(true);
         }
       } catch {
-        // Si falla algo, no bloqueamos al usuario, solo no mostramos onboarding
+        // Fallo al obtener usuario: no asumir que el onboarding está completo
         if (mounted) {
           setShowWizard(false);
         }

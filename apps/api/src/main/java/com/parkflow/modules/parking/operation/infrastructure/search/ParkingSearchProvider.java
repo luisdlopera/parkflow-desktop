@@ -27,7 +27,7 @@ public class ParkingSearchProvider implements SearchProvider {
             return List.of();
         }
 
-        List<ParkingSession> sessions = parkingSessionPort.searchByPlateOrTicket(normalizedQuery, companyId, PageRequest.of(0, 10));
+        List<ParkingSession> sessions = parkingSessionPort.searchByPlateOrTicket(normalizedQuery, companyId, PageRequest.of(0, 10)).getContent();
         
         return sessions.stream().map(session -> SearchResult.builder()
                 .id(session.getId().toString())

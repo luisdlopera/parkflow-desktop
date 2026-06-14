@@ -11,6 +11,61 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 /**
+ * Mata el proceso que está usando un puerto (con SIGTERM primero, luego SIGKILL).
+ * @param {number} port - Puerto cuyo proceso se desea terminar
+ * @returns {Promise<boolean>} - true si se mató algún proceso, false si no había nada o falló
+ */
+export async function killProcessOnPort(port) {
+  const platform = process.platform;
+
+  try {
+    if (platform === 'win32') {
+      const { stdout } = await execAsync(
+        `netstat -ano | findstr :${port} | findstr LISTENING`
+      );
+      if (stdout) {
+        const lines = stdout.trim().split('\n');
+        const pids = [...new Set(lines.map(line => line.trim().split(/\s+/).pop()))];
+        for (const pid of pids) {
+          try {
+            await execAsync(`taskkill /F /PID ${pid}`, { windowsHide: true });
+            console.log(`[Parkflow Ports] Killed process ${pid} on port ${port}`);
+          } catch {
+            // May already be dead
+          }
+        }
+        return pids.length > 0;
+      }
+    } else {
+      const { stdout } = await execAsync(
+        `lsof -i :${port} -sTCP:LISTEN -t 2>/dev/null || true`
+      );
+      const pids = stdout.trim().split('\n').filter(Boolean);
+      for (const pid of pids) {
+        // Try SIGTERM first, then SIGKILL after a short wait
+        try {
+          await execAsync(`kill ${pid} 2>/dev/null || true`);
+          await new Promise(r => setTimeout(r, 500));
+          // Check if still alive
+          const { stdout: alive } = await execAsync(`kill -0 ${pid} 2>/dev/null || echo "dead"`);
+          if (!alive.trim()) {
+            await execAsync(`kill -9 ${pid} 2>/dev/null || true`);
+          }
+          console.log(`[Parkflow Ports] Killed process ${pid} on port ${port}`);
+        } catch {
+          // Already dead
+        }
+      }
+      return pids.length > 0;
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
+}
+
+/**
  * Verifica si un puerto está libre.
  * @param {number} port - Puerto a verificar
  * @returns {Promise<boolean>} - true si está libre, false si está ocupado

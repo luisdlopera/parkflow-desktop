@@ -20,6 +20,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+
 @Service
 @RequiredArgsConstructor
 public class OnboardingService implements OnboardingUseCase {
@@ -33,6 +35,9 @@ public class OnboardingService implements OnboardingUseCase {
   private final OperationalConfigurationService operationalConfigurationService;
   private final OnboardingQuestionConfigService onboardingQuestionConfigService;
   private final OnboardingSettingsMapper settingsMapper;
+  private final com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort parkingSessionPort;
+  private final com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
+  private final AppUserRepository appUserRepository;
 
   @Transactional(readOnly = true)
   public OnboardingStatusResponse status(UUID companyId) {
@@ -53,7 +58,7 @@ public class OnboardingService implements OnboardingUseCase {
   private List<Integer> computeEnabledSteps(Company company) {
     var globalConfig = onboardingQuestionConfigService.findAllEnabled();
     Map<String, Object> planOptions = featureAccessService.getAvailableOptionsByPlan(company.getPlan());
-    List<Integer> steps = new java.util.ArrayList<>();
+    List<com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto> filtered = new java.util.ArrayList<>();
     for (var question : globalConfig) {
       int step = question.stepNumber();
       // Si está restringida por plan, verificar que el plan lo permita
@@ -66,20 +71,33 @@ public class OnboardingService implements OnboardingUseCase {
         };
         if (!allowed) continue;
       }
-      steps.add(step);
+      filtered.add(question);
     }
-    return steps.stream().sorted().distinct().toList();
+    // Ordenar: obligatorias primero, luego opcionales, manteniendo orden por stepNumber
+    return filtered.stream()
+        .sorted(java.util.Comparator
+            .comparing((com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto q) -> !q.required())
+            .thenComparingInt(com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto::stepNumber))
+        .map(com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto::stepNumber)
+        .distinct()
+        .toList();
   }
 
   @Transactional
-  public OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data) {
+  public OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data, Integer targetStep) {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
     Map<String, Object> sanitized = settingsMapper.sanitizeStepDataByPlan(company, step, data);
     Map<String, Object> merged = new LinkedHashMap<>(progress.getProgressData());
     merged.put("step_" + step, sanitized);
     progress.setProgressData(merged);
-    progress.setCurrentStep(Math.max(progress.getCurrentStep(), Math.min(step + 1, 12)));
+    
+    if (targetStep != null) {
+      progress.setCurrentStep(targetStep);
+    } else {
+      progress.setCurrentStep(Math.max(progress.getCurrentStep(), Math.min(step + 1, 12)));
+    }
+    
     progress.setUpdatedAt(OffsetDateTime.now());
     onboardingProgressPort.save(progress);
     return status(companyId);
@@ -107,6 +125,11 @@ public class OnboardingService implements OnboardingUseCase {
   public OnboardingStatusResponse completeOnboarding(UUID companyId) {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
+
+    // Idempotencia: si ya está completado, retornar estado actual sin cambios
+    if (Boolean.TRUE.equals(company.getOnboardingCompleted())) {
+      return status(companyId);
+    }
     Map<String, Object> finalSettings = settingsMapper.buildSettingsFromProgress(company, progress.getProgressData());
     
     Map<String, Object> step1 = settingsMapper.stepMap(progress.getProgressData(), 1);
@@ -212,6 +235,16 @@ public class OnboardingService implements OnboardingUseCase {
     }
 
     Company company = getCompany(companyId);
+
+    // Verificación informativa (no bloqueante): se permite reiniciar el onboarding
+    // incluso con vehículos activos o cajas abiertas, ya que solo afecta configuración
+    // futura y no compromete operaciones en curso. Se registra en auditoría para trazabilidad.
+    long activeSessions = parkingSessionPort.countActive(companyId);
+    StringBuilder auditContext = new StringBuilder();
+    if (activeSessions > 0) {
+      auditContext.append("Reinicio con ").append(activeSessions).append(" vehículos activos. ");
+    }
+
     OnboardingProgress progress = findOrCreateProgress(company);
     Map<String, Object> currentSettings = companySettingsService.getSettingsOrDefault(company);
 
@@ -226,21 +259,36 @@ public class OnboardingService implements OnboardingUseCase {
     snapshot.setCreatedAt(OffsetDateTime.now());
     
     com.parkflow.modules.auth.domain.AppUser appUser = null;
-    String creator = "SYSTEM";
+    String creatorEmail = "SYSTEM";
     org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
     if (auth != null) {
       if (auth.getPrincipal() instanceof com.parkflow.modules.auth.domain.AppUser user) {
         appUser = user;
-        creator = user.getEmail();
+        creatorEmail = user.getEmail();
       } else if (auth.getPrincipal() instanceof com.parkflow.modules.auth.security.AuthPrincipal principal) {
-        creator = principal.email();
+        creatorEmail = principal.email();
       }
     }
+    final String creator = creatorEmail;
     snapshot.setCreatedBy(creator);
     companySettingsSnapshotPort.save(snapshot);
 
     company.setOnboardingCompleted(false);
     companyRepository.save(company);
+
+    // Invalidar todas las sesiones activas de la empresa para forzar re-login con nuevo estado
+    List<com.parkflow.modules.auth.domain.AppUser> companyUsers = appUserRepository.findByCompanyId(companyId);
+    if (!companyUsers.isEmpty()) {
+      // No cerrar sesión al usuario que realiza la acción
+      List<com.parkflow.modules.auth.domain.AppUser> usersToInvalidate = companyUsers.stream()
+          .filter(u -> !u.getEmail().equalsIgnoreCase(creator))
+          .toList();
+      if (!usersToInvalidate.isEmpty()) {
+        authSessionPort.deleteByUserIn(usersToInvalidate);
+        org.slf4j.LoggerFactory.getLogger(getClass()).info("Invalidated {} sessions for company {} ({}) during onboarding reset by {}",
+            usersToInvalidate.size(), company.getName(), companyId, creator);
+      }
+    }
 
     progress.setCompleted(false);
     progress.setCurrentStep(1);
@@ -253,7 +301,7 @@ public class OnboardingService implements OnboardingUseCase {
         appUser,
         "onboardingCompleted=true, currentStep=" + progress.getCurrentStep(),
         "onboardingCompleted=false, currentStep=1",
-        "Reinicio de onboarding multi-tenant. Snapshot v" + nextVersion + " guardado."
+        "Reinicio de onboarding multi-tenant. Snapshot v" + nextVersion + " guardado. " + auditContext.toString()
     );
 
     return status(companyId);

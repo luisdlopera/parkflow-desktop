@@ -109,7 +109,7 @@ export default function EspaciosPage() {
     } finally {
       setLoading(false);
     }
-  }, [api, capacity, load, summary]);
+  }, [api, capacity, load, summary, confirm]);
 
   const patchSpace = useCallback(async (id: string, body: Record<string, unknown>) => {
     setLoading(true);

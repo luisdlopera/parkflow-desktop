@@ -40,7 +40,7 @@ public class IdempotencyManager {
                 session.getEntryImageUrl(), session.getExitImageUrl(),
                 session.getSyncStatus(), session.getEntryMode(), session.isMonthlySession(),
                 session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
-                null, null, null, null);
+                null, null, null, session.isHasHelmet(), null);
 
             return new OperationResultResponse(
                 session.getId().toString(),

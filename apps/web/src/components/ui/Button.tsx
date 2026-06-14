@@ -1,5 +1,5 @@
 import React from "react";
-import { Button as HeroButton, Spinner } from "@heroui/react";
+import { Button as HeroButton } from "@heroui/react";
 
 export interface ButtonProps {
   variant?: "solid" | "bordered" | "light" | "flat" | "faded" | "border border-default-200" | "ghost" | "primary" | "secondary" | "tertiary" | "outline" | "danger" | string;
@@ -54,21 +54,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={fullWidth ? `w-full ${props.className || ""}` : props.className}
         {...props as any} 
       >
-        {typeof children === "function" ? (
-          children
-        ) : (
-          (renderProps: any) => {
-            const { isPending } = renderProps;
-            return (
-              <>
-                {isPending && <Spinner color="current" size="sm" />}
-                {startContent}
-                {children}
-                {endContent}
-              </>
-            );
-          }
-        )}
+        {startContent}
+        {children}
+        {endContent}
       </HeroButton>
     );
   }

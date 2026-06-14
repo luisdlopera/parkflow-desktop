@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,7 +39,7 @@ public class ParkingSessionJpaAdapter implements ParkingSessionPort {
   }
 
   @Override
-  public List<ParkingSession> findActiveWithAssociations(SessionStatus status, UUID companyId, Pageable pageable) {
+  public org.springframework.data.domain.Page<ParkingSession> findActiveWithAssociations(SessionStatus status, UUID companyId, Pageable pageable) {
     return jpaRepository.findActiveWithAssociations(status, companyId, pageable);
   }
 
@@ -105,7 +104,7 @@ public class ParkingSessionJpaAdapter implements ParkingSessionPort {
   }
 
   @Override
-  public List<ParkingSession> searchByPlateOrTicket(String query, UUID companyId, Pageable pageable) {
+  public org.springframework.data.domain.Page<ParkingSession> searchByPlateOrTicket(String query, UUID companyId, Pageable pageable) {
     return jpaRepository.searchByPlateOrTicket(query, companyId, pageable);
   }
 
@@ -130,9 +129,11 @@ public class ParkingSessionJpaAdapter implements ParkingSessionPort {
     long countByStatusAndSiteAndCompanyId(SessionStatus status, String site, UUID companyId);
     long countByRate_IdAndCompanyId(UUID rateId, UUID companyId);
 
-    @Query("SELECT s FROM ParkingSession s JOIN FETCH s.vehicle v LEFT JOIN FETCH s.rate r " +
-           "WHERE s.status = :status AND s.companyId = :cid ORDER BY s.entryAt ASC")
-    List<ParkingSession> findActiveWithAssociations(@Param("status") SessionStatus status, @Param("cid") UUID companyId, Pageable pageable);
+    @Query(
+        value = "SELECT s FROM ParkingSession s JOIN FETCH s.vehicle v LEFT JOIN FETCH s.rate r WHERE s.status = :status AND s.companyId = :cid",
+        countQuery = "SELECT COUNT(s) FROM ParkingSession s WHERE s.status = :status AND s.companyId = :cid"
+    )
+    org.springframework.data.domain.Page<ParkingSession> findActiveWithAssociations(@Param("status") SessionStatus status, @Param("cid") UUID companyId, Pageable pageable);
 
     Optional<ParkingSession> findByStatusAndVehicle_PlateAndCompanyId(SessionStatus status, String plate, UUID companyId);
     Optional<ParkingSession> findByStatusAndTicketNumberAndCompanyId(SessionStatus status, String ticketNumber, UUID companyId);
@@ -172,10 +173,16 @@ public class ParkingSessionJpaAdapter implements ParkingSessionPort {
     @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.syncStatus = 'PENDING' AND s.companyId = :cid")
     long countSyncPending(@Param("cid") UUID companyId);
 
-    @Query("SELECT s FROM ParkingSession s JOIN FETCH s.vehicle v LEFT JOIN FETCH s.rate r " +
-           "WHERE (LOWER(v.plate) LIKE LOWER(CONCAT('%', :q, '%')) " +
-           "OR LOWER(s.ticketNumber) LIKE LOWER(CONCAT('%', :q, '%'))) " +
-           "AND s.companyId = :cid ORDER BY s.entryAt DESC")
-    List<ParkingSession> searchByPlateOrTicket(@Param("q") String query, @Param("cid") UUID companyId, Pageable pageable);
+    @Query(
+        value = "SELECT s FROM ParkingSession s JOIN FETCH s.vehicle v LEFT JOIN FETCH s.rate r " +
+                "WHERE (LOWER(v.plate) LIKE LOWER(CONCAT('%', :q, '%')) " +
+                "OR LOWER(s.ticketNumber) LIKE LOWER(CONCAT('%', :q, '%'))) " +
+                "AND s.companyId = :cid",
+        countQuery = "SELECT COUNT(s) FROM ParkingSession s JOIN s.vehicle v " +
+                     "WHERE (LOWER(v.plate) LIKE LOWER(CONCAT('%', :q, '%')) " +
+                     "OR LOWER(s.ticketNumber) LIKE LOWER(CONCAT('%', :q, '%'))) " +
+                     "AND s.companyId = :cid"
+    )
+    org.springframework.data.domain.Page<ParkingSession> searchByPlateOrTicket(@Param("q") String query, @Param("cid") UUID companyId, Pageable pageable);
   }
 }

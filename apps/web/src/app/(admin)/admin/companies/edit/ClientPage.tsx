@@ -22,12 +22,29 @@ export default function ClientPage() {
   useEffect(() => {
     if (!id) {
       setLoading(false);
+      setCompany(null);
       return;
     }
+    setLoading(true);
+    setCompany(null);
+    const abortController = new AbortController();
     getCompany(id)
-      .then(setCompany)
-      .catch(err => console.error("Error fetching company", err))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!abortController.signal.aborted) {
+          setCompany(data);
+        }
+      })
+      .catch(err => {
+        if (!abortController.signal.aborted) {
+          console.error("Error fetching company", err);
+        }
+      })
+      .finally(() => {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      });
+    return () => abortController.abort();
   }, [id]);
 
   const handleUpdate = async (data: any) => {

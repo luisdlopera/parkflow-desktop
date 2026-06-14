@@ -8,8 +8,13 @@ export interface TooltipProps extends Omit<HeroTooltipProps, "content"> {
 export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
   ({ content, children, ...props }, ref) => {
     return (
-      <HeroTooltip content={content as any} {...props as any}>
-        {children}
+      <HeroTooltip {...props as any}>
+        <HeroTooltip.Trigger>
+          {children}
+        </HeroTooltip.Trigger>
+        <HeroTooltip.Content>
+          {content}
+        </HeroTooltip.Content>
       </HeroTooltip>
     );
   }

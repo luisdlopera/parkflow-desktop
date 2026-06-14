@@ -24,14 +24,13 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       }
       if (mounted) {
         const isChangePasswordPage = pathname?.startsWith("/change-password");
-        const hasSkippedPasswordChange = typeof window !== "undefined" && localStorage.getItem("parkflow_skip_password_change") === "true";
 
-        if (user.requirePasswordChange && !isChangePasswordPage && user.role !== "SUPER_ADMIN" && !hasSkippedPasswordChange) {
+        if (user.requirePasswordChange && !isChangePasswordPage && user.role !== "SUPER_ADMIN") {
           router.replace("/change-password");
           return;
         }
 
-        if ((!user.requirePasswordChange || hasSkippedPasswordChange) && isChangePasswordPage) {
+        if (!user.requirePasswordChange && isChangePasswordPage) {
           router.replace("/");
           return;
         }

@@ -46,14 +46,14 @@ export function TenantConfigProvider({ children }: { children: React.ReactNode }
   }, [refresh]);
 
   const supportsVehicleType = useCallback((typeCode: string): boolean => {
-    if (!runtimeConfig?.vehicleTypes) return true; // Si no hay lista, por defecto soporta todo
+    if (!runtimeConfig?.vehicleTypes) return false;
     return runtimeConfig.vehicleTypes.includes(typeCode);
   }, [runtimeConfig]);
 
   const isModuleEnabled = useCallback((moduleKey: string): boolean => {
-    if (!runtimeConfig?.modules) return true;
+    if (!runtimeConfig?.modules) return false;
     const value = runtimeConfig.modules[moduleKey];
-    return typeof value === "boolean" ? value : true;
+    return typeof value === "boolean" ? value : false;
   }, [runtimeConfig]);
 
   const getOperationConfigValue = useCallback(<T,>(key: string, defaultValue: T): T => {

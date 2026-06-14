@@ -20,7 +20,10 @@ public class OnboardingSettingsMapper {
     if (step == 6) {
       List<String> allowedPayments = asStringList(access.get("paymentMethods"), List.of("EFECTIVO"));
       List<String> current = asStringList(out.get("paymentMethods"), List.of("EFECTIVO"));
-      out.put("paymentMethods", current.stream().filter(allowedPayments::contains).toList());
+      // Mapear ambos a códigos estandarizados para comparación consistente
+      List<String> standardizedAllowed = allowedPayments.stream().map(this::mapPaymentMethodCode).toList();
+      List<String> standardizedCurrent = current.stream().map(this::mapPaymentMethodCode).toList();
+      out.put("paymentMethods", standardizedCurrent.stream().filter(standardizedAllowed::contains).toList());
     }
     if ((step == 8 || step == 9) && Boolean.FALSE.equals(access.get("allowAgreementsAndMonthly"))) {
       out.put("enabled", false);

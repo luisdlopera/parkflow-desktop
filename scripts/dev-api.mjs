@@ -5,7 +5,7 @@
  */
 
 import { spawn } from 'child_process';
-import { resolvePort, PORT_CONFIG } from './port-utils.mjs';
+import { resolvePort, PORT_CONFIG, killProcessOnPort } from './port-utils.mjs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { exec } from 'child_process';
@@ -148,6 +148,10 @@ async function main() {
     // Load .env from root project
     const rootEnvPath = join(repoRoot, '.env');
     const rootEnv = loadEnvFile(rootEnvPath);
+
+    // Kill any existing processes on API ports before starting
+    await killProcessOnPort(PORT_CONFIG.api.primary);
+    await killProcessOnPort(PORT_CONFIG.api.fallback);
 
     // Resolve port with fallback
     const { port, usedFallback } = await resolvePort({

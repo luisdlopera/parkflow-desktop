@@ -12,7 +12,7 @@ import java.util.UUID;
  */
 public interface ParkingSitePort {
   Optional<ParkingSite> findByCodeAndCompanyId(String code, UUID companyId);
-  Optional<ParkingSite> findByNameIgnoreCase(String name);
+  Optional<ParkingSite> findByNameIgnoreCase(String name, UUID companyId);
   Optional<ParkingSite> findByCodeOrNameForUpdate(String site, UUID companyId);
   boolean existsByCodeAndCompanyId(String code, UUID companyId);
   Page<ParkingSite> search(UUID companyId, String q, Boolean active, Pageable pageable);

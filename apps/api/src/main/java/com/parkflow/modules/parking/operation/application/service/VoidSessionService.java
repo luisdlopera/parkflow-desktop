@@ -143,6 +143,6 @@ public class VoidSessionService implements VoidSessionUseCase {
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
         session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
-        null, null, null, null);
+        null, null, null, session.isHasHelmet(), null);
   }
 }

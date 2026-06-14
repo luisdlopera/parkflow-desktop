@@ -64,6 +64,7 @@ class OperationServiceEdgeCasesTest {
   @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private Counter counter;
   @Mock private CustodiedItemPort custodiedItemRepository;
+  @Mock private com.parkflow.modules.parking.helmet.domain.repository.HelmetLockerPort helmetLockerPort;
 
   private RegisterEntryService registerEntryService;
 
@@ -86,7 +87,7 @@ class OperationServiceEdgeCasesTest {
         parkingSiteRepository, parkingSessionRepository, ticketCounterRepository,
         vehicleConditionReportRepository, operationIdempotencyRepository,
         auditService, operationPrintService,
-        plateValidator, monthlyContractRepository, parkingSpaceService, custodiedItemRepository, objectMapper, meterRegistry
+        plateValidator, monthlyContractRepository, parkingSpaceService, custodiedItemRepository, helmetLockerPort, objectMapper, meterRegistry
     );
 
     TenantContext.setTenantId(companyId);

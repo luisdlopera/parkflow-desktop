@@ -75,6 +75,10 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
 
   private String entryNotes;
 
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean hasHelmet = false;
+
   private String exitNotes;
 
   @Column(name = "entry_image_url")

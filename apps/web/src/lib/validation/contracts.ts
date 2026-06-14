@@ -35,10 +35,11 @@ export const operationEntryRequestSchema = z.object({
   vehicleCondition: z.string().max(200).nullable().optional(),
   conditionChecklist: z.array(z.string().max(100)).optional(),
   conditionPhotoUrls: z.array(z.string().max(500)).optional(),
-  helmetDelivered: z.boolean().optional(),
-  helmetIdentifier: z.string().max(100).nullable().optional(),
-  helmetObservations: z.string().max(500).nullable().optional(),
-  helmetPhotoUrl: z.string().max(500).nullable().optional()
+  custodiedItems: z.array(z.object({
+    identifier: z.string().max(100),
+    observations: z.string().max(500).nullable().optional(),
+    photoUrl: z.string().max(500).nullable().optional()
+  })).optional()
 }).refine((v) => Boolean(v.noPlate) || Boolean(v.plate?.trim()), {
   message: "Placa obligatoria salvo ingreso especial sin placa",
   path: ["plate"]

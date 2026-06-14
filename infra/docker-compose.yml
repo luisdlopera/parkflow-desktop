@@ -39,6 +39,24 @@ services:
       - "parkflow.port.host=${PARKFLOW_DB_PORT:-6021}"
       - "parkflow.port.container=5432"
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: parkflow-pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@parkflow.dev}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-parkflow}
+    ports:
+      - "${PARKFLOW_PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    labels:
+      - "parkflow.service=pgadmin"
+      - "parkflow.port.host=${PARKFLOW_PGADMIN_PORT:-5050}"
+      - "parkflow.port.container=80"
+
   # Redis service (comentado hasta que sea necesario)
   # redis:
   #   image: redis:7-alpine
@@ -56,6 +74,9 @@ volumes:
   pgdata:
     labels:
       - "parkflow.volume=postgres"
+  pgadmin-data:
+    labels:
+      - "parkflow.volume=pgadmin"
   # redisdata:
   #   labels:
   #     - "parkflow.volume=redis"

@@ -22,6 +22,7 @@ import com.parkflow.modules.parking.operation.domain.pricing.PricingCalculator;
 import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
+import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -57,6 +58,7 @@ class RegisterExitServiceTest {
   @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private CustodiedItemPort custodiedItemRepository;
   @Mock private ObjectMapper objectMapper;
+  @Mock private CashMovementUseCase cashMovementUseCase;
 
   private RegisterExitService service;
 
@@ -70,7 +72,7 @@ class RegisterExitServiceTest {
         prepaidBalanceRepository, prepaidUseCase, agreementRepository, parkingSiteRepository,
         operationalParameterRepository, pricingCalculator, operationAuditService, operationPrintService,
         globalAuditService, vehicleConditionReportRepository, operationIdempotencyRepository,
-        parkingSpaceService, custodiedItemRepository, objectMapper);
+        parkingSpaceService, custodiedItemRepository, objectMapper, cashMovementUseCase);
   }
 
   @Test
@@ -94,7 +96,7 @@ class RegisterExitServiceTest {
     when(operationIdempotencyRepository.findByIdempotencyKey(key)).thenReturn(Optional.of(i));
     when(custodiedItemRepository.findBySession(session)).thenReturn(java.util.Collections.emptyList());
 
-    ExitRequest req = new ExitRequest(key, null, null, null, null, null, null, null, null, null, null, null, null, null);
+    ExitRequest req = new ExitRequest(key, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     var res = service.execute(req);
 
     assertThat(res).isNotNull();

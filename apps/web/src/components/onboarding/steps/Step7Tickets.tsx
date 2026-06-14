@@ -1,0 +1,60 @@
+import { Input } from "@/components/ui/Input";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Switch } from "@/components/ui/Switch";
+import { Printer } from "lucide-react";
+import { useOnboarding, PRINTER_OPTIONS } from "../OnboardingContext";
+
+export default function Step7Tickets() {
+  const { stepData, setStepData } = useOnboarding();
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Printer className="w-4 h-4 text-default-400" />
+          <p className="text-sm font-medium">Configuración de impresión</p>
+        </div>
+        
+        <div className="grid gap-3 sm:grid-cols-2">
+          {PRINTER_OPTIONS.map((item) => (
+            <Checkbox
+              key={item.code}
+              isSelected={stepData.printerType === item.code}
+              onChange={(checked: boolean) => {
+                if (checked) setStepData({ ...stepData, printerType: item.code });
+              }}
+            >
+              <div className="flex flex-col">
+                <span className="font-medium">{item.label}</span>
+                <span className="text-xs text-default-400">{item.description}</span>
+              </div>
+            </Checkbox>
+          ))}
+        </div>
+        
+        <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+          <span className="text-sm font-medium">Nombre de la impresora (opcional)</span>
+          <Input 
+            className="w-48"
+            aria-label="Nombre de la impresora"
+            value={String(stepData.printerName ?? "")} 
+            onChange={(v) => setStepData({ ...stepData, printerName: v.target.value })} 
+            placeholder="Ej: EPSON-TM-T20"
+          />
+        </div>
+      </div>
+      
+      <div className="border-t border-default-200 pt-4">
+        <Switch isSelected={Boolean(stepData.allowReprint)} onChange={(v) => setStepData({ ...stepData, allowReprint: v })}>
+          Permitir reimpresión de tickets
+        </Switch>
+      </div>
+      
+      <div className="border-t border-default-200 pt-4">
+        <Switch isSelected={Boolean(stepData.showTicketPreview)} onChange={(v) => setStepData({ ...stepData, showTicketPreview: v })}>
+          Mostrar vista previa del ticket antes de imprimir
+        </Switch>
+      </div>
+    </div>
+  );
+}

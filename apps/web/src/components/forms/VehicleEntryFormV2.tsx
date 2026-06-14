@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/Input";
 import { useRef, useState, useCallback, useEffect, useMemo, type KeyboardEvent } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
 import { vehicleEntrySchema, VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { buildApiHeaders } from "@/lib/api";
@@ -16,8 +15,7 @@ import { newIdempotencyKey, getOrCreateIdempotencyKey, clearIdempotencyKey } fro
 import { queueOfflineOperation } from "@/lib/offline-outbox";
 import {
   buildTicketPreviewForOperation,
-  printReceiptIfTauri,
-  resolvePaperWidthMm
+  printReceiptIfTauri
 } from "@/lib/tauri-print";
 import { downloadTicketAsHtml } from "@/lib/print/ticket-download";
 import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
@@ -29,6 +27,7 @@ import type { VehicleType } from "@parkflow/types";
 import { fetchMasterVehicleTypes, type MasterVehicleTypeRow } from "@/lib/settings-api";
 import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 import { currentUser } from "@/lib/auth";
+import { fetchParkingSpaces, type ParkingSpaceDto } from "@/services/sessions.service";
 import { FormLayoutFactory } from "@/components/forms/dynamic/FormLayoutFactory";
 import { type RegisteredFieldKey } from "@/components/forms/dynamic/form-registry";
 import { MotorcycleEntryFormUI } from "@/components/forms/motorcycle/MotorcycleEntryFormUI";
@@ -163,7 +162,6 @@ async function handleOfflineEntry(
 export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery = false }: { initialPlate?: string; disableRecovery?: boolean }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [previewLines, setPreviewLines] = useState<string[] | null>(null);
   const [stats, setStats] = useState({ today: 0, session: 0 });
   const [showRecovery, setShowRecovery] = useState(false);
   const [vehicleTypes, setVehicleTypes] = useState<MasterVehicleTypeRow[]>([]);
@@ -173,23 +171,25 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   const [loadingConfig, setLoadingConfig] = useState(true);
   const submitLock = useRef(false);
   const [occupancy, setOccupancy] = useState<{ availableSpaces: number; activeSpaces: number } | null>(null);
+  const [spaces, setSpaces] = useState<ParkingSpaceDto[]>([]);
 
   const loadOccupancy = useCallback(async () => {
     try {
       const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
-      const response = await fetch(`${api}/parking-spaces/summary`, {
-        headers: await buildApiHeaders(),
-        cache: "no-store"
-      });
-      if (response.ok) {
-        const data = await response.json();
+      const [occupancyRes, spacesData] = await Promise.all([
+        fetch(`${api}/parking-spaces/summary`, { headers: await buildApiHeaders(), cache: "no-store" }),
+        fetchParkingSpaces()
+      ]);
+      if (occupancyRes.ok) {
+        const data = await occupancyRes.json();
         setOccupancy({
           availableSpaces: data.availableSpaces,
           activeSpaces: data.activeSpaces
         });
       }
+      setSpaces(spacesData.filter(s => s.status === "ACTIVE" && !s.occupied));
     } catch (err) {
-      console.error("Error loading occupancy summary:", err);
+      console.error("Error loading occupancy and spaces:", err);
     }
   }, []);
   const plateInputRef = useRef<HTMLInputElement>(null);
@@ -245,7 +245,8 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       observations: "",
       vehicleCondition: settings.skipConditionCheck ? "" : "Sin novedades al ingreso",
       conditionChecklist: "",
-      conditionPhotoUrls: ""
+      conditionPhotoUrls: "",
+      custodiedItems: []
     }
   });
 
@@ -486,7 +487,6 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
     submitLock.current = true;
     setMessage("");
     setError("");
-    setPreviewLines(null);
 
     if (occupancy !== null && occupancy.availableSpaces <= 0) {
       setError("No hay celdas disponibles para este negocio.");
@@ -547,10 +547,11 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
             : values.vehicleCondition.trim(),
           conditionChecklist: values.conditionChecklist.split(",").map(i => i.trim()).filter(Boolean),
           conditionPhotoUrls: values.conditionPhotoUrls.split(",").map(i => i.trim()).filter(Boolean),
-          helmetDelivered: values.helmetDelivered,
-          helmetIdentifier: values.helmetIdentifier?.trim() || null,
-          helmetObservations: values.helmetObservations?.trim() || null,
-          helmetPhotoUrl: values.helmetPhotoUrl?.trim() || null
+          custodiedItems: values.custodiedItems?.map(item => ({
+            identifier: item.identifier.trim(),
+            observations: item.observations?.trim() || null,
+            photoUrl: item.photoUrl?.trim() || null
+          })) || []
         },
         "Corrige los campos del ingreso antes de enviar"
       );
@@ -609,7 +610,6 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         }
       };
       const generatedPreviewLines = buildTicketPreviewForOperation(printPayload, "ENTRY");
-      setPreviewLines(generatedPreviewLines);
 
       let printWarning: string | null = null;
       try {
@@ -665,10 +665,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         vehicleCondition: settings.skipConditionCheck ? "" : "Sin novedades al ingreso",
         conditionChecklist: "",
         conditionPhotoUrls: "",
-        helmetDelivered: false,
-        helmetIdentifier: "",
-        helmetObservations: "",
-        helmetPhotoUrl: ""
+        custodiedItems: []
       });
 
       focusPlate();
@@ -1126,7 +1123,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
               type="submit"
               size={isSpeed ? "lg" : "md"}
               isLoading={form.formState.isSubmitting}
-              isDisabled={!!printWarning || !form.formState.isValid}
+              isDisabled={!!printWarning}
               className={`w-full font-bold bg-orange-500 text-white hover:bg-orange-600 ${isSpeed ? "text-lg border border-default-200" : ""}`}
               data-testid="register-entry"
             >
@@ -1186,7 +1183,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
 
                           {configuredSites.map((site: any) => {
                             const key = String(site.code ?? site.name ?? "PRINCIPAL");
-                            return <ListBox.Item key={key}>{String(site.name ?? site.code ?? key)}</ListBox.Item>;
+                            return <ListBox.Item key={key} textValue="{String(site.name ?? site.code ?? key)}">{String(site.name ?? site.code ?? key)}</ListBox.Item>;
                           })}
                         
         </ListBox>
@@ -1235,6 +1232,38 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
                   )}
                 />
 
+                <Controller
+                  name="parkingSpaceId"
+                  control={form.control as any}
+                  render={({ field: { value, onChange, ...field } }) => (
+                    <Select
+                      {...field}
+                      aria-label="Celda (opcional)"
+                      placeholder="Seleccionar celda..."
+                      selectedKey={value || null}
+                      onSelectionChange={(keys) => {
+                        const arr = Array.from((keys as any) || []);
+                        onChange(arr.length ? String(arr[0]) : "");
+                      }}
+                      size="sm"
+                    >
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {spaces.map(s => (
+                            <ListBox.Item key={s.id} textValue={`${s.code} ${s.label ? `(${s.label})` : ""}`}>
+                              {s.code} {s.label ? `(${s.label})` : ""}
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  )}
+                />
+
                 {/* Campos Dinámicos / Autogenerados por Configuración */}
                 <FormLayoutFactory
                   layout={ENTRY_FORM_LAYOUT}
@@ -1266,10 +1295,6 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
           </div>
         )}
 
-        {/* Preview del ticket */}
-        {previewLines && (
-          <TicketReceiptPreview lines={previewLines} paperWidthMm={resolvePaperWidthMm()} />
-        )}
       </form>
 
       {/* Tips según modo — Solo para modo multi-tipo */}

@@ -79,6 +79,8 @@ export interface TicketDocument {
   barcodePayload: string | null;
   copyNumber: number;
   printerProfile?: TicketPrinterProfile | null;
+  /** Precio total para tickets de salida (ej. $15,000). */
+  price?: string | null;
   /** Lineas extra (arqueo, cierre, comprobantes de caja) — preview y ESC/POS. */
   detailLines?: string[] | null;
 }

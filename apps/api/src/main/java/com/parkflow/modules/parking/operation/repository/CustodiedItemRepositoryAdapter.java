@@ -40,4 +40,14 @@ public class CustodiedItemRepositoryAdapter implements CustodiedItemPort {
   public List<CustodiedItem> findBySessionAndItemType(ParkingSession session, String itemType) {
     return repository.findBySessionAndItemTypeOrderByCreatedAtAsc(session, itemType);
   }
+
+  @Override
+  public boolean existsActiveHelmetByIdentifierAndCompany(String identifier, UUID companyId) {
+    return repository.existsActiveHelmetByIdentifierAndCompany(identifier, companyId);
+  }
+
+  @Override
+  public boolean existsActiveByLockerId(UUID lockerId) {
+    return repository.existsByLockerIdAndStatus(lockerId, CustodiedItemStatus.RECEIVED);
+  }
 }

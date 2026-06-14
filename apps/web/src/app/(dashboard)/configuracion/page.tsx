@@ -54,7 +54,7 @@ import {
   type RateCategory
 } from "@/lib/settings-api";
 import { resetOnboarding } from "@/lib/onboarding-api";
-import { currentUser } from "@/lib/auth";
+import { currentUser, loadSession, saveSession } from "@/lib/auth";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DropdownTrigger, Dropdown, DropdownMenu, DropdownItem } from "@/components/ui/Dropdown";
 import { MoreVertical, Pencil, Trash2, Car } from "lucide-react";
@@ -495,9 +495,9 @@ function RatesSection({
       <Select.Popover>
         <ListBox>
 
-            <ListBox.Item key="">Todos</ListBox.Item>
-            <ListBox.Item key="true">Activas</ListBox.Item>
-            <ListBox.Item key="false">Inactivas</ListBox.Item>
+            <ListBox.Item key="" textValue="Todos">Todos</ListBox.Item>
+            <ListBox.Item key="true" textValue="Activas">Activas</ListBox.Item>
+            <ListBox.Item key="false" textValue="Inactivas">Inactivas</ListBox.Item>
           
         </ListBox>
       </Select.Popover>
@@ -1277,9 +1277,9 @@ function UsersSection({
       <Select.Popover>
         <ListBox>
 
-          <ListBox.Item key="">Todos</ListBox.Item>
-          <ListBox.Item key="true">Activos</ListBox.Item>
-          <ListBox.Item key="false">Inactivos</ListBox.Item>
+          <ListBox.Item key="" textValue="Todos">Todos</ListBox.Item>
+          <ListBox.Item key="true" textValue="Activos">Activos</ListBox.Item>
+          <ListBox.Item key="false" textValue="Inactivos">Inactivos</ListBox.Item>
         
         </ListBox>
       </Select.Popover>
@@ -2084,9 +2084,9 @@ function ParametersSection({
       <Select.Popover>
         <ListBox>
 
-                <ListBox.Item key="">Heredar servidor (app.cash)</ListBox.Item>
-                <ListBox.Item key="true">Si, exigir</ListBox.Item>
-                <ListBox.Item key="false">No exigir</ListBox.Item>
+                <ListBox.Item key="" textValue="Heredar servidor (app.cash)">Heredar servidor (app.cash)</ListBox.Item>
+                <ListBox.Item key="true" textValue="Si, exigir">Si, exigir</ListBox.Item>
+                <ListBox.Item key="false" textValue="No exigir">No exigir</ListBox.Item>
               
         </ListBox>
       </Select.Popover>
@@ -2110,9 +2110,9 @@ function ParametersSection({
       <Select.Popover>
         <ListBox>
 
-                <ListBox.Item key="">Heredar servidor</ListBox.Item>
-                <ListBox.Item key="true">Permitir</ListBox.Item>
-                <ListBox.Item key="false">No permitir</ListBox.Item>
+                <ListBox.Item key="" textValue="Heredar servidor">Heredar servidor</ListBox.Item>
+                <ListBox.Item key="true" textValue="Permitir">Permitir</ListBox.Item>
+                <ListBox.Item key="false" textValue="No permitir">No permitir</ListBox.Item>
               
         </ListBox>
       </Select.Popover>
@@ -2310,7 +2310,7 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
     } catch (e) {
       onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA) });
     }
-  }, [onNotify]);
+  }, [onNotify, confirm]);
 
   // Filter and paginate
   const processedRows = useMemo(() => {
@@ -2730,6 +2730,13 @@ function OnboardingSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | 
                     return;
                   }
                   await resetOnboarding(compId, "Reinicio desde configuración");
+                  const session = await loadSession();
+                  if (session) {
+                    await saveSession({
+                      ...session,
+                      user: { ...session.user, onboardingCompleted: false }
+                    });
+                  }
                   window.location.reload();
                 } catch (e) {
                   setLoading(false);

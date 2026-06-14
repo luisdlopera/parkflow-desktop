@@ -10,7 +10,13 @@ vi.mock("@/lib/onboarding-api", () => ({
     onboardingCompleted: false,
     currentStep: 1,
     skipped: false,
-    progressData: {},
+    progressData: {
+      step_1: { vehicleTypes: ["CAR"] },
+      step_2: { totalCapacity: 10 },
+      step_3: { baseValue: 1000 },
+      step_4: { countryCode: "CO" },
+      step_6: { paymentMethods: ["CASH"] },
+    },
     availableOptionsByPlan: { allowMultiLocation: false, allowAdvancedPermissions: false }
   })),
   saveOnboardingStep: vi.fn(async () => ({
@@ -19,7 +25,13 @@ vi.mock("@/lib/onboarding-api", () => ({
     onboardingCompleted: false,
     currentStep: 2,
     skipped: false,
-    progressData: {},
+    progressData: {
+      step_1: { vehicleTypes: ["CAR"] },
+      step_2: { totalCapacity: 10 },
+      step_3: { baseValue: 1000 },
+      step_4: { countryCode: "CO" },
+      step_6: { paymentMethods: ["CASH"] },
+    },
     availableOptionsByPlan: { allowMultiLocation: false, allowAdvancedPermissions: false }
   })),
   skipOnboarding: vi.fn(async () => ({})),

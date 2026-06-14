@@ -5,7 +5,6 @@ import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import org.springframework.data.domain.Pageable;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,9 +15,9 @@ public interface ParkingSessionPort {
   default long countByRate_Id(UUID rateId) {
     return countByRate_IdAndCompanyId(rateId, null);
   }
-  List<ParkingSession> findActiveWithAssociations(SessionStatus status, UUID companyId, Pageable pageable);
+  org.springframework.data.domain.Page<ParkingSession> findActiveWithAssociations(SessionStatus status, UUID companyId, Pageable pageable);
 
-  default List<ParkingSession> findActiveWithAssociations(SessionStatus status, UUID companyId) {
+  default org.springframework.data.domain.Page<ParkingSession> findActiveWithAssociations(SessionStatus status, UUID companyId) {
     return findActiveWithAssociations(status, companyId, org.springframework.data.domain.PageRequest.of(0, 1000));
   }
   Optional<ParkingSession> findByStatusAndVehicle_PlateAndCompanyId(SessionStatus status, String plate, UUID companyId);
@@ -49,7 +48,7 @@ public interface ParkingSessionPort {
   }
   long countSyncPending(UUID companyId);
 
-  List<ParkingSession> searchByPlateOrTicket(String query, UUID companyId, Pageable pageable);
+  org.springframework.data.domain.Page<ParkingSession> searchByPlateOrTicket(String query, UUID companyId, Pageable pageable);
   
   ParkingSession save(ParkingSession session);
   Optional<ParkingSession> findById(UUID id);
