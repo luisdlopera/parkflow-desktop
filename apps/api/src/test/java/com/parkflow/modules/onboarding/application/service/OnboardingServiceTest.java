@@ -2,6 +2,7 @@ package com.parkflow.modules.onboarding.application.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -16,6 +17,7 @@ import com.parkflow.modules.onboarding.domain.repository.CompanySettingsSnapshot
 import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.configuration.service.OperationalConfigurationService;
 import com.parkflow.modules.auth.security.AuthPrincipal;
+import com.parkflow.modules.common.exception.OperationException;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -112,5 +114,91 @@ class OnboardingServiceTest {
     verify(companySettingsService, times(1)).upsertSettings(eq(company), anyMap());
     assertTrue(company.getOnboardingCompleted());
     verify(companyRepository, times(2)).save(company);
+  }
+
+  @Test
+  void saveStep_rejectsMotorcycleWithoutHelmetHandling() {
+    OnboardingProgress progress = new OnboardingProgress();
+    progress.setCompany(company);
+    progress.setCurrentStep(1);
+    progress.setProgressData(new LinkedHashMap<>());
+    when(onboardingProgressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
+
+    Map<String, Object> data = Map.of(
+        "vehicleTypes", java.util.List.of("MOTORCYCLE"),
+        "operationalProfile", "MOTORCYCLE_ONLY");
+
+    assertThrows(OperationException.class, () -> onboardingService.saveOnboardingStep(companyId, 1, data, null));
+  }
+
+  @Test
+  void saveStep_rejectsTokensWithoutLockerCount() {
+    OnboardingProgress progress = new OnboardingProgress();
+    progress.setCompany(company);
+    progress.setCurrentStep(1);
+    progress.setProgressData(new LinkedHashMap<>());
+    when(onboardingProgressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
+
+    Map<String, Object> data = Map.of(
+        "vehicleTypes", java.util.List.of("MOTORCYCLE"),
+        "operationalProfile", "MOTORCYCLE_ONLY",
+        "helmetHandling", "TOKENS");
+
+    assertThrows(OperationException.class, () -> onboardingService.saveOnboardingStep(companyId, 1, data, null));
+  }
+
+  @Test
+  void saveStep_acceptsMotorcycleWithTokensAndCount() {
+    OnboardingProgress progress = new OnboardingProgress();
+    progress.setCompany(company);
+    progress.setCurrentStep(1);
+    progress.setProgressData(new LinkedHashMap<>());
+    when(onboardingProgressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
+
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("vehicleTypes", java.util.List.of("MOTORCYCLE"));
+    data.put("operationalProfile", "MOTORCYCLE_ONLY");
+    data.put("helmetHandling", "TOKENS");
+    data.put("helmetLockerCount", 25);
+
+    OnboardingStatusResponse response = onboardingService.saveOnboardingStep(companyId, 1, data, null);
+
+    assertEquals(2, response.currentStep());
+    @SuppressWarnings("unchecked")
+    Map<String, Object> step1 = (Map<String, Object>) response.progressData().get("step_1");
+    assertNotNull(step1);
+    assertEquals("TOKENS", step1.get("helmetHandling"));
+    assertEquals(25, step1.get("helmetLockerCount"));
+  }
+
+  @Test
+  void completeOnboarding_usesHelmetConfigFromStep1() {
+    OnboardingProgress progress = new OnboardingProgress();
+    progress.setCompany(company);
+    progress.setCurrentStep(12);
+    progress.setCompleted(false);
+    Map<String, Object> progressData = new LinkedHashMap<>();
+    progressData.put("step_1", Map.of(
+        "vehicleTypes", java.util.List.of("MOTORCYCLE"),
+        "operationalProfile", "MOTORCYCLE_ONLY",
+        "helmetHandling", "TOKENS",
+        "helmetLockerCount", 30));
+    progressData.put("step_2", Map.of("totalCapacity", 50));
+    progressData.put("step_3", Map.of("baseValue", 2000));
+    progressData.put("step_4", Map.of("countryCode", "CO"));
+    progressData.put("step_6", Map.of("paymentMethods", java.util.List.of("EFECTIVO")));
+    progress.setProgressData(progressData);
+    when(onboardingProgressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
+
+    onboardingService.completeOnboarding(companyId);
+
+    verify(companySettingsService, times(1)).upsertSettings(eq(company), argThat(settings -> {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> operationConfiguration = (Map<String, Object>) settings.get("operationConfiguration");
+      return Boolean.TRUE.equals(operationConfiguration.get("enableCustodiedItem"))
+          && Boolean.TRUE.equals(operationConfiguration.get("usesHelmetTokens"))
+          && Integer.valueOf(30).equals(operationConfiguration.get("helmetLockerCount"));
+    }));
+    assertTrue(company.getOnboardingCompleted());
   }
 }

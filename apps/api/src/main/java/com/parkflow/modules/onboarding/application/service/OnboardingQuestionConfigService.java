@@ -18,7 +18,7 @@ public class OnboardingQuestionConfigService {
   private final OnboardingQuestionConfigMapper mapper;
 
   private static final List<OnboardingQuestionConfigDto> DEFAULT_QUESTIONS = List.of(
-      new OnboardingQuestionConfigDto(null, 1, "Tipos de vehículo", "Selecciona los tipos de vehículos que recibe tu parqueadero", true, true, false),
+      new OnboardingQuestionConfigDto(null, 1, "Tipos de vehículo", "Selecciona los tipos de vehículos que recibe tu parqueadero y la custodia de cascos para motos", true, true, false),
       new OnboardingQuestionConfigDto(null, 2, "Capacidad", "Configura la capacidad total y por tipo de vehículo", true, true, false),
       new OnboardingQuestionConfigDto(null, 3, "Tarifas", "Configura el valor base y tarifas específicas por tipo", true, true, false),
       new OnboardingQuestionConfigDto(null, 4, "Configuración regional", "País, formato de placa y prefijo", true, true, false),

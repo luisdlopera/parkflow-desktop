@@ -106,6 +106,7 @@ public class OnboardingSettingsMapper {
     tickets.put("printerType", String.valueOf(step7.getOrDefault("printerType", "NONE")));
     tickets.put("printerName", String.valueOf(step7.getOrDefault("printerName", "")));
     tickets.put("thermalPrinter", "THERMAL".equals(step7.get("printerType")));
+    tickets.put("ticketPrefix", String.valueOf(step7.getOrDefault("ticketPrefix", "T-")));
 
     Map<String, Object> shifts = new LinkedHashMap<>();
     shifts.put("enabled", Boolean.TRUE.equals(step5.get("enabled")));
@@ -120,12 +121,18 @@ public class OnboardingSettingsMapper {
     agreements.put("enabled", Boolean.TRUE.equals(step9.get("enabled")));
     agreements.put("discount", extractNumber(step9.get("agreementDiscount"), 0));
 
-    boolean enableHelmet = vehicleTypes.contains("MOTORCYCLE") && Boolean.TRUE.equals(step8.get("enableHelmetSection"));
+    Map<String, Object> helmetConfig = resolveHelmetConfig(step1, step8);
+    boolean enableHelmet = Boolean.TRUE.equals(helmetConfig.get("enableHelmetSection"));
+    boolean usesHelmetTokens = "TOKENS".equals(String.valueOf(helmetConfig.get("helmetHandling")));
 
     Map<String, Object> operationConfiguration = new LinkedHashMap<>();
     operationConfiguration.put("defaultVehicleType", vehicleTypes.isEmpty() ? "CAR" : vehicleTypes.get(0));
     operationConfiguration.put("defaultVisitorType", "VISITOR");
     operationConfiguration.put("enableCustodiedItem", enableHelmet);
+    operationConfiguration.put("enableHelmetSection", enableHelmet);
+    operationConfiguration.put("helmetHandling", String.valueOf(helmetConfig.getOrDefault("helmetHandling", "NONE")));
+    operationConfiguration.put("usesHelmetTokens", usesHelmetTokens);
+    operationConfiguration.put("helmetLockerCount", extractNumber(helmetConfig.get("helmetLockerCount"), 0));
     operationConfiguration.put("showAdvancedSection", Boolean.TRUE.equals(step11.get("advanced")));
     operationConfiguration.put("countryCode", String.valueOf(step4.getOrDefault("countryCode", "CO")));
     operationConfiguration.put("platePrefix", String.valueOf(step4.getOrDefault("platePrefix", "")));
@@ -175,6 +182,7 @@ public class OnboardingSettingsMapper {
     tickets.put("printerType", "NONE");
     tickets.put("printerName", "");
     tickets.put("thermalPrinter", false);
+    tickets.put("ticketPrefix", "T-");
 
     Map<String, Object> shifts = new LinkedHashMap<>();
     shifts.put("enabled", false);
@@ -186,7 +194,11 @@ public class OnboardingSettingsMapper {
     Map<String, Object> operationConfiguration = new LinkedHashMap<>();
     operationConfiguration.put("defaultVehicleType", "CAR");
     operationConfiguration.put("defaultVisitorType", "VISITOR");
-    operationConfiguration.put("enableCustodiedItem", true);
+    operationConfiguration.put("enableCustodiedItem", false);
+    operationConfiguration.put("enableHelmetSection", false);
+    operationConfiguration.put("helmetHandling", "NONE");
+    operationConfiguration.put("usesHelmetTokens", false);
+    operationConfiguration.put("helmetLockerCount", 0);
     operationConfiguration.put("showAdvancedSection", false);
     operationConfiguration.put("countryCode", "CO");
     operationConfiguration.put("platePrefix", "");
@@ -223,6 +235,43 @@ public class OnboardingSettingsMapper {
       return out;
     }
     return Map.of();
+  }
+
+  /**
+   * Resuelve la configuración de cascos preferentemente desde el paso 1 (tipos de vehículo).
+   * Mantiene retrocompatibilidad con onboards en curso que aún tengan la configuración en el paso 8.
+   */
+  public Map<String, Object> resolveHelmetConfig(Map<String, Object> step1, Map<String, Object> step8) {
+    Map<String, Object> primary = step1;
+    Map<String, Object> fallback = step8;
+
+    String primaryHandling = String.valueOf(primary.getOrDefault("helmetHandling", ""));
+    String fallbackHandling = String.valueOf(fallback.getOrDefault("helmetHandling", ""));
+    boolean primaryHasConfig = !primaryHandling.isBlank();
+    boolean fallbackHasConfig = !fallbackHandling.isBlank();
+
+    // Preferir datos del paso 1 si existen; de lo contrario, intentar migrar legacy desde paso 8.
+    Map<String, Object> source;
+    if (primaryHasConfig) {
+      source = primary;
+    } else if (fallbackHasConfig) {
+      source = fallback;
+    } else {
+      // Legacy: antes helmetSection vivía solo en step8 bajo enableHelmetSection.
+      source = fallback;
+    }
+
+    String handling = String.valueOf(source.getOrDefault("helmetHandling", ""));
+    if (handling.isBlank()) {
+      boolean legacyEnabled = Boolean.TRUE.equals(source.get("enableHelmetSection"));
+      handling = legacyEnabled ? "TOKENS" : "NONE";
+    }
+
+    Map<String, Object> result = new LinkedHashMap<>();
+    result.put("helmetHandling", handling);
+    result.put("enableHelmetSection", !"NONE".equals(handling));
+    result.put("helmetLockerCount", extractNumber(source.get("helmetLockerCount"), 0));
+    return result;
   }
 
   public String mapVehicleTypeCode(String raw) {
@@ -289,7 +338,7 @@ public class OnboardingSettingsMapper {
     return OperationalProfile.MIXED;
   }
 
-  private int extractNumber(Object raw, int fallback) {
+  public int extractNumber(Object raw, int fallback) {
     if (raw instanceof Number n) return n.intValue();
     if (raw instanceof String s) {
       try {
