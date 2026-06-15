@@ -49,6 +49,7 @@ public class CashMovementManagementService implements CashMovementUseCase {
     private final CashDomainAuditService cashDomainAuditService;
     private final AuthAuditService authAuditService;
     private final CashPolicyResolver cashPolicyResolver;
+    private final CashLedgerSummaryCalculator cashLedgerSummaryCalculator;
 
     @Override
     @Transactional
@@ -68,13 +69,13 @@ public class CashMovementManagementService implements CashMovementUseCase {
             && !StringUtils.hasText(request.reason())) {
             throw new OperationException(HttpStatus.BAD_REQUEST, "Motivo obligatorio para este movimiento");
         }
-        if (request.type() == CashMovementType.ADJUSTMENT) {
+        if (request.type() == CashMovementType.ADJUSTMENT || request.type() == CashMovementType.CUSTOMER_REFUND) {
             UserRole role = SecurityUtils.requireUserRole();
             if (request.amount().compareTo(MAX_CASHIER_ADJUST) > 0
                 && role != UserRole.ADMIN
                 && role != UserRole.SUPER_ADMIN) {
                 throw new OperationException(
-                    HttpStatus.FORBIDDEN, "Ajuste elevado: requiere perfil administrador");
+                    HttpStatus.FORBIDDEN, "Monto elevado (" + request.type() + "): requiere perfil administrador");
             }
         }
 
@@ -207,7 +208,8 @@ public class CashMovementManagementService implements CashMovementUseCase {
         offset.setCashSession(session);
         offset.setMovementType(CashMovementType.VOID_OFFSET);
         offset.setPaymentMethod(m.getPaymentMethod());
-        offset.setAmount(m.getAmount().negate());
+        BigDecimal originalImpact = cashLedgerSummaryCalculator.ledgerContribution(m);
+        offset.setAmount(originalImpact.negate());
         offset.setReason("Anulacion: " + request.reason());
         offset.setMetadata("{\"voidOf\":\"" + m.getId() + "\"}");
         offset.setCreatedBy(actor);
@@ -319,7 +321,7 @@ public class CashMovementManagementService implements CashMovementUseCase {
         String key =
             StringUtils.hasText(idempotencyKey)
                 ? "parkpay:" + idempotencyKey.trim()
-                : "parkpay:sess:" + parkingSession.getId();
+                : "parkpay:sess:" + parkingSession.getId() + ":pay:" + payment.getId();
         if (cashMovementRepository.findByIdempotencyKey(key).isPresent()) {
             return;
         }
