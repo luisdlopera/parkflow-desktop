@@ -1157,7 +1157,7 @@ VALUES ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-0000000
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO app_user (id, company_id, name, email, role, password_hash, is_active, can_void_tickets, can_reprint_tickets, can_close_cash, require_password_change)
-VALUES ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'Administrador', 'admin@parkflow.local', 'SUPER_ADMIN', '$2b$12$bU4bjxtQIMHP/us3972HTuIz.OM2128W34BtysTTH1AeqjInkGcRe', TRUE, TRUE, TRUE, TRUE, FALSE)
+VALUES ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'Administrador', 'admin@parkflow.local', 'SUPER_ADMIN', '!INVALID_HASH_PLEASE_CHANGE!', TRUE, TRUE, TRUE, TRUE, TRUE)
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO master_vehicle_type (code, name, icon, color, is_active, requires_plate, has_own_rate, quick_access, requires_photo, display_order) VALUES
