@@ -212,6 +212,42 @@ async function handleOfflineExit(
   return false;
 }
 
+function buildExitRequestBody(
+  user: any,
+  active: ActiveLookup,
+  paymentMethod: PaymentMethodCode,
+  cashSessionId: string | null,
+  paymentObservationValue: string | null,
+  vehicleCondition: string,
+  conditionChecklist: string,
+  conditionPhotoUrls: string,
+  agreementCode: string,
+  pendingCustodiedItems: CustodiedItemInfo[],
+  returnConfirmedIds: string[],
+  idempotencyKey: string
+) {
+  return validatePayloadOrThrow(operationExitRequestSchema, {
+    idempotencyKey,
+    ticketNumber: active.receipt.ticketNumber,
+    operatorUserId: user.id,
+    paymentMethod,
+    cashSessionId,
+    observations: paymentObservationValue,
+    vehicleCondition,
+    conditionChecklist: conditionChecklist
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    conditionPhotoUrls: conditionPhotoUrls
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    agreementCode: agreementCode.trim() || null,
+    returnedItemIds: pendingCustodiedItems.length > 0 ? returnConfirmedIds : undefined,
+    custodiedItemObservations: pendingCustodiedItems.length > 0 ? "Devuelto en salida" : null
+  });
+}
+
 export default function SalidaCobroPage() {
   const searchParams = useSearchParams();
   const initialTicketNumber = searchParams?.get("ticketNumber")?.trim() ?? "";
@@ -257,7 +293,7 @@ export default function SalidaCobroPage() {
       if (!config?.paymentMethods) return PAYMENT_METHODS;
       return PAYMENT_METHODS.filter((m) => config.paymentMethods!.includes(m.code));
     },
-    [config?.paymentMethods]
+    [config]
   );
   const firstMethod = availablePaymentMethods[0]?.code ?? ("CASH" as PaymentMethodCode);
   const secondMethod = availablePaymentMethods[1]?.code ?? firstMethod;
@@ -345,7 +381,7 @@ export default function SalidaCobroPage() {
       const payload = await response.json();
       if (!response.ok) {
         setActive(null);
-        setError(payload.error ?? "No se encontro sesion activa");
+        setError(payload?.userMessage ?? payload?.error ?? "No se encontro sesion activa");
         playError();
         return;
       }
@@ -443,26 +479,20 @@ export default function SalidaCobroPage() {
         total: totalDue
       });
       const idempotencyKey = getOrCreateIdempotencyKey("exit", idempotencyFingerprint);
-      const requestBody = validatePayloadOrThrow(operationExitRequestSchema, {
-        idempotencyKey,
-        ticketNumber: active.receipt.ticketNumber,
-        operatorUserId: user.id,
+      const requestBody = buildExitRequestBody(
+        user,
+        active,
         paymentMethod,
         cashSessionId,
-        observations: paymentObservation(paymentMethod),
+        paymentObservation(paymentMethod),
         vehicleCondition,
-        conditionChecklist: conditionChecklist
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-        conditionPhotoUrls: conditionPhotoUrls
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-        agreementCode: agreementCode.trim() || null,
-        returnedItemIds: pendingCustodiedItems.length > 0 ? returnConfirmedIds : undefined,
-        custodiedItemObservations: pendingCustodiedItems.length > 0 ? "Devuelto en salida" : null
-      });
+        conditionChecklist,
+        conditionPhotoUrls,
+        agreementCode,
+        pendingCustodiedItems,
+        returnConfirmedIds,
+        idempotencyKey
+      );
 
       const response = await fetch(`${apiBase}/exits`, {
         method: "POST",
@@ -471,7 +501,7 @@ export default function SalidaCobroPage() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        let errMsg = typeof payload.error === "string" ? payload.error : "No se pudo registrar la salida";
+        let errMsg = payload?.userMessage ?? (typeof payload.error === "string" ? payload.error : null) ?? "No se pudo registrar la salida";
         if (/caja/i.test(errMsg)) {
           try {
             const site = active.receipt.site ?? undefined;
@@ -550,7 +580,7 @@ export default function SalidaCobroPage() {
       setProcessing(false);
       operationLock.current = false;
     }
-  }, [active, apiBase, selectedPaymentMethod, splitPayments, splitTotal, totalDue, singleCashReceived, paymentObservation, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, playSuccess, playError, toastError, pendingCustodiedItems.length, returnConfirmedIds]);
+  }, [active, apiBase, selectedPaymentMethod, splitPayments, splitTotal, totalDue, singleCashReceived, paymentObservation, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, playSuccess, playError, toastError, pendingCustodiedItems, returnConfirmedIds]);
 
   // Keyboard shortcuts - definido después de processExit
   useExitShortcuts({
@@ -596,7 +626,7 @@ export default function SalidaCobroPage() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        setError(payload.error ?? "No se pudo reimprimir");
+        setError(payload?.userMessage ?? payload?.error ?? "No se pudo reimprimir");
         return;
       }
 
@@ -692,7 +722,7 @@ export default function SalidaCobroPage() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        setError(payload.error ?? "No se pudo procesar ticket perdido");
+        setError(payload?.userMessage ?? payload?.error ?? "No se pudo procesar ticket perdido");
         playError();
         return;
       }
@@ -1030,42 +1060,6 @@ export default function SalidaCobroPage() {
               ? `; con sesión activa use 1 (${availablePaymentMethods[0].label.toLowerCase()})${availablePaymentMethods.length > 1 ? ` o 2 (${availablePaymentMethods[1].label.toLowerCase()})` : ""}.`
               : "."}
           </p>
-
-          {/* Botones de cobro dinámicos según selección de onboarding */}
-          {availablePaymentMethods.slice(0, 2).length > 0 && (
-            <div className="mt-4 space-y-3">
-              {availablePaymentMethods.slice(0, 2).map((method, index) => (
-                <button
-                  key={method.code}
-                  type="button"
-                  data-testid={`payment-${method.code.toLowerCase()}`}
-                  disabled={!active || searching || processing}
-                  onClick={() => processExit(method.code)}
-                  className={`
-                    w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
-                    flex items-center gap-3
-                    ${active && !processing
-                      ? `${method.tone} text-white`
-                      : "bg-slate-200 text-slate-400 cursor-not-allowed"}
-                  `}
-                >
-                  <div className={`
-                    w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
-                    ${active && !processing ? "bg-white/20" : "bg-slate-300"}
-                  `}>
-                    {index + 1}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-lg">{method.label}</div>
-                    <div className="text-xs opacity-80 font-normal">Tecla {index + 1}</div>
-                  </div>
-                  {processing && (
-                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
 
           <div className="mt-4 grid grid-cols-1 gap-2">
             {availablePaymentMethods.map((method, index) => (

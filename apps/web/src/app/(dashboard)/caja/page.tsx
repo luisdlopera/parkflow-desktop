@@ -91,6 +91,24 @@ function friendlyCashError(msg: string): string {
   return msg;
 }
 
+function getStepColor(done: boolean, isCountPending: boolean, index: number): string {
+  if (done) return "bg-emerald-500 text-white";
+  if (isCountPending && index === 2) return "bg-blue-500 text-white";
+  return "bg-slate-200 text-slate-400";
+}
+
+function getDifferenceCardClass(countedTotal: number | null | undefined, difference: number | null | undefined): string {
+  if (countedTotal == null) return "bg-slate-50 border-slate-200 border-dashed";
+  if (difference === 0) return "bg-emerald-50 border-emerald-100";
+  return "bg-amber-50 border-amber-100";
+}
+
+function getPaymentMethodTone(method: string): string {
+  if (method === "CASH") return "success";
+  if (method === "TRANSFER") return "warning";
+  return "neutral";
+}
+
 export default function CajaPage() {
   const [session, setSession] = useState<CashSessionDto | null>(null);
   const [movements, setMovements] = useState<CashMovementDto[]>([]);
@@ -608,13 +626,7 @@ export default function CajaPage() {
                     <div key={step.label} className="flex items-center gap-1 flex-1">
                       <div className="flex flex-col items-center flex-1">
                         <div
-                          className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold ${
-                            step.done
-                              ? "bg-emerald-500 text-white"
-                              : !session.countedAt && i === 2
-                                ? "bg-blue-500 text-white"
-                                : "bg-slate-200 text-slate-400"
-                          }`}
+                          className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold ${getStepColor(step.done, !session.countedAt, i)}`}
                         >
                           {step.done ? "\u2713" : String(i + 1)}
                         </div>
@@ -631,43 +643,43 @@ export default function CajaPage() {
               {summary && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                    <div className="text-[10px] uppercase tracking-wider text-slate-500">
                       Base inicial
                       <Tooltip content="Monto en efectivo con el que se abrió la caja">
                         <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
                       </Tooltip>
-                    </p>
+                    </div>
                     <p className="text-lg font-semibold text-slate-900">${summary.openingAmount.toLocaleString()}</p>
                   </div>
                   <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                    <div className="text-[10px] uppercase tracking-wider text-slate-500">
                       Esperado (Libro)
                       <Tooltip content="Total que debería haber según los movimientos registrados">
                         <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
                       </Tooltip>
-                    </p>
+                    </div>
                     <p className="text-lg font-semibold text-slate-900">${summary.expectedLedgerTotal.toLocaleString()}</p>
                   </div>
                   <div className={`rounded-xl p-3 border ${summary.countedTotal != null ? "bg-blue-50 border-blue-100" : "bg-slate-50 border-slate-200 border-dashed"}`}>
-                    <p className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-blue-600" : "text-slate-400"}`}>
+                    <div className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-blue-600" : "text-slate-400"}`}>
                       Contado
                       <Tooltip content="Efectivo físico contado al realizar el arqueo">
                         <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
                       </Tooltip>
-                    </p>
+                    </div>
                     {summary.countedTotal != null ? (
                       <p className="text-lg font-semibold text-blue-900">${summary.countedTotal.toLocaleString()}</p>
                     ) : (
                       <p className="text-lg font-semibold text-slate-400 italic">Pendiente</p>
                     )}
                   </div>
-                  <div className={`rounded-xl p-3 border ${summary.countedTotal != null ? (summary.difference === 0 ? "bg-emerald-50 border-emerald-100" : "bg-amber-50 border-amber-100") : "bg-slate-50 border-slate-200 border-dashed"}`}>
-                    <p className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-slate-500" : "text-slate-400"}`}>
+                  <div className={`rounded-xl p-3 border ${getDifferenceCardClass(summary.countedTotal, summary.difference)}`}>
+                    <div className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-slate-500" : "text-slate-400"}`}>
                       Diferencia
                       <Tooltip content={summary.countedTotal != null ? `Contado − Esperado = ${summary.countedTotal.toLocaleString()} − ${summary.expectedLedgerTotal.toLocaleString()}` : "Realiza el arqueo para ver la diferencia"}>
                         <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
                       </Tooltip>
-                    </p>
+                    </div>
                     {summary.countedTotal != null ? (
                       <p className={`text-lg font-semibold ${summary.difference === 0 ? "text-emerald-700" : "text-amber-700"}`}>
                         ${(summary.difference ?? 0).toLocaleString()}
@@ -687,7 +699,7 @@ export default function CajaPage() {
                       <Badge 
                         key={method} 
                         label={`${method}: $${amount.toLocaleString()}`} 
-                        tone={method === "CASH" ? "success" : method === "TRANSFER" ? "warning" : "neutral"}
+                        tone={getPaymentMethodTone(method)}
                       />
                     ))}
                   </div>
@@ -971,7 +983,7 @@ export default function CajaPage() {
         </div>
       ) : null}
 
-      {session?.status === "OPEN" && canClose ? (
+      {session?.status === "OPEN" ? (
         <div className="surface rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Arqueo</h2>
           <p className="mt-2 text-sm text-slate-600">
@@ -1042,55 +1054,63 @@ export default function CajaPage() {
             </Button>
           </div>
 
-          <h3 className="mt-10 text-base font-semibold text-slate-900">Cierre</h3>
-          <p className="mt-2 text-xs text-slate-500">
-            El usuario que ejecuta el cierre queda registrado en el sistema. Opcionalmente indique nombre
-            para constancia física de testigo o supervisor.
-          </p>
-          <div className="mt-4">
-            <TextArea
-              label="Notas de cierre"
-              placeholder="Obligatorias si hay diferencia..."
-              
-              value={closeNotes}
-              onChange={(e) => setCloseNotes(e.target.value)}
-            />
-          </div>
-          <div className="mt-4">
-            <Input
-              label="Testigo / responsable firma (opcional)"
-              placeholder="Nombre legible..."
-              
-              value={closingWitness}
-              onChange={(e) => setClosingWitness(e.target.value)}
-            />
-          </div>
-          {session && !session.countedAt ? (
-            <p className="mt-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 border border-amber-200">
-              ⚠ Debe realizar el arqueo (ingresar valores de conteo y guardar) antes de poder cerrar la caja.
+          {canClose ? (
+            <>
+              <h3 className="mt-10 text-base font-semibold text-slate-900">Cierre</h3>
+              <p className="mt-2 text-xs text-slate-500">
+                El usuario que ejecuta el cierre queda registrado en el sistema. Opcionalmente indique nombre
+                para constancia física de testigo o supervisor.
+              </p>
+              <div className="mt-4">
+                <TextArea
+                  label="Notas de cierre"
+                  placeholder="Obligatorias si hay diferencia..."
+                  
+                  value={closeNotes}
+                  onChange={(e) => setCloseNotes(e.target.value)}
+                />
+              </div>
+              <div className="mt-4">
+                <Input
+                  label="Testigo / responsable firma (opcional)"
+                  placeholder="Nombre legible..."
+                  
+                  value={closingWitness}
+                  onChange={(e) => setClosingWitness(e.target.value)}
+                />
+              </div>
+              {session && !session.countedAt ? (
+                <p className="mt-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 border border-amber-200">
+                  ⚠ Debe realizar el arqueo (ingresar valores de conteo y guardar) antes de poder cerrar la caja.
+                </p>
+              ) : null}
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <Button 
+                  color="danger" 
+                  variant="tertiary" 
+                  className="flex-1 font-bold"
+                  isDisabled={busy || !session?.countedAt} 
+                  isLoading={busy}
+                  onPress={() => { onClose().catch(console.error); }}
+                >
+                  Cerrar caja (Fin turno)
+                </Button>
+                <Button
+                  color="primary"
+                  variant="tertiary"
+                  className="flex-1 font-bold"
+                  isDisabled={busy || !session.countedAt}
+                  onPress={() => setShowShiftChangeModal(true)}
+                >
+                  Cambio de turno
+                </Button>
+              </div>
+            </>
+          ) : (
+            <p className="mt-6 text-xs text-slate-500 italic">
+              No tienes permiso para cerrar la caja. Solicita el permiso <strong>cierres_caja:cerrar</strong>.
             </p>
-          ) : null}
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button 
-              color="danger" 
-              variant="tertiary" 
-              className="flex-1 font-bold"
-              isDisabled={busy || !session?.countedAt} 
-              isLoading={busy}
-              onPress={() => { onClose().catch(console.error); }}
-            >
-              Cerrar caja (Fin turno)
-            </Button>
-            <Button
-              color="primary"
-              variant="tertiary"
-              className="flex-1 font-bold"
-              isDisabled={busy || !session.countedAt}
-              onPress={() => setShowShiftChangeModal(true)}
-            >
-              Cambio de turno
-            </Button>
-          </div>
+          )}
         </div>
       ) : null}
 

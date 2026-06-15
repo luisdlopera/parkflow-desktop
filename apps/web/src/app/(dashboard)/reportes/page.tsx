@@ -109,6 +109,12 @@ function pmLabel(k: string): string {
   return pmLabels[upper] ?? k;
 }
 
+function getOccupancyColor(percentage: number): "danger" | "warning" | "success" {
+  if (percentage > 80) return "danger";
+  if (percentage > 50) return "warning";
+  return "success";
+}
+
 function toCsv(headers: string[], rows: string[][], filename: string) {
   const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(","))].join("\n");
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
@@ -632,7 +638,7 @@ export default function ReportesPage() {
             <Progress
               aria-label="Ocupación"
               value={occupancy.occupancyPercentage}
-              color={occupancy.occupancyPercentage > 80 ? "danger" : occupancy.occupancyPercentage > 50 ? "warning" : "success"}
+              color={getOccupancyColor(occupancy.occupancyPercentage)}
               className="h-4"
             />
             {occupancy.byVehicleType.length > 0 && (

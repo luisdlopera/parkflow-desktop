@@ -9,6 +9,7 @@ import { useTerminalCaja } from "@/hooks/useTerminalCaja";
 import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
 import { fetchHelmetTokens, type HelmetTokenDto } from "@/services/helmet-tokens.service";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, Eye, MoreVertical, Edit, Printer, LogOut, CheckCircle } from "lucide-react";
 import { GetActiveSessionsQuery, ActiveSessionDto } from "@/services/sessions.service";
 import {
@@ -30,12 +31,14 @@ export default function VehiculosActivosPage() {
   });
 
   const { rows, meta, summary, loading, error, reload } = useActiveSessions(params);
-  const { cajaOpen } = useTerminalCaja();
+  const { caja, requireOpenForPayment } = useTerminalCaja();
   const { runtimeConfig } = useTenantConfig();
   const [ticketPreview, setTicketPreview] = useState<ActiveSessionDto | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set());
   const [helmetTokens, setHelmetTokens] = useState<HelmetTokenDto[]>([]);
   const [helmetTokensLoading, setHelmetTokensLoading] = useState(false);
+
+  const router = useRouter();
 
   const [precalculation, setPrecalculation] = useState<BulkExitCalculateResponseDto | null>(null);
   const [finalResult, setFinalResult] = useState<BulkExitResponseDto | null>(null);
@@ -113,8 +116,8 @@ export default function VehiculosActivosPage() {
 
   return (
     <div className="space-y-6">
-      {/* Full-screen modal when cash register is closed */}
-      {cajaOpen === false ? (
+      {/* Full-screen modal when cash register is closed (only if policy requires it) */}
+      {caja.status === "closed" && requireOpenForPayment ? (
         <Modal.Backdrop
           isOpen={true}
           onOpenChange={() => {}}
@@ -147,6 +150,52 @@ export default function VehiculosActivosPage() {
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
+      ) : null}
+      {caja.status === "error" ? (
+        <Modal.Backdrop
+          isOpen={true}
+          onOpenChange={() => {}}
+          isDismissable={false}
+          isKeyboardDismissDisabled
+        >
+          <Modal.Container size="full">
+            <Modal.Dialog className="flex flex-col items-center justify-center text-center py-32">
+              <Modal.Header className="flex-col items-center gap-4">
+                <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center">
+                  <AlertTriangle className="w-10 h-10 text-rose-600" />
+                </div>
+                <Modal.Heading className="text-3xl font-bold text-slate-900">
+                  Error de conexión
+                </Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="max-w-md space-y-3">
+                <p className="text-lg text-slate-600">
+                  {caja.reason === "network"
+                    ? "No se puede conectar con el servidor de caja (puerto 6011). Verifica que el backend esté corriendo."
+                    : caja.reason === "auth"
+                      ? "Tu sesión expiró. Inicia sesión nuevamente para continuar."
+                      : "Ocurrió un error al verificar el estado de la caja. Intenta recargar la página."}
+                </p>
+              </Modal.Body>
+              <Modal.Footer className="flex-col gap-3 w-full max-w-xs">
+                <Button color="primary" onPress={() => window.location.reload()}>
+                  Recargar página
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      ) : null}
+
+      {caja.status === "closed" && !requireOpenForPayment ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p className="font-semibold">Caja no abierta</p>
+          <p className="mt-1">
+            No hay una sesión de caja abierta en este terminal. Puedes operar igualmente, pero los
+            cobros no quedarán asociados a una sesión de caja.{" "}
+            <Link href="/caja" className="underline font-medium">Ir a caja</Link>.
+          </p>
+        </div>
       ) : null}
 
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -425,7 +474,12 @@ export default function VehiculosActivosPage() {
                       aria-label="Acciones de vehículo"
                       onAction={(key) => {
                         if (key === "view") setTicketPreview(row as ActiveSessionDto);
-                        // Handle others here...
+                        if (key === "checkout") {
+                          router.push(`/salida-cobro?ticketNumber=${encodeURIComponent(row.ticketNumber)}`);
+                        }
+                        if (key === "reprint") {
+                          router.push(`/salida-cobro?ticketNumber=${encodeURIComponent(row.ticketNumber)}`);
+                        }
                       }}
                     >
                       <Dropdown.Item id="view" textValue="Ver detalle">
