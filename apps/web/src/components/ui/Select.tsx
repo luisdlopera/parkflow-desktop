@@ -6,7 +6,7 @@ export interface SelectProps extends Omit<HeroSelectProps<any>, "value" | "onCha
   selectedKeys?: any[] | any;
   defaultSelectedKeys?: any[] | any;
   onChange?: (val: any) => void;
-  size?: "sm" | "md" | "lg" | string;
+  size?: "sm" | "md" | "lg" | (string & {});
   label?: React.ReactNode;
   description?: React.ReactNode;
   errorMessage?: React.ReactNode;

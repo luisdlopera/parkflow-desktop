@@ -2,7 +2,7 @@ import React from "react";
 import { Chip as HeroChip, ChipProps as HeroChipProps } from "@heroui/react";
 
 export interface ChipProps extends Omit<HeroChipProps, "color"> {
-  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger" | "accent" | string;
+  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger" | "accent" | (string & {});
 }
 
 export const Chip = React.forwardRef<HTMLDivElement, ChipProps>(

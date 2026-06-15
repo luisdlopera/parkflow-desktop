@@ -3,7 +3,7 @@ import { ProgressBar as HeroProgress, ProgressBarProps as HeroProgressProps } fr
 
 export interface ProgressProps extends Omit<HeroProgressProps, "showValueLabel" | "color"> {
   showValueLabel?: boolean;
-  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger" | "accent" | string;
+  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger" | "accent" | (string & {});
 }
 
 export const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
