@@ -24,6 +24,8 @@ public class OperationController {
   private final ListActiveSessionsUseCase listActiveSessionsUseCase;
   private final FindActiveSessionUseCase findActiveSessionUseCase;
   private final UpdatePlateUseCase updatePlateUseCase;
+  private final BulkExitCalculateUseCase bulkExitCalculateUseCase;
+  private final BulkExitProcessUseCase bulkExitProcessUseCase;
 
   public OperationController(
       SupervisorService supervisorService,
@@ -35,7 +37,9 @@ public class OperationController {
       GetTicketUseCase getTicketUseCase,
       ListActiveSessionsUseCase listActiveSessionsUseCase,
       FindActiveSessionUseCase findActiveSessionUseCase,
-      UpdatePlateUseCase updatePlateUseCase) {
+      UpdatePlateUseCase updatePlateUseCase,
+      BulkExitCalculateUseCase bulkExitCalculateUseCase,
+      BulkExitProcessUseCase bulkExitProcessUseCase) {
     this.supervisorService = supervisorService;
     this.registerEntryUseCase = registerEntryUseCase;
     this.registerExitUseCase = registerExitUseCase;
@@ -46,6 +50,8 @@ public class OperationController {
     this.listActiveSessionsUseCase = listActiveSessionsUseCase;
     this.findActiveSessionUseCase = findActiveSessionUseCase;
     this.updatePlateUseCase = updatePlateUseCase;
+    this.bulkExitCalculateUseCase = bulkExitCalculateUseCase;
+    this.bulkExitProcessUseCase = bulkExitProcessUseCase;
   }
 
   @GetMapping("/supervisor/summary")
@@ -136,5 +142,17 @@ public class OperationController {
   @PreAuthorize("hasAuthority('anulaciones:crear') or hasAuthority('tickets:emitir')")
   public void updatePlate(@PathVariable java.util.UUID id, @Valid @RequestBody UpdatePlateRequest request) {
     updatePlateUseCase.execute(id, request);
+  }
+
+  @PostMapping("/bulk-exits/calculate")
+  @PreAuthorize("hasAuthority('cobros:registrar')")
+  public BulkExitCalculateResponse calculateBulkExit(@Valid @RequestBody BulkExitRequest request) {
+    return bulkExitCalculateUseCase.precalculate(request);
+  }
+
+  @PostMapping("/bulk-exits")
+  @PreAuthorize("hasAuthority('cobros:registrar')")
+  public BulkExitResponse processBulkExit(@Valid @RequestBody BulkExitRequest request) {
+    return bulkExitProcessUseCase.process(request);
   }
 }
