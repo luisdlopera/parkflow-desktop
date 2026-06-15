@@ -57,8 +57,7 @@ public class HelmetTokenService {
   }
 
   @Transactional
-  public List<HelmetTokenResponse> createBatch(BatchHelmetTokenRequest request) {
-    UUID companyId = SecurityUtils.requireCompanyId();
+  public List<HelmetTokenResponse> createBatch(UUID companyId, BatchHelmetTokenRequest request) {
     String prefix = request.prefix() != null ? request.prefix().trim() : "";
     List<HelmetTokenResponse> results = new ArrayList<>();
 
