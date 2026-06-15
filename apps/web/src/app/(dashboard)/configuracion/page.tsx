@@ -56,7 +56,7 @@ import {
 import { resetOnboarding } from "@/lib/onboarding-api";
 import { currentUser, loadSession, saveSession, refreshIfNeeded } from "@/lib/auth";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DropdownTrigger, Dropdown, DropdownMenu, DropdownItem } from "@/components/ui/Dropdown";
+import { Dropdown, DropdownMenu, DropdownItem } from "@/components/ui/Dropdown";
 import { MoreVertical, Pencil, Trash2, Car } from "lucide-react";
 import { VehicleTypeIcon } from "@/components/vehicles/VehicleTypeIcon";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
@@ -130,12 +130,9 @@ function Notice({
   kind: "ok" | "err" | "info";
   text: string;
 }) {
-  const cls =
-    kind === "ok"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-      : kind === "err"
-        ? "border-rose-200 bg-rose-50 text-rose-900"
-        : "border-slate-200 bg-slate-50 text-slate-800";
+  let cls = "border-slate-200 bg-slate-50 text-slate-800";
+  if (kind === "ok") cls = "border-emerald-200 bg-emerald-50 text-emerald-900";
+  else if (kind === "err") cls = "border-rose-200 bg-rose-50 text-rose-900";
   return (
     <div className={`rounded-xl border px-4 py-3 text-sm ${cls}`} role="status">
       {text}

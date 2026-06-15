@@ -5,7 +5,7 @@ import { useState, useCallback, useMemo } from "react";
 import { Skeleton, useOverlayState, AlertDialog, Button as HeroButton } from "@heroui/react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Chip } from "@/components/ui/Chip";
-import { DropdownTrigger } from "@/components/ui/Dropdown";
+
 import { Dropdown } from "@/components/ui/Dropdown";
 import { DropdownMenu } from "@/components/ui/Dropdown";
 import { DropdownItem } from "@/components/ui/Dropdown";
