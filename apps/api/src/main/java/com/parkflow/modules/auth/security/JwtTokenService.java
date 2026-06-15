@@ -25,7 +25,12 @@ public class JwtTokenService {
       @Value("${app.security.access-token-ttl-minutes:15}") long accessTokenTtlMinutes,
       @Value("${app.security.refresh-token-ttl-days:7}") long refreshTokenTtlDays,
       @Value("${app.security.jwt-clock-skew-seconds:30}") long clockSkewSeconds) {
-    byte[] bytes = Decoders.BASE64.decode(jwtSecret);
+    byte[] bytes;
+    try {
+      bytes = Decoders.BASE64URL.decode(jwtSecret);
+    } catch (Exception e) {
+      bytes = Decoders.BASE64.decode(jwtSecret);
+    }
     this.key = Keys.hmacShaKeyFor(bytes);
     this.accessTtl = Duration.ofMinutes(Math.max(5, accessTokenTtlMinutes));
     this.refreshTtl = Duration.ofDays(Math.max(1, refreshTokenTtlDays));
