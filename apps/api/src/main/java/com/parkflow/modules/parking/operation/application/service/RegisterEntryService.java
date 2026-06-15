@@ -6,8 +6,13 @@ import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPor
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.settings.domain.MasterVehicleType;
+import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
+import com.parkflow.modules.licensing.domain.Company;
+import com.parkflow.modules.licensing.domain.repository.CompanyPort;
+import com.parkflow.modules.onboarding.application.service.CompanySettingsService;
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import com.parkflow.modules.parking.operation.application.port.in.RegisterEntryUseCase;
 import com.parkflow.modules.parking.operation.domain.*;
@@ -56,6 +61,9 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private final HelmetLockerPort helmetLockerPort;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
+  private final MasterVehicleTypePort masterVehicleTypePort;
+  private final CompanyPort companyRepository;
+  private final CompanySettingsService companySettingsService;
 
   @Override
   @Transactional
@@ -69,13 +77,23 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     boolean noPlateEntry = Boolean.TRUE.equals(request.noPlate());
     UUID companyId = SecurityUtils.requireCompanyId();
 
-    log.info("registerEntry: plate={} type={} site={} idempotencyKey={}",
-        rawPlate, vehicleType, site, idempotencyKey);
+    String correlationId = org.slf4j.MDC.get(com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
+    log.info("registerEntry: plate={} type={} site={} idempotencyKey={} correlationId={}",
+        rawPlate, vehicleType, site, idempotencyKey, correlationId);
 
     Optional<OperationResultResponse> replay =
         tryReplay(idempotencyKey, IdempotentOperationType.ENTRY);
     if (replay.isPresent()) {
       return replay.get();
+    }
+
+    MasterVehicleType vehicleTypeConfig = masterVehicleTypePort.findByCode(vehicleType)
+        .orElseThrow(() -> new OperationException(HttpStatus.BAD_REQUEST, "Tipo de vehículo no existe"));
+    if (!vehicleTypeConfig.isActive()) {
+      throw new OperationException(HttpStatus.BAD_REQUEST, "Tipo de vehículo está inactivo");
+    }
+    if (!noPlateEntry && !vehicleTypeConfig.isRequiresPlate()) {
+      throw new OperationException(HttpStatus.BAD_REQUEST, "El tipo de vehículo no admite placa");
     }
 
     String normalizedPlate;
@@ -191,21 +209,37 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   }
 
   private AppUser findRequiredOperator(UUID userId) {
+    AppUser operator;
     if (userId == null) {
-      return appUserRepository.findGlobalByEmail("system@parkflow.local")
+      operator = appUserRepository.findGlobalByEmail("system@parkflow.local")
           .orElseThrow(() -> new OperationException(HttpStatus.INTERNAL_SERVER_ERROR, "Operador de sistema no encontrado"));
+    } else {
+      operator = appUserRepository.findById(userId)
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
     }
-    return appUserRepository.findById(userId)
-        .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
+    if (!operator.isActive()) {
+      throw new OperationException(HttpStatus.FORBIDDEN, "Operador inactivo");
+    }
+    UUID companyId = SecurityUtils.requireCompanyId();
+    if (operator.getCompanyId() != null && !operator.getCompanyId().equals(companyId)) {
+      throw new OperationException(HttpStatus.FORBIDDEN, "Operador no pertenece a la empresa");
+    }
+    return operator;
   }
 
   private Rate resolveRate(UUID rateId, String vehicleType, String site, OffsetDateTime entryAt, UUID companyId) {
+    Rate rate;
     if (rateId != null) {
-      return rateRepository.findByIdAndCompanyId(rateId, companyId)
+      rate = rateRepository.findByIdAndCompanyId(rateId, companyId)
           .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
+    } else {
+      rate = rateRepository.findFirstApplicableRate(site, vehicleType, companyId)
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "No se encontró tarifa aplicable"));
     }
-    return rateRepository.findFirstApplicableRate(site, vehicleType, companyId)
-        .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "No se encontró tarifa aplicable"));
+    if (!rate.isActive()) {
+      throw new OperationException(HttpStatus.BAD_REQUEST, "Tarifa inactiva");
+    }
+    return rate;
   }
 
   private String nextTicketNumber(LocalDate date, UUID companyId) {
@@ -221,7 +255,35 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     counter.setLastNumber(counter.getLastNumber() + 1);
     counter.setUpdatedAt(OffsetDateTime.now());
     ticketCounterRepository.save(counter);
-    return "T-" + key + "-" + String.format("%06d", counter.getLastNumber());
+    String prefix = resolveTicketPrefix(companyId);
+    return prefix + key + "-" + String.format("%06d", counter.getLastNumber());
+  }
+
+  private String resolveTicketPrefix(UUID companyId) {
+    try {
+      Company company = companyRepository.findById(companyId).orElse(null);
+      if (company == null) {
+        return "T-";
+      }
+      java.util.Map<String, Object> settings = companySettingsService.getSettingsOrDefault(company);
+      Object tickets = settings.get("tickets");
+      if (tickets instanceof java.util.Map<?, ?> ticketsMap) {
+        Object prefix = ticketsMap.get("ticketPrefix");
+        if (prefix != null && !String.valueOf(prefix).isBlank()) {
+          return String.valueOf(prefix);
+        }
+      }
+      Object operationConfiguration = settings.get("operationConfiguration");
+      if (operationConfiguration instanceof java.util.Map<?, ?> opConfigMap) {
+        Object prefix = opConfigMap.get("ticketPrefix");
+        if (prefix != null && !String.valueOf(prefix).isBlank()) {
+          return String.valueOf(prefix);
+        }
+      }
+    } catch (Exception e) {
+      log.warn("Could not resolve ticket prefix for company {}, using default. Reason: {}", companyId, e.getMessage());
+    }
+    return "T-";
   }
 
   private void saveVehicleCondition(ParkingSession session, ConditionStage stage, String observations,

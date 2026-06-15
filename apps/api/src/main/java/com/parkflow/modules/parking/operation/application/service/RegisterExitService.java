@@ -148,6 +148,30 @@ public class RegisterExitService implements RegisterExitUseCase {
         price.total());
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public OperationResultResponse precalculate(ExitRequest request) {
+    UUID companyId = SecurityUtils.requireCompanyId();
+    OffsetDateTime exitAt = request.exitAt() != null ? request.exitAt() : OffsetDateTime.now();
+
+    ParkingSession session = requireActiveSession(request.ticketNumber(), request.plate(), companyId);
+
+    PriceBreakdown price = calculateComplexPrice(session, exitAt, request.agreementCode(), false, true);
+    price = applyCourtesyPricing(session, price, false);
+
+    DurationCalculator.DurationBreakdown duration = DurationCalculator.calculate(session.getEntryAt(), exitAt, 0);
+
+    return new OperationResultResponse(
+        session.getId().toString(),
+        toReceipt(session, duration.totalMinutes(), duration.human()),
+        "Cálculo previo exitoso",
+        price.subtotal(),
+        price.surcharge(),
+        price.discount(),
+        price.deductedMinutes(),
+        price.total());
+  }
+
   // Helper methods moved from OperationService
   
   private PriceBreakdown calculateComplexPrice(
@@ -255,6 +279,18 @@ public class RegisterExitService implements RegisterExitUseCase {
             throw new OperationException(HttpStatus.BAD_REQUEST, "La sede exige foto en salida");
         }
     }
+  }
+
+  private ParkingSession requireActiveSession(String ticketNumber, String plate, UUID companyId) {
+    if (!isBlank(ticketNumber)) {
+      return parkingSessionRepository.findByStatusAndTicketNumberAndCompanyId(SessionStatus.ACTIVE, ticketNumber.trim(), companyId)
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesión activa no encontrada"));
+    }
+    if (!isBlank(plate)) {
+      return parkingSessionRepository.findByStatusAndVehicle_PlateAndCompanyId(SessionStatus.ACTIVE, plate.trim().toUpperCase(), companyId)
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesión activa no encontrada"));
+    }
+    throw new OperationException(HttpStatus.BAD_REQUEST, "ticketNumber o plate es obligatorio");
   }
 
   private ParkingSession requireActiveSessionForUpdate(String ticketNumber, String plate, UUID companyId) {
