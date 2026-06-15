@@ -73,10 +73,10 @@ export function LicenseBanner() {
           </div>
         }
       >
-        <div className="flex items-center gap-2">
+        <span className="flex items-center gap-2">
           <span className="font-semibold">{message}</span>
           <span className="text-sm opacity-80">({label})</span>
-        </div>
+        </span>
       </Alert>
 
       <LicenseActivationDialog
