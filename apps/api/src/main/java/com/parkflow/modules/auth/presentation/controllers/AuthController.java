@@ -55,6 +55,18 @@ public class AuthController {
     authenticationUseCase.logout(request);
   }
 
+  @PostMapping("/logout/all")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void logoutAll() {
+    authenticationUseCase.logoutAll();
+  }
+
+  @PostMapping("/logout/device/{deviceId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void logoutDevice(@PathVariable String deviceId) {
+    authenticationUseCase.logoutDevice(deviceId);
+  }
+
   @GetMapping("/me")
   public AuthUserResponse me() {
     return authenticationUseCase.me();

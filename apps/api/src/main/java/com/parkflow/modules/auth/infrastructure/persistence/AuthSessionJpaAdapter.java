@@ -1,6 +1,7 @@
 package com.parkflow.modules.auth.infrastructure.persistence;
 
 import com.parkflow.modules.auth.domain.AuthSession;
+import com.parkflow.modules.auth.domain.AuthorizedDevice;
 import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
 import com.parkflow.modules.auth.domain.AppUser;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,11 @@ public class AuthSessionJpaAdapter implements AuthSessionPort {
   }
 
   @Override
+  public List<AuthSession> findByDeviceAndActiveTrue(AuthorizedDevice device) {
+    return jpaRepository.findByDeviceAndActiveTrue(device);
+  }
+
+  @Override
   public long deleteByActiveFalseAndCreatedAtBefore(OffsetDateTime before) {
     return jpaRepository.deleteByActiveFalseAndCreatedAtBefore(before);
   }
@@ -75,6 +81,7 @@ public class AuthSessionJpaAdapter implements AuthSessionPort {
     Optional<AuthSession> findByRefreshJtiAndActiveTrue(String refreshJti);
     Optional<AuthSession> findByRefreshTokenHashAndActiveTrue(String refreshTokenHash);
     List<AuthSession> findByUserAndActiveTrue(AppUser user);
+    List<AuthSession> findByDeviceAndActiveTrue(AuthorizedDevice device);
     long deleteByActiveFalseAndCreatedAtBefore(OffsetDateTime before);
     void deleteByUserIn(List<AppUser> users);
   }

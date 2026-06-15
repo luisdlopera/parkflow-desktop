@@ -129,7 +129,58 @@ export async function clearSession(): Promise<void> {
   writeBrowserStorage(null);
 }
 
+export async function logoutFromApi(session: StoredSession): Promise<void> {
+  try {
+    await fetch(`${authBaseUrl()}/logout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": operationsApiKey(),
+        Authorization: `Bearer ${session.accessToken}`
+      },
+      body: JSON.stringify({ sessionId: session.session.sessionId })
+    });
+  } catch {
+    // Best-effort: el backend invalidará la sesión eventualmente.
+  }
+}
+
+export async function logoutAllSessions(): Promise<void> {
+  const session = await loadSession();
+  if (!session) return;
+  try {
+    await fetch(`${authBaseUrl()}/logout/all`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": operationsApiKey(),
+        Authorization: `Bearer ${session.accessToken}`
+      }
+    });
+  } catch {
+    // Best-effort
+  }
+  await clearSession();
+}
+
+export async function logoutDevice(deviceId: string): Promise<void> {
+  const session = await loadSession();
+  if (!session) return;
+  await fetch(`${authBaseUrl()}/logout/device/${encodeURIComponent(deviceId)}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": operationsApiKey(),
+      Authorization: `Bearer ${session.accessToken}`
+    }
+  });
+}
+
 export async function logoutAndRedirectToLogin(reason = "expired"): Promise<void> {
+  const session = await loadSession();
+  if (session) {
+    await logoutFromApi(session);
+  }
   await clearSession();
   if (typeof window === "undefined") {
     return;

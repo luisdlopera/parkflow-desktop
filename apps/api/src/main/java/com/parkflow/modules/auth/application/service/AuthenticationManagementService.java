@@ -256,6 +256,63 @@ public class AuthenticationManagementService implements AuthenticationUseCase {
   }
 
   @Override
+  @Transactional
+  public void logoutAll() {
+    AppUser currentUser = requireCurrentUser();
+    List<AuthSession> sessions = authSessionRepository.findByUserAndActiveTrue(currentUser);
+    OffsetDateTime now = OffsetDateTime.now();
+    int revoked = 0;
+    for (AuthSession session : sessions) {
+      session.setActive(false);
+      session.setRevokedAt(now);
+      authSessionRepository.save(session);
+      revoked++;
+    }
+    log.info("AUTH: Logout all sessions - userId={}, sessionsRevoked={}", currentUser.getId(), revoked);
+    authAuditService.log(AuthAuditAction.LOGOUT_ALL, currentUser, null, "OK",
+        Map.of("sessionsRevoked", revoked));
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.LOGOUT,
+        currentUser,
+        "All sessions active",
+        "All sessions revoked",
+        "Sessions revoked: " + revoked);
+  }
+
+  @Override
+  @Transactional
+  public void logoutDevice(String deviceId) {
+    AppUser currentUser = requireCurrentUser();
+    AuthorizedDevice device = authorizedDeviceRepository.findByDeviceId(deviceId)
+        .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Dispositivo no encontrado"));
+
+    List<AuthSession> sessions = authSessionRepository.findByDeviceAndActiveTrue(device);
+    OffsetDateTime now = OffsetDateTime.now();
+    int revoked = 0;
+    for (AuthSession session : sessions) {
+      session.setActive(false);
+      session.setRevokedAt(now);
+      authSessionRepository.save(session);
+      revoked++;
+    }
+
+    device.setAuthorized(false);
+    device.setRevokedAt(now);
+    authorizedDeviceRepository.save(device);
+
+    log.info("AUTH: Logout device - userId={}, deviceId={}, sessionsRevoked={}",
+        currentUser.getId(), deviceId, revoked);
+    authAuditService.log(AuthAuditAction.LOGOUT_DEVICE, currentUser, device, "OK",
+        Map.of("sessionsRevoked", revoked));
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.LOGOUT,
+        currentUser,
+        "Device sessions active",
+        "Device sessions revoked",
+        "Device: " + deviceId + ", Sessions revoked: " + revoked);
+  }
+
+  @Override
   @Transactional(readOnly = true)
   public AuthUserResponse me() {
     UUID userId = SecurityUtils.requireUserId();
