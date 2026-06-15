@@ -65,6 +65,9 @@ class OperationServiceEdgeCasesTest {
   @Mock private Counter counter;
   @Mock private CustodiedItemPort custodiedItemRepository;
   @Mock private com.parkflow.modules.parking.helmet.domain.repository.HelmetLockerPort helmetLockerPort;
+  @Mock private com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort masterVehicleTypePort;
+  @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
+  @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
 
   private RegisterEntryService registerEntryService;
 
@@ -87,8 +90,20 @@ class OperationServiceEdgeCasesTest {
         parkingSiteRepository, parkingSessionRepository, ticketCounterRepository,
         vehicleConditionReportRepository, operationIdempotencyRepository,
         auditService, operationPrintService,
-        plateValidator, monthlyContractRepository, parkingSpaceService, custodiedItemRepository, helmetLockerPort, objectMapper, meterRegistry
+        plateValidator, monthlyContractRepository, parkingSpaceService, custodiedItemRepository, helmetLockerPort, objectMapper, meterRegistry, masterVehicleTypePort,
+        companyRepository, companySettingsService
     );
+
+    com.parkflow.modules.settings.domain.MasterVehicleType defaultType = new com.parkflow.modules.settings.domain.MasterVehicleType();
+    defaultType.setCode("CAR");
+    defaultType.setActive(true);
+    defaultType.setRequiresPlate(true);
+    org.mockito.Mockito.lenient().when(masterVehicleTypePort.findByCode(org.mockito.ArgumentMatchers.anyString())).thenReturn(java.util.Optional.of(defaultType));
+
+    com.parkflow.modules.licensing.domain.Company company = new com.parkflow.modules.licensing.domain.Company();
+    company.setId(companyId);
+    org.mockito.Mockito.lenient().when(companyRepository.findById(companyId)).thenReturn(java.util.Optional.of(company));
+    org.mockito.Mockito.lenient().when(companySettingsService.getSettingsOrDefault(company)).thenReturn(java.util.Collections.emptyMap());
 
     TenantContext.setTenantId(companyId);
   }
