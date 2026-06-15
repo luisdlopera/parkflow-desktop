@@ -13,6 +13,8 @@ public interface AuthenticationUseCase {
     LoginResponse login(LoginRequest request);
     LoginResponse refresh(RefreshRequest request);
     void logout(LogoutRequest request);
+    void logoutAll();
+    void logoutDevice(String deviceId);
     AuthUserResponse me();
     ProfileResponse getProfile();
     ProfileResponse updateProfile(UpdateProfileRequest request);

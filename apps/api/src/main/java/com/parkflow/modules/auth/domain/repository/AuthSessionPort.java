@@ -12,6 +12,7 @@ public interface AuthSessionPort {
   Optional<AuthSession> findByRefreshJtiAndActiveTrue(String refreshJti);
   Optional<AuthSession> findByRefreshTokenHashAndActiveTrue(String refreshTokenHash);
   List<AuthSession> findByUserAndActiveTrue(AppUser user);
+  List<AuthSession> findByDeviceAndActiveTrue(com.parkflow.modules.auth.domain.AuthorizedDevice device);
   long deleteByActiveFalseAndCreatedAtBefore(OffsetDateTime before);
   AuthSession save(AuthSession session);
   Optional<AuthSession> findById(UUID id);

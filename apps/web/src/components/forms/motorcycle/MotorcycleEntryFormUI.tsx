@@ -4,13 +4,13 @@ import React, { KeyboardEvent, useEffect, useState } from "react";
 import { UseFormReturn, Controller, useWatch, useFieldArray } from "react-hook-form";
 import { VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
 import { motion, AnimatePresence } from "framer-motion";
-import { User } from "lucide-react";
+import { Ban, CheckCircle2, AlertCircle } from "lucide-react";
 import { MotorRacingHelmet } from "@/components/ui/MotorRacingHelmet";
-import { ListBox } from "@heroui/react";
+import { Autocomplete, ListBox, SearchField, useFilter, Label, FieldError } from "@heroui/react";
 import { fetchAvailableHelmetLockers } from "@/services/helmet-lockers.service";
 
 interface MotorcycleEntryFormUIProps {
@@ -21,8 +21,18 @@ interface MotorcycleEntryFormUIProps {
   occupancy: { availableSpaces: number; activeSpaces: number } | null;
   stats: { today: number; session: number };
   isSubmitDisabled: boolean;
+  submitDisabledReason?: string;
   platePrefix?: string;
   noPlate: boolean;
+}
+
+function HelmetOffIcon({ className }: { className?: string }) {
+  return (
+    <div className={`relative ${className || ""}`}>
+      <MotorRacingHelmet className="w-full h-full" />
+      <Ban className="absolute inset-0 w-full h-full text-current opacity-80" />
+    </div>
+  );
 }
 
 export function MotorcycleEntryFormUI({
@@ -33,6 +43,7 @@ export function MotorcycleEntryFormUI({
   occupancy,
   stats,
   isSubmitDisabled,
+  submitDisabledReason,
   platePrefix,
   noPlate,
 }: MotorcycleEntryFormUIProps) {
@@ -40,6 +51,7 @@ export function MotorcycleEntryFormUI({
   const enableCustodiedItem = getOperationConfigValue<boolean>("enableCustodiedItem", true);
 
   const [availableLockers, setAvailableLockers] = useState<{ id: string; code: string }[]>([]);
+  const { contains } = useFilter({ sensitivity: "base" });
 
   useEffect(() => {
     if (enableCustodiedItem) {
@@ -99,8 +111,12 @@ export function MotorcycleEntryFormUI({
                   }`}
                   autoComplete="off"
                 />
-                {fieldState.error && (
+                {fieldState.error ? (
                   <p className="text-xs text-danger px-3 pt-1 pb-2">{fieldState.error.message}</p>
+                ) : (
+                  <p className="text-xs text-slate-400 px-3 pt-1 pb-2 text-center">
+                    Formato esperado: 3 letras + 2 números + 1 letra · Ej: ABC12D
+                  </p>
                 )}
               </div>
             )}
@@ -118,14 +134,19 @@ export function MotorcycleEntryFormUI({
               onClick={() => form.setValue("custodiedItems", [], { shouldValidate: true })}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 !helmetDelivered
-                  ? "border-slate-800 bg-slate-800 text-white border border-default-200 scale-[1.02]"
-                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
+                  ? "border-slate-800 bg-slate-800 text-white scale-[1.02] shadow-md"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
               }`}
             >
-              <User className="w-7 h-7 mb-2 text-slate-400 opacity-80" />
+              <HelmetOffIcon className={`w-7 h-7 mb-2 ${!helmetDelivered ? "text-white" : "text-slate-500"}`} />
               <span className="font-bold text-sm sm:text-base">Lleva el Casco</span>
               {!helmetDelivered && (
-                <motion.div layoutId="helmet-indicator" className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary-400" />
+                <>
+                  <motion.div layoutId="helmet-indicator" className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary-400" />
+                  <div className="absolute top-2 left-2">
+                    <CheckCircle2 className="w-4 h-4 text-primary-400" />
+                  </div>
+                </>
               )}
             </button>
 
@@ -138,14 +159,19 @@ export function MotorcycleEntryFormUI({
               }}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 helmetDelivered
-                  ? "border-brand-500 bg-brand-500 text-white border border-default-200 scale-[1.02]"
-                  : "border-slate-200 bg-white text-slate-500 hover:border-brand-200 hover:bg-brand-50/30"
+                  ? "border-brand-500 bg-brand-500 text-white scale-[1.02] shadow-md"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:bg-brand-50 hover:shadow-sm"
               }`}
             >
-              <MotorRacingHelmet className="w-7 h-7 mb-2 text-current" />
+              <MotorRacingHelmet className={`w-7 h-7 mb-2 ${helmetDelivered ? "text-white" : "text-brand-500"}`} />
               <span className="font-bold text-sm sm:text-base">Deja Casco(s)</span>
               {helmetDelivered && (
-                <motion.div layoutId="helmet-indicator" className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white border border-default-200" />
+                <>
+                  <motion.div layoutId="helmet-indicator" className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white" />
+                  <div className="absolute top-2 left-2">
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                  </div>
+                </>
               )}
             </button>
           </div>
@@ -202,37 +228,40 @@ export function MotorcycleEntryFormUI({
                         name={`custodiedItems.${index}.identifier`}
                         control={form.control}
                         render={({ field: cField, fieldState }) => (
-                          <Select
-                            label="Número/Ficha"
+                          <Autocomplete
+                            className="w-full"
                             placeholder={availableLockers.length === 0 ? "Sin fichas disponibles" : "Seleccionar ficha"}
-                            size="sm"
-                            isInvalid={!!fieldState.error}
-                            errorMessage={fieldState.error?.message}
-                            isRequired
+                            selectionMode="single"
+                            value={cField.value || null}
+                            onChange={(key: unknown) => cField.onChange(key || "")}
                             isDisabled={availableLockers.length === 0}
-                            selectedKeys={cField.value ? [cField.value] : []}
-                            onSelectionChange={(keys: any) => {
-                              const val = Array.from(keys as Set<string>)[0] || "";
-                              cField.onChange(val);
-                            }}
-                            classNames={{
-                              trigger: "bg-white",
-                            }}
+                            isInvalid={!!fieldState.error}
                           >
-                            <Select.Trigger>
-                              <Select.Value />
-                              <Select.Indicator />
-                            </Select.Trigger>
-                            <Select.Popover>
-                              <ListBox>
-                                {availableLockers.map((locker) => (
-                                  <ListBox.Item key={locker.code} textValue={locker.code}>
-                                    {locker.code}
-                                  </ListBox.Item>
-                                ))}
-                              </ListBox>
-                            </Select.Popover>
-                          </Select>
+                            <Label className="text-sm">Número/Ficha</Label>
+                            <Autocomplete.Trigger className="bg-white">
+                              <Autocomplete.Value />
+                              <Autocomplete.ClearButton />
+                              <Autocomplete.Indicator />
+                            </Autocomplete.Trigger>
+                            {fieldState.error?.message && <FieldError className="text-xs">{fieldState.error.message}</FieldError>}
+                            <Autocomplete.Popover>
+                              <Autocomplete.Filter filter={contains}>
+                                <SearchField autoFocus name="search" className="mb-2">
+                                  <SearchField.Group>
+                                    <SearchField.Input placeholder="Buscar ficha..." />
+                                    <SearchField.ClearButton />
+                                  </SearchField.Group>
+                                </SearchField>
+                                <ListBox>
+                                  {availableLockers.map((locker) => (
+                                    <ListBox.Item key={locker.code} id={locker.code} textValue={locker.code}>
+                                      {locker.code}
+                                    </ListBox.Item>
+                                  ))}
+                                </ListBox>
+                              </Autocomplete.Filter>
+                            </Autocomplete.Popover>
+                          </Autocomplete>
                         )}
                       />
                       <Controller
@@ -262,35 +291,60 @@ export function MotorcycleEntryFormUI({
         </div>
       )}
 
+      {/* Estado del formulario */}
+      <div
+        className={`flex items-center gap-2 text-sm rounded-xl px-4 py-3 ${
+          isSubmitDisabled
+            ? "bg-amber-50 text-amber-800 border border-amber-100"
+            : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+        }`}
+        data-testid="entry-status-banner"
+      >
+        {isSubmitDisabled ? (
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+        ) : (
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+        )}
+        <span>{isSubmitDisabled ? (submitDisabledReason || "Completa los datos requeridos") : "Listo para registrar el ingreso"}</span>
+      </div>
+
       {/* Botón de ingreso — Masivo */}
-      {Object.keys(form.formState.errors).length > 0 && (
-        <div className="flex items-center gap-2 text-sm text-rose-700 bg-rose-50 rounded-xl px-4 py-3">
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>Corrige los campos marcados para registrar el ingreso</span>
-        </div>
-      )}
-      <div className="pt-4">
-        <Button
-          type="button"
-          onClick={() => onSubmit()}
-          size="lg"
-          isLoading={form.formState.isSubmitting}
-          isDisabled={isSubmitDisabled}
-          className="w-full font-black text-xl border border-default-200 h-16 rounded-2xl group relative overflow-hidden bg-orange-500 text-white hover:bg-orange-600"
-          data-testid="register-entry"
+      <div className="pt-2">
+        <Tooltip
+          content={submitDisabledReason || "Completa los datos requeridos"}
+          isDisabled={!isSubmitDisabled}
+          placement="top"
+          delay={100}
         >
-          <span className="relative z-10 flex items-center justify-center gap-2">
-            {form.formState.isSubmitting ? "REGISTRANDO..." : "REGISTRAR INGRESO"}
-            {!form.formState.isSubmitting && (
-              <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            )}
-          </span>
-          <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
-        </Button>
+          <div className="w-full">
+            <Button
+              type="button"
+              onClick={() => onSubmit()}
+              size="lg"
+              isLoading={form.formState.isSubmitting}
+              isDisabled={isSubmitDisabled}
+              className={`w-full font-black text-xl border h-16 rounded-2xl group relative overflow-hidden transition-colors ${
+                isSubmitDisabled
+                  ? "bg-slate-300 text-slate-500 border-slate-200 cursor-not-allowed"
+                  : "bg-orange-500 text-white border-default-200 hover:bg-orange-600"
+              }`}
+              data-testid="register-entry"
+              aria-describedby={isSubmitDisabled ? "entry-disabled-reason" : undefined}
+            >
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                {form.formState.isSubmitting ? "REGISTRANDO..." : "REGISTRAR INGRESO"}
+                {!form.formState.isSubmitting && !isSubmitDisabled && (
+                  <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                )}
+              </span>
+              {!isSubmitDisabled && (
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+              )}
+            </Button>
+          </div>
+        </Tooltip>
       </div>
 
     </div>
