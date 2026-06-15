@@ -12,9 +12,9 @@ import lombok.*;
 @Builder(toBuilder = true)
 @Entity
 @Table(
-    name = "helmet_locker",
-    uniqueConstraints = {@UniqueConstraint(name = "uq_helmet_locker_company_code", columnNames = {"company_id", "code"})})
-public class HelmetLocker {
+    name = "helmet_token",
+    uniqueConstraints = {@UniqueConstraint(name = "uq_helmet_token_company_code", columnNames = {"company_id", "code"})})
+public class HelmetToken {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)

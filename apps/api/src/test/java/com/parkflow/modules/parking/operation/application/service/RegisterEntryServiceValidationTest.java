@@ -12,7 +12,7 @@ import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.parking.helmet.domain.repository.HelmetLockerPort;
+import com.parkflow.modules.parking.helmet.domain.repository.HelmetTokenPort;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.domain.repository.*;
 import com.parkflow.modules.parking.operation.dto.EntryRequest;
@@ -57,7 +57,7 @@ class RegisterEntryServiceValidationTest {
   @Mock private MonthlyContractRepository monthlyContractRepository;
   @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private CustodiedItemPort custodiedItemRepository;
-  @Mock private HelmetLockerPort helmetLockerPort;
+  @Mock private HelmetTokenPort helmetTokenPort;
   @Mock private MasterVehicleTypePort masterVehicleTypePort;
   @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
   @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
@@ -79,7 +79,7 @@ class RegisterEntryServiceValidationTest {
         appUserRepository, vehicleRepository, rateRepository, parkingSiteRepository, parkingSessionRepository,
         ticketCounterRepository, vehicleConditionReportRepository, operationIdempotencyRepository,
         operationAuditService, operationPrintService, plateValidator, monthlyContractRepository,
-        parkingSpaceService, custodiedItemRepository, helmetLockerPort, new ObjectMapper(), new SimpleMeterRegistry(), masterVehicleTypePort, companyRepository, companySettingsService);
+        parkingSpaceService, custodiedItemRepository, helmetTokenPort, new ObjectMapper(), new SimpleMeterRegistry(), masterVehicleTypePort, companyRepository, companySettingsService);
 
     Mockito.lenient().when(operationIdempotencyRepository.findByIdempotencyKey(anyString())).thenReturn(Optional.empty());
 

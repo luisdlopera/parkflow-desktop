@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.operation.domain;
 
 import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.parking.helmet.domain.HelmetLocker;
+import com.parkflow.modules.parking.helmet.domain.HelmetToken;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -43,8 +43,8 @@ public class CustodiedItem {
   private String photoUrl;
 
   @ManyToOne
-  @JoinColumn(name = "locker_id")
-  private HelmetLocker locker;
+  @JoinColumn(name = "token_id")
+  private HelmetToken token;
 
   @ManyToOne
   @JoinColumn(name = "received_by_id")

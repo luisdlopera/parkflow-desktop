@@ -2,7 +2,7 @@ package com.parkflow.modules.parking.helmet.dto;
 
 import java.util.UUID;
 
-public record HelmetLockerResponse(
+public record HelmetTokenResponse(
     UUID id,
     String code,
     String label,

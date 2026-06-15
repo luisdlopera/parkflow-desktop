@@ -18,8 +18,8 @@ import com.parkflow.modules.parking.operation.application.port.in.RegisterEntryU
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.helmet.domain.HelmetLocker;
-import com.parkflow.modules.parking.helmet.domain.repository.HelmetLockerPort;
+import com.parkflow.modules.parking.helmet.domain.HelmetToken;
+import com.parkflow.modules.parking.helmet.domain.repository.HelmetTokenPort;
 import com.parkflow.modules.parking.operation.repository.*;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.parking.operation.validation.PlateValidator;
@@ -58,7 +58,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private final MonthlyContractRepository monthlyContractRepository;
   private final ParkingSpaceService parkingSpaceService;
   private final CustodiedItemPort custodiedItemRepository;
-  private final HelmetLockerPort helmetLockerPort;
+  private final HelmetTokenPort helmetTokenPort;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
   private final MasterVehicleTypePort masterVehicleTypePort;
@@ -311,9 +311,9 @@ public class RegisterEntryService implements RegisterEntryUseCase {
               "La ficha " + identifier + " ya está asignada a otro vehículo activo.");
         }
 
-        HelmetLocker locker = null;
+        HelmetToken token = null;
         if (identifier != null) {
-          locker = helmetLockerPort.findActiveByCompanyId(companyId).stream()
+          token = helmetTokenPort.findActiveByCompanyId(companyId).stream()
               .filter(l -> l.getCode().equals(identifier))
               .findFirst().orElse(null);
         }
@@ -322,7 +322,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
             .session(session)
             .itemType(CustodiedItemType.HELMET)
             .identifier(identifier)
-            .locker(locker)
+            .token(token)
             .status(CustodiedItemStatus.RECEIVED)
             .observations(blankToNull(itemReq.observations()))
             .photoUrl(blankToNull(itemReq.photoUrl()))

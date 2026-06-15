@@ -44,7 +44,7 @@ class RegisterEntryServiceTest {
   @Mock private MonthlyContractRepository monthlyContractRepository;
   @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort custodiedItemRepository;
-  @Mock private com.parkflow.modules.parking.helmet.domain.repository.HelmetLockerPort helmetLockerPort;
+  @Mock private com.parkflow.modules.parking.helmet.domain.repository.HelmetTokenPort helmetTokenPort;
   @Mock private com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort masterVehicleTypePort;
   @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
   @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
@@ -61,7 +61,7 @@ class RegisterEntryServiceTest {
         appUserRepository, vehicleRepository, rateRepository, parkingSiteRepository, parkingSessionRepository,
         ticketCounterRepository, vehicleConditionReportRepository, operationIdempotencyRepository,
         operationAuditService, operationPrintService, plateValidator, monthlyContractRepository,
-        parkingSpaceService, custodiedItemRepository, helmetLockerPort, new com.fasterxml.jackson.databind.ObjectMapper(), new io.micrometer.core.instrument.simple.SimpleMeterRegistry(), masterVehicleTypePort, companyRepository, companySettingsService);
+        parkingSpaceService, custodiedItemRepository, helmetTokenPort, new com.fasterxml.jackson.databind.ObjectMapper(), new io.micrometer.core.instrument.simple.SimpleMeterRegistry(), masterVehicleTypePort, companyRepository, companySettingsService);
 
     // Default master vehicle type stub so tests don't fail on vehicle type validation
     org.mockito.Mockito.lenient().when(masterVehicleTypePort.findByCode(any())).thenAnswer(inv -> {

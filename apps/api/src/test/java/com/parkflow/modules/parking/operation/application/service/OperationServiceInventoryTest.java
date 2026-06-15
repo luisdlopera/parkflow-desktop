@@ -100,7 +100,7 @@ class OperationServiceInventoryTest {
   @Mock private MeterRegistry meterRegistry;
   @Mock private Counter counter;
   @Mock private CustodiedItemPort custodiedItemRepository;
-  @Mock private com.parkflow.modules.parking.helmet.domain.repository.HelmetLockerPort helmetLockerPort;
+  @Mock private com.parkflow.modules.parking.helmet.domain.repository.HelmetTokenPort helmetTokenPort;
   @Mock private com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort masterVehicleTypePort;
   @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
   @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
@@ -118,7 +118,7 @@ class OperationServiceInventoryTest {
         vehicleConditionReportRepository, operationIdempotencyRepository,
         legacyAuditService, legacyPrintService,
         new com.parkflow.modules.parking.operation.validation.PlateValidator(),
-        monthlyContractRepository, parkingSpaceService, custodiedItemRepository, helmetLockerPort, objectMapper, meterRegistry, masterVehicleTypePort, companyRepository, companySettingsService
+        monthlyContractRepository, parkingSpaceService, custodiedItemRepository, helmetTokenPort, objectMapper, meterRegistry, masterVehicleTypePort, companyRepository, companySettingsService
     );
 
     // Default master vehicle type stub so tests don't fail on vehicle type validation

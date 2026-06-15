@@ -47,7 +47,7 @@ public class CustodiedItemRepositoryAdapter implements CustodiedItemPort {
   }
 
   @Override
-  public boolean existsActiveByLockerId(UUID lockerId) {
-    return repository.existsByLockerIdAndStatus(lockerId, CustodiedItemStatus.RECEIVED);
+  public boolean existsActiveByTokenId(UUID tokenId) {
+    return repository.existsByTokenIdAndStatus(tokenId, CustodiedItemStatus.RECEIVED);
   }
 }

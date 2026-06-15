@@ -2,17 +2,35 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import QuestionHelp from "../QuestionHelp";
-import { useOnboarding, VEHICLE_OPTIONS, profileLabel, profileDescription, inferOperationalProfile } from "../OnboardingContext";
+import {
+  useOnboarding,
+  VEHICLE_OPTIONS,
+  profileLabel,
+  profileDescription,
+  inferOperationalProfile,
+} from "../OnboardingContext";
 
 function RequiredMark() {
-  return <span className="text-danger ml-0.5" aria-hidden="true">*</span>;
+  return (
+    <span className="text-danger ml-0.5" aria-hidden="true">
+      *
+    </span>
+  );
 }
 
 type HelmetHandling = "TOKENS" | "LOCKER" | "NONE";
 
 const HELMET_OPTIONS: Array<{ code: HelmetHandling; label: string; description: string }> = [
-  { code: "TOKENS", label: "Fichas / casilleros", description: "Entrego fichas numeradas para guardar cascos" },
-  { code: "LOCKER", label: "Locker físico", description: "Uso lockers físicos, no asigno fichas en el sistema" },
+  {
+    code: "TOKENS",
+    label: "Fichas / casilleros",
+    description: "Entrego fichas numeradas para guardar cascos",
+  },
+  {
+    code: "LOCKER",
+    label: "Token físico",
+    description: "Uso tokens físicos, no asigno fichas en el sistema",
+  },
   { code: "NONE", label: "No aplica", description: "No recibo ni custodio cascos" },
 ];
 
@@ -20,28 +38,31 @@ const MAX_HELMET_LOCKERS = 9999;
 
 export default function Step1VehicleTypes() {
   const { stepData, setStepData, stepErrors } = useOnboarding();
-  const vehicleTypes = Array.isArray(stepData.vehicleTypes) ? (stepData.vehicleTypes as string[]) : [];
+  const vehicleTypes = Array.isArray(stepData.vehicleTypes)
+    ? (stepData.vehicleTypes as string[])
+    : [];
   const detectedProfile = inferOperationalProfile(vehicleTypes);
   const hasMotorcycles = vehicleTypes.includes("MOTORCYCLE");
   const helmetHandling = (stepData.helmetHandling as HelmetHandling | undefined) ?? undefined;
-  const helmetLockerCount = typeof stepData.helmetLockerCount === "number" ? stepData.helmetLockerCount : undefined;
+  const helmetTokenCount =
+    typeof stepData.helmetTokenCount === "number" ? stepData.helmetTokenCount : undefined;
 
   const setHelmetHandling = (value: HelmetHandling) => {
     setStepData({
       ...stepData,
       helmetHandling: value,
-      helmetLockerCount: value === "TOKENS" ? (helmetLockerCount ?? 10) : undefined,
+      helmetTokenCount: value === "TOKENS" ? (helmetTokenCount ?? 10) : undefined,
     });
   };
 
-  const setLockerCount = (raw: string) => {
+  const setTokenCount = (raw: string) => {
     const parsed = Number(raw);
     if (Number.isNaN(parsed) || raw.trim() === "") {
-      setStepData({ ...stepData, helmetLockerCount: undefined });
+      setStepData({ ...stepData, helmetTokenCount: undefined });
       return;
     }
     const clamped = Math.max(1, Math.min(MAX_HELMET_LOCKERS, parsed));
-    setStepData({ ...stepData, helmetLockerCount: clamped });
+    setStepData({ ...stepData, helmetTokenCount: clamped });
   };
 
   return (
@@ -53,12 +74,14 @@ export default function Step1VehicleTypes() {
             <RequiredMark />
           </p>
           <QuestionHelp title="Tipos de vehículo">
-            Selecciona todos los tipos de vehículos que ingresan a tu parqueadero.
-            Esto determinará el perfil operacional y las vistas dinámicas del sistema.
+            Selecciona todos los tipos de vehículos que ingresan a tu parqueadero. Esto determinará
+            el perfil operacional y las vistas dinámicas del sistema.
           </QuestionHelp>
         </div>
         {stepErrors.vehicleTypes && (
-          <p className="text-xs text-danger" role="alert">{stepErrors.vehicleTypes}</p>
+          <p className="text-xs text-danger" role="alert">
+            {stepErrors.vehicleTypes}
+          </p>
         )}
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -70,10 +93,14 @@ export default function Step1VehicleTypes() {
                 const prev = vehicleTypes;
                 const next = checked ? [...prev, item.code] : prev.filter((v) => v !== item.code);
                 const profile = inferOperationalProfile(next);
-                const updated: Record<string, unknown> = { ...stepData, vehicleTypes: next, operationalProfile: profile };
+                const updated: Record<string, unknown> = {
+                  ...stepData,
+                  vehicleTypes: next,
+                  operationalProfile: profile,
+                };
                 if (!next.includes("MOTORCYCLE")) {
                   updated.helmetHandling = undefined;
-                  updated.helmetLockerCount = undefined;
+                  updated.helmetTokenCount = undefined;
                 }
                 setStepData(updated);
               }}
@@ -90,7 +117,9 @@ export default function Step1VehicleTypes() {
           <div className="mt-4 p-4 rounded-lg bg-primary-50 border border-primary-200">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-sm font-semibold text-primary">Perfil detectado:</span>
-              <span className="text-sm font-bold text-primary">{profileLabel(detectedProfile)}</span>
+              <span className="text-sm font-bold text-primary">
+                {profileLabel(detectedProfile)}
+              </span>
             </div>
             <p className="text-xs text-primary-600">{profileDescription(detectedProfile)}</p>
           </div>
@@ -113,13 +142,19 @@ export default function Step1VehicleTypes() {
               <RequiredMark />
             </p>
             <QuestionHelp title="Custodia de cascos">
-              <strong>Fichas / casilleros:</strong> entregas fichas numeradas para identificar cada casco en custodia; el sistema controla cuáles están ocupadas.<br />
-              <strong>Locker físico:</strong> tienes casilleros físicos reales; el sistema solo registra que se dejó un casco, pero no asigna número de ficha.<br />
+              <strong>Fichas / casilleros:</strong> entregas fichas numeradas para identificar cada
+              casco en custodia; el sistema controla cuáles están ocupadas.
+              <br />
+              <strong>Token físico:</strong> tienes casilleros físicos reales; el sistema solo
+              registra que se dejó un casco, pero no asigna número de ficha.
+              <br />
               <strong>No aplica:</strong> no recibes ni custodias cascos.
             </QuestionHelp>
           </div>
           {stepErrors.helmetHandling && (
-            <p className="text-xs text-danger" role="alert">{stepErrors.helmetHandling}</p>
+            <p className="text-xs text-danger" role="alert">
+              {stepErrors.helmetHandling}
+            </p>
           )}
 
           <div className="grid gap-3 sm:grid-cols-3">
@@ -160,14 +195,15 @@ export default function Step1VehicleTypes() {
                   label={`Cantidad${helmetHandling === "TOKENS" ? " *" : ""}`}
                   aria-label="Cantidad de fichas de casco"
                   isRequired={helmetHandling === "TOKENS"}
-                  isInvalid={Boolean(stepErrors.helmetLockerCount)}
-                  errorMessage={stepErrors.helmetLockerCount}
-                  value={helmetLockerCount === undefined ? "" : String(helmetLockerCount)}
-                  onChange={(e) => setLockerCount(e.target.value)}
+                  isInvalid={Boolean(stepErrors.helmetTokenCount)}
+                  errorMessage={stepErrors.helmetTokenCount}
+                  value={helmetTokenCount === undefined ? "" : String(helmetTokenCount)}
+                  onChange={(e) => setTokenCount(e.target.value)}
                 />
               </div>
               <p className="text-xs text-success-600 bg-success-50 px-3 py-2 rounded-lg">
-                Se crearán automáticamente las fichas F-01, F-02, etc. al finalizar la configuración.
+                Se crearán automáticamente las fichas F-01, F-02, etc. al finalizar la
+                configuración.
               </p>
             </div>
           )}

@@ -2,7 +2,7 @@ import { buildApiHeaders } from "@/lib/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
 
-export type HelmetLockerDto = {
+export type HelmetTokenDto = {
   id: string;
   code: string;
   label: string | null;
@@ -10,8 +10,8 @@ export type HelmetLockerDto = {
   occupied: boolean;
 };
 
-export async function fetchHelmetLockers(): Promise<HelmetLockerDto[]> {
-  const res = await fetch(`${API_BASE}/helmet-lockers`, {
+export async function fetchHelmetTokens(): Promise<HelmetTokenDto[]> {
+  const res = await fetch(`${API_BASE}/helmet-tokens`, {
     headers: await buildApiHeaders(),
     cache: "no-store",
   });
@@ -22,8 +22,8 @@ export async function fetchHelmetLockers(): Promise<HelmetLockerDto[]> {
   return res.json();
 }
 
-export async function fetchAvailableHelmetLockers(): Promise<HelmetLockerDto[]> {
-  const res = await fetch(`${API_BASE}/helmet-lockers/available`, {
+export async function fetchAvailableHelmetTokens(): Promise<HelmetTokenDto[]> {
+  const res = await fetch(`${API_BASE}/helmet-tokens/available`, {
     headers: await buildApiHeaders(),
     cache: "no-store",
   });
@@ -34,8 +34,8 @@ export async function fetchAvailableHelmetLockers(): Promise<HelmetLockerDto[]> 
   return res.json();
 }
 
-export async function createHelmetLocker(code: string, label?: string): Promise<HelmetLockerDto> {
-  const res = await fetch(`${API_BASE}/helmet-lockers`, {
+export async function createHelmetToken(code: string, label?: string): Promise<HelmetTokenDto> {
+  const res = await fetch(`${API_BASE}/helmet-tokens`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify({ code, label }),
@@ -47,8 +47,12 @@ export async function createHelmetLocker(code: string, label?: string): Promise<
   return res.json();
 }
 
-export async function createBatchHelmetLockers(prefix: string, start: number, end: number): Promise<HelmetLockerDto[]> {
-  const res = await fetch(`${API_BASE}/helmet-lockers/batch`, {
+export async function createBatchHelmetTokens(
+  prefix: string,
+  start: number,
+  end: number,
+): Promise<HelmetTokenDto[]> {
+  const res = await fetch(`${API_BASE}/helmet-tokens/batch`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify({ prefix, start, end }),
@@ -60,8 +64,11 @@ export async function createBatchHelmetLockers(prefix: string, start: number, en
   return res.json();
 }
 
-export async function patchHelmetLocker(id: string, data: { code?: string; label?: string; isActive?: boolean }): Promise<HelmetLockerDto> {
-  const res = await fetch(`${API_BASE}/helmet-lockers/${id}`, {
+export async function patchHelmetToken(
+  id: string,
+  data: { code?: string; label?: string; isActive?: boolean },
+): Promise<HelmetTokenDto> {
+  const res = await fetch(`${API_BASE}/helmet-tokens/${id}`, {
     method: "PATCH",
     headers: await buildApiHeaders(),
     body: JSON.stringify(data),
@@ -73,8 +80,8 @@ export async function patchHelmetLocker(id: string, data: { code?: string; label
   return res.json();
 }
 
-export async function deleteHelmetLocker(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/helmet-lockers/${id}`, {
+export async function deleteHelmetToken(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/helmet-tokens/${id}`, {
     method: "DELETE",
     headers: await buildApiHeaders(),
   });

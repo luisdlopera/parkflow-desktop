@@ -239,7 +239,7 @@ public class OnboardingService implements OnboardingUseCase {
         throw new OperationException(HttpStatus.BAD_REQUEST, "Debes seleccionar una opción de custodia de cascos.");
       }
       if ("TOKENS".equals(handling)) {
-        int count = settingsMapper.extractNumber(data.get("helmetLockerCount"), 0);
+        int count = settingsMapper.extractNumber(data.get("helmetTokenCount"), 0);
         if (count <= 0) {
           throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de fichas debe ser mayor a 0.");
         }
