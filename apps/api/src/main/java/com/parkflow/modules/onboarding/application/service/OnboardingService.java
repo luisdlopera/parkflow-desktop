@@ -20,7 +20,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.parkflow.modules.parking.helmet.dto.BatchHelmetTokenRequest;
+import com.parkflow.modules.parking.helmet.service.HelmetTokenService;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +41,8 @@ public class OnboardingService implements OnboardingUseCase {
   private final com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort parkingSessionPort;
   private final com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
   private final AppUserRepository appUserRepository;
+  private final HelmetTokenService helmetTokenService;
+  private final ParkingSpaceService parkingSpaceService;
 
   @Transactional(readOnly = true)
   public OnboardingStatusResponse status(UUID companyId) {
@@ -147,6 +152,18 @@ public class OnboardingService implements OnboardingUseCase {
     }
     
     companySettingsService.upsertSettings(company, finalSettings);
+
+    // Crear fichas de cascos automáticamente si el usuario configuró custodia por fichas.
+    // Se ejecuta dentro de la misma transacción para garantizar atomicidad con el onboarding.
+    createHelmetTokensIfConfigured(companyId, step1);
+
+    // Materializar las celdas de parqueo configuradas en el paso 2.
+    // Si no se crean aquí, el ingreso queda bloqueado porque no hay espacios disponibles.
+    int totalCapacity = settingsMapper.extractNumber(step2.get("totalCapacity"), 0);
+    if (totalCapacity > 0) {
+      parkingSpaceService.resizeCapacity(companyId, totalCapacity);
+    }
+
     progress.setCompleted(true);
     progress.setCurrentStep(12);
     progress.setCompletedAt(OffsetDateTime.now());
@@ -154,6 +171,22 @@ public class OnboardingService implements OnboardingUseCase {
     company.setOnboardingCompleted(true);
     companyRepository.save(company);
     return status(companyId);
+  }
+
+  private void createHelmetTokensIfConfigured(UUID companyId, Map<String, Object> step1) {
+    if (step1 == null) {
+      return;
+    }
+    String handling = String.valueOf(step1.getOrDefault("helmetHandling", ""));
+    if (!"TOKENS".equals(handling)) {
+      return;
+    }
+    int count = settingsMapper.extractNumber(step1.get("helmetTokenCount"), 0);
+    if (count <= 0 || count > 9999) {
+      return;
+    }
+    BatchHelmetTokenRequest batchRequest = new BatchHelmetTokenRequest("F-", 1, count);
+    helmetTokenService.createBatch(companyId, batchRequest);
   }
 
   @Transactional(readOnly = true)
