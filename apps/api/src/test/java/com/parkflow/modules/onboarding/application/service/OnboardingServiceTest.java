@@ -132,7 +132,7 @@ class OnboardingServiceTest {
   }
 
   @Test
-  void saveStep_rejectsTokensWithoutLockerCount() {
+  void saveStep_rejectsTokensWithoutTokenCount() {
     OnboardingProgress progress = new OnboardingProgress();
     progress.setCompany(company);
     progress.setCurrentStep(1);
@@ -159,7 +159,7 @@ class OnboardingServiceTest {
     data.put("vehicleTypes", java.util.List.of("MOTORCYCLE"));
     data.put("operationalProfile", "MOTORCYCLE_ONLY");
     data.put("helmetHandling", "TOKENS");
-    data.put("helmetLockerCount", 25);
+    data.put("helmetTokenCount", 25);
 
     OnboardingStatusResponse response = onboardingService.saveOnboardingStep(companyId, 1, data, null);
 
@@ -168,7 +168,7 @@ class OnboardingServiceTest {
     Map<String, Object> step1 = (Map<String, Object>) response.progressData().get("step_1");
     assertNotNull(step1);
     assertEquals("TOKENS", step1.get("helmetHandling"));
-    assertEquals(25, step1.get("helmetLockerCount"));
+    assertEquals(25, step1.get("helmetTokenCount"));
   }
 
   @Test
@@ -182,7 +182,7 @@ class OnboardingServiceTest {
         "vehicleTypes", java.util.List.of("MOTORCYCLE"),
         "operationalProfile", "MOTORCYCLE_ONLY",
         "helmetHandling", "TOKENS",
-        "helmetLockerCount", 30));
+        "helmetTokenCount", 30));
     progressData.put("step_2", Map.of("totalCapacity", 50));
     progressData.put("step_3", Map.of("baseValue", 2000));
     progressData.put("step_4", Map.of("countryCode", "CO"));
@@ -197,7 +197,7 @@ class OnboardingServiceTest {
       Map<String, Object> operationConfiguration = (Map<String, Object>) settings.get("operationConfiguration");
       return Boolean.TRUE.equals(operationConfiguration.get("enableCustodiedItem"))
           && Boolean.TRUE.equals(operationConfiguration.get("usesHelmetTokens"))
-          && Integer.valueOf(30).equals(operationConfiguration.get("helmetLockerCount"));
+          && Integer.valueOf(30).equals(operationConfiguration.get("helmetTokenCount"));
     }));
     assertTrue(company.getOnboardingCompleted());
   }

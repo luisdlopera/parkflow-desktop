@@ -132,7 +132,7 @@ public class OnboardingSettingsMapper {
     operationConfiguration.put("enableHelmetSection", enableHelmet);
     operationConfiguration.put("helmetHandling", String.valueOf(helmetConfig.getOrDefault("helmetHandling", "NONE")));
     operationConfiguration.put("usesHelmetTokens", usesHelmetTokens);
-    operationConfiguration.put("helmetLockerCount", extractNumber(helmetConfig.get("helmetLockerCount"), 0));
+    operationConfiguration.put("helmetTokenCount", extractNumber(helmetConfig.get("helmetTokenCount"), 0));
     operationConfiguration.put("showAdvancedSection", Boolean.TRUE.equals(step11.get("advanced")));
     operationConfiguration.put("countryCode", String.valueOf(step4.getOrDefault("countryCode", "CO")));
     operationConfiguration.put("platePrefix", String.valueOf(step4.getOrDefault("platePrefix", "")));
@@ -198,7 +198,7 @@ public class OnboardingSettingsMapper {
     operationConfiguration.put("enableHelmetSection", false);
     operationConfiguration.put("helmetHandling", "NONE");
     operationConfiguration.put("usesHelmetTokens", false);
-    operationConfiguration.put("helmetLockerCount", 0);
+    operationConfiguration.put("helmetTokenCount", 0);
     operationConfiguration.put("showAdvancedSection", false);
     operationConfiguration.put("countryCode", "CO");
     operationConfiguration.put("platePrefix", "");
@@ -270,7 +270,7 @@ public class OnboardingSettingsMapper {
     Map<String, Object> result = new LinkedHashMap<>();
     result.put("helmetHandling", handling);
     result.put("enableHelmetSection", !"NONE".equals(handling));
-    result.put("helmetLockerCount", extractNumber(source.get("helmetLockerCount"), 0));
+    result.put("helmetTokenCount", extractNumber(source.get("helmetTokenCount"), 0));
     return result;
   }
 

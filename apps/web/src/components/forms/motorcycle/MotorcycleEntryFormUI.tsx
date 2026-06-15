@@ -1,7 +1,7 @@
 "use client";
 
 import React, { KeyboardEvent, useEffect, useState } from "react";
-import { UseFormReturn, Controller, useWatch, useFieldArray } from "react-hook-form";
+import { UseFormReturn, Controller, useFieldArray } from "react-hook-form";
 import { VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User, CheckCircle2, AlertCircle } from "lucide-react";
 import { MotorRacingHelmet } from "@/components/ui/MotorRacingHelmet";
 import { Autocomplete, ListBox, SearchField, useFilter, Label, FieldError } from "@heroui/react";
-import { fetchAvailableHelmetLockers } from "@/services/helmet-lockers.service";
+import { fetchAvailableHelmetTokens } from "@/services/helmet-tokens.service";
 
 interface MotorcycleEntryFormUIProps {
   form: UseFormReturn<VehicleEntryFormValues>;
@@ -41,14 +41,14 @@ export function MotorcycleEntryFormUI({
   const { getOperationConfigValue } = useTenantConfig();
   const enableCustodiedItem = getOperationConfigValue<boolean>("enableCustodiedItem", true);
 
-  const [availableLockers, setAvailableLockers] = useState<{ id: string; code: string }[]>([]);
+  const [availableTokens, setAvailableTokens] = useState<{ id: string; code: string }[]>([]);
   const { contains } = useFilter({ sensitivity: "base" });
 
   useEffect(() => {
     if (enableCustodiedItem) {
-      fetchAvailableHelmetLockers()
-        .then((lockers) => setAvailableLockers(lockers.map((l) => ({ id: l.id, code: l.code }))))
-        .catch(() => setAvailableLockers([]));
+      fetchAvailableHelmetTokens()
+        .then((tokens) => setAvailableTokens(tokens.map((l) => ({ id: l.id, code: l.code }))))
+        .catch(() => setAvailableTokens([]));
     }
   }, [enableCustodiedItem]);
 
@@ -129,11 +129,16 @@ export function MotorcycleEntryFormUI({
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
               }`}
             >
-              <User className={`w-7 h-7 mb-2 ${!helmetDelivered ? "text-white" : "text-slate-500"}`} />
+              <User
+                className={`w-7 h-7 mb-2 ${!helmetDelivered ? "text-white" : "text-slate-500"}`}
+              />
               <span className="font-bold text-sm sm:text-base">Lleva el Casco</span>
               {!helmetDelivered && (
                 <>
-                  <motion.div layoutId="helmet-indicator" className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white" />
+                  <motion.div
+                    layoutId="helmet-indicator"
+                    className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white"
+                  />
                   <div className="absolute top-2 left-2">
                     <CheckCircle2 className="w-4 h-4 text-white" />
                   </div>
@@ -145,7 +150,11 @@ export function MotorcycleEntryFormUI({
               type="button"
               onClick={() => {
                 if (!helmetDelivered) {
-                  form.setValue("custodiedItems", [{ identifier: "", observations: "", photoUrl: "" }], { shouldValidate: true });
+                  form.setValue(
+                    "custodiedItems",
+                    [{ identifier: "", observations: "", photoUrl: "" }],
+                    { shouldValidate: true },
+                  );
                 }
               }}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
@@ -154,11 +163,16 @@ export function MotorcycleEntryFormUI({
                   : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:bg-brand-50 hover:shadow-sm"
               }`}
             >
-              <MotorRacingHelmet className={`w-7 h-7 mb-2 ${helmetDelivered ? "text-white" : "text-brand-500"}`} />
+              <MotorRacingHelmet
+                className={`w-7 h-7 mb-2 ${helmetDelivered ? "text-white" : "text-brand-500"}`}
+              />
               <span className="font-bold text-sm sm:text-base">Deja Casco(s)</span>
               {helmetDelivered && (
                 <>
-                  <motion.div layoutId="helmet-indicator" className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white" />
+                  <motion.div
+                    layoutId="helmet-indicator"
+                    className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white"
+                  />
                   <div className="absolute top-2 left-2">
                     <CheckCircle2 className="w-4 h-4 text-white" />
                   </div>
@@ -177,12 +191,13 @@ export function MotorcycleEntryFormUI({
                 className="overflow-hidden"
               >
                 <div className="bg-transparent border border-slate-200 rounded-2xl p-4 flex flex-col gap-4 mt-3">
-                  
                   {/* Selector rápido de cantidad */}
                   <div className="flex items-center justify-between bg-white rounded-xl p-2 border border-slate-200">
-                    <span className="text-sm font-medium text-slate-600 px-2">Cantidad a guardar:</span>
+                    <span className="text-sm font-medium text-slate-600 px-2">
+                      Cantidad a guardar:
+                    </span>
                     <div className="flex gap-2">
-                      {[1, 2].map(num => (
+                      {[1, 2].map((num) => (
                         <button
                           key={num}
                           type="button"
@@ -199,21 +214,26 @@ export function MotorcycleEntryFormUI({
                             }
                           }}
                           className={`px-4 py-1.5 rounded-lg border text-sm font-bold transition-colors ${
-                            fields.length === num 
-                              ? "bg-brand-100 border-brand-300 text-brand-800" 
+                            fields.length === num
+                              ? "bg-brand-100 border-brand-300 text-brand-800"
                               : "border-slate-200 text-slate-700 hover:bg-brand-50"
                           }`}
                         >
-                          {num} {num === 1 ? 'Casco' : 'Cascos'}
+                          {num} {num === 1 ? "Casco" : "Cascos"}
                         </button>
                       ))}
                     </div>
                   </div>
 
                   {fields.map((field, index) => (
-                    <div key={field.id} className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-brand-100/50 first:border-0 first:pt-0">
+                    <div
+                      key={field.id}
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-brand-100/50 first:border-0 first:pt-0"
+                    >
                       <div className="col-span-1 sm:col-span-2">
-                        <span className="text-xs font-bold text-brand-600 uppercase">Datos Casco #{index + 1}</span>
+                        <span className="text-xs font-bold text-brand-600 uppercase">
+                          Datos Casco #{index + 1}
+                        </span>
                       </div>
                       <Controller
                         name={`custodiedItems.${index}.identifier`}
@@ -221,11 +241,15 @@ export function MotorcycleEntryFormUI({
                         render={({ field: cField, fieldState }) => (
                           <Autocomplete
                             className="w-full"
-                            placeholder={availableLockers.length === 0 ? "Sin fichas disponibles" : "Seleccionar ficha"}
+                            placeholder={
+                              availableTokens.length === 0
+                                ? "Sin fichas disponibles"
+                                : "Seleccionar ficha"
+                            }
                             selectionMode="single"
                             value={cField.value || null}
                             onChange={(key: unknown) => cField.onChange(key || "")}
-                            isDisabled={availableLockers.length === 0}
+                            isDisabled={availableTokens.length === 0}
                             isInvalid={!!fieldState.error}
                           >
                             <Label className="text-sm">Número/Ficha</Label>
@@ -234,7 +258,11 @@ export function MotorcycleEntryFormUI({
                               <Autocomplete.ClearButton />
                               <Autocomplete.Indicator />
                             </Autocomplete.Trigger>
-                            {fieldState.error?.message && <FieldError className="text-xs">{fieldState.error.message}</FieldError>}
+                            {fieldState.error?.message && (
+                              <FieldError className="text-xs">
+                                {fieldState.error.message}
+                              </FieldError>
+                            )}
                             <Autocomplete.Popover>
                               <Autocomplete.Filter filter={contains}>
                                 <SearchField autoFocus name="search" className="mb-2">
@@ -244,9 +272,13 @@ export function MotorcycleEntryFormUI({
                                   </SearchField.Group>
                                 </SearchField>
                                 <ListBox>
-                                  {availableLockers.map((locker) => (
-                                    <ListBox.Item key={locker.code} id={locker.code} textValue={locker.code}>
-                                      {locker.code}
+                                  {availableTokens.map((token) => (
+                                    <ListBox.Item
+                                      key={token.code}
+                                      id={token.code}
+                                      textValue={token.code}
+                                    >
+                                      {token.code}
                                     </ListBox.Item>
                                   ))}
                                 </ListBox>
@@ -267,14 +299,13 @@ export function MotorcycleEntryFormUI({
                             isInvalid={!!fieldState.error}
                             errorMessage={fieldState.error?.message}
                             classNames={{
-                              inputWrapper: "bg-white"
+                              inputWrapper: "bg-white",
                             }}
                           />
                         )}
                       />
                     </div>
                   ))}
-
                 </div>
               </motion.div>
             )}
@@ -296,7 +327,11 @@ export function MotorcycleEntryFormUI({
         ) : (
           <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
         )}
-        <span>{isSubmitDisabled ? (submitDisabledReason || "Completa los datos requeridos") : "Listo para registrar el ingreso"}</span>
+        <span>
+          {isSubmitDisabled
+            ? submitDisabledReason || "Completa los datos requeridos"
+            : "Listo para registrar el ingreso"}
+        </span>
       </div>
 
       {/* Botón de ingreso — Masivo */}
@@ -323,8 +358,18 @@ export function MotorcycleEntryFormUI({
               <span className="relative z-10 flex items-center justify-center gap-2">
                 {form.formState.isSubmitting ? "REGISTRANDO..." : "REGISTRAR INGRESO"}
                 {!form.formState.isSubmitting && !isSubmitDisabled && (
-                  <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  <svg
+                    className="w-6 h-6 group-hover:translate-x-1 transition-transform"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2.5}
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    />
                   </svg>
                 )}
               </span>
@@ -335,7 +380,6 @@ export function MotorcycleEntryFormUI({
           </div>
         </Tooltip>
       </div>
-
     </div>
   );
 }

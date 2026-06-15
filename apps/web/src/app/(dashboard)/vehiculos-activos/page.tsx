@@ -7,13 +7,18 @@ import DataTable from "@/components/ui/DataTable";
 import { useActiveSessions } from "@/hooks/useActiveSessions";
 import { useTerminalCaja } from "@/hooks/useTerminalCaja";
 import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
-import { fetchHelmetLockers, type HelmetLockerDto } from "@/services/helmet-lockers.service";
+import { fetchHelmetTokens, type HelmetTokenDto } from "@/services/helmet-tokens.service";
 import Link from "next/link";
-import { AlertTriangle, Eye, MoreVertical, Edit, Printer, LogOut, CheckCircle, XCircle } from "lucide-react";
+import { AlertTriangle, Eye, MoreVertical, Edit, Printer, LogOut, CheckCircle } from "lucide-react";
 import { GetActiveSessionsQuery, ActiveSessionDto } from "@/services/sessions.service";
-import { precalculateBulkExit, processBulkExit, BulkExitCalculateResponseDto, BulkExitResponseDto } from "@/services/bulk-exit.service";
+import {
+  precalculateBulkExit,
+  processBulkExit,
+  BulkExitCalculateResponseDto,
+  BulkExitResponseDto,
+} from "@/services/bulk-exit.service";
 import { currentUser } from "@/lib/auth";
-import type { SortDescriptor, Selection } from "@heroui/react";
+import type { Selection } from "@heroui/react";
 
 export default function VehiculosActivosPage() {
   const [params, setParams] = useState<GetActiveSessionsQuery>({
@@ -21,7 +26,7 @@ export default function VehiculosActivosPage() {
     limit: 25,
     search: "",
     sortBy: "entryAt",
-    sortDir: "desc"
+    sortDir: "desc",
   });
 
   const { rows, meta, summary, loading, error, reload } = useActiveSessions(params);
@@ -29,41 +34,44 @@ export default function VehiculosActivosPage() {
   const { runtimeConfig } = useTenantConfig();
   const [ticketPreview, setTicketPreview] = useState<ActiveSessionDto | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set());
-  const [helmetLockers, setHelmetLockers] = useState<HelmetLockerDto[]>([]);
-  const [helmetLockersLoading, setHelmetLockersLoading] = useState(false);
+  const [helmetTokens, setHelmetTokens] = useState<HelmetTokenDto[]>([]);
+  const [helmetTokensLoading, setHelmetTokensLoading] = useState(false);
 
   const [precalculation, setPrecalculation] = useState<BulkExitCalculateResponseDto | null>(null);
   const [finalResult, setFinalResult] = useState<BulkExitResponseDto | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const enableCustodiedItem = runtimeConfig?.operationConfiguration?.enableCustodiedItem as boolean ?? true;
+  const enableCustodiedItem =
+    (runtimeConfig?.operationConfiguration?.enableCustodiedItem as boolean) ?? true;
   const vehicleTypes = runtimeConfig?.vehicleTypes ?? [];
   const hasMotorcycles = vehicleTypes.includes("MOTORCYCLE");
-  const hasHelmetLockers = helmetLockers.length > 0;
-  const showHelmetAlert = !helmetLockersLoading && enableCustodiedItem && hasMotorcycles && !hasHelmetLockers;
+  const hasHelmetTokens = helmetTokens.length > 0;
+  const showHelmetAlert =
+    !helmetTokensLoading && enableCustodiedItem && hasMotorcycles && !hasHelmetTokens;
 
   useEffect(() => {
     if (enableCustodiedItem && hasMotorcycles) {
-      setHelmetLockersLoading(true);
-      fetchHelmetLockers()
-        .then((lockers) => setHelmetLockers(lockers))
-        .catch(() => setHelmetLockers([]))
-        .finally(() => setHelmetLockersLoading(false));
+      setHelmetTokensLoading(true);
+      fetchHelmetTokens()
+        .then((tokens) => setHelmetTokens(tokens))
+        .catch(() => setHelmetTokens([]))
+        .finally(() => setHelmetTokensLoading(false));
     }
   }, [enableCustodiedItem, hasMotorcycles]);
 
   const handleCalculateBulkExit = async () => {
     const user = await currentUser();
     if (!user) return;
-    const selectedIds = selectedKeys === "all" ? rows.map(r => r.ticketNumber) : Array.from(selectedKeys);
+    const selectedIds =
+      selectedKeys === "all" ? rows.map((r) => r.ticketNumber) : Array.from(selectedKeys);
     if (selectedIds.length === 0) return;
-    
+
     setIsCalculating(true);
     try {
       const result = await precalculateBulkExit({
         locators: selectedIds as string[],
-        operatorUserId: user.id
+        operatorUserId: user.id,
       });
       setPrecalculation(result);
     } catch (err: any) {
@@ -76,14 +84,14 @@ export default function VehiculosActivosPage() {
   const handleConfirmProcess = async () => {
     const user = await currentUser();
     if (!user || !precalculation) return;
-    const selectedIds = precalculation.items.map(i => i.locator);
-    
+    const selectedIds = precalculation.items.map((i) => i.locator);
+
     setIsProcessing(true);
     try {
       const result = await processBulkExit({
         locators: selectedIds,
         operatorUserId: user.id,
-        paymentMethod: "CASH" 
+        paymentMethod: "CASH",
       });
       setFinalResult(result);
       setSelectedKeys(new Set());
@@ -107,7 +115,12 @@ export default function VehiculosActivosPage() {
     <div className="space-y-6">
       {/* Full-screen modal when cash register is closed */}
       {cajaOpen === false ? (
-        <Modal.Backdrop isOpen={true} onOpenChange={() => {}} isDismissable={false} isKeyboardDismissDisabled>
+        <Modal.Backdrop
+          isOpen={true}
+          onOpenChange={() => {}}
+          isDismissable={false}
+          isKeyboardDismissDisabled
+        >
           <Modal.Container size="full">
             <Modal.Dialog className="flex flex-col items-center justify-center text-center py-32">
               <Modal.Header className="flex-col items-center gap-4">
@@ -163,10 +176,18 @@ export default function VehiculosActivosPage() {
       {error ? <p className="text-sm text-rose-700 font-medium">{error}</p> : null}
 
       {/* Alerta cuando no hay celdas configuradas */}
-      {summary && (summary.activeSpaces === undefined || summary.activeSpaces === null || summary.activeSpaces === 0) ? (
+      {summary &&
+      (summary.activeSpaces === undefined ||
+        summary.activeSpaces === null ||
+        summary.activeSpaces === 0) ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-800 space-y-2">
-          <p className="font-semibold flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> No tienes celdas configuradas</p>
-          <p>Para poder visualizar la disponibilidad de espacios y registrar ingresos de vehículos, primero debes configurar la capacidad de tu parqueadero.</p>
+          <p className="font-semibold flex items-center gap-1">
+            <AlertTriangle className="w-4 h-4" /> No tienes celdas configuradas
+          </p>
+          <p>
+            Para poder visualizar la disponibilidad de espacios y registrar ingresos de vehículos,
+            primero debes configurar la capacidad de tu parqueadero.
+          </p>
           <Link href="/configuracion/espacios">
             <Button size="sm" color="warning" className="mt-1">
               Ir a Configurar Espacios
@@ -178,8 +199,13 @@ export default function VehiculosActivosPage() {
       {/* Alerta cuando no hay fichas de cascos configuradas */}
       {showHelmetAlert && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 space-y-2">
-          <p className="font-semibold flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> No tienes fichas de cascos configuradas</p>
-          <p>Para poder registrar cascos en custodia al ingresar motocicletas, necesitas configurar las fichas/casilleros.</p>
+          <p className="font-semibold flex items-center gap-1">
+            <AlertTriangle className="w-4 h-4" /> No tienes fichas de cascos configuradas
+          </p>
+          <p>
+            Para poder registrar cascos en custodia al ingresar motocicletas, necesitas configurar
+            las fichas/casilleros.
+          </p>
           <Link href="/configuracion/fichas">
             <Button size="sm" color="warning" className="mt-1">
               Ir a Configurar Fichas
@@ -191,11 +217,13 @@ export default function VehiculosActivosPage() {
         <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
           <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Ocupados</p>
           <p className="text-2xl font-bold text-slate-900">
-            {summary ? (summary.activeSpaces - summary.availableSpaces) : rows.length}
+            {summary ? summary.activeSpaces - summary.availableSpaces : rows.length}
           </p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-          <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Disponibles</p>
+          <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">
+            Disponibles
+          </p>
           <p className="text-2xl font-bold text-emerald-700">
             {summary ? `${summary.availableSpaces} / ${summary.activeSpaces}` : "—"}
           </p>
@@ -204,7 +232,12 @@ export default function VehiculosActivosPage() {
 
       {/* Ticket preview modal */}
       {ticketPreview && (
-        <Modal.Backdrop isOpen={true} onOpenChange={(open) => { if (!open) setTicketPreview(null); }}>
+        <Modal.Backdrop
+          isOpen={true}
+          onOpenChange={(open) => {
+            if (!open) setTicketPreview(null);
+          }}
+        >
           <Modal.Container size="sm">
             <Modal.Dialog className="sm:max-w-sm">
               <Modal.CloseTrigger onClick={() => setTicketPreview(null)} />
@@ -222,21 +255,30 @@ export default function VehiculosActivosPage() {
                   <span className="text-slate-500 font-medium">Tiempo:</span>
                   <span className="font-semibold">{ticketPreview.duration}</span>
                   <span className="text-slate-500 font-medium">Celda:</span>
-                  <span className="font-semibold">{ticketPreview.parkingSpaceCode ?? "Sin asignar"}</span>
+                  <span className="font-semibold">
+                    {ticketPreview.parkingSpaceCode ?? "Sin asignar"}
+                  </span>
                   <span className="text-slate-500 font-medium">Tarifa:</span>
                   <span className="font-semibold">{ticketPreview.rateName ?? "Sin tarifa"}</span>
                   {ticketPreview.custodiedItems && ticketPreview.custodiedItems.length > 0 && (
                     <>
                       <span className="text-slate-500 font-medium">Cascos:</span>
                       <span className="font-semibold">
-                        {ticketPreview.custodiedItems.map((item: any) => item.identifier).join(", ")}
+                        {ticketPreview.custodiedItems
+                          .map((item: any) => item.identifier)
+                          .join(", ")}
                       </span>
                     </>
                   )}
                 </div>
               </Modal.Body>
               <Modal.Footer>
-                <Button size="sm" variant="ghost" color="default" onPress={() => setTicketPreview(null)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  color="default"
+                  onPress={() => setTicketPreview(null)}
+                >
                   Cerrar
                 </Button>
               </Modal.Footer>
@@ -244,39 +286,60 @@ export default function VehiculosActivosPage() {
           </Modal.Container>
         </Modal.Backdrop>
       )}
-      {((selectedKeys === "all" && rows.length > 0) || (selectedKeys !== "all" && (selectedKeys as Set<string>).size > 0)) && (
+      {((selectedKeys === "all" && rows.length > 0) ||
+        (selectedKeys !== "all" && (selectedKeys as Set<string>).size > 0)) && (
         <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] p-4 flex justify-between items-center z-50">
           <div className="flex items-center gap-3">
             <div className="bg-amber-100 text-amber-800 rounded-full w-8 h-8 flex items-center justify-center font-bold">
-              {selectedKeys === "all" ? meta?.total ?? rows.length : (selectedKeys as Set<string>).size}
+              {selectedKeys === "all"
+                ? (meta?.total ?? rows.length)
+                : (selectedKeys as Set<string>).size}
             </div>
             <span className="font-semibold text-slate-700">Vehículos seleccionados</span>
           </div>
           <div className="flex gap-3">
-             <Button color="default" variant="flat" onPress={() => setSelectedKeys(new Set())}>Cancelar</Button>
-             <Button color="warning" onPress={handleCalculateBulkExit} isLoading={isCalculating} startContent={<LogOut className="w-4 h-4" />}>
-               Pre-liquidar Salida Masiva
-             </Button>
+            <Button color="default" variant="flat" onPress={() => setSelectedKeys(new Set())}>
+              Cancelar
+            </Button>
+            <Button
+              color="warning"
+              onPress={handleCalculateBulkExit}
+              isLoading={isCalculating}
+              startContent={<LogOut className="w-4 h-4" />}
+            >
+              Pre-liquidar Salida Masiva
+            </Button>
           </div>
         </div>
       )}
 
       <DataTable
         selectable
-        selectedKeys={selectedKeys === "all" ? new Set(rows.map((r: any) => r.ticketNumber)) : selectedKeys}
+        selectedKeys={
+          selectedKeys === "all" ? new Set(rows.map((r: any) => r.ticketNumber)) : selectedKeys
+        }
         onRowSelectionChange={(keys) => setSelectedKeys(keys as Set<string>)}
         serverSide
         searchable
         searchPlaceholder="Buscar por placa o ticket..."
-        onSearchChange={(search) => setParams(p => ({ ...p, search, page: 1 }))}
-        sortDescriptor={{ column: params.sortBy || "entryAt", direction: params.sortDir === "asc" ? "ascending" : "descending" }}
-        onSortChange={(desc) => setParams(p => ({ ...p, sortBy: String(desc.column), sortDir: desc.direction === "ascending" ? "asc" : "desc" }))}
+        onSearchChange={(search) => setParams((p) => ({ ...p, search, page: 1 }))}
+        sortDescriptor={{
+          column: params.sortBy || "entryAt",
+          direction: params.sortDir === "asc" ? "ascending" : "descending",
+        }}
+        onSortChange={(desc) =>
+          setParams((p) => ({
+            ...p,
+            sortBy: String(desc.column),
+            sortDir: desc.direction === "ascending" ? "asc" : "desc",
+          }))
+        }
         pagination={{
           page: params.page || 1,
           pageSize: params.limit || 25,
           total: meta?.total ?? 0,
         }}
-        onPaginationChange={(page, limit) => setParams(p => ({ ...p, page, limit }))}
+        onPaginationChange={(page, limit) => setParams((p) => ({ ...p, page, limit }))}
         columns={[
           {
             key: "plate",
@@ -285,10 +348,14 @@ export default function VehiculosActivosPage() {
             sortable: true,
             render: (row) => {
               if (!row.plate || row.plate.startsWith("NP-")) {
-                return <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">SIN PLACA</span>;
+                return (
+                  <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">
+                    SIN PLACA
+                  </span>
+                );
               }
               return row.plate;
-            }
+            },
           },
           { key: "ticketNumber", label: "Ticket", priority: "medium", sortable: true },
           { key: "vehicleType", label: "Tipo", priority: "high", sortable: false },
@@ -297,7 +364,8 @@ export default function VehiculosActivosPage() {
             label: "Celda",
             priority: "high",
             sortable: false,
-            render: (row) => row.parkingSpaceCode ?? <span className="text-slate-400">Sin asignar</span>
+            render: (row) =>
+              row.parkingSpaceCode ?? <span className="text-slate-400">Sin asignar</span>,
           },
           { key: "duration", label: "Tiempo", priority: "medium", sortable: false },
           {
@@ -305,7 +373,7 @@ export default function VehiculosActivosPage() {
             label: "Tarifa",
             priority: "low",
             sortable: false,
-            render: (row) => row.rateName ?? <span className="text-slate-400">Sin tarifa</span>
+            render: (row) => row.rateName ?? <span className="text-slate-400">Sin tarifa</span>,
           },
           {
             key: "cascos",
@@ -326,13 +394,15 @@ export default function VehiculosActivosPage() {
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                       {item.identifier}
                       {item.observations && (
-                        <span className="font-normal text-amber-600 ml-0.5">· {item.observations}</span>
+                        <span className="font-normal text-amber-600 ml-0.5">
+                          · {item.observations}
+                        </span>
                       )}
                     </span>
                   ))}
                 </div>
               );
-            }
+            },
           },
           {
             key: "actions",
@@ -351,10 +421,13 @@ export default function VehiculosActivosPage() {
                     <MoreVertical className="h-4 w-4 text-slate-500" />
                   </Button>
                   <Dropdown.Popover>
-                    <Dropdown.Menu aria-label="Acciones de vehículo" onAction={(key) => {
-                      if (key === "view") setTicketPreview(row as ActiveSessionDto);
-                      // Handle others here...
-                    }}>
+                    <Dropdown.Menu
+                      aria-label="Acciones de vehículo"
+                      onAction={(key) => {
+                        if (key === "view") setTicketPreview(row as ActiveSessionDto);
+                        // Handle others here...
+                      }}
+                    >
                       <Dropdown.Item id="view" textValue="Ver detalle">
                         <div className="flex items-center gap-2">
                           <Eye className="w-4 h-4 text-slate-500" />
@@ -383,8 +456,8 @@ export default function VehiculosActivosPage() {
                   </Dropdown.Popover>
                 </Dropdown>
               </div>
-            )
-          }
+            ),
+          },
         ]}
         rows={rows}
         emptyMessage="No hay vehículos activos en este momento."
@@ -407,27 +480,38 @@ export default function VehiculosActivosPage() {
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 uppercase font-bold">Subtotal</p>
-                    <p className="text-xl font-bold text-slate-700">${precalculation.totalSubtotal.toLocaleString()}</p>
+                    <p className="text-xl font-bold text-slate-700">
+                      ${precalculation.totalSubtotal.toLocaleString()}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 uppercase font-bold">Descuentos</p>
-                    <p className="text-xl font-bold text-green-600">-${precalculation.totalDiscount.toLocaleString()}</p>
+                    <p className="text-xl font-bold text-green-600">
+                      -${precalculation.totalDiscount.toLocaleString()}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 uppercase font-bold">Total a Cobrar</p>
-                    <p className="text-xl font-bold text-brand-600">${precalculation.finalTotal.toLocaleString()}</p>
+                    <p className="text-xl font-bold text-brand-600">
+                      ${precalculation.finalTotal.toLocaleString()}
+                    </p>
                   </div>
                 </div>
-                
+
                 {precalculation.errors && precalculation.errors.length > 0 && (
                   <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm text-rose-700">
-                    <p className="font-bold flex items-center gap-1"><AlertTriangle className="w-4 h-4"/> Vehículos con anomalías (se excluirán/fallarán):</p>
+                    <p className="font-bold flex items-center gap-1">
+                      <AlertTriangle className="w-4 h-4" /> Vehículos con anomalías (se
+                      excluirán/fallarán):
+                    </p>
                     <ul className="list-disc pl-5 mt-1">
-                      {precalculation.errors.map((e, idx) => <li key={idx}>{e}</li>)}
+                      {precalculation.errors.map((e, idx) => (
+                        <li key={idx}>{e}</li>
+                      ))}
                     </ul>
                   </div>
                 )}
-                
+
                 <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
                   <table className="w-full text-sm text-left">
                     <thead className="bg-slate-50 sticky top-0">
@@ -435,7 +519,9 @@ export default function VehiculosActivosPage() {
                         <th className="px-4 py-2 text-slate-500 font-semibold">Placa</th>
                         <th className="px-4 py-2 text-slate-500 font-semibold">Ticket</th>
                         <th className="px-4 py-2 text-slate-500 font-semibold text-right">Total</th>
-                        <th className="px-4 py-2 text-slate-500 font-semibold text-center">Estado</th>
+                        <th className="px-4 py-2 text-slate-500 font-semibold text-center">
+                          Estado
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -443,10 +529,17 @@ export default function VehiculosActivosPage() {
                         <tr key={idx}>
                           <td className="px-4 py-2 font-medium">{item.plate}</td>
                           <td className="px-4 py-2 text-slate-500">{item.ticketNumber}</td>
-                          <td className="px-4 py-2 text-right font-semibold">${item.total.toLocaleString()}</td>
+                          <td className="px-4 py-2 text-right font-semibold">
+                            ${item.total.toLocaleString()}
+                          </td>
                           <td className="px-4 py-2 text-center">
                             {item.errorMessage ? (
-                              <span className="text-rose-500 text-xs font-bold" title={item.errorMessage}>Error</span>
+                              <span
+                                className="text-rose-500 text-xs font-bold"
+                                title={item.errorMessage}
+                              >
+                                Error
+                              </span>
                             ) : (
                               <span className="text-emerald-500 text-xs font-bold">OK</span>
                             )}
@@ -458,7 +551,9 @@ export default function VehiculosActivosPage() {
                 </div>
               </Modal.Body>
               <Modal.Footer>
-                <Button color="default" variant="ghost" onPress={() => setPrecalculation(null)}>Cancelar</Button>
+                <Button color="default" variant="ghost" onPress={() => setPrecalculation(null)}>
+                  Cancelar
+                </Button>
                 <Button color="warning" onPress={handleConfirmProcess} isLoading={isProcessing}>
                   Confirmar e Imprimir
                 </Button>
@@ -489,10 +584,17 @@ export default function VehiculosActivosPage() {
                   {finalResult.failedCount === 0 ? "Proceso Exitoso" : "Proceso Parcial"}
                 </h3>
                 <p className="text-slate-500 mt-2">
-                  Se procesaron <b>{finalResult.successfulCount}</b> vehículos correctamente. 
-                  {finalResult.failedCount > 0 && <span className="text-rose-600 font-medium"> ({finalResult.failedCount} fallaron)</span>}
+                  Se procesaron <b>{finalResult.successfulCount}</b> vehículos correctamente.
+                  {finalResult.failedCount > 0 && (
+                    <span className="text-rose-600 font-medium">
+                      {" "}
+                      ({finalResult.failedCount} fallaron)
+                    </span>
+                  )}
                 </p>
-                <p className="text-2xl font-black text-brand-600 mt-4">${finalResult.totalCharged.toLocaleString()}</p>
+                <p className="text-2xl font-black text-brand-600 mt-4">
+                  ${finalResult.totalCharged.toLocaleString()}
+                </p>
               </div>
               <Button color="primary" className="w-full" onPress={closeModal}>
                 Cerrar

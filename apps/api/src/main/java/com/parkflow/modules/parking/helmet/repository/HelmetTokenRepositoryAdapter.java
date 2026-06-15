@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.helmet.repository;
 
-import com.parkflow.modules.parking.helmet.domain.HelmetLocker;
-import com.parkflow.modules.parking.helmet.domain.repository.HelmetLockerPort;
+import com.parkflow.modules.parking.helmet.domain.HelmetToken;
+import com.parkflow.modules.parking.helmet.domain.repository.HelmetTokenPort;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,33 +10,33 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class HelmetLockerRepositoryAdapter implements HelmetLockerPort {
+public class HelmetTokenRepositoryAdapter implements HelmetTokenPort {
 
-  private final HelmetLockerRepository repository;
+  private final HelmetTokenRepository repository;
 
   @Override
-  public List<HelmetLocker> findByCompanyId(UUID companyId) {
+  public List<HelmetToken> findByCompanyId(UUID companyId) {
     return repository.findByCompanyIdOrderByCodeAsc(companyId);
   }
 
   @Override
-  public List<HelmetLocker> findActiveByCompanyId(UUID companyId) {
+  public List<HelmetToken> findActiveByCompanyId(UUID companyId) {
     return repository.findByCompanyIdAndIsActiveTrueOrderByCodeAsc(companyId);
   }
 
   @Override
-  public Optional<HelmetLocker> findByIdAndCompanyId(UUID id, UUID companyId) {
+  public Optional<HelmetToken> findByIdAndCompanyId(UUID id, UUID companyId) {
     return repository.findByIdAndCompanyId(id, companyId);
   }
 
   @Override
-  public HelmetLocker save(HelmetLocker locker) {
-    return repository.save(locker);
+  public HelmetToken save(HelmetToken token) {
+    return repository.save(token);
   }
 
   @Override
-  public void delete(HelmetLocker locker) {
-    repository.delete(locker);
+  public void delete(HelmetToken token) {
+    repository.delete(token);
   }
 
   @Override

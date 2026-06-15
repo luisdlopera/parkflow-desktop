@@ -1,6 +1,15 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+  ReactNode,
+} from "react";
 import { fetchOnboardingStatus, saveOnboardingStep, OnboardingStatus } from "@/lib/onboarding-api";
 
 export type OperationalProfile = "MOTORCYCLE_ONLY" | "CAR_ONLY" | "MIXED";
@@ -8,8 +17,18 @@ export type OperationalProfile = "MOTORCYCLE_ONLY" | "CAR_ONLY" | "MIXED";
 export const REQUIRED_STEPS = [1, 2, 3, 4, 6];
 export const BASE_ENABLED_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 12];
 export const STEP_TITLES = [
-  "Tipos de vehículo", "Capacidad", "Tarifas", "Caja", "Turnos", "Métodos de pago",
-  "Tickets", "Clientes y mensualidades", "Convenios", "Sedes", "Roles y permisos", "Auditoría"
+  "Tipos de vehículo",
+  "Capacidad",
+  "Tarifas",
+  "Caja",
+  "Turnos",
+  "Métodos de pago",
+  "Tickets",
+  "Clientes y mensualidades",
+  "Convenios",
+  "Sedes",
+  "Roles y permisos",
+  "Auditoría",
 ];
 
 export const VEHICLE_OPTIONS: Array<{ code: string; label: string; description: string }> = [
@@ -56,13 +75,17 @@ export function isStepCompleted(progressData: Record<string, unknown>, step: num
   const stepKey = `step_${step}`;
   const data = progressData?.[stepKey] as Record<string, unknown> | undefined;
   if (!data) return false;
-  return validateStep(step, data, Array.isArray(data.vehicleTypes) ? (data.vehicleTypes as string[]) : []).isValid;
+  return validateStep(
+    step,
+    data,
+    Array.isArray(data.vehicleTypes) ? (data.vehicleTypes as string[]) : [],
+  ).isValid;
 }
 
 export function validateStep(
   step: number,
   data: Record<string, unknown>,
-  vehicleTypes: string[]
+  vehicleTypes: string[],
 ): { isValid: boolean; errors: StepValidationErrors } {
   const errors: StepValidationErrors = {};
 
@@ -71,25 +94,31 @@ export function validateStep(
       if (!Array.isArray(data.vehicleTypes) || (data.vehicleTypes as string[]).length === 0) {
         errors.vehicleTypes = "Selecciona al menos un tipo de vehículo.";
       }
-      const selectedTypes = Array.isArray(data.vehicleTypes) ? (data.vehicleTypes as string[]) : vehicleTypes;
+      const selectedTypes = Array.isArray(data.vehicleTypes)
+        ? (data.vehicleTypes as string[])
+        : vehicleTypes;
       if (selectedTypes.includes("MOTORCYCLE")) {
         const handling = data.helmetHandling;
         if (handling !== "TOKENS" && handling !== "LOCKER" && handling !== "NONE") {
           errors.helmetHandling = "Selecciona una opción de custodia de cascos.";
         }
         if (handling === "TOKENS") {
-          const count = typeof data.helmetLockerCount === "number" ? data.helmetLockerCount : Number(data.helmetLockerCount);
+          const count =
+            typeof data.helmetTokenCount === "number"
+              ? data.helmetTokenCount
+              : Number(data.helmetTokenCount);
           if (!Number.isFinite(count) || count <= 0) {
-            errors.helmetLockerCount = "La cantidad de fichas debe ser mayor a 0.";
+            errors.helmetTokenCount = "La cantidad de fichas debe ser mayor a 0.";
           } else if (count > 9999) {
-            errors.helmetLockerCount = "La cantidad de fichas no puede superar 9999.";
+            errors.helmetTokenCount = "La cantidad de fichas no puede superar 9999.";
           }
         }
       }
       break;
     }
     case 2: {
-      const total = typeof data.totalCapacity === "number" ? data.totalCapacity : Number(data.totalCapacity);
+      const total =
+        typeof data.totalCapacity === "number" ? data.totalCapacity : Number(data.totalCapacity);
       if (!Number.isFinite(total) || total <= 0) {
         errors.totalCapacity = "La capacidad total debe ser mayor a 0.";
       }
@@ -147,7 +176,7 @@ export function inferOperationalProfile(vehicleTypes: string[]): OperationalProf
   const hasMoto = vehicleTypes.includes("MOTORCYCLE");
   const hasCar = vehicleTypes.includes("CAR");
   const hasOthers = vehicleTypes.some((v) => v !== "MOTORCYCLE" && v !== "CAR");
-  
+
   if (hasMoto && !hasCar && !hasOthers) return "MOTORCYCLE_ONLY";
   if (hasCar && !hasMoto && !hasOthers) return "CAR_ONLY";
   return "MIXED";
@@ -155,17 +184,23 @@ export function inferOperationalProfile(vehicleTypes: string[]): OperationalProf
 
 export function profileLabel(profile: OperationalProfile): string {
   switch (profile) {
-    case "MOTORCYCLE_ONLY": return "Parqueadero de motos";
-    case "CAR_ONLY": return "Parqueadero de carros";
-    case "MIXED": return "Parqueadero mixto";
+    case "MOTORCYCLE_ONLY":
+      return "Parqueadero de motos";
+    case "CAR_ONLY":
+      return "Parqueadero de carros";
+    case "MIXED":
+      return "Parqueadero mixto";
   }
 }
 
 export function profileDescription(profile: OperationalProfile): string {
   switch (profile) {
-    case "MOTORCYCLE_ONLY": return "La interfaz se adaptará solo para ingreso de motocicletas.";
-    case "CAR_ONLY": return "La interfaz se adaptará solo para ingreso de automóviles.";
-    case "MIXED": return "La interfaz mostrará opciones para todos los tipos de vehículos seleccionados.";
+    case "MOTORCYCLE_ONLY":
+      return "La interfaz se adaptará solo para ingreso de motocicletas.";
+    case "CAR_ONLY":
+      return "La interfaz se adaptará solo para ingreso de automóviles.";
+    case "MIXED":
+      return "La interfaz mostrará opciones para todos los tipos de vehículos seleccionados.";
   }
 }
 
@@ -198,7 +233,15 @@ interface OnboardingContextType {
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
-export function OnboardingProvider({ children, companyId, onDone }: { children: ReactNode; companyId: string; onDone: () => void }) {
+export function OnboardingProvider({
+  children,
+  companyId,
+  onDone,
+}: {
+  children: ReactNode;
+  companyId: string;
+  onDone: () => void;
+}) {
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
   const [stepData, setStepData] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(true);
@@ -211,7 +254,9 @@ export function OnboardingProvider({ children, companyId, onDone }: { children: 
 
   useEffect(() => {
     fetchOnboardingStatus(companyId).then((s) => {
-      const safeStep = s.enabledSteps?.includes(s.currentStep) ? s.currentStep : (s.enabledSteps?.[0] ?? 1);
+      const safeStep = s.enabledSteps?.includes(s.currentStep)
+        ? s.currentStep
+        : (s.enabledSteps?.[0] ?? 1);
       const statusWithSafeStep = { ...s, currentStep: safeStep };
       setStatus(statusWithSafeStep);
       const payload = (s.progressData?.[`step_${safeStep}`] as Record<string, unknown>) ?? {};
@@ -223,16 +268,22 @@ export function OnboardingProvider({ children, companyId, onDone }: { children: 
   }, [companyId, onDone]);
 
   const step = status?.currentStep ?? 1;
-  const enabledSteps = useMemo(() => status?.enabledSteps ?? [1,2,3,4,5,6,7,8,9,10,11,12], [status?.enabledSteps]);
+  const enabledSteps = useMemo(
+    () => status?.enabledSteps ?? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    [status?.enabledSteps],
+  );
   const totalEnabledSteps = enabledSteps.length;
-  
+
   const progress = useMemo(() => {
     const idx = enabledSteps.indexOf(step);
     if (idx === -1) return 0;
     return Math.round(((idx + 1) / totalEnabledSteps) * 100);
   }, [step, enabledSteps, totalEnabledSteps]);
 
-  const requiredCompleted = useMemo(() => areRequiredStepsCompleted(status?.progressData ?? {}), [status?.progressData]);
+  const requiredCompleted = useMemo(
+    () => areRequiredStepsCompleted(status?.progressData ?? {}),
+    [status?.progressData],
+  );
 
   const canMultiSite = Boolean(status?.availableOptionsByPlan?.allowMultiLocation);
   const canAdvancedPermissions = Boolean(status?.availableOptionsByPlan?.allowAdvancedPermissions);
@@ -249,13 +300,13 @@ export function OnboardingProvider({ children, companyId, onDone }: { children: 
     if (autoSaveRef.current) {
       clearInterval(autoSaveRef.current);
     }
-    
+
     autoSaveRef.current = setInterval(() => {
       if (!status || !stepData || Object.keys(stepData).length === 0 || isSavingRef.current) return;
-      
+
       const currentData = JSON.stringify(stepData);
       if (currentData === lastSavedData.current) return;
-      
+
       isSavingRef.current = true;
       setSaveState("saving");
       saveOnboardingStep(companyId, step, stepData, step)
@@ -273,7 +324,7 @@ export function OnboardingProvider({ children, companyId, onDone }: { children: 
           isSavingRef.current = false;
         });
     }, 10000);
-    
+
     return () => {
       if (autoSaveRef.current) clearInterval(autoSaveRef.current);
     };
@@ -289,7 +340,7 @@ export function OnboardingProvider({ children, companyId, onDone }: { children: 
         : targetStep > step
           ? getNextEnabledStep(step, enabledSteps)
           : getPrevEnabledStep(step, enabledSteps);
-          
+
       const next = await saveOnboardingStep(companyId, step, stepData, safeStep);
       setStatus({ ...next, currentStep: safeStep });
       const payload = (next.progressData?.[`step_${safeStep}`] as Record<string, unknown>) ?? {};
@@ -306,19 +357,25 @@ export function OnboardingProvider({ children, companyId, onDone }: { children: 
   };
 
   const getCapacityByType = useCallback(() => {
-    const existing = stepData.capacityByType as Record<string, number> ?? {};
-    return VEHICLE_OPTIONS.reduce((acc, v) => {
-      acc[v.code] = existing[v.code] ?? 0;
-      return acc;
-    }, {} as Record<string, number>);
+    const existing = (stepData.capacityByType as Record<string, number>) ?? {};
+    return VEHICLE_OPTIONS.reduce(
+      (acc, v) => {
+        acc[v.code] = existing[v.code] ?? 0;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
   }, [stepData.capacityByType]);
 
   const getRatesByType = useCallback(() => {
-    const existing = stepData.ratesByType as Record<string, number> ?? {};
-    return VEHICLE_OPTIONS.reduce((acc, v) => {
-      acc[v.code] = existing[v.code] ?? (stepData.baseValue as number ?? 0);
-      return acc;
-    }, {} as Record<string, number>);
+    const existing = (stepData.ratesByType as Record<string, number>) ?? {};
+    return VEHICLE_OPTIONS.reduce(
+      (acc, v) => {
+        acc[v.code] = existing[v.code] ?? (stepData.baseValue as number) ?? 0;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
   }, [stepData.ratesByType, stepData.baseValue]);
 
   const validateCurrentStep = useCallback(() => {

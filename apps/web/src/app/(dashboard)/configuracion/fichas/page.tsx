@@ -8,17 +8,17 @@ import DataTable from "@/components/ui/DataTable";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import {
-  fetchHelmetLockers,
-  createHelmetLocker,
-  createBatchHelmetLockers,
-  patchHelmetLocker,
-  deleteHelmetLocker,
-  type HelmetLockerDto,
-} from "@/services/helmet-lockers.service";
-import { ShieldPlus, Plus, Trash2, PackagePlus } from "lucide-react";
+  fetchHelmetTokens,
+  createHelmetToken,
+  createBatchHelmetTokens,
+  patchHelmetToken,
+  deleteHelmetToken,
+  type HelmetTokenDto,
+} from "@/services/helmet-tokens.service";
+import { Plus, Trash2, PackagePlus } from "lucide-react";
 
 export default function FichasPage() {
-  const [lockers, setLockers] = useState<HelmetLockerDto[]>([]);
+  const [tokens, setTokens] = useState<HelmetTokenDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { confirm } = useDialog();
@@ -36,7 +36,7 @@ export default function FichasPage() {
     setLoading(true);
     setError(null);
     try {
-      setLockers(await fetchHelmetLockers());
+      setTokens(await fetchHelmetTokens());
     } catch (e) {
       setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
     } finally {
@@ -49,18 +49,18 @@ export default function FichasPage() {
   }, [load]);
 
   const stats = useMemo(() => {
-    const total = lockers.length;
-    const active = lockers.filter((l) => l.isActive).length;
-    const occupied = lockers.filter((l) => l.occupied).length;
+    const total = tokens.length;
+    const active = tokens.filter((l) => l.isActive).length;
+    const occupied = tokens.filter((l) => l.occupied).length;
     const available = active - occupied;
     return { total, active, occupied, available };
-  }, [lockers]);
+  }, [tokens]);
 
   const handleCreateSingle = useCallback(async () => {
     if (!singleCode.trim()) return;
     setError(null);
     try {
-      await createHelmetLocker(singleCode.trim(), singleLabel.trim() || undefined);
+      await createHelmetToken(singleCode.trim(), singleLabel.trim() || undefined);
       setSingleCode("");
       setSingleLabel("");
       setShowCreateSingle(false);
@@ -84,7 +84,7 @@ export default function FichasPage() {
     }
     setError(null);
     try {
-      const created = await createBatchHelmetLockers(batchPrefix, start, end);
+      const created = await createBatchHelmetTokens(batchPrefix, start, end);
       setBatchPrefix("F-");
       setBatchStart("1");
       setBatchEnd("10");
@@ -95,33 +95,41 @@ export default function FichasPage() {
     }
   }, [batchPrefix, batchStart, batchEnd, load, confirm]);
 
-  const handleToggle = useCallback(async (locker: HelmetLockerDto) => {
-    setError(null);
-    try {
-      await patchHelmetLocker(locker.id, { isActive: !locker.isActive });
-      await load();
-    } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
-    }
-  }, [load]);
+  const handleToggle = useCallback(
+    async (token: HelmetTokenDto) => {
+      setError(null);
+      try {
+        await patchHelmetToken(token.id, { isActive: !token.isActive });
+        await load();
+      } catch (e) {
+        setError(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
+      }
+    },
+    [load],
+  );
 
-  const handleDelete = useCallback(async (locker: HelmetLockerDto) => {
-    const ok = await confirm(`¿Eliminar ficha "${locker.code}"?`);
-    if (!ok) return;
-    setError(null);
-    try {
-      await deleteHelmetLocker(locker.id);
-      await load();
-    } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA));
-    }
-  }, [load, confirm]);
+  const handleDelete = useCallback(
+    async (token: HelmetTokenDto) => {
+      const ok = await confirm(`¿Eliminar ficha "${token.code}"?`);
+      if (!ok) return;
+      setError(null);
+      try {
+        await deleteHelmetToken(token.id);
+        await load();
+      } catch (e) {
+        setError(getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA));
+      }
+    },
+    [load, confirm],
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80 font-medium">Configuración</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80 font-medium">
+            Configuración
+          </p>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Fichas de Cascos</h1>
           <p className="text-sm text-slate-500 mt-1">
             Administra los números de ficha/casillero para guardar cascos de moto.
@@ -152,7 +160,13 @@ export default function FichasPage() {
           >
             Crear en lote
           </Button>
-          <Button size="sm" color="primary" variant="outline" onPress={() => load()} isLoading={loading}>
+          <Button
+            size="sm"
+            color="primary"
+            variant="outline"
+            onPress={() => load()}
+            isLoading={loading}
+          >
             Actualizar
           </Button>
         </div>
@@ -261,7 +275,7 @@ export default function FichasPage() {
             render: (row) => (
               <Switch
                 isSelected={row.isActive}
-                onChange={() => handleToggle(row as HelmetLockerDto)}
+                onChange={() => handleToggle(row as HelmetTokenDto)}
                 size="sm"
               />
             ),
@@ -290,7 +304,7 @@ export default function FichasPage() {
                   variant="ghost"
                   color="danger"
                   isDisabled={row.occupied}
-                  onPress={() => handleDelete(row as HelmetLockerDto)}
+                  onPress={() => handleDelete(row as HelmetTokenDto)}
                   startContent={<Trash2 className="w-3 h-3" />}
                 >
                   Eliminar
@@ -299,7 +313,7 @@ export default function FichasPage() {
             ),
           },
         ]}
-        rows={lockers}
+        rows={tokens}
         emptyMessage="No hay fichas configuradas. Crea fichas individuales o en lote para comenzar."
       />
     </div>
