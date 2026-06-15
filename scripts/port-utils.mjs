@@ -75,11 +75,7 @@ export async function isPortFree(port) {
     const server = createServer();
 
     server.once('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        resolve(false);
-      } else {
-        resolve(false);
-      }
+      resolve(false);
     });
 
     server.once('listening', () => {

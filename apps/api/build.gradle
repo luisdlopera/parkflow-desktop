@@ -121,3 +121,7 @@ flyway {
   password = 'parkflow'
   driver = 'org.postgresql.Driver'
 }
+
+dependencyLocking {
+  lockAllConfigurations()
+}
