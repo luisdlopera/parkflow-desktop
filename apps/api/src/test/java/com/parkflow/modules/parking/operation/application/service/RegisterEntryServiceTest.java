@@ -45,6 +45,9 @@ class RegisterEntryServiceTest {
   @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort custodiedItemRepository;
   @Mock private com.parkflow.modules.parking.helmet.domain.repository.HelmetLockerPort helmetLockerPort;
+  @Mock private com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort masterVehicleTypePort;
+  @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
+  @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
   @Mock private org.springframework.core.metrics.ApplicationStartup applicationStartup; // unused
 
   private RegisterEntryService service;
@@ -58,7 +61,31 @@ class RegisterEntryServiceTest {
         appUserRepository, vehicleRepository, rateRepository, parkingSiteRepository, parkingSessionRepository,
         ticketCounterRepository, vehicleConditionReportRepository, operationIdempotencyRepository,
         operationAuditService, operationPrintService, plateValidator, monthlyContractRepository,
-        parkingSpaceService, custodiedItemRepository, helmetLockerPort, new com.fasterxml.jackson.databind.ObjectMapper(), new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+        parkingSpaceService, custodiedItemRepository, helmetLockerPort, new com.fasterxml.jackson.databind.ObjectMapper(), new io.micrometer.core.instrument.simple.SimpleMeterRegistry(), masterVehicleTypePort, companyRepository, companySettingsService);
+
+    // Default master vehicle type stub so tests don't fail on vehicle type validation
+    org.mockito.Mockito.lenient().when(masterVehicleTypePort.findByCode(any())).thenAnswer(inv -> {
+      String code = inv.getArgument(0);
+      if (code == null) return java.util.Optional.empty();
+      com.parkflow.modules.settings.domain.MasterVehicleType type = new com.parkflow.modules.settings.domain.MasterVehicleType();
+      type.setCode(code);
+      type.setName(code);
+      type.setActive(true);
+      type.setRequiresPlate(true);
+      return java.util.Optional.of(type);
+    });
+
+    // Default company settings stub for ticket prefix resolution
+    com.parkflow.modules.licensing.domain.Company company = new com.parkflow.modules.licensing.domain.Company();
+    company.setId(UUID.randomUUID());
+    org.mockito.Mockito.lenient().when(companyRepository.findById(any())).thenReturn(java.util.Optional.of(company));
+    org.mockito.Mockito.lenient().when(companySettingsService.getSettingsOrDefault(any())).thenReturn(java.util.Map.of("tickets", java.util.Map.of("ticketPrefix", "T-")));
+
+    com.parkflow.modules.settings.domain.MasterVehicleType defaultType = new com.parkflow.modules.settings.domain.MasterVehicleType();
+    defaultType.setCode("CAR");
+    defaultType.setActive(true);
+    defaultType.setRequiresPlate(true);
+    org.mockito.Mockito.lenient().when(masterVehicleTypePort.findByCode(org.mockito.ArgumentMatchers.anyString())).thenReturn(java.util.Optional.of(defaultType));
   }
 
   @Test
