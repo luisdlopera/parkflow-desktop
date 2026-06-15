@@ -11,7 +11,7 @@ vi.mock("@/lib/onboarding-api", () => ({
     currentStep: 1,
     skipped: false,
     progressData: {
-      step_1: { vehicleTypes: ["CAR"] },
+      step_1: { vehicleTypes: ["CAR"], helmetHandling: "NONE" },
       step_2: { totalCapacity: 10 },
       step_3: { baseValue: 1000 },
       step_4: { countryCode: "CO" },
@@ -26,7 +26,7 @@ vi.mock("@/lib/onboarding-api", () => ({
     currentStep: 2,
     skipped: false,
     progressData: {
-      step_1: { vehicleTypes: ["CAR"] },
+      step_1: { vehicleTypes: ["CAR"], helmetHandling: "NONE" },
       step_2: { totalCapacity: 10 },
       step_3: { baseValue: 1000 },
       step_4: { countryCode: "CO" },
@@ -57,5 +57,24 @@ describe("OnboardingWizard", () => {
     expect(
       screen.getByText("Se aplicará una configuración estándar. Podrás modificarla luego desde Configuración.")
     ).toBeInTheDocument();
+  });
+
+  it("calls skip and onDone when confirming skip", async () => {
+    const user = userEvent.setup();
+    const onDone = vi.fn();
+    const { skipOnboarding } = await import("@/lib/onboarding-api");
+
+    render(<OnboardingWizard companyId="c1" onDone={onDone} />);
+    await waitFor(() => expect(screen.getByText("Paso 1 de 12")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Omitir parametrización" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar omitir" })).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Confirmar omitir" }));
+
+    await waitFor(() => {
+      expect(skipOnboarding).toHaveBeenCalledWith("c1");
+      expect(onDone).toHaveBeenCalled();
+    });
   });
 });

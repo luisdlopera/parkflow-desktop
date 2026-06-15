@@ -3,8 +3,12 @@ import { Switch } from "@/components/ui/Switch";
 import QuestionHelp from "../QuestionHelp";
 import { useOnboarding, VEHICLE_OPTIONS } from "../OnboardingContext";
 
+function RequiredMark() {
+  return <span className="text-danger ml-0.5" aria-hidden="true">*</span>;
+}
+
 export default function Step3Rates() {
-  const { stepData, setStepData, vehicleTypes, getRatesByType } = useOnboarding();
+  const { stepData, setStepData, vehicleTypes, getRatesByType, stepErrors } = useOnboarding();
 
   return (
     <div className="space-y-4">
@@ -17,14 +21,20 @@ export default function Step3Rates() {
       
       <div className="space-y-3">
         <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
-          <span className="text-sm font-medium">Tarifa base por hora</span>
-          <Input 
-            type="number" 
-            min="0"
+          <span className="text-sm font-medium">
+            Tarifa base por hora
+            <RequiredMark />
+          </span>
+          <Input
+            type="number"
+            min={1}
             className="w-40"
-            label="Valor"
-            value={String(stepData.baseValue ?? "")} 
-            onChange={(v) => setStepData({ ...stepData, baseValue: Math.max(0, Number(v.target.value) || 0), mode: "HOURLY" })} 
+            label="Valor *"
+            isRequired
+            isInvalid={Boolean(stepErrors.baseValue)}
+            errorMessage={stepErrors.baseValue}
+            value={String(stepData.baseValue ?? "")}
+            onChange={(v) => setStepData({ ...stepData, baseValue: Math.max(0, Number(v.target.value) || 0), mode: "HOURLY" })}
           />
         </div>
         

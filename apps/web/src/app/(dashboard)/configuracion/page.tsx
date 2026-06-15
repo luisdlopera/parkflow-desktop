@@ -54,7 +54,7 @@ import {
   type RateCategory
 } from "@/lib/settings-api";
 import { resetOnboarding } from "@/lib/onboarding-api";
-import { currentUser, loadSession, saveSession } from "@/lib/auth";
+import { currentUser, loadSession, saveSession, refreshIfNeeded } from "@/lib/auth";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DropdownTrigger, Dropdown, DropdownMenu, DropdownItem } from "@/components/ui/Dropdown";
 import { MoreVertical, Pencil, Trash2, Car } from "lucide-react";
@@ -2732,11 +2732,16 @@ function OnboardingSection({ onNotify }: { onNotify: (n: { kind: "ok" | "err" | 
                   await resetOnboarding(compId, "Reinicio desde configuración");
                   const session = await loadSession();
                   if (session) {
+                    // Refrescar tokens para garantizar que el estado de sesión esté
+                    // sincronizado con el backend tras invalidar sesiones de otros usuarios.
+                    const refreshed = await refreshIfNeeded(session);
                     await saveSession({
-                      ...session,
-                      user: { ...session.user, onboardingCompleted: false }
+                      ...refreshed,
+                      user: { ...refreshed.user, onboardingCompleted: false }
                     });
                   }
+                  // Invalidar configuración en caché para que el wizard se reconstruya limpio.
+                  window.dispatchEvent(new CustomEvent("parkflow-refresh-runtime-config"));
                   window.location.reload();
                 } catch (e) {
                   setLoading(false);
