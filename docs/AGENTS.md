@@ -111,6 +111,45 @@ Asume que el proyecto debe cumplir estándares de empresas como Google, Amazon, 
 
 ---
 
+## Runtime Error Detection & Prevention
+
+**IMPORTANTE: Antes de ejecutar build/tests, debes revisar activamente si el código contiene estos errores comunes:**
+
+### Hydration Errors (Next.js)
+
+1. **Nested `<button>` elements**: `<Dropdown.Trigger>` (HeroUI) renderiza un `<button>`. Si dentro pones un `<Button>` que también renderiza un `<button>`, se crean botones anidados → hydration error.
+   - **Solución**: No uses `<Dropdown.Trigger>` cuando el trigger es un `<Button>`. Pon el `<Button>` directamente como hijo de `<Dropdown>`.
+   - **Excepción**: Usa `<Dropdown.Trigger>` solo con elementos que NO son botones (Avatar, íconos sin Button wrapper, etc.).
+
+2. **Nested `<a>` elements**: Similar a botones, no ancles enlaces dentro de enlaces.
+
+3. **`className` mismatch** entre server y client: No uses valores no deterministas (como `randomUUID`, `Date.now()`, `Math.random()`) en classNames o estilos.
+
+### Console Errors & Warnings
+
+1. **"Cannot update a component while rendering a different component"**: Ocurre cuando un setState se llama durante el render de otro componente. Refactoriza usando `useEffect` o `useLayoutEffect`.
+
+2. **"Each child in a list should have a unique key prop"**: Toda iteración con `.map()` debe tener `key` única y estable (no usar `index` a menos que la lista sea estática).
+
+3. **"Props with type string/number/boolean are not valid"**: Pasar valores incorrectos a props de componentes HeroUI. Verifica tipos.
+
+4. **"Warning: A props object containing a "key" prop is being spread"**: No esparzas objetos que contengan `key` como props.
+
+### Reglas de Componentes HeroUI v3
+
+1. **`Dropdown.Trigger`**: Solo úsalo cuando el trigger NO sea un `Button`. Si usas `Button`, ponlo directamente como hijo de `<Dropdown>`.
+2. **`Select.Trigger` + `Select.Value`**: Siempre deben usarse dentro de `Select`, nunca fuera.
+3. **`Modal`**: Usa `Modal.Backdrop` → `Modal.Container` → `Modal.Dialog` → `Modal.Header`/`Modal.Body`/`Modal.Footer`. No omitas niveles.
+4. **`Table` + `Table.Content`**: `Table.Content` requiere `Table.Header` y `Table.Body` como hijos directos.
+
+### Proceso ante errores de runtime
+
+1. Si detectas un error de hydration o console error en el código que estás modificando, **debes corregirlo antes de continuar**.
+2. Si el error está en código que NO modificaste, detente y notifícalo al usuario antes de proseguir.
+3. No desplegar código que tenga console errors o hydration errors conocidos.
+
+---
+
 ## Build & Test Verification
 
 **IMPORTANTE: Cada vez que realices cambios en el código, debes seguir este proceso obligatorio:**
