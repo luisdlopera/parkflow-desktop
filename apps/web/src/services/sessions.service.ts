@@ -66,7 +66,7 @@ export async function fetchActiveSessions(params?: GetActiveSessionsQuery): Prom
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
-    throw new Error(payload.error ?? "No se pudo cargar el listado de vehículos activos");
+    throw new Error(payload?.userMessage ?? payload?.error ?? "No se pudo cargar el listado de vehículos activos");
   }
   return res.json();
 }
@@ -77,7 +77,7 @@ export async function fetchParkingSummary(): Promise<ParkingSummaryDto> {
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
-    throw new Error(payload.error ?? "No se pudo cargar el resumen de celdas");
+    throw new Error(payload?.userMessage ?? payload?.error ?? "No se pudo cargar el resumen de celdas");
   }
   return res.json();
 }
@@ -88,7 +88,7 @@ export async function fetchParkingSpaces(): Promise<ParkingSpaceDto[]> {
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
-    throw new Error(payload.error ?? "No se pudieron cargar las celdas de parqueo");
+    throw new Error(payload?.userMessage ?? payload?.error ?? "No se pudieron cargar las celdas de parqueo");
   }
   return res.json();
 }

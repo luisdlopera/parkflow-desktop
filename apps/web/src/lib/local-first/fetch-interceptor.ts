@@ -476,13 +476,24 @@ export async function handleLocalFirstFetch(
 
     // 11. Cash drawer policies & list registers
     if (pathname.endsWith("/cash/policy") && method === "GET") {
-      return jsonResponse({
-        requireOpenForPayment: true,
-        offlineCloseAllowed: true,
-        offlineMaxManualMovement: 500000,
-        operationsHint: "Modo Local-First Activo",
-        resolvedForSite: "00000000-0000-0000-0000-000000000002",
-      });
+      // Try to read cached policy from localStorage (set by cashPolicy() when online)
+      let policy;
+      try {
+        const raw = typeof window !== "undefined" && window.localStorage.getItem("parkflow_cash_policy");
+        if (raw) policy = JSON.parse(raw);
+      } catch {
+        // ignore
+      }
+      if (!policy) {
+        policy = {
+          requireOpenForPayment: true,
+          offlineCloseAllowed: true,
+          offlineMaxManualMovement: 500000,
+          operationsHint: "Modo Local-First Activo",
+          resolvedForSite: "00000000-0000-0000-0000-000000000002",
+        };
+      }
+      return jsonResponse(policy);
     }
 
     if (pathname.endsWith("/cash/registers") && method === "GET") {

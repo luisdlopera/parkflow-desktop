@@ -94,6 +94,27 @@ export type CashPolicyDto = {
 
 export type CashRegisterRow = { id: string; site: string; terminal: string; label: string | null };
 
+const LOCALSTORAGE_POLICY_KEY = "parkflow_cash_policy";
+
+export function readCachedCashPolicy(): CashPolicyDto | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(LOCALSTORAGE_POLICY_KEY);
+    return raw ? (JSON.parse(raw) as CashPolicyDto) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearCachedCashPolicy(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(LOCALSTORAGE_POLICY_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export async function cashPolicy(site?: string | null): Promise<CashPolicyDto> {
   const u = new URL(`${apiV1Base()}/cash/policy`);
   if (site) {
@@ -103,7 +124,15 @@ export async function cashPolicy(site?: string | null): Promise<CashPolicyDto> {
   if (!res.ok) {
     throw new Error(await parseError(res));
   }
-  return (await res.json()) as CashPolicyDto;
+  const result = (await res.json()) as CashPolicyDto;
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(LOCALSTORAGE_POLICY_KEY, JSON.stringify(result));
+    } catch {
+      // storage full or unavailable
+    }
+  }
+  return result;
 }
 
 export async function cashRegisters(site?: string | null): Promise<CashRegisterRow[]> {

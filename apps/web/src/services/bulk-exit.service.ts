@@ -46,7 +46,7 @@ export async function precalculateBulkExit(request: BulkExitRequestDto): Promise
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
-    throw new Error(payload.error ?? "Error al pre-liquidar las salidas masivas");
+    throw new Error(payload?.userMessage ?? payload?.error ?? "Error al pre-liquidar las salidas masivas");
   }
   return res.json();
 }
@@ -59,7 +59,7 @@ export async function processBulkExit(request: BulkExitRequestDto): Promise<Bulk
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
-    throw new Error(payload.error ?? "Error al procesar las salidas masivas");
+    throw new Error(payload?.userMessage ?? payload?.error ?? "Error al procesar las salidas masivas");
   }
   return res.json();
 }

@@ -17,7 +17,7 @@ export async function fetchHelmetTokens(): Promise<HelmetTokenDto[]> {
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
-    throw new Error(payload.error ?? "No se pudieron cargar las fichas");
+    throw new Error(payload?.userMessage ?? payload?.error ?? "No se pudieron cargar las fichas");
   }
   return res.json();
 }
@@ -29,7 +29,7 @@ export async function fetchAvailableHelmetTokens(): Promise<HelmetTokenDto[]> {
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
-    throw new Error(payload.error ?? "No se pudieron cargar las fichas disponibles");
+    throw new Error(payload?.userMessage ?? payload?.error ?? "No se pudieron cargar las fichas disponibles");
   }
   return res.json();
 }
@@ -42,7 +42,7 @@ export async function createHelmetToken(code: string, label?: string): Promise<H
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
-    throw new Error(payload.error ?? "Error al crear la ficha");
+    throw new Error(payload?.userMessage ?? payload?.error ?? "Error al crear la ficha");
   }
   return res.json();
 }
@@ -59,7 +59,7 @@ export async function createBatchHelmetTokens(
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
-    throw new Error(payload.error ?? "Error al crear fichas en lote");
+    throw new Error(payload?.userMessage ?? payload?.error ?? "Error al crear fichas en lote");
   }
   return res.json();
 }
@@ -75,7 +75,7 @@ export async function patchHelmetToken(
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
-    throw new Error(payload.error ?? "Error al actualizar la ficha");
+    throw new Error(payload?.userMessage ?? payload?.error ?? "Error al actualizar la ficha");
   }
   return res.json();
 }
@@ -87,6 +87,6 @@ export async function deleteHelmetToken(id: string): Promise<void> {
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
-    throw new Error(payload.error ?? "Error al eliminar la ficha");
+    throw new Error(payload?.userMessage ?? payload?.error ?? "Error al eliminar la ficha");
   }
 }
