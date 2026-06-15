@@ -16,7 +16,7 @@ import { Select } from "@/components/ui/Select";
 import { ChevronUp, Inbox, Search } from "lucide-react";
 
 export type DataTableColumn<T> = {
-  key: keyof T | string;
+  key: keyof T | (string & {});
   label?: string;
   header?: string;
   priority?: "high" | "medium" | "low";
@@ -176,10 +176,11 @@ export default function DataTable<T extends object>({
       if (sortDescriptor.direction === "descending") cmp *= -1;
       return cmp;
     });
-  }, [source, sortDescriptor, columns]);
+  }, [source, sortDescriptor, columns, serverSide]);
 
-  const getKey = (row: T, index: number) =>
-    getRowKey ? getRowKey(row) : String(rowKey(row, index));
+  const getKey = useCallback((row: T, index: number) =>
+    getRowKey ? getRowKey(row) : String(rowKey(row, index)),
+  [getRowKey, rowKey]);
 
   const selection = useMemo<Selection>(() => {
     if (!selectable) return new Set();

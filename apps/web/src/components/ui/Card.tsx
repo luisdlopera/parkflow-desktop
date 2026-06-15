@@ -5,7 +5,7 @@ import {
 } from "@heroui/react";
 
 export interface CardProps extends Omit<HeroCardProps, "shadow"> {
-  shadow?: "none" | "sm" | "md" | "lg" | string;
+  shadow?: "none" | "sm" | "md" | "lg" | (string & {});
   border?: boolean;
 }
 

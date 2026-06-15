@@ -2,8 +2,8 @@ import React from "react";
 import { Badge as HeroBadge, BadgeProps as HeroBadgeProps } from "@heroui/react";
 
 export interface BadgeProps extends Omit<HeroBadgeProps, "color" | "content"> {
-  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger" | "accent" | string;
-  tone?: "success" | "warning" | "neutral" | string; // V2 internal badge compatibility
+  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger" | "accent" | (string & {});
+  tone?: "success" | "warning" | "neutral" | (string & {}); // V2 internal badge compatibility
   label?: string; // V2 internal badge compatibility
   content?: React.ReactNode;
 }

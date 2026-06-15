@@ -14,10 +14,10 @@ export interface TextAreaProps extends Omit<HeroTextAreaProps, "size" | "color" 
   errorMessage?: string;
   isInvalid?: boolean;
   isRequired?: boolean;
-  size?: "sm" | "md" | "lg" | string;
-  color?: string;
-  variant?: "flat" | "bordered" | "faded" | "underlined" | "primary" | "secondary" | string;
-  radius?: string;
+  size?: "sm" | "md" | "lg" | (string & {});
+  color?: (string & {});
+  variant?: "flat" | "bordered" | "faded" | "underlined" | "primary" | "secondary" | (string & {});
+  radius?: (string & {});
   classNames?: any;
   className?: any;
   minRows?: number;

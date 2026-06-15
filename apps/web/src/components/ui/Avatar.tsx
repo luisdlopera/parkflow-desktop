@@ -2,7 +2,7 @@ import React from "react";
 import { Avatar as HeroAvatar, AvatarProps as HeroAvatarProps } from "@heroui/react";
 
 export interface AvatarProps extends Omit<HeroAvatarProps, "size" | "name"> {
-  size?: "sm" | "md" | "lg" | string;
+  size?: "sm" | "md" | "lg" | (string & {});
   name?: string;
 }
 

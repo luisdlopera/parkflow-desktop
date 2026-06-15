@@ -2,8 +2,8 @@ import React from "react";
 import { Button as HeroButton } from "@heroui/react";
 
 export interface ButtonProps {
-  variant?: "solid" | "bordered" | "light" | "flat" | "faded" | "border border-default-200" | "ghost" | "primary" | "secondary" | "tertiary" | "outline" | "danger" | string;
-  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger" | string;
+  variant?: "solid" | "bordered" | "light" | "flat" | "faded" | "border border-default-200" | "ghost" | "primary" | "secondary" | "tertiary" | "outline" | "danger" | (string & {});
+  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger" | (string & {});
   isLoading?: boolean;
   isDisabled?: boolean;
   isIconOnly?: boolean;
@@ -17,7 +17,7 @@ export interface ButtonProps {
   onPress?: () => void;
   onClick?: () => void;
   className?: string;
-  size?: "sm" | "md" | "lg" | string;
+  size?: "sm" | "md" | "lg" | (string & {});
   type?: "button" | "submit" | "reset";
   form?: string;
   id?: string;

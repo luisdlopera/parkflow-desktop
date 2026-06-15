@@ -10,7 +10,9 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
     return (
       <HeroTooltip {...props as any}>
         <HeroTooltip.Trigger>
-          {children}
+          <span role="button" tabIndex={0}>
+            {children}
+          </span>
         </HeroTooltip.Trigger>
         <HeroTooltip.Content>
           {content}

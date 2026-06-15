@@ -6,8 +6,8 @@ export interface CheckboxProps extends Omit<HeroCheckboxProps, "onChange" | "chi
   defaultSelected?: boolean;
   onChange?: ((checked: boolean) => void) | React.ChangeEventHandler<HTMLInputElement> | any;
   onValueChange?: (checked: boolean) => void;
-  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger" | string;
-  size?: "sm" | "md" | "lg" | string;
+  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger" | (string & {});
+  size?: "sm" | "md" | "lg" | (string & {});
   name?: string;
   onBlur?: any;
   children?: React.ReactNode;
