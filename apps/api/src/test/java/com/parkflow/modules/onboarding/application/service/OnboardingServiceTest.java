@@ -45,6 +45,8 @@ class OnboardingServiceTest {
   @Mock private com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort parkingSessionPort;
   @Mock private com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
   @Mock private com.parkflow.modules.parking.operation.repository.AppUserRepository appUserRepository;
+  @Mock private com.parkflow.modules.parking.helmet.service.HelmetTokenService helmetTokenService;
+  @Mock private com.parkflow.modules.parking.spaces.service.ParkingSpaceService parkingSpaceService;
 
   private OnboardingService onboardingService;
   private UUID companyId;
@@ -72,7 +74,9 @@ class OnboardingServiceTest {
         new OnboardingSettingsMapper(new FeatureAccessService()),
         parkingSessionPort,
         authSessionPort,
-        appUserRepository
+        appUserRepository,
+        helmetTokenService,
+        parkingSpaceService
     );
 
     company = new Company();
@@ -199,6 +203,9 @@ class OnboardingServiceTest {
           && Boolean.TRUE.equals(operationConfiguration.get("usesHelmetTokens"))
           && Integer.valueOf(30).equals(operationConfiguration.get("helmetTokenCount"));
     }));
+    verify(helmetTokenService, times(1)).createBatch(eq(companyId), argThat(req ->
+        "F-".equals(req.prefix()) && req.start() == 1 && req.end() == 30));
+    verify(parkingSpaceService, times(1)).resizeCapacity(companyId, 50);
     assertTrue(company.getOnboardingCompleted());
   }
 }
