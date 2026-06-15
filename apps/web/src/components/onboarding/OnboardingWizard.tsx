@@ -4,7 +4,6 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Check, Save, AlertTriangle } from "lucide-react";
 import { skipOnboarding, completeOnboarding } from "@/lib/onboarding-api";
-import { createBatchHelmetTokens } from "@/services/helmet-tokens.service";
 import { patchSessionUser } from "@/lib/auth";
 import { useState } from "react";
 import {
@@ -196,26 +195,6 @@ function OnboardingContent() {
                 setSaveState("saving");
                 try {
                   await persistStep(step); // Ensure last data is saved
-
-                  // Crear fichas de cascos automáticamente si se configuraron.
-                  // Preferimos los datos ya persistidos en el progreso para evitar
-                  // discrepanncias con el formulario actual del paso 12.
-                  const step1Data = status?.progressData?.step_1 as
-                    | Record<string, unknown>
-                    | undefined;
-                  if (step1Data?.helmetHandling === "TOKENS" && step1Data?.helmetTokenCount) {
-                    const count = Number(step1Data.helmetTokenCount);
-                    if (count > 0 && count <= 9999) {
-                      try {
-                        await createBatchHelmetTokens("F-", 1, count);
-                      } catch (err) {
-                        console.error("Error creating helmet tokens during onboarding:", err);
-                        setSaveState("error");
-                        return;
-                      }
-                    }
-                  }
-
                   await completeOnboarding(companyId);
                   await patchSessionUser({ onboardingCompleted: true });
                   window.dispatchEvent(new CustomEvent("parkflow-refresh-runtime-config"));

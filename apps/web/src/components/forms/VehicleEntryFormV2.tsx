@@ -31,6 +31,7 @@ import { fetchParkingSpaces, type ParkingSpaceDto } from "@/services/sessions.se
 import { FormLayoutFactory } from "@/components/forms/dynamic/FormLayoutFactory";
 import { type RegisteredFieldKey } from "@/components/forms/dynamic/form-registry";
 import { MotorcycleEntryFormUI } from "@/components/forms/motorcycle/MotorcycleEntryFormUI";
+import { CarEntryFormUI } from "@/components/forms/car/CarEntryFormUI";
 import { VehicleTypeIcon } from "@/components/vehicles/VehicleTypeIcon";
 
 const ENTRY_FORM_LAYOUT: RegisteredFieldKey[] = [
@@ -157,6 +158,77 @@ async function handleOfflineEntry(
   }
   toastError("Sin conexión: no se pudo guardar localmente. Verifique la configuración offline.");
   return false;
+}
+
+function buildEntryRequestBody(
+  user: any,
+  values: VehicleEntryFormValues,
+  settings: OperatorSettings,
+  idempotencyKey: string,
+  normalizedPlate: string,
+  resolvedType: string
+) {
+  return validatePayloadOrThrow(
+    operationEntryRequestSchema,
+    {
+      idempotencyKey,
+      operatorUserId: user.id,
+      ...values,
+      type: resolvedType,
+      plate: normalizedPlate,
+      countryCode: values.countryCode,
+      entryMode: values.entryMode,
+      noPlate: values.noPlate,
+      noPlateReason: values.noPlate ? values.noPlateReason?.trim() : null,
+      rateId: values.rateId?.trim() ? values.rateId.trim() : null,
+      site: values.site?.trim() || null,
+      lane: values.lane?.trim() || null,
+      booth: values.booth?.trim() || null,
+      terminal: values.terminal?.trim() || null,
+      observations: values.observations?.trim() || null,
+      vehicleCondition: settings.skipConditionCheck && !values.vehicleCondition?.trim()
+        ? "Sin novedades"
+        : values.vehicleCondition.trim(),
+      conditionChecklist: values.conditionChecklist.split(",").map(i => i.trim()).filter(Boolean),
+      conditionPhotoUrls: values.conditionPhotoUrls.split(",").map(i => i.trim()).filter(Boolean),
+      custodiedItems: values.custodiedItems?.map(item => ({
+        identifier: item.identifier.trim(),
+        observations: item.observations?.trim() || null,
+        photoUrl: item.photoUrl?.trim() || null
+      })) || []
+    },
+    "Corrige los campos del ingreso antes de enviar"
+  );
+}
+
+async function handleEntryPrinting(payload: any, values: VehicleEntryFormValues) {
+  const printPayload = {
+    sessionId: payload.sessionId,
+    receipt: {
+      ticketNumber: payload.receipt.ticketNumber,
+      plate: payload.receipt.plate,
+      vehicleType: payload.receipt.vehicleType as VehicleType,
+      site: payload.receipt.site ?? values.site?.trim() ?? null,
+      lane: payload.receipt.lane ?? values.lane?.trim() ?? null,
+      booth: payload.receipt.booth ?? values.booth?.trim() ?? null,
+      terminal: payload.receipt.terminal ?? values.terminal?.trim() ?? null,
+      parkingSpaceCode: payload.receipt.parkingSpaceCode ?? null,
+      entryAt: payload.receipt.entryAt ?? null
+    }
+  };
+  const generatedPreviewLines = buildTicketPreviewForOperation(printPayload, "ENTRY");
+
+  let printWarning: string | null = null;
+  try {
+    printWarning = await printReceiptIfTauri(printPayload, "ENTRY");
+  } catch (printError) {
+    printWarning = printError instanceof Error 
+      ? `No se pudo imprimir: ${printError.message}` 
+      : "No se pudo imprimir";
+  }
+
+  const plateLabel = payload?.receipt?.plate?.startsWith("NP-") ? "SIN PLACA" : payload?.receipt?.plate;
+  return { printWarning, plateLabel, generatedPreviewLines };
 }
 
 export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery = false }: { initialPlate?: string; disableRecovery?: boolean }) {
@@ -355,6 +427,8 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   const selectedVehicleType = vehicleTypes.find((type) => type.code === selectedTypeCode);
   const requiresPlate = selectedVehicleType?.requiresPlate ?? true;
   const isMotorcycleOnly = vehicleTypes.length === 1 && vehicleTypes[0]?.code === "MOTORCYCLE";
+  const isCarOnly = vehicleTypes.length === 1 && vehicleTypes[0]?.code === "CAR";
+  const isSingleType = isMotorcycleOnly || isCarOnly;
   const selectedTypeName = selectedVehicleType?.name?.toLowerCase() || selectedTypeCode?.toLowerCase() || "";
   const isCarroOrMoto = selectedTypeName.includes("moto") || selectedTypeName.includes("carro") || selectedTypeName.includes("auto") || selectedTypeCode === "CAR";
   const configuredSites = useMemo(() => {
@@ -386,12 +460,12 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   }, [requiresPlate, form]);
 
   useEffect(() => {
-    if (!isMotorcycleOnly) return;
+    if (!isSingleType) return;
     form.setValue("vehicleCondition", "Sin novedades al ingreso", { shouldValidate: true, shouldDirty: false });
     if (!form.getValues("observations")?.trim()) {
       form.setValue("observations", "Sin observaciones", { shouldValidate: true, shouldDirty: false });
     }
-  }, [isMotorcycleOnly, form]);
+  }, [isSingleType, form]);
 
   // Persistir settings
   useEffect(() => {
@@ -524,37 +598,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
 
       const resolvedType = resolveVehicleType(values.type, values.countryCode, values.plate);
 
-      const requestBody = validatePayloadOrThrow(
-        operationEntryRequestSchema,
-        {
-          idempotencyKey: idempotencyKeyRef.current,
-          operatorUserId: user.id,
-          ...values,
-          type: resolvedType,
-          plate: normalizedPlate,
-          countryCode: values.countryCode,
-          entryMode: values.entryMode,
-          noPlate: values.noPlate,
-          noPlateReason: values.noPlate ? values.noPlateReason?.trim() : null,
-          rateId: values.rateId?.trim() ? values.rateId.trim() : null,
-          site: values.site?.trim() || null,
-          lane: values.lane?.trim() || null,
-          booth: values.booth?.trim() || null,
-          terminal: values.terminal?.trim() || null,
-          observations: values.observations?.trim() || null,
-          vehicleCondition: settings.skipConditionCheck && !values.vehicleCondition?.trim()
-            ? "Sin novedades"
-            : values.vehicleCondition.trim(),
-          conditionChecklist: values.conditionChecklist.split(",").map(i => i.trim()).filter(Boolean),
-          conditionPhotoUrls: values.conditionPhotoUrls.split(",").map(i => i.trim()).filter(Boolean),
-          custodiedItems: values.custodiedItems?.map(item => ({
-            identifier: item.identifier.trim(),
-            observations: item.observations?.trim() || null,
-            photoUrl: item.photoUrl?.trim() || null
-          })) || []
-        },
-        "Corrige los campos del ingreso antes de enviar"
-      );
+      const requestBody = buildEntryRequestBody(user, values, settings, idempotencyKeyRef.current, normalizedPlate, resolvedType);
 
       const response = await fetch(`${apiBase}/entries`, {
         method: "POST",
@@ -566,15 +610,12 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        // Build a fake response object to pass to normalizeApiError 
-        // since we already read the body
         const fakeResponse = new Response(JSON.stringify(payload), {
           status: response.status,
           statusText: response.statusText,
           headers: response.headers
         });
         
-        // Dynamic import to avoid missing imports at the top
         const { normalizeApiError } = await import("@/lib/errors/normalize-api-error");
         const { getUserErrorMessage } = await import("@/lib/errors/get-user-error-message");
         
@@ -595,32 +636,8 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
 
       clearIdempotencyKey("entry", idempotencyFingerprint);
 
-      const printPayload = {
-        sessionId: payload.sessionId,
-        receipt: {
-          ticketNumber: payload.receipt.ticketNumber,
-          plate: payload.receipt.plate,
-          vehicleType: payload.receipt.vehicleType as VehicleType,
-          site: payload.receipt.site ?? values.site?.trim() ?? null,
-          lane: payload.receipt.lane ?? values.lane?.trim() ?? null,
-          booth: payload.receipt.booth ?? values.booth?.trim() ?? null,
-          terminal: payload.receipt.terminal ?? values.terminal?.trim() ?? null,
-          parkingSpaceCode: payload.receipt.parkingSpaceCode ?? null,
-          entryAt: payload.receipt.entryAt ?? null
-        }
-      };
-      const generatedPreviewLines = buildTicketPreviewForOperation(printPayload, "ENTRY");
+      const { printWarning, plateLabel, generatedPreviewLines } = await handleEntryPrinting(payload, values);
 
-      let printWarning: string | null = null;
-      try {
-        printWarning = await printReceiptIfTauri(printPayload, "ENTRY");
-      } catch (printError) {
-        printWarning = printError instanceof Error 
-          ? `No se pudo imprimir: ${printError.message}` 
-          : "No se pudo imprimir";
-      }
-
-      const plateLabel = payload?.receipt?.plate?.startsWith("NP-") ? "SIN PLACA" : payload?.receipt?.plate;
       if (printWarning) {
         console.log("Calling setPrintWarning! Warning is:", printWarning); setPrintWarning({
           ticketNumber: payload.receipt.ticketNumber,
@@ -760,7 +777,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       )}
 
       {/* Header con stats y modo - Solo para modo multi-tipo */}
-      {!isMotorcycleOnly && (
+      {!isSingleType && (
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {/* Stats - en móvil se muestran en fila, en desktop también */}
         <div className="flex items-center gap-2 sm:gap-3">
@@ -828,7 +845,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       )}
 
       {/* Panel de configuración - Solo para modo multi-tipo */}
-      {!isMotorcycleOnly && showSettings && (
+      {!isSingleType && showSettings && (
         <Card className="bg-slate-50">
           <Card.Content className="p-4 space-y-3">
             <h4 className="text-sm font-semibold text-slate-700">Configuración de Operador</h4>
@@ -892,15 +909,15 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
             Nuevo ingreso
           </p>
           <h1 className="text-3xl font-bold text-slate-900">
-            {isMotorcycleOnly ? "Registrar entrada de moto" : "Registrar entrada de vehículo"}
+            {isMotorcycleOnly ? "Registrar entrada de moto" : isCarOnly ? "Registrar entrada de carro" : "Registrar entrada de vehículo"}
           </h1>
-          {!isMotorcycleOnly && !(selectedTypeCode && isCarroOrMoto) && (
+          {!isSingleType && !(selectedTypeCode && isCarroOrMoto) && (
             <p className="mt-2 text-sm text-slate-500">
               Modo experto disponible. Presione F1 en cualquier momento para volver a esta pantalla.
             </p>
           )}
         </div>
-        {isMotorcycleOnly && occupancy && (
+        {isSingleType && occupancy && (
           <p className={`text-sm font-medium px-3 py-1.5 rounded-full ${
             occupancy.availableSpaces <= 0 ? "bg-rose-100 text-rose-700" : "bg-brand-100 text-brand-700"
           }`}>
@@ -912,13 +929,25 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       </div>
 
       {/* Formulario Principal */}
-      <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown} className={`rounded-2xl space-y-4 ${isMotorcycleOnly ? "p-4 sm:p-8 border-none shadow-none bg-transparent" : "p-6"}`}>
+      <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown} className={`rounded-2xl space-y-4 ${isSingleType ? "p-4 sm:p-8 border-none shadow-none bg-transparent" : "p-6"}`}>
 
         {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* MODO SOLO MOTOS — Vista separada UI                          */}
+        {/* MODO SOLO TIPO — Vista separada UI                          */}
         {/* ═══════════════════════════════════════════════════════════════ */}
         {isMotorcycleOnly ? (
           <MotorcycleEntryFormUI
+            form={form}
+            onSubmit={form.handleSubmit(onSubmit)}
+            onKeyDown={handleFormKeyDown}
+            plateInputRef={plateInputRef as React.MutableRefObject<HTMLInputElement | null>}
+            occupancy={occupancy}
+            stats={stats}
+            isSubmitDisabled={!!printWarning || (occupancy !== null && occupancy.availableSpaces <= 0) || !form.formState.isValid}
+            platePrefix={settings.platePrefix}
+            noPlate={noPlate}
+          />
+        ) : isCarOnly ? (
+          <CarEntryFormUI
             form={form}
             onSubmit={form.handleSubmit(onSubmit)}
             onKeyDown={handleFormKeyDown}
@@ -1134,7 +1163,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         )}
 
         {/* Sección Avanzada - Colapsable — Solo para modo multi-tipo */}
-        {!isMotorcycleOnly && !isSpeed && runtimeConfig?.operationConfiguration?.showAdvancedSection !== false && (
+        {!isSingleType && !isSpeed && runtimeConfig?.operationConfiguration?.showAdvancedSection !== false && (
           <div className="border-t border-slate-200 pt-4">
             <button
               type="button"
@@ -1298,7 +1327,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       </form>
 
       {/* Tips según modo — Solo para modo multi-tipo */}
-      {!isMotorcycleOnly && (
+      {!isSingleType && (
       <div className="bg-brand-50/50 rounded-xl p-4 text-sm">
         <p className="font-semibold text-brand-800 mb-1 flex items-center gap-1">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
