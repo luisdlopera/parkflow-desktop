@@ -38,7 +38,7 @@ public class CashLedgerSummaryCalculator {
     return new CashSummaryResponse(opening, expected, counted, diff, byMethod, byType, posted);
   }
 
-  private BigDecimal ledgerContribution(CashMovement movement) {
+  public BigDecimal ledgerContribution(CashMovement movement) {
     if (movement.getStatus() != CashMovementStatus.POSTED) {
       return ZERO;
     }

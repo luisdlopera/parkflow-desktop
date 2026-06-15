@@ -50,6 +50,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
     private final CashSequentialSupportService cashSequentialSupportService;
     private final CashClosingOutboundNotifier cashClosingOutboundNotifier;
     private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
+    private final CashLedgerSummaryCalculator cashLedgerSummaryCalculator;
 
     @Override
     @Transactional
@@ -234,7 +235,11 @@ public class CashSessionManagementService implements CashSessionUseCase {
             throw new OperationException(HttpStatus.BAD_REQUEST, "Debe registrar arqueo antes de cerrar");
         }
         CashSummaryResponse sum = getSummary(sessionId);
-        BigDecimal diff = session.getDifferenceAmount() != null ? session.getDifferenceAmount() : ZERO;
+        BigDecimal counted = session.getCountedAmount() != null ? session.getCountedAmount() : ZERO;
+        BigDecimal diff = counted.subtract(sum.expectedLedgerTotal());
+        session.setDifferenceAmount(diff);
+        session.setExpectedAmount(sum.expectedLedgerTotal());
+
         if (diff.compareTo(ZERO) != 0 && !StringUtils.hasText(request.closingNotes())) {
             throw new OperationException(
                 HttpStatus.BAD_REQUEST, "Hay diferencia; observacion de cierre obligatoria");
@@ -364,37 +369,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
     public CashSummaryResponse getSummary(UUID sessionId) {
         CashSession session = requireSession(sessionId);
         List<CashMovement> movements = cashMovementRepository.findByCashSession_IdOrderByCreatedAtDesc(sessionId);
-        BigDecimal ledger =
-            movements.stream().map(this::ledgerContribution).reduce(ZERO, BigDecimal::add);
-        BigDecimal opening = session.getOpeningAmount() != null ? session.getOpeningAmount() : ZERO;
-        BigDecimal expected = opening.add(ledger);
-
-        Map<String, BigDecimal> byMethod = new HashMap<>();
-        Map<String, BigDecimal> byType = new HashMap<>();
-        long posted = 0;
-        for (CashMovement m : movements) {
-            if (m.getStatus() != CashMovementStatus.POSTED) {
-                continue;
-            }
-            posted++;
-            BigDecimal c = ledgerContribution(m);
-            byMethod.merge(m.getPaymentMethod().name(), c, BigDecimal::add);
-            byType.merge(m.getMovementType().name(), c, BigDecimal::add);
-        }
-
-        BigDecimal counted =
-            session.getCountedAmount() != null ? session.getCountedAmount() : null;
-        BigDecimal diff =
-            counted != null ? counted.subtract(expected) : null;
-
-        return new CashSummaryResponse(
-            opening,
-            expected,
-            counted,
-            diff,
-            byMethod,
-            byType,
-            posted);
+        return cashLedgerSummaryCalculator.summarize(session, movements);
     }
 
     @Override
@@ -455,21 +430,6 @@ public class CashSessionManagementService implements CashSessionUseCase {
             throw new OperationException(HttpStatus.CONFLICT, "La sesion de caja ya esta cerrada");
         }
         return s;
-    }
-
-    private BigDecimal ledgerContribution(CashMovement m) {
-        if (m.getStatus() != CashMovementStatus.POSTED) {
-            return ZERO;
-        }
-        return switch (m.getMovementType()) {
-            case PARKING_PAYMENT,
-                MANUAL_INCOME,
-                LOST_TICKET_PAYMENT,
-                REPRINT_FEE,
-                ADJUSTMENT -> m.getAmount();
-            case MANUAL_EXPENSE, WITHDRAWAL, CUSTOMER_REFUND, DISCOUNT -> m.getAmount().negate();
-            case VOID_OFFSET -> m.getAmount();
-        };
     }
 
     private String groupingSiteForParams(CashSession s) {
