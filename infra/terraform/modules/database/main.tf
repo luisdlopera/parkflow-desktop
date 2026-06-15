@@ -54,6 +54,9 @@ resource "aws_db_instance" "main" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
 
+  storage_encrypted       = true
+  backup_retention_period = 7
+
   # Configuration for dev/cost optimization
   skip_final_snapshot = var.environment == "prod" ? false : true
   publicly_accessible = false

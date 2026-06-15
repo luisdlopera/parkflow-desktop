@@ -27,3 +27,9 @@ variable "key_name" {
   type        = string
   default     = ""
 }
+
+variable "admin_cidr_blocks" {
+  description = "CIDR blocks allowed to access admin ports (SSH, Postgres, Spring Boot)"
+  type        = list(string)
+  default     = ["0.0.0.0/0"] # TODO: Restrict this in production
+}
