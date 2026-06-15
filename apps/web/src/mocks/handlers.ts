@@ -58,6 +58,13 @@ export const handlers = [
     ])
   }),
 
+  http.get(/.*\/api\/v1\/parking-spaces/, () => {
+    return HttpResponse.json([
+      { id: 'space-1', code: 'A1', status: 'ACTIVE', occupied: false, type: 'CAR' },
+      { id: 'space-2', code: 'A2', status: 'ACTIVE', occupied: false, type: 'CAR' },
+    ])
+  }),
+
   http.get(/.*\/api\/v1\/parking-spaces\/summary/, () => {
     return HttpResponse.json({
       availableSpaces: 100,

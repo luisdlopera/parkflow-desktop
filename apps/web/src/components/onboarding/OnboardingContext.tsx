@@ -50,18 +50,81 @@ export const PRINTER_OPTIONS = [
   { code: "NONE", label: "Sin impresora", description: "Solo pantalla o digital" },
 ];
 
+export type StepValidationErrors = Record<string, string>;
+
 export function isStepCompleted(progressData: Record<string, unknown>, step: number) {
   const stepKey = `step_${step}`;
   const data = progressData?.[stepKey] as Record<string, unknown> | undefined;
   if (!data) return false;
+  return validateStep(step, data, Array.isArray(data.vehicleTypes) ? (data.vehicleTypes as string[]) : []).isValid;
+}
+
+export function validateStep(
+  step: number,
+  data: Record<string, unknown>,
+  vehicleTypes: string[]
+): { isValid: boolean; errors: StepValidationErrors } {
+  const errors: StepValidationErrors = {};
+
   switch (step) {
-    case 1: return Array.isArray(data.vehicleTypes) && (data.vehicleTypes as string[]).length > 0;
-    case 2: return typeof data.totalCapacity === "number" && data.totalCapacity > 0;
-    case 3: return typeof data.baseValue === "number" && data.baseValue > 0;
-    case 4: return typeof data.countryCode === "string" && data.countryCode.length > 0;
-    case 6: return Array.isArray(data.paymentMethods) && (data.paymentMethods as string[]).length > 0;
-    default: return Object.keys(data).length > 0;
+    case 1: {
+      if (!Array.isArray(data.vehicleTypes) || (data.vehicleTypes as string[]).length === 0) {
+        errors.vehicleTypes = "Selecciona al menos un tipo de vehículo.";
+      }
+      const selectedTypes = Array.isArray(data.vehicleTypes) ? (data.vehicleTypes as string[]) : vehicleTypes;
+      if (selectedTypes.includes("MOTORCYCLE")) {
+        const handling = data.helmetHandling;
+        if (handling !== "TOKENS" && handling !== "LOCKER" && handling !== "NONE") {
+          errors.helmetHandling = "Selecciona una opción de custodia de cascos.";
+        }
+        if (handling === "TOKENS") {
+          const count = typeof data.helmetLockerCount === "number" ? data.helmetLockerCount : Number(data.helmetLockerCount);
+          if (!Number.isFinite(count) || count <= 0) {
+            errors.helmetLockerCount = "La cantidad de fichas debe ser mayor a 0.";
+          } else if (count > 9999) {
+            errors.helmetLockerCount = "La cantidad de fichas no puede superar 9999.";
+          }
+        }
+      }
+      break;
+    }
+    case 2: {
+      const total = typeof data.totalCapacity === "number" ? data.totalCapacity : Number(data.totalCapacity);
+      if (!Number.isFinite(total) || total <= 0) {
+        errors.totalCapacity = "La capacidad total debe ser mayor a 0.";
+      }
+      if (Boolean(data.controlSlots)) {
+        const byType = (data.capacityByType as Record<string, number>) ?? {};
+        const selectedTypes = vehicleTypes.length > 0 ? vehicleTypes : Object.keys(byType);
+        const sum = selectedTypes.reduce((acc, type) => acc + (Number(byType[type]) || 0), 0);
+        if (Number.isFinite(total) && sum > total) {
+          errors.capacityByType = `La suma de capacidades por tipo (${sum}) supera la capacidad total (${total}).`;
+        }
+      }
+      break;
+    }
+    case 3: {
+      const base = typeof data.baseValue === "number" ? data.baseValue : Number(data.baseValue);
+      if (!Number.isFinite(base) || base <= 0) {
+        errors.baseValue = "La tarifa base debe ser mayor a 0.";
+      }
+      break;
+    }
+    case 4: {
+      if (typeof data.countryCode !== "string" || data.countryCode.length === 0) {
+        errors.countryCode = "Selecciona un país.";
+      }
+      break;
+    }
+    case 6: {
+      if (!Array.isArray(data.paymentMethods) || (data.paymentMethods as string[]).length === 0) {
+        errors.paymentMethods = "Selecciona al menos un método de pago.";
+      }
+      break;
+    }
   }
+
+  return { isValid: Object.keys(errors).length === 0, errors };
 }
 
 export function areRequiredStepsCompleted(progressData: Record<string, unknown>) {
@@ -128,6 +191,9 @@ interface OnboardingContextType {
   canAdvancedPermissions: boolean;
   progress: number;
   allProgressData: Record<string, unknown>;
+  stepErrors: StepValidationErrors;
+  validateCurrentStep: () => boolean;
+  clearStepErrors: () => void;
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -137,7 +203,8 @@ export function OnboardingProvider({ children, companyId, onDone }: { children: 
   const [stepData, setStepData] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  
+  const [stepErrors, setStepErrors] = useState<StepValidationErrors>({});
+
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastSavedData = useRef<string>("");
   const isSavingRef = useRef<boolean>(false);
@@ -254,6 +321,16 @@ export function OnboardingProvider({ children, companyId, onDone }: { children: 
     }, {} as Record<string, number>);
   }, [stepData.ratesByType, stepData.baseValue]);
 
+  const validateCurrentStep = useCallback(() => {
+    const result = validateStep(step, stepData, vehicleTypes);
+    setStepErrors(result.errors);
+    return result.isValid;
+  }, [step, stepData, vehicleTypes]);
+
+  const clearStepErrors = useCallback(() => {
+    setStepErrors({});
+  }, []);
+
   return (
     <OnboardingContext.Provider
       value={{
@@ -278,6 +355,9 @@ export function OnboardingProvider({ children, companyId, onDone }: { children: 
         canAdvancedPermissions,
         progress,
         allProgressData: status?.progressData ?? {},
+        stepErrors,
+        validateCurrentStep,
+        clearStepErrors,
       }}
     >
       {children}

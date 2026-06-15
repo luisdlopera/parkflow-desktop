@@ -34,12 +34,27 @@ export default function Step7Tickets() {
         
         <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
           <span className="text-sm font-medium">Nombre de la impresora (opcional)</span>
-          <Input 
+          <Input
             className="w-48"
             aria-label="Nombre de la impresora"
-            value={String(stepData.printerName ?? "")} 
-            onChange={(v) => setStepData({ ...stepData, printerName: v.target.value })} 
+            value={String(stepData.printerName ?? "")}
+            onChange={(v) => setStepData({ ...stepData, printerName: v.target.value })}
             placeholder="Ej: EPSON-TM-T20"
+          />
+        </div>
+
+        <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">Prefijo del número de ficha</span>
+            <span className="text-xs text-default-400">Se usa al generar los consecutivos de tickets</span>
+          </div>
+          <Input
+            className="w-32"
+            aria-label="Prefijo del número de ficha"
+            value={String(stepData.ticketPrefix ?? "T-")}
+            onChange={(v) => setStepData({ ...stepData, ticketPrefix: v.target.value.toUpperCase().replace(/\s/g, "") })}
+            placeholder="T-"
+            maxLength={10}
           />
         </div>
       </div>

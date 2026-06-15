@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Check, Save, AlertTriangle } from "lucide-react";
 import { skipOnboarding, completeOnboarding } from "@/lib/onboarding-api";
 import { createBatchHelmetLockers } from "@/services/helmet-lockers.service";
+import { patchSessionUser } from "@/lib/auth";
 import { useState } from "react";
 import { 
   OnboardingProvider, 
@@ -13,7 +14,9 @@ import {
   REQUIRED_STEPS, 
   isStepCompleted, 
   getPrevEnabledStep, 
-  getNextEnabledStep 
+  getNextEnabledStep,
+  validateStep,
+  type StepValidationErrors
 } from "./OnboardingContext";
 
 import Step1VehicleTypes from "./steps/Step1VehicleTypes";
@@ -44,12 +47,19 @@ function OnboardingContent() {
     vehicleTypes,
     stepData,
     progress,
-    onDone
+    onDone,
+    stepErrors,
+    validateCurrentStep,
+    clearStepErrors,
+    allProgressData
   } = useOnboarding();
 
   const currentVehicleTypes = step === 1
     ? (Array.isArray(stepData.vehicleTypes) ? (stepData.vehicleTypes as string[]) : [])
     : vehicleTypes;
+
+  const currentValidation = validateStep(step, stepData, currentVehicleTypes);
+  const canAdvance = currentValidation.isValid;
 
   const [showSkipModal, setShowSkipModal] = useState(false);
 
@@ -112,40 +122,71 @@ function OnboardingContent() {
           {renderStep()}
         </div>
 
+        {Object.keys(stepErrors).length > 0 && (
+          <div className="mt-4 flex flex-col gap-1 rounded-lg border border-danger-200 bg-danger-50 px-4 py-3">
+            <p className="text-sm font-semibold text-danger">Corrige los siguientes errores para continuar:</p>
+            <ul className="list-disc list-inside text-sm text-danger-700">
+              {Object.entries(stepErrors).map(([key, message]) => (
+                <li key={key}>{message}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="mt-6 flex flex-wrap gap-3">
-          <Button variant="ghost" onPress={() => persistStep(getPrevEnabledStep(step, enabledSteps))} isDisabled={step === enabledSteps[0]}>Atrás</Button>
+          <Button
+            variant="ghost"
+            onPress={() => {
+              clearStepErrors();
+              persistStep(getPrevEnabledStep(step, enabledSteps));
+            }}
+            isDisabled={step === enabledSteps[0]}
+          >
+            Atrás
+          </Button>
           {step !== enabledSteps[enabledSteps.length - 1] && (
-            <Button 
-              color="primary" 
-              onPress={() => persistStep(getNextEnabledStep(step, enabledSteps))}
-              isDisabled={step === 1 && currentVehicleTypes.length === 0}
+            <Button
+              color="primary"
+              onPress={() => {
+                if (!validateCurrentStep()) return;
+                clearStepErrors();
+                persistStep(getNextEnabledStep(step, enabledSteps));
+              }}
+              isDisabled={!canAdvance}
             >
               Siguiente
             </Button>
           )}
           {step === enabledSteps[enabledSteps.length - 1] && (
             <Button
-              color="success"
+              color="primary"
+              size="lg"
+              className="font-semibold px-6"
+              startContent={<Check className="w-5 h-5" />}
               onPress={async () => {
                 setSaveState("saving");
                 try {
                   await persistStep(step); // Ensure last data is saved
-                  
-                  // Crear fichas de cascos automáticamente si se configuraron
-                  const step8Data = status?.progressData?.step_8 as Record<string, unknown> | undefined;
-                  if (step8Data?.enableHelmetSection && step8Data?.helmetLockerCount) {
-                    const count = Number(step8Data.helmetLockerCount);
-                    if (count > 0 && count <= 100) {
+
+                  // Crear fichas de cascos automáticamente si se configuraron.
+                  // Preferimos los datos ya persistidos en el progreso para evitar
+                  // discrepanncias con el formulario actual del paso 12.
+                  const step1Data = status?.progressData?.step_1 as Record<string, unknown> | undefined;
+                  if (step1Data?.helmetHandling === "TOKENS" && step1Data?.helmetLockerCount) {
+                    const count = Number(step1Data.helmetLockerCount);
+                    if (count > 0 && count <= 9999) {
                       try {
                         await createBatchHelmetLockers("F-", 1, count);
                       } catch (err) {
                         console.error("Error creating helmet lockers during onboarding:", err);
-                        // No bloquear el onboarding si falla la creación de fichas
+                        setSaveState("error");
+                        return;
                       }
                     }
                   }
-                  
+
                   await completeOnboarding(companyId);
+                  await patchSessionUser({ onboardingCompleted: true });
                   window.dispatchEvent(new CustomEvent("parkflow-refresh-runtime-config"));
                   onDone();
                 } catch {
@@ -153,7 +194,7 @@ function OnboardingContent() {
                 }
               }}
             >
-              Finalizar
+              Finalizar onboarding
             </Button>
           )}
           {requiredCompleted && (
@@ -168,13 +209,39 @@ function OnboardingContent() {
         </div>
       </div>
 
-      <Modal state={ { isOpen: showSkipModal, setOpen: () => {}, open: () => {}, close: () => {}, toggle: () => {} } } onOpenChange={setShowSkipModal} aria-label="Omitir parametrización">
+      <Modal
+        state={{
+          isOpen: showSkipModal,
+          setOpen: (v: boolean) => { if (!v) setShowSkipModal(false); },
+          open: () => setShowSkipModal(true),
+          close: () => setShowSkipModal(false),
+          toggle: () => setShowSkipModal((v) => !v),
+        }}
+        onOpenChange={setShowSkipModal}
+        aria-label="Omitir parametrización"
+      >
         <Modal.Content>
           <Modal.Header>Omitir parametrización</Modal.Header>
           <Modal.Body>Se aplicará una configuración estándar. Podrás modificarla luego desde Configuración.</Modal.Body>
           <Modal.Footer>
             <Button variant="ghost" onPress={() => setShowSkipModal(false)}>Cancelar</Button>
-            <Button color="warning" onPress={async () => { await skipOnboarding(companyId); window.dispatchEvent(new CustomEvent("parkflow-refresh-runtime-config")); onDone(); }}>Confirmar omitir</Button>
+            <Button
+              color="warning"
+              onPress={async () => {
+                setShowSkipModal(false);
+                try {
+                  await skipOnboarding(companyId);
+                  await patchSessionUser({ onboardingCompleted: true });
+                  window.dispatchEvent(new CustomEvent("parkflow-refresh-runtime-config"));
+                  onDone();
+                } catch (err) {
+                  console.error("Error skipping onboarding:", err);
+                  setSaveState("error");
+                }
+              }}
+            >
+              Confirmar omitir
+            </Button>
           </Modal.Footer>
         </Modal.Content>
       </Modal>

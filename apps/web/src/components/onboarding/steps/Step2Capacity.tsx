@@ -4,31 +4,47 @@ import QuestionHelp from "../QuestionHelp";
 import { useOnboarding, VEHICLE_OPTIONS } from "../OnboardingContext";
 import { Hash } from "lucide-react";
 
+function RequiredMark() {
+  return <span className="text-danger ml-0.5" aria-hidden="true">*</span>;
+}
+
 export default function Step2Capacity() {
-  const { stepData, setStepData, vehicleTypes, getCapacityByType } = useOnboarding();
+  const { stepData, setStepData, vehicleTypes, getCapacityByType, stepErrors } = useOnboarding();
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <p className="text-sm font-medium">¿Cuál es la capacidad de tu parqueadero?</p>
+        <p className="text-sm font-medium">
+          ¿Cuál es la capacidad de tu parqueadero?
+          <RequiredMark />
+        </p>
         <QuestionHelp title="Capacidad">
-          Configura la capacidad total y por tipo de vehículo. Esto permite controlar cupos específicos.
+          Configura la capacidad total y por tipo de vehículo. Si activas “Controlar cupos”,
+          la suma de capacidades por tipo no podrá superar la capacidad total.
         </QuestionHelp>
       </div>
-      
+
+      {stepErrors.capacityByType && (
+        <p className="text-sm text-danger" role="alert">{stepErrors.capacityByType}</p>
+      )}
+
       <div className="space-y-3">
         <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
           <div className="flex items-center gap-2">
             <Hash className="w-4 h-4 text-default-400" />
             <span className="text-sm font-medium">Capacidad total</span>
           </div>
-          <Input 
-            type="number" 
-            min="0"
+          <Input
+            type="number"
+            min={1}
             className="w-32"
             aria-label="Capacidad total"
-            value={String(stepData.totalCapacity ?? "")} 
-            onChange={(v) => setStepData({ ...stepData, totalCapacity: Math.max(0, Number(v.target.value) || 0) })} 
+            label="Total *"
+            isRequired
+            isInvalid={Boolean(stepErrors.totalCapacity)}
+            errorMessage={stepErrors.totalCapacity}
+            value={String(stepData.totalCapacity ?? "")}
+            onChange={(v) => setStepData({ ...stepData, totalCapacity: Math.max(0, Number(v.target.value) || 0) })}
           />
         </div>
         
@@ -36,7 +52,7 @@ export default function Step2Capacity() {
           ¿Quieres controlar cupos?
         </Switch>
         
-        {Boolean(stepData.controlSlots) && vehicleTypes.length > 0 && (
+          {Boolean(stepData.controlSlots) && vehicleTypes.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-default-600">Capacidad por tipo de vehículo:</p>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -46,12 +62,13 @@ export default function Step2Capacity() {
                 return (
                   <div key={typeCode} className="flex items-center justify-between p-2 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
                     <span className="text-sm">{vehicle?.label}</span>
-                    <Input 
-                      type="number" 
-                      min="0"
+                    <Input
+                      type="number"
+                      min={0}
                       className="w-24"
                       aria-label={`Capacidad ${vehicle?.label ?? typeCode}`}
-                      value={String(capacity)} 
+                      isInvalid={Boolean(stepErrors.capacityByType)}
+                      value={String(capacity)}
                       onChange={(v) => {
                         const current = getCapacityByType();
                         const next = { ...current, [typeCode]: Math.max(0, Number(v.target.value) || 0) };

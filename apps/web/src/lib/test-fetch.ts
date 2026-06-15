@@ -8,7 +8,7 @@ async function testFetch() {
     });
     console.log("Status:", res.status);
     const text = await res.text();
-    console.log("Body:", text);
+    console.log("Body length:", text.length);
   } catch (e) {
     console.error("Fetch failed:", e);
   }
