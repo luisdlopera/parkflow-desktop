@@ -17,7 +17,10 @@ public interface CashMovementUseCase {
     List<CashMovementResponse> listMovements(UUID sessionId);
     
     // Integration methods for other modules
-    void assertCashOpenForParkingPayment(ParkingSession parkingSession);
+    default void assertCashOpenForParkingPayment(ParkingSession parkingSession) {
+        assertCashOpenForParkingPayment(parkingSession, null);
+    }
+    void assertCashOpenForParkingPayment(ParkingSession parkingSession, UUID cashSessionId);
     void recordParkingPayment(
         ParkingSession parkingSession,
         Payment payment,

@@ -246,8 +246,18 @@ public class CashMovementManagementService implements CashMovementUseCase {
 
     @Override
     @Transactional
-    public void assertCashOpenForParkingPayment(ParkingSession parkingSession) {
+    public void assertCashOpenForParkingPayment(ParkingSession parkingSession, UUID cashSessionId) {
         if (!cashPolicyResolver.requireOpenForPayment(policySiteLabel(parkingSession))) {
+            return;
+        }
+        if (cashSessionId != null) {
+            cashSessionRepository
+                .findById(cashSessionId)
+                .filter(s -> s.getStatus() == CashSessionStatus.OPEN)
+                .orElseThrow(
+                    () ->
+                        new OperationException(
+                            HttpStatus.CONFLICT, "La sesion de caja no esta abierta"));
             return;
         }
         String site = normalizeSite(parkingSession.getSite());
