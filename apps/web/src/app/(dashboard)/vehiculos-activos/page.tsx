@@ -9,8 +9,10 @@ import { useTerminalCaja } from "@/hooks/useTerminalCaja";
 import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
 import { fetchHelmetLockers, type HelmetLockerDto } from "@/services/helmet-lockers.service";
 import Link from "next/link";
-import { AlertTriangle, Eye, MoreVertical, Edit, Printer, LogOut } from "lucide-react";
+import { AlertTriangle, Eye, MoreVertical, Edit, Printer, LogOut, CheckCircle, XCircle } from "lucide-react";
 import { GetActiveSessionsQuery, ActiveSessionDto } from "@/services/sessions.service";
+import { precalculateBulkExit, processBulkExit, BulkExitCalculateResponseDto, BulkExitResponseDto } from "@/services/bulk-exit.service";
+import { currentUser } from "@/lib/auth";
 import type { SortDescriptor, Selection } from "@heroui/react";
 
 export default function VehiculosActivosPage() {
@@ -30,6 +32,11 @@ export default function VehiculosActivosPage() {
   const [helmetLockers, setHelmetLockers] = useState<HelmetLockerDto[]>([]);
   const [helmetLockersLoading, setHelmetLockersLoading] = useState(false);
 
+  const [precalculation, setPrecalculation] = useState<BulkExitCalculateResponseDto | null>(null);
+  const [finalResult, setFinalResult] = useState<BulkExitResponseDto | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const enableCustodiedItem = runtimeConfig?.operationConfiguration?.enableCustodiedItem as boolean ?? true;
   const vehicleTypes = runtimeConfig?.vehicleTypes ?? [];
   const hasMotorcycles = vehicleTypes.includes("MOTORCYCLE");
@@ -45,6 +52,53 @@ export default function VehiculosActivosPage() {
         .finally(() => setHelmetLockersLoading(false));
     }
   }, [enableCustodiedItem, hasMotorcycles]);
+
+  const handleCalculateBulkExit = async () => {
+    const user = await currentUser();
+    if (!user) return;
+    const selectedIds = selectedKeys === "all" ? rows.map(r => r.ticketNumber) : Array.from(selectedKeys);
+    if (selectedIds.length === 0) return;
+    
+    setIsCalculating(true);
+    try {
+      const result = await precalculateBulkExit({
+        locators: selectedIds as string[],
+        operatorUserId: user.id
+      });
+      setPrecalculation(result);
+    } catch (err: any) {
+      alert("Error en pre-liquidación: " + err.message);
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
+  const handleConfirmProcess = async () => {
+    const user = await currentUser();
+    if (!user || !precalculation) return;
+    const selectedIds = precalculation.items.map(i => i.locator);
+    
+    setIsProcessing(true);
+    try {
+      const result = await processBulkExit({
+        locators: selectedIds,
+        operatorUserId: user.id,
+        paymentMethod: "CASH" 
+      });
+      setFinalResult(result);
+      setSelectedKeys(new Set());
+      reload();
+    } catch (err: any) {
+      alert("Error procesando salida masiva: " + err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const closeModal = () => {
+    setPrecalculation(null);
+    setFinalResult(null);
+  };
 
   // ... skip unchanged lines and add selectable to DataTable
   // We'll do this carefully. Let me re-do the replacement to target the correct lines.
@@ -190,16 +244,22 @@ export default function VehiculosActivosPage() {
           </Modal.Container>
         </Modal.Backdrop>
       )}
-      <div className="flex justify-between items-center mb-4">
-        {(selectedKeys === "all" || (selectedKeys as Set<string>).size > 0) && (
-          <div className="flex gap-2 items-center bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
-            <span className="text-sm font-medium text-blue-800">{selectedKeys === "all" ? rows.length : (selectedKeys as Set<string>).size} seleccionados</span>
-            <div className="h-4 w-px bg-blue-200 mx-2"></div>
-            <Button size="sm" color="warning" variant="flat">Salida Masiva</Button>
-            <Button size="sm" color="default" variant="flat">Cambiar Tarifa</Button>
+      {((selectedKeys === "all" && rows.length > 0) || (selectedKeys !== "all" && (selectedKeys as Set<string>).size > 0)) && (
+        <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] p-4 flex justify-between items-center z-50">
+          <div className="flex items-center gap-3">
+            <div className="bg-amber-100 text-amber-800 rounded-full w-8 h-8 flex items-center justify-center font-bold">
+              {selectedKeys === "all" ? meta?.total ?? rows.length : (selectedKeys as Set<string>).size}
+            </div>
+            <span className="font-semibold text-slate-700">Vehículos seleccionados</span>
           </div>
-        )}
-      </div>
+          <div className="flex gap-3">
+             <Button color="default" variant="flat" onPress={() => setSelectedKeys(new Set())}>Cancelar</Button>
+             <Button color="warning" onPress={handleCalculateBulkExit} isLoading={isCalculating} startContent={<LogOut className="w-4 h-4" />}>
+               Pre-liquidar Salida Masiva
+             </Button>
+          </div>
+        </div>
+      )}
 
       <DataTable
         selectable
@@ -281,17 +341,15 @@ export default function VehiculosActivosPage() {
             render: (row) => (
               <div className="flex justify-end relative">
                 <Dropdown>
-                  <Dropdown.Trigger>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      color="default"
-                      isIconOnly
-                      aria-label="Opciones"
-                    >
-                      <MoreVertical className="h-4 w-4 text-slate-500" />
-                    </Button>
-                  </Dropdown.Trigger>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    color="default"
+                    isIconOnly
+                    aria-label="Opciones"
+                  >
+                    <MoreVertical className="h-4 w-4 text-slate-500" />
+                  </Button>
                   <Dropdown.Popover>
                     <Dropdown.Menu aria-label="Acciones de vehículo" onAction={(key) => {
                       if (key === "view") setTicketPreview(row as ActiveSessionDto);
@@ -331,6 +389,118 @@ export default function VehiculosActivosPage() {
         rows={rows}
         emptyMessage="No hay vehículos activos en este momento."
       />
+
+      {/* Precalculation Confirmation Modal */}
+      {precalculation && !finalResult && (
+        <Modal.Backdrop isOpen={true} onOpenChange={(open) => !open && setPrecalculation(null)}>
+          <Modal.Container size="lg">
+            <Modal.Dialog>
+              <Modal.CloseTrigger />
+              <Modal.Header>
+                <Modal.Heading>Confirmar Salida Masiva</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase font-bold">Total Vehículos</p>
+                    <p className="text-xl font-bold">{precalculation.totalVehicles}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase font-bold">Subtotal</p>
+                    <p className="text-xl font-bold text-slate-700">${precalculation.totalSubtotal.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase font-bold">Descuentos</p>
+                    <p className="text-xl font-bold text-green-600">-${precalculation.totalDiscount.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase font-bold">Total a Cobrar</p>
+                    <p className="text-xl font-bold text-brand-600">${precalculation.finalTotal.toLocaleString()}</p>
+                  </div>
+                </div>
+                
+                {precalculation.errors && precalculation.errors.length > 0 && (
+                  <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm text-rose-700">
+                    <p className="font-bold flex items-center gap-1"><AlertTriangle className="w-4 h-4"/> Vehículos con anomalías (se excluirán/fallarán):</p>
+                    <ul className="list-disc pl-5 mt-1">
+                      {precalculation.errors.map((e, idx) => <li key={idx}>{e}</li>)}
+                    </ul>
+                  </div>
+                )}
+                
+                <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-slate-50 sticky top-0">
+                      <tr>
+                        <th className="px-4 py-2 text-slate-500 font-semibold">Placa</th>
+                        <th className="px-4 py-2 text-slate-500 font-semibold">Ticket</th>
+                        <th className="px-4 py-2 text-slate-500 font-semibold text-right">Total</th>
+                        <th className="px-4 py-2 text-slate-500 font-semibold text-center">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {precalculation.items.map((item, idx) => (
+                        <tr key={idx}>
+                          <td className="px-4 py-2 font-medium">{item.plate}</td>
+                          <td className="px-4 py-2 text-slate-500">{item.ticketNumber}</td>
+                          <td className="px-4 py-2 text-right font-semibold">${item.total.toLocaleString()}</td>
+                          <td className="px-4 py-2 text-center">
+                            {item.errorMessage ? (
+                              <span className="text-rose-500 text-xs font-bold" title={item.errorMessage}>Error</span>
+                            ) : (
+                              <span className="text-emerald-500 text-xs font-bold">OK</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button color="default" variant="ghost" onPress={() => setPrecalculation(null)}>Cancelar</Button>
+                <Button color="warning" onPress={handleConfirmProcess} isLoading={isProcessing}>
+                  Confirmar e Imprimir
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      )}
+
+      {/* Success Modal */}
+      {finalResult && (
+        <Modal.Backdrop isOpen={true} onOpenChange={(open) => !open && closeModal()}>
+          <Modal.Container size="sm">
+            <Modal.Dialog className="text-center p-6 space-y-4">
+              <div className="flex justify-center">
+                {finalResult.failedCount === 0 ? (
+                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-8 h-8" />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="w-8 h-8" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">
+                  {finalResult.failedCount === 0 ? "Proceso Exitoso" : "Proceso Parcial"}
+                </h3>
+                <p className="text-slate-500 mt-2">
+                  Se procesaron <b>{finalResult.successfulCount}</b> vehículos correctamente. 
+                  {finalResult.failedCount > 0 && <span className="text-rose-600 font-medium"> ({finalResult.failedCount} fallaron)</span>}
+                </p>
+                <p className="text-2xl font-black text-brand-600 mt-4">${finalResult.totalCharged.toLocaleString()}</p>
+              </div>
+              <Button color="primary" className="w-full" onPress={closeModal}>
+                Cerrar
+              </Button>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      )}
     </div>
   );
 }

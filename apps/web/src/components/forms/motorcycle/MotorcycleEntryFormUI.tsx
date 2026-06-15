@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
 import { motion, AnimatePresence } from "framer-motion";
-import { Ban, CheckCircle2, AlertCircle } from "lucide-react";
+import { User, CheckCircle2, AlertCircle } from "lucide-react";
 import { MotorRacingHelmet } from "@/components/ui/MotorRacingHelmet";
 import { Autocomplete, ListBox, SearchField, useFilter, Label, FieldError } from "@heroui/react";
 import { fetchAvailableHelmetLockers } from "@/services/helmet-lockers.service";
@@ -24,15 +24,6 @@ interface MotorcycleEntryFormUIProps {
   submitDisabledReason?: string;
   platePrefix?: string;
   noPlate: boolean;
-}
-
-function HelmetOffIcon({ className }: { className?: string }) {
-  return (
-    <div className={`relative ${className || ""}`}>
-      <MotorRacingHelmet className="w-full h-full" />
-      <Ban className="absolute inset-0 w-full h-full text-current opacity-80" />
-    </div>
-  );
 }
 
 export function MotorcycleEntryFormUI({
@@ -72,7 +63,7 @@ export function MotorcycleEntryFormUI({
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Placa — Input nativo gigante */}
       <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-warning-400 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-brand-500 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
         <div className="relative bg-white rounded-2xl p-1">
           <Controller
             name="plate"
@@ -134,17 +125,17 @@ export function MotorcycleEntryFormUI({
               onClick={() => form.setValue("custodiedItems", [], { shouldValidate: true })}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 !helmetDelivered
-                  ? "border-slate-800 bg-slate-800 text-white scale-[1.02] shadow-md"
+                  ? "border-brand-500 bg-brand-500 text-white scale-[1.02] shadow-md"
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
               }`}
             >
-              <HelmetOffIcon className={`w-7 h-7 mb-2 ${!helmetDelivered ? "text-white" : "text-slate-500"}`} />
+              <User className={`w-7 h-7 mb-2 ${!helmetDelivered ? "text-white" : "text-slate-500"}`} />
               <span className="font-bold text-sm sm:text-base">Lleva el Casco</span>
               {!helmetDelivered && (
                 <>
-                  <motion.div layoutId="helmet-indicator" className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary-400" />
+                  <motion.div layoutId="helmet-indicator" className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white" />
                   <div className="absolute top-2 left-2">
-                    <CheckCircle2 className="w-4 h-4 text-primary-400" />
+                    <CheckCircle2 className="w-4 h-4 text-white" />
                   </div>
                 </>
               )}
@@ -185,7 +176,7 @@ export function MotorcycleEntryFormUI({
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className="overflow-hidden"
               >
-                <div className="bg-brand-50/50 border border-brand-100 rounded-2xl p-4 flex flex-col gap-4 mt-3">
+                <div className="bg-transparent border border-slate-200 rounded-2xl p-4 flex flex-col gap-4 mt-3">
                   
                   {/* Selector rápido de cantidad */}
                   <div className="flex items-center justify-between bg-white rounded-xl p-2 border border-slate-200">
@@ -313,8 +304,6 @@ export function MotorcycleEntryFormUI({
         <Tooltip
           content={submitDisabledReason || "Completa los datos requeridos"}
           isDisabled={!isSubmitDisabled}
-          placement="top"
-          delay={100}
         >
           <div className="w-full">
             <Button

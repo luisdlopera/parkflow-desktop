@@ -2,7 +2,7 @@
 
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { ListBox } from "@heroui/react";
 import { Select } from "@/components/ui/Select";
@@ -251,7 +251,16 @@ export default function SalidaCobroPage() {
   const [printWarning, setPrintWarning] = useState<{ ticketNumber: string; plate: string; previewLines: string[] } | null>(null);
   const autoLookupDone = useRef(false);
 
-  const { hasPaymentMethod } = useRuntimeConfig();
+  const { config, hasPaymentMethod } = useRuntimeConfig();
+  const availablePaymentMethods = useMemo(
+    () => {
+      if (!config?.paymentMethods) return PAYMENT_METHODS;
+      return PAYMENT_METHODS.filter((m) => config.paymentMethods!.includes(m.code));
+    },
+    [config?.paymentMethods]
+  );
+  const firstMethod = availablePaymentMethods[0]?.code ?? ("CASH" as PaymentMethodCode);
+  const secondMethod = availablePaymentMethods[1]?.code ?? firstMethod;
 
   // Auto-focus en campo de ticket al cargar
   useEffect(() => {
@@ -341,11 +350,17 @@ export default function SalidaCobroPage() {
         return;
       }
       setActive(payload);
-      setSelectedPaymentMethod("CASH");
+      const availableNonMixed = availablePaymentMethods.filter((m) => m.code !== "MIXED") as Array<{
+        code: Exclude<PaymentMethodCode, "MIXED">;
+        label: string;
+        hint: string;
+        tone: string;
+      }>;
+      setSelectedPaymentMethod(availablePaymentMethods[0]?.code ?? "CASH");
       setCashReceived("");
       setSplitPayments([
-        { id: "split-1", method: "CASH", amount: "" },
-        { id: "split-2", method: "NEQUI", amount: "" }
+        { id: "split-1", method: availableNonMixed[0]?.code ?? "CASH", amount: "" },
+        { id: "split-2", method: availableNonMixed[1]?.code ?? availableNonMixed[0]?.code ?? "CASH", amount: "" }
       ]);
       if (payload.receipt.agreementCode) {
         setAgreementCode(payload.receipt.agreementCode);
@@ -362,7 +377,7 @@ export default function SalidaCobroPage() {
     } finally {
       setSearching(false);
     }
-  }, [ticketNumber, plate, agreementCode, apiBase, playSuccess, playError]);
+  }, [ticketNumber, plate, agreementCode, apiBase, playSuccess, playError, availablePaymentMethods]);
 
   useEffect(() => {
     if (autoLookupDone.current) {
@@ -539,8 +554,8 @@ export default function SalidaCobroPage() {
 
   // Keyboard shortcuts - definido después de processExit
   useExitShortcuts({
-    onCashPayment: () => processExit("CASH"),
-    onCardPayment: () => processExit("DEBIT_CARD"),
+    onCashPayment: () => processExit(firstMethod),
+    onCardPayment: () => processExit(secondMethod),
     onSearch: lookup,
     isActive: !!active && !processing
   });
@@ -1010,71 +1025,50 @@ export default function SalidaCobroPage() {
               : "Busque una sesion activa para habilitar cobros."}
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            Salida rápida: F2 abre esta pantalla; Ctrl+Enter ejecuta la búsqueda; con sesión activa use 1 (efectivo) o 2 (tarjeta débito).
+            Salida rápida: F2 abre esta pantalla; Ctrl+Enter ejecuta la búsqueda
+            {availablePaymentMethods.length > 0
+              ? `; con sesión activa use 1 (${availablePaymentMethods[0].label.toLowerCase()})${availablePaymentMethods.length > 1 ? ` o 2 (${availablePaymentMethods[1].label.toLowerCase()})` : ""}.`
+              : "."}
           </p>
 
-          {/* Botones de cobro grandes */}
-          <div className="mt-4 space-y-3">
-            {hasPaymentMethod("CASH") && (
-              <button
-                type="button"
-                data-testid="payment-cash"
-                disabled={!active || searching || processing}
-                onClick={() => processExit("CASH")}
-                className={`
-                  w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
-                  flex items-center gap-3
-                  ${active && !processing
-                    ? "bg-emerald-500 hover:bg-emerald-600 text-white border border-default-200 -500/30" 
-                    : "bg-slate-200 text-slate-400 cursor-not-allowed"}
-                `}
-              >
-                <div className={`
-                  w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
-                  ${active && !processing ? "bg-white/20" : "bg-slate-300"}
-                `}>
-                  1
-                </div>
-                <div className="flex-1">
-                  <div className="text-lg">Efectivo</div>
-                  <div className="text-xs opacity-80 font-normal">Tecla 1</div>
-                </div>
-                {processing && (
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                )}
-              </button>
-            )}
-
-            {(hasPaymentMethod("CARD") || hasPaymentMethod("DEBIT_CARD") || hasPaymentMethod("CREDIT_CARD")) && (
-              <button
-                type="button"
-                data-testid="payment-card"
-                disabled={!active || searching || processing}
-                onClick={() => processExit("DEBIT_CARD")}
-                className={`
-                  w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
-                  flex items-center gap-3
-                  ${active && !processing
-                    ? "bg-blue-500 hover:bg-blue-600 text-white border border-default-200 -500/30" 
-                    : "bg-slate-200 text-slate-400 cursor-not-allowed"}
-                `}
-              >
-                <div className={`
-                  w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
-                  ${active && !processing ? "bg-white/20" : "bg-slate-300"}
-                `}>
-                  2
-                </div>
-                <div className="flex-1">
-                  <div className="text-lg">Tarjeta</div>
-                  <div className="text-xs opacity-80 font-normal">Tecla 2</div>
-                </div>
-              </button>
-            )}
-          </div>
+          {/* Botones de cobro dinámicos según selección de onboarding */}
+          {availablePaymentMethods.slice(0, 2).length > 0 && (
+            <div className="mt-4 space-y-3">
+              {availablePaymentMethods.slice(0, 2).map((method, index) => (
+                <button
+                  key={method.code}
+                  type="button"
+                  data-testid={`payment-${method.code.toLowerCase()}`}
+                  disabled={!active || searching || processing}
+                  onClick={() => processExit(method.code)}
+                  className={`
+                    w-full rounded-xl px-4 py-4 text-left font-semibold transition-all
+                    flex items-center gap-3
+                    ${active && !processing
+                      ? `${method.tone} text-white`
+                      : "bg-slate-200 text-slate-400 cursor-not-allowed"}
+                  `}
+                >
+                  <div className={`
+                    w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-base sm:text-lg
+                    ${active && !processing ? "bg-white/20" : "bg-slate-300"}
+                  `}>
+                    {index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-lg">{method.label}</div>
+                    <div className="text-xs opacity-80 font-normal">Tecla {index + 1}</div>
+                  </div>
+                  {processing && (
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="mt-4 grid grid-cols-1 gap-2">
-            {PAYMENT_METHODS.filter(m => hasPaymentMethod(m.code) || m.code === "MIXED").map((method, index) => (
+            {availablePaymentMethods.map((method, index) => (
               <Button
                 key={method.code}
                 className={`min-h-14 justify-start text-left font-bold ${
