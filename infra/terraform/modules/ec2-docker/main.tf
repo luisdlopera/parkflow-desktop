@@ -9,7 +9,7 @@ resource "aws_security_group" "ec2_docker" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] 
+    cidr_blocks = var.admin_cidr_blocks 
   }
 
   # HTTP access for the API/Web
@@ -33,14 +33,14 @@ resource "aws_security_group" "ec2_docker" {
     from_port   = 6021 # Postgres
     to_port     = 6021
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.admin_cidr_blocks
   }
 
   ingress {
     from_port   = 8080 # Spring Boot default
     to_port     = 8080
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.admin_cidr_blocks
   }
 
   egress {
