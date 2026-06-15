@@ -14,4 +14,12 @@ public interface RegisterExitUseCase {
    * @return the result of the operation
    */
   OperationResultResponse execute(ExitRequest request);
+
+  /**
+   * Pre-calculates the vehicle exit operation without committing to DB (dry-run).
+   *
+   * @param request the exit details
+   * @return the result of the calculation
+   */
+  OperationResultResponse precalculate(ExitRequest request);
 }
