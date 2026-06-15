@@ -87,6 +87,7 @@ public class OnboardingService implements OnboardingUseCase {
   public OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data, Integer targetStep) {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
+    validateStepData(step, data);
     Map<String, Object> sanitized = settingsMapper.sanitizeStepDataByPlan(company, step, data);
     Map<String, Object> merged = new LinkedHashMap<>(progress.getProgressData());
     merged.put("step_" + step, sanitized);
@@ -130,6 +131,11 @@ public class OnboardingService implements OnboardingUseCase {
     if (Boolean.TRUE.equals(company.getOnboardingCompleted())) {
       return status(companyId);
     }
+
+    // Validar consistencia de capacidad antes de completar (por si el paso 2 no se re-guardó).
+    Map<String, Object> step2 = settingsMapper.stepMap(progress.getProgressData(), 2);
+    validateCapacityConsistency(step2);
+
     Map<String, Object> finalSettings = settingsMapper.buildSettingsFromProgress(company, progress.getProgressData());
     
     Map<String, Object> step1 = settingsMapper.stepMap(progress.getProgressData(), 1);
@@ -217,6 +223,58 @@ public class OnboardingService implements OnboardingUseCase {
           created.setProgressData(new LinkedHashMap<>());
           return onboardingProgressPort.save(created);
         });
+  }
+
+  private void validateStepData(int step, Map<String, Object> data) {
+    if (data == null) {
+      return;
+    }
+    if (step == 1) {
+      List<String> vehicleTypes = settingsMapper.asStringList(data.get("vehicleTypes"), List.of());
+      if (!vehicleTypes.contains("MOTORCYCLE")) {
+        return;
+      }
+      String handling = String.valueOf(data.getOrDefault("helmetHandling", ""));
+      if (!"TOKENS".equals(handling) && !"LOCKER".equals(handling) && !"NONE".equals(handling)) {
+        throw new OperationException(HttpStatus.BAD_REQUEST, "Debes seleccionar una opción de custodia de cascos.");
+      }
+      if ("TOKENS".equals(handling)) {
+        int count = settingsMapper.extractNumber(data.get("helmetLockerCount"), 0);
+        if (count <= 0) {
+          throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de fichas debe ser mayor a 0.");
+        }
+        if (count > 9999) {
+          throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de fichas no puede superar 9999.");
+        }
+      }
+    }
+    if (step == 2) {
+      validateCapacityConsistency(data);
+    }
+  }
+
+  private void validateCapacityConsistency(Map<String, Object> data) {
+    int totalCapacity = settingsMapper.extractNumber(data.get("totalCapacity"), 0);
+    if (totalCapacity <= 0) {
+      throw new OperationException(HttpStatus.BAD_REQUEST, "La capacidad total debe ser mayor a 0.");
+    }
+    boolean controlSlots = Boolean.TRUE.equals(data.get("controlSlots"));
+    if (!controlSlots) {
+      return;
+    }
+    Map<String, Object> byType = new LinkedHashMap<>();
+    Object rawByType = data.get("capacityByType");
+    if (rawByType instanceof Map<?, ?> map) {
+      map.forEach((k, v) -> byType.put(String.valueOf(k), v));
+    }
+    int sumByType = byType.values().stream()
+        .mapToInt(v -> settingsMapper.extractNumber(v, 0))
+        .sum();
+    if (sumByType > totalCapacity) {
+      throw new OperationException(HttpStatus.BAD_REQUEST,
+          "La suma de las capacidades configuradas por tipo (" + sumByType
+              + ") supera la capacidad total permitida (" + totalCapacity + ").");
+    }
   }
 
 
