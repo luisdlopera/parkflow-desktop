@@ -99,7 +99,7 @@ public class RegisterExitService implements RegisterExitUseCase {
     parkingSessionRepository.save(session);
 
     if (price.total().compareTo(BigDecimal.ZERO) > 0 && request.paymentMethod() != null) {
-      cashMovementUseCase.assertCashOpenForParkingPayment(session);
+      cashMovementUseCase.assertCashOpenForParkingPayment(session, request.cashSessionId());
       Payment payment = new Payment();
       payment.setSession(session);
       payment.setMethod(request.paymentMethod());

@@ -49,7 +49,7 @@ public class HelmetTokenController {
   public ResponseEntity<List<HelmetTokenResponse>> createBatch(
       @Valid @RequestBody BatchHelmetTokenRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(helmetTokenService.createBatch(request));
+        .body(helmetTokenService.createBatch(SecurityUtils.requireCompanyId(), request));
   }
 
   @PatchMapping("/{id}")
