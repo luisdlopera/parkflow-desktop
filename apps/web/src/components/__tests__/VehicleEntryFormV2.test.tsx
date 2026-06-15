@@ -73,7 +73,10 @@ function clearLocalStorage() {
 }
 
 describe("VehicleEntryFormV2", () => {
+  let user: ReturnType<typeof userEvent.setup>;
+
   beforeEach(() => {
+    user = userEvent.setup();
     setupLocalStorage();
     vi.mocked(fetchRuntimeConfig).mockResolvedValue({});
   });
@@ -92,14 +95,14 @@ describe("VehicleEntryFormV2", () => {
   });
 
   it("does not submit when plate is empty", async () => {
-    renderWithProviders(<VehicleEntryFormV2 />);
+renderWithProviders(<VehicleEntryFormV2 />);
 
     await waitFor(() => {
       expect(screen.getByTestId("register-entry")).toBeInTheDocument();
     });
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.queryByText("Ingreso registrado")).not.toBeInTheDocument();
@@ -133,12 +136,12 @@ describe("VehicleEntryFormV2", () => {
     await flushPromises();
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "AAA123");
+    await user.type(plateInput, "AAA123");
     await flushPromises();
 
     const submitBtn = screen.getByTestId("register-entry");
     await waitFor(() => expect(submitBtn).not.toBeDisabled());
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => expect(capturedBody).not.toBeNull());
 
@@ -175,10 +178,10 @@ describe("VehicleEntryFormV2", () => {
     });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "AAA123");
+    await user.type(plateInput, "AAA123");
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => expect(capturedBody).not.toBeNull());
 
@@ -222,11 +225,11 @@ describe("VehicleEntryFormV2", () => {
 
     // Clear and type the justification
     const justificationInput = await screen.findByLabelText(/Justificación sin placa/i);
-    await userEvent.clear(justificationInput);
-    await userEvent.type(justificationInput, "Vehiculo oficial sin placa visible");
+    await user.clear(justificationInput);
+    await user.type(justificationInput, "Vehiculo oficial sin placa visible");
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => {
       expect(capturedBody).not.toBeNull();
@@ -265,11 +268,11 @@ describe("VehicleEntryFormV2", () => {
     });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "AAA123");
+    await user.type(plateInput, "AAA123");
     await flushPromises();
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => expect(capturedBody).not.toBeNull());
 
@@ -301,11 +304,11 @@ describe("VehicleEntryFormV2", () => {
     });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "AAA123");
+    await user.type(plateInput, "AAA123");
     await flushPromises();
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getByText(/revisa los datos/i)).toBeInTheDocument();
@@ -332,11 +335,11 @@ describe("VehicleEntryFormV2", () => {
     });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "DUP001");
+    await user.type(plateInput, "DUP001");
     await flushPromises();
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getByText(/ya tiene una entrada activa/i)).toBeInTheDocument();
@@ -367,11 +370,11 @@ describe("VehicleEntryFormV2", () => {
     });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "AAA123");
+    await user.type(plateInput, "AAA123");
     await flushPromises();
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => expect((screen.getByTestId("plate") as HTMLInputElement).value).toBe(""));
 
@@ -417,17 +420,17 @@ describe("VehicleEntryFormV2", () => {
     });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "AAA123");
+    await user.type(plateInput, "AAA123");
     await flushPromises();
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getByText(/revisa los datos/i)).toBeInTheDocument();
     });
 
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => {
       const plateAfterRetry = screen.getByTestId("plate") as HTMLInputElement;
@@ -466,11 +469,11 @@ describe("VehicleEntryFormV2", () => {
     });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "AAA123");
+    await user.type(plateInput, "AAA123");
     await flushPromises();
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getAllByText(/Ingreso registrado correctamente/i).length).toBeGreaterThan(0);
@@ -506,11 +509,11 @@ describe("VehicleEntryFormV2", () => {
     });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "AAA123");
+    await user.type(plateInput, "AAA123");
     await flushPromises();
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getAllByText(/Descargar ticket/i).length).toBeGreaterThan(0);
@@ -551,11 +554,11 @@ describe("VehicleEntryFormV2", () => {
 
     // Clear and type the justification
     const justificationInput = await screen.findByLabelText(/Justificación sin placa/i);
-    await userEvent.clear(justificationInput);
-    await userEvent.type(justificationInput, "Vehiculo oficial sin placa visible");
+    await user.clear(justificationInput);
+    await user.type(justificationInput, "Vehiculo oficial sin placa visible");
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => {
       expect(capturedBody).not.toBeNull();
@@ -585,11 +588,11 @@ describe("VehicleEntryFormV2", () => {
     });
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "AAA123");
+    await user.type(plateInput, "AAA123");
     await flushPromises();
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getByText(/no se pudo registrar/i)).toBeInTheDocument();
@@ -599,11 +602,11 @@ describe("VehicleEntryFormV2", () => {
   });
 
   it("shows validation error when plate is empty and noPlate is unchecked", async () => {
-    renderWithProviders(<VehicleEntryFormV2 />);
+renderWithProviders(<VehicleEntryFormV2 />);
     await flushPromises();
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getByText(/Placa obligatoria/i)).toBeInTheDocument();
@@ -611,14 +614,14 @@ describe("VehicleEntryFormV2", () => {
   });
 
   it("shows validation error when motorcycle plate is typed with CAR type selected", async () => {
-    renderWithProviders(<VehicleEntryFormV2 />);
+renderWithProviders(<VehicleEntryFormV2 />);
     await flushPromises();
 
     const plateInput = screen.getByTestId("plate");
-    await userEvent.type(plateInput, "ABC12A");
+    await user.type(plateInput, "ABC12A");
 
     const submitBtn = screen.getByTestId("register-entry");
-    await userEvent.click(submitBtn);
+    await user.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getByText(/corresponde a moto/i)).toBeInTheDocument();
