@@ -1953,6 +1953,12 @@ function ParametersSection({
             >
               Operacion offline ingreso/salida
             </Checkbox>
+            <Checkbox
+              isSelected={Boolean(data.printExitTicket ?? true)}
+              onChange={(v: any) => setField("printExitTicket", v)}
+            >
+              Imprimir tiquete de salida
+            </Checkbox>
           </div>
 
           <div className="col-span-full pt-6 border-t border-slate-100 mt-2">
@@ -2258,11 +2264,23 @@ function vehicleTypeToForm(row: import("@/lib/settings-api").MasterVehicleTypeRo
   };
 }
 
+const STANDARD_VEHICLE_TYPES: Array<{ code: string; name: string; icon: string; color: string; requiresPlate: boolean; hasOwnRate: boolean; quickAccess: boolean; requiresPhoto: boolean; displayOrder: number }> = [
+  { code: "MOTORCYCLE", name: "Moto", icon: "🏍️", color: "#059669", requiresPlate: true, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 1 },
+  { code: "CAR", name: "Carro", icon: "🚗", color: "#2563EB", requiresPlate: true, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 2 },
+  { code: "BICYCLE", name: "Bicicleta", icon: "🚲", color: "#16A34A", requiresPlate: false, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 3 },
+  { code: "VAN", name: "Camioneta", icon: "🚐", color: "#7C3AED", requiresPlate: true, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 4 },
+  { code: "TRUCK", name: "Camión", icon: "🚛", color: "#EA580C", requiresPlate: true, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 5 },
+  { code: "BUS", name: "Bus", icon: "🚌", color: "#CA8A04", requiresPlate: true, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 6 },
+  { code: "ELECTRIC", name: "Eléctrico", icon: "⚡", color: "#0D9488", requiresPlate: true, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 7 },
+  { code: "OTHER", name: "Otro", icon: "🚙", color: "#64748B", requiresPlate: false, hasOwnRate: false, quickAccess: false, requiresPhoto: false, displayOrder: 8 },
+];
+
 function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void; canEdit: boolean; }) {
   const [rows, setRows] = useState<import("@/lib/settings-api").MasterVehicleTypeRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<import("@/lib/settings-api").MasterVehicleTypeRow | null>(null);
   const [creating, setCreating] = useState(false);
+  const [selectedStdType, setSelectedStdType] = useState<string>("");
   const [form, setForm] = useState<{ code: string; name: string; icon: string; color: string; displayOrder: number; requiresPlate: boolean; hasOwnRate: boolean; quickAccess: boolean; requiresPhoto: boolean }>({ code: "", name: "", icon: "", color: "#64748B", displayOrder: 0, requiresPlate: true, hasOwnRate: false, quickAccess: false, requiresPhoto: false });
   const { confirm } = useDialog();
 
@@ -2383,7 +2401,7 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
             color="primary"
             size="md"
             className="font-semibold"
-            onPress={() => { setCreating(true); setEditing(null); setForm(defaultVehicleTypeForm); }}
+            onPress={() => { setCreating(true); setEditing(null); setSelectedStdType(""); setForm(defaultVehicleTypeForm); }}
           >
             Nuevo tipo
           </Button>
@@ -2455,56 +2473,75 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
 
       {(creating || editing) && canEdit ? (
         <div className="surface rounded-2xl p-6">
-          <h3 className="text-lg font-semibold text-slate-900">{creating ? "Nuevo tipo" : "Editar tipo"}</h3>
+          <h3 className="text-lg font-semibold text-slate-900">{creating ? "Agregar tipo de vehículo" : "Editar tipo de vehículo"}</h3>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <Input
-              label="Código (ej. CAR)"
-              size="sm"
-              classNames={{ input: "uppercase" }}
-              value={form.code}
-              onChange={(val) => setForm({ ...form, code: val.target.value.toUpperCase() })}
-              isDisabled={!!editing}
-            />
-            <Input
-              label="Nombre (ej. Carro)"
-              size="sm"
-              value={form.name}
-              onChange={(val) => setForm({ ...form, name: val.target.value })}
-            />
-            <Input
-              label="Icono"
-              size="sm"
-              maxLength={40}
-              value={form.icon}
-              onChange={(val) => setForm({ ...form, icon: val.target.value })}
-            />
-            <Input
-              label="Color"
-              size="sm"
-              type="color"
-              value={form.color}
-              onChange={(val) => setForm({ ...form, color: val.target.value.toUpperCase() })}
-            />
-            <Input
-              label="Orden"
-              size="sm"
-              type="number"
-              min={0}
-              value={String(form.displayOrder)}
-              onChange={(val) => setForm({ ...form, displayOrder: Number.parseInt(val.target.value || "0", 10) })}
-            />
-            <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-              <span
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white"
-                style={{ backgroundColor: form.color || "#64748B" }}
+            {creating ? (
+              <Select
+                label="Tipo de vehículo"
+                value={selectedStdType ? [selectedStdType] : []}
+                onChange={(keys) => {
+                  const code = Array.from(keys)[0] as string;
+                  setSelectedStdType(code);
+                  const std = STANDARD_VEHICLE_TYPES.find(t => t.code === code);
+                  if (std) {
+                    setForm({
+                      code: std.code,
+                      name: std.name,
+                      icon: std.icon,
+                      color: std.color,
+                      displayOrder: std.displayOrder,
+                      requiresPlate: std.requiresPlate,
+                      hasOwnRate: std.hasOwnRate,
+                      quickAccess: std.quickAccess,
+                      requiresPhoto: std.requiresPhoto,
+                    });
+                  }
+                }}
               >
-                <VehicleTypeIcon code={form.code || "CAR"} className="w-5 h-5" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{form.name || "Vista previa"}</p>
-                <p className="text-xs text-slate-500">{form.code || "CODIGO"}</p>
+                <Select.Trigger>
+                  <Select.Value placeholder="Selecciona un tipo..." />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {STANDARD_VEHICLE_TYPES
+                      .filter(t => !rows.some(r => r.code === t.code))
+                      .map(t => (
+                        <ListBox.Item key={t.code} textValue={t.name}>
+                          <span className="flex items-center gap-2">
+                            <span>{t.icon}</span>
+                            <span>{t.name}</span>
+                            <span className="text-xs text-slate-400">({t.code})</span>
+                          </span>
+                        </ListBox.Item>
+                      ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+            ) : (
+              <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+                <span
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white"
+                  style={{ backgroundColor: form.color || "#64748B" }}
+                >
+                  <VehicleTypeIcon code={form.code || "CAR"} className="w-5 h-5" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{form.name}</p>
+                  <p className="text-xs text-slate-500">{form.code}</p>
+                </div>
               </div>
-            </div>
+            )}
+            {!creating && (
+              <Input
+                label="Orden"
+                size="sm"
+                type="number"
+                min={0}
+                value={String(form.displayOrder)}
+                onChange={(val) => setForm({ ...form, displayOrder: Number.parseInt(val.target.value || "0", 10) })}
+              />
+            )}
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-4">
             <Switch
@@ -2537,7 +2574,7 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
             </Switch>
           </div>
           <div className="mt-6 flex justify-end gap-3">
-            <Button variant="ghost" color="primary" className="font-semibold" onPress={() => { setCreating(false); setEditing(null); }}>Cancelar</Button>
+            <Button variant="ghost" color="primary" className="font-semibold" onPress={() => { setCreating(false); setEditing(null); setSelectedStdType(""); }}>Cancelar</Button>
             <Button
               color="success"
               className="font-semibold text-white"
@@ -2548,6 +2585,7 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
                   onNotify({ kind: "ok", text: "Tipo guardado exitosamente" });
                   setCreating(false);
                   setEditing(null);
+                  setSelectedStdType("");
                   load();
                 } catch(e) {
                   onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA) });

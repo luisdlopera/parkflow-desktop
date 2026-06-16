@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User, CheckCircle2, AlertCircle } from "lucide-react";
 import { MotorRacingHelmet } from "@/components/ui/MotorRacingHelmet";
 import { Autocomplete, ListBox, SearchField, useFilter, Label, FieldError } from "@heroui/react";
-import { fetchAvailableHelmetTokens } from "@/services/helmet-tokens.service";
+import { fetchAvailableLockers } from "@/services/lockers.service";
 
 interface MotorcycleEntryFormUIProps {
   form: UseFormReturn<VehicleEntryFormValues>;
@@ -46,8 +46,8 @@ export function MotorcycleEntryFormUI({
 
   useEffect(() => {
     if (enableCustodiedItem) {
-      fetchAvailableHelmetTokens()
-        .then((tokens) => setAvailableTokens(tokens.map((l) => ({ id: l.id, code: l.code }))))
+      fetchAvailableLockers()
+        .then((lockers) => setAvailableTokens(lockers.map((l) => ({ id: l.id, code: l.code }))))
         .catch(() => setAvailableTokens([]));
     }
   }, [enableCustodiedItem]);
@@ -243,8 +243,8 @@ export function MotorcycleEntryFormUI({
                             className="w-full"
                             placeholder={
                               availableTokens.length === 0
-                                ? "Sin fichas disponibles"
-                                : "Seleccionar ficha"
+                                ? "Sin lockers disponibles"
+                                : "Seleccionar locker"
                             }
                             selectionMode="single"
                             value={cField.value || null}
@@ -252,7 +252,7 @@ export function MotorcycleEntryFormUI({
                             isDisabled={availableTokens.length === 0}
                             isInvalid={!!fieldState.error}
                           >
-                            <Label className="text-sm">Número/Ficha</Label>
+                            <Label className="text-sm">Número de Locker</Label>
                             <Autocomplete.Trigger className="bg-white">
                               <Autocomplete.Value />
                               <Autocomplete.ClearButton />
@@ -267,7 +267,7 @@ export function MotorcycleEntryFormUI({
                               <Autocomplete.Filter filter={contains}>
                                 <SearchField autoFocus name="search" className="mb-2">
                                   <SearchField.Group>
-                                    <SearchField.Input placeholder="Buscar ficha..." />
+                                    <SearchField.Input placeholder="Buscar locker..." />
                                     <SearchField.ClearButton />
                                   </SearchField.Group>
                                 </SearchField>
