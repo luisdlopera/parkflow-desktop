@@ -1,4 +1,4 @@
-package com.parkflow.modules.parking.helmet.infrastructure;
+package com.parkflow.modules.parking.locker.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,34 +11,36 @@ import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
 @ActiveProfiles("test")
-class HelmetTokenSchemaTest {
+class LockerSchemaTest {
 
   @PersistenceContext
   private EntityManager entityManager;
 
   @Test
-  void helmetTokenTableExistsWithExpectedColumns() {
+  @SuppressWarnings("unchecked")
+  void lockerTableExistsWithExpectedColumns() {
     List<Object[]> columns = entityManager.createNativeQuery(
         """
         SELECT COLUMN_NAME, DATA_TYPE
         FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE TABLE_NAME = 'HELMET_TOKEN'
+        WHERE TABLE_NAME = 'LOCKER'
         """
     ).getResultList();
 
     assertThat(columns)
         .extracting(row -> String.valueOf(row[0]).toLowerCase())
-        .contains("id", "company_id", "code", "label", "is_active", "created_at", "updated_at");
+        .contains("id", "company_id", "code", "label", "status", "is_active", "created_at", "updated_at");
   }
 
   @Test
-  void custodiedItemReferencesTokenId() {
+  @SuppressWarnings("unchecked")
+  void custodiedItemReferencesLockerId() {
     List<Object[]> columns = entityManager.createNativeQuery(
         """
         SELECT COLUMN_NAME
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_NAME = 'CUSTODIED_ITEM'
-          AND COLUMN_NAME = 'TOKEN_ID'
+          AND COLUMN_NAME = 'LOCKER_ID'
         """
     ).getResultList();
 
