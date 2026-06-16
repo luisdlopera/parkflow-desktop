@@ -17,6 +17,7 @@ import com.parkflow.modules.configuration.domain.OperationalParameter;
 import com.parkflow.modules.configuration.domain.PrepaidBalance;
 import com.parkflow.modules.configuration.repository.*;
 import com.parkflow.modules.configuration.application.port.in.PrepaidUseCase;
+import com.parkflow.modules.settings.application.port.in.ParkingParametersUseCase;
 import com.parkflow.modules.parking.operation.application.port.in.RegisterExitUseCase;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.CustodiedItemResponse;
@@ -24,6 +25,9 @@ import com.parkflow.modules.parking.operation.dto.ExitRequest;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.parking.locker.domain.Locker;
+import com.parkflow.modules.parking.locker.domain.LockerStatus;
+import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
 import com.parkflow.modules.parking.operation.repository.*;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.parking.operation.domain.pricing.PricingCalculator;
@@ -64,8 +68,10 @@ public class RegisterExitService implements RegisterExitUseCase {
   private final OperationIdempotencyPort operationIdempotencyRepository;
   private final ParkingSpaceService parkingSpaceService;
   private final CustodiedItemPort custodiedItemRepository;
+  private final LockerPort lockerPort;
   private final ObjectMapper objectMapper;
   private final CashMovementUseCase cashMovementUseCase;
+  private final ParkingParametersUseCase parkingParametersUseCase;
 
   @Override
   @Transactional
@@ -108,7 +114,7 @@ public class RegisterExitService implements RegisterExitUseCase {
       payment.setCompanyId(companyId);
       paymentRepository.save(payment);
       cashMovementUseCase.recordParkingPayment(
-          session, payment, operator, request.idempotencyKey(), CashMovementType.PARKING_PAYMENT);
+          session, payment, operator, request.idempotencyKey(), CashMovementType.PARKING_PAYMENT, request.cashSessionId());
     }
 
     saveVehicleCondition(session, ConditionStage.EXIT, request.vehicleCondition(),
@@ -125,10 +131,22 @@ public class RegisterExitService implements RegisterExitUseCase {
         "Status: CLOSED",
         "Ticket: " + session.getTicketNumber() + ", Plate: " + session.getPlate());
 
+    boolean printExitTicket = true;
     try {
-      operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.EXIT, "exit");
+        com.parkflow.modules.settings.dto.ParkingParametersData params = parkingParametersUseCase.get(session.getSite());
+        if (params.getPrintExitTicket() != null) {
+            printExitTicket = params.getPrintExitTicket();
+        }
     } catch (Exception e) {
-      log.warn("Print job failed for session {}", session.getId());
+        log.warn("Could not retrieve parking parameters for site {}, defaulting to printExitTicket=true", session.getSite());
+    }
+
+    if (printExitTicket) {
+      try {
+        operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.EXIT, "exit");
+      } catch (Exception e) {
+        log.warn("Print job failed for session {}", session.getId());
+      }
     }
 
     parkingSpaceService.releaseSpaceBySession(session.getId());
@@ -347,6 +365,12 @@ public class RegisterExitService implements RegisterExitUseCase {
           item.setObservations(existing != null ? existing + " | " + request.custodiedItemObservations() : request.custodiedItemObservations());
         }
         custodiedItemRepository.save(item);
+
+        Locker locker = item.getLocker();
+        if (locker != null) {
+          locker.setStatus(LockerStatus.DISPONIBLE);
+          lockerPort.save(locker);
+        }
       }
     }
   }

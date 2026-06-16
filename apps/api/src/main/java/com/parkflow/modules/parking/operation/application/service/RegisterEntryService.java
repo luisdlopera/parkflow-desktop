@@ -18,10 +18,11 @@ import com.parkflow.modules.parking.operation.application.port.in.RegisterEntryU
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.helmet.domain.HelmetToken;
-import com.parkflow.modules.parking.helmet.domain.repository.HelmetTokenPort;
+import com.parkflow.modules.parking.locker.domain.Locker;
+import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
 import com.parkflow.modules.parking.operation.repository.*;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
+import com.parkflow.modules.configuration.service.OperationalConfigurationService;
 import com.parkflow.modules.parking.operation.validation.PlateValidator;
 import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -58,12 +59,13 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private final MonthlyContractRepository monthlyContractRepository;
   private final ParkingSpaceService parkingSpaceService;
   private final CustodiedItemPort custodiedItemRepository;
-  private final HelmetTokenPort helmetTokenPort;
+  private final LockerPort lockerPort;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
   private final MasterVehicleTypePort masterVehicleTypePort;
   private final CompanyPort companyRepository;
   private final CompanySettingsService companySettingsService;
+  private final OperationalConfigurationService operationalConfigurationService;
 
   @Override
   @Transactional
@@ -95,6 +97,11 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     if (!noPlateEntry && !vehicleTypeConfig.isRequiresPlate()) {
       throw new OperationException(HttpStatus.BAD_REQUEST, "El tipo de vehículo no admite placa");
     }
+
+    operationalConfigurationService.validateEntryPayload(
+        companyId, vehicleType,
+        entryMode != null ? entryMode.name() : null,
+        request.lane(), request.terminal(), null);
 
     String normalizedPlate;
     if (noPlateEntry) {
@@ -308,21 +315,19 @@ public class RegisterEntryService implements RegisterEntryUseCase {
         String identifier = blankToNull(itemReq.identifier());
         if (identifier != null && custodiedItemRepository.existsActiveHelmetByIdentifierAndCompany(identifier, companyId)) {
           throw new OperationException(HttpStatus.CONFLICT, "HELMET_IDENTIFIER_IN_USE",
-              "La ficha " + identifier + " ya está asignada a otro vehículo activo.");
+              "El locker " + identifier + " ya está asignado a otro vehículo activo.");
         }
 
-        HelmetToken token = null;
+        Locker locker = null;
         if (identifier != null) {
-          token = helmetTokenPort.findActiveByCompanyId(companyId).stream()
-              .filter(l -> l.getCode().equals(identifier))
-              .findFirst().orElse(null);
+          locker = lockerPort.findByCompanyIdAndCode(companyId, identifier).orElse(null);
         }
 
         CustodiedItem item = CustodiedItem.builder()
             .session(session)
             .itemType(CustodiedItemType.HELMET)
             .identifier(identifier)
-            .token(token)
+            .locker(locker)
             .status(CustodiedItemStatus.RECEIVED)
             .observations(blankToNull(itemReq.observations()))
             .photoUrl(blankToNull(itemReq.photoUrl()))
@@ -331,6 +336,11 @@ public class RegisterEntryService implements RegisterEntryUseCase {
             .companyId(companyId)
             .build();
         custodiedItemRepository.save(item);
+
+        if (locker != null) {
+          locker.setStatus(com.parkflow.modules.parking.locker.domain.LockerStatus.OCUPADO);
+          lockerPort.save(locker);
+        }
     }
   }
 
