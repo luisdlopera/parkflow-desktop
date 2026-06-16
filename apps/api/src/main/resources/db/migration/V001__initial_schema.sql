@@ -1156,28 +1156,10 @@ INSERT INTO parking_sites (id, company_id, code, name, city, timezone, currency,
 VALUES ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'DEFAULT', 'Sede Principal', 'Bogotá', 'America/Bogota', 'COP', 0)
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO app_user (id, company_id, name, email, role, password_hash, is_active, can_void_tickets, can_reprint_tickets, can_close_cash, require_password_change)
-VALUES ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'Administrador', 'admin@parkflow.local', 'SUPER_ADMIN', '!INVALID_HASH_PLEASE_CHANGE!', TRUE, TRUE, TRUE, TRUE, TRUE)
-ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO master_vehicle_type (code, name, icon, color, is_active, requires_plate, has_own_rate, quick_access, requires_photo, display_order) VALUES
-    ('MOTORCYCLE', 'Moto', '🏍️', '#059669', TRUE, TRUE, TRUE, TRUE, FALSE, 1),
-    ('CAR', 'Carro', '🚗', '#2563EB', TRUE, TRUE, TRUE, TRUE, FALSE, 2),
-    ('BICYCLE', 'Bicicleta', '🚲', '#16A34A', TRUE, FALSE, TRUE, TRUE, FALSE, 3),
-    ('VAN', 'Camioneta', '🚐', '#7C3AED', TRUE, TRUE, TRUE, TRUE, FALSE, 4),
-    ('TRUCK', 'Camión', '🚛', '#EA580C', TRUE, TRUE, TRUE, TRUE, FALSE, 5),
-    ('BUS', 'Bus', '🚌', '#CA8A04', TRUE, TRUE, TRUE, TRUE, FALSE, 6),
-    ('ELECTRIC', 'Eléctrico', '⚡', '#0D9488', TRUE, TRUE, TRUE, TRUE, FALSE, 7),
-    ('OTHER', 'Otro', '🚙', '#64748B', TRUE, FALSE, FALSE, FALSE, FALSE, 8)
-ON CONFLICT (code) DO UPDATE SET
-    name = EXCLUDED.name,
-    icon = EXCLUDED.icon,
-    color = EXCLUDED.color,
-    requires_plate = EXCLUDED.requires_plate,
-    has_own_rate = EXCLUDED.has_own_rate,
-    quick_access = EXCLUDED.quick_access,
-    display_order = EXCLUDED.display_order,
-    updated_at = NOW();
+
+-- NOTA: master_vehicle_type ahora se puebla bajo demanda desde el onboarding
+-- Cada empresa crea sus tipos seleccionados y se linkean via company_vehicle_type
 
 INSERT INTO payment_methods (code, name, requires_reference, display_order) VALUES
     ('CASH', 'Efectivo', FALSE, 1),
