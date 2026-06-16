@@ -259,6 +259,159 @@ class ComplexPricingServiceTest {
   }
 
   // -----------------------------------------------------------------------
+  // Motorcycle-specific pricing (different rate, same pipeline)
+  // -----------------------------------------------------------------------
+
+  @Test
+  void calculate_worksForMotorcycleRate() {
+    Rate motoRate = rate(0, BigDecimal.valueOf(1500));
+    motoRate.setVehicleType("MOTORCYCLE");
+    ParkingSession session = session(motoRate);
+    session.getVehicle().setType("MOTORCYCLE");
+    session.getVehicle().setPlate("ABC12D");
+    session.setPlate("ABC12D");
+    OffsetDateTime exitAt = OffsetDateTime.now();
+
+    when(monthlyContractRepository
+        .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            any(), any(), any(), any()))
+        .thenReturn(Optional.empty());
+    when(prepaidBalanceRepository.findActiveByPlate(any(), any(), any())).thenReturn(Collections.emptyList());
+    when(pricingCalculator.calculate(any(), anyLong(), anyBoolean()))
+        .thenReturn(new PriceBreakdown(1, BigDecimal.valueOf(1500), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(1500)));
+    when(agreementRepository.findByCodeAndIsActiveTrue(any(), any())).thenReturn(Optional.empty());
+
+    PriceBreakdown result = service.calculate(session, exitAt, null, false, false);
+    assertThat(result.total()).isEqualByComparingTo(BigDecimal.valueOf(1500));
+  }
+
+  // -----------------------------------------------------------------------
+  // No prepaid → no deduction
+  // -----------------------------------------------------------------------
+
+  @Test
+  void calculate_skipsPrepaidWhenNoBalance() {
+    ParkingSession session = session(rate(0, BigDecimal.TEN));
+    session.setEntryAt(OffsetDateTime.now().minusMinutes(60));
+    session.setCompanyId(UUID.randomUUID());
+    OffsetDateTime exitAt = OffsetDateTime.now();
+
+    when(monthlyContractRepository
+        .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            any(), any(), any(), any()))
+        .thenReturn(Optional.empty());
+    when(prepaidBalanceRepository.findActiveByPlate(any(), any(), any())).thenReturn(Collections.emptyList());
+    when(pricingCalculator.calculate(any(), eq(60L), eq(false)))
+        .thenReturn(new PriceBreakdown(1, BigDecimal.valueOf(10), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(10)));
+    when(agreementRepository.findByCodeAndIsActiveTrue(any(), any())).thenReturn(Optional.empty());
+
+    PriceBreakdown result = service.calculate(session, exitAt, null, false, false);
+    assertThat(result.deductedMinutes()).isEqualTo(0);
+    assertThat(result.total()).isEqualByComparingTo(BigDecimal.valueOf(10));
+  }
+
+  // -----------------------------------------------------------------------
+  // Dry run: no pricing mutations
+  // -----------------------------------------------------------------------
+
+  @Test
+  void calculate_dryRunDoesNotSetMonthlySession() {
+    ParkingSession session = session(rate(0, BigDecimal.TEN));
+    OffsetDateTime exitAt = OffsetDateTime.now();
+    when(monthlyContractRepository
+        .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            any(), any(), any(), any()))
+        .thenReturn(Optional.of(new com.parkflow.modules.configuration.domain.MonthlyContract()));
+
+    service.calculate(session, exitAt, null, false, true);
+
+    assertThat(session.isMonthlySession()).isFalse();
+  }
+
+  // -----------------------------------------------------------------------
+  // Agreement not found → no discount
+  // -----------------------------------------------------------------------
+
+  @Test
+  void calculate_ignoresAgreementWhenNotFound() {
+    ParkingSession session = session(rate(0, BigDecimal.TEN));
+    session.setEntryAt(OffsetDateTime.now().minusMinutes(60));
+    session.setCompanyId(UUID.randomUUID());
+    OffsetDateTime exitAt = OffsetDateTime.now();
+
+    when(monthlyContractRepository
+        .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            any(), any(), any(), any()))
+        .thenReturn(Optional.empty());
+    when(prepaidBalanceRepository.findActiveByPlate(any(), any(), any())).thenReturn(Collections.emptyList());
+    when(pricingCalculator.calculate(any(), anyLong(), anyBoolean()))
+        .thenReturn(new PriceBreakdown(1, BigDecimal.valueOf(100), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(100)));
+    when(agreementRepository.findByCodeAndIsActiveTrue(eq("MISSING"), eq(session.getCompanyId())))
+        .thenReturn(Optional.empty());
+
+    PriceBreakdown result = service.calculate(session, exitAt, "MISSING", false, false);
+    assertThat(result.total()).isEqualByComparingTo(BigDecimal.valueOf(100));
+    assertThat(result.discount()).isEqualByComparingTo(BigDecimal.ZERO);
+  }
+
+  // -----------------------------------------------------------------------
+  // Lost ticket: skip prepaid deduction
+  // -----------------------------------------------------------------------
+
+  @Test
+  void calculate_skipsPrepaidForLostTicket() {
+    ParkingSession session = session(rate(0, BigDecimal.TEN));
+    session.setEntryAt(OffsetDateTime.now().minusMinutes(90));
+    session.setCompanyId(UUID.randomUUID());
+    OffsetDateTime exitAt = OffsetDateTime.now();
+
+    when(monthlyContractRepository
+        .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            any(), any(), any(), any()))
+        .thenReturn(Optional.empty());
+    when(pricingCalculator.calculate(any(), eq(90L), eq(true)))
+        .thenReturn(new PriceBreakdown(2, BigDecimal.valueOf(20), BigDecimal.valueOf(5000), BigDecimal.ZERO, 0, BigDecimal.valueOf(5020)));
+
+    PriceBreakdown result = service.calculate(session, exitAt, null, true, false);
+    assertThat(result.deductedMinutes()).isEqualTo(0);
+    verify(prepaidUseCase, never()).deduct(any(), anyInt());
+  }
+
+  // -----------------------------------------------------------------------
+  // Courtesy pricing edge cases
+  // -----------------------------------------------------------------------
+
+  @Test
+  void applyCourtesy_employeePaysZero() {
+    ParkingSession session = session(null);
+    session.setEntryMode(EntryMode.EMPLOYEE);
+    PriceBreakdown computed = new PriceBreakdown(1, BigDecimal.valueOf(20), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(20));
+
+    PriceBreakdown result = service.applyCourtesy(session, computed, false);
+    assertThat(result.total()).isEqualByComparingTo(BigDecimal.ZERO);
+  }
+
+  @Test
+  void applyCourtesy_agreementPaysZero() {
+    ParkingSession session = session(null);
+    session.setEntryMode(EntryMode.AGREEMENT);
+    PriceBreakdown computed = new PriceBreakdown(1, BigDecimal.valueOf(20), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(20));
+
+    PriceBreakdown result = service.applyCourtesy(session, computed, false);
+    assertThat(result.total()).isEqualByComparingTo(BigDecimal.ZERO);
+  }
+
+  @Test
+  void applyCourtesy_nullEntryModeDefaultsToVisitor() {
+    ParkingSession session = session(null);
+    session.setEntryMode(null);
+    PriceBreakdown computed = new PriceBreakdown(1, BigDecimal.valueOf(20), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(20));
+
+    PriceBreakdown result = service.applyCourtesy(session, computed, false);
+    assertThat(result.total()).isEqualByComparingTo(BigDecimal.valueOf(20));
+  }
+
+  // -----------------------------------------------------------------------
   // Helpers
   // -----------------------------------------------------------------------
 

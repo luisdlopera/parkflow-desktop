@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -30,10 +31,13 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
     return findActiveWithAssociations(status, companyId, Pageable.ofSize(1000));
   }
 
+  @EntityGraph(attributePaths = {"vehicle", "rate"})
   Optional<ParkingSession> findByStatusAndVehicle_PlateAndCompanyId(SessionStatus status, String plate, UUID companyId);
 
+  @EntityGraph(attributePaths = {"vehicle", "rate"})
   Optional<ParkingSession> findByStatusAndTicketNumberAndCompanyId(SessionStatus status, String ticketNumber, UUID companyId);
 
+  @EntityGraph(attributePaths = {"vehicle", "rate"})
   Optional<ParkingSession> findByTicketNumberAndCompanyId(String ticketNumber, UUID companyId);
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)

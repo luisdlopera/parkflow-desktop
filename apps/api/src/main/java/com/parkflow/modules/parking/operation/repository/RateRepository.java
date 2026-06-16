@@ -3,6 +3,7 @@ package com.parkflow.modules.parking.operation.repository;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateCategory;
 import com.parkflow.modules.auth.security.TenantContext;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -76,4 +77,6 @@ public interface RateRepository extends JpaRepository<Rate, UUID> {
   }
 
   Optional<Rate> findByIdAndCompanyId(UUID id, UUID companyId);
+
+  List<Rate> findByCompanyId(UUID companyId);
 }

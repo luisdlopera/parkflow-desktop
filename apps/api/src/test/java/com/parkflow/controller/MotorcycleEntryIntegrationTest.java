@@ -204,4 +204,241 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.errorCode").value("OPERATION_ERROR"));
   }
+
+  @Test
+  void registerMotorcycleEntry_ShouldReturn400_WhenMotorcyclePlateWithCarType() throws Exception {
+    String token = getAuthToken();
+    String entryRequest = """
+        {
+            "idempotencyKey": "moto-cross-plate-%s",
+            "plate": "ABC12D",
+            "type": "CAR",
+            "rateId": "%s",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": "Sin novedades"
+        }
+        """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errorCode").value("OPERATION_ERROR"));
+  }
+
+  @Test
+  void registerMotorcycleEntry_ShouldReturn400_WhenCarPlateWithMotorcycleType() throws Exception {
+    String token = getAuthToken();
+    String entryRequest = """
+        {
+            "idempotencyKey": "moto-cross-plate-2-%s",
+            "plate": "ABC123",
+            "type": "MOTORCYCLE",
+            "rateId": "%s",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": "Sin novedades"
+        }
+        """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errorCode").value("OPERATION_ERROR"));
+  }
+
+  @Test
+  void registerMotorcycleEntry_ShouldCreateSession_WhenNormalizedPlateWithSpaces() throws Exception {
+    String token = getAuthToken();
+    String entryRequest = """
+        {
+            "idempotencyKey": "moto-normalize-%s",
+            "plate": "ABC 12 D",
+            "type": "MOTORCYCLE",
+            "rateId": "%s",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": "Sin novedades"
+        }
+        """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.receipt.plate").value("ABC12D"));
+  }
+
+  @Test
+  void registerMotorcycleEntry_ShouldReturn400_WhenNoPlateWithoutReason() throws Exception {
+    String token = getAuthToken();
+    MasterVehicleType motorcycleType = masterVehicleTypeRepository.findByCode("MOTORCYCLE").orElseThrow();
+    motorcycleType.setRequiresPlate(false);
+    masterVehicleTypeRepository.save(motorcycleType);
+
+    String entryRequest = """
+        {
+            "idempotencyKey": "moto-no-plate-reason-%s",
+            "type": "MOTORCYCLE",
+            "noPlate": true,
+            "rateId": "%s",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": "Sin novedades"
+        }
+        """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void registerMotorcycleEntry_ShouldReturn400_WhenIdempotencyKeyMissing() throws Exception {
+    String token = getAuthToken();
+    String entryRequest = """
+        {
+            "plate": "IDM12M",
+            "type": "MOTORCYCLE",
+            "rateId": "%s",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": "Sin novedades"
+        }
+        """.formatted(motorcycleRateId, adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void registerMotorcycleEntry_ShouldReturn400_WhenVehicleConditionEmpty() throws Exception {
+    String token = getAuthToken();
+    String entryRequest = """
+        {
+            "idempotencyKey": "moto-empty-cond-%s",
+            "plate": "CND12M",
+            "type": "MOTORCYCLE",
+            "rateId": "%s",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": ""
+        }
+        """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void registerMotorcycleEntry_ShouldCreateSession_WhenAutoRateResolution() throws Exception {
+    String token = getAuthToken();
+    String entryRequest = """
+        {
+            "idempotencyKey": "moto-auto-rate-%s",
+            "plate": "RAT12M",
+            "type": "MOTORCYCLE",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": "Sin novedades"
+        }
+        """.formatted(System.currentTimeMillis(), adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.receipt.plate").value("RAT12M"))
+            .andExpect(jsonPath("$.receipt.vehicleType").value("MOTORCYCLE"));
+  }
+
+  @Test
+  void registerMotorcycleEntry_ShouldReturn400_WhenVehicleTypeDoesNotExist() throws Exception {
+    String token = getAuthToken();
+    String entryRequest = """
+        {
+            "idempotencyKey": "moto-bad-type-%s",
+            "plate": "ABC12D",
+            "type": "UNKNOWN_VEHICLE",
+            "rateId": "%s",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": "Sin novedades"
+        }
+        """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void registerMotorcycleEntry_ShouldReturn400_WhenPlateWithSpecialChars() throws Exception {
+    String token = getAuthToken();
+    String entryRequest = """
+        {
+            "idempotencyKey": "moto-special-%s",
+            "plate": "AB@12D",
+            "type": "MOTORCYCLE",
+            "rateId": "%s",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": "Sin novedades"
+        }
+        """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void registerMotorcycleEntry_ShouldReject_WhenPlateExceedsMaxCharacters() throws Exception {
+    String token = getAuthToken();
+    String entryRequest = """
+        {
+            "idempotencyKey": "moto-long-plate-%s",
+            "plate": "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456",
+            "type": "MOTORCYCLE",
+            "rateId": "%s",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": "Sin novedades"
+        }
+        """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isBadRequest());
+  }
 }
