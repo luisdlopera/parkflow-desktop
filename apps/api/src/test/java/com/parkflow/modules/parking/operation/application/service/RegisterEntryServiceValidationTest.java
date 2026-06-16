@@ -12,7 +12,7 @@ import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.parking.helmet.domain.repository.HelmetTokenPort;
+import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.domain.repository.*;
 import com.parkflow.modules.parking.operation.dto.EntryRequest;
@@ -34,7 +34,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.http.HttpStatus;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -57,7 +57,7 @@ class RegisterEntryServiceValidationTest {
   @Mock private MonthlyContractRepository monthlyContractRepository;
   @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private CustodiedItemPort custodiedItemRepository;
-  @Mock private HelmetTokenPort helmetTokenPort;
+  @Mock private LockerPort lockerPort;
   @Mock private MasterVehicleTypePort masterVehicleTypePort;
   @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
   @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
@@ -79,7 +79,7 @@ class RegisterEntryServiceValidationTest {
         appUserRepository, vehicleRepository, rateRepository, parkingSiteRepository, parkingSessionRepository,
         ticketCounterRepository, vehicleConditionReportRepository, operationIdempotencyRepository,
         operationAuditService, operationPrintService, plateValidator, monthlyContractRepository,
-        parkingSpaceService, custodiedItemRepository, helmetTokenPort, new ObjectMapper(), new SimpleMeterRegistry(), masterVehicleTypePort, companyRepository, companySettingsService);
+        parkingSpaceService, custodiedItemRepository, lockerPort, new ObjectMapper(), new SimpleMeterRegistry(), masterVehicleTypePort, companyRepository, companySettingsService, org.mockito.Mockito.mock(com.parkflow.modules.configuration.service.OperationalConfigurationService.class));
 
     Mockito.lenient().when(operationIdempotencyRepository.findByIdempotencyKey(anyString())).thenReturn(Optional.empty());
 

@@ -58,4 +58,82 @@ class PlateValidatorTest {
         assertThat(result.isValid()).isFalse();
         assertThat(result.errorMessage()).contains("Pais no soportado");
     }
+
+    // === Motorcycle-specific edge cases ===
+
+    @Test
+    void testMotorcyclePlate_ValidEdgeCases() {
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "ABC12D").isValid()).isTrue();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "XYZ99Z").isValid()).isTrue();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "MNO11A").isValid()).isTrue();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "QWE00B").isValid()).isTrue();
+    }
+
+    @Test
+    void testMotorcyclePlate_InvalidEdgeCases() {
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "ABC12DD").isValid()).isFalse();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "ABC123D").isValid()).isFalse();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "AB1C2D").isValid()).isFalse();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "12345A").isValid()).isFalse();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "ABCD12").isValid()).isFalse();
+    }
+
+    @Test
+    void testMotorcyclePlate_CrossValidationWithCar() {
+        PlateValidationResult motoPlateAsCar = validator.validatePlate("CO", "CAR", "ABC12D");
+        assertThat(motoPlateAsCar.isValid()).isFalse();
+        assertThat(motoPlateAsCar.errorMessage()).contains("moto");
+
+        PlateValidationResult carPlateAsMoto = validator.validatePlate("CO", "MOTORCYCLE", "ABC123");
+        assertThat(carPlateAsMoto.isValid()).isFalse();
+        assertThat(carPlateAsMoto.errorMessage()).contains("carro");
+    }
+
+    @Test
+    void testMotorcyclePlate_SpecialCharactersAndSpaces() {
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "ABC 12 D").isValid()).isTrue();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "abc-12-d").isValid()).isTrue();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "abc_12_d").isValid()).isTrue();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "ab c12 d").isValid()).isTrue();
+    }
+
+    @Test
+    void testMotorcyclePlate_NullAndEmpty() {
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", null).isValid()).isFalse();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "").isValid()).isFalse();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "   ").isValid()).isFalse();
+    }
+
+    @Test
+    void testMotorcyclePlate_TooShort() {
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "A1").isValid()).isFalse();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "AB1").isValid()).isFalse();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "ABC1").isValid()).isFalse();
+        assertThat(validator.validatePlate("CO", "MOTORCYCLE", "ABC12").isValid()).isFalse();
+    }
+
+    @Test
+    void testNormalizePlate_WithMotorcycleFormats() {
+        assertThat(validator.normalizePlate("ABC-12D")).isEqualTo("ABC12D");
+        assertThat(validator.normalizePlate("abc 12 d")).isEqualTo("ABC12D");
+        assertThat(validator.normalizePlate("ABC12D")).isEqualTo("ABC12D");
+        assertThat(validator.normalizePlate("abc12d")).isEqualTo("ABC12D");
+    }
+
+    @Test
+    void testMotorcyclePlate_CrossValidationWithOtherTypes() {
+        PlateValidationResult motoPlateAsVan = validator.validatePlate("CO", "VAN", "ABC12D");
+        assertThat(motoPlateAsVan.isValid()).isFalse();
+        assertThat(motoPlateAsVan.errorMessage()).contains("moto");
+
+        PlateValidationResult motoPlateAsTruck = validator.validatePlate("CO", "TRUCK", "ABC12D");
+        assertThat(motoPlateAsTruck.isValid()).isFalse();
+        assertThat(motoPlateAsTruck.errorMessage()).contains("moto");
+    }
+
+    @Test
+    void testMotorcyclePlate_TypeOtherWithMotoPlate() {
+        PlateValidationResult result = validator.validatePlate("CO", "OTHER", "ABC12D");
+        assertThat(result.isValid()).isFalse();
+    }
 }

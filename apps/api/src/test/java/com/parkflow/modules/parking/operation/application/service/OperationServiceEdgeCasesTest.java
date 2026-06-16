@@ -64,10 +64,11 @@ class OperationServiceEdgeCasesTest {
   @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private Counter counter;
   @Mock private CustodiedItemPort custodiedItemRepository;
-  @Mock private com.parkflow.modules.parking.helmet.domain.repository.HelmetTokenPort helmetTokenPort;
+  @Mock private com.parkflow.modules.parking.locker.domain.repository.LockerPort lockerPort;
   @Mock private com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort masterVehicleTypePort;
   @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
   @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
+  @Mock private com.parkflow.modules.configuration.service.OperationalConfigurationService operationalConfigurationService;
 
   private RegisterEntryService registerEntryService;
 
@@ -90,8 +91,8 @@ class OperationServiceEdgeCasesTest {
         parkingSiteRepository, parkingSessionRepository, ticketCounterRepository,
         vehicleConditionReportRepository, operationIdempotencyRepository,
         auditService, operationPrintService,
-        plateValidator, monthlyContractRepository, parkingSpaceService, custodiedItemRepository, helmetTokenPort, objectMapper, meterRegistry, masterVehicleTypePort,
-        companyRepository, companySettingsService
+        plateValidator, monthlyContractRepository, parkingSpaceService, custodiedItemRepository, lockerPort, objectMapper, meterRegistry, masterVehicleTypePort,
+        companyRepository, companySettingsService, org.mockito.Mockito.mock(com.parkflow.modules.configuration.service.OperationalConfigurationService.class)
     );
 
     com.parkflow.modules.settings.domain.MasterVehicleType defaultType = new com.parkflow.modules.settings.domain.MasterVehicleType();

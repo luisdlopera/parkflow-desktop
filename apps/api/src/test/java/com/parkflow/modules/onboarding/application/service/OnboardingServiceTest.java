@@ -2,6 +2,7 @@ package com.parkflow.modules.onboarding.application.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -18,6 +19,7 @@ import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.configuration.service.OperationalConfigurationService;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.settings.application.service.SettingsVehicleTypeService;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -45,8 +47,10 @@ class OnboardingServiceTest {
   @Mock private com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort parkingSessionPort;
   @Mock private com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
   @Mock private com.parkflow.modules.parking.operation.repository.AppUserRepository appUserRepository;
-  @Mock private com.parkflow.modules.parking.helmet.service.HelmetTokenService helmetTokenService;
+  @Mock private com.parkflow.modules.parking.locker.service.LockerService lockerService;
   @Mock private com.parkflow.modules.parking.spaces.service.ParkingSpaceService parkingSpaceService;
+  @Mock private com.parkflow.modules.parking.operation.repository.RateRepository rateRepository;
+  @Mock private SettingsVehicleTypeService settingsVehicleTypeService;
 
   private OnboardingService onboardingService;
   private UUID companyId;
@@ -75,8 +79,10 @@ class OnboardingServiceTest {
         parkingSessionPort,
         authSessionPort,
         appUserRepository,
-        helmetTokenService,
-        parkingSpaceService
+        lockerService,
+        parkingSpaceService,
+        rateRepository,
+        settingsVehicleTypeService
     );
 
     company = new Company();
@@ -88,6 +94,7 @@ class OnboardingServiceTest {
     lenient().when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
     lenient().when(onboardingProgressPort.save(any(OnboardingProgress.class))).thenAnswer(inv -> inv.getArgument(0));
     lenient().when(companyRepository.save(any(Company.class))).thenAnswer(inv -> inv.getArgument(0));
+    lenient().when(settingsVehicleTypeService.addTypeToCompany(any(), anyString())).thenReturn(null);
   }
 
   @Test
@@ -146,13 +153,13 @@ class OnboardingServiceTest {
     Map<String, Object> data = Map.of(
         "vehicleTypes", java.util.List.of("MOTORCYCLE"),
         "operationalProfile", "MOTORCYCLE_ONLY",
-        "helmetHandling", "TOKENS");
+        "helmetHandling", "LOCKERS");
 
     assertThrows(OperationException.class, () -> onboardingService.saveOnboardingStep(companyId, 1, data, null));
   }
 
   @Test
-  void saveStep_acceptsMotorcycleWithTokensAndCount() {
+  void saveStep_acceptsMotorcycleWithLockersAndCount() {
     OnboardingProgress progress = new OnboardingProgress();
     progress.setCompany(company);
     progress.setCurrentStep(1);
@@ -162,7 +169,7 @@ class OnboardingServiceTest {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("vehicleTypes", java.util.List.of("MOTORCYCLE"));
     data.put("operationalProfile", "MOTORCYCLE_ONLY");
-    data.put("helmetHandling", "TOKENS");
+    data.put("helmetHandling", "LOCKERS");
     data.put("helmetTokenCount", 25);
 
     OnboardingStatusResponse response = onboardingService.saveOnboardingStep(companyId, 1, data, null);
@@ -171,12 +178,12 @@ class OnboardingServiceTest {
     @SuppressWarnings("unchecked")
     Map<String, Object> step1 = (Map<String, Object>) response.progressData().get("step_1");
     assertNotNull(step1);
-    assertEquals("TOKENS", step1.get("helmetHandling"));
+    assertEquals("LOCKERS", step1.get("helmetHandling"));
     assertEquals(25, step1.get("helmetTokenCount"));
   }
 
   @Test
-  void completeOnboarding_usesHelmetConfigFromStep1() {
+  void completeOnboarding_usesLockerConfigFromStep1() {
     OnboardingProgress progress = new OnboardingProgress();
     progress.setCompany(company);
     progress.setCurrentStep(12);
@@ -185,7 +192,7 @@ class OnboardingServiceTest {
     progressData.put("step_1", Map.of(
         "vehicleTypes", java.util.List.of("MOTORCYCLE"),
         "operationalProfile", "MOTORCYCLE_ONLY",
-        "helmetHandling", "TOKENS",
+        "helmetHandling", "LOCKERS",
         "helmetTokenCount", 30));
     progressData.put("step_2", Map.of("totalCapacity", 50));
     progressData.put("step_3", Map.of("baseValue", 2000));
@@ -203,8 +210,8 @@ class OnboardingServiceTest {
           && Boolean.TRUE.equals(operationConfiguration.get("usesHelmetTokens"))
           && Integer.valueOf(30).equals(operationConfiguration.get("helmetTokenCount"));
     }));
-    verify(helmetTokenService, times(1)).createBatch(eq(companyId), argThat(req ->
-        "F-".equals(req.prefix()) && req.start() == 1 && req.end() == 30));
+    verify(lockerService, times(1)).createBatch(eq(companyId), argThat(req ->
+        "L-".equals(req.prefix()) && req.start() == 1 && req.end() == 30));
     verify(parkingSpaceService, times(1)).resizeCapacity(companyId, 50);
     assertTrue(company.getOnboardingCompleted());
   }

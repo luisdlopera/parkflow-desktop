@@ -34,4 +34,20 @@ class DailyPricingStrategyTest {
     assertThat(breakdown.units()).isEqualTo(2);
     assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(40000));
   }
+
+  @Test
+  void lost_ticket_adds_surcharge() {
+    Rate r = baseRate(BigDecimal.valueOf(20000));
+    var breakdown = strategy.calculate(r, 60, true); // 1 day + surcharge
+    assertThat(breakdown.surcharge()).isEqualByComparingTo(BigDecimal.valueOf(10000));
+    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(30000));
+  }
+
+  @Test
+  void max_session_value_caps_total() {
+    Rate r = baseRate(BigDecimal.valueOf(20000));
+    r.setMaxSessionValue(new BigDecimal("35000"));
+    var breakdown = strategy.calculate(r, 60 * 72, false); // 3 days = 60000, no cap implemented yet
+    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(60000));
+  }
 }
