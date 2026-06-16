@@ -41,6 +41,7 @@ public class ParkingParametersData {
   private String qrConfig;
   private Boolean manualExitAllowed;
   private Boolean allowOfflineEntryExit;
+  private Boolean printExitTicket;
 
   /** Si no es null, sustituye app.cash.require-open-for-payment para esta sede. */
   private Boolean cashRequireOpenForPayment;
