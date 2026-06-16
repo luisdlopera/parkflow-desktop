@@ -48,7 +48,11 @@ export function buildTicketDocument(
     operatorName: options?.operatorName ?? null,
     issuedAtIso: receipt.entryAt ?? new Date().toISOString(),
     legalMessage: process.env.NEXT_PUBLIC_TICKET_LEGAL_MESSAGE ?? null,
-    qrPayload: `${process.env.NEXT_PUBLIC_TICKET_QR_PREFIX ?? "TICKET"}:${receipt.ticketNumber}`,
+    qrPayload: JSON.stringify({
+      t: receipt.ticketNumber,
+      p: receipt.plate,
+      e: receipt.entryAt ?? new Date().toISOString()
+    }),
     barcodePayload: null,
     copyNumber: 1,
     printerProfile: resolvePrinterProfileFromEnv()

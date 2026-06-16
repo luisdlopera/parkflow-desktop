@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ListBox } from "@heroui/react";
+import { ListBox, SearchField, useFilter, type Key } from "@heroui/react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Select } from "@/components/ui/Select";
+import { Autocomplete } from "@/components/ui/Autocomplete";
 import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/Switch";
 import { Input } from "@/components/ui/Input";
@@ -33,6 +33,7 @@ import {
   type CashSummaryDto
 } from "@/lib/cash/cash-api";
 import { buildCashCountTicket, buildCashMovementTicket } from "@/lib/cash/cash-print";
+import { fetchConfigurationSites } from "@/lib/settings-api";
 import { listCashOutboxPending } from "@/lib/cash/cash-outbox-idb";
 import { flushCashMovementOutbox } from "@/lib/cash/cash-sync";
 import { currentUser, hasPermission } from "@/lib/auth";
@@ -109,6 +110,58 @@ function getPaymentMethodTone(method: string): string {
   return "neutral";
 }
 
+function CountDiffIndicator({
+  countCash,
+  countCard,
+  countTransfer,
+  countOther,
+  expectedLedgerTotal,
+}: {
+  countCash: string;
+  countCard: string;
+  countTransfer: string;
+  countOther: string;
+  expectedLedgerTotal: number;
+}) {
+  const parsed =
+    (Number(countCash.replace(",", ".")) || 0) +
+    (Number(countCard.replace(",", ".")) || 0) +
+    (Number(countTransfer.replace(",", ".")) || 0) +
+    (Number(countOther.replace(",", ".")) || 0);
+  const diff = parsed - expectedLedgerTotal;
+
+  if (parsed === 0) return null;
+
+  return (
+    <div
+      className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
+        diff === 0
+          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+          : "border-amber-200 bg-amber-50 text-amber-800"
+      }`}
+    >
+      <p>
+        <strong>Total contado:</strong> ${parsed.toLocaleString()} &mdash;{" "}
+        <strong>Esperado:</strong> ${expectedLedgerTotal.toLocaleString()}
+        {diff !== 0 ? (
+          <span className="font-semibold">
+            {" "}
+            &mdash; <strong>Diferencia:</strong>{" "}
+            {diff > 0 ? "+" : ""}${diff.toLocaleString()}
+            {diff !== 0 && (
+              <span className="ml-1 text-amber-700">
+                (requiere observaciones)
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className="text-emerald-700 font-semibold"> &mdash; Coincide ✓</span>
+        )}
+      </p>
+    </div>
+  );
+}
+
 export default function CajaPage() {
   const [session, setSession] = useState<CashSessionDto | null>(null);
   const [movements, setMovements] = useState<CashMovementDto[]>([]);
@@ -141,7 +194,9 @@ export default function CajaPage() {
   const [closingWitness, setClosingWitness] = useState("");
   const [showShiftChangeModal, setShowShiftChangeModal] = useState(false);
   const [nextOpenAmount, setNextOpenAmount] = useState("0");
+  const [siteCount, setSiteCount] = useState(1);
   const { confirm } = useDialog();
+  const { contains } = useFilter({ sensitivity: "base" });
 
   // PERFORMANCE: Constant value, no need for useMemo
   const parkingName = process.env.NEXT_PUBLIC_PARKING_NAME ?? "Parkflow";
@@ -204,6 +259,12 @@ export default function CajaPage() {
       .then(setRegisterRows)
       .catch(() => setRegisterRows([]));
   }, [site]);
+
+  useEffect(() => {
+    fetchConfigurationSites({ active: true, page: 0, size: 1 })
+      .then((page) => setSiteCount(page.totalElements))
+      .catch(() => setSiteCount(1));
+  }, []);
 
   useEffect(() => {
     startLocalPrintQueueWorker();
@@ -342,17 +403,31 @@ export default function CajaPage() {
   };
 
   const onCount = async () => {
-    if (!session) {
+    if (!session) return;
+
+    const vals = {
+      cash: Number(countCash.replace(",", ".")) || 0,
+      card: Number(countCard.replace(",", ".")) || 0,
+      transfer: Number(countTransfer.replace(",", ".")) || 0,
+      other: Number(countOther.replace(",", ".")) || 0,
+    };
+    const counted = vals.cash + vals.card + vals.transfer + vals.other;
+
+    if (summary && counted !== summary.expectedLedgerTotal && !countNotes.trim()) {
+      setError(
+        `Hay diferencia de $${Math.abs(counted - summary.expectedLedgerTotal).toLocaleString()} respecto al esperado ($${summary.expectedLedgerTotal.toLocaleString()}). Las observaciones son obligatorias cuando hay diferencia.`
+      );
       return;
     }
+
     setBusy(true);
     setError(null);
     try {
       await cashCount(session.id, {
-        countCash: Number(countCash.replace(",", ".")) || 0,
-        countCard: Number(countCard.replace(",", ".")) || 0,
-        countTransfer: Number(countTransfer.replace(",", ".")) || 0,
-        countOther: Number(countOther.replace(",", ".")) || 0,
+        countCash: vals.cash,
+        countCard: vals.card,
+        countTransfer: vals.transfer,
+        countOther: vals.other,
         observations: countNotes || null
       });
       await load();
@@ -534,39 +609,51 @@ export default function CajaPage() {
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
       ) : null}
 
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-3 items-end">
-        <Input
-          label="Sede"
-          
-          size="sm"
-          value={site}
-          onChange={(e) => setSite(e.target.value)}
-          isDisabled={closed}
-        />
+      <div className={`grid gap-4 grid-cols-1 items-end ${siteCount > 1 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+        {siteCount > 1 && (
+          <Input
+            label="Sede"
+            
+            size="sm"
+            value={site}
+            onChange={(e) => setSite(e.target.value)}
+            isDisabled={closed}
+          />
+        )}
         <div className="flex flex-col gap-2">
           {registerRows.length > 0 && (
-            <Select
+            <Autocomplete
               label="Terminal / caja"
-              value={registerRows.some((r) => r.terminal === terminal) ? [terminal] : []}
-              onChange={(keys) => setTerminal(Array.from(keys)[0] as string)}
+              placeholder="Seleccionar terminal"
+              selectionMode="single"
+              value={registerRows.some((r) => r.terminal === terminal) ? terminal : null}
+              onChange={(key: Key | null) => setTerminal(key as string)}
               isDisabled={closed}
             >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
-      </Select.Trigger>
-      <Select.Popover>
-        <ListBox>
-
-              {registerRows.map((r) => (
-                <ListBox.Item key={r.terminal} textValue={r.terminal}>
-                  {(r.label ?? r.terminal) + ` (${r.terminal})`}
-                </ListBox.Item>
-              ))}
-            
-        </ListBox>
-      </Select.Popover>
-    </Select>
+              <Autocomplete.Trigger>
+                <Autocomplete.Value />
+                <Autocomplete.ClearButton />
+                <Autocomplete.Indicator />
+              </Autocomplete.Trigger>
+              <Autocomplete.Popover>
+                <Autocomplete.Filter filter={contains}>
+                  <SearchField autoFocus name="search" variant="secondary">
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input placeholder="Buscar terminal..." />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+                  <ListBox>
+                    {registerRows.map((r) => (
+                      <ListBox.Item key={r.terminal} id={r.terminal} textValue={r.terminal}>
+                        {(r.label ?? r.terminal) + ` (${r.terminal})`}
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Autocomplete.Filter>
+              </Autocomplete.Popover>
+            </Autocomplete>
           )}
           <Input
             placeholder="Terminal manual"
@@ -588,7 +675,7 @@ export default function CajaPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
+      <div className={`grid gap-4 sm:gap-6 grid-cols-1 ${session ? "" : "lg:grid-cols-2"}`}>
         <div className="surface rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Estado actual</h2>
           {loading ? (
@@ -747,97 +834,119 @@ export default function CajaPage() {
           )}
         </div>
 
-        <div className="surface rounded-2xl p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Abrir caja</h2>
-          <p className="mt-2 text-sm text-slate-600">Requiere permiso de apertura y terminal configurado.</p>
-          <label className="mt-4 block text-sm">
-            <span className="text-slate-600">Monto inicial</span>
-            <input
-              data-testid="initial-amount"
-              aria-label="Monto inicial"
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
-              value={openAmount}
-              onChange={(e) => setOpenAmount(e.target.value)}
-              disabled={busy || !!session}
-            />
-          </label>
-          <div className="mt-4">
-            <Button
-              className="w-full font-bold"
-              color="primary"
-              size="lg"
-              isDisabled={busy || !!session || !canOpen}
-              isLoading={busy}
-              onPress={() => { onOpen().catch(console.error); }}
-            >
-              Abrir caja
-            </Button>
+        {!session ? (
+          <div className="surface rounded-2xl p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-slate-900">Abrir caja</h2>
+            <p className="mt-2 text-sm text-slate-600">Requiere permiso de apertura y terminal configurado.</p>
+            <label className="mt-4 block text-sm">
+              <span className="text-slate-600">Monto inicial</span>
+              <input
+                data-testid="initial-amount"
+                aria-label="Monto inicial"
+                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                value={openAmount}
+                onChange={(e) => setOpenAmount(e.target.value)}
+                disabled={busy || !!session}
+              />
+            </label>
+            <div className="mt-4">
+              <Button
+                className="w-full font-bold"
+                color="primary"
+                size="lg"
+                isDisabled={busy || !!session || !canOpen}
+                isLoading={busy}
+                onPress={() => { onOpen().catch(console.error); }}
+              >
+                Abrir caja
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
 
       {session?.status === "OPEN" ? (
         <div className="surface rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Movimientos</h2>
           <div className="mt-4 flex flex-wrap gap-4 mb-6">
-            <Select
+            <Autocomplete
               label="Filtrar por tipo"
               className="max-w-[200px]"
-              value={filterType ? [filterType] : [""]}
-              onChange={(keys) => setFilterType(Array.from(keys)[0] as string)}
+              placeholder="Todos los tipos"
+              selectionMode="single"
+              value={filterType || null}
+              onChange={(key: Key | null) => setFilterType(key as string)}
             >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
-      </Select.Trigger>
-      <Select.Popover>
-        <ListBox>
-
-              <ListBox.Item key="" textValue="Todos los tipos">Todos los tipos</ListBox.Item>
-              <ListBox.Item key="PARKING_PAYMENT" textValue="Cobro parqueo">Cobro parqueo</ListBox.Item>
-              <ListBox.Item key="MANUAL_INCOME" textValue="Ingreso manual">Ingreso manual</ListBox.Item>
-              <ListBox.Item key="MANUAL_EXPENSE" textValue="Egreso manual">Egreso manual</ListBox.Item>
-              <ListBox.Item key="WITHDRAWAL" textValue="Retiro / Transferencia a Tesorería">Retiro / Transferencia a Tesorería</ListBox.Item>
-              <ListBox.Item key="CUSTOMER_REFUND" textValue="Devolucion al cliente">Devolucion al cliente</ListBox.Item>
-              <ListBox.Item key="DISCOUNT" textValue="Descuento">Descuento</ListBox.Item>
-              <ListBox.Item key="ADJUSTMENT" textValue="Ajuste">Ajuste</ListBox.Item>
-              <ListBox.Item key="LOST_TICKET_PAYMENT" textValue="Cobro ticket perdido">Cobro ticket perdido</ListBox.Item>
-              <ListBox.Item key="REPRINT_FEE" textValue="Reimpresion cobrada">Reimpresion cobrada</ListBox.Item>
-              <ListBox.Item key="VOID_OFFSET" textValue="Contrapartida anulacion">Contrapartida anulacion</ListBox.Item>
-            
-        </ListBox>
-      </Select.Popover>
-    </Select>
-            <Select
+              <Autocomplete.Trigger>
+                <Autocomplete.Value />
+                <Autocomplete.ClearButton />
+                <Autocomplete.Indicator />
+              </Autocomplete.Trigger>
+              <Autocomplete.Popover>
+                <Autocomplete.Filter filter={contains}>
+                  <SearchField autoFocus name="search" variant="secondary">
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input placeholder="Buscar tipo..." />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+                  <ListBox>
+                    <ListBox.Item key="" id="" textValue="Todos los tipos">Todos los tipos</ListBox.Item>
+                    <ListBox.Item key="PARKING_PAYMENT" id="PARKING_PAYMENT" textValue="Cobro parqueo">Cobro parqueo</ListBox.Item>
+                    <ListBox.Item key="MANUAL_INCOME" id="MANUAL_INCOME" textValue="Ingreso manual">Ingreso manual</ListBox.Item>
+                    <ListBox.Item key="MANUAL_EXPENSE" id="MANUAL_EXPENSE" textValue="Egreso manual">Egreso manual</ListBox.Item>
+                    <ListBox.Item key="WITHDRAWAL" id="WITHDRAWAL" textValue="Retiro / Transferencia a Tesorería">Retiro / Transferencia a Tesorería</ListBox.Item>
+                    <ListBox.Item key="CUSTOMER_REFUND" id="CUSTOMER_REFUND" textValue="Devolucion al cliente">Devolucion al cliente</ListBox.Item>
+                    <ListBox.Item key="DISCOUNT" id="DISCOUNT" textValue="Descuento">Descuento</ListBox.Item>
+                    <ListBox.Item key="ADJUSTMENT" id="ADJUSTMENT" textValue="Ajuste">Ajuste</ListBox.Item>
+                    <ListBox.Item key="LOST_TICKET_PAYMENT" id="LOST_TICKET_PAYMENT" textValue="Cobro ticket perdido">Cobro ticket perdido</ListBox.Item>
+                    <ListBox.Item key="REPRINT_FEE" id="REPRINT_FEE" textValue="Reimpresion cobrada">Reimpresion cobrada</ListBox.Item>
+                    <ListBox.Item key="VOID_OFFSET" id="VOID_OFFSET" textValue="Contrapartida anulacion">Contrapartida anulacion</ListBox.Item>
+                  </ListBox>
+                </Autocomplete.Filter>
+              </Autocomplete.Popover>
+            </Autocomplete>
+            <Autocomplete
               label="Filtrar por medio"
               className="max-w-[200px]"
-              value={filterMethod ? [filterMethod] : [""]}
-              onChange={(keys) => setFilterMethod(Array.from(keys)[0] as string)}
+              placeholder="Todos los medios"
+              selectionMode="single"
+              value={filterMethod || null}
+              onChange={(key: Key | null) => setFilterMethod(key as string)}
             >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
-      </Select.Trigger>
-      <Select.Popover>
-        <ListBox>
-
-              <ListBox.Item key="" textValue="Todos los medios">Todos los medios</ListBox.Item>
-              <ListBox.Item key="CASH" textValue="Efectivo">Efectivo</ListBox.Item>
-              <ListBox.Item key="DEBIT_CARD" textValue="Tarjeta débito">Tarjeta débito</ListBox.Item>
-              <ListBox.Item key="CREDIT_CARD" textValue="Tarjeta crédito">Tarjeta crédito</ListBox.Item>
-              <ListBox.Item key="CARD" textValue="Tarjeta legacy">Tarjeta legacy</ListBox.Item>
-              <ListBox.Item key="QR" textValue="QR">QR</ListBox.Item>
-              <ListBox.Item key="NEQUI" textValue="Nequi">Nequi</ListBox.Item>
-              <ListBox.Item key="DAVIPLATA" textValue="Daviplata">Daviplata</ListBox.Item>
-              <ListBox.Item key="TRANSFER" textValue="Transferencia">Transferencia</ListBox.Item>
-              <ListBox.Item key="AGREEMENT" textValue="Convenio">Convenio</ListBox.Item>
-              <ListBox.Item key="INTERNAL_CREDIT" textValue="Crédito interno">Crédito interno</ListBox.Item>
-              <ListBox.Item key="OTHER" textValue="Otro">Otro</ListBox.Item>
-              <ListBox.Item key="MIXED" textValue="Mixto">Mixto</ListBox.Item>
-            
-        </ListBox>
-      </Select.Popover>
-    </Select>
+              <Autocomplete.Trigger>
+                <Autocomplete.Value />
+                <Autocomplete.ClearButton />
+                <Autocomplete.Indicator />
+              </Autocomplete.Trigger>
+              <Autocomplete.Popover>
+                <Autocomplete.Filter filter={contains}>
+                  <SearchField autoFocus name="search" variant="secondary">
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input placeholder="Buscar medio..." />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+                  <ListBox>
+                    <ListBox.Item key="" id="" textValue="Todos los medios">Todos los medios</ListBox.Item>
+                    <ListBox.Item key="CASH" id="CASH" textValue="Efectivo">Efectivo</ListBox.Item>
+                    <ListBox.Item key="DEBIT_CARD" id="DEBIT_CARD" textValue="Tarjeta débito">Tarjeta débito</ListBox.Item>
+                    <ListBox.Item key="CREDIT_CARD" id="CREDIT_CARD" textValue="Tarjeta crédito">Tarjeta crédito</ListBox.Item>
+                    <ListBox.Item key="CARD" id="CARD" textValue="Tarjeta legacy">Tarjeta legacy</ListBox.Item>
+                    <ListBox.Item key="QR" id="QR" textValue="QR">QR</ListBox.Item>
+                    <ListBox.Item key="NEQUI" id="NEQUI" textValue="Nequi">Nequi</ListBox.Item>
+                    <ListBox.Item key="DAVIPLATA" id="DAVIPLATA" textValue="Daviplata">Daviplata</ListBox.Item>
+                    <ListBox.Item key="TRANSFER" id="TRANSFER" textValue="Transferencia">Transferencia</ListBox.Item>
+                    <ListBox.Item key="AGREEMENT" id="AGREEMENT" textValue="Convenio">Convenio</ListBox.Item>
+                    <ListBox.Item key="INTERNAL_CREDIT" id="INTERNAL_CREDIT" textValue="Crédito interno">Crédito interno</ListBox.Item>
+                    <ListBox.Item key="OTHER" id="OTHER" textValue="Otro">Otro</ListBox.Item>
+                    <ListBox.Item key="MIXED" id="MIXED" textValue="Mixto">Mixto</ListBox.Item>
+                  </ListBox>
+                </Autocomplete.Filter>
+              </Autocomplete.Popover>
+            </Autocomplete>
           </div>
           
           <DataTable<CashMovementDto>
@@ -888,59 +997,79 @@ export default function CajaPage() {
 
           <h3 className="mt-8 text-base font-semibold text-slate-900">Ingreso / egreso manual</h3>
           <div className="mt-3 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 items-end">
-            <Select
+            <Autocomplete
               label="Tipo de movimiento"
-              value={[manualType]}
-              onChange={(keys) => setManualType(Array.from(keys)[0] as string)}
+              placeholder="Seleccionar tipo"
+              selectionMode="single"
+              value={manualType}
+              onChange={(key: Key | null) => setManualType(key as string)}
               isDisabled={!canMove}
             >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
-      </Select.Trigger>
-      <Select.Popover>
-        <ListBox>
-
-              <ListBox.Item key="MANUAL_INCOME" textValue="Ingreso manual">Ingreso manual</ListBox.Item>
-              <ListBox.Item key="MANUAL_EXPENSE" textValue="Egreso manual">Egreso manual</ListBox.Item>
-              <ListBox.Item key="WITHDRAWAL" textValue="Retiro / Transferencia a Tesorería">Retiro / Transferencia a Tesorería</ListBox.Item>
-              <ListBox.Item key="CUSTOMER_REFUND" textValue="Devolucion al cliente">Devolucion al cliente</ListBox.Item>
-              <ListBox.Item key="DISCOUNT" textValue="Descuento">Descuento</ListBox.Item>
-              <ListBox.Item key="ADJUSTMENT" textValue="Ajuste autorizado">Ajuste autorizado</ListBox.Item>
-              <ListBox.Item key="REPRINT_FEE" textValue="Reimpresion cobrada">Reimpresion cobrada</ListBox.Item>
-            
-        </ListBox>
-      </Select.Popover>
-    </Select>
-            <Select
+              <Autocomplete.Trigger>
+                <Autocomplete.Value />
+                <Autocomplete.ClearButton />
+                <Autocomplete.Indicator />
+              </Autocomplete.Trigger>
+              <Autocomplete.Popover>
+                <Autocomplete.Filter filter={contains}>
+                  <SearchField autoFocus name="search" variant="secondary">
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input placeholder="Buscar tipo..." />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+                  <ListBox>
+                    <ListBox.Item key="MANUAL_INCOME" id="MANUAL_INCOME" textValue="Ingreso manual">Ingreso manual</ListBox.Item>
+                    <ListBox.Item key="MANUAL_EXPENSE" id="MANUAL_EXPENSE" textValue="Egreso manual">Egreso manual</ListBox.Item>
+                    <ListBox.Item key="WITHDRAWAL" id="WITHDRAWAL" textValue="Retiro / Transferencia a Tesorería">Retiro / Transferencia a Tesorería</ListBox.Item>
+                    <ListBox.Item key="CUSTOMER_REFUND" id="CUSTOMER_REFUND" textValue="Devolucion al cliente">Devolucion al cliente</ListBox.Item>
+                    <ListBox.Item key="DISCOUNT" id="DISCOUNT" textValue="Descuento">Descuento</ListBox.Item>
+                    <ListBox.Item key="ADJUSTMENT" id="ADJUSTMENT" textValue="Ajuste autorizado">Ajuste autorizado</ListBox.Item>
+                    <ListBox.Item key="REPRINT_FEE" id="REPRINT_FEE" textValue="Reimpresion cobrada">Reimpresion cobrada</ListBox.Item>
+                  </ListBox>
+                </Autocomplete.Filter>
+              </Autocomplete.Popover>
+            </Autocomplete>
+            <Autocomplete
               label="Medio de pago"
-              value={[manualMethod]}
-              onChange={(keys) => setManualMethod(Array.from(keys)[0] as string)}
+              placeholder="Seleccionar medio"
+              selectionMode="single"
+              value={manualMethod}
+              onChange={(key: Key | null) => setManualMethod(key as string)}
               isDisabled={!canMove}
             >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
-      </Select.Trigger>
-      <Select.Popover>
-        <ListBox>
-
-              <ListBox.Item key="CASH" textValue="Efectivo">Efectivo</ListBox.Item>
-              <ListBox.Item key="DEBIT_CARD" textValue="Tarjeta débito">Tarjeta débito</ListBox.Item>
-              <ListBox.Item key="CREDIT_CARD" textValue="Tarjeta crédito">Tarjeta crédito</ListBox.Item>
-              <ListBox.Item key="CARD" textValue="Tarjeta legacy">Tarjeta legacy</ListBox.Item>
-              <ListBox.Item key="QR" textValue="QR">QR</ListBox.Item>
-              <ListBox.Item key="NEQUI" textValue="Nequi">Nequi</ListBox.Item>
-              <ListBox.Item key="DAVIPLATA" textValue="Daviplata">Daviplata</ListBox.Item>
-              <ListBox.Item key="TRANSFER" textValue="Transferencia">Transferencia</ListBox.Item>
-              <ListBox.Item key="AGREEMENT" textValue="Convenio">Convenio</ListBox.Item>
-              <ListBox.Item key="INTERNAL_CREDIT" textValue="Crédito interno">Crédito interno</ListBox.Item>
-              <ListBox.Item key="OTHER" textValue="Otro">Otro</ListBox.Item>
-              <ListBox.Item key="MIXED" textValue="Mixto">Mixto</ListBox.Item>
-            
-        </ListBox>
-      </Select.Popover>
-    </Select>
+              <Autocomplete.Trigger>
+                <Autocomplete.Value />
+                <Autocomplete.ClearButton />
+                <Autocomplete.Indicator />
+              </Autocomplete.Trigger>
+              <Autocomplete.Popover>
+                <Autocomplete.Filter filter={contains}>
+                  <SearchField autoFocus name="search" variant="secondary">
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input placeholder="Buscar medio..." />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+                  <ListBox>
+                    <ListBox.Item key="CASH" id="CASH" textValue="Efectivo">Efectivo</ListBox.Item>
+                    <ListBox.Item key="DEBIT_CARD" id="DEBIT_CARD" textValue="Tarjeta débito">Tarjeta débito</ListBox.Item>
+                    <ListBox.Item key="CREDIT_CARD" id="CREDIT_CARD" textValue="Tarjeta crédito">Tarjeta crédito</ListBox.Item>
+                    <ListBox.Item key="CARD" id="CARD" textValue="Tarjeta legacy">Tarjeta legacy</ListBox.Item>
+                    <ListBox.Item key="QR" id="QR" textValue="QR">QR</ListBox.Item>
+                    <ListBox.Item key="NEQUI" id="NEQUI" textValue="Nequi">Nequi</ListBox.Item>
+                    <ListBox.Item key="DAVIPLATA" id="DAVIPLATA" textValue="Daviplata">Daviplata</ListBox.Item>
+                    <ListBox.Item key="TRANSFER" id="TRANSFER" textValue="Transferencia">Transferencia</ListBox.Item>
+                    <ListBox.Item key="AGREEMENT" id="AGREEMENT" textValue="Convenio">Convenio</ListBox.Item>
+                    <ListBox.Item key="INTERNAL_CREDIT" id="INTERNAL_CREDIT" textValue="Crédito interno">Crédito interno</ListBox.Item>
+                    <ListBox.Item key="OTHER" id="OTHER" textValue="Otro">Otro</ListBox.Item>
+                    <ListBox.Item key="MIXED" id="MIXED" textValue="Mixto">Mixto</ListBox.Item>
+                  </ListBox>
+                </Autocomplete.Filter>
+              </Autocomplete.Popover>
+            </Autocomplete>
             <Input
               label="Valor"
               
@@ -963,7 +1092,6 @@ export default function CajaPage() {
             <Button
               className="flex-1 font-bold"
               color="primary"
-              variant="tertiary"
               isDisabled={busy || !canMove}
               isLoading={busy}
               onPress={() => { onAddManual().catch(console.error); }}
@@ -1023,11 +1151,58 @@ export default function CajaPage() {
               onChange={(e) => setCountOther(e.target.value)}
             />
           </div>
+
+          {summary && (
+            <CountDiffIndicator
+              countCash={countCash}
+              countCard={countCard}
+              countTransfer={countTransfer}
+              countOther={countOther}
+              expectedLedgerTotal={summary.expectedLedgerTotal}
+            />
+          )}
+
           <div className="mt-4">
             <TextArea
               label="Observaciones de arqueo"
-              placeholder="Describa cualquier novedad..."
-              
+              placeholder={(() => {
+                if (!summary) return "Describa cualquier novedad...";
+                const parsedTotal =
+                  (Number(countCash.replace(",", ".")) || 0) +
+                  (Number(countCard.replace(",", ".")) || 0) +
+                  (Number(countTransfer.replace(",", ".")) || 0) +
+                  (Number(countOther.replace(",", ".")) || 0);
+                return parsedTotal !== summary.expectedLedgerTotal
+                  ? "OBLIGATORIAS: hay diferencia respecto al esperado"
+                  : "Describa cualquier novedad...";
+              })()}
+              isInvalid={
+                summary
+                  ? (() => {
+                      const parsedTotal =
+                        (Number(countCash.replace(",", ".")) || 0) +
+                        (Number(countCard.replace(",", ".")) || 0) +
+                        (Number(countTransfer.replace(",", ".")) || 0) +
+                        (Number(countOther.replace(",", ".")) || 0);
+                      return parsedTotal !== summary.expectedLedgerTotal && !countNotes.trim();
+                    })()
+                  : false
+              }
+              errorMessage={
+                summary
+                  ? (() => {
+                      const parsedTotal =
+                        (Number(countCash.replace(",", ".")) || 0) +
+                        (Number(countCard.replace(",", ".")) || 0) +
+                        (Number(countTransfer.replace(",", ".")) || 0) +
+                        (Number(countOther.replace(",", ".")) || 0);
+                      if (parsedTotal !== summary.expectedLedgerTotal && !countNotes.trim()) {
+                        return "Las observaciones son obligatorias cuando el conteo difiere del esperado";
+                      }
+                      return "";
+                    })()
+                  : undefined
+              }
               value={countNotes}
               onChange={(e) => setCountNotes(e.target.value)}
             />
@@ -1036,7 +1211,6 @@ export default function CajaPage() {
             <Button 
               className="flex-1 font-bold" 
               color="primary" 
-              variant="tertiary"
               isDisabled={busy} 
               isLoading={busy}
               onPress={() => { onCount().catch(console.error); }}

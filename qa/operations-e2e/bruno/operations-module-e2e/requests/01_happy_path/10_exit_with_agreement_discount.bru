@@ -1,0 +1,41 @@
+meta {
+  name: 10_exit_with_agreement_discount
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{apiBaseUrl}}/exits
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "ticketNumber": "{{agreementTicket}}",
+    "operatorUserId": "{{adminUserId}}",
+    "paymentMethod": "CASH",
+    "agreementCode": "CORP10",
+    "observations": "Salida con convenio CORP10"
+  }
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("descuento aplicado", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    expect(data.receipt.status).to.equal("CLOSED");
+    expect(data.discount).to.be.above(0);
+    expect(data.total).to.be.below(data.subtotal);
+  });
+}

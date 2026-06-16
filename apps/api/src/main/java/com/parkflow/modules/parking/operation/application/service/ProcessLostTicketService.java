@@ -107,6 +107,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
       payment.setMethod(request.paymentMethod());
       payment.setAmount(price.total());
       payment.setPaidAt(exitAt);
+      payment.setCompanyId(session.getCompanyId());
       paymentPort.save(payment);
       
       cashMovementUseCase.recordParkingPayment(

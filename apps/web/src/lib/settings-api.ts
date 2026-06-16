@@ -117,6 +117,7 @@ export type ParkingParametersPayload = {
   qrConfig?: string;
   manualExitAllowed?: boolean;
   allowOfflineEntryExit?: boolean;
+  printExitTicket?: boolean;
   /** Override por sede; undefined = hereda app.cash del servidor. */
   cashRequireOpenForPayment?: boolean;
   cashOfflineCloseAllowed?: boolean;
@@ -378,17 +379,26 @@ export async function fetchMasterVehicleTypes(auditReason?: string): Promise<Mas
   });
 }
 
-export async function saveMasterVehicleType(data: { code: string; name: string; icon?: string; color?: string; requiresPlate?: boolean; hasOwnRate?: boolean; quickAccess?: boolean; requiresPhoto?: boolean; displayOrder?: number; }, id?: string, auditReason?: string): Promise<MasterVehicleTypeRow> {
-  const validatedBody = validatePayloadOrThrow(vehicleTypeSchema, data);
+export async function saveMasterVehicleType(data: { code: string; name?: string; icon?: string; color?: string; requiresPlate?: boolean; hasOwnRate?: boolean; quickAccess?: boolean; requiresPhoto?: boolean; displayOrder?: number; }, id?: string, auditReason?: string): Promise<MasterVehicleTypeRow> {
   const method = id ? "PUT" : "POST";
   const url = id 
     ? `${cfgBase()}/vehicle-types/${id}`
     : `${cfgBase()}/vehicle-types`;
 
+  let body: string;
+  if (!id) {
+    // Creating: only send code, backend fills rest from StandardVehicleType enum
+    body = JSON.stringify({ code: data.code });
+  } else {
+    // Updating: send full object (backend only reads displayOrder for company types)
+    const validatedBody = validatePayloadOrThrow(vehicleTypeSchema, data);
+    body = JSON.stringify(validatedBody);
+  }
+
   return apiFetch<MasterVehicleTypeRow>(url, {
     method,
     headers: await buildApiHeaders(hdr(auditReason)),
-    body: JSON.stringify(validatedBody)
+    body
   });
 }
 

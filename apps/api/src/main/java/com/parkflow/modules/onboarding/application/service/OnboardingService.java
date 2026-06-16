@@ -20,10 +20,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.parkflow.modules.parking.helmet.dto.BatchHelmetTokenRequest;
-import com.parkflow.modules.parking.helmet.service.HelmetTokenService;
+import com.parkflow.modules.parking.locker.dto.BatchLockerRequest;
+import com.parkflow.modules.parking.locker.service.LockerService;
+import com.parkflow.modules.parking.operation.domain.Rate;
+import com.parkflow.modules.parking.operation.domain.RateType;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
+import com.parkflow.modules.configuration.domain.RoundingMode;
+import com.parkflow.modules.settings.application.service.SettingsVehicleTypeService;
+import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
@@ -41,8 +47,10 @@ public class OnboardingService implements OnboardingUseCase {
   private final com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort parkingSessionPort;
   private final com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
   private final AppUserRepository appUserRepository;
-  private final HelmetTokenService helmetTokenService;
+  private final LockerService lockerService;
   private final ParkingSpaceService parkingSpaceService;
+  private final RateRepository rateRepository;
+  private final SettingsVehicleTypeService settingsVehicleTypeService;
 
   @Transactional(readOnly = true)
   public OnboardingStatusResponse status(UUID companyId) {
@@ -116,6 +124,13 @@ public class OnboardingService implements OnboardingUseCase {
     company.setOperationalProfile(OperationalProfile.MIXED);
     companyRepository.save(company);
     companySettingsService.upsertSettings(company, settingsMapper.defaultConfiguration(company));
+
+    // Crear tipos de vehículo por defecto en el catálogo global + vínculo con la empresa
+    materializeVehicleTypes(companyId, List.of("MOTORCYCLE", "CAR"));
+
+    // Crear tarifas default para que el ingreso de vehículos no falle.
+    createDefaultRates(company);
+
     progress.setSkipped(true);
     progress.setCompleted(true);
     progress.setCurrentStep(12);
@@ -153,9 +168,13 @@ public class OnboardingService implements OnboardingUseCase {
     
     companySettingsService.upsertSettings(company, finalSettings);
 
-    // Crear fichas de cascos automáticamente si el usuario configuró custodia por fichas.
-    // Se ejecuta dentro de la misma transacción para garantizar atomicidad con el onboarding.
-    createHelmetTokensIfConfigured(companyId, step1);
+    // Crear tipos de vehículo en el catálogo global + vínculo con la empresa
+    @SuppressWarnings("unchecked")
+    List<String> vehicleTypeCodes = (List<String>) finalSettings.getOrDefault("vehicleTypes", List.of("MOTORCYCLE", "CAR"));
+    materializeVehicleTypes(companyId, vehicleTypeCodes);
+
+    // Crear lockers automáticamente si el usuario configuró custodia por lockers.
+    createLockersIfConfigured(companyId, step1);
 
     // Materializar las celdas de parqueo configuradas en el paso 2.
     // Si no se crean aquí, el ingreso queda bloqueado porque no hay espacios disponibles.
@@ -163,6 +182,10 @@ public class OnboardingService implements OnboardingUseCase {
     if (totalCapacity > 0) {
       parkingSpaceService.resizeCapacity(companyId, totalCapacity);
     }
+
+    // Crear tarifas operativas en la tabla rate desde la configuración del paso 3.
+    // Necesarias para que el ingreso de vehículos no falle con "No se encontró tarifa aplicable".
+    createRatesFromOnboarding(company, progress.getProgressData());
 
     progress.setCompleted(true);
     progress.setCurrentStep(12);
@@ -173,20 +196,107 @@ public class OnboardingService implements OnboardingUseCase {
     return status(companyId);
   }
 
-  private void createHelmetTokensIfConfigured(UUID companyId, Map<String, Object> step1) {
+  private void materializeVehicleTypes(UUID companyId, List<String> codes) {
+    for (String code : codes) {
+      settingsVehicleTypeService.addTypeToCompany(companyId, code);
+    }
+  }
+
+  private void createRatesFromOnboarding(Company company, Map<String, Object> progressData) {
+    Map<String, Object> step1 = settingsMapper.stepMap(progressData, 1);
+    Map<String, Object> step3 = settingsMapper.stepMap(progressData, 3);
+
+    List<String> vehicleTypes = settingsMapper.asStringList(step1.get("vehicleTypes"), List.of("MOTORCYCLE", "CAR"));
+    int baseValue = settingsMapper.extractNumber(step3.get("baseValue"), 2000);
+    int graceMinutes = settingsMapper.extractNumber(step3.get("graceMinutes"), 5);
+
+    Map<String, Object> ratesByType = new LinkedHashMap<>();
+    Object rawByType = step3.get("ratesByType");
+    if (rawByType instanceof Map<?, ?> map) {
+      map.forEach((k, v) -> ratesByType.put(String.valueOf(k), v));
+    }
+
+    // Desactivar tarifas existentes de la empresa antes de crear las nuevas
+    List<Rate> existing = rateRepository.findByCompanyId(company.getId());
+    for (Rate r : existing) {
+      r.setActive(false);
+      r.setUpdatedAt(OffsetDateTime.now());
+      rateRepository.save(r);
+    }
+
+    // Crear una tarifa HOURLY por tipo de vehículo
+    for (String vehicleType : vehicleTypes) {
+      int amount = settingsMapper.extractNumber(ratesByType.get(vehicleType), baseValue);
+      Rate rate = new Rate();
+      rate.setCompanyId(company.getId());
+      rate.setName("Tarifa " + vehicleType);
+      rate.setVehicleType(vehicleType);
+      rate.setRateType(RateType.HOURLY);
+      rate.setAmount(BigDecimal.valueOf(amount));
+      rate.setGraceMinutes(graceMinutes);
+      rate.setFractionMinutes(60);
+      rate.setSite("DEFAULT");
+      rate.setBaseValue(BigDecimal.ZERO);
+      rate.setBaseMinutes(0);
+      rate.setAdditionalValue(BigDecimal.ZERO);
+      rate.setAdditionalMinutes(0);
+      rate.setRoundingMode(RoundingMode.NEAREST);
+      rate.setLostTicketSurcharge(BigDecimal.ZERO);
+      rate.setActive(true);
+      rate.setCreatedAt(OffsetDateTime.now());
+      rate.setUpdatedAt(OffsetDateTime.now());
+      rateRepository.save(rate);
+    }
+  }
+
+  private void createDefaultRates(Company company) {
+    // Desactivar tarifas existentes
+    List<Rate> existing = rateRepository.findByCompanyId(company.getId());
+    for (Rate r : existing) {
+      r.setActive(false);
+      r.setUpdatedAt(OffsetDateTime.now());
+      rateRepository.save(r);
+    }
+
+    // Crear tarifas default para MOTO y CARRO
+    for (String vehicleType : List.of("MOTORCYCLE", "CAR")) {
+      int amount = "MOTORCYCLE".equals(vehicleType) ? 1000 : 2000;
+      Rate rate = new Rate();
+      rate.setCompanyId(company.getId());
+      rate.setName("Tarifa " + vehicleType);
+      rate.setVehicleType(vehicleType);
+      rate.setRateType(RateType.HOURLY);
+      rate.setAmount(BigDecimal.valueOf(amount));
+      rate.setGraceMinutes(5);
+      rate.setFractionMinutes(60);
+      rate.setSite("DEFAULT");
+      rate.setBaseValue(BigDecimal.ZERO);
+      rate.setBaseMinutes(0);
+      rate.setAdditionalValue(BigDecimal.ZERO);
+      rate.setAdditionalMinutes(0);
+      rate.setRoundingMode(RoundingMode.NEAREST);
+      rate.setLostTicketSurcharge(BigDecimal.ZERO);
+      rate.setActive(true);
+      rate.setCreatedAt(OffsetDateTime.now());
+      rate.setUpdatedAt(OffsetDateTime.now());
+      rateRepository.save(rate);
+    }
+  }
+
+  private void createLockersIfConfigured(UUID companyId, Map<String, Object> step1) {
     if (step1 == null) {
       return;
     }
     String handling = String.valueOf(step1.getOrDefault("helmetHandling", ""));
-    if (!"TOKENS".equals(handling)) {
+    if (!"LOCKERS".equals(handling)) {
       return;
     }
     int count = settingsMapper.extractNumber(step1.get("helmetTokenCount"), 0);
     if (count <= 0 || count > 9999) {
       return;
     }
-    BatchHelmetTokenRequest batchRequest = new BatchHelmetTokenRequest("F-", 1, count);
-    helmetTokenService.createBatch(companyId, batchRequest);
+    BatchLockerRequest batchRequest = new BatchLockerRequest("L-", 1, count);
+    lockerService.createBatch(companyId, batchRequest);
   }
 
   @Transactional(readOnly = true)
@@ -268,16 +378,16 @@ public class OnboardingService implements OnboardingUseCase {
         return;
       }
       String handling = String.valueOf(data.getOrDefault("helmetHandling", ""));
-      if (!"TOKENS".equals(handling) && !"LOCKER".equals(handling) && !"NONE".equals(handling)) {
+      if (!"LOCKERS".equals(handling) && !"MANUAL".equals(handling) && !"NONE".equals(handling)) {
         throw new OperationException(HttpStatus.BAD_REQUEST, "Debes seleccionar una opción de custodia de cascos.");
       }
-      if ("TOKENS".equals(handling)) {
+      if ("LOCKERS".equals(handling)) {
         int count = settingsMapper.extractNumber(data.get("helmetTokenCount"), 0);
         if (count <= 0) {
-          throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de fichas debe ser mayor a 0.");
+          throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de lockers debe ser mayor a 0.");
         }
         if (count > 9999) {
-          throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de fichas no puede superar 9999.");
+          throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de lockers no puede superar 9999.");
         }
       }
     }

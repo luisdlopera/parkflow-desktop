@@ -49,6 +49,7 @@ public interface ParkingSessionPort {
   long countSyncPending(UUID companyId);
 
   org.springframework.data.domain.Page<ParkingSession> searchByPlateOrTicket(String query, UUID companyId, Pageable pageable);
+  org.springframework.data.domain.Page<ParkingSession> searchActiveByPlateOrTicket(String query, UUID companyId, Pageable pageable);
   
   ParkingSession save(ParkingSession session);
   Optional<ParkingSession> findById(UUID id);

@@ -9,11 +9,18 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
   ({ content, children, ...props }, ref) => {
     return (
       <HeroTooltip {...props as any}>
-        <HeroTooltip.Trigger>
-          <span role="button" tabIndex={0}>
-            {children}
-          </span>
-        </HeroTooltip.Trigger>
+        <span
+          role="button"
+          tabIndex={0}
+          className="cursor-help"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+            }
+          }}
+        >
+          {children}
+        </span>
         <HeroTooltip.Content>
           {content}
         </HeroTooltip.Content>

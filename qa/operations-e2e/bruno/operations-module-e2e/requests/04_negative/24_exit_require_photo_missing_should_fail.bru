@@ -1,0 +1,32 @@
+meta {
+  name: 24_exit_require_photo_missing_should_fail
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{apiBaseUrl}}/exits
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "ticketNumber": "{{photoRequiredTicket}}",
+    "operatorUserId": "{{cashierOperatorId}}",
+    "paymentMethod": "CASH",
+    "observations": "Salida sin foto en sede que exige foto"
+  }
+}
+
+tests {
+  test("status 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

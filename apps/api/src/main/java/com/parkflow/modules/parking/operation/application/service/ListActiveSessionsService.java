@@ -31,7 +31,7 @@ public class ListActiveSessionsService implements ListActiveSessionsUseCase {
     
     org.springframework.data.domain.Page<ParkingSession> sessionPage;
     if (search != null && !search.trim().isEmpty()) {
-      sessionPage = parkingSessionPort.searchByPlateOrTicket(search.trim(), SecurityUtils.requireCompanyId(), pageable);
+      sessionPage = parkingSessionPort.searchActiveByPlateOrTicket(search.trim(), SecurityUtils.requireCompanyId(), pageable);
     } else {
       sessionPage = parkingSessionPort.findActiveWithAssociations(SessionStatus.ACTIVE, SecurityUtils.requireCompanyId(), pageable);
     }

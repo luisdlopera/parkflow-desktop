@@ -18,6 +18,9 @@ public class CashRegister {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
+  @Version
+  private Long version = 0L;
+
   @Column(nullable = false, length = 80)
   private String site;
 

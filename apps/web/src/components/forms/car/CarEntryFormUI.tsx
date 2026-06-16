@@ -1,6 +1,6 @@
 "use client";
 
-import React, { KeyboardEvent } from "react";
+import React, { KeyboardEvent, memo } from "react";
 import { UseFormReturn, Controller } from "react-hook-form";
 import { VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { Input } from "@/components/ui/Input";
@@ -21,7 +21,7 @@ interface CarEntryFormUIProps {
   noPlate: boolean;
 }
 
-export function CarEntryFormUI({
+export const CarEntryFormUI = memo(function CarEntryFormUI({
   form,
   onSubmit,
   onKeyDown,
@@ -175,4 +175,4 @@ export function CarEntryFormUI({
       </div>
     </div>
   );
-}
+});

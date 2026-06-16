@@ -18,7 +18,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
-
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import jakarta.persistence.OptimisticLockException;
 import static com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY;
 
 /**
@@ -161,6 +162,26 @@ public class GlobalExceptionHandler {
             "DATABASE_CONSTRAINT_ERROR",
             "La operacion no pudo completarse por un conflicto de datos. Verifique que el recurso no este duplicado.",
             message,
+            request.getRequestURI(),
+            correlationId
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler({ObjectOptimisticLockingFailureException.class, OptimisticLockException.class})
+    public ResponseEntity<ErrorResponse> handleOptimisticLockingFailure(
+            Exception ex, HttpServletRequest request) {
+
+        String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
+        
+        log.warn("Optimistic locking failure [correlationId={}]: {}", correlationId, ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.CONFLICT.value(),
+            "CONCURRENT_MODIFICATION_ERROR",
+            "La operacion no pudo completarse porque otro usuario modifico la informacion. Por favor recarga e intenta de nuevo.",
+            ex.getClass().getSimpleName() + ": " + ex.getMessage(),
             request.getRequestURI(),
             correlationId
         );

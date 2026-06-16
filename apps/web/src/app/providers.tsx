@@ -5,6 +5,7 @@ import { HeroUIProvider } from "@heroui/system";
 import { Toast, toast } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { handleAuthFailureStatus } from "@/lib/auth";
+import { SWRConfig } from "swr";
 
 import { TenantConfigProvider } from "@/lib/providers/TenantConfigProvider";
 import { DialogProvider } from "@/components/ui/DialogProvider";
@@ -17,15 +18,17 @@ export function Providers({ children }: ProvidersProps) {
   const router = useRouter();
 
   return (
-    <HeroUIProvider navigate={router.push}>
-      <Toast.Provider placement="top end" />
-      <TenantConfigProvider>
-        <DialogProvider>
-          <GlobalAuthEffects />
-          {children}
-        </DialogProvider>
-      </TenantConfigProvider>
-    </HeroUIProvider>
+    <SWRConfig value={{ revalidateOnFocus: false }}>
+      <HeroUIProvider navigate={router.push}>
+        <Toast.Provider placement="top end" />
+        <TenantConfigProvider>
+          <DialogProvider>
+            <GlobalAuthEffects />
+            {children}
+          </DialogProvider>
+        </TenantConfigProvider>
+      </HeroUIProvider>
+    </SWRConfig>
   );
 }
 

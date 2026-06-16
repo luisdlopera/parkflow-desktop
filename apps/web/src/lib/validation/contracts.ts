@@ -341,6 +341,7 @@ export const settingsParametersSchema = z.object({
   qrConfig: z.string().optional(),
   manualExitAllowed: z.boolean().optional(),
   allowOfflineEntryExit: z.boolean().optional(),
+  printExitTicket: z.boolean().optional(),
   cashRequireOpenForPayment: z.boolean().optional(),
   cashOfflineCloseAllowed: z.boolean().optional(),
   cashOfflineMaxManualMovement: z.number().min(0).optional(),

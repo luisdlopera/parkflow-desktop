@@ -1,0 +1,42 @@
+meta {
+  name: 08_motorcycle_exit_with_helmet_return
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{apiBaseUrl}}/exits
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "ticketNumber": "{{motoHelmetTicket}}",
+    "operatorUserId": "{{adminUserId}}",
+    "paymentMethod": "CASH",
+    "exitAt": "2026-04-14T10:00:00-05:00",
+    "observations": "Salida moto con devolucion de casco",
+    "returnedItemIds": ["{{helmetItemId}}"],
+    "custodiedItemObservations": "Casco negro devuelto en buen estado"
+  }
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("sesion cerrada", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    expect(data.receipt.status).to.equal("CLOSED");
+    expect(data.receipt.vehicleType).to.equal("MOTORCYCLE");
+  });
+}

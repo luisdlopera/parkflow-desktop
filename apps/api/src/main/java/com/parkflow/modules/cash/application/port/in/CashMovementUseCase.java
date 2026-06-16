@@ -21,10 +21,19 @@ public interface CashMovementUseCase {
         assertCashOpenForParkingPayment(parkingSession, null);
     }
     void assertCashOpenForParkingPayment(ParkingSession parkingSession, UUID cashSessionId);
+    default void recordParkingPayment(
+        ParkingSession parkingSession,
+        Payment payment,
+        AppUser operator,
+        String idempotencyKey,
+        CashMovementType movementType) {
+        recordParkingPayment(parkingSession, payment, operator, idempotencyKey, movementType, null);
+    }
     void recordParkingPayment(
         ParkingSession parkingSession,
         Payment payment,
         AppUser operator,
         String idempotencyKey,
-        CashMovementType movementType);
+        CashMovementType movementType,
+        UUID cashSessionId);
 }

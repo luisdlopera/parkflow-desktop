@@ -4,6 +4,7 @@ import { http, HttpResponse } from "msw";
 import { server } from "@/mocks/server";
 import { HeroUIProvider } from "@heroui/system";
 import { Toast } from "@heroui/react";
+import { TenantConfigProvider } from "@/lib/providers/TenantConfigProvider";
 import VehicleEntryFormV2 from "@/components/forms/VehicleEntryFormV2";
 
 if (typeof window !== "undefined" && typeof window.PointerEvent === "undefined") {
@@ -34,7 +35,9 @@ function renderWithProviders(ui: React.ReactElement) {
   return render(
     <HeroUIProvider>
       <Toast.Provider />
-      {ui}
+      <TenantConfigProvider>
+        {ui}
+      </TenantConfigProvider>
     </HeroUIProvider>
   );
 }
@@ -112,7 +115,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
   it.skip("normalizes plate to uppercase and removes spaces", async () => {
     let capturedBody: unknown = null;
     server.use(
-      http.post(/.*\/api\/v1\/operations\/entries/, async ({ request }) => {
+      http.post("*/api/v1/operations/entries", async ({ request }) => {
         capturedBody = await request.json();
         return HttpResponse.json({
           sessionId: "session-1",
@@ -155,7 +158,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
   it.skip("sends idempotencyKey in the request", async () => {
     let capturedBody: unknown = null;
     server.use(
-      http.post(/.*\/api\/v1\/operations\/entries/, async ({ request }) => {
+      http.post("*/api/v1/operations/entries", async ({ request }) => {
         capturedBody = await request.json();
         return HttpResponse.json({
           sessionId: "session-1",
@@ -204,7 +207,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
     }));
     let capturedBody: unknown = null;
     server.use(
-      http.post(/.*\/api\/v1\/operations\/entries/, async ({ request }) => {
+      http.post("*/api/v1/operations/entries", async ({ request }) => {
         capturedBody = await request.json();
         return HttpResponse.json({
           sessionId: "session-no-plate",
@@ -245,7 +248,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
   it("sends the correct vehicle type", async () => {
     let capturedBody: unknown = null;
     server.use(
-      http.post(/.*\/api\/v1\/operations\/entries/, async ({ request }) => {
+      http.post("*/api/v1/operations/entries", async ({ request }) => {
         capturedBody = await request.json();
         return HttpResponse.json({
           sessionId: "session-1",
@@ -285,7 +288,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
 
   it("shows error message for 400 response", async () => {
     server.use(
-      http.post(/.*\/api\/v1\/operations\/entries/, () => {
+      http.post("*/api/v1/operations/entries", () => {
         return HttpResponse.json(
           {
             errorCode: "VALIDATION_ERROR",
@@ -317,7 +320,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
 
   it("shows specific message for 409 conflict", async () => {
     server.use(
-      http.post(/.*\/api\/v1\/operations\/entries/, () => {
+      http.post("*/api/v1/operations/entries", () => {
         return HttpResponse.json(
           {
             errorCode: "OPERATION_ERROR",
@@ -348,7 +351,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
 
   it("clears form and shows ticket after successful entry", async () => {
     server.use(
-      http.post(/.*\/api\/v1\/operations\/entries/, () => {
+      http.post("*/api/v1/operations/entries", () => {
         return HttpResponse.json({
           sessionId: "session-1",
           receipt: {
@@ -388,7 +391,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
     let secondKey: string | null = null;
 
     server.use(
-      http.post(/.*\/api\/v1\/operations\/entries/, async ({ request }) => {
+      http.post("*/api/v1/operations/entries", async ({ request }) => {
         attemptCount++;
         const body = (await request.json()) as Record<string, unknown>;
         if (attemptCount === 1) {
@@ -444,7 +447,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
 
   it("shows print warning when print-agent is unavailable", async () => {
     server.use(
-      http.post(/.*\/api\/v1\/operations\/entries/, () => {
+      http.post("*/api/v1/operations/entries", () => {
         return HttpResponse.json({
           sessionId: "session-print-fail",
           receipt: {
@@ -457,7 +460,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
           message: "Ingreso registrado",
         });
       }),
-      http.get(/.*\/api\/print-agent\/health/, () => {
+      http.get("*/api/print-agent/health", () => {
         return HttpResponse.json({ ok: false }, { status: 500 });
       })
     );
@@ -484,7 +487,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
 
   it("shows download and reprint buttons in print warning", async () => {
     server.use(
-      http.post(/.*\/api\/v1\/operations\/entries/, () => {
+      http.post("*/api/v1/operations/entries", () => {
         return HttpResponse.json({
           sessionId: "session-print-fail-2",
           receipt: {
@@ -497,7 +500,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
           message: "Ingreso registrado",
         });
       }),
-      http.get(/.*\/api\/print-agent\/health/, () => {
+      http.get("*/api/print-agent/health", () => {
         return HttpResponse.json({ ok: false }, { status: 500 });
       })
     );
@@ -533,7 +536,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
     }));
     let capturedBody: unknown = null;
     server.use(
-      http.post(/.*\/api\/v1\/operations\/entries/, async ({ request }) => {
+      http.post("*/api/v1/operations/entries", async ({ request }) => {
         capturedBody = await request.json();
         return HttpResponse.json({
           sessionId: "session-no-plate-np",
@@ -573,7 +576,7 @@ renderWithProviders(<VehicleEntryFormV2 />);
 
   it("does NOT show success when backend returns error", async () => {
     server.use(
-      http.post(/.*\/api\/v1\/operations\/entries/, () => {
+      http.post("*/api/v1/operations/entries", () => {
         return HttpResponse.json(
           { errorCode: "OPERATION_ERROR", userMessage: "No se pudo registrar el ingreso" },
           { status: 500 }
@@ -628,6 +631,154 @@ renderWithProviders(<VehicleEntryFormV2 />);
     });
   });
 
+  it("submits a motorcycle entry with valid plate ABC12D when defaultType is MOTORCYCLE", async () => {
+    localStorage.setItem("parkflow_operator_settings", JSON.stringify({
+      mode: "beginner",
+      defaultVehicleType: "MOTORCYCLE",
+      rememberLocation: true,
+      skipConditionCheck: false,
+      platePrefix: ""
+    }));
 
+    let capturedBody: unknown = null;
+    server.use(
+      http.post("*/api/v1/operations/entries", async ({ request }) => {
+        capturedBody = await request.json();
+        return HttpResponse.json({
+          sessionId: "moto-session-1",
+          receipt: {
+            ticketNumber: "T-20260513-000200",
+            plate: "ABC12D",
+            vehicleType: "MOTORCYCLE",
+            site: "Test Site",
+            entryAt: "2026-05-13T10:00:00Z",
+          },
+          message: "Ingreso registrado",
+        });
+      })
+    );
 
+    renderWithProviders(<VehicleEntryFormV2 />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
+
+    const plateInput = screen.getByTestId("plate");
+    await user.type(plateInput, "ABC12D");
+    await flushPromises();
+
+    const submitBtn = screen.getByTestId("register-entry");
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(capturedBody).not.toBeNull();
+    });
+
+    expect(capturedBody).not.toBeNull();
+    if (capturedBody) {
+      const body = capturedBody as Record<string, unknown>;
+      expect(body.plate).toBe("ABC12D");
+      expect(body.type).toBe("MOTORCYCLE");
+    }
+  });
+
+  it("shows cross-validation error when car plate ABC123 is typed with MOTORCYCLE type", async () => {
+    localStorage.setItem("parkflow_operator_settings", JSON.stringify({
+      mode: "beginner",
+      defaultVehicleType: "MOTORCYCLE",
+      rememberLocation: true,
+      skipConditionCheck: false,
+      platePrefix: ""
+    }));
+
+    renderWithProviders(<VehicleEntryFormV2 />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
+
+    const plateInput = screen.getByTestId("plate");
+    await user.type(plateInput, "ABC123");
+    await flushPromises();
+
+    const submitBtn = screen.getByTestId("register-entry");
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/corresponde a carro|plate|cross/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows API 400 error for motorcycle entry submission", async () => {
+    localStorage.setItem("parkflow_operator_settings", JSON.stringify({
+      mode: "beginner",
+      defaultVehicleType: "MOTORCYCLE",
+      rememberLocation: true,
+      skipConditionCheck: false,
+      platePrefix: ""
+    }));
+
+    server.use(
+      http.post("*/api/v1/operations/entries", () => {
+        return HttpResponse.json(
+          { errorCode: "VALIDATION_ERROR", userMessage: "Placa invalida", developerMessage: "Invalid plate" },
+          { status: 400 }
+        );
+      })
+    );
+
+    renderWithProviders(<VehicleEntryFormV2 />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
+
+    const plateInput = screen.getByTestId("plate");
+    await user.type(plateInput, "ABC12D");
+    await flushPromises();
+
+    const submitBtn = screen.getByTestId("register-entry");
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/revisa los datos/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows 409 conflict error for duplicate motorcycle plate", async () => {
+    localStorage.setItem("parkflow_operator_settings", JSON.stringify({
+      mode: "beginner",
+      defaultVehicleType: "MOTORCYCLE",
+      rememberLocation: true,
+      skipConditionCheck: false,
+      platePrefix: ""
+    }));
+
+    server.use(
+      http.post("*/api/v1/operations/entries", () => {
+        return HttpResponse.json(
+          { errorCode: "OPERATION_ERROR", userMessage: "El vehiculo ya tiene una sesion activa" },
+          { status: 409 }
+        );
+      })
+    );
+
+    renderWithProviders(<VehicleEntryFormV2 />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("plate")).toBeInTheDocument();
+    });
+
+    const plateInput = screen.getByTestId("plate");
+    await user.type(plateInput, "DUP12M");
+    await flushPromises();
+
+    const submitBtn = screen.getByTestId("register-entry");
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/ya tiene una entrada activa/i)).toBeInTheDocument();
+    });
+  });
 });

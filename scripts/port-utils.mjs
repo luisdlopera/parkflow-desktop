@@ -11,6 +11,20 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 /**
+ * Helper to get PIDs listening on a port on Windows.
+ */
+async function getWindowsPidsForPort(port) {
+  try {
+    const { stdout } = await execAsync(`netstat -ano | findstr :${port} | findstr LISTENING`);
+    if (!stdout) return [];
+    const lines = stdout.trim().split('\n');
+    return [...new Set(lines.map(line => line.trim().split(/\s+/).pop()))];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Mata el proceso que está usando un puerto (con SIGTERM primero, luego SIGKILL).
  * @param {number} port - Puerto cuyo proceso se desea terminar
  * @returns {Promise<boolean>} - true si se mató algún proceso, false si no había nada o falló
@@ -20,12 +34,8 @@ export async function killProcessOnPort(port) {
 
   try {
     if (platform === 'win32') {
-      const { stdout } = await execAsync(
-        `netstat -ano | findstr :${port} | findstr LISTENING`
-      );
-      if (stdout) {
-        const lines = stdout.trim().split('\n');
-        const pids = [...new Set(lines.map(line => line.trim().split(/\s+/).pop()))];
+      const pids = await getWindowsPidsForPort(port);
+      if (pids.length > 0) {
         for (const pid of pids) {
           try {
             await execAsync(`taskkill /F /PID ${pid}`, { windowsHide: true });
@@ -34,8 +44,9 @@ export async function killProcessOnPort(port) {
             // May already be dead
           }
         }
-        return pids.length > 0;
+        return true;
       }
+      return false;
     } else {
       const { stdout } = await execAsync(
         `lsof -i :${port} -sTCP:LISTEN -t 2>/dev/null || true`
@@ -99,21 +110,15 @@ export async function findProcessOnPort(port) {
   try {
     if (platform === 'win32') {
       // Windows: usar netstat y findstr
-      const { stdout } = await execAsync(
-        `netstat -ano | findstr :${port} | findstr LISTENING`
-      );
-      if (stdout) {
-        const lines = stdout.trim().split('\n');
-        const pids = [...new Set(lines.map(line => line.trim().split(/\s+/).pop()))];
-        if (pids.length > 0) {
-          try {
-            const { stdout: procStdout } = await execAsync(
-              `tasklist /FI "PID eq ${pids[0]}" /FO CSV /NH`
-            );
-            return procStdout.trim().replace(/"/g, '');
-          } catch {
-            return `PID ${pids[0]} (unknown process)`;
-          }
+      const pids = await getWindowsPidsForPort(port);
+      if (pids.length > 0) {
+        try {
+          const { stdout: procStdout } = await execAsync(
+            `tasklist /FI "PID eq ${pids[0]}" /FO CSV /NH`
+          );
+          return procStdout.trim().replace(/"/g, '');
+        } catch {
+          return `PID ${pids[0]} (unknown process)`;
         }
       }
     } else {

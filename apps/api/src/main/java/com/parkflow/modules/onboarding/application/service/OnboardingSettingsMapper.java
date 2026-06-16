@@ -123,7 +123,7 @@ public class OnboardingSettingsMapper {
 
     Map<String, Object> helmetConfig = resolveHelmetConfig(step1, step8);
     boolean enableHelmet = Boolean.TRUE.equals(helmetConfig.get("enableHelmetSection"));
-    boolean usesHelmetTokens = "TOKENS".equals(String.valueOf(helmetConfig.get("helmetHandling")));
+    boolean usesHelmetTokens = "LOCKERS".equals(String.valueOf(helmetConfig.get("helmetHandling")));
 
     Map<String, Object> operationConfiguration = new LinkedHashMap<>();
     operationConfiguration.put("defaultVehicleType", vehicleTypes.isEmpty() ? "CAR" : vehicleTypes.get(0));
@@ -132,6 +132,7 @@ public class OnboardingSettingsMapper {
     operationConfiguration.put("enableHelmetSection", enableHelmet);
     operationConfiguration.put("helmetHandling", String.valueOf(helmetConfig.getOrDefault("helmetHandling", "NONE")));
     operationConfiguration.put("usesHelmetTokens", usesHelmetTokens);
+    operationConfiguration.put("usesLockers", usesHelmetTokens);
     operationConfiguration.put("helmetTokenCount", extractNumber(helmetConfig.get("helmetTokenCount"), 0));
     operationConfiguration.put("showAdvancedSection", Boolean.TRUE.equals(step11.get("advanced")));
     operationConfiguration.put("countryCode", String.valueOf(step4.getOrDefault("countryCode", "CO")));
@@ -198,6 +199,7 @@ public class OnboardingSettingsMapper {
     operationConfiguration.put("enableHelmetSection", false);
     operationConfiguration.put("helmetHandling", "NONE");
     operationConfiguration.put("usesHelmetTokens", false);
+    operationConfiguration.put("usesLockers", false);
     operationConfiguration.put("helmetTokenCount", 0);
     operationConfiguration.put("showAdvancedSection", false);
     operationConfiguration.put("countryCode", "CO");
@@ -264,7 +266,7 @@ public class OnboardingSettingsMapper {
     String handling = String.valueOf(source.getOrDefault("helmetHandling", ""));
     if (handling.isBlank()) {
       boolean legacyEnabled = Boolean.TRUE.equals(source.get("enableHelmetSection"));
-      handling = legacyEnabled ? "TOKENS" : "NONE";
+      handling = legacyEnabled ? "LOCKERS" : "NONE";
     }
 
     Map<String, Object> result = new LinkedHashMap<>();

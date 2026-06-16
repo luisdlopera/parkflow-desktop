@@ -109,6 +109,11 @@ public class ParkingSessionJpaAdapter implements ParkingSessionPort {
   }
 
   @Override
+  public org.springframework.data.domain.Page<ParkingSession> searchActiveByPlateOrTicket(String query, UUID companyId, Pageable pageable) {
+    return jpaRepository.searchActiveByPlateOrTicket(query, companyId, pageable);
+  }
+
+  @Override
   public ParkingSession save(ParkingSession session) {
     return jpaRepository.save(session);
   }
@@ -184,5 +189,19 @@ public class ParkingSessionJpaAdapter implements ParkingSessionPort {
                      "AND s.companyId = :cid"
     )
     org.springframework.data.domain.Page<ParkingSession> searchByPlateOrTicket(@Param("q") String query, @Param("cid") UUID companyId, Pageable pageable);
+
+    @Query(
+        value = "SELECT s FROM ParkingSession s JOIN FETCH s.vehicle v LEFT JOIN FETCH s.rate r " +
+                "WHERE (LOWER(v.plate) LIKE LOWER(CONCAT('%', :q, '%')) " +
+                "OR LOWER(s.ticketNumber) LIKE LOWER(CONCAT('%', :q, '%'))) " +
+                "AND s.status = 'ACTIVE' " +
+                "AND s.companyId = :cid",
+        countQuery = "SELECT COUNT(s) FROM ParkingSession s JOIN s.vehicle v " +
+                     "WHERE (LOWER(v.plate) LIKE LOWER(CONCAT('%', :q, '%')) " +
+                     "OR LOWER(s.ticketNumber) LIKE LOWER(CONCAT('%', :q, '%'))) " +
+                     "AND s.status = 'ACTIVE' " +
+                     "AND s.companyId = :cid"
+    )
+    org.springframework.data.domain.Page<ParkingSession> searchActiveByPlateOrTicket(@Param("q") String query, @Param("cid") UUID companyId, Pageable pageable);
   }
 }

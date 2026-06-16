@@ -572,16 +572,22 @@ textarea:focus-within,
   color: #fdba74 !important;
 }
 
-/* ── HeroUI Select trigger background override ── */
+/* ── HeroUI Select & Autocomplete trigger background override ── */
 .select__trigger,
-[data-slot="select-trigger"] {
+[data-slot="select-trigger"],
+.autocomplete__trigger,
+[data-slot="autocomplete-trigger"] {
   background-color: #f4f4f5 !important;
 }
 
 .dark .select__trigger,
 [data-theme="dark"] .select__trigger,
 .dark [data-slot="select-trigger"],
-[data-theme="dark"] [data-slot="select-trigger"] {
+[data-theme="dark"] [data-slot="select-trigger"],
+.dark .autocomplete__trigger,
+[data-theme="dark"] .autocomplete__trigger,
+.dark [data-slot="autocomplete-trigger"],
+[data-theme="dark"] [data-slot="autocomplete-trigger"] {
   background-color: rgba(39, 39, 42, 0.6) !important;
   border-color: #3f3f46 !important;
   color: hsl(var(--heroui-foreground)) !important;

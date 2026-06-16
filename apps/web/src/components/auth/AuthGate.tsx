@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { currentUser, loadSession, logoutAndRedirectToLogin } from "@/lib/auth";
 import { useSessionMonitor } from "@/lib/hooks/useSessionMonitor";
@@ -10,8 +10,12 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
   const { isExpired } = useSessionMonitor();
+  const ranRef = useRef(false);
 
   useEffect(() => {
+    if (ranRef.current) return;
+    ranRef.current = true;
+
     let mounted = true;
     void (async () => {
       const session = await loadSession();

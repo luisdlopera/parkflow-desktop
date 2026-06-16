@@ -37,16 +37,8 @@ export default function LoginPage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      const next = params.get("next") ?? "/";
-      setNextPath(next);
+      setNextPath(params.get("next") ?? "/");
     }
-    void (async () => {
-      const session = await loadSession();
-      const user = await currentUser();
-      if (session && user) {
-        router.replace(nextPath);
-      }
-    })();
 
     void (async () => {
       if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
@@ -77,7 +69,22 @@ export default function LoginPage() {
         console.error("Check setup required failed:", err);
       }
     })();
-  }, [nextPath, router]);
+  }, []);
+
+  // Separate effect to check session and redirect on mount — reads nextPath from URL directly to avoid race conditions
+  useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      const session = await loadSession();
+      const user = await currentUser();
+      if (!mounted) return;
+      if (session && user) {
+        const next = new URLSearchParams(window.location.search).get("next") ?? "/";
+        router.replace(next);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [router]);
 
   const loadDemoData = () => {
     setEmail("admin@parkflow.local");
