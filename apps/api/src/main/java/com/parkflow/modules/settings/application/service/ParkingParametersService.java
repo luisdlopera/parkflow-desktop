@@ -232,6 +232,9 @@ public class ParkingParametersService implements com.parkflow.modules.settings.a
     if (in.getAllowOfflineEntryExit() != null) {
       d.setAllowOfflineEntryExit(in.getAllowOfflineEntryExit());
     }
+    if (in.getPrintExitTicket() != null) {
+      d.setPrintExitTicket(in.getPrintExitTicket());
+    }
     if (in.getCashRequireOpenForPayment() != null) {
       d.setCashRequireOpenForPayment(in.getCashRequireOpenForPayment());
     }
@@ -324,6 +327,7 @@ public class ParkingParametersService implements com.parkflow.modules.settings.a
     d.setQrConfig("PLATE_AND_ENTRY_TIME");
     d.setManualExitAllowed(true);
     d.setAllowOfflineEntryExit(true);
+    d.setPrintExitTicket(true);
     return d;
   }
 }

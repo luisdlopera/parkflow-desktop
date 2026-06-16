@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
 import com.parkflow.modules.settings.dto.VehicleTypeRequest;
+import com.parkflow.modules.settings.domain.repository.CompanyVehicleTypePort;
 import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;
 import com.parkflow.modules.settings.application.service.SettingsVehicleTypeService;
 import java.util.Optional;
@@ -24,12 +25,13 @@ import org.springframework.http.HttpStatus;
 class SettingsVehicleTypeServiceTest {
 
   @Mock private MasterVehicleTypePort repository;
+  @Mock private CompanyVehicleTypePort companyVehicleTypePort;
 
   private SettingsVehicleTypeService service;
 
   @BeforeEach
   void setUp() {
-    service = new SettingsVehicleTypeService(repository);
+    service = new SettingsVehicleTypeService(repository, companyVehicleTypePort);
   }
 
   @Test
