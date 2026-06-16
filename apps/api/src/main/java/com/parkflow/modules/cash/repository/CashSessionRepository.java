@@ -6,12 +6,14 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface CashSessionRepository extends JpaRepository<CashSession, UUID> {
 
+  @EntityGraph(attributePaths = {"cashRegister", "operator"})
   @Query(
       "SELECT s FROM CashSession s WHERE s.cashRegister.id = :registerId AND s.status = :status")
   Optional<CashSession> findByRegisterAndStatus(
@@ -25,8 +27,10 @@ public interface CashSessionRepository extends JpaRepository<CashSession, UUID> 
   @Query("SELECT s FROM CashSession s WHERE s.id = :id")
   Optional<CashSession> findByIdWithPessimisticLock(@Param("id") UUID id);
 
+  @EntityGraph(attributePaths = {"cashRegister", "operator"})
   Page<CashSession> findAllByOrderByOpenedAtDesc(Pageable pageable);
 
+  @EntityGraph(attributePaths = {"cashRegister", "operator"})
   Page<CashSession> findByCompanyIdOrderByOpenedAtDesc(UUID companyId, Pageable pageable);
 
   @Query(
@@ -34,7 +38,7 @@ public interface CashSessionRepository extends JpaRepository<CashSession, UUID> 
   Optional<CashSession> fetchForClosingWebhook(@Param("id") UUID id);
 
   @Query(
-      "SELECT s FROM CashSession s JOIN s.cashRegister r WHERE r.site = :site AND r.terminal = :terminal AND s.status = :status")
+      "SELECT s FROM CashSession s JOIN FETCH s.cashRegister r WHERE r.site = :site AND r.terminal = :terminal AND s.status = :status")
   Optional<CashSession> findOpenForSiteTerminal(
       @Param("site") String site,
       @Param("terminal") String terminal,

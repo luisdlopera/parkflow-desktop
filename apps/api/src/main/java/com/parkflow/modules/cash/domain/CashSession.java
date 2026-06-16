@@ -23,11 +23,11 @@ public class CashSession {
   @Version
   private Long version;
 
-  @ManyToOne(optional = false)
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "cash_register_id")
   private CashRegister cashRegister;
 
-  @ManyToOne(optional = false)
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "operator_id")
   private AppUser operator;
 
@@ -43,7 +43,7 @@ public class CashSession {
 
   private OffsetDateTime closedAt;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "closed_by_id")
   private AppUser closedBy;
 
@@ -80,7 +80,7 @@ public class CashSession {
 
   private OffsetDateTime countedAt;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "count_operator_id")
   private AppUser countOperator;
 

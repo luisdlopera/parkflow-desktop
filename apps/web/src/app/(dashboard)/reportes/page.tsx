@@ -6,7 +6,9 @@ import { Progress } from "@/components/ui/Progress";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import DataTable from "@/components/ui/DataTable";
-import KpiCard from "@/components/ui/KpiCard";
+import dynamic from "next/dynamic";
+
+const KpiCard = dynamic(() => import("@/components/ui/KpiCard"), { ssr: false });
 import { buildApiHeaders } from "@/lib/api";
 import { hasPermission } from "@/lib/auth";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";

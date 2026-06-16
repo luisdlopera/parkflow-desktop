@@ -284,7 +284,8 @@ public class CashMovementManagementService implements CashMovementUseCase {
         Payment payment,
         AppUser operator,
         String idempotencyKey,
-        CashMovementType movementType) {
+        CashMovementType movementType,
+        UUID cashSessionId) {
         if (payment == null) {
             return;
         }
@@ -292,7 +293,7 @@ public class CashMovementManagementService implements CashMovementUseCase {
             tryRecordParkingLedger(parkingSession, payment, operator, idempotencyKey, movementType);
             return;
         }
-        recordParkingLedgerStrict(parkingSession, payment, operator, idempotencyKey, movementType);
+        recordParkingLedgerStrict(parkingSession, payment, operator, idempotencyKey, movementType, cashSessionId);
     }
 
     private void tryRecordParkingLedger(
@@ -302,7 +303,7 @@ public class CashMovementManagementService implements CashMovementUseCase {
         String idempotencyKey,
         CashMovementType movementType) {
         try {
-            recordParkingLedgerStrict(parkingSession, payment, operator, idempotencyKey, movementType);
+            recordParkingLedgerStrict(parkingSession, payment, operator, idempotencyKey, movementType, null);
         } catch (OperationException ex) {
             if (ex.getStatus() == HttpStatus.CONFLICT) {
                 return;
@@ -316,17 +317,29 @@ public class CashMovementManagementService implements CashMovementUseCase {
         Payment payment,
         AppUser operator,
         String idempotencyKey,
-        CashMovementType movementType) {
-        String site = normalizeSite(parkingSession.getSite());
-        String terminal = resolveTerminal(parkingSession);
-        CashRegister reg =
-            cashRegisterRepository
-                .findBySiteAndTerminal(site, terminal)
-                .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "Caja no configurada"));
-        CashSession cashSession =
-            cashSessionRepository
-                .findByRegisterAndStatus(reg.getId(), CashSessionStatus.OPEN)
-                .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "No hay caja abierta"));
+        CashMovementType movementType,
+        UUID cashSessionId) {
+        CashSession cashSession;
+        String terminal;
+        if (cashSessionId != null) {
+            cashSession =
+                cashSessionRepository
+                    .findById(cashSessionId)
+                    .filter(s -> s.getStatus() == CashSessionStatus.OPEN)
+                    .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "No hay caja abierta"));
+            terminal = cashSession.getCashRegister().getTerminal();
+        } else {
+            String site = normalizeSite(parkingSession.getSite());
+            terminal = resolveTerminal(parkingSession);
+            CashRegister reg =
+                cashRegisterRepository
+                    .findBySiteAndTerminal(site, terminal)
+                    .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "Caja no configurada"));
+            cashSession =
+                cashSessionRepository
+                    .findByRegisterAndStatus(reg.getId(), CashSessionStatus.OPEN)
+                    .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "No hay caja abierta"));
+        }
 
         String key =
             StringUtils.hasText(idempotencyKey)

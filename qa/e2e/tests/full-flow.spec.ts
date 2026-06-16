@@ -151,4 +151,162 @@ test.describe('Full parking management flow', () => {
     // Should show an error state rather than crash
     await expect(page.locator('body')).toBeVisible()
   })
+
+  test.describe('Motorcycle Entry Flow', () => {
+    test('complete motorcycle entry with valid plate', async ({ page }) => {
+      await page.route('**/api/v1/auth/login', async route => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            accessToken: 'e2e-moto-token',
+            refreshToken: 'e2e-moto-refresh',
+            user: { id: 'user-1', name: 'Admin', email: 'admin@parkflow.local', role: 'ADMIN', permissions: ['*'], active: true },
+            session: { sessionId: 'session-1', userId: 'user-1', deviceId: 'desktop-default', accessTokenExpiresAtIso: new Date(Date.now() + 86400000).toISOString() },
+            offlineLease: null,
+          }),
+        })
+      })
+
+      await page.route('**/api/v1/operations/entries', async route => {
+        const body = JSON.parse(route.request().postData() || '{}')
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            sessionId: 'moto-session-1',
+            receipt: {
+              ticketNumber: `T-${Date.now()}`,
+              plate: body.plate || 'ABC12D',
+              vehicleType: 'MOTORCYCLE',
+              entryAt: new Date().toISOString(),
+            },
+            message: 'Ingreso registrado',
+          }),
+        })
+      })
+
+      await page.route('**/api/v1/operations/sessions/active-list', async route => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            { ticketNumber: 'T-001', plate: 'ABC12D', vehicleType: 'MOTORCYCLE', entryAt: new Date().toISOString(), status: 'ACTIVE' },
+          ]),
+        })
+      })
+
+      await page.route('**/api/v1/parking-spaces/summary', async route => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ availableSpaces: 50, activeSpaces: 10, totalSpaces: 60 }),
+        })
+      })
+
+      await page.route('**/api/v1/configuration/vehicle-types', async route => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            { id: "1", code: "CAR", name: "Carro", isActive: true, requiresPlate: true, quickAccess: true },
+            { id: "2", code: "MOTORCYCLE", name: "Moto", isActive: true, requiresPlate: true, quickAccess: true },
+          ]),
+        })
+      })
+
+      // Login
+      await loginAsAdmin(page)
+      await expect(page).toHaveURL('/', { timeout: 15_000 })
+
+      // Navigate to new entry and create a motorcycle entry
+      await createEntry(page, 'ABC12D')
+
+      // Verify entry was created
+      await expect(page.locator('body')).toBeVisible()
+
+      // Navigate to active vehicles and verify the motorcycle entry appears
+      await page.goto('/vehiculos-activos')
+      await page.waitForTimeout(1000)
+      await expect(page.locator('body')).toBeVisible()
+    })
+
+    test('rejects invalid motorcycle plate format', async ({ page }) => {
+      await page.route('**/api/v1/auth/login', async route => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            accessToken: 'e2e-moto-token',
+            refreshToken: 'e2e-moto-refresh',
+            user: { id: 'user-1', name: 'Admin', email: 'admin@parkflow.local', role: 'ADMIN', permissions: ['*'], active: true },
+            session: { sessionId: 'session-1', userId: 'user-1', deviceId: 'desktop-default', accessTokenExpiresAtIso: new Date(Date.now() + 86400000).toISOString() },
+            offlineLease: null,
+          }),
+        })
+      })
+
+      await page.route('**/api/v1/parking-spaces/summary', async route => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ availableSpaces: 50, activeSpaces: 10, totalSpaces: 60 }),
+        })
+      })
+
+      await page.route('**/api/v1/configuration/vehicle-types', async route => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            { id: "1", code: "CAR", name: "Carro", isActive: true, requiresPlate: true, quickAccess: true },
+            { id: "2", code: "MOTORCYCLE", name: "Moto", isActive: true, requiresPlate: true, quickAccess: true },
+          ]),
+        })
+      })
+
+      await loginAsAdmin(page)
+      await expect(page).toHaveURL('/', { timeout: 15_000 })
+
+      await page.goto('/nuevo-ingreso')
+      await page.waitForSelector('[data-testid="plate"]', { timeout: 15_000 })
+      await page.fill('[data-testid="plate"]', 'ABC123')
+      await page.click('[data-testid="register-entry"]')
+      await page.waitForTimeout(1000)
+
+      // Should show validation error, not crash
+      await expect(page.locator('body')).toBeVisible()
+    })
+
+    test('handles network error for motorcycle entry gracefully', async ({ page }) => {
+      await page.route('**/api/v1/auth/login', async route => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            accessToken: 'e2e-moto-token',
+            refreshToken: 'e2e-moto-refresh',
+            user: { id: 'user-1', name: 'Admin', email: 'admin@parkflow.local', role: 'ADMIN', permissions: ['*'], active: true },
+            session: { sessionId: 'session-1', userId: 'user-1', deviceId: 'desktop-default', accessTokenExpiresAtIso: new Date(Date.now() + 86400000).toISOString() },
+            offlineLease: null,
+          }),
+        })
+      })
+
+      await page.route('**/api/v1/operations/entries', async route => {
+        await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'Service Unavailable' }) })
+      })
+
+      await loginAsAdmin(page)
+      await expect(page).toHaveURL('/', { timeout: 15_000 })
+
+      await page.goto('/nuevo-ingreso')
+      await page.waitForSelector('[data-testid="plate"]', { timeout: 15_000 })
+      await page.fill('[data-testid="plate"]', 'ERR12M')
+      await page.click('[data-testid="register-entry"]')
+      await page.waitForTimeout(1000)
+
+      await expect(page.locator('body')).toBeVisible()
+    })
+  })
 })

@@ -17,5 +17,5 @@ public interface CustodiedItemRepository extends JpaRepository<CustodiedItem, UU
   @Query("SELECT COUNT(i) > 0 FROM CustodiedItem i WHERE i.itemType = 'HELMET' AND i.status = 'RECEIVED' AND i.identifier = :identifier AND i.companyId = :companyId")
   boolean existsActiveHelmetByIdentifierAndCompany(@Param("identifier") String identifier, @Param("companyId") UUID companyId);
 
-  boolean existsByTokenIdAndStatus(UUID tokenId, CustodiedItemStatus status);
+  boolean existsByLockerIdAndStatus(UUID lockerId, CustodiedItemStatus status);
 }

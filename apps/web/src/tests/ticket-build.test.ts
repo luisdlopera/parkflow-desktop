@@ -36,7 +36,11 @@ describe('ticket build', () => {
     expect(ticket.paperWidthMm).toBe(80)
     expect(ticket.parkingName).toBe('Central Parking')
     expect(ticket.legalMessage).toBe('Legal line')
-    expect(ticket.qrPayload).toBe('QRPREFIX:T-1')
+    expect(ticket.qrPayload).toBe(JSON.stringify({
+      t: 'T-1',
+      p: 'ABC123',
+      e: '2026-05-08T10:00:00Z'
+    }))
     expect(ticket.operatorName).toBe('Alice')
     expect(JSON.parse(ticketDocumentToJson(ticket)).ticketNumber).toBe('T-1')
   })

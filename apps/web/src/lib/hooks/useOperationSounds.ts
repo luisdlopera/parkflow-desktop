@@ -11,7 +11,11 @@ export function useOperationSounds() {
 
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      audioContextRef.current = new Ctor();
+      audioContextRef.current.resume().catch(() => {
+        // Browser bloqueó autoplay — se reanudará en el siguiente gesto del usuario
+      });
     }
     return audioContextRef.current;
   }, []);

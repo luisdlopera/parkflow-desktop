@@ -18,20 +18,20 @@ function RequiredMark() {
   );
 }
 
-type HelmetHandling = "TOKENS" | "LOCKER" | "NONE";
+type HelmetHandling = "LOCKERS" | "MANUAL" | "NONE";
 
 const HELMET_OPTIONS: Array<{ code: HelmetHandling; label: string; description: string }> = [
   {
-    code: "TOKENS",
-    label: "Fichas / casilleros",
-    description: "Entrego fichas numeradas para guardar cascos",
+    code: "LOCKERS",
+    label: "Lockers numerados",
+    description: "El sistema controla automáticamente la disponibilidad y ocupación de lockers",
   },
   {
-    code: "LOCKER",
-    label: "Token físico",
-    description: "Uso tokens físicos, no asigno fichas en el sistema",
+    code: "MANUAL",
+    label: "Custodia manual",
+    description: "El parqueadero administra los cascos sin control de lockers en el sistema",
   },
-  { code: "NONE", label: "No aplica", description: "No recibo ni custodio cascos" },
+  { code: "NONE", label: "No custodio cascos", description: "No recibo ni custodio cascos" },
 ];
 
 const MAX_HELMET_LOCKERS = 9999;
@@ -51,7 +51,7 @@ export default function Step1VehicleTypes() {
     setStepData({
       ...stepData,
       helmetHandling: value,
-      helmetTokenCount: value === "TOKENS" ? (helmetTokenCount ?? 10) : undefined,
+      helmetTokenCount: value === "LOCKERS" ? (helmetTokenCount ?? 10) : undefined,
     });
   };
 
@@ -138,17 +138,17 @@ export default function Step1VehicleTypes() {
         <div className="space-y-4 border-t border-default-200 pt-5">
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium">
-              ¿Cómo manejas la custodia de cascos?
+              ¿Cómo gestionas la custodia de cascos?
               <RequiredMark />
             </p>
             <QuestionHelp title="Custodia de cascos">
-              <strong>Fichas / casilleros:</strong> entregas fichas numeradas para identificar cada
-              casco en custodia; el sistema controla cuáles están ocupadas.
+              <strong>Lockers numerados:</strong> el sistema controla automáticamente la disponibilidad
+              y ocupación de lockers numerados. Al ingresar se asigna un locker y se imprime en el ticket.
               <br />
-              <strong>Token físico:</strong> tienes casilleros físicos reales; el sistema solo
-              registra que se dejó un casco, pero no asigna número de ficha.
+              <strong>Custodia manual:</strong> el parqueadero administra los cascos sin control de
+              lockers en el sistema. Solo se registra la recepción del casco.
               <br />
-              <strong>No aplica:</strong> no recibes ni custodias cascos.
+              <strong>No custodio cascos:</strong> no recibes ni custodias cascos.
             </QuestionHelp>
           </div>
           {stepErrors.helmetHandling && (
@@ -176,15 +176,15 @@ export default function Step1VehicleTypes() {
             })}
           </div>
 
-          {helmetHandling === "TOKENS" && (
+          {helmetHandling === "LOCKERS" && (
             <div className="p-4 bg-default-50 dark:bg-zinc-900 border border-default-200 rounded-xl space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <label className="text-sm font-medium text-default-900">
-                    ¿Cuántas fichas / casilleros necesitas?
+                    ¿Cuántos lockers tiene el parqueadero?
                   </label>
                   <p className="text-xs text-default-500 mt-0.5">
-                    Máximo {MAX_HELMET_LOCKERS}. Elige la cantidad real de tu parqueadero.
+                    Máximo {MAX_HELMET_LOCKERS}. Elige la cantidad real de lockers de tu parqueadero.
                   </p>
                 </div>
                 <Input
@@ -192,9 +192,9 @@ export default function Step1VehicleTypes() {
                   min={1}
                   max={MAX_HELMET_LOCKERS}
                   className="w-32"
-                  label={`Cantidad${helmetHandling === "TOKENS" ? " *" : ""}`}
-                  aria-label="Cantidad de fichas de casco"
-                  isRequired={helmetHandling === "TOKENS"}
+                  label="Cantidad *"
+                  aria-label="Cantidad de lockers"
+                  isRequired={helmetHandling === "LOCKERS"}
                   isInvalid={Boolean(stepErrors.helmetTokenCount)}
                   errorMessage={stepErrors.helmetTokenCount}
                   value={helmetTokenCount === undefined ? "" : String(helmetTokenCount)}
@@ -202,8 +202,7 @@ export default function Step1VehicleTypes() {
                 />
               </div>
               <p className="text-xs text-success-600 bg-success-50 px-3 py-2 rounded-lg">
-                Se crearán automáticamente las fichas F-01, F-02, etc. al finalizar la
-                configuración.
+                Se crearán automáticamente los lockers L-001, L-002, etc. al finalizar la configuración.
               </p>
             </div>
           )}

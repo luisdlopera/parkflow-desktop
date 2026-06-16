@@ -25,8 +25,8 @@ import { CrashRecoveryDialog } from "@/components/ui/CrashRecoveryDialog";
 import { normalizePlate, inferVehicleType } from "@/lib/validation/plate-validator";
 import type { VehicleType } from "@parkflow/types";
 import { fetchMasterVehicleTypes, type MasterVehicleTypeRow } from "@/lib/settings-api";
-import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 import { currentUser } from "@/lib/auth";
+import { useTenantConfig } from "@/lib/providers/TenantConfigProvider";
 import { fetchParkingSpaces, type ParkingSpaceDto } from "@/services/sessions.service";
 import { FormLayoutFactory } from "@/components/forms/dynamic/FormLayoutFactory";
 import { type RegisteredFieldKey } from "@/components/forms/dynamic/form-registry";
@@ -239,8 +239,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   const [vehicleTypes, setVehicleTypes] = useState<MasterVehicleTypeRow[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [activeLookup, setActiveLookup] = useState<string | null>(null);
-  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
-  const [loadingConfig, setLoadingConfig] = useState(true);
+  const { runtimeConfig } = useTenantConfig();
   const submitLock = useRef(false);
   const [occupancy, setOccupancy] = useState<{ availableSpaces: number; activeSpaces: number } | null>(null);
   const [spaces, setSpaces] = useState<ParkingSpaceDto[]>([]);
@@ -339,12 +338,11 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   });
 
   useEffect(() => {
-    fetchRuntimeConfig()
-      .then(setRuntimeConfig)
-      .catch(() => setRuntimeConfig(null))
-      .finally(() => setLoadingConfig(false));
-    loadOccupancy().catch(console.error);
-  }, [loadOccupancy]);
+    // Only load occupancy when runtime config has real capacity (onboarding completed)
+    if (runtimeConfig?.capacity && runtimeConfig.capacity.total > 0) {
+      loadOccupancy().catch(() => {});
+    }
+  }, [loadOccupancy, runtimeConfig]);
 
   useEffect(() => {
     if (runtimeConfig?.operationConfiguration) {
@@ -383,7 +381,6 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         if (runtimeConfig?.vehicleTypes && runtimeConfig.vehicleTypes.length > 0) {
           const allowedCodes = runtimeConfig.vehicleTypes;
           activeTypes = activeTypes.filter(t => allowedCodes.includes(t.code));
-          console.log("Vehicle types filtered by runtimeConfig:", activeTypes.map(t => t.code));
         }
         
         setVehicleTypes(activeTypes);
@@ -402,7 +399,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       })
       .catch(err => {
         if (cancelled) return;
-        console.error("Error fetching vehicle types:", err);
+        console.warn("Could not fetch vehicle types, using fallback:", err);
         let fallbackTypes = [
           { id: "fallback-car", code: "CAR", name: "Carro", isActive: true },
           { id: "fallback-moto", code: "MOTORCYCLE", name: "Moto", isActive: true },
@@ -639,7 +636,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       const { printWarning, plateLabel, generatedPreviewLines } = await handleEntryPrinting(payload, values);
 
       if (printWarning) {
-        console.log("Calling setPrintWarning! Warning is:", printWarning); setPrintWarning({
+        setPrintWarning({
           ticketNumber: payload.receipt.ticketNumber,
           plate: plateLabel,
           previewLines: generatedPreviewLines
@@ -731,10 +728,17 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
   const quickVehicleTypes = vehicleTypes.filter((type) => type.quickAccess !== false);
   const visibleQuickTypes = quickVehicleTypes.length > 0 ? quickVehicleTypes : vehicleTypes;
 
+  const onSubmitRef = useRef(onSubmit);
+  onSubmitRef.current = onSubmit;
+
+  const handleChildSubmit = useCallback((e?: React.BaseSyntheticEvent) => {
+    return form.handleSubmit((values) => onSubmitRef.current(values))(e);
+  }, [form]);
+
   const handleFormKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
     if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
       event.preventDefault();
-      form.handleSubmit(onSubmit)();
+      handleChildSubmit();
       return;
     }
     if (event.altKey && /^[1-9]$/.test(event.key)) {
@@ -746,6 +750,13 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       }
     }
   };
+
+  const handleFormKeyDownRef = useRef(handleFormKeyDown);
+  handleFormKeyDownRef.current = handleFormKeyDown;
+
+  const stableHandleFormKeyDown = useCallback((event: KeyboardEvent<HTMLFormElement>) => {
+    return handleFormKeyDownRef.current(event);
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -929,7 +940,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       </div>
 
       {/* Formulario Principal */}
-      <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown} className={`rounded-2xl space-y-4 ${isSingleType ? "p-4 sm:p-8 border-none shadow-none bg-transparent" : "p-6"}`}>
+      <form onSubmit={handleChildSubmit} onKeyDown={stableHandleFormKeyDown} className={`rounded-2xl space-y-4 ${isSingleType ? "p-4 sm:p-8 border-none shadow-none bg-transparent" : "p-6"}`}>
 
         {/* ═══════════════════════════════════════════════════════════════ */}
         {/* MODO SOLO TIPO — Vista separada UI                          */}
@@ -937,8 +948,8 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         {isMotorcycleOnly ? (
           <MotorcycleEntryFormUI
             form={form}
-            onSubmit={form.handleSubmit(onSubmit)}
-            onKeyDown={handleFormKeyDown}
+            onSubmit={handleChildSubmit}
+            onKeyDown={stableHandleFormKeyDown}
             plateInputRef={plateInputRef as React.MutableRefObject<HTMLInputElement | null>}
             occupancy={occupancy}
             stats={stats}
@@ -949,8 +960,8 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         ) : isCarOnly ? (
           <CarEntryFormUI
             form={form}
-            onSubmit={form.handleSubmit(onSubmit)}
-            onKeyDown={handleFormKeyDown}
+            onSubmit={handleChildSubmit}
+            onKeyDown={stableHandleFormKeyDown}
             plateInputRef={plateInputRef as React.MutableRefObject<HTMLInputElement | null>}
             occupancy={occupancy}
             stats={stats}
@@ -963,47 +974,59 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         /* MODO MULTI-TIPO — Vista completa original                     */
         /* ═══════════════════════════════════════════════════════════════ */
         <div className="space-y-4">
-          {/* Placa */}
-          <Controller
-            name="plate"
-            control={form.control as any}
-            render={({ field, fieldState }) => (
-              <Input
-                {...field}
-                data-testid="plate"
-                ref={(e: HTMLInputElement | null) => {
-                  field.ref(e);
-                  (plateInputRef as React.MutableRefObject<HTMLInputElement | null>).current = e;
-                }}
-                label={
-                  <span className="flex items-center justify-between w-full">
-                    Placa
-                    {settings.platePrefix && (
-                      <span className="text-xs text-primary bg-primary-50 px-2 py-0.5 rounded">
-                        Prefijo: {settings.platePrefix}
-                      </span>
+          {/* Placa — Input nativo gigante */}
+          <div className="relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary-500 to-primary-500 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
+            <div className="relative bg-white rounded-2xl p-1">
+              <Controller
+                name="plate"
+                control={form.control as any}
+                render={({ field, fieldState }) => (
+                  <div className="flex flex-col">
+                    <label className="flex items-center justify-between w-full text-base font-semibold px-3 pt-2 pb-1">
+                      <span className="text-slate-600">Placa del vehículo</span>
+                      {settings.platePrefix && (
+                        <span className="text-xs font-bold text-primary-700 bg-primary-100 px-2.5 py-0.5 rounded-md">
+                          {settings.platePrefix}
+                        </span>
+                      )}
+                    </label>
+                    <input
+                      {...field}
+                      ref={(e: HTMLInputElement | null) => {
+                        field.ref(e);
+                        (plateInputRef as React.MutableRefObject<HTMLInputElement | null>).current = e;
+                      }}
+                      type="text"
+                      data-testid="plate"
+                      placeholder="ABC123"
+                      disabled={noPlate}
+                      autoFocus
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleChildSubmit();
+                        }
+                      }}
+                      className={`w-full text-5xl sm:text-6xl font-black uppercase tracking-[0.2em] text-center h-[200px] text-slate-800 placeholder:text-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all rounded-xl border-0 outline-none focus:outline-none focus:ring-0 ${
+                        fieldState.error ? "border-2 border-danger" : ""
+                      }`}
+                      autoComplete="off"
+                    />
+                    {fieldState.error ? (
+                      <p className="text-xs text-danger px-3 pt-1 pb-2">{fieldState.error.message}</p>
+                    ) : (
+                      <p className="text-xs text-slate-400 px-3 pt-1 pb-2 text-center">
+                        Formato esperado: 3 letras + 3 números · Ej: ABC123
+                      </p>
                     )}
-                  </span>
-                }
-                placeholder="ABC123"
-                variant="flat"
-                isDisabled={noPlate}
-                isInvalid={!!fieldState.error}
-                errorMessage={fieldState.error?.message}
-                classNames={{
-                  input: "text-2xl font-bold uppercase tracking-wider",
-                  inputWrapper: isSpeed ? "border-2 border-primary" : "",
-                }}
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && isSpeed) {
-                    e.preventDefault();
-                    form.handleSubmit(onSubmit)();
-                  }
-                }}
+                  </div>
+                )}
               />
-            )}
-          />
+            </div>
+          </div>
 
 
 
@@ -1111,7 +1134,6 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
                         value={selectedKey ? [selectedKey] : []}
                         isDisabled={vehicleTypes.length === 0 || loadingTypes}
                           onChange={(keys) => {
-                            console.log("SELECT onChange", keys);
                             const selected = Array.from(keys as Set<any>)[0] as string;
                             field.onChange(selected);
                             void form.trigger("plate");

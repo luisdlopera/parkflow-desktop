@@ -99,18 +99,18 @@ export function validateStep(
         : vehicleTypes;
       if (selectedTypes.includes("MOTORCYCLE")) {
         const handling = data.helmetHandling;
-        if (handling !== "TOKENS" && handling !== "LOCKER" && handling !== "NONE") {
+        if (handling !== "LOCKERS" && handling !== "MANUAL" && handling !== "NONE") {
           errors.helmetHandling = "Selecciona una opción de custodia de cascos.";
         }
-        if (handling === "TOKENS") {
+        if (handling === "LOCKERS") {
           const count =
             typeof data.helmetTokenCount === "number"
               ? data.helmetTokenCount
               : Number(data.helmetTokenCount);
           if (!Number.isFinite(count) || count <= 0) {
-            errors.helmetTokenCount = "La cantidad de fichas debe ser mayor a 0.";
+            errors.helmetTokenCount = "La cantidad de lockers debe ser mayor a 0.";
           } else if (count > 9999) {
-            errors.helmetTokenCount = "La cantidad de fichas no puede superar 9999.";
+            errors.helmetTokenCount = "La cantidad de lockers no puede superar 9999.";
           }
         }
       }

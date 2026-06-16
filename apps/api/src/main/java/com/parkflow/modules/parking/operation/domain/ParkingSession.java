@@ -46,19 +46,19 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
   @Column(length = 200)
   private String noPlateReason;
 
-  @ManyToOne(optional = false)
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "vehicle_id")
   private Vehicle vehicle;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "rate_id")
   private Rate rate;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "entry_operator_id")
   private AppUser entryOperator;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "exit_operator_id")
   private AppUser exitOperator;
 

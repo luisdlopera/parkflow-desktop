@@ -37,7 +37,7 @@ export function FormDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} role="presentation" onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }} />
       <div className="relative z-10 flex h-full w-full max-w-lg flex-col bg-white border border-default-200 dark:bg-gray-900 dark:border border-default-200">
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-700 px-6 py-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h3>

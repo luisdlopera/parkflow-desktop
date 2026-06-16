@@ -1,0 +1,40 @@
+meta {
+  name: 09_motorcycle_exit_without_helmet
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{apiBaseUrl}}/exits
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-API-Key: {{apiKey}}
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "ticketNumber": "{{motoNoHelmetTicket}}",
+    "operatorUserId": "{{adminUserId}}",
+    "paymentMethod": "CASH",
+    "exitAt": "2026-04-14T11:00:00-05:00",
+    "observations": "Salida moto sin casco (no aplica devolucion)"
+  }
+}
+
+tests {
+  test("status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("sesion cerrada sin items custodiados", function() {
+    const body = res.getBody();
+    const data = typeof body === "string" ? JSON.parse(body) : body;
+    expect(data.receipt.status).to.equal("CLOSED");
+    expect(data.receipt.custodiedItems.length).to.equal(0);
+  });
+}

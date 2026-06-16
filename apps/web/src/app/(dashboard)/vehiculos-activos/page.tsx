@@ -7,7 +7,7 @@ import DataTable from "@/components/ui/DataTable";
 import { useActiveSessions } from "@/hooks/useActiveSessions";
 import { useTerminalCaja } from "@/hooks/useTerminalCaja";
 import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
-import { fetchHelmetTokens, type HelmetTokenDto } from "@/services/helmet-tokens.service";
+import { fetchLockers, type LockerDto } from "@/services/lockers.service";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Eye, MoreVertical, Edit, Printer, LogOut, CheckCircle } from "lucide-react";
@@ -35,8 +35,8 @@ export default function VehiculosActivosPage() {
   const { runtimeConfig } = useTenantConfig();
   const [ticketPreview, setTicketPreview] = useState<ActiveSessionDto | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set());
-  const [helmetTokens, setHelmetTokens] = useState<HelmetTokenDto[]>([]);
-  const [helmetTokensLoading, setHelmetTokensLoading] = useState(false);
+  const [lockers, setLockers] = useState<LockerDto[]>([]);
+  const [lockersLoading, setLockersLoading] = useState(false);
 
   const router = useRouter();
 
@@ -49,17 +49,17 @@ export default function VehiculosActivosPage() {
     (runtimeConfig?.operationConfiguration?.enableCustodiedItem as boolean) ?? true;
   const vehicleTypes = runtimeConfig?.vehicleTypes ?? [];
   const hasMotorcycles = vehicleTypes.includes("MOTORCYCLE");
-  const hasHelmetTokens = helmetTokens.length > 0;
+  const hasLockers = lockers.length > 0;
   const showHelmetAlert =
-    !helmetTokensLoading && enableCustodiedItem && hasMotorcycles && !hasHelmetTokens;
+    !lockersLoading && enableCustodiedItem && hasMotorcycles && !hasLockers;
 
   useEffect(() => {
     if (enableCustodiedItem && hasMotorcycles) {
-      setHelmetTokensLoading(true);
-      fetchHelmetTokens()
-        .then((tokens) => setHelmetTokens(tokens))
-        .catch(() => setHelmetTokens([]))
-        .finally(() => setHelmetTokensLoading(false));
+      setLockersLoading(true);
+      fetchLockers()
+        .then((data) => setLockers(data))
+        .catch(() => setLockers([]))
+        .finally(() => setLockersLoading(false));
     }
   }, [enableCustodiedItem, hasMotorcycles]);
 
@@ -245,19 +245,18 @@ export default function VehiculosActivosPage() {
         </div>
       ) : null}
 
-      {/* Alerta cuando no hay fichas de cascos configuradas */}
       {showHelmetAlert && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 space-y-2">
           <p className="font-semibold flex items-center gap-1">
-            <AlertTriangle className="w-4 h-4" /> No tienes fichas de cascos configuradas
+            <AlertTriangle className="w-4 h-4" /> No tienes lockers configurados
           </p>
           <p>
             Para poder registrar cascos en custodia al ingresar motocicletas, necesitas configurar
-            las fichas/casilleros.
+            los lockers numerados.
           </p>
-          <Link href="/configuracion/fichas">
+          <Link href="/configuracion/lockers">
             <Button size="sm" color="warning" className="mt-1">
-              Ir a Configurar Fichas
+              Ir a Configurar Lockers
             </Button>
           </Link>
         </div>

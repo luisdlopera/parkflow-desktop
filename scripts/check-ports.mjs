@@ -33,10 +33,26 @@ async function main() {
     }
   }
 
+  // Services whose ports are expected to be occupied (Docker)
+  const dockerServices = ['PostgreSQL', 'Redis'];
+
   // Print results
   let hasConflicts = false;
 
   for (const [name, { primary, fallback }] of Object.entries(services)) {
+    const isDockerService = dockerServices.includes(name);
+
+    if (!primary.free && !fallback?.free) {
+      if (isDockerService) {
+        console.log(`~ ${name.padEnd(18)} IN USE BY DOCKER${' '.repeat(3)} Port: ${primary.port}`);
+        if (primary.process) {
+          console.log(`    └─ ${primary.process}`);
+        }
+        continue;
+      }
+      hasConflicts = true;
+    }
+
     const statusIcon = primary.free ? '✓' : fallback?.free ? '~' : '✗';
     const statusText = primary.free
       ? 'AVAILABLE'
@@ -47,7 +63,6 @@ async function main() {
     console.log(`${statusIcon} ${name.padEnd(18)} ${statusText.padEnd(20)} Port: ${primary.port}${fallback ? ` (fallback: ${fallback.port})` : ''}`);
 
     if (!primary.free && !fallback?.free) {
-      hasConflicts = true;
       if (primary.process) {
         console.log(`    └─ Primary used by: ${primary.process}`);
       }

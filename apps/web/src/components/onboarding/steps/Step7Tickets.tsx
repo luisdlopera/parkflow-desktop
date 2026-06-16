@@ -45,12 +45,12 @@ export default function Step7Tickets() {
 
         <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
           <div className="flex flex-col">
-            <span className="text-sm font-medium">Prefijo del número de ficha</span>
+            <span className="text-sm font-medium">Prefijo del número de ticket</span>
             <span className="text-xs text-default-400">Se usa al generar los consecutivos de tickets</span>
           </div>
           <Input
             className="w-32"
-            aria-label="Prefijo del número de ficha"
+            aria-label="Prefijo del número de ticket"
             value={String(stepData.ticketPrefix ?? "T-")}
             onChange={(v) => setStepData({ ...stepData, ticketPrefix: v.target.value.toUpperCase().replace(/\s/g, "") })}
             placeholder="T-"

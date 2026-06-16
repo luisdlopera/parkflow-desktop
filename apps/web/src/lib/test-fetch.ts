@@ -10,7 +10,8 @@ async function testFetch() {
     const text = await res.text();
     console.log("Body length:", text.length);
   } catch (e) {
-    console.error("Fetch failed:", e);
+    const safeError = e instanceof Error ? e.message.replace(/[\r\n]/g, '') : 'Unknown error';
+    console.error("Fetch failed:", safeError);
   }
 }
 
