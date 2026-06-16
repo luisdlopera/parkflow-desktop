@@ -8,7 +8,7 @@ import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
 import { ListBox } from "@heroui/react";
-import { fetchAvailableHelmetTokens } from "@/services/helmet-tokens.service";
+import { fetchAvailableLockers } from "@/services/lockers.service";
 
 interface HelmetSectionProps {
   control: Control<any>;
@@ -29,8 +29,8 @@ export function HelmetSection({ control, selectedVehicleType }: HelmetSectionPro
 
   useEffect(() => {
     if (enableCustodiedItem && selectedVehicleType === "MOTORCYCLE") {
-      fetchAvailableHelmetTokens()
-        .then((tokens) => setAvailableTokens(tokens.map((l) => ({ id: l.id, code: l.code }))))
+      fetchAvailableLockers()
+        .then((lockers) => setAvailableTokens(lockers.map((l) => ({ id: l.id, code: l.code }))))
         .catch(() => setAvailableTokens([]));
     }
   }, [enableCustodiedItem, selectedVehicleType]);
@@ -88,9 +88,9 @@ export function HelmetSection({ control, selectedVehicleType }: HelmetSectionPro
             control={control}
             render={({ field: cField, fieldState }) => (
               <Select
-                label="Número de Casco"
+                label="Número de Locker"
                 placeholder={
-                  availableTokens.length === 0 ? "Sin fichas disponibles" : "Seleccionar ficha"
+                  availableTokens.length === 0 ? "Sin lockers disponibles" : "Seleccionar locker"
                 }
                 size="sm"
                 isInvalid={!!fieldState.error}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
@@ -8,17 +8,19 @@ import DataTable from "@/components/ui/DataTable";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import {
-  fetchHelmetTokens,
-  createHelmetToken,
-  createBatchHelmetTokens,
-  patchHelmetToken,
-  deleteHelmetToken,
-  type HelmetTokenDto,
-} from "@/services/helmet-tokens.service";
+  fetchLockers,
+  createLocker,
+  createBatchLockers,
+  patchLocker,
+  deleteLocker,
+  type LockerDto,
+} from "@/services/lockers.service";
 import { Plus, Trash2, PackagePlus } from "lucide-react";
+import { Select } from "@/components/ui/Select";
+import { ListBox } from "@heroui/react";
 
-export default function FichasPage() {
-  const [tokens, setTokens] = useState<HelmetTokenDto[]>([]);
+export default function LockersPage() {
+  const [lockers, setLockers] = useState<LockerDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { confirm } = useDialog();
@@ -28,7 +30,7 @@ export default function FichasPage() {
   const [singleLabel, setSingleLabel] = useState("");
 
   const [showBatch, setShowBatch] = useState(false);
-  const [batchPrefix, setBatchPrefix] = useState("F-");
+  const [batchPrefix, setBatchPrefix] = useState("L-");
   const [batchStart, setBatchStart] = useState("1");
   const [batchEnd, setBatchEnd] = useState("10");
 
@@ -36,7 +38,7 @@ export default function FichasPage() {
     setLoading(true);
     setError(null);
     try {
-      setTokens(await fetchHelmetTokens());
+      setLockers(await fetchLockers());
     } catch (e) {
       setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
     } finally {
@@ -44,23 +46,19 @@ export default function FichasPage() {
     }
   }, []);
 
-  useEffect(() => {
-    load().catch(console.error);
-  }, [load]);
-
   const stats = useMemo(() => {
-    const total = tokens.length;
-    const active = tokens.filter((l) => l.isActive).length;
-    const occupied = tokens.filter((l) => l.occupied).length;
+    const total = lockers.length;
+    const active = lockers.filter((l) => l.isActive).length;
+    const occupied = lockers.filter((l) => l.occupied).length;
     const available = active - occupied;
     return { total, active, occupied, available };
-  }, [tokens]);
+  }, [lockers]);
 
   const handleCreateSingle = useCallback(async () => {
     if (!singleCode.trim()) return;
     setError(null);
     try {
-      await createHelmetToken(singleCode.trim(), singleLabel.trim() || undefined);
+      await createLocker(singleCode.trim(), singleLabel.trim() || undefined);
       setSingleCode("");
       setSingleLabel("");
       setShowCreateSingle(false);
@@ -79,13 +77,13 @@ export default function FichasPage() {
     }
     const count = end - start + 1;
     if (count > 200) {
-      const ok = await confirm(`Vas a crear ${count} fichas. ¿Continuar?`);
+      const ok = await confirm(`Vas a crear ${count} lockers. ¿Continuar?`);
       if (!ok) return;
     }
     setError(null);
     try {
-      const created = await createBatchHelmetTokens(batchPrefix, start, end);
-      setBatchPrefix("F-");
+      const created = await createBatchLockers(batchPrefix, start, end);
+      setBatchPrefix("L-");
       setBatchStart("1");
       setBatchEnd("10");
       setShowBatch(false);
@@ -96,10 +94,23 @@ export default function FichasPage() {
   }, [batchPrefix, batchStart, batchEnd, load, confirm]);
 
   const handleToggle = useCallback(
-    async (token: HelmetTokenDto) => {
+    async (locker: LockerDto) => {
       setError(null);
       try {
-        await patchHelmetToken(token.id, { isActive: !token.isActive });
+        await patchLocker(locker.id, { isActive: !locker.isActive });
+        await load();
+      } catch (e) {
+        setError(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
+      }
+    },
+    [load],
+  );
+
+  const handleStatusChange = useCallback(
+    async (locker: LockerDto, newStatus: string) => {
+      setError(null);
+      try {
+        await patchLocker(locker.id, { status: newStatus });
         await load();
       } catch (e) {
         setError(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
@@ -109,12 +120,12 @@ export default function FichasPage() {
   );
 
   const handleDelete = useCallback(
-    async (token: HelmetTokenDto) => {
-      const ok = await confirm(`¿Eliminar ficha "${token.code}"?`);
+    async (locker: LockerDto) => {
+      const ok = await confirm(`¿Eliminar locker "${locker.code}"?`);
       if (!ok) return;
       setError(null);
       try {
-        await deleteHelmetToken(token.id);
+        await deleteLocker(locker.id);
         await load();
       } catch (e) {
         setError(getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA));
@@ -130,9 +141,9 @@ export default function FichasPage() {
           <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80 font-medium">
             Configuración
           </p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Fichas de Cascos</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Lockers de Cascos</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Administra los números de ficha/casillero para guardar cascos de moto.
+            Administra los lockers numerados para guardar cascos de moto.
           </p>
         </div>
         <div className="flex gap-2">
@@ -146,7 +157,7 @@ export default function FichasPage() {
             }}
             startContent={<Plus className="w-4 h-4" />}
           >
-            Nueva ficha
+            Nuevo locker
           </Button>
           <Button
             size="sm"
@@ -180,18 +191,18 @@ export default function FichasPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Stat label="Total" value={stats.total} />
-        <Stat label="Activas" value={stats.active} />
-        <Stat label="Ocupadas" value={stats.occupied} />
+        <Stat label="Activos" value={stats.active} />
+        <Stat label="Ocupados" value={stats.occupied} />
         <Stat label="Disponibles" value={stats.available} />
       </div>
 
       {showCreateSingle && (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-          <h3 className="font-semibold text-sm text-slate-700">Nueva ficha</h3>
+          <h3 className="font-semibold text-sm text-slate-700">Nuevo locker</h3>
           <div className="flex flex-col sm:flex-row gap-3">
             <Input
               label="Código"
-              placeholder="Ej: F-01"
+              placeholder="Ej: L-01"
               value={singleCode}
               onChange={(e) => setSingleCode(e.target.value)}
               className="max-w-xs"
@@ -217,14 +228,14 @@ export default function FichasPage() {
 
       {showBatch && (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-          <h3 className="font-semibold text-sm text-slate-700">Crear fichas en lote</h3>
+          <h3 className="font-semibold text-sm text-slate-700">Crear lockers en lote</h3>
           <p className="text-xs text-slate-500">
-            Genera varias fichas con un prefijo común y un rango numérico. Ej: F-01, F-02, ..., F-10
+            Genera varios lockers con un prefijo común y un rango numérico. Ej: L-01, L-02, ..., L-10
           </p>
           <div className="flex flex-col sm:flex-row gap-3 items-end">
             <Input
               label="Prefijo"
-              placeholder="F-"
+              placeholder="L-"
               value={batchPrefix}
               onChange={(e) => setBatchPrefix(e.target.value)}
               className="max-w-[100px]"
@@ -261,7 +272,7 @@ export default function FichasPage() {
 
       <DataTable
         columns={[
-          { key: "code", label: "Ficha", priority: "high" },
+          { key: "code", label: "Locker", priority: "high" },
           {
             key: "label",
             label: "Etiqueta",
@@ -269,29 +280,36 @@ export default function FichasPage() {
             render: (row) => row.label ?? <span className="text-slate-400">—</span>,
           },
           {
+            key: "status",
+            label: "Estado",
+            priority: "high",
+            render: (row) => (
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  row.status === "DISPONIBLE"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : row.status === "OCUPADO"
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-red-100 text-red-700"
+                }`}
+              >
+                {row.status === "DISPONIBLE" && "Disponible"}
+                {row.status === "OCUPADO" && "Ocupado"}
+                {row.status === "FUERA_DE_SERVICIO" && "Fuera de servicio"}
+              </span>
+            ),
+          },
+          {
             key: "isActive",
-            label: "Activa",
+            label: "Activo",
             priority: "medium",
             render: (row) => (
               <Switch
                 isSelected={row.isActive}
-                onChange={() => handleToggle(row as HelmetTokenDto)}
+                onChange={() => handleToggle(row as LockerDto)}
                 size="sm"
               />
             ),
-          },
-          {
-            key: "occupied",
-            label: "Ocupada",
-            priority: "high",
-            render: (row) =>
-              row.occupied ? (
-                <span className="rounded-full bg-rose-100 text-rose-700 px-3 py-1 text-xs font-semibold">
-                  Ocupada
-                </span>
-              ) : (
-                <span className="text-slate-400 text-xs">Disponible</span>
-              ),
           },
           {
             key: "actions",
@@ -299,12 +317,33 @@ export default function FichasPage() {
             priority: "high",
             render: (row) => (
               <div className="flex gap-2">
+                {row.status !== "FUERA_DE_SERVICIO" && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    color="warning"
+                    isDisabled={row.occupied}
+                    onPress={() => handleStatusChange(row as LockerDto, "FUERA_DE_SERVICIO")}
+                  >
+                    Fuera de servicio
+                  </Button>
+                )}
+                {row.status === "FUERA_DE_SERVICIO" && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    color="primary"
+                    onPress={() => handleStatusChange(row as LockerDto, "DISPONIBLE")}
+                  >
+                    Reactivar
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="ghost"
                   color="danger"
                   isDisabled={row.occupied}
-                  onPress={() => handleDelete(row as HelmetTokenDto)}
+                  onPress={() => handleDelete(row as LockerDto)}
                   startContent={<Trash2 className="w-3 h-3" />}
                 >
                   Eliminar
@@ -313,8 +352,8 @@ export default function FichasPage() {
             ),
           },
         ]}
-        rows={tokens}
-        emptyMessage="No hay fichas configuradas. Crea fichas individuales o en lote para comenzar."
+        rows={lockers}
+        emptyMessage="No hay lockers configurados. Crea lockers individuales o en lote para comenzar."
       />
     </div>
   );

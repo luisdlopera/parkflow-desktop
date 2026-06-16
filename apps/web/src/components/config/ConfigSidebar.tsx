@@ -61,7 +61,7 @@ const GRID_GROUPS: { label: string; items: GridItem[] }[] = [
     label: "Estacionamiento",
     items: [
       { href: "/configuracion/espacios", label: "Espacios", icon: Grid3x3, description: "Distribución de espacios" },
-      { href: "/configuracion/fichas", label: "Fichas", icon: Tags, description: "Casilleros y fichas de cascos" },
+      { href: "/configuracion/lockers", label: "Lockers", icon: Tags, description: "Lockers numerados para cascos" },
     ],
   },
 ];
