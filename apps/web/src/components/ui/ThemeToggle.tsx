@@ -9,7 +9,7 @@ export function ThemeToggle() {
     <div className="flex items-center gap-2">
       <button
         onClick={() => setTheme("auto")}
-        className={`p-2 rounded-lg transition-colors ${theme === "auto" ? "bg-orange-500 text-white border border-default-200" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 hover:dark:bg-gray-700"}`}
+        className={`p-2 rounded-lg transition-colors ${theme === "auto" ? "bg-brand text-white border border-default-200" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 hover:dark:bg-gray-700"}`}
         title="Automático"
         aria-label="Modo automático"
       >
@@ -20,7 +20,7 @@ export function ThemeToggle() {
 
       <button
         onClick={() => setTheme("light")}
-        className={`p-2 rounded-lg transition-colors ${theme === "light" ? "bg-orange-500 text-white border border-default-200" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 hover:dark:bg-gray-700"}`}
+        className={`p-2 rounded-lg transition-colors ${theme === "light" ? "bg-brand text-white border border-default-200" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 hover:dark:bg-gray-700"}`}
         title="Modo claro"
         aria-label="Modo claro"
       >
@@ -31,7 +31,7 @@ export function ThemeToggle() {
 
       <button
         onClick={() => setTheme("dark")}
-        className={`p-2 rounded-lg transition-colors ${theme === "dark" ? "bg-orange-500 text-white border border-default-200" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 hover:dark:bg-gray-700"}`}
+        className={`p-2 rounded-lg transition-colors ${theme === "dark" ? "bg-brand text-white border border-default-200" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 hover:dark:bg-gray-700"}`}
         title="Modo oscuro"
         aria-label="Modo oscuro"
       >

@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileSidebar from "@/components/layout/MobileSidebar";
 import AuthGate from "@/components/auth/AuthGate";
+import { ThemeInitializer } from "@/components/theme/ThemeInitializer";
 import { useSidebar } from "@/lib/hooks/useSidebar";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -12,6 +13,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <AuthGate>
+      <ThemeInitializer />
       <div className="min-h-screen flex">
         {/* Desktop/Tablet Sidebar */}
         <Sidebar collapsed={isCollapsed} onToggle={toggle} />

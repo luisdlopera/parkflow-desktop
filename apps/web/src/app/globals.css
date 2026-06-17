@@ -31,8 +31,32 @@
   --color-ember: #ea580c;
   --color-moss: #c2410c;
 
-  /* HeroUI primary color — orange brand (#f97316) */
+  /* HeroUI semantic color vars — overridden at runtime by ThemeProvider.applyBrandColors() */
   --heroui-primary: 25 95% 53%;
+  --heroui-secondary: 215 16% 47%;
+  --heroui-success: 142 71% 45%;
+  --heroui-warning: 38 92% 50%;
+  --heroui-danger: 0 84% 60%;
+
+  /* Semantic aliases — written by ThemeProvider for non-HeroUI usage */
+  --color-primary: #f97316;
+  --color-secondary: #64748b;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+}
+
+/* Brand utility classes — backed by CSS variables so ThemeProvider can override them at runtime */
+@layer utilities {
+  .bg-brand {
+    background-color: var(--color-primary);
+  }
+  .text-brand {
+    color: var(--color-primary);
+  }
+  .border-brand {
+    border-color: var(--color-primary);
+  }
 }
 
 /* Dark mode support — neutral / zinc palette (solvy-style: black + zinc surfaces) */

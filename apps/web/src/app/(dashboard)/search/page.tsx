@@ -114,7 +114,7 @@ export default function SearchPage() {
             size="sm"
             variant={scope === item || (!scope && item === "all") ? "solid" : "flat"}
             color={scope === item || (!scope && item === "all") ? "primary" : "default"}
-            className={scope === item || (!scope && item === "all") ? "bg-orange-500 text-white" : ""}
+            className={scope === item || (!scope && item === "all") ? "bg-brand text-white" : ""}
             onPress={() => {
               const next = new URLSearchParams();
               if (query.trim()) next.set("q", query.trim());

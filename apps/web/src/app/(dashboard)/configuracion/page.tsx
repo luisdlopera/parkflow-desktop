@@ -8,10 +8,23 @@ import { Switch } from "@/components/ui/Switch";
 import { Input } from "@/components/ui/Input";
 import { TextArea } from "@/components/ui/TextArea";
 import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
 import { useDialog } from "@/components/ui/DialogProvider";
-import { SetupBasicoTab } from "@/components/config/SetupBasicoTab";
-import { ModulesTab } from "@/components/config/ModulesTab";
 import DataTable from "@/components/ui/DataTable";
+
+const SetupBasicoTab = dynamic(() => import("@/components/config/SetupBasicoTab").then(m => ({ default: m.SetupBasicoTab })), {
+  ssr: false,
+  loading: () => <p className="text-sm text-slate-600">Cargando configuración...</p>,
+});
+const ModulesTab = dynamic(() => import("@/components/config/ModulesTab").then(m => ({ default: m.ModulesTab })), {
+  ssr: false,
+  loading: () => <p className="text-sm text-slate-600">Cargando módulos...</p>,
+});
+const ThemeConfigSection = dynamic(() => import("@/components/config/ThemeConfigSection").then(m => ({ default: m.ThemeConfigSection })), {
+  ssr: false,
+  loading: () => <p className="text-sm text-slate-600">Cargando personalización...</p>,
+});
 import {
   createUser,
   deleteRate,
@@ -355,7 +368,14 @@ export default function ConfiguracionPage() {
         <p className="text-sm text-slate-600">No tiene permiso para ver parametros.</p>
       ) : null}
 
-      {section === "interface" ? <InterfaceSection settings={uiSettings} onUpdate={updateUiSetting} /> : null}
+      {section === "interface" ? (
+        <InterfaceSection
+          settings={uiSettings}
+          onUpdate={updateUiSetting}
+          companyId={companyId}
+          onNotify={setNotice}
+        />
+      ) : null}
 
       {section === "onboarding" ? <OnboardingSection onNotify={setNotice} /> : null}
 
@@ -369,10 +389,14 @@ export default function ConfiguracionPage() {
 
 function InterfaceSection({
   settings,
-  onUpdate
+  onUpdate,
+  companyId,
+  onNotify
 }: {
   settings: { showSystemStatus: boolean; showKeyboardShortcuts: boolean };
   onUpdate: (key: "showSystemStatus" | "showKeyboardShortcuts", value: boolean) => void;
+  companyId: string;
+  onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -420,15 +444,16 @@ function InterfaceSection({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p className="font-medium text-amber-800">Configuración local</p>
+              <p className="font-medium text-amber-800">Preferencias locales</p>
               <p className="text-sm text-amber-700">
-                Estas preferencias se guardan solo en tu navegador y no afectan a otros usuarios.
-                Se aplican inmediatamente sin necesidad de recargar la página.
+                Las preferencias del sidebar se guardan solo en tu navegador y no afectan a otros usuarios.
               </p>
             </div>
           </div>
         </Card.Content>
       </Card>
+
+      <ThemeConfigSection companyId={companyId} onNotify={onNotify} />
     </div>
   );
 }
