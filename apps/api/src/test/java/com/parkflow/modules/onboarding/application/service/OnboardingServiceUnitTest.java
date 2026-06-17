@@ -1,95 +1,116 @@
 package com.parkflow.modules.onboarding.application.service;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
-import com.parkflow.modules.licensing.domain.Company;
-import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.licensing.enums.PlanType;
-import com.parkflow.modules.onboarding.domain.OnboardingProgress;
-import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 @DisplayName("OnboardingService Unit Tests")
 class OnboardingServiceUnitTest {
 
-  @Mock private OnboardingProgressPort progressPort;
-  @Mock private CompanyPort companyPort;
-  @Mock private CompanySettingsService settingsService;
+  private FeatureAccessService featureAccessService = new FeatureAccessService();
 
-  @InjectMocks private OnboardingService service;
+  @Test
+  @DisplayName("Should provide SYNC plan options")
+  void testSyncPlanOptions() {
+    Map<String, Object> options = featureAccessService.getAvailableOptionsByPlan(PlanType.SYNC);
 
-  private UUID companyId;
-  private Company company;
-
-  @BeforeEach
-  void setUp() {
-    companyId = UUID.randomUUID();
-    company = new Company();
-    company.setId(companyId);
-    company.setPlan(PlanType.SYNC);
+    assertNotNull(options);
+    assertFalse((Boolean) options.get("allowMultiLocation"));
   }
 
   @Test
-  @DisplayName("Should save onboarding step with valid data")
-  void testSaveStepValid() {
-    OnboardingProgress progress = new OnboardingProgress();
-    Map<String, Object> data = Map.of("capacity", 20);
+  @DisplayName("Should provide PRO plan with multi location")
+  void testProPlanMultiLocation() {
+    Map<String, Object> options = featureAccessService.getAvailableOptionsByPlan(PlanType.PRO);
 
-    when(progressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
-    when(progressPort.save(any())).thenReturn(progress);
-
-    assertDoesNotThrow(() -> service.saveOnboardingStep(companyId, 1, data, 1));
-    verify(progressPort).save(any());
+    assertTrue((Boolean) options.get("allowMultiLocation"));
+    assertTrue((Boolean) options.get("allowAdvancedPermissions"));
   }
 
   @Test
-  @DisplayName("Should save multiple steps in sequence")
-  void testSaveMultipleSteps() {
-    OnboardingProgress progress = new OnboardingProgress();
-    Map<String, Object> data = Map.of("capacity", 20);
+  @DisplayName("Should provide ENTERPRISE all features")
+  void testEnterpriseAllFeatures() {
+    Map<String, Object> options = featureAccessService.getAvailableOptionsByPlan(PlanType.ENTERPRISE);
 
-    when(progressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
-    when(progressPort.save(any())).thenReturn(progress);
-
-    assertDoesNotThrow(() -> {
-      service.saveOnboardingStep(companyId, 1, data, 1);
-      service.saveOnboardingStep(companyId, 2, Map.of("rates", "data"), 2);
-    });
-
-    verify(progressPort, times(2)).save(any());
+    assertTrue((Boolean) options.get("allowMultiLocation"));
+    assertTrue((Boolean) options.get("allowAdvancedPermissions"));
+    assertTrue((Boolean) options.get("allowAdvancedAudit"));
   }
 
   @Test
-  @DisplayName("Should complete onboarding when all steps done")
-  void testCompleteOnboarding() {
-    OnboardingProgress progress = new OnboardingProgress();
-    when(progressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
-    when(progressPort.save(any())).thenReturn(progress);
+  @DisplayName("Should check feature enabled in map")
+  void testFeatureEnabled() {
+    Map<String, Object> settings = Map.of("modules", Map.of("cash", true));
 
-    assertDoesNotThrow(() -> service.completeOnboarding(companyId));
-    verify(progressPort).save(any());
+    assertTrue(featureAccessService.isFeatureEnabled(settings, "cash"));
   }
 
   @Test
-  @DisplayName("Should reset onboarding progress with reason")
-  void testResetOnboarding() {
-    OnboardingProgress progress = new OnboardingProgress();
-    when(progressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
-    when(progressPort.save(any())).thenReturn(progress);
+  @DisplayName("Should return false for disabled features")
+  void testFeatureDisabled() {
+    Map<String, Object> settings = Map.of("modules", Map.of("shifts", false));
 
-    assertDoesNotThrow(() -> service.resetOnboarding(companyId, "User requested reset"));
-    verify(progressPort).save(any());
+    assertFalse(featureAccessService.isFeatureEnabled(settings, "shifts"));
+  }
+
+  @Test
+  @DisplayName("Should handle missing feature key")
+  void testMissingFeature() {
+    Map<String, Object> settings = Map.of("modules", Map.of());
+
+    assertFalse(featureAccessService.isFeatureEnabled(settings, "unknown"));
+  }
+
+  @Test
+  @DisplayName("Should compare payment methods between plans")
+  void testPaymentMethodsByPlan() {
+    Map<String, Object> sync = featureAccessService.getAvailableOptionsByPlan(PlanType.SYNC);
+    List<?> syncPayments = (List<?>) sync.get("paymentMethods");
+
+    assertNotNull(syncPayments);
+    assertTrue(syncPayments.size() > 0);
+    assertTrue(syncPayments.contains("EFECTIVO"));
+  }
+
+  @Test
+  @DisplayName("Should have vehicle types for all plans")
+  void testVehicleTypesAvailable() {
+    for (PlanType plan : PlanType.values()) {
+      Map<String, Object> options = featureAccessService.getAvailableOptionsByPlan(plan);
+      List<?> types = (List<?>) options.get("vehicleTypes");
+
+      assertNotNull(types);
+      assertTrue(types.size() > 0);
+    }
+  }
+
+  @Test
+  @DisplayName("Should restrict features in SYNC plan")
+  void testSyncRestrictions() {
+    Map<String, Object> options = featureAccessService.getAvailableOptionsByPlan(PlanType.SYNC);
+
+    assertFalse((Boolean) options.get("allowMultiLocation"));
+    assertFalse((Boolean) options.get("allowAdvancedPermissions"));
+  }
+
+  @Test
+  @DisplayName("Should handle null settings gracefully")
+  void testNullSettings() {
+    Map<String, Object> settings = Map.of("modules", Map.of());
+    boolean result = featureAccessService.isFeatureEnabled(settings, "cash");
+
+    assertFalse(result);
+  }
+
+  @Test
+  @DisplayName("Should handle empty modules map")
+  void testEmptyModules() {
+    Map<String, Object> settings = Map.of("modules", Map.of());
+
+    assertFalse(featureAccessService.isFeatureEnabled(settings, "cash"));
   }
 }

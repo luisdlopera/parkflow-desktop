@@ -109,20 +109,10 @@ public class CashSessionManagementService implements CashSessionUseCase {
             throw new OperationException(HttpStatus.FORBIDDEN, "Operador inactivo");
         }
 
-        log.info("CASH_DIAGNOSTICO: Entrando a open(). TenantContext={}", TenantContext.getTenantId());
-        log.info("CASH_DIAGNOSTICO: Operador evaluado: user_id={}, company_id={}", operator.getId(), operator.getCompanyId());
-
-        UUID resolvedCompanyId = TenantContext.getTenantId() != null
-                ? TenantContext.getTenantId()
-                : operator.getCompanyId();
-
+        UUID resolvedCompanyId = TenantContext.getTenantId();
         if (resolvedCompanyId == null) {
-            log.error("CASH_DIAGNOSTICO: ERROR! Contexto de compañía no identificado. Tenant={} OperatorCompany={}", 
-                      TenantContext.getTenantId(), operator.getCompanyId());
-            throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía no identificado");
+            throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía requerido (TenantContext no establecido)");
         }
-
-        log.info("CASH_DIAGNOSTICO: resolvedCompanyId asignado a la sesión: {}", resolvedCompanyId);
 
         CashSession session = new CashSession();
         session.setCompanyId(resolvedCompanyId);
@@ -358,10 +348,11 @@ public class CashSessionManagementService implements CashSessionUseCase {
     @Override
     @Transactional(readOnly = true)
     public Page<CashSessionResponse> listSessions(Pageable pageable) {
-        if (TenantContext.getTenantId() != null) {
-            return cashSessionRepository.findByCompanyIdOrderByOpenedAtDesc(TenantContext.getTenantId(), pageable).map(this::toSessionResponse);
+        UUID tenantId = TenantContext.getTenantId();
+        if (tenantId == null) {
+            throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía requerido");
         }
-        return cashSessionRepository.findAllByOrderByOpenedAtDesc(pageable).map(this::toSessionResponse);
+        return cashSessionRepository.findByCompanyIdOrderByOpenedAtDesc(tenantId, pageable).map(this::toSessionResponse);
     }
 
     @Override

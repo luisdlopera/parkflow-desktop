@@ -193,8 +193,22 @@ public class CashMovementManagementService implements CashMovementUseCase {
         m.setVoidedAt(now);
         m.setVoidReason(request.reason());
         m.setVoidedBy(actor);
-        cashMovementRepository.save(m);
 
+        // Store void idempotency key on both original and offset
+        String voidKey = null;
+        if (StringUtils.hasText(request.idempotencyKey())) {
+            voidKey = "void:" + movementId + ":" + request.idempotencyKey().trim();
+            m.setIdempotencyKey(voidKey);
+        }
+
+        // Save original WITHIN SAME TRANSACTION
+        try {
+            cashMovementRepository.save(m);
+        } catch (DataIntegrityViolationException ex) {
+            throw new OperationException(HttpStatus.CONFLICT, "Movimiento ya anulado o conflicto de concurrencia");
+        }
+
+        // Create offset with same void key
         CashMovement offset = new CashMovement();
         offset.setCompanyId(
             TenantContext.getTenantId() != null
@@ -214,10 +228,17 @@ public class CashMovementManagementService implements CashMovementUseCase {
         offset.setMetadata("{\"voidOf\":\"" + m.getId() + "\"}");
         offset.setCreatedBy(actor);
         offset.setTerminal(m.getTerminal());
-        if (StringUtils.hasText(request.idempotencyKey())) {
-            offset.setIdempotencyKey("void:" + movementId + ":" + request.idempotencyKey().trim());
+        if (voidKey != null) {
+            offset.setIdempotencyKey(voidKey + ":offset");
         }
-        cashMovementRepository.save(offset);
+
+        // Save offset WITHIN SAME TRANSACTION
+        // If this fails, entire void operation rolls back
+        try {
+            cashMovementRepository.save(offset);
+        } catch (DataIntegrityViolationException ex) {
+            throw new OperationException(HttpStatus.CONFLICT, "Error creando movimiento de contrapartida para anulación");
+        }
 
         Map<String, Object> meta = baseMeta(session);
         meta.put("voidedMovementId", m.getId().toString());
@@ -482,6 +503,17 @@ public class CashMovementManagementService implements CashMovementUseCase {
             && role != UserRole.ADMIN
             && role != UserRole.SUPER_ADMIN) {
             throw new OperationException(HttpStatus.FORBIDDEN, "Solo puede operar caja como su usuario");
+        }
+
+        // Additional check: verify operator's company matches expected company
+        AppUser operator = appUserRepository
+            .findById(operatorUserId)
+            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
+
+        UUID expectedCompanyId = TenantContext.getTenantId();
+        if (expectedCompanyId != null && !operator.getCompanyId().equals(expectedCompanyId)) {
+            throw new OperationException(
+                HttpStatus.FORBIDDEN, "Operador no pertenece a la compañía del contexto");
         }
     }
 }
