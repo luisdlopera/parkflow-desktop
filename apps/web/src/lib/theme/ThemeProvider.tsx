@@ -184,11 +184,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // HeroUI focus ring follows primary (hero.ts focus default is static otherwise)
     root.style.setProperty("--heroui-focus", hexToHsl(colors.primaryColor));
 
-    // Brand-tinted background surfaces (focus-visible outline, body glows, grid dots, focus rings)
+    // Brand-tinted background surfaces (page base, focus-visible outline, body glows, grid dots, focus rings)
     const p = colors.primaryColor;
     const r = parseInt(p.slice(1, 3), 16);
     const g = parseInt(p.slice(3, 5), 16);
     const b = parseInt(p.slice(5, 7), 16);
+    root.style.setProperty("--color-ash", primaryScale["50"]); // Page base tone follows primary (lightest)
     root.style.setProperty("--color-ember", primaryScale["600"]);
     root.style.setProperty("--color-moss", primaryScale["700"]);
     root.style.setProperty("--color-bg-glow-1", primaryScale["100"]);
@@ -205,7 +206,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       "--heroui-warning", "--heroui-danger", "--heroui-focus",
       "--color-brand-500", "--color-primary", "--color-secondary",
       "--color-success", "--color-warning", "--color-danger",
-      "--color-ember", "--color-moss",
+      "--color-ash", "--color-ember", "--color-moss",
       "--color-bg-glow-1", "--color-bg-glow-2", "--color-grid-dot",
       "--color-primary-ring", "--color-primary-ring-strong"
     ];
