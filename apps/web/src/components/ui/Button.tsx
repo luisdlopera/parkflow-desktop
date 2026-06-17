@@ -34,52 +34,27 @@ export interface ButtonProps {
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant, color, isLoading, isDisabled, disabled, startContent, endContent, children, fullWidth, ...props }, ref) => {
-    // Map v2 color/variant to v3 variant
-    let mappedVariant: any = "solid";
-    let buttonColor: any = color || "primary";
+    // Determine button color - default to primary (orange)
+    const buttonColor = color || "primary";
 
-    if (color === "danger" || variant === "danger") {
-      mappedVariant = "solid";
-      buttonColor = "danger";
-    }
-    else if (color === "warning" || variant === "warning") {
-      mappedVariant = "solid";
-      buttonColor = "warning";
-    }
-    else if (color === "secondary" || variant === "secondary") {
-      mappedVariant = "solid";
-      buttonColor = "secondary";
-    }
-    else if (color === "success" || variant === "success") {
-      mappedVariant = "solid";
-      buttonColor = "success";
-    }
-    else if (variant === "ghost" || variant === "light" || variant === "flat") {
-      mappedVariant = "ghost";
-      buttonColor = buttonColor || "default";
-    }
-    else if (variant === "bordered" || variant === "faded" || variant === "outline") {
-      mappedVariant = "outline";
-      buttonColor = buttonColor || "default";
-    }
-    else if (variant === "tertiary") {
-      mappedVariant = "tertiary";
-      buttonColor = buttonColor || "default";
-    }
-    else if (color === "default") {
-      mappedVariant = "tertiary";
-      buttonColor = "default";
-    }
-    else {
-      // Default to solid primary for all other cases
-      mappedVariant = "solid";
-      buttonColor = buttonColor || "primary";
+    // Determine variant - preserve explicit variants, use "solid" for color-based buttons
+    let mappedVariant = variant;
+
+    if (!variant || (variant !== "ghost" && variant !== "light" && variant !== "flat" &&
+        variant !== "bordered" && variant !== "faded" && variant !== "outline" && variant !== "tertiary")) {
+      // If no variant or using color-based variant names, map to solid
+      if (variant === "danger" || variant === "warning" || variant === "secondary" ||
+          variant === "success" || variant === "primary") {
+        mappedVariant = "solid";
+      } else if (!variant) {
+        mappedVariant = "solid";
+      }
     }
 
     return (
       <HeroButton
         ref={ref}
-        variant={mappedVariant}
+        variant={mappedVariant || "solid"}
         color={buttonColor}
         isPending={isLoading}
         isDisabled={isDisabled || disabled}
