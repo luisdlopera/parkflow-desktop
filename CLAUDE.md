@@ -42,7 +42,12 @@ apps/
 
 ### Code Quality & Standards
 
-1. **Before Committing**:
+1. **File Organization**:
+   - ❌ DO NOT create `.md` files in project root
+   - ✅ DO place all documentation in `/docs/` folder
+   - ✅ Reference docs via relative paths: `[docs/VERIFICATION_PLAN.md](docs/VERIFICATION_PLAN.md)`
+
+2. **Before Committing**:
    - [ ] Run `pnpm validate` (API build + tests + web build)
    - [ ] Run `pnpm test` for changed modules
    - [ ] No console.errors, warnings, or TODOs left behind
