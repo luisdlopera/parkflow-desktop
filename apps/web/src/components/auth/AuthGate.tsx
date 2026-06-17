@@ -16,46 +16,39 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     if (ranRef.current) return;
     ranRef.current = true;
 
-    let mounted = true;
     void (async () => {
       const session = await loadSession();
       const user = await currentUser();
       if (!session || !user) {
-        if (mounted) {
-          router.replace(`/login?next=${encodeURIComponent(pathname ?? "/")}`);
-        }
+        router.replace(`/login?next=${encodeURIComponent(pathname ?? "/")}`);
         return;
       }
-      if (mounted) {
-        const isChangePasswordPage = pathname?.startsWith("/change-password");
-        const isOnboardingPage = pathname?.startsWith("/onboarding");
 
-        if (user.requirePasswordChange && !isChangePasswordPage && user.role !== "SUPER_ADMIN") {
-          router.replace("/change-password");
-          return;
-        }
+      const isChangePasswordPage = pathname?.startsWith("/change-password");
+      const isOnboardingPage = pathname?.startsWith("/onboarding");
 
-        if (!user.requirePasswordChange && isChangePasswordPage) {
-          router.replace("/");
-          return;
-        }
-
-        if (!user.onboardingCompleted && !isOnboardingPage) {
-          router.replace("/onboarding");
-          return;
-        }
-
-        if (user.onboardingCompleted && isOnboardingPage) {
-          router.replace("/");
-          return;
-        }
-
-        setReady(true);
+      if (user.requirePasswordChange && !isChangePasswordPage && user.role !== "SUPER_ADMIN") {
+        router.replace("/change-password");
+        return;
       }
+
+      if (!user.requirePasswordChange && isChangePasswordPage) {
+        router.replace("/");
+        return;
+      }
+
+      if (!user.onboardingCompleted && !isOnboardingPage) {
+        router.replace("/onboarding");
+        return;
+      }
+
+      if (user.onboardingCompleted && isOnboardingPage) {
+        router.replace("/");
+        return;
+      }
+
+      setReady(true);
     })();
-    return () => {
-      mounted = false;
-    };
   }, [pathname, router]);
 
   useEffect(() => {

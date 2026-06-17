@@ -65,7 +65,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
           ${collapsed ? "py-6 justify-center" : "py-6"}
         `}>
           <div className={`
-            rounded-2xl bg-orange-500 text-white grid place-content-center font-bold border border-default-200 -500/30
+            rounded-2xl bg-brand text-white grid place-content-center font-bold border border-default-200
             ${collapsed ? "h-10 w-10 text-lg" : "h-12 w-12 text-xl"}
           `}>
             P
@@ -121,7 +121,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
               </button>
 
               <div className="flex items-center gap-3 px-1">
-                <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={navItems[6].icon} />
                 </svg>
                 <span className="text-sm font-semibold text-slate-800">Configuración</span>
@@ -138,7 +138,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                       className={`
                         flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
                         ${subActive
-                          ? "bg-orange-500 text-white border border-default-200 -500/20"
+                          ? "bg-brand text-white border border-default-200"
                           : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
                       `}
                     >
@@ -166,7 +166,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                         className={`
                           w-full flex items-center rounded-xl font-medium transition-all
                           ${pathname?.startsWith("/configuracion")
-                            ? "bg-orange-500 text-white border border-default-200 -500/20"
+                            ? "bg-brand text-white border border-default-200"
                             : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
                           ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
                         `}
@@ -195,7 +195,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                     className={`
                       flex items-center rounded-xl font-medium transition-all
                       ${active
-                        ? "bg-orange-500 text-white border border-default-200 -500/20"
+                        ? "bg-brand text-white border border-default-200"
                         : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
                       ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
                     `}

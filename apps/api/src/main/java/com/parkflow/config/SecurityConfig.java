@@ -68,6 +68,7 @@ public class SecurityConfig {
                 auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers(
                         "/",
+                        "/uploads/**",
                         "/api/v1/health",
                         "/actuator/health",
                         "/actuator/info",
