@@ -5,6 +5,7 @@ import com.parkflow.modules.cash.domain.CashMovementStatus;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,11 +15,15 @@ import org.springframework.stereotype.Component;
 public class CashLedgerSummaryCalculator {
 
   private static final BigDecimal ZERO = new BigDecimal("0.00");
+  private static final int SCALE = 2;
+  private static final RoundingMode ROUNDING = RoundingMode.HALF_UP;
 
   public CashSummaryResponse summarize(CashSession session, List<CashMovement> movements) {
-    BigDecimal ledger = movements.stream().map(this::ledgerContribution).reduce(ZERO, BigDecimal::add);
+    BigDecimal ledger = movements.stream()
+        .map(this::ledgerContribution)
+        .reduce(ZERO, (a, b) -> a.add(b).setScale(SCALE, ROUNDING));
     BigDecimal opening = session.getOpeningAmount() != null ? session.getOpeningAmount() : ZERO;
-    BigDecimal expected = opening.add(ledger);
+    BigDecimal expected = opening.add(ledger).setScale(SCALE, ROUNDING);
 
     Map<String, BigDecimal> byMethod = new HashMap<>();
     Map<String, BigDecimal> byType = new HashMap<>();
@@ -29,12 +34,18 @@ public class CashLedgerSummaryCalculator {
       }
       posted++;
       BigDecimal contribution = ledgerContribution(movement);
-      byMethod.merge(movement.getPaymentMethod().name(), contribution, BigDecimal::add);
-      byType.merge(movement.getMovementType().name(), contribution, BigDecimal::add);
+      byMethod.merge(
+          movement.getPaymentMethod().name(),
+          contribution,
+          (a, b) -> a.add(b).setScale(SCALE, ROUNDING));
+      byType.merge(
+          movement.getMovementType().name(),
+          contribution,
+          (a, b) -> a.add(b).setScale(SCALE, ROUNDING));
     }
 
     BigDecimal counted = session.getCountedAmount() != null ? session.getCountedAmount() : null;
-    BigDecimal diff = counted != null ? counted.subtract(expected) : null;
+    BigDecimal diff = counted != null ? counted.subtract(expected).setScale(SCALE, ROUNDING) : null;
     return new CashSummaryResponse(opening, expected, counted, diff, byMethod, byType, posted);
   }
 
