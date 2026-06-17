@@ -5,7 +5,10 @@ export async function httpRequest<T>(input: RequestInfo | URL, init?: RequestIni
     const response = await fetch(input, init);
 
     if (response.status === 401 && typeof window !== "undefined") {
-      window.location.href = "/login";
+      const currentPath = window.location.pathname + window.location.search;
+      const isOnboarding = currentPath.includes("/onboarding");
+      const nextUrl = isOnboarding ? "/onboarding" : "/";
+      window.location.href = `/login?next=${encodeURIComponent(nextUrl)}`;
     }
 
     if (!response.ok) {

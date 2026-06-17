@@ -24,9 +24,14 @@ export function CompanyCreatedDialog({
   const [copiedAll, setCopiedAll] = useState(false);
 
   const handleCopy = async (text: string, setter: (v: boolean) => void) => {
-    await navigator.clipboard.writeText(text);
-    setter(true);
-    setTimeout(() => setter(false), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      setter(true);
+      setTimeout(() => setter(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      setter(false);
+    }
   };
 
   const handleCopyAll = async () => {
@@ -38,9 +43,14 @@ export function CompanyCreatedDialog({
       .filter(Boolean)
       .join("\n");
 
-    await navigator.clipboard.writeText(text);
-    setCopiedAll(true);
-    setTimeout(() => setCopiedAll(false), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      setCopiedAll(false);
+    }
   };
 
   const handleClose = () => {
