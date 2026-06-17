@@ -8,14 +8,12 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  Pagination,
   Chip,
-  Input,
-  Button
+  Input
 } from "@heroui/react";
+import { Button } from "@/components/ui/Button";
 
 export default function AuditPage() {
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
 
   // Simplified Mock Data based on AuditEvent Entity
@@ -40,29 +38,6 @@ export default function AuditPage() {
     }
   ];
 
-  const renderCell = (audit: any, columnKey: React.Key) => {
-    const cellValue = audit[columnKey as keyof typeof audit];
-
-    switch (columnKey) {
-      case "status":
-        return (
-          <Chip color={cellValue === "EXITOSA" ? "success" : "danger"} size="sm" variant="soft">
-            {cellValue}
-          </Chip>
-        );
-      case "timestampUtc":
-        return new Date(cellValue).toLocaleString();
-      case "actions":
-        return (
-          <Button size="sm" variant="ghost" onPress={() => console.log("Ver detalles", audit.id)}>
-            Ver Detalles
-          </Button>
-        );
-      default:
-        return cellValue;
-    }
-  };
-
   return (
     <div className="flex flex-col gap-4 p-6">
       <div className="flex justify-between items-center">
@@ -80,34 +55,34 @@ export default function AuditPage() {
 
       <Table
         aria-label="Tabla de registros de auditoría"
-        bottomContent={
-          <div className="flex w-full justify-center">
-            <Pagination
-              isCompact
-              showControls
-              showShadow
-              color="primary"
-              page={page}
-              total={10}
-              onChange={(page) => setPage(page)}
-            />
-          </div>
-        }
       >
         <TableHeader>
-          <TableColumn key="timestampUtc">FECHA Y HORA</TableColumn>
-          <TableColumn key="username">USUARIO</TableColumn>
-          <TableColumn key="module">MÓDULO</TableColumn>
-          <TableColumn key="action">ACCIÓN</TableColumn>
-          <TableColumn key="status">ESTADO</TableColumn>
-          <TableColumn key="actions">ACCIONES</TableColumn>
+          <TableColumn>FECHA Y HORA</TableColumn>
+          <TableColumn>USUARIO</TableColumn>
+          <TableColumn>MÓDULO</TableColumn>
+          <TableColumn>ACCIÓN</TableColumn>
+          <TableColumn>ESTADO</TableColumn>
+          <TableColumn>ACCIONES</TableColumn>
         </TableHeader>
-        <TableBody items={audits}>
-          {(item) => (
+        <TableBody>
+          {audits.map((item) => (
             <TableRow key={item.id}>
-              {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+              <TableCell>{new Date(item.timestampUtc).toLocaleString()}</TableCell>
+              <TableCell>{item.username}</TableCell>
+              <TableCell>{item.module}</TableCell>
+              <TableCell>{item.action}</TableCell>
+              <TableCell>
+                <Chip color={item.status === "EXITOSA" ? "success" : "danger"} size="sm">
+                  {item.status}
+                </Chip>
+              </TableCell>
+              <TableCell>
+                <Button size="sm" variant="ghost" onPress={() => console.log("Ver detalles", item.id)}>
+                  Ver Detalles
+                </Button>
+              </TableCell>
             </TableRow>
-          )}
+          ))}
         </TableBody>
       </Table>
     </div>

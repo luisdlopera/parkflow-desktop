@@ -34,25 +34,43 @@ export interface ButtonProps {
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant, color, isLoading, isDisabled, disabled, startContent, endContent, children, fullWidth, ...props }, ref) => {
-    // Map v2 color/variant to v3 variant
-    let mappedVariant: any = "primary";
-    
-    if (color === "danger" || variant === "danger") mappedVariant = "danger";
-    else if (color === "warning" || variant === "warning") mappedVariant = "warning";
-    else if (color === "secondary" || variant === "secondary") mappedVariant = "secondary";
-    else if (color === "success" || variant === "success") mappedVariant = "success";
-    else if (variant === "ghost" || variant === "light" || variant === "flat") mappedVariant = "ghost";
-    else if (variant === "bordered" || variant === "faded" || variant === "outline") mappedVariant = "outline";
-    else if (color === "default" || variant === "tertiary") mappedVariant = "tertiary";
-    
+    // Separate variant and color mapping
+    let mappedVariant: any = "solid";
+    let mappedColor: any = color || "primary";
+
+    // Map variant (styling/presentation)
+    if (variant === "ghost" || variant === "light" || variant === "flat") {
+      mappedVariant = "ghost";
+    } else if (variant === "bordered" || variant === "faded" || variant === "outline") {
+      mappedVariant = "outline";
+    } else if (variant === "tertiary") {
+      mappedVariant = "tertiary";
+    } else if (!variant || variant === "solid" || variant === "primary") {
+      mappedVariant = "solid";
+    }
+
+    // Map color (only if explicitly set in color or variant prop)
+    if (color === "danger" || variant === "danger") {
+      mappedColor = "danger";
+    } else if (color === "warning" || variant === "warning") {
+      mappedColor = "warning";
+    } else if (color === "secondary" || variant === "secondary") {
+      mappedColor = "secondary";
+    } else if (color === "success" || variant === "success") {
+      mappedColor = "success";
+    } else if (color === "default" || variant === "default") {
+      mappedColor = "default";
+    }
+
     return (
-      <HeroButton 
-        ref={ref} 
-        variant={mappedVariant} 
+      <HeroButton
+        ref={ref}
+        variant={mappedVariant}
+        color={mappedColor as any}
         isPending={isLoading}
         isDisabled={isDisabled || disabled}
         className={fullWidth ? `w-full ${props.className || ""}` : props.className}
-        {...props as any} 
+        {...props as any}
       >
         {startContent}
         {children}
