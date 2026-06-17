@@ -198,8 +198,11 @@ function OnboardingContent() {
                   await completeOnboarding(companyId);
                   await patchSessionUser({ onboardingCompleted: true });
                   window.dispatchEvent(new CustomEvent("parkflow-refresh-runtime-config"));
+                  // Small delay to ensure session is updated before navigation
+                  await new Promise(resolve => setTimeout(resolve, 500));
                   onDone();
-                } catch {
+                } catch (err) {
+                  console.error("Error completing onboarding:", err);
                   setSaveState("error");
                 }
               }}
