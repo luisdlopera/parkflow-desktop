@@ -52,14 +52,7 @@ function OnboardingContent() {
     allProgressData,
   } = useOnboarding();
 
-  const currentVehicleTypes =
-    step === 1
-      ? Array.isArray(stepData.vehicleTypes)
-        ? (stepData.vehicleTypes as string[])
-        : []
-      : vehicleTypes;
-
-  const currentValidation = validateStep(step, stepData, currentVehicleTypes);
+  const currentValidation = validateStep(step, stepData, vehicleTypes);
   const canAdvance = currentValidation.isValid;
 
   const [showSkipModal, setShowSkipModal] = useState(false);

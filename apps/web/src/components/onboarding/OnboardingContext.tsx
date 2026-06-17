@@ -250,7 +250,6 @@ export function OnboardingProvider({
 
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastSavedData = useRef<string>("");
-  const isSavingRef = useRef<boolean>(false);
 
   useEffect(() => {
     fetchOnboardingStatus(companyId).then((s) => {
@@ -274,6 +273,11 @@ export function OnboardingProvider({
   );
   const totalEnabledSteps = enabledSteps.length;
 
+  const vehicleTypes = useMemo(() => {
+    const step1Data = status?.progressData?.step_1 as Record<string, unknown> | undefined;
+    return Array.isArray(step1Data?.vehicleTypes) ? (step1Data.vehicleTypes as string[]) : [];
+  }, [status?.progressData]);
+
   const progress = useMemo(() => {
     const idx = enabledSteps.indexOf(step);
     if (idx === -1) return 0;
@@ -292,11 +296,6 @@ export function OnboardingProvider({
   const canMultiSite = Boolean(status?.availableOptionsByPlan?.allowMultiLocation);
   const canAdvancedPermissions = Boolean(status?.availableOptionsByPlan?.allowAdvancedPermissions);
 
-  const vehicleTypes = useMemo(() => {
-    const step1Data = status?.progressData?.step_1 as Record<string, unknown> | undefined;
-    return Array.isArray(step1Data?.vehicleTypes) ? (step1Data.vehicleTypes as string[]) : [];
-  }, [status?.progressData]);
-
   const detectedProfile = useMemo(() => inferOperationalProfile(vehicleTypes), [vehicleTypes]);
 
   // Auto-save silencioso cada 10 segundos
@@ -306,37 +305,32 @@ export function OnboardingProvider({
     }
 
     autoSaveRef.current = setInterval(() => {
-      if (!status || !stepData || Object.keys(stepData).length === 0 || isSavingRef.current) return;
+      if (!status || !stepData || Object.keys(stepData).length === 0 || saveState === "saving") return;
 
       const currentData = JSON.stringify(stepData);
       if (currentData === lastSavedData.current) return;
 
-      isSavingRef.current = true;
       setSaveState("saving");
       saveOnboardingStep(companyId, step, stepData, step)
         .then((next) => {
           setStatus({ ...next, currentStep: step });
-          lastSavedData.current = currentData; // ACTUALIZADO DENTRO DE THEN
+          lastSavedData.current = currentData;
           setSaveState("saved");
           setTimeout(() => setSaveState("idle"), 2000);
         })
         .catch(() => {
           setSaveState("error");
           setTimeout(() => setSaveState("idle"), 3000);
-        })
-        .finally(() => {
-          isSavingRef.current = false;
         });
     }, 10000);
 
     return () => {
       if (autoSaveRef.current) clearInterval(autoSaveRef.current);
     };
-  }, [companyId, step, status, stepData]);
+  }, [companyId, step, status, stepData, saveState]);
 
   const persistStep = async (targetStep: number) => {
-    if (!status || isSavingRef.current) return;
-    isSavingRef.current = true;
+    if (!status || saveState === "saving") return;
     setSaveState("saving");
     try {
       const safeStep = enabledSteps.includes(targetStep)
@@ -355,8 +349,6 @@ export function OnboardingProvider({
     } catch {
       setSaveState("error");
       setTimeout(() => setSaveState("idle"), 3000);
-    } finally {
-      isSavingRef.current = false;
     }
   };
 
