@@ -65,7 +65,8 @@ class CashMovementManagementServiceTest {
         securityUtilsMock = mockStatic(SecurityUtils.class);
         tenantContextMock = mockStatic(TenantContext.class);
 
-        securityUtilsMock.when(SecurityUtils::requireUserId).thenReturn(actorId);
+        // Security context returns operatorId so validateOperator() passes
+        securityUtilsMock.when(SecurityUtils::requireUserId).thenReturn(operatorId);
         securityUtilsMock.when(SecurityUtils::requireUserRole).thenReturn(UserRole.CAJERO);
         tenantContextMock.when(TenantContext::getTenantId).thenReturn(companyId);
 

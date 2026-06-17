@@ -17,6 +17,7 @@ import com.parkflow.modules.parking.operation.repository.ParkingSessionRepositor
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
 import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
+import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.parking.operation.repository.VehicleRepository;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
