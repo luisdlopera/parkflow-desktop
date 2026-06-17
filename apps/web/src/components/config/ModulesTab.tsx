@@ -143,6 +143,7 @@ export function ModulesTab({ companyId }: ModulesTabProps) {
                   ) : (
                     <input
                       type="checkbox"
+                      aria-label={`Habilitar ${module.label}`}
                       checked={isEnabled}
                       onChange={(e) =>
                         handleModuleToggle(

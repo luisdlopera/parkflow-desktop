@@ -13,6 +13,7 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
           role="button"
           tabIndex={0}
           className="cursor-help"
+          aria-label={typeof content === 'string' ? content : 'More information'}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
