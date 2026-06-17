@@ -4,6 +4,9 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback,
 
 type Theme = "light" | "dark" | "auto";
 
+/** Single source of truth for the brand's default primary color (used as seed/fallback). */
+export const DEFAULT_PRIMARY_COLOR = "#f97316";
+
 export interface BrandColors {
   primaryColor: string;
   secondaryColor: string;
@@ -177,15 +180,34 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.style.setProperty("--color-success", colors.successColor);
     root.style.setProperty("--color-warning", colors.warningColor);
     root.style.setProperty("--color-danger", colors.dangerColor);
+
+    // HeroUI focus ring follows primary (hero.ts focus default is static otherwise)
+    root.style.setProperty("--heroui-focus", hexToHsl(colors.primaryColor));
+
+    // Brand-tinted background surfaces (focus-visible outline, body glows, grid dots, focus rings)
+    const p = colors.primaryColor;
+    const r = parseInt(p.slice(1, 3), 16);
+    const g = parseInt(p.slice(3, 5), 16);
+    const b = parseInt(p.slice(5, 7), 16);
+    root.style.setProperty("--color-ember", primaryScale["600"]);
+    root.style.setProperty("--color-moss", primaryScale["700"]);
+    root.style.setProperty("--color-bg-glow-1", primaryScale["100"]);
+    root.style.setProperty("--color-bg-glow-2", primaryScale["200"]);
+    root.style.setProperty("--color-grid-dot", `rgba(${r}, ${g}, ${b}, 0.2)`);
+    root.style.setProperty("--color-primary-ring", `rgba(${r}, ${g}, ${b}, 0.08)`);
+    root.style.setProperty("--color-primary-ring-strong", `rgba(${r}, ${g}, ${b}, 0.15)`);
   }, []);
 
   const clearBrandColors = useCallback(() => {
     const root = document.documentElement;
     const vars = [
       "--heroui-primary", "--heroui-secondary", "--heroui-success",
-      "--heroui-warning", "--heroui-danger",
+      "--heroui-warning", "--heroui-danger", "--heroui-focus",
       "--color-brand-500", "--color-primary", "--color-secondary",
-      "--color-success", "--color-warning", "--color-danger"
+      "--color-success", "--color-warning", "--color-danger",
+      "--color-ember", "--color-moss",
+      "--color-bg-glow-1", "--color-bg-glow-2", "--color-grid-dot",
+      "--color-primary-ring", "--color-primary-ring-strong"
     ];
     // Also clear all primary color scale vars (50-900)
     for (let i = 0; i <= 9; i++) {
