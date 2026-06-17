@@ -33,10 +33,11 @@ export interface ButtonProps {
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant, color, isLoading, isDisabled, disabled, startContent, endContent, children, fullWidth, ...props }, ref) => {
+  ({ variant, color, isLoading, isDisabled, disabled, startContent, endContent, children, fullWidth, className, ...props }, ref) => {
     // Separate variant and color mapping
     let mappedVariant: any = "solid";
     let mappedColor: any = color || "primary";
+    let colorClasses = "";
 
     // Map variant (styling/presentation)
     if (variant === "ghost" || variant === "light" || variant === "flat") {
@@ -52,24 +53,32 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // Map color (only if explicitly set in color or variant prop)
     if (color === "danger" || variant === "danger") {
       mappedColor = "danger";
+      colorClasses = "bg-red-600 text-white hover:bg-red-700";
     } else if (color === "warning" || variant === "warning") {
       mappedColor = "warning";
+      colorClasses = "bg-yellow-600 text-white hover:bg-yellow-700";
     } else if (color === "secondary" || variant === "secondary") {
       mappedColor = "secondary";
+      colorClasses = "bg-gray-600 text-white hover:bg-gray-700";
     } else if (color === "success" || variant === "success") {
       mappedColor = "success";
+      colorClasses = "bg-green-600 text-white hover:bg-green-700";
     } else if (color === "default" || variant === "default") {
       mappedColor = "default";
+      colorClasses = "bg-gray-300 text-gray-900 hover:bg-gray-400";
+    } else {
+      // Default to primary orange
+      mappedColor = "primary";
+      colorClasses = "bg-brand-500 text-white hover:bg-brand-600";
     }
 
     return (
       <HeroButton
         ref={ref}
         variant={mappedVariant}
-        color={mappedColor as any}
         isPending={isLoading}
         isDisabled={isDisabled || disabled}
-        className={fullWidth ? `w-full ${props.className || ""}` : props.className}
+        className={`${colorClasses} ${fullWidth ? "w-full" : ""} ${className || ""}`.trim()}
         {...props as any}
       >
         {startContent}

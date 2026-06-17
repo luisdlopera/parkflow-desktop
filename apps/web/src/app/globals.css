@@ -31,8 +31,8 @@
   --color-ember: #ea580c;
   --color-moss: #c2410c;
 
-  /* HeroUI primary color — orange brand */
-  --heroui-primary: 32.93 100% 50.39%;
+  /* HeroUI primary color — orange brand (#f97316) */
+  --heroui-primary: 25 95% 53%;
 }
 
 /* Dark mode support — neutral / zinc palette (solvy-style: black + zinc surfaces) */
