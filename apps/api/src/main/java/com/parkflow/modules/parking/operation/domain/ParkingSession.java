@@ -27,7 +27,7 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
   @Column(nullable = false)
   private String ticketNumber;
 
-  @Column(nullable = false, length = 20)
+  @Column(length = 20)
   private String plate;
 
   @Column(nullable = false, length = 2)
@@ -100,6 +100,18 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
 
   @Column(precision = 10, scale = 2)
   private BigDecimal totalAmount;
+
+  @Column(name = "tax_amount", precision = 10, scale = 2)
+  private BigDecimal taxAmount;
+
+  @Column(name = "discount_amount", precision = 10, scale = 2)
+  private BigDecimal discountAmount;
+
+  @Column(name = "net_amount", precision = 10, scale = 2)
+  private BigDecimal netAmount;
+
+  @Column(name = "payment_method", length = 50)
+  private String paymentMethod;
 
   @Column(length = 50)
   private String agreementCode;

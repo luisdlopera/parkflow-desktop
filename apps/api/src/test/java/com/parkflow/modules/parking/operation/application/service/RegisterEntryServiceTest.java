@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.repository.BlacklistedPlateRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
@@ -48,6 +49,7 @@ class RegisterEntryServiceTest {
   @Mock private com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort masterVehicleTypePort;
   @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
   @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
+  @Mock private BlacklistedPlateRepository blacklistedPlateRepository;
   @Mock private org.springframework.core.metrics.ApplicationStartup applicationStartup; // unused
 
   private RegisterEntryService service;
@@ -61,7 +63,7 @@ class RegisterEntryServiceTest {
         appUserRepository, vehicleRepository, rateRepository, parkingSiteRepository, parkingSessionRepository,
         ticketCounterRepository, vehicleConditionReportRepository, operationIdempotencyRepository,
         operationAuditService, operationPrintService, plateValidator, monthlyContractRepository,
-        parkingSpaceService, custodiedItemRepository, lockerPort, new com.fasterxml.jackson.databind.ObjectMapper(), new io.micrometer.core.instrument.simple.SimpleMeterRegistry(), masterVehicleTypePort, companyRepository, companySettingsService, org.mockito.Mockito.mock(com.parkflow.modules.configuration.service.OperationalConfigurationService.class));
+        parkingSpaceService, custodiedItemRepository, lockerPort, new com.fasterxml.jackson.databind.ObjectMapper(), new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),         masterVehicleTypePort, companyRepository, companySettingsService, org.mockito.Mockito.mock(com.parkflow.modules.configuration.service.OperationalConfigurationService.class), org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class), blacklistedPlateRepository);
 
     // Default master vehicle type stub so tests don't fail on vehicle type validation
     org.mockito.Mockito.lenient().when(masterVehicleTypePort.findByCode(any())).thenAnswer(inv -> {

@@ -61,6 +61,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.http.HttpStatus;
 
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.repository.BlacklistedPlateRepository;
 import com.parkflow.modules.parking.operation.repository.VehicleRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
@@ -104,6 +105,7 @@ class OperationServiceInventoryTest {
   @Mock private com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort masterVehicleTypePort;
   @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
   @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
+  @Mock private BlacklistedPlateRepository blacklistedPlateRepository;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -119,7 +121,9 @@ class OperationServiceInventoryTest {
         legacyAuditService, legacyPrintService,
         new com.parkflow.modules.parking.operation.validation.PlateValidator(),
         monthlyContractRepository, parkingSpaceService, custodiedItemRepository, lockerPort, objectMapper, meterRegistry, masterVehicleTypePort, companyRepository, companySettingsService,
-        org.mockito.Mockito.mock(com.parkflow.modules.configuration.service.OperationalConfigurationService.class)
+        org.mockito.Mockito.mock(com.parkflow.modules.configuration.service.OperationalConfigurationService.class),
+        org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
+        blacklistedPlateRepository
     );
 
     // Default master vehicle type stub so tests don't fail on vehicle type validation

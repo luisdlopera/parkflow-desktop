@@ -23,6 +23,7 @@ import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPor
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.parking.operation.dto.EntryRequest;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.repository.BlacklistedPlateRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.parking.operation.repository.VehicleRepository;
@@ -72,6 +73,7 @@ class RegisterEntryServiceEntryModeTest {
   @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
   @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
   @Mock private OperationalConfigurationService operationalConfigurationService;
+  @Mock private BlacklistedPlateRepository blacklistedPlateRepository;
 
   private RegisterEntryService service;
   private final UUID companyId = UUID.randomUUID();
@@ -91,7 +93,7 @@ class RegisterEntryServiceEntryModeTest {
         ticketCounterRepository, vehicleConditionReportRepository, operationIdempotencyRepository,
         operationAuditService, operationPrintService, plateValidator, monthlyContractRepository,
         parkingSpaceService, custodiedItemRepository, lockerPort, new ObjectMapper(), new SimpleMeterRegistry(),
-        masterVehicleTypePort, companyRepository, companySettingsService, operationalConfigurationService);
+        masterVehicleTypePort, companyRepository, companySettingsService, operationalConfigurationService, org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class), blacklistedPlateRepository);
 
     Mockito.lenient().when(operationIdempotencyRepository.findByIdempotencyKey(anyString())).thenReturn(Optional.empty());
     Mockito.lenient().doNothing().when(operationalConfigurationService).validateEntryPayload(any(), any(), any(), any(), any(), any());

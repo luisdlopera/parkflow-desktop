@@ -38,7 +38,7 @@ public class OperationalConfigurationService {
     @Transactional(readOnly = true)
     public OperationalProfile getOperationalProfile(UUID companyId) {
         return companyPort.findById(companyId)
-                .map(company -> OperationalProfile.MIXED)
+                .map(company -> company.getOperationalProfile() != null ? company.getOperationalProfile() : OperationalProfile.MIXED)
                 .orElse(OperationalProfile.MIXED);
     }
 

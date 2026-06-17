@@ -12,10 +12,10 @@ import com.parkflow.modules.parking.operation.domain.Vehicle;
 import com.parkflow.modules.parking.operation.dto.EntryRequest;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.repository.BlacklistedPlateRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
-import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 import com.parkflow.modules.parking.operation.repository.VehicleRepository;
 import com.parkflow.modules.auth.security.AuthPrincipal;
@@ -69,6 +69,7 @@ class OperationServiceEdgeCasesTest {
   @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
   @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
   @Mock private com.parkflow.modules.configuration.service.OperationalConfigurationService operationalConfigurationService;
+  @Mock private BlacklistedPlateRepository blacklistedPlateRepository;
 
   private RegisterEntryService registerEntryService;
 
@@ -92,7 +93,9 @@ class OperationServiceEdgeCasesTest {
         vehicleConditionReportRepository, operationIdempotencyRepository,
         auditService, operationPrintService,
         plateValidator, monthlyContractRepository, parkingSpaceService, custodiedItemRepository, lockerPort, objectMapper, meterRegistry, masterVehicleTypePort,
-        companyRepository, companySettingsService, org.mockito.Mockito.mock(com.parkflow.modules.configuration.service.OperationalConfigurationService.class)
+        companyRepository, companySettingsService, org.mockito.Mockito.mock(com.parkflow.modules.configuration.service.OperationalConfigurationService.class),
+        org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
+        blacklistedPlateRepository
     );
 
     com.parkflow.modules.settings.domain.MasterVehicleType defaultType = new com.parkflow.modules.settings.domain.MasterVehicleType();

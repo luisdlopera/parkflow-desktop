@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -66,6 +67,8 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private final CompanyPort companyRepository;
   private final CompanySettingsService companySettingsService;
   private final OperationalConfigurationService operationalConfigurationService;
+  private final ApplicationEventPublisher eventPublisher;
+  private final BlacklistedPlateRepository blacklistedPlateRepository;
 
   @Override
   @Transactional
@@ -82,6 +85,12 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     String correlationId = org.slf4j.MDC.get(com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
     log.info("registerEntry: plate={} type={} site={} idempotencyKey={} correlationId={}",
         rawPlate, vehicleType, site, idempotencyKey, correlationId);
+
+    Company company = companyRepository.findById(companyId)
+        .orElseThrow(() -> new OperationException(HttpStatus.FORBIDDEN, "Empresa no encontrada"));
+    if (!company.allowsWriteOperations()) {
+      throw new OperationException(HttpStatus.FORBIDDEN, "Empresa no activa o licencia vencida");
+    }
 
     Optional<OperationResultResponse> replay =
         tryReplay(idempotencyKey, IdempotentOperationType.ENTRY);
@@ -122,6 +131,12 @@ public class RegisterEntryService implements RegisterEntryUseCase {
           .findActiveByPlateForUpdate(SessionStatus.ACTIVE, normalizedPlate, companyId)
           .ifPresent(s -> {
             throw new OperationException(HttpStatus.CONFLICT, "El vehículo ya tiene una sesión activa");
+          });
+      blacklistedPlateRepository
+          .findByCompanyIdAndPlateIgnoreCaseAndActiveTrue(companyId, normalizedPlate)
+          .ifPresent(b -> {
+            throw new OperationException(HttpStatus.FORBIDDEN, "PLATE_BLACKLISTED",
+                "La placa " + normalizedPlate + " se encuentra en lista negra" + (isBlank(b.getReason()) ? "" : ": " + b.getReason()));
           });
     }
 
@@ -190,7 +205,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
 
     saveCustodiedItem(session, request, operator);
 
-    operationAuditService.recordEvent(session, SessionEventType.ENTRY_RECORDED, operator, "Ingreso registrado");
+    eventPublisher.publishEvent(new com.parkflow.modules.parking.operation.domain.event.SessionCreatedEvent(session, operator));
     
     com.parkflow.modules.parking.spaces.domain.ParkingSpace assignedSpace = null;
     if (request.parkingSpaceId() != null) {

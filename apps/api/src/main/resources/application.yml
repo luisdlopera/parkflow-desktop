@@ -33,6 +33,9 @@ management:
         include: health,info,prometheus
 
 app:
+  uploads:
+    dir: ${PARKFLOW_UPLOADS_DIR:uploads}
+    base-url: ${PARKFLOW_UPLOADS_BASE_URL:/uploads}
   cash:
     require-open-for-payment: ${PARKFLOW_CASH_REQUIRE_OPEN:true}
     offline-close-allowed: ${PARKFLOW_CASH_OFFLINE_CLOSE:false}
