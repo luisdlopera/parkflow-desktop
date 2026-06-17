@@ -283,6 +283,7 @@ CREATE TABLE onboarding_progress (
     completed_at TIMESTAMPTZ,
     skipped_at TIMESTAMPTZ,
     progress_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    version BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -613,6 +614,8 @@ CREATE TABLE vehicle (
     CONSTRAINT fk_vehicle_type_master FOREIGN KEY (vehicle_type_id) REFERENCES master_vehicle_type(id) ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_vehicle_plate ON vehicle (plate);
+
 CREATE TABLE monthly_contract (
     id UUID DEFAULT gen_random_uuid() NOT NULL,
     company_id UUID NOT NULL,
@@ -719,6 +722,7 @@ CREATE TABLE parking_session (
     company_id UUID NOT NULL,
     ticket_number VARCHAR(255) NOT NULL,
     plate VARCHAR(20),
+    has_helmet BOOLEAN DEFAULT FALSE NOT NULL,
     vehicle_id UUID NOT NULL,
     rate_id UUID,
     entry_operator_id UUID,
@@ -770,6 +774,12 @@ CREATE TABLE parking_session (
     CONSTRAINT chk_parking_session_discount_amount CHECK (discount_amount IS NULL OR discount_amount >= 0),
     CONSTRAINT chk_parking_session_net_amount CHECK (net_amount IS NULL OR net_amount >= 0)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_uq_active_plate_company ON parking_session (company_id, plate) WHERE status = 'ACTIVE';
+CREATE INDEX IF NOT EXISTS idx_parking_session_status_company_entry ON parking_session (status, company_id, entry_at);
+CREATE INDEX IF NOT EXISTS idx_parking_session_company_plate ON parking_session (company_id, plate);
+CREATE INDEX IF NOT EXISTS idx_parking_session_status_company ON parking_session (status, company_id);
+CREATE INDEX IF NOT EXISTS idx_parking_session_ticket_company ON parking_session (ticket_number, company_id);
 
 CREATE TABLE payment (
     id UUID DEFAULT gen_random_uuid() NOT NULL,
@@ -857,9 +867,53 @@ CREATE TABLE prepaid_deduction (
     CONSTRAINT chk_prepaid_deduction_minutes CHECK (minutes_deducted > 0)
 );
 
+CREATE TABLE company_vehicle_type (
+    id UUID DEFAULT gen_random_uuid() NOT NULL,
+    company_id UUID NOT NULL,
+    vehicle_type_id UUID NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    display_order INT DEFAULT 0 NOT NULL,
+    requires_plate BOOLEAN,
+    has_own_rate BOOLEAN,
+    quick_access BOOLEAN,
+    requires_photo BOOLEAN,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+
+    CONSTRAINT pk_company_vehicle_type PRIMARY KEY (id),
+    CONSTRAINT uq_company_vehicle_type UNIQUE (company_id, vehicle_type_id),
+    CONSTRAINT fk_company_vehicle_type_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_company_vehicle_type_vehicle_type FOREIGN KEY (vehicle_type_id) REFERENCES master_vehicle_type(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_cvt_company_id ON company_vehicle_type(company_id);
+CREATE INDEX IF NOT EXISTS idx_cvt_vehicle_type_id ON company_vehicle_type(vehicle_type_id);
+
+CREATE TABLE locker (
+    id UUID DEFAULT gen_random_uuid() NOT NULL,
+    company_id UUID NOT NULL,
+    code VARCHAR(20) NOT NULL,
+    label VARCHAR(100),
+    status VARCHAR(30) NOT NULL DEFAULT 'DISPONIBLE',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT locker_pkey PRIMARY KEY (id),
+    CONSTRAINT uq_locker_company_code UNIQUE (company_id, code)
+);
+
+CREATE INDEX idx_locker_company ON locker(company_id);
+CREATE INDEX idx_locker_active ON locker(company_id, is_active);
+
+COMMENT ON TABLE locker IS 'Lockers for helmet custody';
+COMMENT ON COLUMN locker.status IS 'Locker status: DISPONIBLE, OCUPADO, FUERA_DE_SERVICIO';
+COMMENT ON COLUMN locker.code IS 'Locker code (e.g. L-001, L-002)';
+
 CREATE TABLE custodied_item (
     id UUID DEFAULT gen_random_uuid() NOT NULL,
     session_id UUID NOT NULL,
+    locker_id UUID,
     item_type VARCHAR(50) NOT NULL,
     identifier VARCHAR(100),
     status VARCHAR(20) NOT NULL DEFAULT 'RECEIVED',
@@ -875,9 +929,12 @@ CREATE TABLE custodied_item (
 
     CONSTRAINT custodied_item_pkey PRIMARY KEY (id),
     CONSTRAINT custodied_item_session_id_fkey FOREIGN KEY (session_id) REFERENCES parking_session(id) ON DELETE CASCADE,
+    CONSTRAINT custodied_item_locker_id_fkey FOREIGN KEY (locker_id) REFERENCES locker(id) ON DELETE SET NULL,
     CONSTRAINT custodied_item_received_by_id_fkey FOREIGN KEY (received_by_id) REFERENCES app_user(id),
     CONSTRAINT custodied_item_returned_by_id_fkey FOREIGN KEY (returned_by_id) REFERENCES app_user(id)
 );
+
+CREATE INDEX idx_custodied_item_locker ON custodied_item(locker_id);
 
 -- ============================================================================
 -- 6. Printing subsystem
@@ -933,6 +990,7 @@ CREATE TABLE cash_register (
     printer_id UUID,
     responsible_user_id UUID,
     active BOOLEAN NOT NULL DEFAULT TRUE,
+    version BIGINT DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
 
@@ -949,6 +1007,7 @@ CREATE TABLE cash_session (
     cash_register_id UUID NOT NULL,
     operator_id UUID NOT NULL,
     status VARCHAR(20) NOT NULL,
+    version BIGINT DEFAULT 0 NOT NULL,
     opening_amount NUMERIC(14,2) DEFAULT 0 NOT NULL,
     opened_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     closed_at TIMESTAMPTZ,
@@ -980,6 +1039,8 @@ CREATE TABLE cash_session (
     CONSTRAINT chk_cash_session_opening_amount_nonneg CHECK (opening_amount >= 0)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uq_cash_session_one_open_per_operator ON cash_session(operator_id) WHERE status = 'OPEN';
+
 CREATE TABLE cash_movement (
     id UUID DEFAULT gen_random_uuid() NOT NULL,
     cash_session_id UUID NOT NULL,
@@ -987,6 +1048,7 @@ CREATE TABLE cash_movement (
     movement_type VARCHAR(40) NOT NULL,
     payment_method VARCHAR(20) NOT NULL,
     amount NUMERIC(14,2) NOT NULL,
+    version BIGINT DEFAULT 0 NOT NULL,
     parking_session_id UUID,
     status VARCHAR(20) DEFAULT 'POSTED'::VARCHAR NOT NULL,
     terminal VARCHAR(80),

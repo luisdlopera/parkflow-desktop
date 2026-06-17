@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
 import { Modal, Input } from "@heroui/react";
 import { Button } from "@/components/ui/Button";
 
@@ -89,43 +89,43 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const contextValue = useMemo(() => ({ confirm, prompt }), [confirm, prompt]);
+
   return (
-    <DialogContext.Provider value={{ confirm, prompt }}>
+    <DialogContext.Provider value={contextValue}>
       {children}
-      <Modal>
-        <Modal.Backdrop isOpen={dialog.isOpen} onOpenChange={(open) => !open && handleClose()}>
-          <Modal.Container>
-            <Modal.Dialog className="sm:max-w-[400px]">
-              <Modal.Header>
-                <Modal.Heading>{dialog.title || (dialog.type === "confirm" ? "Confirmación" : "Ingresar valor")}</Modal.Heading>
-              </Modal.Header>
-              <Modal.Body>
-                <p className="text-sm">{dialog.message}</p>
-                {dialog.type === "prompt" && (
-                  <Input
-                    autoFocus
-                    aria-label={dialog.message}
-                    value={dialog.inputValue}
-                    onChange={(e) => setDialog((prev) => ({ ...prev, inputValue: e.target.value }))}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleConfirm();
-                    }}
-                  />
-                )}
-              </Modal.Body>
-              <Modal.Footer>
-                <Button color="danger" variant="ghost" onPress={handleClose}>
-                  {dialog.cancelLabel || "Cancelar"}
-                </Button>
-                <Button color="primary" onPress={handleConfirm}>
-                  {dialog.confirmLabel || "Aceptar"}
-                </Button>
-              </Modal.Footer>
-              <Modal.CloseTrigger onPress={handleClose} />
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
-      </Modal>
+      <Modal.Backdrop isOpen={dialog.isOpen} onOpenChange={(open) => !open && handleClose()}>
+        <Modal.Container>
+          <Modal.Dialog className="sm:max-w-[400px]">
+            <Modal.Header>
+              <Modal.Heading>{dialog.title || (dialog.type === "confirm" ? "Confirmación" : "Ingresar valor")}</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body>
+              <p className="text-sm">{dialog.message}</p>
+              {dialog.type === "prompt" && (
+                <Input
+                  autoFocus
+                  aria-label={dialog.message}
+                  value={dialog.inputValue}
+                  onChange={(e) => setDialog((prev) => ({ ...prev, inputValue: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleConfirm();
+                  }}
+                />
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button color="danger" variant="ghost" onPress={handleClose}>
+                {dialog.cancelLabel || "Cancelar"}
+              </Button>
+              <Button color="primary" onPress={handleConfirm}>
+                {dialog.confirmLabel || "Aceptar"}
+              </Button>
+            </Modal.Footer>
+            <Modal.CloseTrigger onPress={handleClose} />
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </DialogContext.Provider>
   );
 }

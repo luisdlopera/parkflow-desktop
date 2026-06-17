@@ -7,8 +7,11 @@ import java.util.UUID;
 
 public interface CashMovementPort {
     List<CashMovement> findByCashSession_IdOrderByCreatedAtDesc(UUID cashSessionId);
+
+    List<CashMovement> findByCashSessionIdFetchAllOrderByCreatedAtDesc(UUID cashSessionId);
+
     Optional<CashMovement> findByIdempotencyKey(String idempotencyKey);
-    
+
     CashMovement save(CashMovement movement);
     Optional<CashMovement> findById(UUID id);
     void delete(CashMovement movement);

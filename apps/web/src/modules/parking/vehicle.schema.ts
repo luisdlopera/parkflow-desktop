@@ -72,7 +72,20 @@ export const vehicleEntrySchema = z.object({
   }
 }).superRefine((data, ctx) => {
   if (data.type === "MOTORCYCLE" && data.custodiedItems && data.custodiedItems.length > 0) {
+    const seen = new Map<string, number>();
     data.custodiedItems.forEach((item, index) => {
+      if (item.identifier?.trim()) {
+        if (seen.has(item.identifier.trim())) {
+          const previousIndex = seen.get(item.identifier.trim())!;
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `El locker ${item.identifier.trim()} ya fue asignado al casco #${previousIndex + 1}`,
+            path: ["custodiedItems", index, "identifier"]
+          });
+        } else {
+          seen.set(item.identifier.trim(), index);
+        }
+      }
       if (!item.identifier?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,

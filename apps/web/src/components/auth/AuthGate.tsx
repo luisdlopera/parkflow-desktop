@@ -28,6 +28,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       }
       if (mounted) {
         const isChangePasswordPage = pathname?.startsWith("/change-password");
+        const isOnboardingPage = pathname?.startsWith("/onboarding");
 
         if (user.requirePasswordChange && !isChangePasswordPage && user.role !== "SUPER_ADMIN") {
           router.replace("/change-password");
@@ -35,6 +36,16 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         }
 
         if (!user.requirePasswordChange && isChangePasswordPage) {
+          router.replace("/");
+          return;
+        }
+
+        if (!user.onboardingCompleted && !isOnboardingPage) {
+          router.replace("/onboarding");
+          return;
+        }
+
+        if (user.onboardingCompleted && isOnboardingPage) {
           router.replace("/");
           return;
         }

@@ -239,7 +239,7 @@ public class CashMovementManagementService implements CashMovementUseCase {
     @Transactional(readOnly = true)
     public List<CashMovementResponse> listMovements(UUID sessionId) {
         requireSession(sessionId);
-        return cashMovementRepository.findByCashSession_IdOrderByCreatedAtDesc(sessionId).stream()
+        return cashMovementRepository.findByCashSessionIdFetchAllOrderByCreatedAtDesc(sessionId).stream()
             .map(this::toMovementResponse)
             .toList();
     }

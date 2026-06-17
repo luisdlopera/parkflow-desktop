@@ -2,10 +2,9 @@ package com.parkflow.modules.cash.infrastructure.persistence;
 
 import com.parkflow.modules.cash.domain.CashMovement;
 import com.parkflow.modules.cash.domain.repository.CashMovementPort;
+import com.parkflow.modules.cash.repository.CashMovementRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,37 +14,35 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CashMovementJpaAdapter implements CashMovementPort {
 
-    private final CashMovementJpaRepository jpaRepository;
+    private final CashMovementRepository cashMovementRepository;
 
     @Override
     public List<CashMovement> findByCashSession_IdOrderByCreatedAtDesc(UUID cashSessionId) {
-        return jpaRepository.findByCashSession_IdOrderByCreatedAtDesc(cashSessionId);
+        return cashMovementRepository.findByCashSession_IdOrderByCreatedAtDesc(cashSessionId);
+    }
+
+    @Override
+    public List<CashMovement> findByCashSessionIdFetchAllOrderByCreatedAtDesc(UUID cashSessionId) {
+        return cashMovementRepository.findByCashSessionIdFetchAllOrderByCreatedAtDesc(cashSessionId);
     }
 
     @Override
     public Optional<CashMovement> findByIdempotencyKey(String idempotencyKey) {
-        return jpaRepository.findByIdempotencyKey(idempotencyKey);
+        return cashMovementRepository.findByIdempotencyKey(idempotencyKey);
     }
 
     @Override
     public CashMovement save(CashMovement movement) {
-        return jpaRepository.save(movement);
+        return cashMovementRepository.save(movement);
     }
 
     @Override
     public Optional<CashMovement> findById(UUID id) {
-        return jpaRepository.findById(id);
+        return cashMovementRepository.findById(id);
     }
 
     @Override
     public void delete(CashMovement movement) {
-        jpaRepository.delete(movement);
-    }
-
-    @Repository
-    interface CashMovementJpaRepository extends JpaRepository<CashMovement, UUID> {
-        List<CashMovement> findByCashSession_IdOrderByCreatedAtDesc(UUID cashSessionId);
-
-        Optional<CashMovement> findByIdempotencyKey(String idempotencyKey);
+        cashMovementRepository.delete(movement);
     }
 }

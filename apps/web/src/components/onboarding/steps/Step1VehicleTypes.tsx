@@ -191,8 +191,8 @@ export default function Step1VehicleTypes() {
                   type="number"
                   min={1}
                   max={MAX_HELMET_LOCKERS}
-                  className="w-32"
-                  label="Cantidad *"
+                  className="w-28"
+                  variant="bordered"
                   aria-label="Cantidad de lockers"
                   isRequired={helmetHandling === "LOCKERS"}
                   isInvalid={Boolean(stepErrors.helmetTokenCount)}

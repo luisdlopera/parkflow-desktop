@@ -388,35 +388,62 @@ export function OnboardingProvider({
     setStepErrors({});
   }, []);
 
+  const allProgressData = useMemo(() => status?.progressData ?? {}, [status?.progressData]);
+
+  const contextValue = useMemo(() => ({
+    companyId,
+    status,
+    stepData,
+    setStepData,
+    loading,
+    saveState,
+    setSaveState,
+    step,
+    enabledSteps,
+    totalEnabledSteps,
+    persistStep,
+    requiredCompleted,
+    vehicleTypes,
+    detectedProfile,
+    getCapacityByType,
+    getRatesByType,
+    onDone,
+    canMultiSite,
+    canAdvancedPermissions,
+    progress,
+    allProgressData,
+    stepErrors,
+    validateCurrentStep,
+    clearStepErrors,
+  }), [
+    companyId,
+    status,
+    stepData,
+    setStepData,
+    loading,
+    saveState,
+    setSaveState,
+    step,
+    enabledSteps,
+    totalEnabledSteps,
+    persistStep,
+    requiredCompleted,
+    vehicleTypes,
+    detectedProfile,
+    getCapacityByType,
+    getRatesByType,
+    onDone,
+    canMultiSite,
+    canAdvancedPermissions,
+    progress,
+    allProgressData,
+    stepErrors,
+    validateCurrentStep,
+    clearStepErrors,
+  ]);
+
   return (
-    <OnboardingContext.Provider
-      value={{
-        companyId,
-        status,
-        stepData,
-        setStepData,
-        loading,
-        saveState,
-        setSaveState,
-        step,
-        enabledSteps,
-        totalEnabledSteps,
-        persistStep,
-        requiredCompleted,
-        vehicleTypes,
-        detectedProfile,
-        getCapacityByType,
-        getRatesByType,
-        onDone,
-        canMultiSite,
-        canAdvancedPermissions,
-        progress,
-        allProgressData: status?.progressData ?? {},
-        stepErrors,
-        validateCurrentStep,
-        clearStepErrors,
-      }}
-    >
+    <OnboardingContext.Provider value={contextValue}>
       {children}
     </OnboardingContext.Provider>
   );

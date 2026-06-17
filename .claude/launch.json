@@ -1,0 +1,111 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "API (Spring Boot 3)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev:api"],
+      "port": 6011,
+      "autoPort": true,
+      "description": "ParkFlow API backend — Spring Boot with auto port fallback (6011→6012)",
+      "environment": {
+        "PARKFLOW_API_PORT": "6011",
+        "PARKFLOW_API_FALLBACK_PORT": "6012"
+      },
+      "endpoints": {
+        "api": "http://localhost:6011",
+        "swagger": "http://localhost:6011/swagger-ui/index.html",
+        "health": "http://localhost:6011/actuator/health"
+      }
+    },
+    {
+      "name": "Web Admin Panel (Next.js)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev:web"],
+      "port": 6001,
+      "autoPort": true,
+      "description": "ParkFlow web admin dashboard — Next.js with auto port fallback (6001→6002)",
+      "environment": {
+        "PARKFLOW_WEB_PORT": "6001",
+        "PARKFLOW_WEB_FALLBACK_PORT": "6002",
+        "NEXT_PUBLIC_API_BASE_URL": "http://localhost:6011/api/v1/operations",
+        "NEXT_PUBLIC_AUTH_BASE_URL": "http://localhost:6011/api/v1/auth"
+      },
+      "endpoints": {
+        "web": "http://localhost:6001",
+        "login": "http://localhost:6001/login"
+      },
+      "dependencies": ["API (Spring Boot 3)"]
+    },
+    {
+      "name": "Desktop App (Tauri)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev:desktop"],
+      "port": null,
+      "description": "ParkFlow desktop app — Tauri 2 (native window, not HTTP server)",
+      "environment": {
+        "NEXT_PUBLIC_API_BASE_URL": "http://localhost:6011/api/v1/operations",
+        "PARKFLOW_MODE": "local"
+      },
+      "dependencies": ["API (Spring Boot 3)"]
+    },
+    {
+      "name": "Print Agent (Node.js/Fastify)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev:print-agent"],
+      "port": 6051,
+      "autoPort": true,
+      "description": "ParkFlow printer service — Fastify with auto port fallback (6051→6052)",
+      "environment": {
+        "PARKFLOW_PRINTER_PORT": "6051",
+        "PARKFLOW_PRINTER_FALLBACK_PORT": "6052",
+        "NODE_ENV": "development"
+      },
+      "endpoints": {
+        "print": "http://localhost:6051"
+      }
+    },
+    {
+      "name": "Database (PostgreSQL via Docker)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["db:up"],
+      "port": 6021,
+      "description": "PostgreSQL database — Docker Compose (required for API)",
+      "environment": {
+        "PARKFLOW_DB_PORT": "6021",
+        "POSTGRES_USER": "parkflow",
+        "POSTGRES_PASSWORD": "parkflow",
+        "POSTGRES_DB": "parkflow_dev"
+      },
+      "credentials": {
+        "host": "localhost",
+        "port": 5432,
+        "user": "parkflow",
+        "password": "parkflow",
+        "database": "parkflow_dev"
+      }
+    }
+  ],
+  "presets": [
+    {
+      "name": "Full Stack (API + Web + Print)",
+      "servers": ["API (Spring Boot 3)", "Web Admin Panel (Next.js)", "Print Agent (Node.js/Fastify)"],
+      "description": "Start core backend services for web/desktop admin dashboard"
+    },
+    {
+      "name": "Desktop Development",
+      "servers": ["API (Spring Boot 3)", "Desktop App (Tauri)"],
+      "description": "Start API + Desktop for offline-first parking operations"
+    },
+    {
+      "name": "API Only",
+      "servers": ["Database (PostgreSQL via Docker)", "API (Spring Boot 3)"],
+      "description": "Start just the backend API with database"
+    },
+    {
+      "name": "All Services",
+      "servers": ["Database (PostgreSQL via Docker)", "API (Spring Boot 3)", "Web Admin Panel (Next.js)", "Desktop App (Tauri)", "Print Agent (Node.js/Fastify)"],
+      "description": "Start complete development stack"
+    }
+  ]
+}
