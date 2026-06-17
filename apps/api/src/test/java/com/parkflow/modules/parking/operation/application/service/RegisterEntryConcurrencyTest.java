@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.repository.BlacklistedPlateRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
@@ -52,6 +53,7 @@ class RegisterEntryConcurrencyTest {
   @Mock private com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort masterVehicleTypePort;
   @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
   @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
+  @Mock private BlacklistedPlateRepository blacklistedPlateRepository;
 
   private RegisterEntryService service;
   private UUID companyId;
@@ -68,7 +70,7 @@ class RegisterEntryConcurrencyTest {
         ticketCounterRepository, vehicleConditionReportRepository, operationIdempotencyRepository,
         operationAuditService, operationPrintService, plateValidator, monthlyContractRepository,
         parkingSpaceService, custodiedItemRepository, lockerPort, new com.fasterxml.jackson.databind.ObjectMapper(),
-        new io.micrometer.core.instrument.simple.SimpleMeterRegistry(), masterVehicleTypePort, companyRepository, companySettingsService, org.mockito.Mockito.mock(com.parkflow.modules.configuration.service.OperationalConfigurationService.class));
+        new io.micrometer.core.instrument.simple.SimpleMeterRegistry(), masterVehicleTypePort, companyRepository, companySettingsService, org.mockito.Mockito.mock(com.parkflow.modules.configuration.service.OperationalConfigurationService.class), org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class), blacklistedPlateRepository);
 
     com.parkflow.modules.settings.domain.MasterVehicleType defaultType = new com.parkflow.modules.settings.domain.MasterVehicleType();
     defaultType.setCode("CAR");

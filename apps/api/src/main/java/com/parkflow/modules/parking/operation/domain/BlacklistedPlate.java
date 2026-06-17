@@ -9,13 +9,9 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(
-    name = "vehicle",
-    uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"company_id", "plate"}, name = "uq_vehicle_company_plate")
-    }
-)
-public class Vehicle {
+@Table(name = "blacklisted_plate")
+public class BlacklistedPlate {
+
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
@@ -26,11 +22,11 @@ public class Vehicle {
   @Column(nullable = false, length = 20)
   private String plate;
 
-  @Column(nullable = false)
-  private String type;
+  @Column(length = 255)
+  private String reason;
 
-  @Column(name = "vehicle_type_id")
-  private UUID vehicleTypeId;
+  @Column(nullable = false)
+  private boolean active = true;
 
   @Column(nullable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();

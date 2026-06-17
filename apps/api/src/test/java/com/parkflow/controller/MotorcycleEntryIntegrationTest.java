@@ -6,6 +6,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.parkflow.config.BaseIntegrationTest;
 import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.licensing.domain.Company;
+import com.parkflow.modules.licensing.enums.CompanyStatus;
+import com.parkflow.modules.licensing.enums.OperationalProfile;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateType;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
@@ -440,5 +443,90 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void registerMotorcycleEntry_ShouldRejectCar_WhenCompanyIsMotorcycleOnly() throws Exception {
+    String token = getAuthToken();
+    Company company = companyRepository.findById(companyId).orElseThrow();
+    company.setOperationalProfile(OperationalProfile.MOTORCYCLE_ONLY);
+    companyRepository.save(company);
+
+    String entryRequest = """
+        {
+            "idempotencyKey": "moto-only-%s",
+            "plate": "CAR123",
+            "type": "CAR",
+            "rateId": "%s",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": "Sin novedades"
+        }
+        """.formatted(System.currentTimeMillis(), rateId, adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errorCode").value("OPERATION_ERROR"));
+  }
+
+  @Test
+  void registerMotorcycleEntry_ShouldReject_WhenCompanyLicenseBlocked() throws Exception {
+    String token = getAuthToken();
+    Company company = companyRepository.findById(companyId).orElseThrow();
+    company.setStatus(CompanyStatus.BLOCKED);
+    companyRepository.save(company);
+
+    String entryRequest = """
+        {
+            "idempotencyKey": "blocked-%s",
+            "plate": "BLK12M",
+            "type": "MOTORCYCLE",
+            "rateId": "%s",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": "Sin novedades"
+        }
+        """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.errorCode").value("OPERATION_ERROR"));
+  }
+
+  @Test
+  void registerMotorcycleEntry_ShouldCreateSessionEvent_WhenEntrySuccessful() throws Exception {
+    String token = getAuthToken();
+    String plate = "EVT12M";
+    String entryRequest = """
+        {
+            "idempotencyKey": "event-%s",
+            "plate": "%s",
+            "type": "MOTORCYCLE",
+            "rateId": "%s",
+            "operatorUserId": "%s",
+            "site": "Test Site",
+            "terminal": "TERM1",
+            "vehicleCondition": "Sin novedades"
+        }
+        """.formatted(System.currentTimeMillis(), plate, motorcycleRateId, adminUserId);
+
+    mockMvc.perform(post("/api/v1/operations/entries")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryRequest))
+            .andExpect(status().isCreated());
+
+    Long eventCount = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM session_event WHERE type = 'ENTRY_RECORDED'", Long.class);
+    org.junit.jupiter.api.Assertions.assertTrue(eventCount != null && eventCount >= 1,
+        "Expected at least one ENTRY_RECORDED session event");
   }
 }
