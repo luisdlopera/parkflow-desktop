@@ -1,421 +1,190 @@
-# Parkflow Monorepo
+# <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/parking-circle.svg" width="32" height="32" align="center" /> Parkflow Monorepo
 
-Plataforma de parqueaderos desktop-first preparada para crecer a web y backend escalable.
+<div align="center">
+  <p>A comprehensive, desktop-first parking management platform built for scalability, offline resilience, and enterprise needs.</p>
 
-## Apps
-- `apps/desktop`: Tauri 2 (desktop, hardware, offline, sync agent)
-- `apps/web`: Next.js (panel admin, tarifas, usuarios, reportes)
-- `apps/api`: Spring Boot 3 (negocio central, auth, auditoria, sync)
-
-## Packages
-- `packages/types`: contratos v1 (`TicketDocument`, print jobs, sync) y layout de preview de tiquete (`ticket-layout.ts`).
-- `packages/print-core`: utilidades de impresión compartidas.
-- `packages/ui` / `packages/sdk`: no definidos aun en el monorepo.
-
----
-
-## Arquitectura Local-First (Nuevo 🎉)
-
-ParkFlow Desktop implementa una arquitectura Local-First real que permite el funcionamiento 100% autónomo de la aplicación de escritorio sin depender de la API o la base de datos central en la nube.
-
-### 1. Modos de Ejecución (`PARKFLOW_MODE`)
-
-Configura la variable de entorno `PARKFLOW_MODE` para definir el comportamiento de la aplicación:
-
-- **`local`**: La aplicación opera de manera 100% local. Utiliza SQLite local (cifrado con SQLCipher si hay credenciales en el llavero del sistema) para el almacenamiento de datos. La API no es requerida y las operaciones no se encolan para sincronización.
-- **`sync`**: La aplicación opera localmente, pero encola todas las mutaciones críticas (entradas, salidas, pagos, movimientos de caja) en una cola de sincronización local (`sync_queue`). Un hilo de fondo en Rust intenta enviar continuamente los eventos a la API central en `/sync/push` cuando se detecta conexión a internet.
-- **`cloud`**: Modo heredado en línea. Todas las llamadas se realizan directamente a la API central `/api/v1/*` sin interceptación local.
-
-Controla el estado de sincronización con:
-- `PARKFLOW_SYNC_ENABLED=true | false` (Habilita o deshabilita el hilo de fondo de sincronización).
-
-### 2. Creación de Administrador Inicial en Primer Arranque
-
-En el primer arranque en modo `local` o `sync`, la base de datos SQLite se crea automáticamente y se insertan los siguientes datos semillas de forma predeterminada:
-
-- **Usuario Super Administrador Inicial**:
-  - **Email**: `admin@parkflow.local`
-  - **Contraseña**: `Qwert.12345` (Contraseña cifrada de forma segura con BCrypt en la base de datos local)
-- **Roles Locales Soportados**:
-  - `SUPER_ADMIN` (Permisos totales)
-  - `ADMIN` (Administración de tarifas, cajas y personal)
-  - `CAJERO` (Operación de entradas, salidas y cobros)
-  - `OPERADOR` (Registro de vehículos)
-  - `AUDITOR` (Solo lectura y reportes)
-
-### 3. Sincronización Automática e Historial de Eventos
-
-Cuando se ejecuta en modo `sync`, cada operación crítica se escribe primero en la base de datos local SQLite y se genera un registro en la tabla `sync_queue`:
-- `event_id` (UUID del evento)
-- `entity_type` (`USER`, `COMPANY`, `SITE`, `TICKET`, `PAYMENT`, `CASH_SESSION`, etc.)
-- `entity_id` (UUID de la entidad asociada)
-- `operation` (`CREATE_ENTRY`, `CREATE_EXIT`, `OPEN_CASH_SESSION`, `CLOSE_CASH_SESSION`, etc.)
-- `payload_json` (El JSON exacto enviado o generado por la operación)
-- `status`: `LOCAL_ONLY`, `PENDING_SYNC`, `SYNCED`, `CONFLICT`, `FAILED`
-- `created_at` / `synced_at`
-
-El servicio de fondo monitoriza la conectividad enviando heartbeats al endpoint `/health` de la API. Al restablecerse la conexión:
-1. Lee los eventos en estado `PENDING_SYNC` en orden cronológico ascendente.
-2. Los envía a la API mediante peticiones POST seguras a `/sync/push`.
-3. Al recibir un estado exitoso (`200 OK`), marca el evento como `SYNCED`.
-4. Si hay un conflicto lógico (`409 Conflict`), marca el estado como `CONFLICT`.
-5. Si ocurre un fallo del cliente (`4xx`), marca el estado como `FAILED`.
-6. Si hay un fallo de red o servidor (`5xx`), mantiene el estado en `PENDING_SYNC` para reintentarlo en el próximo ciclo.
+  <!-- Badges -->
+  [![Node.js Version](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)](#)
+  [![Java Version](https://img.shields.io/badge/Java-21-007396?logo=java&logoColor=white)](#)
+  [![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131?logo=tauri&logoColor=white)](#)
+  [![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=next.js&logoColor=white)](#)
+  [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.0-6DB33F?logo=spring-boot&logoColor=white)](#)
+  [![Code Quality](https://img.shields.io/badge/Code_Quality-SonarQube-4E9BCD?logo=sonarqube&logoColor=white)](#)
+</div>
 
 ---
 
-## Requisitos Previos
+## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/list.svg" width="24" height="24" /> Table of Contents
 
-- **Node.js 18+** y **pnpm**
-- **Java 21 (JDK)** - para el backend Spring Boot
-- **Docker** y **Docker Compose** - para la base de datos PostgreSQL
-- **Rust** - para compilar Tauri (desktop)
-
----
-
-## Port Architecture
-
-Parkflow usa un sistema de puertos estandarizado con soporte de fallback automático:
-
-| Servicio | Puerto Principal | Fallback |
-|----------|-----------------:|---------:|
-| Web / Next.js | `6001` | `6002` |
-| API / Spring Boot | `6011` | `6012` |
-| PostgreSQL | `6021` | N/A |
-| Redis | `6031` | N/A |
-| WebSocket | `6061` | `6062` |
-
-**Documentación completa**: [docs/architecture/ports.md](docs/architecture/ports.md)
+- [Architecture](#architecture)
+- [Key Features](#key-features)
+- [Getting Started](#getting-started)
+- [Testing](#testing)
+- [Default Credentials](#default-credentials)
+- [Documentation & Resources](#documentation--resources)
+- [Security Practices](#security-practices)
+- [Contributing](#contributing)
 
 ---
 
-## Comandos de Ejecución
+## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/blocks.svg" width="24" height="24" /> Architecture
 
-### Verificar puertos disponibles
+ParkFlow implements a true **Local-First Architecture**, ensuring 100% autonomous operation without relying on a central cloud database when offline.
 
-```bash
-# Verificar que todos los puertos estén libres
-pnpm ports:check
+```mermaid
+graph TD;
+    subapps[Desktop App<br>Tauri + React] -->|Local DB| local_db[(SQLite + SQLCipher)];
+    subapps -->|Background Sync| rust_agent[Rust Sync Agent];
+    
+    rust_agent -->|Push Events| api[API Gateway<br>Spring Boot 3];
+    
+    web[Web Admin<br>Next.js] -->|REST / API| api;
+    
+    api -->|Persist| pg[(PostgreSQL)];
+    api -->|Cache| redis[(Redis)];
 ```
 
-### Base de Datos (PostgreSQL)
+### Apps
+- **`apps/desktop`**: Tauri v2 application acting as the primary point of sale, hardware integration hub, and synchronization agent.
+- **`apps/web`**: Next.js application serving as the central administration panel for tariffs, users, and reporting.
+- **`apps/api`**: Spring Boot 3 backend handling core business logic, authentication, auditing, and data synchronization.
 
-```bash
-# Iniciar la base de datos
-pnpm db:up
-
-# Detener la base de datos
-pnpm db:down
-```
-
-Credenciales por defecto:
-- Usuario: `parkflow`
-- Contraseña: `parkflow`
-- Base de datos: `parkflow_dev`
-- Puerto: `6021` (mapeado desde 5432 en container)
-
-### Variables de Entorno Requeridas
-
-1. Copia el archivo de ejemplo:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Edita `.env` si necesitas cambiar puertos o credenciales.
-
-3. Configura las variables de seguridad (requeridas para la API):
-
-   ```powershell
-   # PowerShell
-   $env:PARKFLOW_JWT_SECRET_BASE64="REPLACE_WITH_BASE64_JWT_SECRET"
-    $env:PARKFLOW_API_KEY="REPLACE_WITH_SECURE_API_KEY"
-   ```
-
-   O en CMD:
-   ```cmd
-    set PARKFLOW_JWT_SECRET_BASE64=REPLACE_WITH_BASE64_JWT_SECRET
-    set PARKFLOW_API_KEY=REPLACE_WITH_SECURE_API_KEY
-   ```
-
-### Ejecutar en Desarrollo
-
-```bash
-# Ejecutar la API (Spring Boot) - con fallback automático de puerto
-pnpm dev:api
-
-# Ejecutar el panel web (Next.js) - con fallback automático de puerto
-pnpm dev:web
-
-# Ejecutar el desktop (Tauri)
-pnpm dev:desktop
-
-# Ejecutar el agente de impresión
-pnpm dev:print-agent
-```
-
-> **Nota**: Los scripts `dev:api` y `dev:web` detectan automáticamente si el puerto principal está ocupado y usan el fallback. Verás un mensaje indicando qué puerto quedó activo.
-
-### Comandos de Construcción
-
-```bash
-# Construir la aplicación web
-pnpm build:web
-
-# Construir el desktop
-pnpm build:desktop
-```
-
-### Otros Comandos
-
-```bash
-# Ejecutar linter en la web
-pnpm lint:web
-
-# Ver configuración de puertos actual
-pnpm ports:config
-```
+### Packages
+- **`packages/types`**: Shared contracts (v1), definitions (e.g., `TicketDocument`), and ticket preview layouts.
+- **`packages/print-core`**: Shared thermal printing utilities and formatting tools.
 
 ---
 
-## Flujo de Inicio Rápido
+## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/sparkles.svg" width="24" height="24" /> Key Features
 
-1. **Verificar puertos:**
+- **Hybrid Execution Modes (`PARKFLOW_MODE`)**:
+  - `local`: 100% standalone operation using SQLite (encrypted via SQLCipher).
+  - `sync`: Local-first operation with an asynchronous Rust background worker pushing events to the cloud when online.
+  - `cloud`: Direct-to-cloud operation for constantly connected environments.
+- **Enterprise Licensing System**: Built-in support for hybrid SaaS models (Local, Sync, Pro, Enterprise) with offline validation, hardware fingerprinting, and anti-tampering measures.
+- **Advanced Security & Auth**: JWT-based authentication with short-lived access tokens and rotating refresh tokens, comprehensive audit logging, and strict rate limiting.
+- **Offline Capabilities**: Full functionality during network outages with guaranteed eventual consistency.
+
+---
+
+## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/rocket.svg" width="24" height="24" /> Getting Started
+
+### Prerequisites
+
+Ensure you have the following installed on your machine:
+- **Node.js 18+** & **pnpm**
+- **Java 21 (JDK)**
+- **Docker** & **Docker Compose**
+- **Rust** (for Tauri desktop compilation)
+
+### Initial Setup
+
+1. **Verify Ports Availability**:
    ```bash
    pnpm ports:check
    ```
-
-2. **Iniciar la base de datos:**
+2. **Start Infrastructure (PostgreSQL)**:
    ```bash
    pnpm db:up
    ```
-
-3. **Configurar variables de entorno** (ver sección anterior)
-
-4. **Iniciar la API:**
+3. **Environment Variables**:
+   Copy `.env.example` to `.env` and set the required keys:
    ```bash
-   pnpm dev:api
+   cp .env.example .env
    ```
-   La API estará disponible en: http://localhost:6011
-   Si el puerto 6011 está ocupado, usará 6012.
-
-5. **En otra terminal, iniciar el desktop:**
+   Set up your security credentials:
    ```bash
-   pnpm dev:desktop
+   export PARKFLOW_JWT_SECRET_BASE64="REPLACE_WITH_BASE64_JWT_SECRET"
+   export PARKFLOW_API_KEY="REPLACE_WITH_SECURE_API_KEY"
    ```
+   *(For Windows use `set` or `$env:` depending on CMD/PowerShell)*
 
-6. **O iniciar el panel web:**
-   ```bash
-   pnpm dev:web
-   ```
-   El panel web estará en: http://localhost:6001
-   Si el puerto 6001 está ocupado, usará 6002.
+### Running the Application
 
----
+ParkFlow features automatic port fallback to ensure smooth development.
 
-## Documentación API
-
-- **Swagger UI**: http://localhost:6011/swagger-ui/index.html (o 6012 si usa fallback)
-- **OpenAPI JSON**: http://localhost:6011/v3/api-docs
-- **Health Check**: http://localhost:6011/actuator/health
-
----
-
-## Antes de iniciar sesión - Checklist
-
-### 1. Iniciar infraestructura
 ```bash
-# Verificar puertos
-pnpm ports:check
-
-# Iniciar base de datos
-pnpm db:up
-
-# Verificar que PostgreSQL responde
-docker ps | findstr parkflow-postgres
-```
-
-### 2. Configurar variables de entorno (PowerShell)
-```powershell
-   $env:PARKFLOW_JWT_SECRET_BASE64="REPLACE_WITH_BASE64_JWT_SECRET"
-$env:PARKFLOW_API_KEY="dev-api-key-123"
-```
-
-### 3. Iniciar API y verificar health
-```bash
+# Start the Spring Boot API (Primary: 6011, Fallback: 6012)
 pnpm dev:api
-# En otra terminal:
-curl http://localhost:6011/actuator/health
+
+# Start the Next.js Web Admin (Primary: 6001, Fallback: 6002)
+pnpm dev:web
+
+# Start the Tauri Desktop Client
+pnpm dev:desktop
+
+# Start the Print Agent
+pnpm dev:print-agent
 ```
-
-### 4. Credenciales válidas para login
-| Usuario | Email | Contraseña | Rol |
-|---------|-------|------------|-----|
-| Super Admin | `admin@parkflow.local` | **Qwert.12345** | SUPER_ADMIN |
-| Cajero | `cashier@parkflow.local` | **Qwert.12345** | CAJERO |
-| Admin Operativo | `operador@parkflow.local` | **Qwert.12345** | ADMIN |
-
-**Requisitos de contraseña:**
-- Mínimo 8 caracteres
-- Al menos una mayúscula
-- Al menos una minúscula
-- Al menos un número
-- Al menos un carácter especial (@#$%^&+=!.)
-
-### 5. URLs de acceso
-- **Desktop:** Ventana nativa (Tauri)
-- **Web:** http://localhost:6001 (o 6002 si usa fallback)
-- **API Swagger:** http://localhost:6011/swagger-ui/index.html (o 6012)
 
 ---
 
-## Troubleshooting de Puertos
+## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/test-tube.svg" width="24" height="24" /> Testing
 
-### Ver qué proceso usa un puerto
-
-**Windows (PowerShell):**
-```powershell
-netstat -ano | findstr :6001
-# Luego con el PID:
-tasklist /FI "PID eq <PID>"
-```
-
-**macOS/Linux:**
-```bash
-lsof -i :6001
-```
-
-### Cambiar puertos si hay conflictos
-
-Edita `.env` en el root del proyecto:
-
-```env
-PARKFLOW_WEB_PORT=7001
-PARKFLOW_WEB_FALLBACK_PORT=7002
-PARKFLOW_API_PORT=7011
-PARKFLOW_API_FALLBACK_PORT=7012
-```
-
-Ver documentación completa en [docs/architecture/ports.md](docs/architecture/ports.md).
-
----
-
-## Seed Data (Datos Iniciales)
-
-La base de datos incluye datos iniciales automáticos:
-
-Tarifas preconfiguradas:
-- Hora carro: $4,000 COP (gracia: 10 min)
-- Hora moto: $2,000 COP (gracia: 10 min)
-
----
-
-## Mejoras de seguridad implementadas
-
-### Rate Limiting
-- Login: 10 intentos por minuto (previene brute force)
-- Operaciones: 100 requests/minuto
-- API general: 200 requests/minuto
-
-### Logging de auditoría
-- Todos los intentos de login se registran con IP y deviceId
-- Contraseñas enmascaradas en logs (a***@example.com)
-- Tokens de reset tienen expiración de 1 hora
-
-### Recuperación de contraseña
-- Flujo completo: `/forgot-password` → email (o token en dev) → `/reset-password`
-- Tokens de un solo uso con hash SHA-256
-- Máximo 3 tokens activos por usuario
-
----
-
-## Desarrollo rapido (Legacy)
-
-## Como depurar bugs y endpoints
-
-Para una trazabilidad completa, sigue estas pautas:
-
-1. **Correlation ID:** Todas las peticiones al API aceptan y devuelven el header `X-Correlation-Id`. Úsalo para buscar en los logs.
-2. **Documentación de Endpoints:** Consulta [docs/api/ENDPOINTS.md](docs/api/ENDPOINTS.md) para ver el catálogo completo de controladores, DTOs y lógica asociada.
-3. **Guías de Resolución:** Si encuentras un error común, revisa la carpeta [docs/troubleshooting/](docs/troubleshooting/).
-4. **Logs del API:** En local, los logs se muestran en la consola. En producción, usa el `correlationId` en tu agregador de logs.
-5. **Runbook de Debug:** Para un paso a paso detallado, consulta [docs/runbooks/debug-api-request.md](docs/runbooks/debug-api-request.md).
-
-## Base de datos local (dev)
+The repository uses robust testing practices encompassing Unit, Integration, and E2E tests:
 
 ```bash
-pnpm db:up
+# Run all tests across the monorepo
+pnpm test
+
+# Run API tests (Spring Boot)
+pnpm test:api
+
+# Run Web Admin unit tests (Vitest/Jest)
+pnpm test:web
+
+# Run End-to-End (E2E) tests with Playwright
+pnpm test:e2e
 ```
-
-## Notas de migracion
-- El backend en produccion usa **Flyway + JPA** (`apps/api`). El panel web usa el API por HTTP.
-- El API Spring (`apps/api`) ahora usa login de usuario con JWT corto + refresh rotatorio. `X-API-Key` queda solo como compatibilidad para clientes técnicos o protección interna, no como auth de usuario.
-- Documentacion de auditoria produccion: `docs/architecture/production-readiness-audit.md` y checklist `docs/runbooks/production-validation-checklist.md`.
-
-## Auth y offline
-
-Ver `docs/architecture/auth-hybrid-v1.md` para el diseño completo y `docs/runbooks/auth-offline.md` para validación operativa.
-
-Variables nuevas relevantes:
-- API: `PARKFLOW_JWT_SECRET_BASE64`, `PARKFLOW_ACCESS_TOKEN_TTL_MINUTES`, `PARKFLOW_REFRESH_TOKEN_TTL_DAYS`, `PARKFLOW_OFFLINE_LEASE_HOURS`
-- Web/Desktop: `NEXT_PUBLIC_AUTH_BASE_URL`, `NEXT_PUBLIC_DEVICE_ID`, `NEXT_PUBLIC_DEVICE_NAME`, `NEXT_PUBLIC_DEVICE_PLATFORM`, `NEXT_PUBLIC_DEVICE_FINGERPRINT`
 
 ---
 
-## Sistema de Licenciamiento Comercial (Nuevo 🎉)
+## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/lock.svg" width="24" height="24" /> Default Credentials
 
-ParkFlow incluye un sistema completo de licenciamiento para modelos de negocio SaaS híbrido offline/cloud.
+Upon the first launch in `local` or `sync` mode, the database is seeded automatically:
 
-### Características
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | `admin@parkflow.local` | `Qwert.12345` |
+| Cashier | `cashier@parkflow.local` | `Qwert.12345` |
+| Operations Admin | `operador@parkflow.local` | `Qwert.12345` |
 
-- **4 Planes Comerciales**: LOCAL (offline), SYNC (cloud), PRO (multi-sede), ENTERPRISE
-- **Licencias Offline**: Validación local con fingerprint de hardware
-- **Heartbeat**: Comunicación periódica desktop-backend para comandos remotos
-- **Anti-Tampering**: Detección de manipulación de fecha del sistema
-- **Panel Super Admin**: Gestión de empresas, licencias y dispositivos
+> **Password Policy**: Minimum 8 characters, requiring uppercase, lowercase, numbers, and special characters.
 
-### Documentación del Sistema de Licencias
+---
 
-- **[Guía de Desarrollo](docs/DEVELOPER_GUIDE.md)** - Setup completo para desarrolladores
-- **[Arquitectura de Licensing](docs/LICENSING_ARCHITECTURE.md)** - Detalles técnicos
-- **[Setup Rápido](docs/QUICK_SETUP.md)** - Instrucciones de instalación
+## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/book-open.svg" width="24" height="24" /> Documentation & Resources
 
-### Scripts de Licenciamiento
+- **Architecture & Auth**: [Hybrid Auth v1](docs/architecture/auth-hybrid-v1.md)
+- **Port Management**: [Port Architecture Guide](docs/architecture/ports.md)
+- **API Documentation (Swagger)**: `http://localhost:6011/swagger-ui/index.html`
+- **Licensing System**: [Developer Guide](docs/DEVELOPER_GUIDE.md) | [Architecture](docs/LICENSING_ARCHITECTURE.md)
+- **Troubleshooting**: [Debug Runbook](docs/runbooks/debug-api-request.md)
 
+---
+
+## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/shield-check.svg" width="24" height="24" /> Security Practices
+
+- **Rate Limiting**: Defends against brute-force attacks (10 login attempts/min) and API abuse.
+- **Auditing**: All logins are tracked by IP and device ID. Passwords are masked in logs.
+- **Vulnerability Scanning**: Includes ZAP baseline and API scripts under `/security/scripts/`.
+
+Run security checks manually:
 ```bash
-# Verificar instalación del sistema de licencias
-pnpm verify:install
-
-# Generar claves RSA (solo para producción)
-pnpm license:keys:generate
-
-# Setup automático de desarrollo
-pnpm setup:dev
-
-# Migrar base de datos (incluye tablas de licencias)
-pnpm db:migrate
+pnpm security:deps
+pnpm security:deps:fix
 ```
 
-### URLs del Panel Admin
+---
 
-- **Panel Super Admin**: http://localhost:6001/admin/companies
-- **Activación de Licencia**: Configuración > Licencia en el desktop
+## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/users.svg" width="24" height="24" /> Contributing
 
-### Modo Desarrollo vs Producción
+1. Follow the SOLID principles and clean architecture guidelines.
+2. Run the `pnpm validate` script before creating a Pull Request to ensure all builds and tests pass.
+3. Review the `CHANGELOG.md` to format your commit messages appropriately.
 
-| Aspecto | Desarrollo | Producción |
-|---------|-----------|------------|
-| Firma de licencias | SHA-256 hash simple | RSA 2048-bit |
-| Claves requeridas | No | Sí (PARKFLOW_LICENSE_PRIVATE_KEY) |
-| Heartbeat | Cada 30 min | Cada 30 min |
-| Anti-tampering | Activo | Activo |
+---
 
-### Licencias en Desarrollo (Un Solo Equipo)
-
-Para probar con un solo equipo:
-
-1. La migración V2 ya crea una empresa de prueba automáticamente
-2. El desktop genera fingerprint único de tu hardware
-3. Usar la API para generar licencia con ese fingerprint
-4. Pegar licenseKey y signature en el desktop
-
-Ver [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md#desarrollo-de-licencias-un-solo-equipo) para instrucciones detalladas.
+<div align="center">
+  <i>Parkflow - Engineered for reliability and scale.</i>
+</div>
