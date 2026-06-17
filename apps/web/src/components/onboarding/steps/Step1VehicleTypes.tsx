@@ -184,7 +184,7 @@ export default function Step1VehicleTypes() {
                     ¿Cuántos lockers tiene el parqueadero?
                   </label>
                   <p className="text-xs text-default-500 mt-0.5">
-                    Máximo {MAX_HELMET_LOCKERS}. Elige la cantidad real de lockers de tu parqueadero.
+                    Elige la cantidad real de lockers de tu parqueadero.
                   </p>
                 </div>
                 <Input

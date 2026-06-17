@@ -280,10 +280,14 @@ export function OnboardingProvider({
     return Math.round(((idx + 1) / totalEnabledSteps) * 100);
   }, [step, enabledSteps, totalEnabledSteps]);
 
-  const requiredCompleted = useMemo(
-    () => areRequiredStepsCompleted(status?.progressData ?? {}),
-    [status?.progressData],
-  );
+  const requiredCompleted = useMemo(() => {
+    const progressData = { ...(status?.progressData ?? {}) };
+    // If currently editing a required step with valid data, consider it complete
+    if (REQUIRED_STEPS.includes(step) && validateStep(step, stepData, vehicleTypes).isValid) {
+      progressData[`step_${step}`] = stepData;
+    }
+    return areRequiredStepsCompleted(progressData);
+  }, [status?.progressData, step, stepData, vehicleTypes]);
 
   const canMultiSite = Boolean(status?.availableOptionsByPlan?.allowMultiLocation);
   const canAdvancedPermissions = Boolean(status?.availableOptionsByPlan?.allowAdvancedPermissions);
