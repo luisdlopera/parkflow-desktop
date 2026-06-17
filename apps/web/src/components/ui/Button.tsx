@@ -33,7 +33,7 @@ export interface ButtonProps {
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant, color, isLoading, isDisabled, disabled, startContent, endContent, children, fullWidth, className, ...props }, ref) => {
+  ({ variant, color, isLoading, isDisabled, disabled, startContent, endContent, children, fullWidth, className, onPress, onClick, ...props }, ref) => {
     // Separate variant and color mapping
     let mappedVariant: any = "solid";
     let mappedColor: any = color || "primary";
@@ -79,6 +79,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         isPending={isLoading}
         isDisabled={isDisabled || disabled}
         className={`${colorClasses} ${fullWidth ? "w-full" : ""} ${className || ""}`.trim()}
+        onPress={onPress}
+        onClick={onClick}
         {...props as any}
       >
         {startContent}

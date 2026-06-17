@@ -19,6 +19,7 @@
     "@heroui/system": "^2.4.28",
     "@heroui/theme": "^2.4.26",
     "@hookform/resolvers": "^3.3.4",
+    "@internationalized/date": "^3.12.2",
     "@parkflow/print-core": "workspace:*",
     "@parkflow/types": "workspace:*",
     "@tauri-apps/api": "^2.0.0",

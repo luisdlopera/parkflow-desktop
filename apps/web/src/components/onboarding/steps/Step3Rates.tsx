@@ -1,14 +1,16 @@
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
 import QuestionHelp from "../QuestionHelp";
-import { useOnboarding, VEHICLE_OPTIONS } from "../OnboardingContext";
+import { memo } from "react";
+import { useOnboardingData, useOnboardingMetadata, VEHICLE_OPTIONS } from "../OnboardingContext";
 
 function RequiredMark() {
   return <span className="text-danger ml-0.5" aria-hidden="true">*</span>;
 }
 
-export default function Step3Rates() {
-  const { stepData, setStepData, vehicleTypes, getRatesByType, stepErrors } = useOnboarding();
+const Step3Rates = memo(function Step3Rates() {
+  const { stepData, setStepData, stepErrors, getRatesByType } = useOnboardingData();
+  const { vehicleTypes } = useOnboardingMetadata();
 
   return (
     <div className="space-y-4">
@@ -128,4 +130,6 @@ export default function Step3Rates() {
       </div>
     </div>
   );
-}
+});
+
+export default Step3Rates;

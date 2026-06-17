@@ -6,7 +6,7 @@ import { Controller, useFieldArray, Control } from "react-hook-form";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
-import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
+import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 import { ListBox } from "@heroui/react";
 import { fetchAvailableLockers } from "@/services/lockers.service";
 
@@ -16,7 +16,7 @@ interface HelmetSectionProps {
 }
 
 export function HelmetSection({ control, selectedVehicleType }: HelmetSectionProps) {
-  const { getOperationConfigValue } = useTenantConfig();
+  const { config } = useRuntimeConfig();
 
   const [availableTokens, setAvailableTokens] = useState<{ id: string; code: string }[]>([]);
 
@@ -25,7 +25,7 @@ export function HelmetSection({ control, selectedVehicleType }: HelmetSectionPro
     name: "custodiedItems",
   });
 
-  const enableCustodiedItem = getOperationConfigValue<boolean>("enableCustodiedItem", true);
+  const enableCustodiedItem = config?.operationConfiguration?.enableCustodiedItem ?? true;
 
   useEffect(() => {
     if (enableCustodiedItem && selectedVehicleType === "MOTORCYCLE") {

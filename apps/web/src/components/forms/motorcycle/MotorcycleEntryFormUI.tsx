@@ -6,7 +6,7 @@ import { VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
+import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, CheckCircle2, AlertCircle } from "lucide-react";
 import { MotorRacingHelmet } from "@/components/ui/MotorRacingHelmet";
@@ -38,8 +38,8 @@ export function MotorcycleEntryFormUI({
   platePrefix,
   noPlate,
 }: MotorcycleEntryFormUIProps) {
-  const { getOperationConfigValue } = useTenantConfig();
-  const enableCustodiedItem = getOperationConfigValue<boolean>("enableCustodiedItem", true);
+  const { config } = useRuntimeConfig();
+  const enableCustodiedItem = config?.operationConfiguration?.enableCustodiedItem ?? true;
 
   const [availableTokens, setAvailableTokens] = useState<{ id: string; code: string }[]>([]);
   const { contains } = useFilter({ sensitivity: "base" });

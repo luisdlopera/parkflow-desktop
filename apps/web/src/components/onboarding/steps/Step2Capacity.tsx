@@ -1,15 +1,17 @@
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
 import QuestionHelp from "../QuestionHelp";
-import { useOnboarding, VEHICLE_OPTIONS } from "../OnboardingContext";
+import { useOnboardingData, useOnboardingMetadata, VEHICLE_OPTIONS } from "../OnboardingContext";
+import { memo } from "react";
 import { Hash } from "lucide-react";
 
 function RequiredMark() {
   return <span className="text-danger ml-0.5" aria-hidden="true">*</span>;
 }
 
-export default function Step2Capacity() {
-  const { stepData, setStepData, vehicleTypes, getCapacityByType, stepErrors } = useOnboarding();
+const Step2Capacity = memo(function Step2Capacity() {
+  const { stepData, setStepData, stepErrors, getCapacityByType } = useOnboardingData();
+  const { vehicleTypes } = useOnboardingMetadata();
 
   return (
     <div className="space-y-4">
@@ -84,4 +86,6 @@ export default function Step2Capacity() {
       </div>
     </div>
   );
-}
+});
+
+export default Step2Capacity;

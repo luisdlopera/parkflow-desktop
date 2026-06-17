@@ -25,7 +25,8 @@ function loginResponse() {
       role: "ADMIN",
       permissions: ["tickets:emitir"],
       active: true,
-      passwordChangedAtIso: null
+      passwordChangedAtIso: null,
+      onboardingCompleted: true,
     },
     session: {
       sessionId: "session-1",

@@ -4,7 +4,7 @@ import React from "react";
 import { Controller, Control } from "react-hook-form";
 
 import { Input } from "@/components/ui/Input";
-import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
+import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 
 interface VehicleConditionInputProps {
   control: Control<any>;
@@ -12,8 +12,8 @@ interface VehicleConditionInputProps {
 }
 
 export function VehicleConditionInput({ control, skipConditionCheck = false }: VehicleConditionInputProps) {
-  const { getOperationConfigValue } = useTenantConfig();
-  const enableVehicleCondition = getOperationConfigValue<boolean>("enableVehicleCondition", true);
+  const { config } = useRuntimeConfig();
+  const enableVehicleCondition = config?.operationConfiguration?.enableVehicleCondition ?? true;
 
   if (skipConditionCheck || !enableVehicleCondition) {
     return null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, memo } from "react";
 import {
   Pagination,
   Table,
@@ -118,7 +118,7 @@ function getPriorityClass(priority?: "high" | "medium" | "low") {
   }
 }
 
-export default function DataTable<T extends object>({
+function DataTableInner<T extends object>({
   columns,
   data,
   rows,
@@ -520,3 +520,6 @@ function TableFooterContent({
     </div>
   );
 }
+
+const DataTable = memo(DataTableInner) as unknown as typeof DataTableInner;
+export default DataTable;

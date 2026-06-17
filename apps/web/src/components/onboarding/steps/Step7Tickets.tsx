@@ -2,10 +2,11 @@ import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Switch } from "@/components/ui/Switch";
 import { Printer } from "lucide-react";
-import { useOnboarding, PRINTER_OPTIONS } from "../OnboardingContext";
+import { memo } from "react";
+import { useOnboardingData, PRINTER_OPTIONS } from "../OnboardingContext";
 
-export default function Step7Tickets() {
-  const { stepData, setStepData } = useOnboarding();
+const Step7Tickets = memo(function Step7Tickets() {
+  const { stepData, setStepData } = useOnboardingData();
 
   return (
     <div className="space-y-4">
@@ -72,4 +73,6 @@ export default function Step7Tickets() {
       </div>
     </div>
   );
-}
+});
+
+export default Step7Tickets;

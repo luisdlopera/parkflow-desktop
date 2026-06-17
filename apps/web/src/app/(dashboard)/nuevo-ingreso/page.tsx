@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Modal } from "@heroui/react";
 import { Button } from "@/components/ui/Button";
 import { useTerminalCaja } from "@/hooks/useTerminalCaja";
-import { AlertTriangle } from "lucide-react";
+import { hasPermission } from "@/lib/auth";
+import { AlertTriangle, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import VehicleEntryFormV2 from "@/components/forms/VehicleEntryFormV2";
 
@@ -12,6 +14,29 @@ export default function NuevoIngresoPage() {
   const searchParams = useSearchParams();
   const plate = searchParams?.get("plate")?.trim().toUpperCase() ?? "";
   const { caja, requireOpenForPayment } = useTerminalCaja();
+  const [canEmit, setCanEmit] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    hasPermission("tickets:emitir").then((allowed) => {
+      if (!cancelled) setCanEmit(allowed);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (canEmit === false) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-center">
+        <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center mb-6">
+          <ShieldAlert className="w-10 h-10 text-rose-600" />
+        </div>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Acceso denegado</h1>
+        <p className="text-slate-600 max-w-md">
+          No tienes permiso para registrar ingresos de vehículos. Contacta al administrador si crees que esto es un error.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl space-y-6">

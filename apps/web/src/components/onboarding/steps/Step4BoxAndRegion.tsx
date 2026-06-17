@@ -2,14 +2,15 @@ import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Switch } from "@/components/ui/Switch";
 import { Globe } from "lucide-react";
-import { useOnboarding, COUNTRY_OPTIONS } from "../OnboardingContext";
+import { memo } from "react";
+import { useOnboardingData, COUNTRY_OPTIONS } from "../OnboardingContext";
 
 function RequiredMark() {
   return <span className="text-danger ml-0.5" aria-hidden="true">*</span>;
 }
 
-export default function Step4BoxAndRegion() {
-  const { stepData, setStepData, stepErrors } = useOnboarding();
+const Step4BoxAndRegion = memo(function Step4BoxAndRegion() {
+  const { stepData, setStepData, stepErrors } = useOnboardingData();
 
   return (
     <div className="space-y-4">
@@ -64,4 +65,6 @@ export default function Step4BoxAndRegion() {
       </div>
     </div>
   );
-}
+});
+
+export default Step4BoxAndRegion;

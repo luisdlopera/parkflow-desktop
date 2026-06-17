@@ -1,7 +1,8 @@
-import { useOnboarding, profileLabel } from "../OnboardingContext";
+import { memo } from "react";
+import { useOnboardingMetadata, profileLabel } from "../OnboardingContext";
 
-export default function Step12Audit() {
-  const { allProgressData, vehicleTypes, detectedProfile } = useOnboarding();
+const Step12Audit = memo(function Step12Audit() {
+  const { allProgressData, vehicleTypes, detectedProfile } = useOnboardingMetadata();
 
   const step2Data = allProgressData?.step_2 as Record<string, unknown> | undefined;
   const step3Data = allProgressData?.step_3 as Record<string, unknown> | undefined;
@@ -43,4 +44,6 @@ export default function Step12Audit() {
       </div>
     </div>
   );
-}
+});
+
+export default Step12Audit;

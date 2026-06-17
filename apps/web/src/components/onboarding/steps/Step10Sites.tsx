@@ -1,9 +1,11 @@
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
-import { useOnboarding } from "../OnboardingContext";
+import { memo } from "react";
+import { useOnboardingData, useOnboardingMetadata } from "../OnboardingContext";
 
-export default function Step10Sites() {
-  const { stepData, setStepData, canMultiSite } = useOnboarding();
+const Step10Sites = memo(function Step10Sites() {
+  const { stepData, setStepData } = useOnboardingData();
+  const { canMultiSite } = useOnboardingMetadata();
 
   return (
     <div>
@@ -36,4 +38,6 @@ export default function Step10Sites() {
       )}
     </div>
   );
-}
+});
+
+export default Step10Sites;

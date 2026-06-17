@@ -14,7 +14,7 @@ import { fetchOnboardingStatus, saveOnboardingStep, OnboardingStatus } from "@/l
 
 export type OperationalProfile = "MOTORCYCLE_ONLY" | "CAR_ONLY" | "MIXED";
 
-export const REQUIRED_STEPS = [1, 2, 3, 4, 6];
+export const REQUIRED_STEPS = [1, 2, 3, 4];
 export const BASE_ENABLED_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 12];
 export const STEP_TITLES = [
   "Tipos de vehículo",
@@ -204,34 +204,44 @@ export function profileDescription(profile: OperationalProfile): string {
   }
 }
 
-interface OnboardingContextType {
-  companyId: string;
-  status: OnboardingStatus | null;
-  stepData: Record<string, unknown>;
-  setStepData: React.Dispatch<React.SetStateAction<Record<string, unknown>>>;
-  loading: boolean;
-  saveState: "idle" | "saving" | "saved" | "error";
-  setSaveState: React.Dispatch<React.SetStateAction<"idle" | "saving" | "saved" | "error">>;
+// ─── Context split: Navigation (changes on step transitions) ───
+interface OnboardingNavigationContextType {
   step: number;
   enabledSteps: number[];
   totalEnabledSteps: number;
-  persistStep: (targetStep: number) => Promise<void>;
-  requiredCompleted: boolean;
-  vehicleTypes: string[];
-  detectedProfile: OperationalProfile;
-  getCapacityByType: () => Record<string, number>;
-  getRatesByType: () => Record<string, number>;
-  onDone: () => void;
-  canMultiSite: boolean;
-  canAdvancedPermissions: boolean;
   progress: number;
-  allProgressData: Record<string, unknown>;
+  persistStep: (targetStep: number) => Promise<void>;
+  onDone: () => void;
+}
+const OnboardingNavigationContext = createContext<OnboardingNavigationContextType | undefined>(undefined);
+
+// ─── Context split: Data (changes on every keystroke) ───
+interface OnboardingDataContextType {
+  stepData: Record<string, unknown>;
+  setStepData: React.Dispatch<React.SetStateAction<Record<string, unknown>>>;
   stepErrors: StepValidationErrors;
   validateCurrentStep: () => boolean;
   clearStepErrors: () => void;
+  getCapacityByType: () => Record<string, number>;
+  getRatesByType: () => Record<string, number>;
 }
+const OnboardingDataContext = createContext<OnboardingDataContextType | undefined>(undefined);
 
-const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
+// ─── Context split: Metadata (changes when API refetches) ───
+interface OnboardingMetadataContextType {
+  companyId: string;
+  status: OnboardingStatus | null;
+  loading: boolean;
+  saveState: "idle" | "saving" | "saved" | "error";
+  setSaveState: React.Dispatch<React.SetStateAction<"idle" | "saving" | "saved" | "error">>;
+  requiredCompleted: boolean;
+  vehicleTypes: string[];
+  detectedProfile: OperationalProfile;
+  canMultiSite: boolean;
+  canAdvancedPermissions: boolean;
+  allProgressData: Record<string, unknown>;
+}
+const OnboardingMetadataContext = createContext<OnboardingMetadataContextType | undefined>(undefined);
 
 export function OnboardingProvider({
   children,
@@ -286,7 +296,6 @@ export function OnboardingProvider({
 
   const requiredCompleted = useMemo(() => {
     const progressData = { ...(status?.progressData ?? {}) };
-    // If currently editing a required step with valid data, consider it complete
     if (REQUIRED_STEPS.includes(step) && validateStep(step, stepData, vehicleTypes).isValid) {
       progressData[`step_${step}`] = stepData;
     }
@@ -298,7 +307,6 @@ export function OnboardingProvider({
 
   const detectedProfile = useMemo(() => inferOperationalProfile(vehicleTypes), [vehicleTypes]);
 
-  // Auto-save silencioso cada 10 segundos
   useEffect(() => {
     if (autoSaveRef.current) {
       clearInterval(autoSaveRef.current);
@@ -386,69 +394,78 @@ export function OnboardingProvider({
 
   const allProgressData = useMemo(() => status?.progressData ?? {}, [status?.progressData]);
 
-  const contextValue = useMemo(() => ({
-    companyId,
-    status,
-    stepData,
-    setStepData,
-    loading,
-    saveState,
-    setSaveState,
+  const navigationValue = useMemo(() => ({
     step,
     enabledSteps,
     totalEnabledSteps,
-    persistStep,
-    requiredCompleted,
-    vehicleTypes,
-    detectedProfile,
-    getCapacityByType,
-    getRatesByType,
-    onDone,
-    canMultiSite,
-    canAdvancedPermissions,
     progress,
-    allProgressData,
+    persistStep,
+    onDone,
+  }), [step, enabledSteps, totalEnabledSteps, progress, persistStep, onDone]);
+
+  const dataValue = useMemo(() => ({
+    stepData,
+    setStepData,
     stepErrors,
     validateCurrentStep,
     clearStepErrors,
-  }), [
+    getCapacityByType,
+    getRatesByType,
+  }), [stepData, setStepData, stepErrors, validateCurrentStep, clearStepErrors, getCapacityByType, getRatesByType]);
+
+  const metadataValue = useMemo(() => ({
     companyId,
     status,
-    stepData,
-    setStepData,
     loading,
     saveState,
     setSaveState,
-    step,
-    enabledSteps,
-    totalEnabledSteps,
-    persistStep,
     requiredCompleted,
     vehicleTypes,
     detectedProfile,
-    getCapacityByType,
-    getRatesByType,
-    onDone,
     canMultiSite,
     canAdvancedPermissions,
-    progress,
     allProgressData,
-    stepErrors,
-    validateCurrentStep,
-    clearStepErrors,
-  ]);
+  }), [companyId, status, loading, saveState, setSaveState, requiredCompleted, vehicleTypes, detectedProfile, canMultiSite, canAdvancedPermissions, allProgressData]);
 
   return (
-    <OnboardingContext.Provider value={contextValue}>
-      {children}
-    </OnboardingContext.Provider>
+    <OnboardingNavigationContext.Provider value={navigationValue}>
+      <OnboardingMetadataContext.Provider value={metadataValue}>
+        <OnboardingDataContext.Provider value={dataValue}>
+          {children}
+        </OnboardingDataContext.Provider>
+      </OnboardingMetadataContext.Provider>
+    </OnboardingNavigationContext.Provider>
   );
 }
 
-export function useOnboarding() {
-  const context = useContext(OnboardingContext);
-  if (context === undefined) {
-    throw new Error("useOnboarding must be used within an OnboardingProvider");
-  }
+// ─── Specialized hooks for granular subscriptions ───
+export function useOnboardingNavigation() {
+  const context = useContext(OnboardingNavigationContext);
+  if (!context) throw new Error("useOnboardingNavigation must be used within an OnboardingProvider");
   return context;
+}
+
+export function useOnboardingData() {
+  const context = useContext(OnboardingDataContext);
+  if (!context) throw new Error("useOnboardingData must be used within an OnboardingProvider");
+  return context;
+}
+
+export function useOnboardingMetadata() {
+  const context = useContext(OnboardingMetadataContext);
+  if (!context) throw new Error("useOnboardingMetadata must be used within an OnboardingProvider");
+  return context;
+}
+
+// ─── Aggregate hook for backward compatibility ───
+export function useOnboarding() {
+  const nav = useOnboardingNavigation();
+  const data = useOnboardingData();
+  const meta = useOnboardingMetadata();
+
+  return useMemo(() => ({
+    ...nav,
+    ...data,
+    ...meta,
+  }), [nav, data, meta]);
 }

@@ -1,9 +1,10 @@
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
-import { useOnboarding } from "../OnboardingContext";
+import { memo } from "react";
+import { useOnboardingData } from "../OnboardingContext";
 
-export default function Step9Agreements() {
-  const { stepData, setStepData } = useOnboarding();
+const Step9Agreements = memo(function Step9Agreements() {
+  const { stepData, setStepData } = useOnboardingData();
 
   return (
     <div className="space-y-4">
@@ -29,4 +30,6 @@ export default function Step9Agreements() {
       )}
     </div>
   );
-}
+});
+
+export default Step9Agreements;
