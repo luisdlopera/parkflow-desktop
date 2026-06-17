@@ -258,7 +258,7 @@ export function PrintStatusMonitor() {
         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-gray-700 flex gap-2">
         <button
           onClick={checkPrinterStatus}
-          className="flex-1 py-2 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors border border-default-200"
+          className="flex-1 py-2 px-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors border border-default-200"
         >
           Verificar ahora
         </button>

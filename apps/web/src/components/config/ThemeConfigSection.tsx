@@ -325,7 +325,7 @@ export function ThemeConfigSection({ companyId, onNotify }: ThemeConfigSectionPr
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
         <span className="ml-3 text-sm text-slate-500">Cargando configuración de tema…</span>
       </div>
     );
@@ -368,7 +368,7 @@ export function ThemeConfigSection({ companyId, onNotify }: ThemeConfigSectionPr
                 className={[
                   "px-4 py-2 rounded-lg border text-sm font-medium transition-colors",
                   draft.themeMode === m.value
-                    ? "bg-orange-500 text-white border-orange-500"
+                    ? "bg-primary-500 text-white border-primary-500"
                     : "bg-white text-slate-700 border-slate-200 hover:border-slate-300",
                 ].join(" ")}
               >

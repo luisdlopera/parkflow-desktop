@@ -88,7 +88,7 @@ export function UserMenu() {
           <Avatar
             name={getInitials(user.name)}
             size="sm"
-            className="bg-orange-500 text-white font-semibold"
+            className="bg-primary-500 text-white font-semibold"
           />
         </div>
       </DropdownTrigger>

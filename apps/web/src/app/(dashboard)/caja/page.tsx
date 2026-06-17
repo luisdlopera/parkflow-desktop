@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ListBox, SearchField, useFilter, type Key } from "@heroui/react";
+import { ListBox, SearchField, useFilter, Tabs, type Key } from "@heroui/react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { Autocomplete } from "@/components/ui/Autocomplete";
@@ -676,8 +676,9 @@ export default function CajaPage() {
       </div>
 
       <div className={`grid gap-4 sm:gap-6 grid-cols-1 ${session ? "" : "lg:grid-cols-2"}`}>
-        <div className="surface rounded-2xl p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Estado actual</h2>
+        {!session || session.status !== "OPEN" ? (
+          <div className="surface rounded-2xl p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-slate-900">Estado actual</h2>
           {loading ? (
             <p className="mt-4 text-sm text-slate-600">Cargando...</p>
           ) : !session ? (
@@ -833,6 +834,7 @@ export default function CajaPage() {
             </div>
           )}
         </div>
+        ) : null}
 
         {!session ? (
           <div className="surface rounded-2xl p-4 sm:p-6">
@@ -866,8 +868,165 @@ export default function CajaPage() {
       </div>
 
       {session?.status === "OPEN" ? (
-        <div className="surface rounded-2xl p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Movimientos</h2>
+        <>
+          <div className="surface rounded-2xl p-4 sm:p-6 mt-4">
+            <h2 className="text-lg font-semibold text-slate-900">Estado actual</h2>
+              <div className="mt-4 space-y-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <Badge
+                    data-testid="cash-status"
+                    label={session.status === "OPEN" ? "Caja abierta" : "Caja cerrada"}
+                    tone={session.status === "OPEN" ? "success" : "neutral"}
+                  />
+                  <span className="text-slate-600">
+                    {new Date(session.openedAt).toLocaleString()}
+                    {session.operatorName ? (
+                      <> — {session.operatorName}</>
+                    ) : null}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-1 pt-1">
+                  {[
+                    { label: "Abrir", done: true },
+                    { label: "Movimientos", done: movements.length > 0 },
+                    { label: "Arqueo", done: !!session.countedAt },
+                    { label: "Cerrar", done: false },
+                  ].map((step, i) => (
+                    <div key={step.label} className="flex items-center gap-1 flex-1">
+                      <div className="flex flex-col items-center flex-1">
+                        <div
+                          className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold ${getStepColor(step.done, !session.countedAt, i)}`}
+                        >
+                          {step.done ? "\u2713" : String(i + 1)}
+                        </div>
+                        <span className="text-[10px] text-slate-500 mt-1">{step.label}</span>
+                      </div>
+                      {i < 3 ? (
+                        <div className={`h-[2px] flex-1 self-start mt-3 ${step.done ? "bg-emerald-300" : "bg-slate-200"}`} />
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+
+                {summary && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
+                      <div className="text-[10px] uppercase tracking-wider text-slate-500">
+                        Base inicial
+                        <Tooltip content="Monto en efectivo con el que se abrió la caja">
+                          <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
+                        </Tooltip>
+                      </div>
+                      <p className="text-lg font-semibold text-slate-900">${summary.openingAmount.toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
+                      <div className="text-[10px] uppercase tracking-wider text-slate-500">
+                        Esperado (Libro)
+                        <Tooltip content="Total que debería haber según los movimientos registrados">
+                          <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
+                        </Tooltip>
+                      </div>
+                      <p className="text-lg font-semibold text-slate-900">${summary.expectedLedgerTotal.toLocaleString()}</p>
+                    </div>
+                    <div className={`rounded-xl p-3 border ${summary.countedTotal != null ? "bg-blue-50 border-blue-100" : "bg-slate-50 border-slate-200 border-dashed"}`}>
+                      <div className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-blue-600" : "text-slate-400"}`}>
+                        Contado
+                        <Tooltip content="Efectivo físico contado al realizar el arqueo">
+                          <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
+                        </Tooltip>
+                      </div>
+                      {summary.countedTotal != null ? (
+                        <p className="text-lg font-semibold text-blue-900">${summary.countedTotal.toLocaleString()}</p>
+                      ) : (
+                        <p className="text-lg font-semibold text-slate-400 italic">Pendiente</p>
+                      )}
+                    </div>
+                    <div className={`rounded-xl p-3 border ${getDifferenceCardClass(summary.countedTotal, summary.difference)}`}>
+                      <div className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-slate-500" : "text-slate-400"}`}>
+                        Diferencia
+                        <Tooltip content={summary.countedTotal != null ? `Contado − Esperado = ${summary.countedTotal.toLocaleString()} − ${summary.expectedLedgerTotal.toLocaleString()}` : "Realiza el arqueo para ver la diferencia"}>
+                          <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
+                        </Tooltip>
+                      </div>
+                      {summary.countedTotal != null ? (
+                        <p className={`text-lg font-semibold ${summary.difference === 0 ? "text-emerald-700" : "text-amber-700"}`}>
+                          ${(summary.difference ?? 0).toLocaleString()}
+                        </p>
+                      ) : (
+                        <p className="text-lg font-semibold text-slate-400 italic">Pendiente</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {summary && (
+                  <div className="space-y-1 pt-2">
+                    <p className="font-semibold text-slate-800 text-xs uppercase tracking-tight">Ventas por medio de pago</p>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(summary.totalsByPaymentMethod).map(([method, amount]) => (
+                        <Badge 
+                          key={method} 
+                          label={`${method}: $${amount.toLocaleString()}`} 
+                          tone={getPaymentMethodTone(method)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {summary && (
+                  <div className="space-y-1 pt-2">
+                    <p className="font-semibold text-slate-800 text-xs uppercase tracking-tight">Resumen por tipo</p>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(summary.totalsByMovementType).map(([type, amount]) => (
+                        <Badge 
+                          key={type} 
+                          label={`${type.replace(/_/g, " ")}: $${amount.toLocaleString()}`} 
+                          tone={amount < 0 ? "warning" : "neutral"}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {session.notes ? (
+                  <p className="mt-2 rounded-lg bg-amber-50/50 px-3 py-2 text-slate-800 italic">
+                    &quot;{session.notes}&quot;
+                  </p>
+                ) : null}
+
+                {auditLog.length > 0 && canAudit ? (
+                  <div className="mt-4 max-h-48 overflow-auto rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                    <p className="font-semibold text-slate-800">Pista de auditoría (resumen)</p>
+                    <ul className="mt-2 space-y-1">
+                      {auditLog.slice(0, 40).map((a) => (
+                        <li key={a.id} className="border-b border-slate-100 pb-1">
+                          <span className="text-slate-500">{new Date(a.createdAt).toLocaleString()}</span>{" "}
+                          <strong>{a.action}</strong>
+                          {a.actorName ? ` · ${a.actorName}` : ""}
+                          {a.terminalId ? ` · terminal ${a.terminalId}` : ""}
+                          {a.reason ? ` — ${a.reason}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <Tabs className="w-full mt-6">
+              <Tabs.ListContainer>
+                <Tabs.List aria-label="Opciones de caja" className="w-full sm:w-fit overflow-x-auto">
+                  <Tabs.Tab id="movimientos">Movimientos<Tabs.Indicator /></Tabs.Tab>
+                  <Tabs.Tab id="arqueos">Arqueos<Tabs.Indicator /></Tabs.Tab>
+                  {canClose && <Tabs.Tab id="cierre">Cierre<Tabs.Indicator /></Tabs.Tab>}
+                </Tabs.List>
+              </Tabs.ListContainer>
+
+              <Tabs.Panel id="movimientos" className="pt-4">
+            <div className="surface rounded-2xl p-4 sm:p-6 mt-4">
+              <h2 className="text-lg font-semibold text-slate-900">Movimientos</h2>
           <div className="mt-4 flex flex-wrap gap-4 mb-6">
             <Autocomplete
               label="Filtrar por tipo"
@@ -1109,11 +1268,11 @@ export default function CajaPage() {
             </Button>
           </div>
         </div>
-      ) : null}
+        </Tabs.Panel>
 
-      {session?.status === "OPEN" ? (
-        <div className="surface rounded-2xl p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Arqueo</h2>
+        <Tabs.Panel id="arqueos" className="pt-4">
+          <div className="surface rounded-2xl p-4 sm:p-6 mt-4">
+            <h2 className="text-lg font-semibold text-slate-900">Arqueo</h2>
           <p className="mt-2 text-sm text-slate-600">
             Si hay diferencia respecto al esperado, las observaciones son obligatorias.
           </p>
@@ -1226,11 +1385,14 @@ export default function CajaPage() {
             >
               Imprimir comprobante de arqueo
             </Button>
-          </div>
+              </div>
+            </div>
+          </Tabs.Panel>
 
-          {canClose ? (
-            <>
-              <h3 className="mt-10 text-base font-semibold text-slate-900">Cierre</h3>
+          {canClose && (
+            <Tabs.Panel id="cierre" className="pt-4">
+              <div className="surface rounded-2xl p-4 sm:p-6 mt-4">
+                <h3 className="text-lg font-semibold text-slate-900">Cierre</h3>
               <p className="mt-2 text-xs text-slate-500">
                 El usuario que ejecuta el cierre queda registrado en el sistema. Opcionalmente indique nombre
                 para constancia física de testigo o supervisor.
@@ -1278,14 +1440,18 @@ export default function CajaPage() {
                 >
                   Cambio de turno
                 </Button>
+                </div>
               </div>
-            </>
-          ) : (
-            <p className="mt-6 text-xs text-slate-500 italic">
-              No tienes permiso para cerrar la caja. Solicita el permiso <strong>cierres_caja:cerrar</strong>.
-            </p>
+            </Tabs.Panel>
           )}
-        </div>
+        </Tabs>
+        </>
+      ) : null}
+
+      {session?.status === "OPEN" && !canClose ? (
+        <p className="mt-6 text-xs text-slate-500 italic">
+          No tienes permiso para cerrar la caja. Solicita el permiso <strong>cierres_caja:cerrar</strong>.
+        </p>
       ) : null}
 
       {closed && session ? (

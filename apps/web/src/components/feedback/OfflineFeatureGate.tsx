@@ -63,7 +63,7 @@ export default function OfflineFeatureGate({ children }: OfflineFeatureGateProps
               initial={{ scale: 0.8, rotate: -10 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-              className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white border border-default-200 -500/20"
+              className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 text-white border border-default-200"
             >
               <CloudOff size={38} className="animate-pulse" />
             </motion.div>

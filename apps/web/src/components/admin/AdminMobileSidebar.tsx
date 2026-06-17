@@ -143,7 +143,7 @@ export function AdminMobileSidebar({ isOpen, onClose }: AdminMobileSidebarProps)
             <Link
               href="/"
               onClick={onClose}
-              className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-500 dark:text-neutral-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-600 dark:hover:text-orange-400 transition-all"
+              className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-500 dark:text-neutral-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400 transition-all"
             >
               <svg
                 className="w-5 h-5"
