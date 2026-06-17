@@ -10,8 +10,11 @@
 @theme inline {
   --color-background: var(--color-ash);
   --color-foreground: var(--color-ink);
+}
 
-  /* Brand colors (orange/primary scale) — used by bg-brand-*, text-brand-*, etc. */
+/* Brand colors (primary scale) — NON-inline @theme so bg-brand-*, text-brand-*, border-brand-*
+   compile to var(--color-brand-*) and follow ThemeProvider's runtime overrides (not baked at build). */
+@theme {
   --color-brand-50: #fff7ed;
   --color-brand-100: #ffedd5;
   --color-brand-200: #fed7aa;
@@ -54,6 +57,14 @@
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
+
+  /* Brand-tinted background surfaces — defaults preserve current look (no-JS/SSR);
+     overridden at runtime by ThemeProvider.applyBrandColors() so they follow primary */
+  --color-bg-glow-1: #fff1e3;
+  --color-bg-glow-2: #ffe0c2;
+  --color-grid-dot: rgba(194, 65, 12, 0.22);
+  --color-primary-ring: rgba(249, 115, 22, 0.08);
+  --color-primary-ring-strong: rgba(249, 115, 22, 0.15);
 }
 
 /* Primary color utility classes — backed by CSS variables so ThemeProvider can override them at runtime */
@@ -193,8 +204,8 @@
 }
 
 body {
-  background: radial-gradient(1200px 600px at 10% 5%, #fff1e3 0%, transparent 60%),
-    radial-gradient(900px 500px at 90% 10%, #ffe0c2 0%, transparent 55%),
+  background: radial-gradient(1200px 600px at 10% 5%, var(--color-bg-glow-1) 0%, transparent 60%),
+    radial-gradient(900px 500px at 90% 10%, var(--color-bg-glow-2) 0%, transparent 55%),
     var(--color-ash);
   color: var(--color-ink);
   font-family: var(--font-body);
@@ -225,12 +236,12 @@ body {
 }
 
 .grid-dots {
-  background-image: radial-gradient(rgba(194, 65, 12, 0.22) 1px, transparent 0);
+  background-image: radial-gradient(var(--color-grid-dot) 1px, transparent 0);
   background-size: 18px 18px;
 }
 
 [data-theme="dark"] .grid-dots {
-  background-image: radial-gradient(rgba(251, 146, 60, 0.15) 1px, transparent 0);
+  background-image: radial-gradient(var(--color-grid-dot) 1px, transparent 0);
 }
 
 /* Animaciones para feedback operacional */
@@ -358,7 +369,7 @@ textarea:focus-within,
 [data-slot="input-wrapper"]:focus-within,
 [data-slot="trigger"]:focus-within {
   border-color: var(--color-brand-500, #f97316) !important;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.08) !important;
+  box-shadow: 0 0 0 3px var(--color-primary-ring) !important;
 }
 
 .dark input:not([type="checkbox"]):not([type="radio"]):hover,
@@ -381,7 +392,7 @@ textarea:focus-within,
 .dark [data-slot="trigger"]:focus-within,
 [data-theme="dark"] [data-slot="trigger"]:focus-within {
   border-color: var(--color-brand-500, #f97316) !important;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15) !important;
+  box-shadow: 0 0 0 3px var(--color-primary-ring-strong) !important;
 }
 
 /* ── HeroUI: dark mode only (html.dark / data-theme=dark) ── */

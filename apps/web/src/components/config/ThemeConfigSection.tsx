@@ -11,7 +11,7 @@ import {
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useDialog } from "@/components/ui/DialogProvider";
-import { useTheme, type BrandColors } from "@/lib/theme/ThemeProvider";
+import { useTheme, DEFAULT_PRIMARY_COLOR, type BrandColors } from "@/lib/theme/ThemeProvider";
 import {
   fetchThemeConfig,
   saveThemeConfig,
@@ -26,7 +26,7 @@ import {
 // ─── defaults matching hero.ts ─────────────────────────────────────────────
 
 const DEFAULTS: BrandColors & { themeMode: ThemeMode } = {
-  primaryColor: "#f97316",
+  primaryColor: DEFAULT_PRIMARY_COLOR,
   secondaryColor: "#64748b",
   successColor: "#22c55e",
   warningColor: "#f59e0b",
@@ -467,7 +467,7 @@ export function ThemeConfigSection({ companyId, onNotify }: ThemeConfigSectionPr
 // ─── Preview Panel ───────────────────────────────────────────────────────────
 
 function ThemePreviewPanel({ colors }: { colors: BrandColors & { themeMode: ThemeMode } }) {
-  const primary = HEX_RE.test(colors.primaryColor) ? colors.primaryColor : "#f97316";
+  const primary = HEX_RE.test(colors.primaryColor) ? colors.primaryColor : DEFAULT_PRIMARY_COLOR;
   const success = HEX_RE.test(colors.successColor) ? colors.successColor : "#22c55e";
   const warning = HEX_RE.test(colors.warningColor) ? colors.warningColor : "#f59e0b";
   const danger = HEX_RE.test(colors.dangerColor) ? colors.dangerColor : "#ef4444";
