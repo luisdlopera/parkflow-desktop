@@ -37,6 +37,7 @@ export function StatusToggle({ active, onChange, disabled, confirmMessage }: Sta
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
         active ? "bg-emerald-500" : "bg-slate-300"
       } ${disabled || pending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+      aria-label={active ? "Desactivado" : "Activado"}
       aria-pressed={active}
     >
       <span
