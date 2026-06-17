@@ -235,7 +235,7 @@ public class OnboardingService implements OnboardingUseCase {
       rate.setAmount(BigDecimal.valueOf(amount));
       rate.setGraceMinutes(graceMinutes);
       rate.setFractionMinutes(60);
-      rate.setSite("DEFAULT");
+      rate.setSite(null);
       rate.setBaseValue(BigDecimal.ZERO);
       rate.setBaseMinutes(0);
       rate.setAdditionalValue(BigDecimal.ZERO);
@@ -269,7 +269,7 @@ public class OnboardingService implements OnboardingUseCase {
       rate.setAmount(BigDecimal.valueOf(amount));
       rate.setGraceMinutes(5);
       rate.setFractionMinutes(60);
-      rate.setSite("DEFAULT");
+      rate.setSite(null);
       rate.setBaseValue(BigDecimal.ZERO);
       rate.setBaseMinutes(0);
       rate.setAdditionalValue(BigDecimal.ZERO);
