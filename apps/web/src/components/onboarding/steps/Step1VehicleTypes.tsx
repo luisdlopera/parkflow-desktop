@@ -166,7 +166,7 @@ export default function Step1VehicleTypes() {
                   variant={selected ? "solid" : "outline"}
                   color={selected ? "primary" : "default"}
                   onPress={() => setHelmetHandling(option.code)}
-                  className="h-auto py-3 px-4 flex flex-col items-start text-left"
+                  className="w-full h-auto py-3 px-4 flex flex-col items-start text-left"
                   aria-pressed={selected}
                 >
                   <span className="font-medium">{option.label}</span>
