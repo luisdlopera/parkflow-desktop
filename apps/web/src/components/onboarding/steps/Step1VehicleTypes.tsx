@@ -1,9 +1,10 @@
+import { memo } from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import QuestionHelp from "../QuestionHelp";
 import {
-  useOnboarding,
+  useOnboardingData,
   VEHICLE_OPTIONS,
   profileLabel,
   profileDescription,
@@ -36,8 +37,8 @@ const HELMET_OPTIONS: Array<{ code: HelmetHandling; label: string; description: 
 
 const MAX_HELMET_LOCKERS = 9999;
 
-export default function Step1VehicleTypes() {
-  const { stepData, setStepData, stepErrors } = useOnboarding();
+const Step1VehicleTypes = memo(function Step1VehicleTypes() {
+  const { stepData, setStepData, stepErrors } = useOnboardingData();
   const vehicleTypes = Array.isArray(stepData.vehicleTypes)
     ? (stepData.vehicleTypes as string[])
     : [];
@@ -218,4 +219,6 @@ export default function Step1VehicleTypes() {
       )}
     </div>
   );
-}
+});
+
+export default Step1VehicleTypes;

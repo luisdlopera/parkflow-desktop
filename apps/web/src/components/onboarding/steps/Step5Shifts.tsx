@@ -1,9 +1,10 @@
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
-import { useOnboarding } from "../OnboardingContext";
+import { memo } from "react";
+import { useOnboardingData } from "../OnboardingContext";
 
-export default function Step5Shifts() {
-  const { stepData, setStepData } = useOnboarding();
+const Step5Shifts = memo(function Step5Shifts() {
+  const { stepData, setStepData } = useOnboardingData();
 
   return (
     <div className="space-y-4">
@@ -60,4 +61,6 @@ export default function Step5Shifts() {
       )}
     </div>
   );
-}
+});
+
+export default Step5Shifts;

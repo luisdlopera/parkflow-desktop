@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
+import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 
 interface FeatureGuardProps {
   vehicleType?: string;
@@ -20,19 +20,18 @@ export function FeatureGuard({
   children,
   fallback = null,
 }: FeatureGuardProps) {
-  const { supportsVehicleType, isModuleEnabled, getOperationConfigValue } = useTenantConfig();
+  const { hasVehicleType, hasModule, config } = useRuntimeConfig();
 
-  if (vehicleType && !supportsVehicleType(vehicleType)) {
+  if (vehicleType && !hasVehicleType(vehicleType)) {
     return <>{fallback}</>;
   }
 
-  if (module && !isModuleEnabled(module)) {
+  if (module && !hasModule(module)) {
     return <>{fallback}</>;
   }
 
   if (configKey) {
-    // Si configValueEquals es el valor por defecto (true), podemos chequear si es !== false
-    const configValue = getOperationConfigValue<unknown>(configKey, undefined);
+    const configValue = config?.operationConfiguration?.[configKey];
     
     if (configValueEquals === true) {
       if (configValue === false) {

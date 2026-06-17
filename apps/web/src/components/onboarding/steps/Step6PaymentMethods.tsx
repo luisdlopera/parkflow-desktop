@@ -1,13 +1,14 @@
 import { Checkbox } from "@/components/ui/Checkbox";
 import QuestionHelp from "../QuestionHelp";
-import { useOnboarding, PAYMENT_OPTIONS } from "../OnboardingContext";
+import { memo } from "react";
+import { useOnboardingData, PAYMENT_OPTIONS } from "../OnboardingContext";
 
 function RequiredMark() {
   return <span className="text-danger ml-0.5" aria-hidden="true">*</span>;
 }
 
-export default function Step6PaymentMethods() {
-  const { stepData, setStepData, stepErrors } = useOnboarding();
+const Step6PaymentMethods = memo(function Step6PaymentMethods() {
+  const { stepData, setStepData, stepErrors } = useOnboardingData();
 
   return (
     <div className="space-y-4">
@@ -42,4 +43,6 @@ export default function Step6PaymentMethods() {
       </div>
     </div>
   );
-}
+});
+
+export default Step6PaymentMethods;

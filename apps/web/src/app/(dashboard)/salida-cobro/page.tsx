@@ -38,7 +38,6 @@ import {
   operationReprintRequestSchema
 } from "@/lib/validation/contracts";
 import { toUserMessageFromClientValidation, validatePayloadOrThrow } from "@/lib/validation/request-guard";
-import { useTenantConfig } from "@/lib/hooks/useTenantConfig";
 import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 
 type CustodiedItemInfo = {
@@ -285,13 +284,12 @@ export default function SalidaCobroPage() {
   const toastSuccess = toast.success;
   const toastError = toast.danger;
   const [reprintLoading, setReprintLoading] = useState(false);
-  const { getOperationConfigValue } = useTenantConfig();
-  const enableVehicleCondition = getOperationConfigValue<boolean>("enableVehicleCondition", true);
-  const enableCustodiedItem = getOperationConfigValue<boolean>("enableCustodiedItem", true);
   const [printWarning, setPrintWarning] = useState<{ ticketNumber: string; plate: string; previewLines: string[] } | null>(null);
   const autoLookupDone = useRef(false);
 
   const { config, hasPaymentMethod } = useRuntimeConfig();
+  const enableVehicleCondition = config?.operationConfiguration?.enableVehicleCondition ?? true;
+  const enableCustodiedItem = config?.operationConfiguration?.enableCustodiedItem ?? true;
   const availablePaymentMethods = useMemo(
     () => {
       if (!config?.paymentMethods) return PAYMENT_METHODS;

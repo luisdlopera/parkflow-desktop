@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 
 interface TenantConfigContextType {
@@ -62,18 +62,21 @@ export function TenantConfigProvider({ children }: { children: React.ReactNode }
     return value !== undefined ? (value as T) : defaultValue;
   }, [runtimeConfig]);
 
+  const value = useMemo(
+    () => ({
+      runtimeConfig,
+      loading,
+      error,
+      refresh,
+      supportsVehicleType,
+      isModuleEnabled,
+      getOperationConfigValue,
+    }),
+    [runtimeConfig, loading, error, refresh, supportsVehicleType, isModuleEnabled, getOperationConfigValue],
+  );
+
   return (
-    <TenantConfigContext.Provider
-      value={{
-        runtimeConfig,
-        loading,
-        error,
-        refresh,
-        supportsVehicleType,
-        isModuleEnabled,
-        getOperationConfigValue,
-      }}
-    >
+    <TenantConfigContext.Provider value={value}>
       {children}
     </TenantConfigContext.Provider>
   );

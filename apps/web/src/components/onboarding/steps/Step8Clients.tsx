@@ -1,8 +1,9 @@
 import { Switch } from "@/components/ui/Switch";
-import { useOnboarding } from "../OnboardingContext";
+import { memo } from "react";
+import { useOnboardingData } from "../OnboardingContext";
 
-export default function Step8Clients() {
-  const { stepData, setStepData } = useOnboarding();
+const Step8Clients = memo(function Step8Clients() {
+  const { stepData, setStepData } = useOnboardingData();
 
   return (
     <div className="space-y-5">
@@ -15,4 +16,6 @@ export default function Step8Clients() {
       </p>
     </div>
   );
-}
+});
+
+export default Step8Clients;

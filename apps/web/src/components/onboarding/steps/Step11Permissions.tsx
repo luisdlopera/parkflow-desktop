@@ -1,8 +1,10 @@
 import { Switch } from "@/components/ui/Switch";
-import { useOnboarding } from "../OnboardingContext";
+import { memo } from "react";
+import { useOnboardingData, useOnboardingMetadata } from "../OnboardingContext";
 
-export default function Step11Permissions() {
-  const { stepData, setStepData, canAdvancedPermissions } = useOnboarding();
+const Step11Permissions = memo(function Step11Permissions() {
+  const { stepData, setStepData } = useOnboardingData();
+  const { canAdvancedPermissions } = useOnboardingMetadata();
 
   return (
     <div>
@@ -12,4 +14,6 @@ export default function Step11Permissions() {
       {!canAdvancedPermissions && <p className="text-xs text-warning mt-1">Disponible en plan superior.</p>}
     </div>
   );
-}
+});
+
+export default Step11Permissions;
