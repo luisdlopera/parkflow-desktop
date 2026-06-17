@@ -22,6 +22,7 @@ import com.parkflow.modules.onboarding.domain.CompanySettings;
 import com.parkflow.modules.parking.locker.repository.LockerRepository;
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import com.parkflow.modules.common.exception.domain.EntityNotFoundException;
+import java.util.LinkedHashMap;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -69,7 +70,7 @@ public class ConfigurationManagementService
   @Override
   public CapacityResponse updateCapacity(UUID companyId, CapacityRequest request) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> settings = companySettingsService.getSettingsOrDefault(company);
+    java.util.Map<String, Object> settings = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
     settings.put("capacity", request.getTotalCapacity());
     if (request.getCapacityByType() != null) {
@@ -102,7 +103,7 @@ public class ConfigurationManagementService
   public ShiftConfigurationResponse updateShiftConfiguration(
       UUID companyId, ShiftConfigurationRequest request) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
+    java.util.Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
     if (Boolean.TRUE.equals(request.getShiftsEnabled())) {
       validateShiftTimes(request);
@@ -143,7 +144,7 @@ public class ConfigurationManagementService
   public ModuleConfigurationResponse updateModuleConfiguration(
       UUID companyId, ModuleConfigurationRequest request) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
+    java.util.Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
     validateModuleRestrictions(request, company.getPlan().name());
 
@@ -180,7 +181,7 @@ public class ConfigurationManagementService
   public RegionConfigurationResponse updateRegionConfiguration(
       UUID companyId, RegionConfigurationRequest request) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
+    java.util.Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
     json.put("countryCode", request.getCountryCode());
     json.put("platePattern", request.getPlatePattern());
@@ -217,7 +218,7 @@ public class ConfigurationManagementService
   public HelmetHandlingResponse updateHelmetHandling(
       UUID companyId, HelmetHandlingRequest request) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
+    java.util.Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
     String currentMode = (String) json.getOrDefault("helmetMode", "NONE");
 

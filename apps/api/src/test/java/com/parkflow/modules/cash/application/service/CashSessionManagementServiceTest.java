@@ -92,6 +92,7 @@ class CashSessionManagementServiceTest {
         // NO countedAt -> Not arqueado
 
         when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
 
         CashCloseRequest req = new CashCloseRequest("Notes", null, null);
 
