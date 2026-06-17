@@ -83,11 +83,19 @@ apps/
 
 6. **Frontend** (Next.js + TypeScript + HeroUI):
    - Use HeroUI components (Button, Select, Input, Alert, Badge, etc.)
+   - **Always use HeroUI MCP** before building any UI — check available components and their props first
    - Patterns: Check `/apps/web/src/components/config/` for configuration UI examples
    - API calls: Use functions in `/lib/settings-api.ts` or create new in `/lib/`
    - State: Use React hooks (`useState`, `useEffect`); no external state management yet
    - Error handling: Show `<Alert variant="destructive">` with user-friendly message
    - Loading: Show spinner via HeroUI `<Spinner />`
+
+7. **UI Visual Style**:
+   - ❌ NO box shadows (`shadow-*`, `drop-shadow-*`) anywhere in the UI
+   - ✅ Use thin borders instead: `border border-slate-200` for cards, inputs, panels
+   - ✅ Elevation via `border` + subtle `bg-*` background contrast, never shadow
+   - ✅ All color pickers and pickers: use HeroUI `ColorPicker`, `ColorArea`, `ColorSlider`, `ColorField`
+   - ✅ Consistent border radius: `rounded-xl` for cards, `rounded-lg` for inputs/buttons
 
 ---
 
@@ -99,9 +107,11 @@ apps/
 - Command: `search_symbol "ClassName"` or `search_codebase "pattern"`
 - When: Finding existing implementations before creating new code
 
-**HeroUI**: Use for UI component lookup
-- Command: Search HeroUI docs or existing usage in `/apps/web/src/components/`
-- When: Building configuration pages (Button, Select, Input, Toggle, Slider, etc.)
+**HeroUI MCP** ⚠️ **ALWAYS USE BEFORE BUILDING UI**:
+- **Mandatory**: Check available components and their exact props before implementing any frontend feature
+- Use the HeroUI MCP tool to look up components (ColorPicker, DatePicker, DataTable, Modal, etc.)
+- Available components include: `ColorPicker`, `ColorArea`, `ColorSlider`, `ColorField`, `ColorSwatch`, `Popover`, `Tooltip`, `Modal`, `Drawer`, `Select`, `Autocomplete`, `DatePicker`, `DateRangePicker`, `Slider`, `Switch`, `Chip`, `Badge`, `Avatar`, `Progress`, `Spinner`, `Skeleton`, `Accordion`, `Tabs`, `Pagination`, `Table`, and many more
+- All HeroUI v3 components are available in `@heroui/react` — check before adding third-party alternatives
 
 **Connect**: Use for external API documentation
 - Command: Fetch API specs or integration docs
