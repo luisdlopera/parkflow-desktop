@@ -38,9 +38,9 @@ function ResultCard({ result, onSelect }: { result: SearchResult; onSelect: (res
     <button
       type="button"
       onClick={() => onSelect(result)}
-      className="flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left border border-default-200 transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:border border-default-200 dark:border-neutral-800 dark:bg-neutral-950/50 dark:hover:border-orange-900/50"
+      className="flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left border border-default-200 transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:border border-default-200 dark:border-neutral-800 dark:bg-neutral-950/50 dark:hover:border-primary-900/50"
     >
-      <div className="rounded-2xl bg-orange-50 p-3 text-orange-600 dark:bg-orange-950/20">
+      <div className="rounded-2xl bg-primary-50 p-3 text-primary-600 dark:bg-primary-900/20">
         {TYPE_META[result.type]?.icon ?? <Search className="h-4 w-4" />}
       </div>
       <div className="min-w-0 flex-1">
@@ -88,7 +88,7 @@ export default function SearchPage() {
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <p className="text-xs uppercase tracking-[0.28em] text-orange-700/80">Búsqueda global</p>
+        <p className="text-xs uppercase tracking-[0.28em] text-primary-700/80">Búsqueda global</p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-1">
             <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">Todo lo que necesita la persona operando</h1>
@@ -100,7 +100,7 @@ export default function SearchPage() {
               aria-label="Buscar"
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar..."
-              startContent={isLoading ? <Loader2 className="h-4 w-4 animate-spin text-orange-500" /> : <Search className="h-4 w-4 text-slate-400" />}
+              startContent={isLoading ? <Loader2 className="h-4 w-4 animate-spin text-primary-500" /> : <Search className="h-4 w-4 text-slate-400" />}
               classNames={{ inputWrapper: "h-12 rounded-2xl bg-white dark:bg-neutral-950/70" }}
             />
           </div>
@@ -162,7 +162,7 @@ export default function SearchPage() {
       ) : (
         <Card className="border border-dashed border-slate-300 bg-white/70 dark:border-neutral-700 dark:bg-neutral-950/40">
           <Card.Content className="py-14 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-orange-50 text-orange-500 dark:bg-orange-950/20">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-primary-50 text-primary-500 dark:bg-primary-900/20">
               <Search className="h-7 w-7" />
             </div>
             <p className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">No hay resultados</p>

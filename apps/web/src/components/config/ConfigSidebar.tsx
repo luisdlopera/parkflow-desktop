@@ -105,14 +105,14 @@ export default function ConfigSidebar() {
                   href={item.href}
                   className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${
                     isActive
-                      ? "border-orange-200 bg-orange-50 border border-default-200"
+                      ? "border-primary-200 bg-primary-50 border border-default-200"
                       : "border-slate-200 bg-white hover:border-slate-300 hover:border border-default-200"
                   }`}
                 >
                   <div
                     className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${
                       isActive
-                        ? "bg-orange-500 text-white"
+                        ? "bg-primary-500 text-white"
                         : "bg-slate-100 text-slate-500"
                     }`}
                   >
@@ -121,7 +121,7 @@ export default function ConfigSidebar() {
                   <div className="min-w-0">
                     <p
                       className={`text-sm font-semibold ${
-                        isActive ? "text-orange-900" : "text-slate-900"
+                        isActive ? "text-primary-900" : "text-slate-900"
                       }`}
                     >
                       {item.label}

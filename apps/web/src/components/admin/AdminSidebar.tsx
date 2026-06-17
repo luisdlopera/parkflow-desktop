@@ -183,7 +183,7 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
           href="/"
           className={`
             flex items-center rounded-xl font-medium text-sm transition-all
-            text-slate-500 dark:text-neutral-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-600 dark:hover:text-orange-400
+            text-slate-500 dark:text-neutral-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400
             ${collapsed ? "justify-center p-3" : "px-3 py-3 gap-3"}
           `}
           title={collapsed ? "Volver a operación" : undefined}

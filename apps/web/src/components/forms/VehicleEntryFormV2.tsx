@@ -1175,7 +1175,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
               size={isSpeed ? "lg" : "md"}
               isLoading={form.formState.isSubmitting}
               isDisabled={!!printWarning}
-              className={`w-full font-bold bg-orange-500 text-white hover:bg-orange-600 ${isSpeed ? "text-lg border border-default-200" : ""}`}
+              className={`w-full font-bold bg-primary-500 text-white hover:bg-primary-600 ${isSpeed ? "text-lg border border-default-200" : ""}`}
               data-testid="register-entry"
             >
               {form.formState.isSubmitting ? "Registrando..." : isSpeed ? "REGISTRAR INGRESO (Enter)" : "Registrar Ingreso"}

@@ -581,9 +581,9 @@ export default function ReportesPage() {
                   <p className="text-xs uppercase tracking-wide text-red-700 font-medium">Egresos</p>
                   <p className="text-2xl font-bold text-red-900 mt-1">{fmt(incomeExpense.expenseTotal)}</p>
                 </div>
-                <div className={`border rounded-2xl p-5 ${incomeExpense.netTotal >= 0 ? "bg-blue-50 border-blue-200" : "bg-orange-50 border-orange-200"}`}>
+                <div className={`border rounded-2xl p-5 ${incomeExpense.netTotal >= 0 ? "bg-blue-50 border-blue-200" : "bg-primary-50 border-primary-200"}`}>
                   <p className="text-xs uppercase tracking-wide font-medium">Neto</p>
-                  <p className={`text-2xl font-bold mt-1 ${incomeExpense.netTotal >= 0 ? "text-blue-900" : "text-orange-900"}`}>
+                  <p className={`text-2xl font-bold mt-1 ${incomeExpense.netTotal >= 0 ? "text-blue-900" : "text-primary-900"}`}>
                     {fmt(incomeExpense.netTotal)}
                   </p>
                 </div>

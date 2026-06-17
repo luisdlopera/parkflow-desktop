@@ -393,7 +393,7 @@ export function MotorcycleEntryFormUI({
               className={`w-full font-black text-xl border h-16 rounded-2xl group relative overflow-hidden transition-colors ${
                 isSubmitDisabled
                   ? "bg-slate-300 text-slate-500 border-slate-200 cursor-not-allowed"
-                  : "bg-orange-500 text-white border-default-200 hover:bg-orange-600"
+                  : "bg-primary-500 text-white border-default-200 hover:bg-primary-600"
               }`}
               data-testid="register-entry"
               aria-describedby={isSubmitDisabled ? "entry-disabled-reason" : undefined}

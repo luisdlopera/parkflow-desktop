@@ -54,10 +54,10 @@ function SearchResultRow({ result, selected, onSelect }: { result: SearchResult;
       onClick={() => onSelect(result)}
       className={cn(
         "flex w-full items-center gap-3 border-l-2 px-4 py-3 text-left transition-all",
-        selected ? "border-orange-500 bg-orange-50/80 dark:bg-orange-950/20" : "border-transparent hover:bg-slate-50 dark:hover:bg-neutral-800/40"
+        selected ? "border-primary-500 bg-primary-50/80 dark:bg-primary-900/20" : "border-transparent hover:bg-slate-50 dark:hover:bg-neutral-800/40"
       )}
     >
-      <div className={cn("rounded-xl p-2", selected ? "bg-orange-100 text-orange-700" : "bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-300")}>
+      <div className={cn("rounded-xl p-2", selected ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-300")}>
         <TypeIcon type={result.type} />
       </div>
       <div className="min-w-0 flex-1">
@@ -69,7 +69,7 @@ function SearchResultRow({ result, selected, onSelect }: { result: SearchResult;
         </div>
         <p className="truncate text-xs text-slate-500 dark:text-neutral-400">{result.subtitle}</p>
       </div>
-      {selected ? <ChevronRight className="h-4 w-4 text-orange-600" /> : null}
+      {selected ? <ChevronRight className="h-4 w-4 text-primary-600" /> : null}
     </button>
   );
 }
@@ -215,7 +215,7 @@ export function QuickSearch() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Busca placas, tickets, usuarios, sedes..."
-                startContent={isLoading ? <Loader2 className="h-4 w-4 animate-spin text-orange-500" /> : <Search className="h-4 w-4 text-slate-400" />}
+                startContent={isLoading ? <Loader2 className="h-4 w-4 animate-spin text-primary-500" /> : <Search className="h-4 w-4 text-slate-400" />}
                 classNames={{ inputWrapper: "h-12 rounded-2xl bg-slate-50 shadow-none dark:bg-neutral-900/80" }}
               />
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-neutral-400">
@@ -241,7 +241,7 @@ export function QuickSearch() {
                           <button
                             key={item.href}
                             type="button"
-                            className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:border-orange-200 hover:bg-orange-50 dark:border-neutral-800 dark:bg-neutral-950/60 dark:text-neutral-200 dark:hover:border-orange-900/60 dark:hover:bg-orange-950/20"
+                            className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:border-primary-200 hover:bg-primary-50 dark:border-neutral-800 dark:bg-neutral-950/60 dark:text-neutral-200 dark:hover:border-primary-900/60 dark:hover:bg-primary-900/20"
                             onClick={() => router.push(item.href)}
                           >
                             <span>{item.label}</span>
@@ -299,14 +299,14 @@ export function QuickSearch() {
                 </div>
               ) : (
                 <div className="space-y-4 p-8 text-center">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-orange-500 dark:bg-orange-950/20">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-500 dark:bg-primary-900/20">
                     <Search className="h-6 w-6" />
                   </div>
                   <div className="space-y-1">
                     <p className="text-base font-semibold text-slate-900 dark:text-white">Sin resultados</p>
                     <p className="text-sm text-slate-500 dark:text-neutral-400">No encontramos coincidencias para "{query}".</p>
                   </div>
-                  <Button color="primary" className="rounded-xl bg-orange-500 font-semibold text-white" onPress={handleSearchPage}>
+                  <Button color="primary" className="rounded-xl bg-primary-500 font-semibold text-white" onPress={handleSearchPage}>
                     Ver búsqueda completa
                   </Button>
                   <Button color="secondary" variant="tertiary" className="rounded-xl font-semibold" onPress={handleQuickEntry}>
