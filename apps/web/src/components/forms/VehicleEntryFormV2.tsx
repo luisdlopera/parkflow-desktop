@@ -665,7 +665,7 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
       // Reset form manteniendo configuración
       form.reset({
         plate: "",
-        type: settings.defaultVehicleType,
+        type: isMotorcycleOnly ? "MOTORCYCLE" : settings.defaultVehicleType,
         countryCode: values.countryCode || "CO",
         entryMode: "VISITOR",
         noPlate: false,
@@ -709,7 +709,16 @@ export default function VehicleEntryFormV2({ initialPlate = "", disableRecovery 
         );
         if (isQueued) {
           incrementStats();
-          form.reset({ plate: "", type: settings.defaultVehicleType, countryCode: "CO", entryMode: "VISITOR", noPlate: false, noPlateReason: "" });
+          form.reset({
+            plate: "",
+            type: isMotorcycleOnly ? "MOTORCYCLE" : settings.defaultVehicleType,
+            countryCode: values.countryCode || "CO",
+            entryMode: "VISITOR",
+            noPlate: false,
+            noPlateReason: "",
+            vehicleCondition: settings.skipConditionCheck ? "" : "Sin novedades al ingreso",
+            custodiedItems: []
+          });
           focusPlate();
         }
       } else {
