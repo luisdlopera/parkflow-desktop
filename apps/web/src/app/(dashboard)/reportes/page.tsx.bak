@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import DataTable from "@/components/ui/DataTable";
 import dynamic from "next/dynamic";
-import DateRangeInput from "@/components/ui/DateRangeInput";
 
 const KpiCard = dynamic(() => import("@/components/ui/KpiCard"), { ssr: false });
 import { buildApiHeaders } from "@/lib/api";
@@ -403,7 +402,9 @@ export default function ReportesPage() {
       {view === "daily-operations" && (
         <>
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <DateRangeInput from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+            <Input type="date"  size="sm" label="Desde" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
+            <span className="text-slate-400">—</span>
+            <Input type="date"  size="sm" label="Hasta" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           </div>
           {dailyOps.length > 0 && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-4">
@@ -507,7 +508,9 @@ export default function ReportesPage() {
       {view === "paid-tickets" && (
         <>
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <DateRangeInput from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+            <Input type="date"  size="sm" label="Desde" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
+            <span className="text-slate-400">—</span>
+            <Input type="date"  size="sm" label="Hasta" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           </div>
           {paidTickets.length > 0 && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-3">
@@ -537,7 +540,9 @@ export default function ReportesPage() {
       {view === "voided-tickets" && (
         <>
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <DateRangeInput from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+            <Input type="date"  size="sm" label="Desde" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
+            <span className="text-slate-400">—</span>
+            <Input type="date"  size="sm" label="Hasta" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           </div>
           {voidedTickets.length > 0 && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-3">
@@ -568,7 +573,9 @@ export default function ReportesPage() {
       {view === "income-expense" && (
         <>
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <DateRangeInput from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+            <Input type="date"  size="sm" label="Desde" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
+            <span className="text-slate-400">—</span>
+            <Input type="date"  size="sm" label="Hasta" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           </div>
           {incomeExpense && (
             <>
@@ -657,7 +664,9 @@ export default function ReportesPage() {
       {view === "by-operator" && (
         <>
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <DateRangeInput from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+            <Input type="date"  size="sm" label="Desde" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
+            <span className="text-slate-400">—</span>
+            <Input type="date"  size="sm" label="Hasta" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           </div>
           {operators.length > 0 && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-4">
@@ -687,7 +696,9 @@ export default function ReportesPage() {
       {view === "by-payment-method" && (
         <>
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <DateRangeInput from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+            <Input type="date"  size="sm" label="Desde" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
+            <span className="text-slate-400">—</span>
+            <Input type="date"  size="sm" label="Hasta" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           </div>
           {paymentMethods.length > 0 && (
             <div className="flex flex-wrap gap-3">

@@ -46,7 +46,7 @@ export default function AuditPage() {
     switch (columnKey) {
       case "status":
         return (
-          <Chip color={cellValue === "EXITOSA" ? "success" : "danger"} size="sm" variant="flat">
+          <Chip color={cellValue === "EXITOSA" ? "success" : "danger"} size="sm" variant="soft">
             {cellValue}
           </Chip>
         );
@@ -54,7 +54,7 @@ export default function AuditPage() {
         return new Date(cellValue).toLocaleString();
       case "actions":
         return (
-          <Button size="sm" variant="flat" onPress={() => console.log("Ver detalles", audit.id)}>
+          <Button size="sm" variant="ghost" onPress={() => console.log("Ver detalles", audit.id)}>
             Ver Detalles
           </Button>
         );
@@ -71,7 +71,7 @@ export default function AuditPage() {
             <Input
               placeholder="Buscar por usuario o módulo..."
               value={search}
-              onValueChange={setSearch}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-64"
             />
             <Button color="primary">Exportar PDF</Button>
