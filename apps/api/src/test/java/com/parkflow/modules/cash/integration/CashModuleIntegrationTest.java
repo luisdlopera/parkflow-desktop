@@ -44,9 +44,16 @@ class CashModuleIntegrationTest {
         register.setUpdatedAt(OffsetDateTime.now());
         CashRegister savedRegister = cashRegisterRepository.save(register);
 
+        // Create operator
+        com.parkflow.modules.auth.domain.AppUser operator = new com.parkflow.modules.auth.domain.AppUser();
+        operator.setName("Test Operator");
+        operator.setCompanyId(UUID.randomUUID());
+        com.parkflow.modules.auth.domain.AppUser savedOperator = appUserRepository.save(operator);
+
         CashSession session = new CashSession();
-        session.setCompanyId(UUID.randomUUID());
+        session.setCompanyId(savedOperator.getCompanyId());
         session.setStatus(CashSessionStatus.OPEN);
+        session.setOperator(savedOperator);
         session.setOpeningAmount(new BigDecimal("100.00"));
         session.setOpenedAt(OffsetDateTime.now());
         session.setCashRegister(savedRegister);
@@ -63,6 +70,7 @@ class CashModuleIntegrationTest {
             m.setAmount(new BigDecimal("0.10"));
             m.setStatus(CashMovementStatus.POSTED);
             m.setTerminal("T1");
+            m.setCreatedBy(savedOperator);
             m.setCreatedAt(OffsetDateTime.now());
             cashMovementRepository.save(m);
         }
@@ -92,9 +100,16 @@ class CashModuleIntegrationTest {
         register.setUpdatedAt(OffsetDateTime.now());
         CashRegister savedRegister = cashRegisterRepository.save(register);
 
+        // Create operator
+        com.parkflow.modules.auth.domain.AppUser operator = new com.parkflow.modules.auth.domain.AppUser();
+        operator.setName("Test Operator 2");
+        operator.setCompanyId(UUID.randomUUID());
+        com.parkflow.modules.auth.domain.AppUser savedOperator = appUserRepository.save(operator);
+
         CashSession session = new CashSession();
-        session.setCompanyId(UUID.randomUUID());
+        session.setCompanyId(savedOperator.getCompanyId());
         session.setStatus(CashSessionStatus.OPEN);
+        session.setOperator(savedOperator);
         session.setOpeningAmount(BigDecimal.ZERO);
         session.setOpenedAt(OffsetDateTime.now());
         session.setCashRegister(savedRegister);
@@ -109,6 +124,7 @@ class CashModuleIntegrationTest {
         original.setAmount(new BigDecimal("100.00"));
         original.setStatus(CashMovementStatus.POSTED);
         original.setTerminal("T1");
+        original.setCreatedBy(savedOperator);
         original.setCreatedAt(OffsetDateTime.now());
         CashMovement savedOriginal = cashMovementRepository.save(original);
 
@@ -127,6 +143,7 @@ class CashModuleIntegrationTest {
         offset.setAmount(new BigDecimal("-100.00")); // Negated
         offset.setStatus(CashMovementStatus.POSTED);
         offset.setTerminal("T1");
+        offset.setCreatedBy(savedOperator);
         offset.setCreatedAt(OffsetDateTime.now());
         cashMovementRepository.save(offset);
 
@@ -156,9 +173,16 @@ class CashModuleIntegrationTest {
         register.setUpdatedAt(OffsetDateTime.now());
         CashRegister savedRegister = cashRegisterRepository.save(register);
 
+        // Create operator
+        com.parkflow.modules.auth.domain.AppUser operator = new com.parkflow.modules.auth.domain.AppUser();
+        operator.setName("Test Operator 3");
+        operator.setCompanyId(UUID.randomUUID());
+        com.parkflow.modules.auth.domain.AppUser savedOperator = appUserRepository.save(operator);
+
         CashSession session = new CashSession();
-        session.setCompanyId(UUID.randomUUID());
+        session.setCompanyId(savedOperator.getCompanyId());
         session.setStatus(CashSessionStatus.OPEN);
+        session.setOperator(savedOperator);
         session.setOpeningAmount(new BigDecimal("100.00"));
         session.setOpenedAt(OffsetDateTime.now());
         session.setCashRegister(savedRegister);
@@ -174,6 +198,7 @@ class CashModuleIntegrationTest {
         income.setAmount(new BigDecimal("50.00"));
         income.setStatus(CashMovementStatus.POSTED);
         income.setTerminal("T1");
+        income.setCreatedBy(savedOperator);
         income.setCreatedAt(OffsetDateTime.now());
         cashMovementRepository.save(income);
 
@@ -186,6 +211,7 @@ class CashModuleIntegrationTest {
         expense.setAmount(new BigDecimal("25.00"));
         expense.setStatus(CashMovementStatus.POSTED);
         expense.setTerminal("T1");
+        expense.setCreatedBy(savedOperator);
         expense.setCreatedAt(OffsetDateTime.now());
         cashMovementRepository.save(expense);
 

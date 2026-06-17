@@ -115,6 +115,7 @@ class CashMovementManagementServiceTest {
 
         when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(appUserRepository.findById(actorId)).thenReturn(Optional.of(actor));
+        when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
         when(cashMovementRepository.findById(movementId)).thenReturn(Optional.of(original));
         when(cashLedgerSummaryCalculator.ledgerContribution(original))
                 .thenReturn(new BigDecimal("100.00"));
@@ -152,6 +153,7 @@ class CashMovementManagementServiceTest {
 
         when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(appUserRepository.findById(actorId)).thenReturn(Optional.of(actor));
+        when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
         when(cashMovementRepository.findById(movementId)).thenReturn(Optional.of(original));
 
         String voidKey = "void:" + movementId + ":idempotency-123";
@@ -193,6 +195,7 @@ class CashMovementManagementServiceTest {
         original.setVoidReason("Already voided");
 
         when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
         when(cashMovementRepository.findById(movementId)).thenReturn(Optional.of(original));
 
         VoidMovementRequest request = new VoidMovementRequest("Test reason", null);
@@ -222,6 +225,7 @@ class CashMovementManagementServiceTest {
 
         when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(sessionOtherCompany));
         when(appUserRepository.findById(actorId)).thenReturn(Optional.of(actor));
+        when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operatorOtherCompany));
 
         CashMovementRequest request = new CashMovementRequest(
                 CashMovementType.MANUAL_INCOME,
@@ -237,7 +241,7 @@ class CashMovementManagementServiceTest {
         // But current code doesn't check this, so movement is created with wrong company
         assertThatThrownBy(() -> service.addMovement(sessionId, request))
                 .isInstanceOf(OperationException.class)
-                .hasMessageContaining("company");
+                .hasMessageContaining("compañía");
     }
 
     // ==================== BUG 3: BigDecimal Rounding ====================
@@ -247,6 +251,7 @@ class CashMovementManagementServiceTest {
         // FAILING TEST: Amount should be rounded consistently
         when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(appUserRepository.findById(actorId)).thenReturn(Optional.of(actor));
+        when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
         when(cashMovementRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         BigDecimal unroundedAmount = new BigDecimal("10.005"); // Should round to 10.00 or 10.01
@@ -311,6 +316,7 @@ class CashMovementManagementServiceTest {
     void add_movement_offline_caps_amount() {
         // FAILING TEST: Offline movements should be capped
         when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
 
         // Simulate offline client
         try (MockedStatic<com.parkflow.modules.cash.support.CashHttpContext> httpContextMock =
