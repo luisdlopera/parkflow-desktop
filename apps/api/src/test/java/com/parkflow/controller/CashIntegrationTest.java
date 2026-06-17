@@ -107,4 +107,58 @@ class CashIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.amount").value(5000));
     }
+
+    @Test
+    void listMovements_ShouldReturnMovements_WithRelationsWithoutNPlusOne() throws Exception {
+        String token = getAuthToken();
+        String openRequest = """
+            {
+                "site": "Test Site",
+                "terminal": "TERM1",
+                "registerLabel": "Register 1",
+                "openingAmount": 0,
+                "operatorUserId": "%s",
+                "openIdempotencyKey": "cash-open-list-movements"
+            }
+            """;
+
+        var openResult = mockMvc.perform(post("/api/v1/cash/open")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(openRequest.formatted(adminUserId)))
+                .andReturn();
+
+        String sessionId = extractSessionId(openResult.getResponse().getContentAsString());
+
+        for (int i = 1; i <= 5; i++) {
+            String movementRequest = """
+                {
+                    "type": "MANUAL_INCOME",
+                    "paymentMethod": "CASH",
+                    "amount": %d,
+                    "reason": "Test movement %d",
+                    "idempotencyKey": "cash-movement-list-%d"
+                }
+                """.formatted(1000 * i, i, i);
+
+            mockMvc.perform(post("/api/v1/cash/sessions/" + sessionId + "/movements")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(movementRequest))
+                    .andExpect(status().isCreated());
+        }
+
+        mockMvc.perform(get("/api/v1/cash/sessions/" + sessionId + "/movements")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(5))
+                .andExpect(jsonPath("$[0].createdById").exists())
+                .andExpect(jsonPath("$[0].createdByName").value("Admin"));
+    }
+
+    private String extractSessionId(String openResponse) {
+        int start = openResponse.indexOf("\"id\":\"") + 6;
+        int end = openResponse.indexOf("\"", start);
+        return openResponse.substring(start, end);
+    }
 }

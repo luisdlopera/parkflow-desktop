@@ -637,7 +637,7 @@ export default function CajaPage() {
               </Autocomplete.Trigger>
               <Autocomplete.Popover>
                 <Autocomplete.Filter filter={contains}>
-                  <SearchField autoFocus name="search" variant="secondary">
+                  <SearchField autoFocus name="search" variant="secondary" aria-label="Buscar terminal">
                     <SearchField.Group>
                       <SearchField.SearchIcon />
                       <SearchField.Input placeholder="Buscar terminal..." />
@@ -884,7 +884,7 @@ export default function CajaPage() {
               </Autocomplete.Trigger>
               <Autocomplete.Popover>
                 <Autocomplete.Filter filter={contains}>
-                  <SearchField autoFocus name="search" variant="secondary">
+                  <SearchField autoFocus name="search" variant="secondary" aria-label="Buscar tipo">
                     <SearchField.Group>
                       <SearchField.SearchIcon />
                       <SearchField.Input placeholder="Buscar tipo..." />
@@ -922,7 +922,7 @@ export default function CajaPage() {
               </Autocomplete.Trigger>
               <Autocomplete.Popover>
                 <Autocomplete.Filter filter={contains}>
-                  <SearchField autoFocus name="search" variant="secondary">
+                  <SearchField autoFocus name="search" variant="secondary" aria-label="Buscar medio">
                     <SearchField.Group>
                       <SearchField.SearchIcon />
                       <SearchField.Input placeholder="Buscar medio..." />
@@ -1012,7 +1012,7 @@ export default function CajaPage() {
               </Autocomplete.Trigger>
               <Autocomplete.Popover>
                 <Autocomplete.Filter filter={contains}>
-                  <SearchField autoFocus name="search" variant="secondary">
+                  <SearchField autoFocus name="search" variant="secondary" aria-label="Buscar tipo">
                     <SearchField.Group>
                       <SearchField.SearchIcon />
                       <SearchField.Input placeholder="Buscar tipo..." />
@@ -1046,7 +1046,7 @@ export default function CajaPage() {
               </Autocomplete.Trigger>
               <Autocomplete.Popover>
                 <Autocomplete.Filter filter={contains}>
-                  <SearchField autoFocus name="search" variant="secondary">
+                  <SearchField autoFocus name="search" variant="secondary" aria-label="Buscar medio">
                     <SearchField.Group>
                       <SearchField.SearchIcon />
                       <SearchField.Input placeholder="Buscar medio..." />

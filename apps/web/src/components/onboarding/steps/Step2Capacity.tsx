@@ -39,7 +39,7 @@ export default function Step2Capacity() {
             min={1}
             className="w-32"
             aria-label="Capacidad total"
-            label="Total *"
+            label="Total"
             isRequired
             isInvalid={Boolean(stepErrors.totalCapacity)}
             errorMessage={stepErrors.totalCapacity}

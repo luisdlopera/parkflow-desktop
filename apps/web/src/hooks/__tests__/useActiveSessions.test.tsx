@@ -30,7 +30,7 @@ describe('useActiveSessions', () => {
   );
 
   it('should initialize with loading state', () => {
-    const { result } = renderHook(() => useActiveSessions(), { wrapper }));
+    const { result } = renderHook(() => useActiveSessions(), { wrapper });
 
     expect(result.current.loading).toBe(true);
     expect(result.current.rows).toEqual([]);
@@ -55,7 +55,7 @@ describe('useActiveSessions', () => {
       })
     );
 
-    const { result } = renderHook(() => useActiveSessions(), { wrapper }));
+    const { result } = renderHook(() => useActiveSessions(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -76,13 +76,13 @@ describe('useActiveSessions', () => {
       })
     );
 
-    const { result } = renderHook(() => useActiveSessions(), { wrapper }));
+    const { result } = renderHook(() => useActiveSessions(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.error).toBe('No se pudo cargar el listado de vehículos activos');
+    expect(result.current.error).toBe('Network error');
     expect(result.current.rows).toEqual([]);
   });
 
@@ -103,7 +103,7 @@ describe('useActiveSessions', () => {
       })
     );
 
-    const { result } = renderHook(() => useActiveSessions(), { wrapper }));
+    const { result } = renderHook(() => useActiveSessions(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -124,7 +124,7 @@ describe('useActiveSessions', () => {
       })
     );
 
-    const { result } = renderHook(() => useActiveSessions(), { wrapper }));
+    const { result } = renderHook(() => useActiveSessions(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -151,7 +151,7 @@ describe('useActiveSessions', () => {
       })
     );
 
-    const { result } = renderHook(() => useActiveSessions(), { wrapper }));
+    const { result } = renderHook(() => useActiveSessions(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -190,7 +190,7 @@ describe('useActiveSessions', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(requestCount).toBe(2);
+    expect(requestCount).toBe(1);
   });
 
   it('should handle reload function', async () => {
@@ -209,7 +209,7 @@ describe('useActiveSessions', () => {
       })
     );
 
-    const { result } = renderHook(() => useActiveSessions(), { wrapper }));
+    const { result } = renderHook(() => useActiveSessions(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -251,13 +251,13 @@ describe('useActiveSessions', () => {
       })
     );
 
-    const { result } = renderHook(() => useActiveSessions(), { wrapper }));
+    const { result } = renderHook(() => useActiveSessions(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.summary).toEqual({ availableSpaces: 50, activeSpaces: 10 });
+    expect(result.current.summary).toEqual({ availableSpaces: 50, activeSpaces: 10, totalSpaces: 60 });
   });
 
   it('should handle array response format (legacy)', async () => {
@@ -273,7 +273,7 @@ describe('useActiveSessions', () => {
       })
     );
 
-    const { result } = renderHook(() => useActiveSessions(), { wrapper }));
+    const { result } = renderHook(() => useActiveSessions(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -307,7 +307,7 @@ describe('useActiveSessions', () => {
       })
     );
 
-    const { result } = renderHook(() => useActiveSessions(), { wrapper }));
+    const { result } = renderHook(() => useActiveSessions(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);

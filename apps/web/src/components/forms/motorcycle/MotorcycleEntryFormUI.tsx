@@ -1,7 +1,7 @@
 "use client";
 
-import React, { KeyboardEvent, useEffect, useState } from "react";
-import { UseFormReturn, Controller, useFieldArray } from "react-hook-form";
+import React, { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { UseFormReturn, Controller, useFieldArray, useWatch } from "react-hook-form";
 import { VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -58,6 +58,59 @@ export function MotorcycleEntryFormUI({
   });
 
   const helmetDelivered = fields.length > 0;
+
+  const custodiedValues = useWatch({
+    control: form.control,
+    name: "custodiedItems",
+  });
+
+  const selectedLockerCodes = useMemo(
+    () => (custodiedValues || []).map((item) => item?.identifier).filter(Boolean),
+    [custodiedValues],
+  );
+
+  const getFilteredTokens = useCallback(
+    (currentIndex: number) => {
+      if (!availableTokens.length) return [];
+      return availableTokens.filter(
+        (token) =>
+          !selectedLockerCodes.some(
+            (code, idx) => idx !== currentIndex && code === token.code,
+          ),
+      );
+    },
+    [availableTokens, selectedLockerCodes],
+  );
+
+  const handleClearHelmets = useCallback(() => {
+    form.setValue("custodiedItems", [], { shouldValidate: true });
+  }, [form]);
+
+  const handleAddHelmets = useCallback(() => {
+    if (!helmetDelivered) {
+      form.setValue(
+        "custodiedItems",
+        [{ identifier: "", observations: "", photoUrl: "" }],
+        { shouldValidate: true },
+      );
+    }
+  }, [form, helmetDelivered]);
+
+  const handleHelmetCount = useCallback(
+    (num: number) => {
+      const currentLen = fields.length;
+      if (num > currentLen) {
+        for (let i = 0; i < num - currentLen; i++) {
+          append({ identifier: "", observations: "", photoUrl: "" });
+        }
+      } else if (num < currentLen) {
+        for (let i = currentLen - 1; i >= num; i--) {
+          remove(i);
+        }
+      }
+    },
+    [fields.length, append, remove],
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -122,7 +175,7 @@ export function MotorcycleEntryFormUI({
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => form.setValue("custodiedItems", [], { shouldValidate: true })}
+              onClick={handleClearHelmets}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 !helmetDelivered
                   ? "border-brand-500 bg-brand-500 text-white scale-[1.02] shadow-md"
@@ -148,15 +201,7 @@ export function MotorcycleEntryFormUI({
 
             <button
               type="button"
-              onClick={() => {
-                if (!helmetDelivered) {
-                  form.setValue(
-                    "custodiedItems",
-                    [{ identifier: "", observations: "", photoUrl: "" }],
-                    { shouldValidate: true },
-                  );
-                }
-              }}
+              onClick={handleAddHelmets}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 helmetDelivered
                   ? "border-brand-500 bg-brand-500 text-white scale-[1.02] shadow-md"
@@ -201,18 +246,7 @@ export function MotorcycleEntryFormUI({
                         <button
                           key={num}
                           type="button"
-                          onClick={() => {
-                            const currentLen = fields.length;
-                            if (num > currentLen) {
-                              for (let i = 0; i < num - currentLen; i++) {
-                                append({ identifier: "", observations: "", photoUrl: "" });
-                              }
-                            } else if (num < currentLen) {
-                              for (let i = currentLen - 1; i >= num; i--) {
-                                remove(i);
-                              }
-                            }
-                          }}
+                          onClick={() => handleHelmetCount(num)}
                           className={`px-4 py-1.5 rounded-lg border text-sm font-bold transition-colors ${
                             fields.length === num
                               ? "bg-brand-100 border-brand-300 text-brand-800"
@@ -225,7 +259,10 @@ export function MotorcycleEntryFormUI({
                     </div>
                   </div>
 
-                  {fields.map((field, index) => (
+                  {fields.map((field, index) => {
+                    const filteredTokens = getFilteredTokens(index);
+                    const hasTokens = filteredTokens.length > 0;
+                    return (
                     <div
                       key={field.id}
                       className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-brand-100/50 first:border-0 first:pt-0"
@@ -242,14 +279,19 @@ export function MotorcycleEntryFormUI({
                           <Autocomplete
                             className="w-full"
                             placeholder={
-                              availableTokens.length === 0
+                              !hasTokens
                                 ? "Sin lockers disponibles"
                                 : "Seleccionar locker"
                             }
                             selectionMode="single"
                             value={cField.value || null}
-                            onChange={(key: unknown) => cField.onChange(key || "")}
-                            isDisabled={availableTokens.length === 0}
+                            onChange={(key: unknown) => {
+                              const newVal = (key as string) || "";
+                              if (newVal !== cField.value) {
+                                cField.onChange(newVal);
+                              }
+                            }}
+                            isDisabled={!hasTokens}
                             isInvalid={!!fieldState.error}
                           >
                             <Label className="text-sm">Número de Locker</Label>
@@ -265,14 +307,14 @@ export function MotorcycleEntryFormUI({
                             )}
                             <Autocomplete.Popover>
                               <Autocomplete.Filter filter={contains}>
-                                <SearchField autoFocus name="search" className="mb-2">
+                                <SearchField autoFocus name="search" aria-label="Buscar locker" className="mb-2">
                                   <SearchField.Group>
                                     <SearchField.Input placeholder="Buscar locker..." />
                                     <SearchField.ClearButton />
                                   </SearchField.Group>
                                 </SearchField>
                                 <ListBox>
-                                  {availableTokens.map((token) => (
+                                  {filteredTokens.map((token) => (
                                     <ListBox.Item
                                       key={token.code}
                                       id={token.code}
@@ -305,7 +347,8 @@ export function MotorcycleEntryFormUI({
                         )}
                       />
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </motion.div>
             )}

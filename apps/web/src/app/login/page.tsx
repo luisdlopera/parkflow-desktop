@@ -79,8 +79,12 @@ export default function LoginPage() {
       const user = await currentUser();
       if (!mounted) return;
       if (session && user) {
-        const next = new URLSearchParams(window.location.search).get("next") ?? "/";
-        router.replace(next);
+        if (!user.onboardingCompleted) {
+          router.replace("/onboarding");
+        } else {
+          const next = new URLSearchParams(window.location.search).get("next") ?? "/";
+          router.replace(next);
+        }
       }
     })();
     return () => { mounted = false; };
@@ -155,9 +159,13 @@ export default function LoginPage() {
 
         const session = await response.json();
         await saveSession(session);
-        router.replace(nextPath);
+        if (!session.user?.onboardingCompleted) {
+          router.replace("/onboarding");
+        } else {
+          router.replace(nextPath);
+        }
       } else {
-        await login({
+        const session = await login({
           email: emailValue,
           password: passwordValue,
           deviceId,
@@ -166,7 +174,11 @@ export default function LoginPage() {
           fingerprint,
           offlineRequestedHours: 48
         });
-        router.replace(nextPath);
+        if (!session.user.onboardingCompleted) {
+          router.replace("/onboarding");
+        } else {
+          router.replace(nextPath);
+        }
       }
     } catch (err) {
       const userError = getUserErrorMessage(err, "auth.login");

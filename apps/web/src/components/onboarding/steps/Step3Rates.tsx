@@ -29,7 +29,7 @@ export default function Step3Rates() {
             type="number"
             min={1}
             className="w-40"
-            label="Valor *"
+            label="Valor"
             isRequired
             isInvalid={Boolean(stepErrors.baseValue)}
             errorMessage={stepErrors.baseValue}

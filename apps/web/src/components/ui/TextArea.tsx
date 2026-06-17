@@ -29,7 +29,7 @@ const TEXTAREA_BASE_CLASS = "bg-[#f4f4f5] shadow-none border-none dark:bg-zinc-8
 const TEXTAREA_BORDERED_CLASS = "bg-transparent border-2 border-default-200 rounded-xl transition-colors shadow-none";
 
 export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
-  ({ label, description, errorMessage, isInvalid, isRequired, className, classNames, minRows, maxRows, size, color, variant, radius, value, defaultValue, name, onChange, onBlur, ...props }, ref) => {
+  ({ label, description, errorMessage, isInvalid, isRequired, className, classNames, minRows, maxRows, size, color, variant, radius, value, defaultValue, name, onChange, onBlur, "aria-label": ariaLabel, ...props }, ref) => {
     const textareaClass = variant === "bordered" ? TEXTAREA_BORDERED_CLASS : TEXTAREA_BASE_CLASS;
 
     const handleValueChange = React.useCallback((val: string) => {
@@ -54,6 +54,7 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
         name={name}
         onChange={handleValueChange}
         onBlur={onBlur as any}
+        aria-label={ariaLabel}
       >
         {label && <Label>{label}</Label>}
         <HeroTextArea ref={ref} rows={minRows} className={textareaClass} {...props as any} />

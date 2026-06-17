@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/Input";
 import { TextArea } from "@/components/ui/TextArea";
 import { useSearchParams } from "next/navigation";
 import { useDialog } from "@/components/ui/DialogProvider";
+import { SetupBasicoTab } from "@/components/config/SetupBasicoTab";
+import { ModulesTab } from "@/components/config/ModulesTab";
 import DataTable from "@/components/ui/DataTable";
 import {
   createUser,
@@ -62,7 +64,7 @@ import { VehicleTypeIcon } from "@/components/vehicles/VehicleTypeIcon";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { type DataTableColumn } from "@/components/ui/DataTable";
 
-type TabKey = "rates" | "users" | "parameters" | "interface" | "masters" | "monthly" | "agreements" | "prepaid" | "onboarding";
+type TabKey = "setup" | "modules" | "rates" | "users" | "parameters" | "interface" | "masters" | "monthly" | "agreements" | "prepaid" | "onboarding";
 
 const VEHICLE_TYPES: VehicleType[] = ["CAR", "MOTORCYCLE", "BICYCLE", "TRUCK", "BUS", "VAN", "ELECTRIC", "OTHER"];
 const RATE_TYPES: RateType[] = ["PER_MINUTE", "HOURLY", "DAILY", "FLAT"];
@@ -146,6 +148,7 @@ export default function ConfiguracionPage() {
   const [notice, setNotice] = useState<{ kind: "ok" | "err" | "info"; text: string } | null>(null);
   const [auditReason, setAuditReason] = useState("");
   const [perm, setPerm] = useState<Record<string, boolean>>({});
+  const [companyId, setCompanyId] = useState("");
 
   // Configuración de interfaz (persistida en localStorage)
   const [uiSettings, setUiSettings] = useState({
@@ -187,6 +190,20 @@ export default function ConfiguracionPage() {
     refreshPerms().catch(console.error);
   }, [refreshPerms]);
 
+  useEffect(() => {
+    const loadCompanyId = async () => {
+      try {
+        const user = await currentUser();
+        if (user?.companyId) {
+          setCompanyId(user.companyId);
+        }
+      } catch (err) {
+        console.error("Failed to load company ID", err);
+      }
+    };
+    loadCompanyId();
+  }, []);
+
   const can = useMemo(
     () => ({
       ratesRead: perm["tarifas:leer"] ?? false,
@@ -200,6 +217,18 @@ export default function ConfiguracionPage() {
   );
 
   const SECTION_CONFIG: Record<string, { label: string; title: string; description: string; info: string }> = {
+    setup: {
+      label: "Operación Básica",
+      title: "Configuración de operación",
+      description: "Configura los parámetros básicos de tu parqueadero: capacidad, turnos, región y cascos.",
+      info: "Estos parámetros fueron configurados en el onboarding y pueden ser editados en cualquier momento."
+    },
+    modules: {
+      label: "Módulos",
+      title: "Módulos y características",
+      description: "Habilita o deshabilita módulos según tu plan de suscripción.",
+      info: "Algunos módulos requieren un plan PRO o ENTERPRISE. Consulta tu plan actual para activarlos."
+    },
     rates: {
       label: "Tarifas",
       title: "Tarifas de estacionamiento",
@@ -269,6 +298,20 @@ export default function ConfiguracionPage() {
       </div>
 
       {notice ? <Notice kind={notice.kind} text={notice.text} /> : null}
+
+      {section === "setup" && can.cfgRead ? (
+        companyId ? <SetupBasicoTab companyId={companyId} /> : <p className="text-sm text-slate-600">Cargando...</p>
+      ) : null}
+      {section === "setup" && !can.cfgRead ? (
+        <p className="text-sm text-slate-600">No tiene permiso para configurar operación.</p>
+      ) : null}
+
+      {section === "modules" && can.cfgRead ? (
+        companyId ? <ModulesTab companyId={companyId} /> : <p className="text-sm text-slate-600">Cargando...</p>
+      ) : null}
+      {section === "modules" && !can.cfgRead ? (
+        <p className="text-sm text-slate-600">No tiene permiso para configurar módulos.</p>
+      ) : null}
 
       {section === "rates" && can.ratesRead ? (
         <RatesSection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
@@ -1667,10 +1710,10 @@ function UserEditPanel({
         </ListBox>
       </Select.Popover>
     </Select>
-        <Input  size="sm" placeholder="Documento" value={document} onChange={(e) => setDocument(e.target.value)} />
-        <Input  size="sm" placeholder="Telefono" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        <Input  size="sm" placeholder="Sede" value={site} onChange={(e) => setSite(e.target.value)} />
-        <Input  size="sm" placeholder="Terminal" value={terminal} onChange={(e) => setTerminal(e.target.value)} />
+        <Input  size="sm" aria-label="Documento" placeholder="Documento" value={document} onChange={(e) => setDocument(e.target.value)} />
+        <Input  size="sm" aria-label="Telefono" placeholder="Telefono" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Input  size="sm" aria-label="Sede" placeholder="Sede" value={site} onChange={(e) => setSite(e.target.value)} />
+        <Input  size="sm" aria-label="Terminal" placeholder="Terminal" value={terminal} onChange={(e) => setTerminal(e.target.value)} />
       </div>
       <div className="mt-4 flex gap-3">
         <div className="min-w-[120px]">

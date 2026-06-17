@@ -1,5 +1,7 @@
 package com.parkflow.modules.auth.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.parkflow.modules.common.dto.ErrorResponse;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,6 +14,7 @@ import java.util.UUID;
 import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -25,14 +28,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   private final JwtTokenService jwtTokenService;
   private final AuthSessionPort authSessionRepository;
   private final AppUserPort appUserRepository;
+  private final ObjectMapper objectMapper;
 
   public JwtAuthFilter(
       JwtTokenService jwtTokenService,
       AuthSessionPort authSessionRepository,
-      AppUserPort appUserRepository) {
+      AppUserPort appUserRepository,
+      ObjectMapper objectMapper) {
     this.jwtTokenService = jwtTokenService;
     this.authSessionRepository = authSessionRepository;
     this.appUserRepository = appUserRepository;
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -46,76 +52,112 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     String token = auth.substring("Bearer ".length());
+    Claims claims;
     try {
-      Claims claims = jwtTokenService.parse(token);
-      if ("refresh".equals(claims.get("typ", String.class))) {
-        filterChain.doFilter(request, response);
-        return;
-      }
-
-      UUID userId = UUID.fromString(claims.getSubject());
-      String sessionIdClaim = claims.get("sid", String.class);
-      if (sessionIdClaim == null || sessionIdClaim.isBlank()) {
-        SecurityContextHolder.clearContext();
-        filterChain.doFilter(request, response);
-        return;
-      }
-      UUID sessionId = UUID.fromString(sessionIdClaim);
-      var session = authSessionRepository.findByIdAndActiveTrue(sessionId).orElse(null);
-      if (session == null || !session.getUser().getId().equals(userId)) {
-        SecurityContextHolder.clearContext();
-        filterChain.doFilter(request, response);
-        return;
-      }
-      var user = appUserRepository.findById(userId).orElse(null);
-      if (user == null || !user.isActive()) {
-        SecurityContextHolder.clearContext();
-        filterChain.doFilter(request, response);
-        return;
-      }
-
-      String companyIdClaim = claims.get("cid", String.class);
-      if (companyIdClaim == null || companyIdClaim.isBlank()) {
-        SecurityContextHolder.clearContext();
-        filterChain.doFilter(request, response);
-        return;
-      }
-      UUID companyId = UUID.fromString(companyIdClaim);
-
-      String email = claims.get("email", String.class);
-      String role = claims.get("role", String.class);
-      List<?> permissions = claims.get("permissions", List.class);
-
-      List<GrantedAuthority> authorities = new ArrayList<>();
-      // Add role as ROLE_<role> so @PreAuthorize("hasAnyRole(...)") works
-      if (role != null && !role.isBlank()) {
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-      }
-      // Add fine-grained permissions as authorities
-      if (permissions != null) {
-        permissions.stream()
-            .map(value -> (GrantedAuthority) new SimpleGrantedAuthority(String.valueOf(value)))
-            .forEach(authorities::add);
-      }
-
-      AuthPrincipal principal = new AuthPrincipal(userId, companyId, email, role, authorities);
-      UsernamePasswordAuthenticationToken authentication =
-          new UsernamePasswordAuthenticationToken(principal, null, authorities);
-      SecurityContextHolder.getContext().setAuthentication(authentication);
-      
-      request.setAttribute("currentUserEmail", email);
-      request.setAttribute("currentUserId", userId.toString());
-      
-      TenantContext.setTenantId(companyId);
-    } catch (Exception ignored) {
-      SecurityContextHolder.clearContext();
-      TenantContext.clear();
+      claims = jwtTokenService.parse(token);
+    } catch (Exception ex) {
+      writeUnauthorized(response, request.getRequestURI());
+      return;
     }
+
+    // Refresh tokens are handled by the public /auth/refresh endpoint.
+    if ("refresh".equals(claims.get("typ", String.class))) {
+      filterChain.doFilter(request, response);
+      return;
+    }
+
+    UUID userId;
+    try {
+      userId = UUID.fromString(claims.getSubject());
+    } catch (Exception ex) {
+      writeUnauthorized(response, request.getRequestURI());
+      return;
+    }
+
+    String sessionIdClaim = claims.get("sid", String.class);
+    if (sessionIdClaim == null || sessionIdClaim.isBlank()) {
+      writeUnauthorized(response, request.getRequestURI());
+      return;
+    }
+
+    UUID sessionId;
+    try {
+      sessionId = UUID.fromString(sessionIdClaim);
+    } catch (Exception ex) {
+      writeUnauthorized(response, request.getRequestURI());
+      return;
+    }
+
+    var session = authSessionRepository.findByIdAndActiveTrue(sessionId).orElse(null);
+    if (session == null || !session.getUser().getId().equals(userId)) {
+      writeUnauthorized(response, request.getRequestURI());
+      return;
+    }
+
+    var user = appUserRepository.findById(userId).orElse(null);
+    if (user == null || !user.isActive()) {
+      writeUnauthorized(response, request.getRequestURI());
+      return;
+    }
+
+    String companyIdClaim = claims.get("cid", String.class);
+    if (companyIdClaim == null || companyIdClaim.isBlank()) {
+      writeUnauthorized(response, request.getRequestURI());
+      return;
+    }
+
+    UUID companyId;
+    try {
+      companyId = UUID.fromString(companyIdClaim);
+    } catch (Exception ex) {
+      writeUnauthorized(response, request.getRequestURI());
+      return;
+    }
+
+    String email = claims.get("email", String.class);
+    String role = claims.get("role", String.class);
+    List<?> permissions = claims.get("permissions", List.class);
+
+    List<GrantedAuthority> authorities = new ArrayList<>();
+    // Add role as ROLE_<role> so @PreAuthorize("hasAnyRole(...)") works
+    if (role != null && !role.isBlank()) {
+      authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+    }
+    // Add fine-grained permissions as authorities
+    if (permissions != null) {
+      permissions.stream()
+          .map(value -> (GrantedAuthority) new SimpleGrantedAuthority(String.valueOf(value)))
+          .forEach(authorities::add);
+    }
+
+    AuthPrincipal principal = new AuthPrincipal(userId, companyId, email, role, authorities);
+    UsernamePasswordAuthenticationToken authentication =
+        new UsernamePasswordAuthenticationToken(principal, null, authorities);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+    request.setAttribute("currentUserEmail", email);
+    request.setAttribute("currentUserId", userId.toString());
+
+    TenantContext.setTenantId(companyId);
 
     try {
       filterChain.doFilter(request, response);
     } finally {
       TenantContext.clear();
     }
+  }
+
+  private void writeUnauthorized(HttpServletResponse response, String path) throws IOException {
+    String correlationId = org.slf4j.MDC.get(com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    ErrorResponse payload = new ErrorResponse(
+        HttpServletResponse.SC_UNAUTHORIZED,
+        "AUTH_UNAUTHORIZED",
+        "Tu sesion expiro. Inicia sesion nuevamente.",
+        "AuthenticationException",
+        path,
+        correlationId);
+    objectMapper.writeValue(response.getWriter(), payload);
   }
 }
