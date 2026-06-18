@@ -20,7 +20,7 @@ public class AuthAuditService {
   private final AuthAuditLogPort authAuditLogRepository;
   private final ObjectMapper objectMapper;
 
-  @Async
+  @Async("auditExecutor")
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void log(
       AuthAuditAction action,

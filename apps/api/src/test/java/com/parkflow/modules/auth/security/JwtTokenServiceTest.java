@@ -7,13 +7,16 @@ import io.jsonwebtoken.Claims;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.core.env.Environment;
 
 class JwtTokenServiceTest {
 
   // 32 bytes key (base64) -> safe for HS256
   private static final String TEST_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+  private static final Environment ENV = Mockito.mock(Environment.class);
 
-  private final JwtTokenService service = new JwtTokenService(TEST_KEY, 15, 7, 30);
+  private final JwtTokenService service = new JwtTokenService(TEST_KEY, 15, 7, 30, ENV);
 
   @Test
   void createAndParseAccessToken_containsExpectedClaims() {
@@ -49,7 +52,7 @@ class JwtTokenServiceTest {
   @Test
   void parse_invalidSignature_throws() {
     // create a token with different key
-    JwtTokenService other = new JwtTokenService("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=", 15, 7, 30);
+    JwtTokenService other = new JwtTokenService("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=", 15, 7, 30, ENV);
     String token = other.createAccessToken(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "x@x.com", Map.of());
 
     assertThatThrownBy(() -> service.parse(token)).isInstanceOf(Exception.class);

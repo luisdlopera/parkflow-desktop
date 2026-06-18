@@ -25,7 +25,7 @@ public class AuditEventListener {
         this.repository = repository;
     }
 
-    @Async
+    @Async("auditExecutor")
     @EventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleAuditDomainEvent(AuditDomainEvent event) {
