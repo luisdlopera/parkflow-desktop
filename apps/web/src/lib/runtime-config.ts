@@ -8,6 +8,7 @@ export type RuntimeConfig = {
   paymentMethods?: string[];
   sites?: Array<{ code: string; name: string }>;
   modules?: Record<string, boolean>;
+  features?: Record<string, boolean>;
   wizard?: Record<string, Record<string, unknown>>;
   operationConfiguration?: Record<string, unknown>;
   businessModel?: string;

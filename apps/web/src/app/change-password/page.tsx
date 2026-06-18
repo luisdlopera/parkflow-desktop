@@ -6,10 +6,9 @@ import { Separator } from "@heroui/react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { currentUser, authHeaders, loadSession, saveSession } from "@/lib/auth";
+import { currentUser, loadSession, saveSession } from "@/lib/auth";
+import { changePassword } from "@/lib/auth-api";
 import type { AuthUser } from "@parkflow/types";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -56,25 +55,8 @@ export default function ChangePasswordPage() {
 
     try {
       setIsChangingPassword(true);
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/auth/change-password`, {
-        method: "POST",
-        headers: {
-          ...headers,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ currentPassword, newPassword })
-      });
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        let detail = "Error al cambiar la contraseña";
-        if (res.status === 400) detail = "La contraseña actual no es correcta o la nueva no cumple los requisitos";
-        else if (res.status === 401) detail = "Sesión expirada. Inicia sesión nuevamente.";
-        else if (body) detail = body;
-        throw new Error(detail);
-      }
+      await changePassword(currentPassword, newPassword);
 
-      // Actualizar sesión para reflejar que la contraseña fue cambiada
       const session = await loadSession();
       if (session) {
         await saveSession({
@@ -83,8 +65,8 @@ export default function ChangePasswordPage() {
         });
       }
       window.location.href = "/";
-    } catch (err: any) {
-      setPasswordError(err.message || "Error al cambiar la contraseña");
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : "Error al cambiar la contraseña");
     } finally {
       setIsChangingPassword(false);
     }

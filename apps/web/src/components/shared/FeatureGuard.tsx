@@ -6,6 +6,7 @@ import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 interface FeatureGuardProps {
   vehicleType?: string;
   module?: string;
+  feature?: string;
   configKey?: string;
   configValueEquals?: unknown;
   children: React.ReactNode;
@@ -14,7 +15,8 @@ interface FeatureGuardProps {
 
 export function FeatureGuard({
   vehicleType,
-  module,
+  module: moduleKey,
+  feature,
   configKey,
   configValueEquals = true,
   children,
@@ -26,13 +28,21 @@ export function FeatureGuard({
     return <>{fallback}</>;
   }
 
-  if (module && !hasModule(module)) {
+  if (moduleKey && !hasModule(moduleKey)) {
     return <>{fallback}</>;
+  }
+
+  if (feature) {
+    const featureValue = config?.features?.[feature];
+    const isEnabled = typeof featureValue === "boolean" ? featureValue : true;
+    if (!isEnabled) {
+      return <>{fallback}</>;
+    }
   }
 
   if (configKey) {
     const configValue = config?.operationConfiguration?.[configKey];
-    
+
     if (configValueEquals === true) {
       if (configValue === false) {
         return <>{fallback}</>;

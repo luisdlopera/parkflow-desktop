@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
@@ -15,11 +15,17 @@ import {
   deleteLocker,
   type LockerDto,
 } from "@/services/lockers.service";
-import { Plus, Trash2, PackagePlus } from "lucide-react";
+import { Plus, Trash2, PackagePlus, Tags } from "lucide-react";
 import { Select } from "@/components/ui/Select";
 import { ListBox } from "@heroui/react";
+import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
+import Link from "next/link";
 
 export default function LockersPage() {
+  const { config } = useRuntimeConfig();
+  const helmetHandling = config?.operationConfiguration?.helmetHandling;
+  const isEnabled = helmetHandling === "LOCKERS";
+
   const [lockers, setLockers] = useState<LockerDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +41,7 @@ export default function LockersPage() {
   const [batchEnd, setBatchEnd] = useState("10");
 
   const load = useCallback(async () => {
+    if (!isEnabled) return;
     setLoading(true);
     setError(null);
     try {
@@ -44,7 +51,11 @@ export default function LockersPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isEnabled]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const stats = useMemo(() => {
     const total = lockers.length;
@@ -133,6 +144,23 @@ export default function LockersPage() {
     },
     [load, confirm],
   );
+
+  if (!isEnabled) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+        <div className="bg-amber-50 rounded-full p-4 mb-4">
+          <Tags className="w-10 h-10 text-amber-500" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">Lockers no configurados</h2>
+        <p className="text-slate-500 max-w-md mb-6">
+          Tu parqueadero actualmente no tiene habilitado el sistema de lockers para la custodia de cascos.
+        </p>
+        <Link href="/configuracion/operacion">
+          <Button color="primary">Ir a Configuración de Operación</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

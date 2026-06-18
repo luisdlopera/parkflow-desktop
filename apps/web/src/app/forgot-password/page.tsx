@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useState } from "react";
 import Link from "next/link";
+import { requestPasswordReset } from "@/lib/auth-api";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -16,23 +17,7 @@ export default function ForgotPasswordPage() {
     setError("");
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "http://localhost:6011/api/v1/auth"}/password-reset/request`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-API-Key": process.env.NEXT_PUBLIC_API_KEY ?? "dev-api-key-123",
-          },
-          body: JSON.stringify({ email, deviceId: "web" }),
-        }
-      );
-
-      if (response.status === 429) {
-        throw new Error("Demasiados intentos. Por favor espere antes de solicitar un nuevo código.");
-      }
-
-      // Always show success (prevent email enumeration)
+      await requestPasswordReset(email);
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al procesar la solicitud");

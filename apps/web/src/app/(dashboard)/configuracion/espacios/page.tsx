@@ -5,56 +5,32 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import DataTable from "@/components/ui/DataTable";
-import { buildApiHeaders } from "@/lib/api";
 import { useDialog } from "@/components/ui/DialogProvider";
-
-type Space = {
-  id: string;
-  code: string;
-  label: string | null;
-  type: "GENERAL" | "CAR" | "MOTORCYCLE" | "DISABLED" | "VIP";
-  status: "ACTIVE" | "INACTIVE" | "MAINTENANCE";
-  sortOrder: number;
-  occupied: boolean;
-};
-
-type Summary = {
-  totalSpaces: number;
-  activeSpaces: number;
-  occupiedSpaces: number;
-  availableSpaces: number;
-  maintenanceSpaces: number;
-  inactiveSpaces: number;
-  occupancyPercentage: number;
-};
+import {
+  fetchParkingSpacesSummary,
+  fetchParkingSpaces,
+  putParkingSpacesCapacity,
+  patchParkingSpace,
+  type ParkingSpaceSummary,
+  type ParkingSpace,
+} from "@/lib/api/sites-api";
 
 export default function EspaciosPage() {
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [spaces, setSpaces] = useState<Space[]>([]);
+  const [summary, setSummary] = useState<ParkingSpaceSummary | null>(null);
+  const [spaces, setSpaces] = useState<ParkingSpace[]>([]);
   const [capacity, setCapacity] = useState("0");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { confirm } = useDialog();
 
-  const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
-
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [sumRes, spacesRes] = await Promise.all([
-        fetch(`${api}/parking-spaces/summary`, { headers: await buildApiHeaders(), cache: "no-store" }),
-        fetch(`${api}/parking-spaces`, { headers: await buildApiHeaders(), cache: "no-store" }),
+      const [sumPayload, spacesPayload] = await Promise.all([
+        fetchParkingSpacesSummary(),
+        fetchParkingSpaces(),
       ]);
-
-      const sumPayload = await sumRes.json();
-      const spacesPayload = await spacesRes.json();
-
-      if (!sumRes.ok || !spacesRes.ok) {
-        setError(sumPayload?.error ?? spacesPayload?.error ?? "No se pudo cargar espacios.");
-        return;
-      }
-
       setSummary(sumPayload);
       setSpaces(spacesPayload);
       setCapacity(String(sumPayload.activeSpaces ?? 0));
@@ -63,7 +39,7 @@ export default function EspaciosPage() {
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
 
   useEffect(() => {
     load().catch(console.error);
@@ -93,45 +69,27 @@ export default function EspaciosPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${api}/parking-spaces/capacity`, {
-        method: "PUT",
-        headers: await buildApiHeaders(),
-        body: JSON.stringify({ capacity: next }),
-      });
-      const payload = await res.json();
-      if (!res.ok) {
-        setError(payload?.error ?? "No se pudo actualizar la capacidad.");
-        return;
-      }
+      await putParkingSpacesCapacity(next);
       await load();
     } catch (err) {
       setError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
     } finally {
       setLoading(false);
     }
-  }, [api, capacity, load, summary, confirm]);
+  }, [capacity, load, summary, confirm]);
 
-  const patchSpace = useCallback(async (id: string, body: Record<string, unknown>) => {
+  const onPatchSpace = useCallback(async (id: string, body: Record<string, unknown>) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${api}/parking-spaces/${id}`, {
-        method: "PATCH",
-        headers: await buildApiHeaders(),
-        body: JSON.stringify(body),
-      });
-      const payload = await res.json();
-      if (!res.ok) {
-        setError(payload?.error ?? "No se pudo actualizar la celda.");
-        return;
-      }
+      await patchParkingSpace(id, body);
       await load();
     } catch (err) {
       setError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
     } finally {
       setLoading(false);
     }
-  }, [api, load]);
+  }, [load]);
 
   return (
     <div className="space-y-6">
@@ -180,9 +138,9 @@ export default function EspaciosPage() {
             priority: "high",
             render: (row) => (
               <div className="flex gap-2">
-                <Button size="sm" variant="tertiary" onPress={() => { patchSpace(row.id, { status: "MAINTENANCE" }).catch(console.error); }} isDisabled={row.occupied}>Mantenimiento</Button>
-                <Button size="sm" variant="tertiary" onPress={() => { patchSpace(row.id, { status: "ACTIVE" }).catch(console.error); }}>Activar</Button>
-                <Button size="sm" variant="tertiary" onPress={() => { patchSpace(row.id, { status: "INACTIVE" }).catch(console.error); }} isDisabled={row.occupied}>Desactivar</Button>
+                <Button size="sm" variant="tertiary" onPress={() => { onPatchSpace(row.id, { status: "MAINTENANCE" }).catch(console.error); }} isDisabled={row.occupied}>Mantenimiento</Button>
+                <Button size="sm" variant="tertiary" onPress={() => { onPatchSpace(row.id, { status: "ACTIVE" }).catch(console.error); }}>Activar</Button>
+                <Button size="sm" variant="tertiary" onPress={() => { onPatchSpace(row.id, { status: "INACTIVE" }).catch(console.error); }} isDisabled={row.occupied}>Desactivar</Button>
               </div>
             )
           },

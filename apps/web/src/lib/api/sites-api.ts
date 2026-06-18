@@ -1,4 +1,4 @@
-import { apiFetch, cfgBase, buildApiHeaders, hdr, type SettingsPage } from "./_shared";
+import { apiFetch, cfgBase, apiV1Base, buildApiHeaders, hdr, type SettingsPage } from "./_shared";
 import { parkingSiteSchema } from "@/modules/settings/schemas";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type { ParkingSiteRow } from "@/modules/settings/types";
@@ -65,4 +65,54 @@ export async function patchConfigurationSiteStatus(
       headers: await buildApiHeaders(hdr(auditReason)),
     },
   );
+}
+
+export interface ParkingSpaceSummary {
+  totalSpaces: number;
+  activeSpaces: number;
+  occupiedSpaces: number;
+  availableSpaces: number;
+  maintenanceSpaces: number;
+  inactiveSpaces: number;
+  occupancyPercentage: number;
+}
+
+export interface ParkingSpace {
+  id: string;
+  code: string;
+  label: string | null;
+  type: "GENERAL" | "CAR" | "MOTORCYCLE" | "DISABLED" | "VIP";
+  status: "ACTIVE" | "INACTIVE" | "MAINTENANCE";
+  sortOrder: number;
+  occupied: boolean;
+}
+
+export async function fetchParkingSpacesSummary(): Promise<ParkingSpaceSummary> {
+  return apiFetch<ParkingSpaceSummary>(`${apiV1Base()}/parking-spaces/summary`, {
+    cache: "no-store",
+    headers: await buildApiHeaders(),
+  });
+}
+
+export async function fetchParkingSpaces(): Promise<ParkingSpace[]> {
+  return apiFetch<ParkingSpace[]>(`${apiV1Base()}/parking-spaces`, {
+    cache: "no-store",
+    headers: await buildApiHeaders(),
+  });
+}
+
+export async function putParkingSpacesCapacity(capacity: number): Promise<unknown> {
+  return apiFetch<unknown>(`${apiV1Base()}/parking-spaces/capacity`, {
+    method: "PUT",
+    headers: await buildApiHeaders(),
+    body: JSON.stringify({ capacity }),
+  });
+}
+
+export async function patchParkingSpace(id: string, body: Record<string, unknown>): Promise<ParkingSpace> {
+  return apiFetch<ParkingSpace>(`${apiV1Base()}/parking-spaces/${id}`, {
+    method: "PATCH",
+    headers: await buildApiHeaders(),
+    body: JSON.stringify(body),
+  });
 }

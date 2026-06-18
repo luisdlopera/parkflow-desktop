@@ -11,6 +11,7 @@ interface TenantConfigContextType {
   refresh: () => Promise<void>;
   supportsVehicleType: (typeCode: string) => boolean;
   isModuleEnabled: (moduleKey: string) => boolean;
+  isFeatureEnabled: (featureKey: string) => boolean;
   getOperationConfigValue: <T>(key: string, defaultValue: T) => T;
 }
 
@@ -51,6 +52,12 @@ export function TenantConfigProvider({ children }: { children: React.ReactNode }
     return typeof value === "boolean" ? value : false;
   }, [runtimeConfig]);
 
+  const isFeatureEnabled = useCallback((featureKey: string): boolean => {
+    if (!runtimeConfig?.features) return true;
+    const value = runtimeConfig.features[featureKey];
+    return typeof value === "boolean" ? value : true;
+  }, [runtimeConfig]);
+
   const getOperationConfigValue = useCallback(<T,>(key: string, defaultValue: T): T => {
     if (!runtimeConfig?.operationConfiguration) return defaultValue;
     const value = runtimeConfig.operationConfiguration[key];
@@ -65,9 +72,10 @@ export function TenantConfigProvider({ children }: { children: React.ReactNode }
       refresh,
       supportsVehicleType,
       isModuleEnabled,
+      isFeatureEnabled,
       getOperationConfigValue,
     }),
-    [runtimeConfig, loading, error, refresh, supportsVehicleType, isModuleEnabled, getOperationConfigValue],
+    [runtimeConfig, loading, error, refresh, supportsVehicleType, isModuleEnabled, isFeatureEnabled, getOperationConfigValue],
   );
 
   return (

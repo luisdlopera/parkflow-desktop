@@ -193,9 +193,9 @@ export default function CajaPage() {
                 <p>No hay una caja abierta en este terminal.</p>
                 <p className="mt-2">Para operar caja: ingresa el monto inicial y presiona <strong>Abrir caja</strong>.</p>
               </div>
-            ) : (
-              <SessionStatusCard />
-            )}
+              ) : (
+               <SessionStatusCard p={p} />
+              )}
           </div>
         ) : null}
 
@@ -231,7 +231,7 @@ export default function CajaPage() {
         <>
           <div className="surface rounded-2xl p-4 sm:p-6 mt-4">
             <h2 className="text-lg font-semibold text-slate-900">Estado actual</h2>
-            <SessionStatusCard />
+            <SessionStatusCard p={p} />
           </div>
 
           <Tabs className="w-full mt-6">
