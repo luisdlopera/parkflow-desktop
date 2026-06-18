@@ -26,7 +26,7 @@ public class ListRatesService implements ListRatesUseCase {
   @Override
   @Transactional(readOnly = true)
   public SettingsPageResponse<RateResponse> list(
-      String site, String q, Boolean active, String category, java.util.UUID companyId, Pageable pageable) {
+      String site, String q, Boolean active, String category, UUID companyId, Pageable pageable) {
     String s = site == null || site.isBlank() ? "DEFAULT" : site.trim();
     RateCategory parsedCategory = parseCategory(category);
     // prefer explicit companyId parameter (controller-provided) otherwise require it from security context

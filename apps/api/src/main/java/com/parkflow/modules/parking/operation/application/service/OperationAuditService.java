@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Async;
 
 import java.time.OffsetDateTime;
 
@@ -18,7 +19,8 @@ public class OperationAuditService {
 
     private final SessionEventPort sessionEventPort;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordEvent(ParkingSession session, SessionEventType type, AppUser operator, String metadata) {
         SessionEvent event = new SessionEvent();
         event.setSession(session);

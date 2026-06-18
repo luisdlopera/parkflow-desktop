@@ -5,7 +5,7 @@ import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
+import com.parkflow.modules.cash.application.port.in.ParkingCashIntegrationUseCase;
 import com.parkflow.modules.cash.domain.CashMovementType;
 import com.parkflow.modules.configuration.domain.OperationalParameter;
 import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
@@ -54,7 +54,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
   private final OperationAuditService auditService;
   private final OperationPrintService operationPrintService;
   private final ComplexPricingPort complexPricingPort;
-  private final CashMovementUseCase cashMovementUseCase;
+  private final ParkingCashIntegrationUseCase parkingCashIntegrationUseCase;
   private final MeterRegistry meterRegistry;
   private final AuditPort globalAuditService;
 
@@ -101,7 +101,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
     session = parkingSessionPort.save(session);
 
     if (request.paymentMethod() != null) {
-      cashMovementUseCase.assertCashOpenForParkingPayment(session);
+      parkingCashIntegrationUseCase.assertCashOpenForParkingPayment(session);
       Payment payment = new Payment();
       payment.setSession(session);
       payment.setMethod(request.paymentMethod());
@@ -110,7 +110,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
       payment.setCompanyId(session.getCompanyId());
       paymentPort.save(payment);
       
-      cashMovementUseCase.recordParkingPayment(
+      parkingCashIntegrationUseCase.recordParkingPayment(
           session, payment, operator, request.idempotencyKey(), CashMovementType.LOST_TICKET_PAYMENT);
     }
 

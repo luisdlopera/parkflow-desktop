@@ -9,23 +9,16 @@ import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.security.AuthPrincipal;
-import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
-import com.parkflow.modules.configuration.application.port.in.PrepaidUseCase;
-import com.parkflow.modules.configuration.domain.Agreement;
-import com.parkflow.modules.configuration.domain.OperationalParameter;
+import com.parkflow.modules.cash.application.port.in.ParkingCashIntegrationUseCase;
 import com.parkflow.modules.configuration.domain.ParkingSite;
-import com.parkflow.modules.configuration.domain.PrepaidBalance;
-import com.parkflow.modules.configuration.repository.AgreementRepository;
-import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.configuration.repository.PrepaidBalanceRepository;
 import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
 import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
 import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
+import com.parkflow.modules.parking.operation.application.port.in.ParkingPricingUseCase;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
-import com.parkflow.modules.parking.operation.domain.pricing.PricingCalculator;
 import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
@@ -54,6 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import com.parkflow.modules.configuration.domain.OperationalParameter;
 
 @ExtendWith(MockitoExtension.class)
 class RegisterExitServiceTest {
@@ -61,13 +55,8 @@ class RegisterExitServiceTest {
   @Mock private ParkingSessionRepository parkingSessionRepository;
   @Mock private PaymentPort paymentRepository;
   @Mock private AppUserRepository appUserRepository;
-  @Mock private MonthlyContractRepository monthlyContractRepository;
-  @Mock private PrepaidBalanceRepository prepaidBalanceRepository;
-  @Mock private PrepaidUseCase prepaidUseCase;
-  @Mock private AgreementRepository agreementRepository;
   @Mock private ParkingSiteRepository parkingSiteRepository;
   @Mock private OperationalParameterPort operationalParameterRepository;
-  @Mock private PricingCalculator pricingCalculator;
   @Mock private OperationAuditService operationAuditService;
   @Mock private OperationPrintService operationPrintService;
   @Mock private AuditPort globalAuditService;
@@ -77,8 +66,9 @@ class RegisterExitServiceTest {
   @Mock private CustodiedItemPort custodiedItemRepository;
   @Mock private LockerPort lockerPort;
   @Mock private ObjectMapper objectMapper;
-  @Mock private CashMovementUseCase cashMovementUseCase;
+  @Mock private ParkingCashIntegrationUseCase parkingCashIntegrationUseCase;
   @Mock private ParkingParametersUseCase parkingParametersUseCase;
+  @Mock private ParkingPricingUseCase parkingPricingUseCase;
 
   private RegisterExitService service;
   private final UUID companyId = UUID.randomUUID();
@@ -138,12 +128,20 @@ class RegisterExitServiceTest {
         .setAuthentication(new TestingAuthenticationToken(principal, null, setupAuths));
 
     service = new RegisterExitService(
-        parkingSessionRepository, paymentRepository, appUserRepository, monthlyContractRepository,
-        prepaidBalanceRepository, prepaidUseCase, agreementRepository, parkingSiteRepository,
-        operationalParameterRepository, pricingCalculator, operationAuditService, operationPrintService,
-        globalAuditService, vehicleConditionReportRepository, operationIdempotencyRepository,
-        parkingSpaceService, custodiedItemRepository, lockerPort, objectMapper, cashMovementUseCase,
-        parkingParametersUseCase);
+        parkingSessionRepository, paymentRepository, appUserRepository,        parkingSiteRepository,
+        operationalParameterRepository,
+        operationAuditService,
+        operationPrintService,
+        globalAuditService,
+        vehicleConditionReportRepository,
+        operationIdempotencyRepository,
+        parkingSpaceService,
+        custodiedItemRepository,
+        lockerPort,
+        objectMapper,
+        parkingCashIntegrationUseCase,
+        parkingParametersUseCase,
+        parkingPricingUseCase);
   }
 
   private ExitRequest request(String ticket, String plate, PaymentMethod method) {
@@ -162,12 +160,8 @@ class RegisterExitServiceTest {
   }
 
   private void mockPricing(PriceBreakdown breakdown) {
-    DurationCalculator.calculate(
-        activeSession.getEntryAt(), OffsetDateTime.now(), 0);
-    when(pricingCalculator.calculate(any(), anyLong(), eq(false))).thenReturn(breakdown);
-    when(monthlyContractRepository.findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-        any(), any(), any())).thenReturn(Optional.empty());
-    when(prepaidBalanceRepository.findActiveByPlate(any(), any())).thenReturn(Collections.emptyList());
+    when(parkingPricingUseCase.calculateComplexPrice(eq(activeSession), any(), any(), eq(false), eq(false))).thenReturn(breakdown);
+    when(parkingPricingUseCase.applyCourtesyPricing(eq(activeSession), any(), eq(false))).thenAnswer(i -> i.getArgument(1));
   }
 
   private void mockIdempotency(boolean exists) {
@@ -187,13 +181,7 @@ class RegisterExitServiceTest {
     }
   }
 
-  private static Agreement createAgreement(String code, BigDecimal discountPercent) {
-    Agreement a = new Agreement();
-    a.setCode(code);
-    a.setDiscountPercent(discountPercent);
-    a.setCompanyName("Test Corp");
-    return a;
-  }
+
 
   private void mockParkingParams(boolean printExitTicket) {
     ParkingParametersData params = new ParkingParametersData();
@@ -224,8 +212,8 @@ class RegisterExitServiceTest {
       assertThat(result.total()).isEqualByComparingTo(BigDecimal.valueOf(4000));
       assertThat(result.receipt().status()).isEqualTo(SessionStatus.CLOSED);
       verify(parkingSessionRepository).save(activeSession);
-      verify(cashMovementUseCase).assertCashOpenForParkingPayment(eq(activeSession), any());
-      verify(cashMovementUseCase).recordParkingPayment(any(), any(), eq(operator), any(), any(), any());
+      verify(parkingCashIntegrationUseCase).assertCashOpenForParkingPayment(eq(activeSession), any());
+      verify(parkingCashIntegrationUseCase).recordParkingPayment(any(), any(), eq(operator), any(), any(), any());
       verify(parkingSpaceService).releaseSpaceBySession(sessionId);
       verify(operationIdempotencyRepository).save(any());
     }
@@ -264,7 +252,7 @@ class RegisterExitServiceTest {
 
       assertThat(result.total()).isEqualByComparingTo(BigDecimal.ZERO);
       verify(paymentRepository, never()).save(any());
-      verify(cashMovementUseCase, never()).recordParkingPayment(any(), any(), any(), any(), any(), any());
+      verify(parkingCashIntegrationUseCase, never()).recordParkingPayment(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -272,16 +260,14 @@ class RegisterExitServiceTest {
       mockIdempotency(false);
       mockSessionLookup();
       mockOperator();
-      when(monthlyContractRepository
-          .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-              any(), any(), any())).thenReturn(Optional.of(new com.parkflow.modules.configuration.domain.MonthlyContract()));
+      mockPricing(new PriceBreakdown(2, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.ZERO));
       mockParkingParams(true);
       when(custodiedItemRepository.findBySession(activeSession)).thenReturn(Collections.emptyList());
 
       OperationResultResponse result = service.execute(request("T-100", null, null));
 
       assertThat(result.total()).isEqualByComparingTo(BigDecimal.ZERO);
-      verify(pricingCalculator, never()).calculate(any(), anyLong(), anyBoolean());
+      verify(parkingPricingUseCase).calculateComplexPrice(eq(activeSession), any(), any(), eq(false), eq(false));
     }
 
     @Test
@@ -289,20 +275,15 @@ class RegisterExitServiceTest {
       mockIdempotency(false);
       mockSessionLookup();
       mockOperator();
-      mockPricing(new PriceBreakdown(2, BigDecimal.valueOf(4000), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(4000)));
-      when(agreementRepository.findByCodeAndIsActiveTrueAndCompanyId(eq("CORP10"), eq(companyId)))
-          .thenReturn(Optional.of(createAgreement("CORP10", BigDecimal.TEN)));
+      mockPricing(new PriceBreakdown(2, BigDecimal.valueOf(4000), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.ZERO));
       mockParkingParams(true);
       when(custodiedItemRepository.findBySession(activeSession)).thenReturn(Collections.emptyList());
 
-      ExitRequest req = new ExitRequest("idem-key", "T-100", null, operatorId, PaymentMethod.CASH,
+      ExitRequest req = new ExitRequest("idem-key", "T-100", null, operatorId, null,
           "CORP10", null, "Salida", null, null, null, null, null, null, null);
       OperationResultResponse result = service.execute(req);
 
       assertThat(result.total()).isEqualByComparingTo(BigDecimal.ZERO);
-      assertThat(result.discount()).isEqualByComparingTo(BigDecimal.ZERO);
-      assertThat(activeSession.getEntryMode()).isEqualTo(EntryMode.AGREEMENT);
-      assertThat(activeSession.getAgreementCode()).isEqualTo("CORP10");
     }
 
     @Test
@@ -310,23 +291,13 @@ class RegisterExitServiceTest {
       mockIdempotency(false);
       mockSessionLookup();
       mockOperator();
-      when(monthlyContractRepository
-          .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-              any(), any(), any())).thenReturn(Optional.empty());
-      PrepaidBalance balance = new PrepaidBalance();
-      balance.setId(UUID.randomUUID());
-      balance.setRemainingMinutes(30);
-      when(prepaidBalanceRepository.findActiveByPlate(eq("ABC123"), any()))
-          .thenReturn(List.of(balance));
-      when(pricingCalculator.calculate(any(), eq(90L), eq(false)))
-          .thenReturn(new PriceBreakdown(2, BigDecimal.valueOf(3000), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(3000)));
+      mockPricing(new PriceBreakdown(2, BigDecimal.valueOf(4000), BigDecimal.ZERO, BigDecimal.valueOf(3000), 30, BigDecimal.valueOf(1000)));
       mockParkingParams(true);
       when(custodiedItemRepository.findBySession(activeSession)).thenReturn(Collections.emptyList());
 
       OperationResultResponse result = service.execute(request("T-100", null, PaymentMethod.CASH));
 
-      assertThat(result.deductedMinutes()).isEqualTo(30);
-      verify(prepaidUseCase).deduct(balance.getId(), 30);
+      assertThat(result.total()).isEqualByComparingTo(BigDecimal.valueOf(1000));
     }
 
     @Test
@@ -379,6 +350,8 @@ class RegisterExitServiceTest {
       mockIdempotency(false);
       mockSessionLookup();
       when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
+      when(parkingPricingUseCase.calculateComplexPrice(eq(activeSession), any(), any(), eq(false), eq(false)))
+          .thenThrow(new OperationException(HttpStatus.BAD_REQUEST, "La sesión no tiene tarifa asignada"));
 
       assertThatThrownBy(() -> service.execute(request("T-100", null, PaymentMethod.CASH)))
           .isInstanceOf(OperationException.class)
@@ -562,12 +535,9 @@ class RegisterExitServiceTest {
       when(parkingSessionRepository.findByStatusAndTicketNumberAndCompanyId(
           eq(SessionStatus.ACTIVE), eq("T-100"), eq(companyId)))
           .thenReturn(Optional.of(activeSession));
-      when(monthlyContractRepository
-          .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-              any(), any(), any())).thenReturn(Optional.empty());
-      when(prepaidBalanceRepository.findActiveByPlate(any(), any())).thenReturn(Collections.emptyList());
-      when(pricingCalculator.calculate(any(), anyLong(), eq(false)))
+      when(parkingPricingUseCase.calculateComplexPrice(eq(activeSession), any(), any(), eq(false), eq(true)))
           .thenReturn(new PriceBreakdown(2, BigDecimal.valueOf(4000), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(4000)));
+      when(parkingPricingUseCase.applyCourtesyPricing(eq(activeSession), any(), eq(false))).thenAnswer(i -> i.getArgument(1));
 
       ExitRequest req = request("T-100", null, PaymentMethod.CASH);
       OperationResultResponse result = service.precalculate(req);
@@ -959,7 +929,7 @@ class RegisterExitServiceTest {
       mockOperator();
       mockPricing(new PriceBreakdown(2, BigDecimal.valueOf(4000), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(4000)));
       doThrow(new OperationException(HttpStatus.BAD_REQUEST, "Caja no abierta"))
-          .when(cashMovementUseCase).assertCashOpenForParkingPayment(any(), any());
+          .when(parkingCashIntegrationUseCase).assertCashOpenForParkingPayment(any(), any());
 
       assertThatThrownBy(() -> service.execute(request("T-100", null, PaymentMethod.CASH)))
           .isInstanceOf(OperationException.class)
@@ -978,7 +948,7 @@ class RegisterExitServiceTest {
       service.execute(request("T-100", null, null));
 
       verify(paymentRepository, never()).save(any());
-      verify(cashMovementUseCase, never()).recordParkingPayment(any(), any(), any(), any(), any(), any());
+      verify(parkingCashIntegrationUseCase, never()).recordParkingPayment(any(), any(), any(), any(), any(), any());
     }
   }
 }

@@ -1,0 +1,53 @@
+"use client";
+import { useState, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/Button";
+import DataTable from "@/components/ui/DataTable";
+import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import type { PrepaidPackageRow } from "@/lib/settings-api";
+
+export default function PrepaidSection({
+  canEdit,
+  onNotify,
+  auditReason
+}: {
+  canEdit: boolean;
+  onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void;
+  auditReason: string;
+}) {
+  const [rows, setRows] = useState<PrepaidPackageRow[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { fetchPrepaidPackages } = await import("@/lib/settings-api");
+      const res = await fetchPrepaidPackages({ size: 50 });
+      setRows(res.content);
+    } catch (e) {
+      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA) });
+    } finally {
+      setLoading(false);
+    }
+  }, [onNotify]);
+
+  useEffect(() => { load().catch(console.error); }, [load]);
+
+  return (
+    <div className="space-y-4">
+      <div className="surface rounded-2xl p-4 flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-slate-900">Paquetes Prepagados</h2>
+        <Button color="primary" variant="outline" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Actualizar</Button>
+      </div>
+      <DataTable
+        columns={[
+          { key: "name", label: "Paquete" },
+          { key: "hoursIncluded", label: "Horas" },
+          { key: "amount", label: "Precio" },
+          { key: "expiresDays", label: "Validez (días)" },
+          { key: "active", label: "Activo", render: (r: any) => (r.active ? "Sí" : "No") }
+        ]}
+        rows={rows as any[]}
+      />
+    </div>
+  );
+}

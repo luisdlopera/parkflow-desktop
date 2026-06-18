@@ -21,6 +21,7 @@ import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
 import com.parkflow.modules.parking.operation.repository.*;
+import com.parkflow.modules.parking.operation.repository.BlacklistedPlateRepository;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.configuration.service.OperationalConfigurationService;
 import com.parkflow.modules.parking.operation.validation.PlateValidator;

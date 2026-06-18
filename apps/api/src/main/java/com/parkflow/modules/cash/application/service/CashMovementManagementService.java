@@ -4,7 +4,10 @@ import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.application.service.AuthAuditService;
-import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
+import com.parkflow.modules.cash.application.port.in.GetCashMovementsUseCase;
+import com.parkflow.modules.cash.application.port.in.ParkingCashIntegrationUseCase;
+import com.parkflow.modules.cash.application.port.in.RegisterCashMovementUseCase;
+import com.parkflow.modules.cash.application.port.in.VoidCashMovementUseCase;
 import com.parkflow.modules.cash.domain.*;
 import com.parkflow.modules.cash.dto.CashMovementRequest;
 import com.parkflow.modules.cash.dto.CashMovementResponse;
@@ -37,7 +40,7 @@ import java.util.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CashMovementManagementService implements CashMovementUseCase {
+public class CashMovementManagementService implements RegisterCashMovementUseCase, VoidCashMovementUseCase, GetCashMovementsUseCase, ParkingCashIntegrationUseCase {
 
     private static final BigDecimal MAX_CASHIER_ADJUST = new BigDecimal("500000.00");
 

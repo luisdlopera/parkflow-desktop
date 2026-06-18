@@ -17,7 +17,7 @@ public class AuditSessionListener {
     private final OperationAuditService operationAuditService;
 
     // Use TransactionalEventListener to ensure audit is saved only if the session is committed
-    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSessionCreated(SessionCreatedEvent event) {
         log.debug("Auditing creation of session: {}", event.session().getId());
         operationAuditService.recordEvent(
@@ -28,7 +28,7 @@ public class AuditSessionListener {
         );
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSessionClosed(SessionClosedEvent event) {
         log.debug("Auditing closure of session: {}", event.session().getId());
         operationAuditService.recordEvent(
@@ -39,7 +39,7 @@ public class AuditSessionListener {
         );
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSessionLostTicket(SessionLostTicketEvent event) {
         log.debug("Auditing lost ticket for session: {}", event.session().getId());
         operationAuditService.recordEvent(
@@ -50,7 +50,7 @@ public class AuditSessionListener {
         );
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onTicketReprinted(TicketReprintedEvent event) {
         log.debug("Auditing reprint for session: {}", event.session().getId());
         operationAuditService.recordEvent(
@@ -61,7 +61,7 @@ public class AuditSessionListener {
         );
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSessionVoided(SessionVoidedEvent event) {
         log.debug("Auditing voiding of session: {}", event.session().getId());
         operationAuditService.recordEvent(

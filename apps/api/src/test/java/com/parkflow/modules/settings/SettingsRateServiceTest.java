@@ -21,6 +21,7 @@ import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.settings.dto.RateUpsertRequest;
 import com.parkflow.modules.settings.application.service.SettingsAuditService;
 import com.parkflow.modules.settings.application.service.SettingsRateService;
+import com.parkflow.modules.settings.application.service.RateValidationService;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -47,12 +48,15 @@ class SettingsRateServiceTest {
   @Mock private ParkingSiteRepository parkingSiteRepository;
   @Mock private com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
   @Mock private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+  
+  private RateValidationService rateValidationService;
 
   private SettingsRateService service;
 
   @BeforeEach
   void setUp() {
-    service = new SettingsRateService(rateRepository, parkingSessionRepository, settingsAuditService, vehicleTypeRepository, parkingSiteRepository, globalAuditService, objectMapper);
+    rateValidationService = new RateValidationService();
+    service = new SettingsRateService(rateRepository, parkingSessionRepository, settingsAuditService, vehicleTypeRepository, parkingSiteRepository, globalAuditService, objectMapper, rateValidationService);
 
     UUID companyId = UUID.randomUUID();
     AuthPrincipal principal = new AuthPrincipal(

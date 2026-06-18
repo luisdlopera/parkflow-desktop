@@ -8,7 +8,7 @@ import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.security.AuthPrincipal;
-import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
+import com.parkflow.modules.cash.application.port.in.ParkingCashIntegrationUseCase;
 import com.parkflow.modules.configuration.domain.OperationalParameter;
 import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
@@ -52,7 +52,7 @@ class ProcessLostTicketServiceTest {
   @Mock private OperationAuditService auditService;
   @Mock private OperationPrintService operationPrintService;
   @Mock private ComplexPricingPort complexPricingPort;
-  @Mock private CashMovementUseCase cashMovementUseCase;
+  @Mock private ParkingCashIntegrationUseCase parkingCashIntegrationUseCase;
   @Mock private MeterRegistry meterRegistry;
   @Mock private AuditPort globalAuditService;
   @Mock private Counter counter;
@@ -100,7 +100,7 @@ class ProcessLostTicketServiceTest {
         parkingSessionPort, appUserPort, paymentPort, parkingSiteRepository,
         operationalParameterRepository, operationIdempotencyPort,
         auditService, operationPrintService, complexPricingPort,
-        cashMovementUseCase, meterRegistry, globalAuditService);
+        parkingCashIntegrationUseCase, meterRegistry, globalAuditService);
   }
 
   private LostTicketRequest request() {

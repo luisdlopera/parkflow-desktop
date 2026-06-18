@@ -1,7 +1,9 @@
 package com.parkflow.modules.cash.controller;
 
 import com.parkflow.modules.cash.application.port.in.CashConfigurationUseCase;
-import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
+import com.parkflow.modules.cash.application.port.in.GetCashMovementsUseCase;
+import com.parkflow.modules.cash.application.port.in.RegisterCashMovementUseCase;
+import com.parkflow.modules.cash.application.port.in.VoidCashMovementUseCase;
 import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
 import com.parkflow.modules.cash.dto.*;
 import jakarta.validation.Valid;
@@ -21,7 +23,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CashController {
   private final CashSessionUseCase cashSessionUseCase;
-  private final CashMovementUseCase cashMovementUseCase;
+  private final RegisterCashMovementUseCase registerCashMovementUseCase;
+  private final VoidCashMovementUseCase voidCashMovementUseCase;
+  private final GetCashMovementsUseCase getCashMovementsUseCase;
   private final CashConfigurationUseCase cashConfigurationUseCase;
 
   @GetMapping("/policy")
@@ -69,7 +73,7 @@ public class CashController {
   @PreAuthorize(
       "hasAuthority('reportes:leer') or hasAuthority('cierres_caja:abrir') or hasAuthority('cierres_caja:cerrar')")
   public List<CashMovementResponse> movements(@PathVariable UUID id) {
-    return cashMovementUseCase.listMovements(id);
+    return getCashMovementsUseCase.listMovements(id);
   }
 
   @PostMapping("/sessions/{id}/movements")
@@ -77,7 +81,7 @@ public class CashController {
   @PreAuthorize("hasAuthority('cobros:registrar')")
   public CashMovementResponse addMovement(
       @PathVariable UUID id, @Valid @RequestBody CashMovementRequest request) {
-    return cashMovementUseCase.addMovement(id, request);
+    return registerCashMovementUseCase.addMovement(id, request);
   }
 
   @PostMapping("/sessions/{id}/movements/{movementId}/void")
@@ -86,7 +90,7 @@ public class CashController {
       @PathVariable UUID id,
       @PathVariable UUID movementId,
       @Valid @RequestBody VoidMovementRequest request) {
-    return cashMovementUseCase.voidMovement(id, movementId, request);
+    return voidCashMovementUseCase.voidMovement(id, movementId, request);
   }
 
   @GetMapping("/sessions/{id}/summary")
