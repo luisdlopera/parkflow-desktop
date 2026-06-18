@@ -12,6 +12,7 @@ import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.licensing.enums.PlanType;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.parkflow.modules.auth.security.TenantContext;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -32,7 +35,6 @@ class ConfigurationManagementControllerTest {
   @Autowired private ObjectMapper objectMapper;
   @Autowired private CompanyPort companyPort;
   @MockBean private AuditService auditService;
-
   private UUID testCompanyId;
 
   @BeforeEach
@@ -42,6 +44,12 @@ class ConfigurationManagementControllerTest {
     company.setPlan(PlanType.SYNC);
     Company saved = companyPort.save(company);
     testCompanyId = saved.getId();
+    TenantContext.setTenantId(testCompanyId);
+  }
+
+  @AfterEach
+  void tearDown() {
+    TenantContext.clear();
   }
 
   // ==================== CAPACITY MANAGEMENT TESTS ====================
@@ -50,7 +58,7 @@ class ConfigurationManagementControllerTest {
   @DisplayName("Should require authentication for GET capacity")
   void shouldRequireAuthenticationForGetCapacity() throws Exception {
     mockMvc
-        .perform(get("/api/v1/configuration/capacity").param("companyId", testCompanyId.toString()))
+        .perform(get("/api/v1/configuration/capacity").header("X-Company-ID", testCompanyId.toString()))
         .andExpect(status().isUnauthorized());
   }
 
@@ -59,7 +67,7 @@ class ConfigurationManagementControllerTest {
   @DisplayName("Should return capacity configuration for authenticated user")
   void shouldReturnCapacityConfiguration() throws Exception {
     mockMvc
-        .perform(get("/api/v1/configuration/capacity").param("companyId", testCompanyId.toString()))
+        .perform(get("/api/v1/configuration/capacity").header("X-Company-ID", testCompanyId.toString()))
         .andExpect(status().isOk());
   }
 
@@ -73,7 +81,7 @@ class ConfigurationManagementControllerTest {
         .perform(
             patch("/api/v1/configuration/capacity")
                 .with(csrf())
-                .param("companyId", testCompanyId.toString())
+                .header("X-Company-ID", testCompanyId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
@@ -89,7 +97,7 @@ class ConfigurationManagementControllerTest {
         .perform(
             patch("/api/v1/configuration/capacity")
                 .with(csrf())
-                .param("companyId", testCompanyId.toString())
+                .header("X-Company-ID", testCompanyId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(invalidRequest))
         .andExpect(status().isBadRequest());
@@ -101,7 +109,7 @@ class ConfigurationManagementControllerTest {
   @DisplayName("Should require authentication for GET shift configuration")
   void shouldRequireAuthenticationForGetShiftConfig() throws Exception {
     mockMvc
-        .perform(get("/api/v1/configuration/shifts").param("companyId", testCompanyId.toString()))
+        .perform(get("/api/v1/configuration/shifts").header("X-Company-ID", testCompanyId.toString()))
         .andExpect(status().isUnauthorized());
   }
 
@@ -110,7 +118,7 @@ class ConfigurationManagementControllerTest {
   @DisplayName("Should return shift configuration")
   void shouldReturnShiftConfiguration() throws Exception {
     mockMvc
-        .perform(get("/api/v1/configuration/shifts").param("companyId", testCompanyId.toString()))
+        .perform(get("/api/v1/configuration/shifts").header("X-Company-ID", testCompanyId.toString()))
         .andExpect(status().isOk());
   }
 
@@ -131,7 +139,7 @@ class ConfigurationManagementControllerTest {
         .perform(
             patch("/api/v1/configuration/shifts")
                 .with(csrf())
-                .param("companyId", testCompanyId.toString())
+                .header("X-Company-ID", testCompanyId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
@@ -154,7 +162,7 @@ class ConfigurationManagementControllerTest {
         .perform(
             patch("/api/v1/configuration/shifts")
                 .with(csrf())
-                .param("companyId", testCompanyId.toString())
+                .header("X-Company-ID", testCompanyId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isBadRequest());
@@ -166,7 +174,7 @@ class ConfigurationManagementControllerTest {
   @DisplayName("Should require authentication for GET modules configuration")
   void shouldRequireAuthenticationForGetModules() throws Exception {
     mockMvc
-        .perform(get("/api/v1/configuration/modules").param("companyId", testCompanyId.toString()))
+        .perform(get("/api/v1/configuration/modules").header("X-Company-ID", testCompanyId.toString()))
         .andExpect(status().isUnauthorized());
   }
 
@@ -175,7 +183,7 @@ class ConfigurationManagementControllerTest {
   @DisplayName("Should return modules configuration")
   void shouldReturnModulesConfiguration() throws Exception {
     mockMvc
-        .perform(get("/api/v1/configuration/modules").param("companyId", testCompanyId.toString()))
+        .perform(get("/api/v1/configuration/modules").header("X-Company-ID", testCompanyId.toString()))
         .andExpect(status().isOk());
   }
 
@@ -197,7 +205,7 @@ class ConfigurationManagementControllerTest {
         .perform(
             patch("/api/v1/configuration/modules")
                 .with(csrf())
-                .param("companyId", testCompanyId.toString())
+                .header("X-Company-ID", testCompanyId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
@@ -209,7 +217,7 @@ class ConfigurationManagementControllerTest {
   @DisplayName("Should require authentication for GET region configuration")
   void shouldRequireAuthenticationForGetRegion() throws Exception {
     mockMvc
-        .perform(get("/api/v1/configuration/region").param("companyId", testCompanyId.toString()))
+        .perform(get("/api/v1/configuration/region").header("X-Company-ID", testCompanyId.toString()))
         .andExpect(status().isUnauthorized());
   }
 
@@ -218,7 +226,7 @@ class ConfigurationManagementControllerTest {
   @DisplayName("Should return region configuration")
   void shouldReturnRegionConfiguration() throws Exception {
     mockMvc
-        .perform(get("/api/v1/configuration/region").param("companyId", testCompanyId.toString()))
+        .perform(get("/api/v1/configuration/region").header("X-Company-ID", testCompanyId.toString()))
         .andExpect(status().isOk());
   }
 
@@ -238,7 +246,7 @@ class ConfigurationManagementControllerTest {
         .perform(
             patch("/api/v1/configuration/region")
                 .with(csrf())
-                .param("companyId", testCompanyId.toString())
+                .header("X-Company-ID", testCompanyId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
@@ -254,7 +262,7 @@ class ConfigurationManagementControllerTest {
         .perform(
             patch("/api/v1/configuration/region")
                 .with(csrf())
-                .param("companyId", testCompanyId.toString())
+                .header("X-Company-ID", testCompanyId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(invalidRequest))
         .andExpect(status().isBadRequest());
@@ -268,7 +276,7 @@ class ConfigurationManagementControllerTest {
     mockMvc
         .perform(
             get("/api/v1/configuration/helmet-handling")
-                .param("companyId", testCompanyId.toString()))
+                .header("X-Company-ID", testCompanyId.toString()))
         .andExpect(status().isUnauthorized());
   }
 
@@ -279,7 +287,7 @@ class ConfigurationManagementControllerTest {
     mockMvc
         .perform(
             get("/api/v1/configuration/helmet-handling")
-                .param("companyId", testCompanyId.toString()))
+                .header("X-Company-ID", testCompanyId.toString()))
         .andExpect(status().isOk());
   }
 
@@ -294,7 +302,7 @@ class ConfigurationManagementControllerTest {
         .perform(
             patch("/api/v1/configuration/helmet-handling")
                 .with(csrf())
-                .param("companyId", testCompanyId.toString())
+                .header("X-Company-ID", testCompanyId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
@@ -312,7 +320,7 @@ class ConfigurationManagementControllerTest {
         .perform(
             patch("/api/v1/configuration/capacity")
                 .with(csrf())
-                .param("companyId", testCompanyId.toString())
+                .header("X-Company-ID", testCompanyId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isForbidden());
@@ -324,7 +332,7 @@ class ConfigurationManagementControllerTest {
   void shouldAllowReadAccessToOperador() throws Exception {
     mockMvc
         .perform(
-            get("/api/v1/configuration/capacity").param("companyId", testCompanyId.toString()))
+            get("/api/v1/configuration/capacity").header("X-Company-ID", testCompanyId.toString()))
         .andExpect(status().isOk());
   }
 
@@ -335,10 +343,11 @@ class ConfigurationManagementControllerTest {
   @DisplayName("Should return 404 for non-existent company")
   void shouldReturn404ForNonExistentCompany() throws Exception {
     UUID nonExistentId = UUID.randomUUID();
+    TenantContext.setTenantId(nonExistentId);
 
     mockMvc
         .perform(
-            get("/api/v1/configuration/capacity").param("companyId", nonExistentId.toString()))
+            get("/api/v1/configuration/capacity").header("X-Company-ID", nonExistentId.toString()))
         .andExpect(status().isNotFound());
   }
 }

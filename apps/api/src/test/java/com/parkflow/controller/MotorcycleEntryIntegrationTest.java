@@ -524,8 +524,16 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             .content(entryRequest))
             .andExpect(status().isCreated());
 
-    Long eventCount = jdbcTemplate.queryForObject(
-        "SELECT COUNT(*) FROM session_event WHERE type = 'ENTRY_RECORDED'", Long.class);
+    int maxRetries = 10;
+    Long eventCount = 0L;
+    for (int i = 0; i < maxRetries; i++) {
+        eventCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM session_event WHERE type = 'ENTRY_RECORDED'", Long.class);
+        if (eventCount != null && eventCount >= 1) {
+            break;
+        }
+        Thread.sleep(500);
+    }
     org.junit.jupiter.api.Assertions.assertTrue(eventCount != null && eventCount >= 1,
         "Expected at least one ENTRY_RECORDED session event");
   }

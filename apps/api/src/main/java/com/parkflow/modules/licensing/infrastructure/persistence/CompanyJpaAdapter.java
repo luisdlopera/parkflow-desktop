@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
@@ -31,11 +33,13 @@ public class CompanyJpaAdapter implements CompanyPort {
     }
 
     @Override
+    @CacheEvict(value = "companies", key = "#company.id")
     public Company save(Company company) {
         return jpaRepository.save(company);
     }
 
     @Override
+    @Cacheable(value = "companies", key = "#id")
     public Optional<Company> findById(UUID id) {
         return jpaRepository.findById(id);
     }
@@ -71,6 +75,7 @@ public class CompanyJpaAdapter implements CompanyPort {
     }
 
     @Override
+    @CacheEvict(value = "companies", key = "#id")
     public void deleteById(UUID id) {
         jpaRepository.deleteById(id);
     }

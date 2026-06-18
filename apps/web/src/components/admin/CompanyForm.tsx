@@ -4,6 +4,7 @@ import React from "react";
 import { useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { companySchema } from "@/lib/validation/company.schema";
 import { Separator, ListBox } from "@heroui/react";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
@@ -24,21 +25,7 @@ const plans: { value: PlanType; label: string }[] = [
   { value: "ENTERPRISE", label: "Enterprise" },
 ];
 
-const companySchema = z.object({
-  name: requiredString("Ingresa el nombre de la empresa."),
-  nit: z.string().optional().or(z.literal("")),
-  email: z.string().email({ message: "Ingresa un correo electrónico válido." }).optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
-  city: z.string().optional().or(z.literal("")),
-  contactName: z.string().optional().or(z.literal("")),
-  address: z.string().optional().or(z.literal("")),
-  plan: z.enum(["LOCAL", "SYNC", "PRO", "ENTERPRISE"] as const),
-  maxDevices: positiveNumber("Mínimo 1 dispositivo."),
-  maxLocations: positiveNumber("Mínimo 1 sede."),
-  maxUsers: positiveNumber("Mínimo 1 usuario."),
-  trialDays: nonNegativeNumber("Días de prueba inválidos."),
-  offlineModeAllowed: z.boolean(),
-});
+// companySchema is defined in lib/validation/company.schema.ts
 
 type FormValues = z.infer<typeof companySchema>;
 
@@ -373,4 +360,3 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
     </form>
   );
 }
-

@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
+import com.parkflow.modules.cash.application.port.in.ParkingCashIntegrationUseCase;
 import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.auth.security.AuthPrincipal;
@@ -96,7 +96,7 @@ class OperationServiceInventoryTest {
   @Mock private OperationPrintService legacyPrintService;
   @Mock private com.parkflow.modules.parking.operation.application.service.OperationAuditService auditService;
   @Mock private com.parkflow.modules.parking.operation.application.service.OperationPrintService operationPrintService;
-  @Mock private CashMovementUseCase cashMovementUseCase;
+  @Mock private ParkingCashIntegrationUseCase parkingCashIntegrationUseCase;
   @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private MeterRegistry meterRegistry;
   @Mock private Counter counter;
@@ -148,7 +148,7 @@ class OperationServiceInventoryTest {
         parkingSessionPort, appUserPort, paymentRepository, parkingSitePort,
         operationalParameterRepository, operationIdempotencyRepository,
         auditService, operationPrintService, complexPricingPort,
-        cashMovementUseCase, meterRegistry, globalAuditPort
+        parkingCashIntegrationUseCase, meterRegistry, globalAuditPort
     );
 
     lenient().when(operationalParameterRepository.findBySite_Id(any())).thenReturn(Optional.empty());

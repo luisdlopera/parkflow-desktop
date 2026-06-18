@@ -4,7 +4,7 @@ import com.parkflow.modules.parking.operation.domain.repository.OperationIdempot
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
 import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
-import com.parkflow.modules.cash.application.port.in.CashMovementUseCase;
+import com.parkflow.modules.cash.application.port.in.ParkingCashIntegrationUseCase;
 import com.parkflow.modules.cash.domain.CashMovementType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,12 +12,10 @@ import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
-import com.parkflow.modules.configuration.domain.Agreement;
 import com.parkflow.modules.configuration.domain.OperationalParameter;
-import com.parkflow.modules.configuration.domain.PrepaidBalance;
 import com.parkflow.modules.configuration.repository.*;
-import com.parkflow.modules.configuration.application.port.in.PrepaidUseCase;
 import com.parkflow.modules.settings.application.port.in.ParkingParametersUseCase;
+import com.parkflow.modules.parking.operation.application.port.in.ParkingPricingUseCase;
 import com.parkflow.modules.parking.operation.application.port.in.RegisterExitUseCase;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.CustodiedItemResponse;
@@ -30,7 +28,6 @@ import com.parkflow.modules.parking.locker.domain.LockerStatus;
 import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
 import com.parkflow.modules.parking.operation.repository.*;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
-import com.parkflow.modules.parking.operation.domain.pricing.PricingCalculator;
 import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +36,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -54,13 +50,8 @@ public class RegisterExitService implements RegisterExitUseCase {
   private final ParkingSessionRepository parkingSessionRepository;
   private final PaymentPort paymentRepository;
   private final AppUserRepository appUserRepository;
-  private final MonthlyContractRepository monthlyContractRepository;
-  private final PrepaidBalanceRepository prepaidBalanceRepository;
-  private final PrepaidUseCase prepaidUseCase;
-  private final AgreementRepository agreementRepository;
   private final ParkingSiteRepository parkingSiteRepository;
   private final OperationalParameterPort operationalParameterRepository;
-  private final PricingCalculator pricingCalculator;
   private final OperationAuditService operationAuditService;
   private final OperationPrintService operationPrintService;
   private final AuditPort globalAuditService;
@@ -70,8 +61,9 @@ public class RegisterExitService implements RegisterExitUseCase {
   private final CustodiedItemPort custodiedItemRepository;
   private final LockerPort lockerPort;
   private final ObjectMapper objectMapper;
-  private final CashMovementUseCase cashMovementUseCase;
+  private final ParkingCashIntegrationUseCase parkingCashIntegrationUseCase;
   private final ParkingParametersUseCase parkingParametersUseCase;
+  private final ParkingPricingUseCase parkingPricingUseCase;
 
   @Override
   @Transactional
@@ -87,8 +79,8 @@ public class RegisterExitService implements RegisterExitUseCase {
     ParkingSession session = requireActiveSessionForUpdate(request.ticketNumber(), request.plate(), companyId);
     AppUser operator = findRequiredOperator(request.operatorUserId());
 
-    PriceBreakdown price = calculateComplexPrice(session, exitAt, request.agreementCode(), false, false);
-    price = applyCourtesyPricing(session, price, false);
+    PriceBreakdown price = parkingPricingUseCase.calculateComplexPrice(session, exitAt, request.agreementCode(), false, false);
+    price = parkingPricingUseCase.applyCourtesyPricing(session, price, false);
 
     assertExitPaymentPolicy(session, request.paymentMethod(), price);
     assertExitPhotoIfRequired(session, request.exitImageUrl());
@@ -105,7 +97,7 @@ public class RegisterExitService implements RegisterExitUseCase {
     parkingSessionRepository.save(session);
 
     if (price.total().compareTo(BigDecimal.ZERO) > 0 && request.paymentMethod() != null) {
-      cashMovementUseCase.assertCashOpenForParkingPayment(session, request.cashSessionId());
+      parkingCashIntegrationUseCase.assertCashOpenForParkingPayment(session, request.cashSessionId());
       Payment payment = new Payment();
       payment.setSession(session);
       payment.setMethod(request.paymentMethod());
@@ -113,7 +105,7 @@ public class RegisterExitService implements RegisterExitUseCase {
       payment.setPaidAt(exitAt);
       payment.setCompanyId(companyId);
       paymentRepository.save(payment);
-      cashMovementUseCase.recordParkingPayment(
+      parkingCashIntegrationUseCase.recordParkingPayment(
           session, payment, operator, request.idempotencyKey(), CashMovementType.PARKING_PAYMENT, request.cashSessionId());
     }
 
@@ -174,8 +166,8 @@ public class RegisterExitService implements RegisterExitUseCase {
 
     ParkingSession session = requireActiveSession(request.ticketNumber(), request.plate(), companyId);
 
-    PriceBreakdown price = calculateComplexPrice(session, exitAt, request.agreementCode(), false, true);
-    price = applyCourtesyPricing(session, price, false);
+    PriceBreakdown price = parkingPricingUseCase.calculateComplexPrice(session, exitAt, request.agreementCode(), false, true);
+    price = parkingPricingUseCase.applyCourtesyPricing(session, price, false);
 
     DurationCalculator.DurationBreakdown duration = DurationCalculator.calculate(session.getEntryAt(), exitAt, 0);
 
@@ -192,81 +184,6 @@ public class RegisterExitService implements RegisterExitUseCase {
 
   // Helper methods moved from OperationService
   
-  private PriceBreakdown calculateComplexPrice(
-      ParkingSession session, OffsetDateTime exitAt, String agreementCode, boolean lostTicket, boolean dryRun) {
-    Rate rate = requireRate(session);
-    DurationCalculator.DurationBreakdown duration =
-        DurationCalculator.calculate(session.getEntryAt(), exitAt, rate.getGraceMinutes());
-    
-    long billableMinutes = duration.billableMinutes();
-    
-    LocalDate date = exitAt.toLocalDate();
-    boolean hasMonthly = monthlyContractRepository
-        .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-            session.getPlate(), date, date).isPresent();
-    
-    if (hasMonthly) {
-        session.setMonthlySession(true);
-        return new PriceBreakdown(0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.ZERO);
-    }
-    
-    int deductedMinutes = 0;
-    if (billableMinutes > 0 && !lostTicket) {
-        List<PrepaidBalance> balances = prepaidBalanceRepository.findActiveByPlate(session.getPlate(), exitAt);
-        for (PrepaidBalance balance : balances) {
-            int toDeduct = Math.min(balance.getRemainingMinutes(), (int) billableMinutes);
-            if (toDeduct > 0) {
-                if (!dryRun) {
-                    prepaidUseCase.deduct(balance.getId(), toDeduct);
-                }
-                billableMinutes -= toDeduct;
-                deductedMinutes += toDeduct;
-            }
-            if (billableMinutes <= 0) break;
-        }
-    }
-    if (!dryRun) {
-        session.setAppliedPrepaidMinutes(deductedMinutes);
-    }
-    
-    PriceBreakdown basePrice = 
-        pricingCalculator.calculate(rate, Math.max(0, billableMinutes), lostTicket);
-    
-    BigDecimal subtotal = basePrice.subtotal();
-    BigDecimal surcharge = basePrice.surcharge();
-    BigDecimal discount = BigDecimal.ZERO;
-    
-    String effectiveAgreement = agreementCode != null && !agreementCode.isBlank() ? agreementCode.trim() : session.getAgreementCode();
-    if (effectiveAgreement != null) {
-        Optional<Agreement> agreement = agreementRepository.findByCodeAndIsActiveTrueAndCompanyId(effectiveAgreement, session.getCompanyId());
-        if (agreement.isPresent()) {
-            Agreement a = agreement.get();
-            session.setAgreementCode(a.getCode());
-            if (a.getFlatAmount() != null) {
-                subtotal = a.getFlatAmount();
-            } else if (a.getDiscountPercent() != null && a.getDiscountPercent().compareTo(BigDecimal.ZERO) > 0) {
-                discount = subtotal.multiply(a.getDiscountPercent())
-                    .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
-            }
-            if (!dryRun) {
-                session.setEntryMode(EntryMode.AGREEMENT);
-            }
-        }
-    }
-    
-    BigDecimal total = subtotal.add(surcharge).subtract(discount).max(BigDecimal.ZERO);
-    return new PriceBreakdown(basePrice.units(), subtotal, surcharge, discount, deductedMinutes, total);
-  }
-
-  private PriceBreakdown applyCourtesyPricing(
-      ParkingSession session, PriceBreakdown computed, boolean lostTicketSettlement) {
-    if (lostTicketSettlement) return computed;
-    EntryMode mode = session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR;
-    if (mode == EntryMode.VISITOR) return computed;
-    return new PriceBreakdown(
-        computed.units(), computed.subtotal(), computed.surcharge(), BigDecimal.ZERO, computed.deductedMinutes(), BigDecimal.ZERO);
-  }
-
   private void assertExitPaymentPolicy(
       ParkingSession session, com.parkflow.modules.parking.operation.domain.PaymentMethod paymentMethod, PriceBreakdown price) {
     BigDecimal due = price.total();
@@ -332,12 +249,6 @@ public class RegisterExitService implements RegisterExitUseCase {
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
   }
 
-  private Rate requireRate(ParkingSession session) {
-    if (session.getRate() == null) {
-      throw new OperationException(HttpStatus.BAD_REQUEST, "La sesión no tiene tarifa asignada");
-    }
-    return session.getRate();
-  }
 
   private void processCustodiedItemReturn(ParkingSession session, ExitRequest request, AppUser operator) {
     List<CustodiedItem> pending = custodiedItemRepository.findBySessionAndStatus(session, CustodiedItemStatus.RECEIVED);

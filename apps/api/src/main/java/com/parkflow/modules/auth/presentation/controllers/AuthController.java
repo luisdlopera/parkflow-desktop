@@ -1,7 +1,10 @@
 package com.parkflow.modules.auth.presentation.controllers;
 
 import com.parkflow.modules.auth.dto.*;
-import com.parkflow.modules.auth.application.port.in.AuthenticationUseCase;
+import com.parkflow.modules.auth.application.port.in.LoginUseCase;
+import com.parkflow.modules.auth.application.port.in.LogoutUseCase;
+import com.parkflow.modules.auth.application.port.in.ProfileManagementUseCase;
+import com.parkflow.modules.auth.application.port.in.TokenRefreshUseCase;
 import com.parkflow.modules.auth.application.port.in.DeviceManagementUseCase;
 import com.parkflow.modules.auth.application.port.in.PasswordResetUseCase;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
@@ -16,17 +19,26 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
-  private final AuthenticationUseCase authenticationUseCase;
+  private final LoginUseCase loginUseCase;
+  private final TokenRefreshUseCase tokenRefreshUseCase;
+  private final LogoutUseCase logoutUseCase;
+  private final ProfileManagementUseCase profileManagementUseCase;
   private final DeviceManagementUseCase deviceManagementUseCase;
   private final PasswordResetUseCase passwordResetUseCase;
   private final AppUserRepository appUserRepository;
 
   public AuthController(
-      AuthenticationUseCase authenticationUseCase,
+      LoginUseCase loginUseCase,
+      TokenRefreshUseCase tokenRefreshUseCase,
+      LogoutUseCase logoutUseCase,
+      ProfileManagementUseCase profileManagementUseCase,
       DeviceManagementUseCase deviceManagementUseCase,
       PasswordResetUseCase passwordResetUseCase,
       AppUserRepository appUserRepository) {
-    this.authenticationUseCase = authenticationUseCase;
+    this.loginUseCase = loginUseCase;
+    this.tokenRefreshUseCase = tokenRefreshUseCase;
+    this.logoutUseCase = logoutUseCase;
+    this.profileManagementUseCase = profileManagementUseCase;
     this.deviceManagementUseCase = deviceManagementUseCase;
     this.passwordResetUseCase = passwordResetUseCase;
     this.appUserRepository = appUserRepository;
@@ -41,51 +53,51 @@ public class AuthController {
   @PostMapping("/login")
   @ResponseStatus(HttpStatus.OK)
   public LoginResponse login(@Valid @RequestBody LoginRequest request) {
-    return authenticationUseCase.login(request);
+    return loginUseCase.login(request);
   }
 
   @PostMapping("/refresh")
   public LoginResponse refresh(@Valid @RequestBody RefreshRequest request) {
-    return authenticationUseCase.refresh(request);
+    return tokenRefreshUseCase.refresh(request);
   }
 
   @PostMapping("/logout")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void logout(@Valid @RequestBody LogoutRequest request) {
-    authenticationUseCase.logout(request);
+    logoutUseCase.logout(request);
   }
 
   @PostMapping("/logout/all")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void logoutAll() {
-    authenticationUseCase.logoutAll();
+    logoutUseCase.logoutAll();
   }
 
   @PostMapping("/logout/device/{deviceId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void logoutDevice(@PathVariable String deviceId) {
-    authenticationUseCase.logoutDevice(deviceId);
+    logoutUseCase.logoutDevice(deviceId);
   }
 
   @GetMapping("/me")
   public AuthUserResponse me() {
-    return authenticationUseCase.me();
+    return profileManagementUseCase.me();
   }
 
   @GetMapping("/profile")
   public ProfileResponse profile() {
-    return authenticationUseCase.getProfile();
+    return profileManagementUseCase.getProfile();
   }
 
   @PatchMapping("/profile")
   public ProfileResponse updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
-    return authenticationUseCase.updateProfile(request);
+    return profileManagementUseCase.updateProfile(request);
   }
 
   @PostMapping("/change-password")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-    authenticationUseCase.changePassword(request);
+    profileManagementUseCase.changePassword(request);
   }
 
   @GetMapping("/devices")

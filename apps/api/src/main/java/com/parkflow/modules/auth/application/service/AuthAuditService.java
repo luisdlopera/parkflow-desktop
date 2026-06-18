@@ -10,6 +10,9 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Async;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +20,8 @@ public class AuthAuditService {
   private final AuthAuditLogPort authAuditLogRepository;
   private final ObjectMapper objectMapper;
 
+  @Async
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void log(
       AuthAuditAction action,
       @Nullable AppUser user,

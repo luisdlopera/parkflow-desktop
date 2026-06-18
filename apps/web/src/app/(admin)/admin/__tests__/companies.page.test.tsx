@@ -2,6 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import CompaniesPage from "../companies/page";
 
+// Mock Next.js App Router navigation hooks used by useUrlPagination and other helpers
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn(), back: vi.fn(), forward: vi.fn() }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 const mockHooks = vi.hoisted(() => {
   const mockMutate = vi.fn();
   const mockCreateCompany = vi.fn();
