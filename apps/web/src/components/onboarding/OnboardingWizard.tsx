@@ -1,7 +1,7 @@
 "use client";
 
-import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { useDialog } from "@/components/ui/DialogProvider";
 import { Check, Save, AlertTriangle } from "lucide-react";
 import { skipOnboarding, completeOnboarding } from "@/lib/onboarding-api";
 import { patchSessionUser, logoutAndRedirectToLogin } from "@/lib/auth";
@@ -55,8 +55,32 @@ function OnboardingContent() {
   const currentValidation = validateStep(step, stepData, vehicleTypes);
   const canAdvance = currentValidation.isValid;
 
-  const [showSkipModal, setShowSkipModal] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
+  const { confirm } = useDialog();
+
+  const handleSkip = async () => {
+    const ok = await confirm(
+      "Se guardará lo que configuraste y se completará con valores estándar lo que falte. Podrás editarlo luego en Configuración.",
+      { title: "Omitir parametrización", confirmLabel: "Confirmar omitir" },
+    );
+    if (!ok) return;
+    setIsSkipping(true);
+    try {
+      await persistStep(step); // asegura guardar el paso actual antes de omitir
+      await skipOnboarding(companyId);
+      await patchSessionUser({ onboardingCompleted: true });
+      // Navegación dura: recarga limpia, sin overlay del wizard colgado.
+      window.location.assign("/");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        await logoutAndRedirectToLogin("expired");
+      } else {
+        console.error("Error skipping onboarding:", err);
+        setSaveState("error");
+        setIsSkipping(false);
+      }
+    }
+  };
 
   if (loading || !status)
     return (
@@ -207,8 +231,9 @@ function OnboardingContent() {
             <Button
               color="warning"
               variant="tertiary"
+              isLoading={isSkipping}
               isDisabled={isSkipping}
-              onPress={() => setShowSkipModal(true)}
+              onPress={handleSkip}
             >
               Omitir parametrización
             </Button>
@@ -228,52 +253,6 @@ function OnboardingContent() {
           )}
         </div>
       </div>
-
-      {showSkipModal && (
-        <Modal
-          isOpen
-          onOpenChange={(open: boolean) => { if (!open && !isSkipping) setShowSkipModal(false); }}
-          aria-label="Omitir parametrización"
-        >
-          <Modal.Content>
-            <Modal.Header>Omitir parametrización</Modal.Header>
-            <Modal.Body>
-              Se aplicará una configuración estándar. Podrás modificarla luego desde Configuración.
-            </Modal.Body>
-            <Modal.Footer>
-              <Button variant="ghost" isDisabled={isSkipping} onPress={() => setShowSkipModal(false)}>
-                Cancelar
-              </Button>
-              <Button
-                color="warning"
-                isLoading={isSkipping}
-                isDisabled={isSkipping}
-                onPress={async () => {
-                  setIsSkipping(true);
-                  try {
-                    await skipOnboarding(companyId);
-                    await patchSessionUser({ onboardingCompleted: true });
-                    // Hard navigation: garantiza salir del overlay del onboarding y
-                    // re-leer la sesión actualizada sin rebote de AuthGate.
-                    window.location.assign("/");
-                  } catch (err) {
-                    if (err instanceof ApiError && err.status === 401) {
-                      await logoutAndRedirectToLogin("expired");
-                    } else {
-                      console.error("Error skipping onboarding:", err);
-                      setSaveState("error");
-                      setIsSkipping(false);
-                      setShowSkipModal(false);
-                    }
-                  }
-                }}
-              >
-                Confirmar omitir
-              </Button>
-            </Modal.Footer>
-          </Modal.Content>
-        </Modal>
-      )}
     </div>
   );
 }
