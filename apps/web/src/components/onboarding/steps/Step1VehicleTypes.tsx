@@ -168,7 +168,7 @@ const Step1VehicleTypes = memo(function Step1VehicleTypes() {
                   aria-pressed={selected}
                 >
                   <span className="font-medium">{option.label}</span>
-                  <span className="text-xs opacity-80">{option.description}</span>
+                  <span className="text-xs opacity-80 whitespace-normal break-words text-left">{option.description}</span>
                 </Button>
               );
             })}

@@ -58,12 +58,12 @@ export default function AdvancedEntryOptions({
         />
         <Controller
           name="booth"
-          control={form.control as any}
+          control={control as any}
           render={({ field }) => <Input {...field} label="Caja" placeholder="Caja 1" size="sm" />}
         />
         <Controller
           name="terminal"
-          control={form.control as any}
+          control={control as any}
           render={({ field }) => <Input {...field} label="Terminal" placeholder="T1" size="sm" />}
         />
       </div>
@@ -113,7 +113,7 @@ export default function AdvancedEntryOptions({
         )}
       />
 
-      <FormLayoutFactory layout={ENTRY_FORM_LAYOUT} control={form.control as any} selectedVehicleType={selectedTypeCode} skipConditionCheck={settings.skipConditionCheck} />
+      <FormLayoutFactory layout={ENTRY_FORM_LAYOUT} control={control as any} selectedVehicleType={selectedTypeCode} skipConditionCheck={settings.skipConditionCheck} />
     </div>
   );
 }

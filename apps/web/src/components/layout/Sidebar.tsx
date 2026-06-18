@@ -128,7 +128,12 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
               </div>
 
               <nav className="space-y-1">
-                {CONFIG_SUBITEMS.map((sub) => {
+                {CONFIG_SUBITEMS.filter((sub) => {
+                  if (sub.key === "lockers") {
+                    return runtimeConfig?.operationConfiguration?.helmetHandling === "LOCKERS";
+                  }
+                  return true;
+                }).map((sub) => {
                   const href = (sub as any).href || `/configuracion?section=${sub.key}`;
                   const subActive = (sub as any).href ? pathname === (sub as any).href : currentSection === sub.key;
                   return (

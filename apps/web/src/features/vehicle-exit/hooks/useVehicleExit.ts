@@ -1,8 +1,6 @@
 "use client";
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import {
-  lookupActiveSession,
   processExit as serviceProcessExit,
   reprintExitTicket,
   reportLostTicket,
@@ -10,6 +8,7 @@ import {
 } from "../services/vehicle-exit.service";
 import { useSplitPayment } from "./useSplitPayment";
 import { useChangeCalculator } from "./useChangeCalculator";
+import { useExitLookup } from "./useExitLookup";
 import { queueOfflineOperation } from "@/lib/offline-outbox";
 import { cashCurrent, cashPolicy } from "@/lib/cash/cash-api";
 import { getOrCreateIdempotencyKey, clearIdempotencyKey } from "@/lib/idempotency";
@@ -86,42 +85,25 @@ function operationPrintPayload(
 }
 
 export function useVehicleExit() {
-  const searchParams = useSearchParams();
-  const initialTicketNumber = searchParams?.get("ticketNumber")?.trim() ?? "";
-  const initialPlate = searchParams?.get("plate")?.trim().toUpperCase() ?? "";
-
   const { caja, requireOpenForPayment } = useTerminalCaja();
   const { config, isLoading: configLoading, hasPaymentMethod } = useRuntimeConfig();
   const { playSuccess, playError } = useOperationSounds();
 
-  const [ticketNumber, setTicketNumber] = useState("");
-  const [plate, setPlate] = useState("");
   const [vehicleCondition, setVehicleCondition] = useState("Sin novedades a la salida");
   const [conditionChecklist, setConditionChecklist] = useState("");
   const [conditionPhotoUrls, setConditionPhotoUrls] = useState("");
   const [lostReason, setLostReason] = useState("Ticket perdido");
-  const [agreementCode, setAgreementCode] = useState("");
   const [reprintReason, setReprintReason] = useState("Reimpresion solicitada por cliente");
-  const [searching, setSearching] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [active, setActive] = useState<ActiveLookup | null>(null);
   const [previewLines, setPreviewLines] = useState<string[] | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodCode>("CASH");
   const [cashReceived, setCashReceived] = useState("");
-  const [pendingCustodiedItems, setPendingCustodiedItems] = useState<CustodiedItemInfo[]>([]);
-  const [returnConfirmedIds, setReturnConfirmedIds] = useState<string[]>([]);
   const [printWarning, setPrintWarning] = useState<{ ticketNumber: string; plate: string; previewLines: string[] } | null>(null);
   const [reprintLoading, setReprintLoading] = useState(false);
 
   const operationLock = useRef(false);
   const reprintLock = useRef(false);
-  const ticketInputRef = useRef<HTMLInputElement>(null);
-  const autoLookupDone = useRef(false);
-
-  const totalDue = Number(active?.total ?? active?.receipt.totalAmount ?? 0);
-  const isSplitPayment = selectedPaymentMethod === "MIXED";
 
   const availablePaymentMethods = useMemo(() => {
     if (configLoading || config == null) return [];
@@ -135,104 +117,53 @@ export function useVehicleExit() {
   const enableVehicleCondition = config?.operationConfiguration?.enableVehicleCondition ?? true;
   const enableCustodiedItem = config?.operationConfiguration?.enableCustodiedItem ?? true;
 
-  const splitPaymentHook = useSplitPayment(totalDue, firstMethod as Exclude<PaymentMethodCode, "MIXED">, secondMethod as Exclude<PaymentMethodCode, "MIXED">);
+  const splitPaymentHook = useSplitPayment(0, firstMethod as Exclude<PaymentMethodCode, "MIXED">, secondMethod as Exclude<PaymentMethodCode, "MIXED">);
   const { splitPayments, splitTotal, splitRemaining, splitCashReceived } = splitPaymentHook;
+
+  const lookupHook = useExitLookup(availablePaymentMethods, splitPaymentHook.reset);
+  const { active, setActive, agreementCode, pendingCustodiedItems, returnConfirmedIds, ticketInputRef, resetLookup } = lookupHook;
+
+  const totalDue = Number(active?.total ?? active?.receipt.totalAmount ?? 0);
+  const isSplitPayment = selectedPaymentMethod === "MIXED";
 
   const changeCalculator = useChangeCalculator(selectedPaymentMethod, cashReceived, splitCashReceived, totalDue);
   const { changeDue, singleCashReceived } = changeCalculator;
 
-  function resetForm() {
-    setActive(null);
-    setTicketNumber("");
-    setPlate("");
-    setAgreementCode("");
-    setPrintWarning(null);
-    setTimeout(() => ticketInputRef.current?.focus(), 100);
-  }
-
-  // Auto-focus on mount
+  // Reset payment state when a new session is found
   useEffect(() => {
-    setTimeout(() => ticketInputRef.current?.focus(), 100);
-  }, []);
-
-  // Sync initial URL params
-  useEffect(() => {
-    if (initialTicketNumber) setTicketNumber(initialTicketNumber);
-    if (initialPlate) setPlate(initialPlate);
-  }, [initialTicketNumber, initialPlate]);
-
-  const lookup = useCallback(async (override?: { ticketNumber?: string; plate?: string }) => {
-    setError("");
-    setMessage("");
-    setPrintWarning(null);
-    const currentTicket = override?.ticketNumber ?? ticketNumber;
-    const currentPlate = override?.plate ?? plate;
-    const locator = currentTicket.trim() || currentPlate.trim();
-    if (!locator) { setError("Ingresa ticket o placa"); return; }
-
-    setSearching(true);
-    setPreviewLines(null);
-    try {
-      const response = await lookupActiveSession(
-        currentTicket.trim(),
-        currentPlate.trim().toUpperCase(),
-        agreementCode.trim() || undefined,
-      );
-      const payload = await response.json();
-      if (!response.ok) {
-        setActive(null);
-        setError(payload?.userMessage ?? payload?.error ?? "No se encontro sesion activa");
-        playError();
-        return;
-      }
-      setActive(payload as ActiveLookup);
+    if (active) {
       setSelectedPaymentMethod(availablePaymentMethods[0]?.code ?? "CASH");
       setCashReceived("");
-      const availableNonMixed = availablePaymentMethods.filter((m) => m.code !== "MIXED") as Array<{ code: Exclude<PaymentMethodCode, "MIXED">; label: string; hint: string; tone: string }>;
-      splitPaymentHook.reset(availableNonMixed[0]?.code ?? "CASH", availableNonMixed[1]?.code ?? availableNonMixed[0]?.code ?? "CASH");
-      if (payload.receipt.agreementCode) setAgreementCode(payload.receipt.agreementCode);
-      const pending = ((payload.receipt.custodiedItems ?? []) as CustodiedItemInfo[]).filter((item) => item.status === "RECEIVED");
-      setPendingCustodiedItems(pending);
-      setReturnConfirmedIds(pending.map((item) => item.id));
-      playSuccess();
-    } catch (err) {
-      setError(getUserFriendlyErrorMessage(err, FrontendActionError.LOAD_DATA));
-      playError();
-    } finally {
-      setSearching(false);
     }
-  }, [ticketNumber, plate, agreementCode, availablePaymentMethods, splitPaymentHook, playSuccess, playError]);
+  }, [active, availablePaymentMethods]);
 
-  // Auto-lookup from URL params
-  useEffect(() => {
-    if (autoLookupDone.current || (!initialTicketNumber && !initialPlate)) return;
-    autoLookupDone.current = true;
-    void lookup({ ticketNumber: initialTicketNumber, plate: initialPlate });
-  }, [initialPlate, initialTicketNumber, lookup]);
+  function resetForm() {
+    setPrintWarning(null);
+    resetLookup();
+  }
 
   const processExitAction = useCallback(async (paymentMethod: PaymentMethodCode = selectedPaymentMethod) => {
-    if (!active) { setError("Primero busca una sesion activa"); return; }
+    if (!active) { lookupHook.setError("Primero busca una sesion activa"); return; }
     if (operationLock.current) return;
 
-    // Validate payment
     if (paymentMethod === "MIXED") {
       const validationError = splitPaymentHook.validate();
-      if (validationError) { setError(validationError); return; }
+      if (validationError) { lookupHook.setError(validationError); return; }
     }
     if (paymentMethod === "CASH" && singleCashReceived > 0 && singleCashReceived < totalDue) {
-      setError(`El efectivo recibido es menor al total. Falta $${(totalDue - singleCashReceived).toLocaleString("es-CO")}.`);
+      lookupHook.setError(`El efectivo recibido es menor al total. Falta $${(totalDue - singleCashReceived).toLocaleString("es-CO")}.`);
       return;
     }
 
     operationLock.current = true;
     setProcessing(true);
-    setError("");
+    lookupHook.setError("");
     setMessage("");
     setPrintWarning(null);
 
     try {
       const user = await currentUser();
-      if (!user?.id) { setError("Sesion requerida para registrar salida"); return; }
+      if (!user?.id) { lookupHook.setError("Sesion requerida para registrar salida"); return; }
 
       const term = process.env.NEXT_PUBLIC_TERMINAL_ID?.trim() || window.localStorage.getItem("parkflow_terminal_id")?.trim() || "";
       const site = process.env.NEXT_PUBLIC_PARKING_SITE?.trim() || "default";
@@ -241,7 +172,7 @@ export function useVehicleExit() {
         const cs = await cashCurrent(site, term || undefined);
         cashSessionId = cs.id;
       } catch {
-        setError("Debe abrir caja en este terminal antes de procesar salidas");
+        lookupHook.setError("Debe abrir caja en este terminal antes de procesar salidas");
         return;
       }
 
@@ -291,7 +222,7 @@ export function useVehicleExit() {
             errMsg = `${errMsg} ${pol.operationsHint}`.trim();
           } catch { /* keep base message */ }
         }
-        setError(errMsg);
+        lookupHook.setError(errMsg);
         toast.danger(errMsg);
         playError();
         return;
@@ -315,7 +246,7 @@ export function useVehicleExit() {
       }
     } catch (err) {
       const validationMessage = toUserMessageFromClientValidation(err);
-      if (validationMessage) { setError(validationMessage); toast.danger(validationMessage); playError(); return; }
+      if (validationMessage) { lookupHook.setError(validationMessage); toast.danger(validationMessage); playError(); return; }
 
       const idempotencyFingerprint = JSON.stringify({ ticketNumber: active.receipt.ticketNumber, paymentMethod, total: totalDue });
       const queued = await queueOfflineOperation("EXIT_RECORDED", {
@@ -332,7 +263,7 @@ export function useVehicleExit() {
         resetForm();
       } else {
         const errMsg = "Error de red procesando salida";
-        setError(errMsg);
+        lookupHook.setError(errMsg);
         toast.danger(errMsg);
         playError();
       }
@@ -340,23 +271,23 @@ export function useVehicleExit() {
       setProcessing(false);
       operationLock.current = false;
     }
-  }, [active, selectedPaymentMethod, splitPaymentHook, splitPayments, splitTotal, singleCashReceived, changeDue, totalDue, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, pendingCustodiedItems, returnConfirmedIds, playSuccess, playError]);
+  }, [active, selectedPaymentMethod, splitPaymentHook, splitPayments, splitTotal, singleCashReceived, changeDue, totalDue, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, pendingCustodiedItems, returnConfirmedIds, playSuccess, playError, lookupHook]);
 
   const reprintTicket = useCallback(async () => {
     if (!active || reprintLock.current) return;
     reprintLock.current = true;
     setReprintLoading(true);
     setPreviewLines(null);
-    setError("");
+    lookupHook.setError("");
     setMessage("");
     const idempotencyFingerprint = JSON.stringify({ ticketNumber: active.receipt.ticketNumber, reason: reprintReason });
     try {
       const user = await currentUser();
-      if (!user?.id) { setError("Sesion requerida para reimprimir"); return; }
+      if (!user?.id) { lookupHook.setError("Sesion requerida para reimprimir"); return; }
       const idempotencyKey = getOrCreateIdempotencyKey("reprint", idempotencyFingerprint);
       const response = await reprintExitTicket(active.receipt.ticketNumber, user.id, idempotencyKey, reprintReason);
       const payload = await response.json();
-      if (!response.ok) { setError(payload?.userMessage ?? payload?.error ?? "No se pudo reimprimir"); return; }
+      if (!response.ok) { lookupHook.setError(payload?.userMessage ?? payload?.error ?? "No se pudo reimprimir"); return; }
       clearIdempotencyKey("reprint", idempotencyFingerprint);
       const printPayload = operationPrintPayload(payload as ActiveLookup);
       setPreviewLines(buildTicketPreviewForOperation(printPayload, "REPRINT"));
@@ -372,36 +303,36 @@ export function useVehicleExit() {
       }
     } catch (err) {
       const validationMessage = toUserMessageFromClientValidation(err);
-      if (validationMessage) { setError(validationMessage); playError(); return; }
+      if (validationMessage) { lookupHook.setError(validationMessage); playError(); return; }
       const queued = await queueOfflineOperation("TICKET_REPRINTED", { ticketNumber: active.receipt.ticketNumber, reason: reprintReason, occurredAtIso: new Date().toISOString(), origin: "OFFLINE_PENDING_SYNC" });
       if (queued) {
         clearIdempotencyKey("reprint", idempotencyFingerprint);
         toast.danger("Recibo guardado offline, pero no se pudo contactar a la impresora.");
         playSuccess();
       } else {
-        setError(getUserFriendlyErrorMessage(err, FrontendActionError.PRINT_ACTION));
+        lookupHook.setError(getUserFriendlyErrorMessage(err, FrontendActionError.PRINT_ACTION));
         playError();
       }
     } finally {
       setTimeout(() => { reprintLock.current = false; setReprintLoading(false); }, 500);
     }
-  }, [active, reprintReason, playSuccess, playError]);
+  }, [active, reprintReason, playSuccess, playError, lookupHook, setActive]);
 
   const lostTicket = useCallback(async () => {
     if (!active || operationLock.current) return;
     operationLock.current = true;
     setProcessing(true);
-    setError("");
+    lookupHook.setError("");
     setMessage("");
     setPrintWarning(null);
     const idempotencyFingerprint = JSON.stringify({ ticketNumber: active.receipt.ticketNumber, reason: lostReason });
     try {
       const user = await currentUser();
-      if (!user?.id) { setError("Sesion requerida para procesar ticket perdido"); playError(); return; }
+      if (!user?.id) { lookupHook.setError("Sesion requerida para procesar ticket perdido"); playError(); return; }
       const idempotencyKey = getOrCreateIdempotencyKey("lost_ticket", idempotencyFingerprint);
       const response = await reportLostTicket(active.receipt.ticketNumber, active.receipt.plate, user.id, idempotencyKey, lostReason);
       const payload = await response.json();
-      if (!response.ok) { setError(payload?.userMessage ?? payload?.error ?? "No se pudo procesar ticket perdido"); playError(); return; }
+      if (!response.ok) { lookupHook.setError(payload?.userMessage ?? payload?.error ?? "No se pudo procesar ticket perdido"); playError(); return; }
       clearIdempotencyKey("lost_ticket", idempotencyFingerprint);
       const printPayload = operationPrintPayload(payload as ActiveLookup);
       setPreviewLines(buildTicketPreviewForOperation(printPayload, "LOST_TICKET"));
@@ -418,21 +349,21 @@ export function useVehicleExit() {
       }
     } catch (err) {
       const validationMessage = toUserMessageFromClientValidation(err);
-      if (validationMessage) { setError(validationMessage); playError(); return; }
+      if (validationMessage) { lookupHook.setError(validationMessage); playError(); return; }
       const queued = await queueOfflineOperation("LOST_TICKET", { ticketNumber: active.receipt.ticketNumber, reason: lostReason, occurredAtIso: new Date().toISOString(), origin: "OFFLINE_PENDING_SYNC" });
       if (queued) {
         clearIdempotencyKey("lost_ticket", idempotencyFingerprint);
         setMessage("Sin internet: operacion de ticket perdido en cola offline.");
         playSuccess();
       } else {
-        setError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
+        lookupHook.setError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
         playError();
       }
     } finally {
       setProcessing(false);
       operationLock.current = false;
     }
-  }, [active, lostReason, playSuccess, playError]);
+  }, [active, lostReason, playSuccess, playError, lookupHook, setActive, ticketInputRef]);
 
   const handleDownloadPrintWarning = useCallback(() => {
     if (!printWarning) return;
@@ -441,30 +372,36 @@ export function useVehicleExit() {
 
   const handleClosePrintWarning = useCallback(() => {
     setPrintWarning(null);
-    resetForm();
-  }, []);
-
-  const toggleReturnItem = useCallback((id: string, checked: boolean) => {
-    setReturnConfirmedIds((prev) => checked ? [...prev, id] : prev.filter((i) => i !== id));
-  }, []);
+    resetLookup();
+  }, [resetLookup]);
 
   return {
-    // State
-    ticketNumber, setTicketNumber,
-    plate, setPlate,
+    // From lookup hook
+    ticketNumber: lookupHook.ticketNumber,
+    setTicketNumber: lookupHook.setTicketNumber,
+    plate: lookupHook.plate,
+    setPlate: lookupHook.setPlate,
+    agreementCode: lookupHook.agreementCode,
+    setAgreementCode: lookupHook.setAgreementCode,
+    searching: lookupHook.searching,
+    active,
+    pendingCustodiedItems: lookupHook.pendingCustodiedItems,
+    returnConfirmedIds: lookupHook.returnConfirmedIds,
+    error: lookupHook.error,
+    ticketInputRef,
+    lookup: lookupHook.lookup,
+    toggleReturnItem: lookupHook.toggleReturnItem,
+    // Local state
     vehicleCondition, setVehicleCondition,
     conditionChecklist, setConditionChecklist,
     conditionPhotoUrls, setConditionPhotoUrls,
     lostReason, setLostReason,
-    agreementCode, setAgreementCode,
     reprintReason, setReprintReason,
-    searching, processing, error, message,
-    active,
+    processing,
+    message,
     previewLines,
     selectedPaymentMethod, setSelectedPaymentMethod,
     cashReceived, setCashReceived,
-    pendingCustodiedItems,
-    returnConfirmedIds,
     printWarning,
     reprintLoading,
     // Derived
@@ -480,15 +417,11 @@ export function useVehicleExit() {
     removeSplitRow: splitPaymentHook.removeRow,
     // Caja state
     caja, requireOpenForPayment,
-    // Refs
-    ticketInputRef,
     // Actions
-    lookup,
     processExitAction,
     reprintTicket,
     lostTicket,
     handleDownloadPrintWarning,
     handleClosePrintWarning,
-    toggleReturnItem,
   };
 }

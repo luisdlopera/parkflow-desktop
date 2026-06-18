@@ -82,6 +82,9 @@ export default function ConfigSidebar() {
           if (item.href === "/configuracion/cajas") {
             return shouldShowModule(runtimeConfig, "cash", true);
           }
+          if (item.href === "/configuracion/lockers") {
+            return runtimeConfig?.operationConfiguration?.helmetHandling === "LOCKERS";
+          }
           return true;
         }),
       })).filter((group) => group.items.length > 0),

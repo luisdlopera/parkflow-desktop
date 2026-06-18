@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/Input";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { confirmPasswordReset } from "@/lib/auth-api";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -60,23 +61,7 @@ function ResetPasswordForm() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "http://localhost:6011/api/v1/auth"}/password-reset/confirm`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-API-Key": process.env.NEXT_PUBLIC_API_KEY ?? "dev-api-key-123",
-          },
-          body: JSON.stringify({ token, newPassword: password, deviceId: "web" }),
-        }
-      );
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Token inválido o expirado");
-      }
-
+      await confirmPasswordReset(token, password);
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al restablecer la contraseña");

@@ -50,6 +50,10 @@ const OnboardingSection = dynamic(() => import("@/features/configuration/compone
   ssr: false,
   loading: () => <p className="text-sm text-slate-600">Cargando asistente...</p>,
 });
+const FeatureFlagsSection = dynamic(() => import("@/components/config/FeatureFlagsSection").then((m) => ({ default: m.FeatureFlagsSection })), {
+  ssr: false,
+  loading: () => <p className="text-sm text-slate-600">Cargando características...</p>,
+});
 
 function Notice({ kind, text }: { kind: "ok" | "err" | "info"; text: string }) {
   let cls = "border-slate-200 bg-slate-50 text-slate-800";
@@ -63,6 +67,7 @@ function Notice({ kind, text }: { kind: "ok" | "err" | "info"; text: string }) {
 }
 
 const SECTION_CONFIG: Record<string, { label: string; title: string; description: string }> = {
+  onboarding: { label: "Asistente Inicial", title: "Parametrización y Características del Negocio", description: "Ejecuta el asistente de configuración inicial y define las características operativas de tu parqueadero." },
   setup: { label: "Operación Básica", title: "Configuración de operación", description: "Configura los parámetros básicos de tu parqueadero: capacidad, turnos, región y cascos." },
   modules: { label: "Módulos", title: "Módulos y características", description: "Habilita o deshabilita módulos según tu plan de suscripción." },
   rates: { label: "Tarifas", title: "Tarifas de estacionamiento", description: "Configura las tarifas por tipo de vehículo, fracciones de tiempo y topes de cobro." },
@@ -72,13 +77,12 @@ const SECTION_CONFIG: Record<string, { label: string; title: string; description
   users: { label: "Usuarios", title: "Usuarios del sistema", description: "Administra los usuarios, roles y permisos del sistema de estacionamiento." },
   parameters: { label: "Parámetros", title: "Parámetros del sistema", description: "Configura los parámetros generales del parqueadero, facturación e integraciones." },
   interface: { label: "Interfaz", title: "Personalización de interfaz", description: "Ajusta la apariencia y comportamiento de la interfaz de usuario." },
-  onboarding: { label: "Asistente Inicial", title: "Parametrización automática", description: "Ejecuta el asistente de configuración inicial para preparar el sistema." },
   masters: { label: "Maestros", title: "Tipos de vehículo", description: "Administra los tipos de vehículo, íconos y colores del sistema." }
 };
 
 export default function ConfiguracionPage() {
   const searchParams = useSearchParams();
-  const section = searchParams.get("section") || "rates";
+  const section = searchParams.get("section");
   const [notice, setNotice] = useState<{ kind: "ok" | "err" | "info"; text: string } | null>(null);
   const [auditReason] = useState("");
   const { perms: perm, refresh: refreshPerms } = usePermissions();
@@ -113,7 +117,10 @@ export default function ConfiguracionPage() {
     cfgEdit: perm["configuracion:editar"] ?? false
   }), [perm]);
 
-  const config = SECTION_CONFIG[section] || SECTION_CONFIG.rates;
+  if (!section) return null;
+
+  const config = SECTION_CONFIG[section];
+  if (!config) return null;
 
   return (
     <div className="space-y-6">
@@ -177,7 +184,13 @@ export default function ConfiguracionPage() {
         <InterfaceSection settings={uiSettings} onUpdate={updateUiSetting} companyId={companyId} onNotify={setNotice} />
       )}
 
-      {section === "onboarding" && <OnboardingSection onNotify={setNotice} />}
+      {section === "onboarding" && (
+        <>
+          <OnboardingSection onNotify={setNotice} />
+          <hr className="border-slate-200" />
+          <FeatureFlagsSection onNotify={setNotice} />
+        </>
+      )}
 
       {section === "masters" && (
         can.cfgRead

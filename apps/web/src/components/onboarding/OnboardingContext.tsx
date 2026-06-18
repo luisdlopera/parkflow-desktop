@@ -9,7 +9,7 @@ import {
   useRef,
   ReactNode,
 } from "react";
-import { useOnboardingStore } from "@/lib/stores/onboardingStore";
+import { useOnboardingStore } from "@/lib/stores/onboarding-store";
 import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
 import { saveOnboardingStep, type OnboardingStatus } from "@/lib/onboarding-api";
 import {

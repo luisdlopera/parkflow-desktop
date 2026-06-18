@@ -8,37 +8,11 @@ import { Button } from "@/components/ui/Button";
 import KpiCard from "@/components/ui/KpiCard";
 import DataTable from "@/components/ui/DataTable";
 import Badge from "@/components/ui/Badge";
-import { buildApiHeaders } from "@/lib/api";
 import LocalPrintAgentStatus from "@/components/print/LocalPrintAgentStatus";
 import { PrintStatusMonitor } from "@/components/print/PrintStatusMonitor";
+import { fetchDashboardSummary, fetchOperationalHealth, fetchActiveSessions, postOperationalAction, type DashboardSummary, type OperationalHealth } from "@/services/dashboard.service";
 
-type Summary = {
-  activeVehicles: number;
-  totalCapacity: number;
-  availableSpaces: number;
-  occupancyPercent: number;
-  entriesSinceMidnight: number;
-  exitsSinceMidnight: number;
-  reprintsSinceMidnight: number;
-  lostTicketSinceMidnight: number;
-  printFailedSinceMidnight: number;
-  printDeadLetterSinceMidnight: number;
-  syncQueuePending: number;
-};
-
-type OperationalHealth = {
-  overallStatus: "OK" | "WARNING" | "CRITICAL";
-  apiStatus: "OK" | "WARNING" | "CRITICAL";
-  databaseStatus: "OK" | "WARNING" | "CRITICAL";
-  printerStatus: "OK" | "WARNING" | "CRITICAL";
-  lastHeartbeat: string | null;
-  outboxPending: number;
-  failedEvents: number;
-  deadLetter: number;
-  lastSuccessfulSync: string | null;
-  openCashRegisters: number;
-  recentErrors: Array<{ source: string; status: string; message: string; occurredAt: string | null }>;
-};
+type Summary = DashboardSummary;
 
 type ActiveRow = {
   plate: string;
@@ -57,11 +31,6 @@ export default function DashboardPage() {
   const [opsMessage, setOpsMessage] = useState<string | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
 
-  const base = useCallback(() => {
-    const raw = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
-    return raw.replace(/\/$/, "");
-  }, []);
-
   const load = useCallback(async () => {
     setSummaryError(null);
     setSessionsError(null);
@@ -72,63 +41,35 @@ export default function DashboardPage() {
     } catch {}
 
     try {
-      const sRes = await fetch(`${base()}/supervisor/summary`, { headers: await buildApiHeaders() });
-      if (!sRes.ok) {
-        setSummaryError("No se pudo cargar resumen de supervisor");
-        setSummary(null);
-      } else {
-        setSummary(await sRes.json());
-      }
+      setSummary(await fetchDashboardSummary());
     } catch {
       setSummaryError("API no disponible (resumen)");
       setSummary(null);
     }
+
+    setOperational(await fetchOperationalHealth());
+
     try {
-      const opsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1"}/health/operational`, { headers: await buildApiHeaders() });
-      setOperational(opsRes.ok ? await opsRes.json() : null);
-    } catch {
-      setOperational(null);
-    }
-    try {
-      const aRes = await fetch(`${base()}/sessions/active-list`, { headers: await buildApiHeaders() });
-      if (!aRes.ok) {
-        setSessionsError("No se pudo listar sesiones activas");
-        setSessions([]);
-        return;
-      }
-      const list = (await aRes.json()) as Array<{
-        ticketNumber: string;
-        plate: string;
-        vehicleType: string;
-        entryAt: string;
-        status: string;
-        totalAmount: number | null;
-      }>;
-      setSessions(
-        list.map((row) => ({
-          plate: row.plate,
-          type: row.vehicleType,
-          started: row.entryAt
-            ? new Date(row.entryAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
-            : "—",
-          status: row.status === "ACTIVE" ? "Activo" : row.status,
-          amount: row.totalAmount != null ? `$ ${Number(row.totalAmount).toLocaleString("es-CO")}` : "—"
-        }))
-      );
+      const list = await fetchActiveSessions();
+      setSessions(list.map((row) => ({
+        plate: row.plate,
+        type: row.vehicleType,
+        started: row.entryAt ? new Date(row.entryAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }) : "—",
+        status: row.status === "ACTIVE" ? "Activo" : row.status,
+        amount: row.totalAmount != null ? `$ ${Number(row.totalAmount).toLocaleString("es-CO")}` : "—",
+      })));
     } catch {
       setSessionsError("API no disponible (sesiones activas)");
       setSessions([]);
     }
-  }, [base]);
+  }, []);
 
   useEffect(() => {
     load().catch(console.error);
   }, [load]);
 
   const callOperationalAction = useCallback(async (path: "retry-sync" | "test-printer") => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1"}/health/operational/${path}`, { method: "POST", headers: await buildApiHeaders() });
-    const payload = await res.json();
-    setOpsMessage(payload.message ?? "Acción ejecutada");
+    setOpsMessage(await postOperationalAction(path));
     await load();
   }, [load]);
 

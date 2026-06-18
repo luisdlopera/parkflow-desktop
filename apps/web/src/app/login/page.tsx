@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { currentUser, loadSession, login, saveSession } from "@/lib/auth";
+import { checkSetupRequired, postInitialSetup } from "@/lib/auth-api";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
 import { Eye, EyeOff, Lock, Mail, User, Building, Landmark, Zap } from "lucide-react";
@@ -56,14 +57,10 @@ export default function LoginPage() {
     // Check if initial admin setup is required
     void (async () => {
       try {
-        const authBaseUrl = (process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "http://localhost:6011/api/v1/auth").replace(/\/$/, "");
-        const response = await fetch(`${authBaseUrl}/setup-required`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.setupRequired) {
-            setIsSetupMode(true);
-            setEmail(""); // clear default email for setup
-          }
+        const data = await checkSetupRequired();
+        if (data.setupRequired) {
+          setIsSetupMode(true);
+          setEmail(""); // clear default email for setup
         }
       } catch (err) {
         console.error("Check setup required failed:", err);
@@ -140,24 +137,13 @@ export default function LoginPage() {
           return;
         }
 
-        const authBaseUrl = (process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "http://localhost:6011/api/v1/auth").replace(/\/$/, "");
-        const response = await fetch(`${authBaseUrl}/setup`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: emailValue,
-            password: passwordValue,
-            name: adminName.trim(),
-            companyName: companyName.trim(),
-            nit: companyNit.trim(),
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("No se pudo registrar la configuración inicial");
-        }
-
-        const session = await response.json();
+        const session = await postInitialSetup({
+          email: emailValue,
+          password: passwordValue,
+          name: adminName.trim(),
+          companyName: companyName.trim(),
+          nit: companyNit.trim(),
+        }) as any;
         await saveSession(session);
         if (!session.user?.onboardingCompleted) {
           router.replace("/onboarding");

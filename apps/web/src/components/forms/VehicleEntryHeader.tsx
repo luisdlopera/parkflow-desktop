@@ -13,14 +13,13 @@ export default function VehicleEntryHeader({
   updateSettings,
   showSettings,
   setShowSettings,
+  isSingleType,
 }: any) {
   const modeOptions = [
     { key: "beginner", label: "Principiante" },
     { key: "expert", label: "Experto" },
     { key: "speed", label: "Velocidad" },
   ];
-
-  const isSingleType = false;
 
   if (isSingleType) return null;
 
