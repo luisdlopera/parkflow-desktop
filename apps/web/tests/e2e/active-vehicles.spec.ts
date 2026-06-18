@@ -230,7 +230,7 @@ test.describe('Active Vehicles Table (Vehículos Activos)', () => {
     await page.route('**/api/v1/operations/sessions/active-list', async route => {
       requestCount++;
       if (requestCount === 1) {
-        await route.waitForRequest();
+        await new Promise<void>((r) => setTimeout(r, 100));
         await route.fulfill({
           status: 200,
           contentType: 'application/json',

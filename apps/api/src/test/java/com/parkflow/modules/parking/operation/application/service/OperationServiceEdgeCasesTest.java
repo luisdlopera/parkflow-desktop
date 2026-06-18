@@ -148,3 +148,4 @@ class OperationServiceEdgeCasesTest {
     assertThat(throwable.getMessage()).contains("No se encontró tarifa aplicable");
   }
 }
+

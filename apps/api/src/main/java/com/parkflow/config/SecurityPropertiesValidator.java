@@ -33,14 +33,28 @@ public class SecurityPropertiesValidator {
                      || environment.getActiveProfiles().length == 0;
 
         if (!isDev) {
-            if ("dev-api-key-123".equals(apiKey)) {
-                log.error("CRITICAL: Default API Key detected in non-development profile!");
+            // Validate API key: ensure it's not the example placeholder or blank
+            if (apiKey == null || apiKey.trim().isEmpty() || "REPLACE_WITH_SECURE_API_KEY".equals(apiKey)) {
+                log.error("CRITICAL: Default or empty API Key detected in non-development profile!");
                 throw new IllegalStateException("Production environment must override app.security.api-key");
             }
-            if ("VKShGl6Hkv2V4dxJ2R6OOSSQqBGP4CILhK5neP5B6zA=".equals(jwtSecret)) {
-                log.error("CRITICAL: Default JWT Secret detected in non-development profile!");
+
+            // Validate JWT secret: must be Base64 and at least 32 bytes when decoded
+            if (jwtSecret == null || jwtSecret.trim().isEmpty() || "REPLACE_WITH_BASE64_JWT_SECRET".equals(jwtSecret)) {
+                log.error("CRITICAL: Default or empty JWT Secret detected in non-development profile!");
                 throw new IllegalStateException("Production environment must override app.security.jwt-secret");
             }
+            try {
+                byte[] bytes = java.util.Base64.getDecoder().decode(jwtSecret);
+                if (bytes.length < 32) {
+                    log.error("CRITICAL: JWT secret after Base64 decode is shorter than 32 bytes (256 bits)");
+                    throw new IllegalStateException("JWT secret must be at least 32 bytes when Base64 decoded");
+                }
+            } catch (IllegalArgumentException ex) {
+                log.error("CRITICAL: JWT secret is not valid Base64");
+                throw new IllegalStateException("JWT secret must be Base64 encoded and at least 32 bytes after decoding");
+            }
+
             log.info("Security properties validation passed.");
         } else {
             log.warn("Development profile active: default security properties are allowed.");

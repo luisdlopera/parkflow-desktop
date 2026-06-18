@@ -28,6 +28,7 @@ import {
 import type { VehicleType } from "@parkflow/types";
 import { useExitShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
 import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
+import { PAYMENT_METHOD_CATALOG, type PaymentMethodCode } from "@/lib/payment-method-catalog";
 import { useOsShortcut } from "@/hooks/useOsShortcut";
 import { toast } from "@heroui/react";
 import { currentUser } from "@/lib/auth";
@@ -83,41 +84,13 @@ type ActiveLookup = {
   };
 };
 
-type PaymentMethodCode =
-  | "CASH"
-  | "DEBIT_CARD"
-  | "CREDIT_CARD"
-  | "CARD"
-  | "QR"
-  | "NEQUI"
-  | "DAVIPLATA"
-  | "TRANSFER"
-  | "AGREEMENT"
-  | "INTERNAL_CREDIT"
-  | "OTHER"
-  | "MIXED";
-
 type SplitPaymentRow = {
   id: string;
   method: Exclude<PaymentMethodCode, "MIXED">;
   amount: string;
 };
 
-const PAYMENT_METHODS: Array<{ code: PaymentMethodCode; label: string; hint: string; tone: string }> = [
-  { code: "CASH", label: "Efectivo", hint: "Cambio / vuelto", tone: "bg-emerald-500 hover:bg-emerald-600 border border-default-200" },
-  { code: "DEBIT_CARD", label: "Tarjeta débito", hint: "Datáfono débito", tone: "bg-sky-500 hover:bg-sky-600 border border-default-200" },
-  { code: "CREDIT_CARD", label: "Tarjeta crédito", hint: "Datáfono crédito", tone: "bg-indigo-500 hover:bg-indigo-600 border border-default-200" },
-  { code: "QR", label: "QR", hint: "Código QR", tone: "bg-slate-700 hover:bg-slate-800 border border-default-200" },
-  { code: "NEQUI", label: "Nequi", hint: "Referencia requerida", tone: "bg-fuchsia-500 hover:bg-fuchsia-600 border border-default-200" },
-  { code: "DAVIPLATA", label: "Daviplata", hint: "Referencia requerida", tone: "bg-rose-500 hover:bg-rose-600 border border-default-200" },
-  { code: "TRANSFER", label: "Transferencia", hint: "Banco / referencia", tone: "bg-cyan-600 hover:bg-cyan-700 border border-default-200" },
-  { code: "AGREEMENT", label: "Convenio", hint: "Empresa aliada", tone: "bg-amber-500 hover:bg-amber-600 border border-default-200" },
-  { code: "INTERNAL_CREDIT", label: "Crédito interno", hint: "Cartera interna", tone: "bg-violet-500 hover:bg-violet-600 border border-default-200" },
-  { code: "OTHER", label: "Otro", hint: "Caso especial", tone: "bg-zinc-500 hover:bg-zinc-600 border border-default-200" },
-  { code: "MIXED", label: "Mixto", hint: "Pago dividido", tone: "bg-teal-600 hover:bg-teal-700 border border-default-200" },
-];
-
-const SPLIT_METHODS = PAYMENT_METHODS.filter((method) => method.code !== "MIXED") as Array<{
+const SPLIT_METHODS = PAYMENT_METHOD_CATALOG.filter((m) => m.code !== "MIXED") as Array<{
   code: Exclude<PaymentMethodCode, "MIXED">;
   label: string;
   hint: string;
@@ -289,16 +262,15 @@ export default function SalidaCobroPage() {
   const [printWarning, setPrintWarning] = useState<{ ticketNumber: string; plate: string; previewLines: string[] } | null>(null);
   const autoLookupDone = useRef(false);
 
-  const { config, hasPaymentMethod } = useRuntimeConfig();
+  const { config, isLoading: configLoading, hasPaymentMethod } = useRuntimeConfig();
   const enableVehicleCondition = config?.operationConfiguration?.enableVehicleCondition ?? true;
   const enableCustodiedItem = config?.operationConfiguration?.enableCustodiedItem ?? true;
-  const availablePaymentMethods = useMemo(
-    () => {
-      if (!config?.paymentMethods) return PAYMENT_METHODS;
-      return PAYMENT_METHODS.filter((m) => config.paymentMethods!.includes(m.code));
-    },
-    [config]
-  );
+  const availablePaymentMethods = useMemo(() => {
+    if (configLoading || config == null) return [];
+    if (!config.paymentMethods || config.paymentMethods.length === 0) return [];
+    return PAYMENT_METHOD_CATALOG.filter((m) => config.paymentMethods!.includes(m.code));
+  }, [config, configLoading]);
+  const isPaymentConfigMissing = !configLoading && config != null && availablePaymentMethods.length === 0;
   const firstMethod = availablePaymentMethods[0]?.code ?? ("CASH" as PaymentMethodCode);
   const secondMethod = availablePaymentMethods[1]?.code ?? firstMethod;
 
@@ -336,7 +308,7 @@ export default function SalidaCobroPage() {
   const splitRemaining = Math.max(0, totalDue - splitTotal);
 
   const paymentLabel = useCallback((code: PaymentMethodCode) => {
-    return PAYMENT_METHODS.find((method) => method.code === code)?.label ?? code;
+    return PAYMENT_METHOD_CATALOG.find((method) => method.code === code)?.label ?? code;
   }, []);
 
   const paymentObservation = useCallback((method: PaymentMethodCode) => {
@@ -1146,6 +1118,16 @@ export default function SalidaCobroPage() {
               : "."}
           </p>
 
+          {isPaymentConfigMissing && (
+            <div className="mt-4 rounded-xl border border-warning-200 bg-warning-50 p-4 text-sm text-warning-700">
+              No hay métodos de pago configurados.{" "}
+              <Link href="/configuracion/metodos-pago" className="underline font-medium">
+                Ir a Configuración → Métodos de pago
+              </Link>{" "}
+              para habilitarlos antes de cobrar.
+            </div>
+          )}
+
           <div className="mt-4 grid grid-cols-1 gap-2">
             {availablePaymentMethods.map((method, index) => (
               <Button
@@ -1303,7 +1285,7 @@ export default function SalidaCobroPage() {
             color="primary"
             size="lg"
             className="mt-5 h-14 w-full font-bold border border-default-200"
-            isDisabled={!active || searching || processing || !!printWarning}
+            isDisabled={!active || searching || processing || !!printWarning || isPaymentConfigMissing}
             isLoading={processing}
             onPress={() => processExit()}
           >

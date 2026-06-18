@@ -64,7 +64,10 @@ export async function fetchRuntimeConfig(): Promise<RuntimeConfig | null> {
       },
       cache: "no-store"
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`[RuntimeConfig] ${res.status} ${res.statusText} — config not available`);
+      return null;
+    }
     return (await res.json()) as RuntimeConfig;
   } catch (err) {
     // Silently swallow network errors (API not ready, CORS, etc.)

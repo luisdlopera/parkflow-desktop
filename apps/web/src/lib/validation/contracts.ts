@@ -314,8 +314,6 @@ export const settingsParametersSchema = z.object({
   parkingName: z.string().optional(),
   taxId: z.string().optional(),
   address: z.string().optional(),
-  phone: z.string().optional(),
-  siteLabel: z.string().optional(),
   currency: z.string().optional(),
   timeZone: z.string().optional(),
   logoUrl: z.string().max(500).optional(),

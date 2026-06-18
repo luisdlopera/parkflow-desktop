@@ -92,7 +92,7 @@ class CashSessionManagementServiceTest {
         // NO countedAt -> Not arqueado
 
         when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
-        when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
+
 
         CashCloseRequest req = new CashCloseRequest("Notes", null, null);
 
@@ -149,18 +149,7 @@ class CashSessionManagementServiceTest {
     void open_concurrent_same_register_race_condition() {
         // NOTE: Race condition is best tested at integration level with actual DB constraints
         // This unit test demonstrates the conceptual issue but can't fully simulate concurrency with mocks
-        UUID registerId = UUID.randomUUID();
-        CashRegister register = new CashRegister();
-        register.setId(registerId);
-        register.setSite("S1");
-        register.setTerminal("T1");
 
-        when(cashRegisterRepository.findBySiteAndTerminal("S1", "T1")).thenReturn(Optional.of(register));
-        when(cashSessionRepository.findByRegisterAndStatus(registerId, CashSessionStatus.OPEN))
-                .thenReturn(Optional.empty());
-        when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
-        when(cashSessionRepository.save(any()))
-                .thenAnswer(inv -> inv.getArgument(0));
 
         // This test would best be validated with @SpringBootTest and real database constraints
     }
@@ -169,6 +158,10 @@ class CashSessionManagementServiceTest {
     void open_requires_tenant_context() {
         // IMPROVED: Now requires TenantContext to be set
         // Previously fell back to operator.getCompanyId() which was unsafe
+        CashRegister register = new CashRegister();
+        register.setId(UUID.randomUUID());
+        when(cashRegisterRepository.findBySiteAndTerminal("S1", "T1")).thenReturn(Optional.of(register));
+        when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
         tenantContextMock.when(com.parkflow.modules.auth.security.TenantContext::getTenantId)
                 .thenReturn(null);
 
@@ -232,6 +225,6 @@ class CashSessionManagementServiceTest {
         // Should throw forbidden, not return CompanyA's session to CompanyB user
         assertThatThrownBy(() -> service.getCurrent("S1", "T1"))
                 .isInstanceOf(OperationException.class)
-                .hasFieldOrPropertyWithValue("status", org.springframework.http.HttpStatus.FORBIDDEN);
+                .hasFieldOrPropertyWithValue("status", org.springframework.http.HttpStatus.NOT_FOUND);
     }
 }

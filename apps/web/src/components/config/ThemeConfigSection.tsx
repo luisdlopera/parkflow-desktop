@@ -74,7 +74,6 @@ interface ColorRowProps {
 function ColorRow({ slot, value, onChange }: ColorRowProps) {
   const safeHex = HEX_RE.test(value) ? value : "#000000";
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleColorChange = (color: any) => {
     try {
       const raw: string = color.toString("hex");
@@ -393,6 +392,7 @@ export function ThemeConfigSection({ companyId, onNotify }: ThemeConfigSectionPr
             <p className="text-sm font-medium text-slate-800">Logotipo</p>
             <div className="h-24 rounded-xl border border-slate-200 flex items-center justify-center bg-slate-50">
               {savedConfig?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- logo URL is a dynamic API asset; next/image requires static remotePatterns which would need to enumerate all possible server origins in export mode
                 <img src={savedConfig.logoUrl} alt="Logo actual" className="max-h-20 max-w-full object-contain" />
               ) : (
                 <p className="text-xs text-slate-400">Sin logotipo</p>
@@ -414,6 +414,7 @@ export function ThemeConfigSection({ companyId, onNotify }: ThemeConfigSectionPr
             <p className="text-sm font-medium text-slate-800">Favicon</p>
             <div className="h-24 rounded-xl border border-slate-200 flex items-center justify-center bg-slate-50">
               {savedConfig?.faviconUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- favicon URL is a dynamic API asset; see logo comment above
                 <img src={savedConfig.faviconUrl} alt="Favicon actual" className="max-h-16 max-w-full object-contain" />
               ) : (
                 <p className="text-xs text-slate-400">Sin favicon</p>

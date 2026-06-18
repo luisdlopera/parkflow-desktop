@@ -271,3 +271,4 @@ class RegisterEntryServiceEntryModeTest {
     return rate;
   }
 }
+

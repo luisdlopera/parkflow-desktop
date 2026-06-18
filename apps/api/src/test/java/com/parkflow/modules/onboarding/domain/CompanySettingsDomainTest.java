@@ -99,6 +99,7 @@ class CompanySettingsDomainTest {
     settings.setSettingsJson(new HashMap<>(nested));
 
     assertTrue(settings.getSettingsJson().containsKey("level1"));
+    @SuppressWarnings("unchecked")
     Map<String, Object> level1 = (Map<String, Object>) settings.getSettingsJson().get("level1");
     assertTrue(level1.containsKey("level2"));
   }

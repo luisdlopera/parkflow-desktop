@@ -85,3 +85,4 @@ class SupervisorServiceTest {
     assertThat(summary.syncQueuePending()).isEqualTo(3);
   }
 }
+

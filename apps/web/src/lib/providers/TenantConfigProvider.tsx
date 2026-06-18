@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useCallback, useMemo } from "react";
+import useSWR from "swr";
 import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 
 interface TenantConfigContextType {
@@ -16,34 +17,28 @@ interface TenantConfigContextType {
 const TenantConfigContext = createContext<TenantConfigContextType | null>(null);
 
 export function TenantConfigProvider({ children }: { children: React.ReactNode }) {
-  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { data: runtimeConfig, error: swrError, isLoading, mutate } = useSWR<RuntimeConfig | null>(
+    "tenant-runtime-config",
+    fetchRuntimeConfig,
+    {
+      revalidateOnFocus: false,
+    }
+  );
+
+  const loading = isLoading;
+  const error = !!swrError;
 
   const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    try {
-      const config = await fetchRuntimeConfig();
-      setRuntimeConfig(config);
-    } catch (err) {
-      console.error("Error fetching runtime config inside provider:", err);
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await mutate();
+  }, [mutate]);
 
   useEffect(() => {
-    void refresh();
-
-    // Evento personalizado si la configuración cambia en otra parte del sistema
     const handleRefreshRequest = () => {
-      void refresh();
+      void mutate();
     };
     window.addEventListener("parkflow-refresh-runtime-config", handleRefreshRequest);
     return () => window.removeEventListener("parkflow-refresh-runtime-config", handleRefreshRequest);
-  }, [refresh]);
+  }, [mutate]);
 
   const supportsVehicleType = useCallback((typeCode: string): boolean => {
     if (!runtimeConfig?.vehicleTypes) return false;
@@ -64,7 +59,7 @@ export function TenantConfigProvider({ children }: { children: React.ReactNode }
 
   const value = useMemo(
     () => ({
-      runtimeConfig,
+      runtimeConfig: runtimeConfig ?? null,
       loading,
       error,
       refresh,

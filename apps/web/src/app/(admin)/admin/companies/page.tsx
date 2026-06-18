@@ -1,7 +1,8 @@
 "use client";
 
 import { toast } from "@heroui/react";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
+import { useUrlPagination } from "@/hooks/useUrlPagination";
 import { Skeleton, useOverlayState, AlertDialog, Button as HeroButton } from "@heroui/react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Chip } from "@/components/ui/Chip";
@@ -41,47 +42,23 @@ export default function CompaniesPage() {
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [isPurging, setIsPurging] = useState(false);
-
-  // DataTable States
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
 
-  // Filter and paginate data
-  const processedCompanies = useMemo(() => {
-    if (!companies) return [];
-    
-    let filtered = [...companies];
-    
-    // 1. Search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(c => 
-        c.name.toLowerCase().includes(query) || 
-        (c.nit && c.nit.toLowerCase().includes(query)) ||
-        (c.email && c.email.toLowerCase().includes(query))
-      );
-    }
-    
-    // 2. Filters
-    if (activeFilters.plan) {
-      const selectedPlans = activeFilters.plan.split(',');
-      filtered = filtered.filter(c => selectedPlans.includes(c.plan));
-    }
-    if (activeFilters.status) {
-      const selectedStatuses = activeFilters.status.split(',');
-      filtered = filtered.filter(c => selectedStatuses.includes(c.status));
-    }
-    
-    return filtered;
-  }, [companies, searchQuery, activeFilters]);
-
-  const paginatedCompanies = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return processedCompanies.slice(start, start + pageSize);
-  }, [processedCompanies, page, pageSize]);
+  const {
+    paginatedData: paginatedCompanies,
+    totalItems,
+    searchQuery,
+    setSearchQuery,
+    activeFilters,
+    setActiveFilters,
+    page,
+    pageSize,
+    handlePaginationChange,
+  } = useUrlPagination<Company>({
+    data: companies,
+    searchFields: ["name", "nit", "email"],
+    initialPageSize: 10,
+  });
 
   const handleDelete = (company: Company) => {
     setCompanyToDelete(company);
@@ -109,7 +86,7 @@ export default function CompaniesPage() {
 
       mutate();
       setCompanyToDelete(null);
-      setSelectedKeys(new Set()); // Clear selection if deleted
+      setSelectedKeys(new Set());
       toast.success("Eliminación exitosa");
     } catch (err: any) {
       console.error("Error al eliminar empresa", err);
@@ -379,14 +356,9 @@ export default function CompaniesPage() {
         pagination={{
           page,
           pageSize,
-          total: processedCompanies.length,
+          total: totalItems,
         }}
-        onPaginationChange={(newPage, newPageSize) => {
-          setPage(newPage);
-          if (newPageSize !== pageSize) {
-            setPageSize(newPageSize);
-          }
-        }}
+        onPaginationChange={handlePaginationChange}
         filters={[
           {
             key: "plan",

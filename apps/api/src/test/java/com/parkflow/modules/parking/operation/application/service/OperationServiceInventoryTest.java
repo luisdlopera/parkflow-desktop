@@ -413,3 +413,4 @@ class OperationServiceInventoryTest {
     return r;
   }
 }
+

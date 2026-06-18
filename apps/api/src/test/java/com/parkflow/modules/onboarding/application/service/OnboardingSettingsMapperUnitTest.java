@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.parkflow.modules.licensing.domain.Company;
-import com.parkflow.modules.licensing.enums.OperationalProfile;
 import com.parkflow.modules.licensing.enums.PlanType;
 import java.util.HashMap;
 import java.util.List;

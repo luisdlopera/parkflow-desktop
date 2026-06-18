@@ -460,3 +460,4 @@ class RegisterEntryServiceMotorcycleTest {
     return rate;
   }
 }
+

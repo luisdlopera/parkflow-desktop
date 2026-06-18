@@ -90,8 +90,6 @@ export type ParkingParametersPayload = {
   parkingName?: string;
   taxId?: string;
   address?: string;
-  phone?: string;
-  siteLabel?: string;
   currency?: string;
   timeZone?: string;
   logoUrl?: string;

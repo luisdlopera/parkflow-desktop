@@ -27,6 +27,10 @@ public class ConfigurationParkingSiteController {
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,
       Pageable pageable) {
+    // If companyId not provided, resolve from TenantContext
+    if (companyId == null) {
+      companyId = com.parkflow.modules.auth.security.TenantContext.getTenantId();
+    }
     return ResponseEntity.ok(parkingSiteUseCase.list(companyId, q, active, pageable));
   }
 
@@ -39,8 +43,11 @@ public class ConfigurationParkingSiteController {
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<ParkingSiteResponse> create(
-      @RequestParam UUID companyId,
       @Valid @RequestBody ParkingSiteRequest req) {
+    UUID companyId = com.parkflow.modules.auth.security.TenantContext.getTenantId();
+    if (companyId == null) {
+      throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
+    }
     return ResponseEntity.status(HttpStatus.CREATED).body(parkingSiteUseCase.create(companyId, req));
   }
 

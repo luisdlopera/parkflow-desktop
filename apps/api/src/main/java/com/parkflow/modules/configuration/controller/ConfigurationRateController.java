@@ -37,7 +37,8 @@ public class ConfigurationRateController {
       @RequestParam(required = false) Boolean active,
       @RequestParam(required = false) String category,
       Pageable pageable) {
-    return ResponseEntity.ok(listRatesUseCase.list(site, q, active, category, pageable));
+    java.util.UUID companyId = com.parkflow.modules.auth.security.TenantContext.getTenantId();
+    return ResponseEntity.ok(listRatesUseCase.list(site, q, active, category, companyId, pageable));
   }
 
   @GetMapping("/{id}")

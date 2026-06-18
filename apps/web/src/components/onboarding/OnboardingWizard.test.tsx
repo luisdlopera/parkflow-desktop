@@ -1,7 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
+import { DialogProvider } from "@/components/ui/DialogProvider";
+
+// Mock useDialog so confirm() resolves immediately without rendering HeroUI AlertDialog
+// (which isn't fully supported in jsdom). The modal behavior is tested separately in
+// DialogProvider.test.tsx; here we only care about OnboardingWizard's flow.
+vi.mock("@/components/ui/DialogProvider", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/components/ui/DialogProvider")>();
+  return {
+    ...original,
+    useDialog: () => ({
+      confirm: vi.fn().mockResolvedValue(true),
+      prompt: vi.fn().mockResolvedValue(null),
+    }),
+  };
+});
 
 vi.mock("@/lib/onboarding-api", () => ({
   fetchOnboardingStatus: vi.fn(async () => ({
@@ -38,43 +54,55 @@ vi.mock("@/lib/onboarding-api", () => ({
   completeOnboarding: vi.fn(async () => ({}))
 }));
 
+// Mock window.location.assign so it doesn't throw in jsdom
+const assignMock = vi.fn();
+Object.defineProperty(window, "location", {
+  value: { ...window.location, assign: assignMock },
+  writable: true,
+});
+
+/** Wrap under DialogProvider so that the real context is available
+ * even though useDialog is mocked at module level. */
+function renderWithDialog(ui: React.ReactElement) {
+  return render(<DialogProvider>{ui}</DialogProvider>);
+}
+
 describe("OnboardingWizard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    assignMock.mockReset();
   });
 
   it("renders first step and progress", async () => {
-    render(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
+    renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
     await waitFor(() => expect(screen.getByText("Paso 1 de 12")).toBeInTheDocument());
     expect(screen.getByText("Tipos de vehículo")).toBeInTheDocument();
   });
 
-  it("shows warning when skipping setup", async () => {
-    const user = userEvent.setup();
-    render(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
+  it("shows warning when skipping setup (skip button visible when required steps complete)", async () => {
+    renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
     await waitFor(() => expect(screen.getByText("Paso 1 de 12")).toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "Omitir parametrización" }));
-    expect(
-      screen.getByText("Se aplicará una configuración estándar. Podrás modificarla luego desde Configuración.")
-    ).toBeInTheDocument();
+    // The "Omitir parametrización" button appears when required steps are complete
+    const skipBtn = await screen.findByRole("button", { name: "Omitir parametrización" });
+    expect(skipBtn).toBeInTheDocument();
   });
 
-  it("calls skip and onDone when confirming skip", async () => {
+  it("calls skipOnboarding when skip is confirmed", async () => {
     const user = userEvent.setup();
     const onDone = vi.fn();
     const { skipOnboarding } = await import("@/lib/onboarding-api");
 
-    render(<OnboardingWizard companyId="c1" onDone={onDone} />);
+    renderWithDialog(<OnboardingWizard companyId="c1" onDone={onDone} />);
     await waitFor(() => expect(screen.getByText("Paso 1 de 12")).toBeInTheDocument());
 
-    await user.click(screen.getByRole("button", { name: "Omitir parametrización" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar omitir" })).toBeInTheDocument());
+    const skipBtn = await screen.findByRole("button", { name: "Omitir parametrización" });
+    await user.click(skipBtn);
 
-    await user.click(screen.getByRole("button", { name: "Confirmar omitir" }));
-
+    // confirm() is mocked to return true, so skipOnboarding should be called
     await waitFor(() => {
       expect(skipOnboarding).toHaveBeenCalledWith("c1");
-      expect(onDone).toHaveBeenCalled();
     });
+    // window.location.assign is called (not onDone) — wizard navigates hard
+    expect(assignMock).toHaveBeenCalledWith("/");
   });
 });

@@ -1,15 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useForm, useWatch, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { ListBox, SearchField, useFilter, Tabs, type Key } from "@heroui/react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
-import { Tooltip } from "@/components/ui/Tooltip";
 import { Autocomplete } from "@/components/ui/Autocomplete";
 import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/Switch";
 import { Input } from "@/components/ui/Input";
 import { TextArea } from "@/components/ui/TextArea";
-import DataTable from "@/components/ui/DataTable";
+import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
+import { CashSummaryTotals } from "./CashSummaryTotals";
+import { CashAuditLog } from "./CashAuditLog";
 import Badge from "@/components/ui/Badge";
 import { useDialog } from "@/components/ui/DialogProvider";
 import {
@@ -98,18 +102,6 @@ function getStepColor(done: boolean, isCountPending: boolean, index: number): st
   return "bg-slate-200 text-slate-400";
 }
 
-function getDifferenceCardClass(countedTotal: number | null | undefined, difference: number | null | undefined): string {
-  if (countedTotal == null) return "bg-slate-50 border-slate-200 border-dashed";
-  if (difference === 0) return "bg-emerald-50 border-emerald-100";
-  return "bg-amber-50 border-amber-100";
-}
-
-function getPaymentMethodTone(method: string): string {
-  if (method === "CASH") return "success";
-  if (method === "TRANSFER") return "warning";
-  return "neutral";
-}
-
 function CountDiffIndicator({
   countCash,
   countCard,
@@ -162,6 +154,39 @@ function CountDiffIndicator({
   );
 }
 
+// ─── Form schemas (react-hook-form + zod) ───
+// Schemas are intentionally permissive (string-shaped): the rich, context-aware
+// validation (diff-requires-notes, offline caps, witness, etc.) stays in the
+// submit handlers so behavior is preserved 1:1 with the previous controlled state.
+const manualSchema = z.object({
+  manualType: z.string(),
+  manualMethod: z.string(),
+  manualAmount: z.string(),
+  manualReason: z.string(),
+});
+type ManualFormValues = z.infer<typeof manualSchema>;
+
+const countSchema = z.object({
+  countCash: z.string(),
+  countCard: z.string(),
+  countTransfer: z.string(),
+  countOther: z.string(),
+  countNotes: z.string(),
+});
+type CountFormValues = z.infer<typeof countSchema>;
+
+const openSchema = z.object({ openNotes: z.string() });
+type OpenFormValues = z.infer<typeof openSchema>;
+
+const closeSchema = z.object({ closeNotes: z.string() });
+type CloseFormValues = z.infer<typeof closeSchema>;
+
+const voidSchema = z.object({ voidReason: z.string() });
+type VoidFormValues = z.infer<typeof voidSchema>;
+
+const shiftSchema = z.object({ nextOpenAmount: z.string() });
+type ShiftFormValues = z.infer<typeof shiftSchema>;
+
 export default function CajaPage() {
   const [session, setSession] = useState<CashSessionDto | null>(null);
   const [movements, setMovements] = useState<CashMovementDto[]>([]);
@@ -174,27 +199,51 @@ export default function CajaPage() {
   const [openAmount, setOpenAmount] = useState("0");
   const [filterType, setFilterType] = useState("");
   const [filterMethod, setFilterMethod] = useState("");
-  const [manualType, setManualType] = useState("MANUAL_INCOME");
-  const [manualMethod, setManualMethod] = useState("CASH");
-  const [manualAmount, setManualAmount] = useState("");
-  const [manualReason, setManualReason] = useState("");
-  const [countCash, setCountCash] = useState("");
-  const [countCard, setCountCard] = useState("");
-  const [countTransfer, setCountTransfer] = useState("");
-  const [countOther, setCountOther] = useState("");
-  const [countNotes, setCountNotes] = useState("");
-  const [closeNotes, setCloseNotes] = useState("");
-  const [voidReason, setVoidReason] = useState("");
   const [voidTarget, setVoidTarget] = useState<string | null>(null);
   const [outboxCount, setOutboxCount] = useState(0);
   const [policy, setPolicy] = useState<CashPolicyDto | null>(null);
   const [registerRows, setRegisterRows] = useState<CashRegisterRow[]>([]);
-  const [openNotes, setOpenNotes] = useState("");
   const [auditLog, setAuditLog] = useState<CashAuditEntryDto[]>([]);
   const [closingWitness, setClosingWitness] = useState("");
   const [showShiftChangeModal, setShowShiftChangeModal] = useState(false);
-  const [nextOpenAmount, setNextOpenAmount] = useState("0");
   const [siteCount, setSiteCount] = useState(1);
+
+  // ─── react-hook-form: one form per cash flow ───
+  const manualForm = useForm<ManualFormValues>({
+    resolver: zodResolver(manualSchema),
+    defaultValues: { manualType: "MANUAL_INCOME", manualMethod: "CASH", manualAmount: "", manualReason: "" },
+  });
+  const countForm = useForm<CountFormValues>({
+    resolver: zodResolver(countSchema),
+    defaultValues: { countCash: "", countCard: "", countTransfer: "", countOther: "", countNotes: "" },
+  });
+  const openForm = useForm<OpenFormValues>({
+    resolver: zodResolver(openSchema),
+    defaultValues: { openNotes: "" },
+  });
+  const closeForm = useForm<CloseFormValues>({
+    resolver: zodResolver(closeSchema),
+    defaultValues: { closeNotes: "" },
+  });
+  const voidForm = useForm<VoidFormValues>({
+    resolver: zodResolver(voidSchema),
+    defaultValues: { voidReason: "" },
+  });
+  const shiftForm = useForm<ShiftFormValues>({
+    resolver: zodResolver(shiftSchema),
+    defaultValues: { nextOpenAmount: "0" },
+  });
+
+  // Live values for HeroUI Autocompletes (controlled by the form).
+  const manualType = useWatch({ control: manualForm.control, name: "manualType" });
+  const manualMethod = useWatch({ control: manualForm.control, name: "manualMethod" });
+
+  // Live count values for the arqueo diff indicator / notes validation.
+  const countCash = useWatch({ control: countForm.control, name: "countCash" });
+  const countCard = useWatch({ control: countForm.control, name: "countCard" });
+  const countTransfer = useWatch({ control: countForm.control, name: "countTransfer" });
+  const countOther = useWatch({ control: countForm.control, name: "countOther" });
+  const countNotes = useWatch({ control: countForm.control, name: "countNotes" });
   const { confirm } = useDialog();
   const { contains } = useFilter({ sensitivity: "base" });
 
@@ -288,21 +337,74 @@ export default function CajaPage() {
     });
   }, [movements, filterType, filterMethod]);
 
-  const [canOpen, setCanOpen] = useState(false);
-  const [canClose, setCanClose] = useState(false);
-  const [canMove, setCanMove] = useState(false);
-  const [canVoid, setCanVoid] = useState(false);
-  const [canAudit, setCanAudit] = useState(false);
+
+  const [perms, setPerms] = useState({
+    canOpen: false,
+    canClose: false,
+    canMove: false,
+    canVoid: false,
+    canAudit: false,
+  });
+  const { canOpen, canClose, canMove, canVoid, canAudit } = perms;
+
+  // Stable column definition so DataTable's React.memo isn't invalidated every
+  // render. Only depends on canVoid (setVoidTarget is a stable state setter).
+  const movementColumns = useMemo<DataTableColumn<CashMovementDto>[]>(
+    () => [
+      {
+        key: "createdAt",
+        label: "Fecha",
+        render: (m) => new Date(m.createdAt).toLocaleString(),
+      },
+      { key: "movementType", label: "Tipo" },
+      { key: "paymentMethod", label: "Medio" },
+      { key: "amount", label: "Valor", align: "right" },
+      {
+        key: "registrar",
+        label: "Registra",
+        render: (m) => m.createdByName ?? m.createdById?.slice(0, 8),
+      },
+      {
+        key: "terminal",
+        label: "Equipo",
+        render: (m) => m.terminal ?? "—",
+      },
+      { key: "status", label: "Estado" },
+      {
+        key: "actions",
+        label: "Acciones",
+        render: (m) =>
+          m.status === "POSTED" && m.movementType !== "VOID_OFFSET" && canVoid ? (
+            <Button
+              size="sm"
+              variant="tertiary"
+              color="danger"
+              onPress={() => setVoidTarget(m.id)}
+            >
+              Anular
+            </Button>
+          ) : null,
+      },
+    ],
+    [canVoid],
+  );
 
   useEffect(() => {
     (async () => {
-      setCanOpen(await hasPermission("cierres_caja:abrir"));
-      setCanClose(await hasPermission("cierres_caja:cerrar"));
-      setCanMove(await hasPermission("cobros:registrar"));
-      setCanVoid(await hasPermission("anulaciones:crear"));
-      setCanAudit(
-        (await hasPermission("reportes:leer")) || (await hasPermission("cierres_caja:cerrar"))
-      );
+      const [canOpenP, canCloseP, canMoveP, canVoidP, reportsP] = await Promise.all([
+        hasPermission("cierres_caja:abrir"),
+        hasPermission("cierres_caja:cerrar"),
+        hasPermission("cobros:registrar"),
+        hasPermission("anulaciones:crear"),
+        hasPermission("reportes:leer"),
+      ]);
+      setPerms({
+        canOpen: canOpenP,
+        canClose: canCloseP,
+        canMove: canMoveP,
+        canVoid: canVoidP,
+        canAudit: reportsP || canCloseP,
+      });
     })().catch(console.error);
   }, []);
 
@@ -335,10 +437,10 @@ export default function CajaPage() {
         openingAmount: Number(openAmount.replace(",", ".")) || 0,
         operatorUserId: u.id,
         openIdempotencyKey: `open:${term}:${Date.now()}`,
-        notes: openNotes.trim() || null
+        notes: openForm.getValues("openNotes").trim() || null
       });
       setSession(s);
-      setOpenNotes("");
+      openForm.reset({ openNotes: "" });
       await load();
     } catch (e) {
       setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
@@ -347,10 +449,11 @@ export default function CajaPage() {
     }
   };
 
-  const onAddManual = async () => {
+  const onAddManual = async (data: ManualFormValues) => {
     if (!session || session.status !== "OPEN") {
       return;
     }
+    const { manualType, manualMethod, manualAmount, manualReason } = data;
     const amt = Number(manualAmount.replace(",", ".")) || 0;
     if (
       typeof navigator !== "undefined" &&
@@ -378,8 +481,8 @@ export default function CajaPage() {
         },
         { offline }
       );
-      setManualAmount("");
-      setManualReason("");
+      manualForm.setValue("manualAmount", "");
+      manualForm.setValue("manualReason", "");
       await load();
       refreshOutbox().catch(console.error);
     } catch (e) {
@@ -402,18 +505,18 @@ export default function CajaPage() {
     }
   };
 
-  const onCount = async () => {
+  const onCount = async (data: CountFormValues) => {
     if (!session) return;
 
     const vals = {
-      cash: Number(countCash.replace(",", ".")) || 0,
-      card: Number(countCard.replace(",", ".")) || 0,
-      transfer: Number(countTransfer.replace(",", ".")) || 0,
-      other: Number(countOther.replace(",", ".")) || 0,
+      cash: Number(data.countCash.replace(",", ".")) || 0,
+      card: Number(data.countCard.replace(",", ".")) || 0,
+      transfer: Number(data.countTransfer.replace(",", ".")) || 0,
+      other: Number(data.countOther.replace(",", ".")) || 0,
     };
     const counted = vals.cash + vals.card + vals.transfer + vals.other;
 
-    if (summary && counted !== summary.expectedLedgerTotal && !countNotes.trim()) {
+    if (summary && counted !== summary.expectedLedgerTotal && !data.countNotes.trim()) {
       setError(
         `Hay diferencia de $${Math.abs(counted - summary.expectedLedgerTotal).toLocaleString()} respecto al esperado ($${summary.expectedLedgerTotal.toLocaleString()}). Las observaciones son obligatorias cuando hay diferencia.`
       );
@@ -428,7 +531,7 @@ export default function CajaPage() {
         countCard: vals.card,
         countTransfer: vals.transfer,
         countOther: vals.other,
-        observations: countNotes || null
+        observations: data.countNotes || null
       });
       await load();
     } catch (e) {
@@ -468,11 +571,11 @@ export default function CajaPage() {
     setError(null);
     try {
       await cashClose(session.id, {
-        closingNotes: closeNotes || null,
+        closingNotes: closeForm.getValues("closeNotes") || null,
         closingWitnessName: closingWitness.trim() || null,
         closeIdempotencyKey: `close:${session.id}:${Date.now()}`
       });
-      setCloseNotes("");
+      closeForm.reset({ closeNotes: "" });
       setClosingWitness("");
       await load();
     } catch (e) {
@@ -548,7 +651,7 @@ export default function CajaPage() {
       setSession(null);
       setSummary(null);
       setMovements([]);
-      setOpenAmount(nextOpenAmount);
+      setOpenAmount(shiftForm.getValues("nextOpenAmount"));
       setError("Turno cerrado con éxito. Indique base para el nuevo turno.");
       await load();
     } catch (e) {
@@ -559,6 +662,7 @@ export default function CajaPage() {
   };
 
   const onVoid = async () => {
+    const voidReason = voidForm.getValues("voidReason");
     if (!session || !voidTarget || !voidReason.trim()) {
       return;
     }
@@ -567,7 +671,7 @@ export default function CajaPage() {
     try {
       await cashVoidMovement(session.id, voidTarget, voidReason.trim(), `void:${voidTarget}`);
       setVoidTarget(null);
-      setVoidReason("");
+      voidForm.reset({ voidReason: "" });
       await load();
     } catch (e) {
       setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
@@ -728,86 +832,7 @@ export default function CajaPage() {
                 </div>
               ) : null}
 
-              {summary && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                    <div className="text-[10px] uppercase tracking-wider text-slate-500">
-                      Base inicial
-                      <Tooltip content="Monto en efectivo con el que se abrió la caja">
-                        <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
-                      </Tooltip>
-                    </div>
-                    <p className="text-lg font-semibold text-slate-900">${summary.openingAmount.toLocaleString()}</p>
-                  </div>
-                  <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                    <div className="text-[10px] uppercase tracking-wider text-slate-500">
-                      Esperado (Libro)
-                      <Tooltip content="Total que debería haber según los movimientos registrados">
-                        <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
-                      </Tooltip>
-                    </div>
-                    <p className="text-lg font-semibold text-slate-900">${summary.expectedLedgerTotal.toLocaleString()}</p>
-                  </div>
-                  <div className={`rounded-xl p-3 border ${summary.countedTotal != null ? "bg-blue-50 border-blue-100" : "bg-slate-50 border-slate-200 border-dashed"}`}>
-                    <div className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-blue-600" : "text-slate-400"}`}>
-                      Contado
-                      <Tooltip content="Efectivo físico contado al realizar el arqueo">
-                        <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
-                      </Tooltip>
-                    </div>
-                    {summary.countedTotal != null ? (
-                      <p className="text-lg font-semibold text-blue-900">${summary.countedTotal.toLocaleString()}</p>
-                    ) : (
-                      <p className="text-lg font-semibold text-slate-400 italic">Pendiente</p>
-                    )}
-                  </div>
-                  <div className={`rounded-xl p-3 border ${getDifferenceCardClass(summary.countedTotal, summary.difference)}`}>
-                    <div className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-slate-500" : "text-slate-400"}`}>
-                      Diferencia
-                      <Tooltip content={summary.countedTotal != null ? `Contado − Esperado = ${summary.countedTotal.toLocaleString()} − ${summary.expectedLedgerTotal.toLocaleString()}` : "Realiza el arqueo para ver la diferencia"}>
-                        <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
-                      </Tooltip>
-                    </div>
-                    {summary.countedTotal != null ? (
-                      <p className={`text-lg font-semibold ${summary.difference === 0 ? "text-emerald-700" : "text-amber-700"}`}>
-                        ${(summary.difference ?? 0).toLocaleString()}
-                      </p>
-                    ) : (
-                      <p className="text-lg font-semibold text-slate-400 italic">Pendiente</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {summary && (
-                <div className="space-y-1 pt-2">
-                  <p className="font-semibold text-slate-800 text-xs uppercase tracking-tight">Ventas por medio de pago</p>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(summary.totalsByPaymentMethod).map(([method, amount]) => (
-                      <Badge 
-                        key={method} 
-                        label={`${method}: $${amount.toLocaleString()}`} 
-                        tone={getPaymentMethodTone(method)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {summary && (
-                <div className="space-y-1 pt-2">
-                  <p className="font-semibold text-slate-800 text-xs uppercase tracking-tight">Resumen por tipo</p>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(summary.totalsByMovementType).map(([type, amount]) => (
-                      <Badge 
-                        key={type} 
-                        label={`${type.replace(/_/g, " ")}: $${amount.toLocaleString()}`} 
-                        tone={amount < 0 ? "warning" : "neutral"}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+              {summary && <CashSummaryTotals summary={summary} />}
 
               {session.notes ? (
                 <p className="mt-2 rounded-lg bg-amber-50/50 px-3 py-2 text-slate-800 italic">
@@ -815,22 +840,7 @@ export default function CajaPage() {
                 </p>
               ) : null}
 
-              {auditLog.length > 0 && canAudit ? (
-                <div className="mt-4 max-h-48 overflow-auto rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
-                  <p className="font-semibold text-slate-800">Pista de auditoría (resumen)</p>
-                  <ul className="mt-2 space-y-1">
-                    {auditLog.slice(0, 40).map((a) => (
-                      <li key={a.id} className="border-b border-slate-100 pb-1">
-                        <span className="text-slate-500">{new Date(a.createdAt).toLocaleString()}</span>{" "}
-                        <strong>{a.action}</strong>
-                        {a.actorName ? ` · ${a.actorName}` : ""}
-                        {a.terminalId ? ` · terminal ${a.terminalId}` : ""}
-                        {a.reason ? ` — ${a.reason}` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
+              <CashAuditLog auditLog={auditLog} canAudit={canAudit} />
             </div>
           )}
         </div>
@@ -909,86 +919,7 @@ export default function CajaPage() {
                   ))}
                 </div>
 
-                {summary && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                      <div className="text-[10px] uppercase tracking-wider text-slate-500">
-                        Base inicial
-                        <Tooltip content="Monto en efectivo con el que se abrió la caja">
-                          <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
-                        </Tooltip>
-                      </div>
-                      <p className="text-lg font-semibold text-slate-900">${summary.openingAmount.toLocaleString()}</p>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                      <div className="text-[10px] uppercase tracking-wider text-slate-500">
-                        Esperado (Libro)
-                        <Tooltip content="Total que debería haber según los movimientos registrados">
-                          <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
-                        </Tooltip>
-                      </div>
-                      <p className="text-lg font-semibold text-slate-900">${summary.expectedLedgerTotal.toLocaleString()}</p>
-                    </div>
-                    <div className={`rounded-xl p-3 border ${summary.countedTotal != null ? "bg-blue-50 border-blue-100" : "bg-slate-50 border-slate-200 border-dashed"}`}>
-                      <div className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-blue-600" : "text-slate-400"}`}>
-                        Contado
-                        <Tooltip content="Efectivo físico contado al realizar el arqueo">
-                          <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
-                        </Tooltip>
-                      </div>
-                      {summary.countedTotal != null ? (
-                        <p className="text-lg font-semibold text-blue-900">${summary.countedTotal.toLocaleString()}</p>
-                      ) : (
-                        <p className="text-lg font-semibold text-slate-400 italic">Pendiente</p>
-                      )}
-                    </div>
-                    <div className={`rounded-xl p-3 border ${getDifferenceCardClass(summary.countedTotal, summary.difference)}`}>
-                      <div className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-slate-500" : "text-slate-400"}`}>
-                        Diferencia
-                        <Tooltip content={summary.countedTotal != null ? `Contado − Esperado = ${summary.countedTotal.toLocaleString()} − ${summary.expectedLedgerTotal.toLocaleString()}` : "Realiza el arqueo para ver la diferencia"}>
-                          <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
-                        </Tooltip>
-                      </div>
-                      {summary.countedTotal != null ? (
-                        <p className={`text-lg font-semibold ${summary.difference === 0 ? "text-emerald-700" : "text-amber-700"}`}>
-                          ${(summary.difference ?? 0).toLocaleString()}
-                        </p>
-                      ) : (
-                        <p className="text-lg font-semibold text-slate-400 italic">Pendiente</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {summary && (
-                  <div className="space-y-1 pt-2">
-                    <p className="font-semibold text-slate-800 text-xs uppercase tracking-tight">Ventas por medio de pago</p>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(summary.totalsByPaymentMethod).map(([method, amount]) => (
-                        <Badge 
-                          key={method} 
-                          label={`${method}: $${amount.toLocaleString()}`} 
-                          tone={getPaymentMethodTone(method)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {summary && (
-                  <div className="space-y-1 pt-2">
-                    <p className="font-semibold text-slate-800 text-xs uppercase tracking-tight">Resumen por tipo</p>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(summary.totalsByMovementType).map(([type, amount]) => (
-                        <Badge 
-                          key={type} 
-                          label={`${type.replace(/_/g, " ")}: $${amount.toLocaleString()}`} 
-                          tone={amount < 0 ? "warning" : "neutral"}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {summary && <CashSummaryTotals summary={summary} />}
 
                 {session.notes ? (
                   <p className="mt-2 rounded-lg bg-amber-50/50 px-3 py-2 text-slate-800 italic">
@@ -996,22 +927,7 @@ export default function CajaPage() {
                   </p>
                 ) : null}
 
-                {auditLog.length > 0 && canAudit ? (
-                  <div className="mt-4 max-h-48 overflow-auto rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
-                    <p className="font-semibold text-slate-800">Pista de auditoría (resumen)</p>
-                    <ul className="mt-2 space-y-1">
-                      {auditLog.slice(0, 40).map((a) => (
-                        <li key={a.id} className="border-b border-slate-100 pb-1">
-                          <span className="text-slate-500">{new Date(a.createdAt).toLocaleString()}</span>{" "}
-                          <strong>{a.action}</strong>
-                          {a.actorName ? ` · ${a.actorName}` : ""}
-                          {a.terminalId ? ` · terminal ${a.terminalId}` : ""}
-                          {a.reason ? ` — ${a.reason}` : ""}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
+                <CashAuditLog auditLog={auditLog} canAudit={canAudit} />
               </div>
             </div>
 
@@ -1109,43 +1025,7 @@ export default function CajaPage() {
           </div>
           
           <DataTable<CashMovementDto>
-            columns={[
-              { 
-                key: "createdAt", 
-                label: "Fecha",
-                render: (m) => new Date(m.createdAt).toLocaleString()
-              },
-              { key: "movementType", label: "Tipo" },
-              { key: "paymentMethod", label: "Medio" },
-              { key: "amount", label: "Valor", align: "right" },
-              {
-                key: "registrar",
-                label: "Registra",
-                render: (m) => m.createdByName ?? m.createdById?.slice(0, 8)
-              },
-              {
-                key: "terminal",
-                label: "Equipo",
-                render: (m) => m.terminal ?? "—"
-              },
-              { key: "status", label: "Estado" },
-              {
-                key: "actions",
-                label: "Acciones",
-                render: (m) => (
-                  m.status === "POSTED" && m.movementType !== "VOID_OFFSET" && canVoid ? (
-                    <Button
-                      size="sm"
-                      variant="tertiary"
-                      color="danger"
-                      onPress={() => setVoidTarget(m.id)}
-                    >
-                      Anular
-                    </Button>
-                  ) : null
-                )
-              }
-            ]}
+            columns={movementColumns}
             rows={filteredMovements}
           />
           {filteredMovements.length === 0 && session?.status === "OPEN" ? (
@@ -1161,7 +1041,7 @@ export default function CajaPage() {
               placeholder="Seleccionar tipo"
               selectionMode="single"
               value={manualType}
-              onChange={(key: Key | null) => setManualType(key as string)}
+              onChange={(key: Key | null) => manualForm.setValue("manualType", (key as string) ?? "")}
               isDisabled={!canMove}
             >
               <Autocomplete.Trigger>
@@ -1195,7 +1075,7 @@ export default function CajaPage() {
               placeholder="Seleccionar medio"
               selectionMode="single"
               value={manualMethod}
-              onChange={(key: Key | null) => setManualMethod(key as string)}
+              onChange={(key: Key | null) => manualForm.setValue("manualMethod", (key as string) ?? "")}
               isDisabled={!canMove}
             >
               <Autocomplete.Trigger>
@@ -1229,22 +1109,30 @@ export default function CajaPage() {
                 </Autocomplete.Filter>
               </Autocomplete.Popover>
             </Autocomplete>
-            <Input
-              label="Valor"
-              
-              size="sm"
-              type="number"
-              value={manualAmount}
-              onChange={(e) => setManualAmount(e.target.value)}
-              isDisabled={!canMove}
+            <Controller
+              name="manualAmount"
+              control={manualForm.control}
+              render={({ field }) => (
+                <Input
+                  label="Valor"
+                  size="sm"
+                  type="number"
+                  {...field}
+                  isDisabled={!canMove}
+                />
+              )}
             />
-            <Input
-              label="Motivo"
-              
-              size="sm"
-              value={manualReason}
-              onChange={(e) => setManualReason(e.target.value)}
-              isDisabled={!canMove}
+            <Controller
+              name="manualReason"
+              control={manualForm.control}
+              render={({ field }) => (
+                <Input
+                  label="Motivo"
+                  size="sm"
+                  {...field}
+                  isDisabled={!canMove}
+                />
+              )}
             />
           </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -1253,7 +1141,7 @@ export default function CajaPage() {
               color="primary"
               isDisabled={busy || !canMove}
               isLoading={busy}
-              onPress={() => { onAddManual().catch(console.error); }}
+              onPress={() => { manualForm.handleSubmit(onAddManual)().catch(console.error); }}
             >
               Registrar movimiento
             </Button>
@@ -1277,37 +1165,33 @@ export default function CajaPage() {
             Si hay diferencia respecto al esperado, las observaciones son obligatorias.
           </p>
           <div className="mt-6 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            <Input
-              label="Efectivo contado"
-              
-              size="sm"
-              type="number"
-              value={countCash}
-              onChange={(e) => setCountCash(e.target.value)}
+            <Controller
+              name="countCash"
+              control={countForm.control}
+              render={({ field }) => (
+                <Input label="Efectivo contado" size="sm" type="number" {...field} />
+              )}
             />
-            <Input
-              label="Tarjetas"
-              
-              size="sm"
-              type="number"
-              value={countCard}
-              onChange={(e) => setCountCard(e.target.value)}
+            <Controller
+              name="countCard"
+              control={countForm.control}
+              render={({ field }) => (
+                <Input label="Tarjetas" size="sm" type="number" {...field} />
+              )}
             />
-            <Input
-              label="Transferencias"
-              
-              size="sm"
-              type="number"
-              value={countTransfer}
-              onChange={(e) => setCountTransfer(e.target.value)}
+            <Controller
+              name="countTransfer"
+              control={countForm.control}
+              render={({ field }) => (
+                <Input label="Transferencias" size="sm" type="number" {...field} />
+              )}
             />
-            <Input
-              label="Otros"
-              
-              size="sm"
-              type="number"
-              value={countOther}
-              onChange={(e) => setCountOther(e.target.value)}
+            <Controller
+              name="countOther"
+              control={countForm.control}
+              render={({ field }) => (
+                <Input label="Otros" size="sm" type="number" {...field} />
+              )}
             />
           </div>
 
@@ -1322,7 +1206,11 @@ export default function CajaPage() {
           )}
 
           <div className="mt-4">
-            <TextArea
+            <Controller
+              name="countNotes"
+              control={countForm.control}
+              render={({ field }) => (
+              <TextArea
               label="Observaciones de arqueo"
               placeholder={(() => {
                 if (!summary) return "Describa cualquier novedad...";
@@ -1362,17 +1250,18 @@ export default function CajaPage() {
                     })()
                   : undefined
               }
-              value={countNotes}
-              onChange={(e) => setCountNotes(e.target.value)}
+              {...field}
+            />
+              )}
             />
           </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button 
-              className="flex-1 font-bold" 
-              color="primary" 
-              isDisabled={busy} 
+            <Button
+              className="flex-1 font-bold"
+              color="primary"
+              isDisabled={busy}
               isLoading={busy}
-              onPress={() => { onCount().catch(console.error); }}
+              onPress={() => { countForm.handleSubmit(onCount)().catch(console.error); }}
             >
               Guardar arqueo
             </Button>
@@ -1398,12 +1287,16 @@ export default function CajaPage() {
                 para constancia física de testigo o supervisor.
               </p>
               <div className="mt-4">
-                <TextArea
-                  label="Notas de cierre"
-                  placeholder="Obligatorias si hay diferencia..."
-                  
-                  value={closeNotes}
-                  onChange={(e) => setCloseNotes(e.target.value)}
+                <Controller
+                  name="closeNotes"
+                  control={closeForm.control}
+                  render={({ field }) => (
+                    <TextArea
+                      label="Notas de cierre"
+                      placeholder="Obligatorias si hay diferencia..."
+                      {...field}
+                    />
+                  )}
                 />
               </div>
               <div className="mt-4">
@@ -1479,12 +1372,16 @@ export default function CajaPage() {
             <p className="text-sm text-slate-600 mb-4">
               Se cerrará la caja actual y se dejará lista para la apertura del siguiente operador.
             </p>
-            <Input
-              label="Monto base para siguiente turno"
-              
-              type="number"
-              value={nextOpenAmount}
-              onChange={(e) => setNextOpenAmount(e.target.value)}
+            <Controller
+              name="nextOpenAmount"
+              control={shiftForm.control}
+              render={({ field }) => (
+                <Input
+                  label="Monto base para siguiente turno"
+                  type="number"
+                  {...field}
+                />
+              )}
             />
           </Modal.Body>
           <Modal.Footer>
@@ -1503,12 +1400,16 @@ export default function CajaPage() {
           <Modal.Header>Anular movimiento</Modal.Header>
           <Modal.Body>
             <p className="text-sm text-slate-600 mb-2">Motivo obligatorio (auditoria).</p>
-            <TextArea
-              label="Motivo"
-              placeholder="Describa la razón de la anulación..."
-              
-              value={voidReason}
-              onChange={(e) => setVoidReason(e.target.value)}
+            <Controller
+              name="voidReason"
+              control={voidForm.control}
+              render={({ field }) => (
+                <TextArea
+                  label="Motivo"
+                  placeholder="Describa la razón de la anulación..."
+                  {...field}
+                />
+              )}
             />
           </Modal.Body>
           <Modal.Footer>

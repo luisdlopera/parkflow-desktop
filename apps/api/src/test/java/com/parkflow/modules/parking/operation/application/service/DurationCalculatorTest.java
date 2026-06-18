@@ -29,3 +29,4 @@ class DurationCalculatorTest {
     assertThat(breakdown.billableMinutes()).isEqualTo(0);
   }
 }
+
