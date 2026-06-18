@@ -10,6 +10,7 @@ import { ChevronRight, Clock3, Loader2, Search, Ticket, Car, User, Building2, Cr
 import { cn } from "@heroui/theme";
 import { useSearch } from "../hooks/useSearch";
 import { SearchResult, SearchType } from "../types/search.types";
+import { useOsShortcut } from "@/hooks/useOsShortcut";
 
 const RECENT_KEY = "parkflow.search.recent";
 const MAX_RECENT = 6;
@@ -78,6 +79,7 @@ export function QuickSearch() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const { modifier, modifierSymbol } = useOsShortcut();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -193,7 +195,7 @@ export function QuickSearch() {
           Buscar placa, ticket, usuario...
         </span>
         <span className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500">
-          ⌘K
+          {modifierSymbol}K
         </span>
       </Button>
 
@@ -219,7 +221,7 @@ export function QuickSearch() {
                 classNames={{ inputWrapper: "h-12 rounded-2xl bg-slate-50 shadow-none dark:bg-neutral-900/80" }}
               />
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-neutral-400">
-                <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 dark:bg-neutral-900"><Clock3 className="h-3.5 w-3.5" /> Cmd/Ctrl + K</span>
+                <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 dark:bg-neutral-900"><Clock3 className="h-3.5 w-3.5" /> {modifier} + K</span>
                 <span className="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-neutral-900">Enter abre el mejor resultado</span>
                 <span className="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-neutral-900">Esc cierra</span>
               </div>

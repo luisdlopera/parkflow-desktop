@@ -28,6 +28,7 @@ import {
 import type { VehicleType } from "@parkflow/types";
 import { useExitShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
 import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
+import { useOsShortcut } from "@/hooks/useOsShortcut";
 import { toast } from "@heroui/react";
 import { currentUser } from "@/lib/auth";
 import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
@@ -251,6 +252,7 @@ function buildExitRequestBody(
 }
 
 export default function SalidaCobroPage() {
+  const { modifier } = useOsShortcut();
   const searchParams = useSearchParams();
   const { caja, requireOpenForPayment } = useTerminalCaja();
   const initialTicketNumber = searchParams?.get("ticketNumber")?.trim() ?? "";
@@ -978,7 +980,7 @@ export default function SalidaCobroPage() {
                 )
               }
             >
-              Buscar sesion (Ctrl+Enter)
+              Buscar sesion ({modifier}+Enter)
             </Button>
           </div>
 
@@ -1138,7 +1140,7 @@ export default function SalidaCobroPage() {
               : "Busque una sesion activa para habilitar cobros."}
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            Salida rápida: F2 abre esta pantalla; Ctrl+Enter ejecuta la búsqueda
+            Salida rápida: F2 abre esta pantalla; {modifier}+Enter ejecuta la búsqueda
             {availablePaymentMethods.length > 0
               ? `; con sesión activa use 1 (${availablePaymentMethods[0].label.toLowerCase()})${availablePaymentMethods.length > 1 ? ` o 2 (${availablePaymentMethods[1].label.toLowerCase()})` : ""}.`
               : "."}

@@ -81,12 +81,14 @@ function GlobalAuthEffects() {
       const requestUrl = typeof input === "string" || input instanceof URL ? String(input) : input.url;
       const requestMethod =
         init?.method ?? (typeof input !== "string" && !(input instanceof URL) ? input.method : "GET");
+      const requestPath = new URL(response.url).pathname;
       const isLoginRequest = requestUrl.includes("/api/v1/auth/login");
+      const isLogoutRequest = requestPath.includes("/api/v1/auth/logout");
       const isSilent = getHeader(init?.headers, "X-Parkflow-Auth-Toast-Silent") === "1";
-      if (!isLoginRequest && !isSilent && (response.status === 401 || response.status === 403)) {
-        const key = `${response.status}:${requestMethod}:${new URL(response.url).pathname}`;
+      if (!isLoginRequest && !isLogoutRequest && (response.status === 401 || response.status === 403)) {
+        const key = `${response.status}:${requestMethod}:${requestPath}`;
         await handleAuthFailureStatus(response.status);
-        if (response.status === 403 && shouldToast(key)) {
+        if (!isSilent && response.status === 403 && shouldToast(key)) {
           toast.warning("No tienes permisos para realizar esta accion");
         }
       }

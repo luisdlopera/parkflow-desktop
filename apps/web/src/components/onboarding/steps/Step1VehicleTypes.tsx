@@ -19,7 +19,7 @@ function RequiredMark() {
   );
 }
 
-type HelmetHandling = "LOCKERS" | "MANUAL" | "NONE";
+type HelmetHandling = "LOCKERS" | "NONE";
 
 const HELMET_OPTIONS: Array<{ code: HelmetHandling; label: string; description: string }> = [
   {
@@ -28,11 +28,10 @@ const HELMET_OPTIONS: Array<{ code: HelmetHandling; label: string; description: 
     description: "El sistema controla automáticamente la disponibilidad y ocupación de lockers",
   },
   {
-    code: "MANUAL",
-    label: "Custodia manual",
-    description: "El parqueadero administra los cascos sin control de lockers en el sistema",
+    code: "NONE",
+    label: "Sin sistema de lockers",
+    description: "Gestiono los cascos manualmente o no los recibo",
   },
-  { code: "NONE", label: "No custodio cascos", description: "No recibo ni custodio cascos" },
 ];
 
 const MAX_HELMET_LOCKERS = 9999;
@@ -146,10 +145,8 @@ const Step1VehicleTypes = memo(function Step1VehicleTypes() {
               <strong>Lockers numerados:</strong> el sistema controla automáticamente la disponibilidad
               y ocupación de lockers numerados. Al ingresar se asigna un locker y se imprime en el ticket.
               <br />
-              <strong>Custodia manual:</strong> el parqueadero administra los cascos sin control de
-              lockers en el sistema. Solo se registra la recepción del casco.
-              <br />
-              <strong>No custodio cascos:</strong> no recibes ni custodias cascos.
+              <strong>Sin sistema de lockers:</strong> administras los cascos manualmente o simplemente
+              no los recibes. El sistema no controlará lockers.
             </QuestionHelp>
           </div>
           {stepErrors.helmetHandling && (
@@ -158,7 +155,7 @@ const Step1VehicleTypes = memo(function Step1VehicleTypes() {
             </p>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             {HELMET_OPTIONS.map((option) => {
               const selected = helmetHandling === option.code;
               return (

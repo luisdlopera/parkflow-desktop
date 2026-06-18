@@ -87,13 +87,20 @@ export async function enqueueLocalPrint(
 }
 
 export async function pickNextJob(): Promise<Row | null> {
-  const db = await getDb();
-  const all = (await db.getAll(STORE)) as Row[];
-  const now = Date.now();
-  const ready = all
-    .filter((j) => j.status === "pending" && j.nextRetryAt <= now)
-    .sort((a, b) => a.enqueuedAt - b.enqueuedAt);
-  return ready[0] ?? null;
+  try {
+    const db = await getDb();
+    const all = (await db.getAll(STORE)) as Row[];
+    const now = Date.now();
+    const ready = all
+      .filter((j) => j.status === "pending" && j.nextRetryAt <= now)
+      .sort((a, b) => a.enqueuedAt - b.enqueuedAt);
+    return ready[0] ?? null;
+  } catch (err) {
+    if (err instanceof Error && err.name === "InvalidStateError") {
+      dbPromise = null;
+    }
+    return null;
+  }
 }
 
 export async function getJobById(id: string): Promise<Row | null> {
