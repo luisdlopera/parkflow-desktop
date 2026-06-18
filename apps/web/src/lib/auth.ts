@@ -189,7 +189,9 @@ export async function logoutAndRedirectToLogin(reason = "expired"): Promise<void
     return;
   }
   redirectInProgress = true;
-  
+
+  window.dispatchEvent(new CustomEvent("parkflow-logout"));
+
   if (window.location.pathname.startsWith("/login")) {
     return;
   }

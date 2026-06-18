@@ -4,7 +4,8 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Check, Save, AlertTriangle } from "lucide-react";
 import { skipOnboarding, completeOnboarding } from "@/lib/onboarding-api";
-import { patchSessionUser } from "@/lib/auth";
+import { patchSessionUser, logoutAndRedirectToLogin } from "@/lib/auth";
+import { ApiError } from "@/lib/errors/api-error";
 import { useState } from "react";
 import {
   OnboardingProvider,
@@ -56,6 +57,7 @@ function OnboardingContent() {
   const canAdvance = currentValidation.isValid;
 
   const [showSkipModal, setShowSkipModal] = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
 
   if (loading || !status)
     return (
@@ -204,7 +206,12 @@ function OnboardingContent() {
             </Button>
           )}
           {requiredCompleted && (
-            <Button color="warning" variant="tertiary" onPress={() => setShowSkipModal(true)}>
+            <Button
+              color="warning"
+              variant="tertiary"
+              isDisabled={isSkipping}
+              onPress={() => setShowSkipModal(true)}
+            >
               Omitir parametrización
             </Button>
           )}
@@ -224,48 +231,51 @@ function OnboardingContent() {
         </div>
       </div>
 
-      <Modal
-        state={{
-          isOpen: showSkipModal,
-          setOpen: (v: boolean) => {
-            if (!v) setShowSkipModal(false);
-          },
-          open: () => setShowSkipModal(true),
-          close: () => setShowSkipModal(false),
-          toggle: () => setShowSkipModal((v) => !v),
-        }}
-        onOpenChange={setShowSkipModal}
-        aria-label="Omitir parametrización"
-      >
-        <Modal.Content>
-          <Modal.Header>Omitir parametrización</Modal.Header>
-          <Modal.Body>
-            Se aplicará una configuración estándar. Podrás modificarla luego desde Configuración.
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="ghost" onPress={() => setShowSkipModal(false)}>
-              Cancelar
-            </Button>
-            <Button
-              color="warning"
-              onPress={async () => {
-                setShowSkipModal(false);
-                try {
-                  await skipOnboarding(companyId);
-                  await patchSessionUser({ onboardingCompleted: true });
-                  window.dispatchEvent(new CustomEvent("parkflow-refresh-runtime-config"));
-                  onDone();
-                } catch (err) {
-                  console.error("Error skipping onboarding:", err);
-                  setSaveState("error");
-                }
-              }}
-            >
-              Confirmar omitir
-            </Button>
-          </Modal.Footer>
-        </Modal.Content>
-      </Modal>
+      {showSkipModal && (
+        <Modal
+          isOpen
+          onOpenChange={(open: boolean) => { if (!open && !isSkipping) setShowSkipModal(false); }}
+          aria-label="Omitir parametrización"
+        >
+          <Modal.Content>
+            <Modal.Header>Omitir parametrización</Modal.Header>
+            <Modal.Body>
+              Se aplicará una configuración estándar. Podrás modificarla luego desde Configuración.
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="ghost" isDisabled={isSkipping} onPress={() => setShowSkipModal(false)}>
+                Cancelar
+              </Button>
+              <Button
+                color="warning"
+                isLoading={isSkipping}
+                isDisabled={isSkipping}
+                onPress={async () => {
+                  setIsSkipping(true);
+                  try {
+                    await skipOnboarding(companyId);
+                    await patchSessionUser({ onboardingCompleted: true });
+                    window.dispatchEvent(new CustomEvent("parkflow-refresh-runtime-config"));
+                    onDone();
+                  } catch (err) {
+                    if (err instanceof ApiError && err.status === 401) {
+                      await logoutAndRedirectToLogin("expired");
+                    } else {
+                      console.error("Error skipping onboarding:", err);
+                      setSaveState("error");
+                    }
+                  } finally {
+                    setIsSkipping(false);
+                    setShowSkipModal(false);
+                  }
+                }}
+              >
+                Confirmar omitir
+              </Button>
+            </Modal.Footer>
+          </Modal.Content>
+        </Modal>
+      )}
     </div>
   );
 }

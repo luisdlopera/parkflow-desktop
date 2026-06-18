@@ -183,12 +183,23 @@ export async function printCashThermalReceipt(
 }
 
 let workerStarted = false;
+let workerIntervalId: ReturnType<typeof setInterval> | null = null;
+
+export function stopLocalPrintQueueWorker(): void {
+  if (workerIntervalId !== null) {
+    clearInterval(workerIntervalId);
+    workerIntervalId = null;
+    workerStarted = false;
+  }
+}
 
 export function startLocalPrintQueueWorker(): void {
   if (typeof window === "undefined" || workerStarted) {
     return;
   }
   workerStarted = true;
+
+  window.addEventListener("parkflow-logout", stopLocalPrintQueueWorker, { once: true });
 
   const run = async () => {
     const job = await pickNextJob();
@@ -263,7 +274,7 @@ export function startLocalPrintQueueWorker(): void {
     }
   };
 
-  setInterval(() => {
+  workerIntervalId = setInterval(() => {
     void run();
   }, 5_000);
   void run();

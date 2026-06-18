@@ -99,7 +99,7 @@ export function validateStep(
         : vehicleTypes;
       if (selectedTypes.includes("MOTORCYCLE")) {
         const handling = data.helmetHandling;
-        if (handling !== "LOCKERS" && handling !== "MANUAL" && handling !== "NONE") {
+        if (handling !== "LOCKERS" && handling !== "NONE") {
           errors.helmetHandling = "Selecciona una opción de custodia de cascos.";
         }
         if (handling === "LOCKERS") {
