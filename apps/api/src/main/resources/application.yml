@@ -53,7 +53,7 @@ app:
     access-token-ttl-minutes: ${PARKFLOW_ACCESS_TOKEN_TTL_MINUTES:15}
     refresh-token-ttl-days: ${PARKFLOW_REFRESH_TOKEN_TTL_DAYS:7}
     jwt-clock-skew-seconds: ${PARKFLOW_JWT_CLOCK_SKEW_SECONDS:30}
-    swagger-public: ${PARKFLOW_SWAGGER_PUBLIC:true}
+    swagger-public: ${PARKFLOW_SWAGGER_PUBLIC:false}
     offline-lease-hours: ${PARKFLOW_OFFLINE_LEASE_HOURS:48}
     seed-admin-email: ${PARKFLOW_SEED_ADMIN_EMAIL:admin@parkflow.local}
     seed-admin-password: ${PARKFLOW_SEED_ADMIN_PASSWORD:REPLACE_WITH_ADMIN_PASSWORD}

@@ -342,7 +342,14 @@ public class OnboardingService implements OnboardingUseCase {
     Map<String, Object> mutable = new LinkedHashMap<>(settings);
     mutable.put("businessModel", company.getOperationalProfile().name());
     mutable.put("operationalProfile", company.getOperationalProfile().name());
-    mutable.put("operationConfiguration", operationalConfigurationService.getOperationConfiguration(companyId));
+    @SuppressWarnings("unchecked")
+    Map<String, Object> persistedOpConfig = (Map<String, Object>) settings.getOrDefault("operationConfiguration", new LinkedHashMap<>());
+    Map<String, Object> derivedOpConfig = operationalConfigurationService.getOperationConfiguration(companyId);
+    
+    Map<String, Object> mergedOpConfig = new LinkedHashMap<>(derivedOpConfig);
+    mergedOpConfig.putAll(persistedOpConfig);
+    
+    mutable.put("operationConfiguration", mergedOpConfig);
     return mutable;
   }
 
