@@ -1,8 +1,11 @@
 package com.parkflow.modules.parking.operation.domain;
 
 import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.StringListConverter;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,11 +29,13 @@ public class VehicleConditionReport {
 
   private String observations;
 
-  @Column(columnDefinition = "TEXT")
-  private String checklistJson;
+  @Convert(converter = StringListConverter.class)
+  @Column(name = "checklist_json", columnDefinition = "TEXT")
+  private List<String> checklist = new ArrayList<>();
 
-  @Column(columnDefinition = "TEXT")
-  private String photoUrlsJson;
+  @Convert(converter = StringListConverter.class)
+  @Column(name = "photo_urls_json", columnDefinition = "TEXT")
+  private List<String> photoUrls = new ArrayList<>();
 
   @ManyToOne
   @JoinColumn(name = "created_by_id")

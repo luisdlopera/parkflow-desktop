@@ -4,41 +4,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
 import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
-
-import com.parkflow.modules.parking.operation.domain.OperationIdempotency;
-import com.parkflow.modules.parking.operation.domain.ParkingSession;
-import com.parkflow.modules.parking.operation.domain.Rate;
-
-import com.parkflow.modules.parking.operation.domain.Vehicle;
-import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
-import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
-import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
-import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
+import com.parkflow.modules.parking.operation.domain.*;
+import com.parkflow.modules.parking.operation.domain.repository.*;
 import com.parkflow.modules.parking.operation.dto.CustodiedItemRequest;
 import com.parkflow.modules.parking.operation.dto.EntryRequest;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
-import com.parkflow.modules.parking.operation.repository.BlacklistedPlateRepository;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
-import com.parkflow.modules.parking.operation.repository.RateRepository;
-import com.parkflow.modules.parking.operation.repository.VehicleRepository;
 import com.parkflow.modules.parking.operation.validation.PlateValidationResult;
-import com.parkflow.modules.parking.operation.validation.PlateValidator;
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
-import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;
-import com.parkflow.modules.common.exception.OperationException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,6 +37,8 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -59,25 +47,19 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class RegisterEntryServiceMotorcycleTest {
 
-  @Mock private AppUserRepository appUserRepository;
-  @Mock private VehicleRepository vehicleRepository;
-  @Mock private RateRepository rateRepository;
-  @Mock private ParkingSiteRepository parkingSiteRepository;
+  @Mock private EntryValidationService entryValidation;
+  @Mock private VehicleResolverService vehicleResolver;
+  @Mock private TicketNumberService ticketNumbers;
+  @Mock private AppUserPort appUserRepository;
   @Mock private ParkingSessionRepository parkingSessionRepository;
-  @Mock private TicketCounterPort ticketCounterRepository;
   @Mock private VehicleConditionReportPort vehicleConditionReportRepository;
   @Mock private OperationIdempotencyPort operationIdempotencyRepository;
-  @Mock private OperationAuditService operationAuditService;
-  @Mock private OperationPrintService operationPrintService;
-  @Mock private PlateValidator plateValidator;
-  @Mock private MonthlyContractRepository monthlyContractRepository;
-  @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private CustodiedItemPort custodiedItemRepository;
   @Mock private LockerPort lockerPort;
-  @Mock private MasterVehicleTypePort masterVehicleTypePort;
+  @Mock private OperationPrintService operationPrintService;
+  @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
-  @Mock private com.parkflow.modules.onboarding.application.service.CompanySettingsService companySettingsService;
-  @Mock private BlacklistedPlateRepository blacklistedPlateRepository;
+  @Mock private ApplicationEventPublisher eventPublisher;
 
   private RegisterEntryService service;
   private final UUID companyId = UUID.randomUUID();
@@ -93,42 +75,41 @@ class RegisterEntryServiceMotorcycleTest {
     TenantContext.setTenantId(companyId);
 
     service = new RegisterEntryService(
-        appUserRepository, vehicleRepository, rateRepository, parkingSiteRepository, parkingSessionRepository,
-        ticketCounterRepository, vehicleConditionReportRepository, operationIdempotencyRepository,
-        operationAuditService, operationPrintService, plateValidator, monthlyContractRepository,
-        parkingSpaceService, custodiedItemRepository, lockerPort, new ObjectMapper(), new SimpleMeterRegistry(),
-        masterVehicleTypePort, companyRepository, companySettingsService, org.mockito.Mockito.mock(com.parkflow.modules.configuration.service.OperationalConfigurationService.class), org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class), blacklistedPlateRepository);
-
-    Mockito.lenient().when(operationIdempotencyRepository.findByIdempotencyKey(anyString())).thenReturn(Optional.empty());
+        entryValidation, vehicleResolver, ticketNumbers,
+        appUserRepository, parkingSessionRepository, vehicleConditionReportRepository,
+        operationIdempotencyRepository, custodiedItemRepository, lockerPort,
+        operationPrintService, parkingSpaceService, companyRepository, eventPublisher,
+        new SimpleMeterRegistry());
 
     com.parkflow.modules.licensing.domain.Company company = new com.parkflow.modules.licensing.domain.Company();
     company.setId(companyId);
-    Mockito.lenient().when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
-    Mockito.lenient().when(companySettingsService.getSettingsOrDefault(company))
-        .thenReturn(java.util.Map.of("tickets", java.util.Map.of("ticketPrefix", "T-")));
+    lenient().when(companyRepository.findById(any())).thenReturn(Optional.of(company));
+    lenient().when(operationIdempotencyRepository.findByIdempotencyKey(anyString())).thenReturn(Optional.empty());
+    lenient().when(ticketNumbers.next(any(), any())).thenReturn("T-20260618-000001");
+    lenient().when(custodiedItemRepository.findBySession(any())).thenReturn(Collections.emptyList());
+    lenient().when(entryValidation.isMonthlySubscriber(anyString(), any(), any())).thenReturn(false);
 
     MasterVehicleType motorcycleType = new MasterVehicleType();
-    motorcycleType.setCode("MOTORCYCLE");
-    motorcycleType.setActive(true);
-    motorcycleType.setRequiresPlate(true);
-    Mockito.lenient().when(masterVehicleTypePort.findByCode("MOTORCYCLE")).thenReturn(Optional.of(motorcycleType));
-    MasterVehicleType defaultType = new MasterVehicleType();
-    defaultType.setCode("CAR");
-    defaultType.setActive(true);
-    defaultType.setRequiresPlate(true);
-    Mockito.lenient().when(masterVehicleTypePort.findByCode("CAR")).thenReturn(Optional.of(defaultType));
+    motorcycleType.setCode("MOTORCYCLE"); motorcycleType.setActive(true); motorcycleType.setRequiresPlate(true);
+    lenient().when(entryValidation.requireActiveVehicleType("MOTORCYCLE")).thenReturn(motorcycleType);
+    MasterVehicleType carType = new MasterVehicleType();
+    carType.setCode("CAR"); carType.setActive(true); carType.setRequiresPlate(true);
+    lenient().when(entryValidation.requireActiveVehicleType("CAR")).thenReturn(carType);
 
-    Mockito.lenient().when(parkingSessionRepository.findActiveByPlateForUpdate(any(), anyString(), any())).thenReturn(Optional.empty());
-    Mockito.lenient().when(vehicleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-    Mockito.lenient().when(parkingSessionRepository.save(any())).thenAnswer(inv -> {
+    lenient().when(entryValidation.validateAndNormalizePlate(anyString(), anyString(), anyString()))
+        .thenReturn(PlateValidationResult.valid("ABC12D"));
+
+    Rate r = activeRate(); r.setVehicleType("MOTORCYCLE");
+    lenient().when(entryValidation.resolveRate(any(), anyString(), any(), any(), any())).thenReturn(r);
+
+    Vehicle vehicle = new Vehicle(); vehicle.setType("MOTORCYCLE");
+    lenient().when(vehicleResolver.resolveAndSave(anyString(), anyString(), any())).thenReturn(vehicle);
+
+    lenient().when(parkingSessionRepository.save(any())).thenAnswer(inv -> {
       ParkingSession s = inv.getArgument(0);
       s.setId(UUID.randomUUID());
       return s;
     });
-    Mockito.lenient().when(ticketCounterRepository.findByIdForUpdate(anyString())).thenReturn(Optional.empty());
-    Mockito.lenient().when(ticketCounterRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-    Mockito.lenient().when(custodiedItemRepository.findBySession(any())).thenReturn(java.util.Collections.emptyList());
-    Mockito.lenient().when(monthlyContractRepository.findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(anyString(), any(), any())).thenReturn(Optional.empty());
   }
 
   @AfterEach
@@ -140,10 +121,8 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldCreateMotorcycleEntry_WhenValidPlate() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
-    Mockito.when(plateValidator.validatePlate("CO", "MOTORCYCLE", "ABC12D"))
+    Mockito.when(entryValidation.validateAndNormalizePlate("CO", "MOTORCYCLE", "ABC12D"))
         .thenReturn(PlateValidationResult.valid("ABC12D"));
-    Rate rate = activeRate();
-    Mockito.when(rateRepository.findFirstApplicableRate("MAIN", "MOTORCYCLE", companyId)).thenReturn(Optional.of(rate));
 
     EntryRequest req = new EntryRequest(
         "moto-valid-1", "ABC12D", "MOTORCYCLE", "CO", null, false, null,
@@ -159,8 +138,9 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldRejectMotorcyclePlate_WhenTypeIsCar() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
-    Mockito.when(plateValidator.validatePlate("CO", "CAR", "ABC12D"))
-        .thenReturn(PlateValidationResult.invalid("ABC12D", "Parece que ingresaste una placa de moto."));
+    Mockito.doThrow(new OperationException(HttpStatus.BAD_REQUEST,
+            "Parece que ingresaste una placa de moto."))
+        .when(entryValidation).validateAndNormalizePlate("CO", "CAR", "ABC12D");
 
     EntryRequest req = new EntryRequest(
         "moto-cross-1", "ABC12D", "CAR", "CO", null, false, null,
@@ -176,8 +156,9 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldRejectCarPlate_WhenTypeIsMotorcycle() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
-    Mockito.when(plateValidator.validatePlate("CO", "MOTORCYCLE", "ABC123"))
-        .thenReturn(PlateValidationResult.invalid("ABC123", "Parece que ingresaste una placa de carro."));
+    Mockito.doThrow(new OperationException(HttpStatus.BAD_REQUEST,
+            "Parece que ingresaste una placa de carro."))
+        .when(entryValidation).validateAndNormalizePlate("CO", "MOTORCYCLE", "ABC123");
 
     EntryRequest req = new EntryRequest(
         "moto-cross-2", "ABC123", "MOTORCYCLE", "CO", null, false, null,
@@ -193,11 +174,6 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldRejectNoPlate_WhenNoReasonProvided() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
-    MasterVehicleType type = new MasterVehicleType();
-    type.setCode("MOTORCYCLE");
-    type.setActive(true);
-    type.setRequiresPlate(false);
-    Mockito.when(masterVehicleTypePort.findByCode("MOTORCYCLE")).thenReturn(Optional.of(type));
 
     EntryRequest req = new EntryRequest(
         "moto-no-plate-1", null, "MOTORCYCLE", "CO", null, true, null,
@@ -213,13 +189,10 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldCreateMotorcycleEntry_WhenNoPlateWithReason() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
+
     MasterVehicleType type = new MasterVehicleType();
-    type.setCode("MOTORCYCLE");
-    type.setActive(true);
-    type.setRequiresPlate(false);
-    Mockito.when(masterVehicleTypePort.findByCode("MOTORCYCLE")).thenReturn(Optional.of(type));
-    Rate rate = activeRate();
-    Mockito.when(rateRepository.findFirstApplicableRate("MAIN", "MOTORCYCLE", companyId)).thenReturn(Optional.of(rate));
+    type.setCode("MOTORCYCLE"); type.setActive(true); type.setRequiresPlate(false);
+    Mockito.when(entryValidation.requireActiveVehicleType("MOTORCYCLE")).thenReturn(type);
 
     EntryRequest req = new EntryRequest(
         "moto-no-plate-2", null, "MOTORCYCLE", "CO", null, true, "Placa extraviada",
@@ -235,10 +208,8 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldRejectDuplicateHelmetIdentifier() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
-    Mockito.when(plateValidator.validatePlate("CO", "MOTORCYCLE", "ABC12D"))
+    Mockito.when(entryValidation.validateAndNormalizePlate("CO", "MOTORCYCLE", "ABC12D"))
         .thenReturn(PlateValidationResult.valid("ABC12D"));
-    Rate rate = activeRate();
-    Mockito.when(rateRepository.findFirstApplicableRate("MAIN", "MOTORCYCLE", companyId)).thenReturn(Optional.of(rate));
     Mockito.when(custodiedItemRepository.existsActiveHelmetByIdentifierAndCompany("LOCKER-01", companyId)).thenReturn(true);
 
     EntryRequest req = new EntryRequest(
@@ -256,17 +227,12 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldCreateEntry_WhenHelmetWithValidLocker() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
-    Mockito.when(plateValidator.validatePlate("CO", "MOTORCYCLE", "ABC12D"))
+    Mockito.when(entryValidation.validateAndNormalizePlate("CO", "MOTORCYCLE", "ABC12D"))
         .thenReturn(PlateValidationResult.valid("ABC12D"));
-    Rate rate = activeRate();
-    Mockito.when(rateRepository.findFirstApplicableRate("MAIN", "MOTORCYCLE", companyId)).thenReturn(Optional.of(rate));
     Mockito.when(custodiedItemRepository.existsActiveHelmetByIdentifierAndCompany("LOCKER-01", companyId)).thenReturn(false);
 
     Locker locker = Locker.builder()
-        .id(UUID.randomUUID())
-        .code("LOCKER-01")
-        .status(LockerStatus.DISPONIBLE)
-        .build();
+        .id(UUID.randomUUID()).code("LOCKER-01").status(LockerStatus.DISPONIBLE).build();
     Mockito.when(lockerPort.findByCompanyIdAndCode(companyId, "LOCKER-01")).thenReturn(Optional.of(locker));
 
     EntryRequest req = new EntryRequest(
@@ -284,15 +250,13 @@ class RegisterEntryServiceMotorcycleTest {
 
   @Test
   void execute_ShouldReturnIdempotentReplay_WhenSameIdempotencyKey() {
-    Vehicle replayVehicle = new Vehicle();
-    replayVehicle.setType("MOTORCYCLE");
+    Vehicle replayVehicle = new Vehicle(); replayVehicle.setType("MOTORCYCLE");
     ParkingSession session = ParkingSession.builder()
         .id(UUID.randomUUID()).ticketNumber("T-20260513-000001")
-        .plate("ABC12D").companyId(companyId)
-        .vehicle(replayVehicle).build();
+        .plate("ABC12D").companyId(companyId).vehicle(replayVehicle).build();
     OperationIdempotency existing = new OperationIdempotency();
     existing.setIdempotencyKey("moto-idem-1");
-    existing.setOperationType(com.parkflow.modules.parking.operation.domain.IdempotentOperationType.ENTRY);
+    existing.setOperationType(IdempotentOperationType.ENTRY);
     existing.setSession(session);
     Mockito.when(operationIdempotencyRepository.findByIdempotencyKey("moto-idem-1")).thenReturn(Optional.of(existing));
 
@@ -310,10 +274,8 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldReject_WhenVehicleConditionIsEmpty() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
-    Mockito.when(plateValidator.validatePlate("CO", "MOTORCYCLE", "ABC12D"))
+    Mockito.when(entryValidation.validateAndNormalizePlate("CO", "MOTORCYCLE", "ABC12D"))
         .thenReturn(PlateValidationResult.valid("ABC12D"));
-    Rate rate = activeRate();
-    Mockito.when(rateRepository.findFirstApplicableRate("MAIN", "MOTORCYCLE", companyId)).thenReturn(Optional.of(rate));
 
     EntryRequest req = new EntryRequest(
         "moto-cond-empty", "ABC12D", "MOTORCYCLE", "CO", null, false, null,
@@ -329,15 +291,12 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldReject_WhenInactiveRateProvided() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
-    Mockito.when(plateValidator.validatePlate("CO", "MOTORCYCLE", "ABC12D"))
+    Mockito.when(entryValidation.validateAndNormalizePlate("CO", "MOTORCYCLE", "ABC12D"))
         .thenReturn(PlateValidationResult.valid("ABC12D"));
 
     UUID rateId = UUID.randomUUID();
-    Rate inactiveRate = new Rate();
-    inactiveRate.setId(rateId);
-    inactiveRate.setActive(false);
-    inactiveRate.setCompanyId(companyId);
-    Mockito.when(rateRepository.findByIdAndCompanyId(rateId, companyId)).thenReturn(Optional.of(inactiveRate));
+    Mockito.doThrow(new OperationException(HttpStatus.BAD_REQUEST, "Tarifa inactiva"))
+        .when(entryValidation).resolveRate(any(), anyString(), any(), any(), any());
 
     EntryRequest req = new EntryRequest(
         "moto-inactive-rate", "ABC12D", "MOTORCYCLE", "CO", null, false, null,
@@ -353,11 +312,10 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldReject_WhenPlateAlreadyActive() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
-    Mockito.when(plateValidator.validatePlate("CO", "MOTORCYCLE", "DUP12M"))
+    Mockito.when(entryValidation.validateAndNormalizePlate("CO", "MOTORCYCLE", "DUP12M"))
         .thenReturn(PlateValidationResult.valid("DUP12M"));
-    ParkingSession active = ParkingSession.builder()
-        .id(UUID.randomUUID()).plate("DUP12M").companyId(companyId).build();
-    Mockito.when(parkingSessionRepository.findActiveByPlateForUpdate(any(), anyString(), any())).thenReturn(Optional.of(active));
+    Mockito.doThrow(new OperationException(HttpStatus.CONFLICT, "El vehículo ya tiene una sesión activa"))
+        .when(entryValidation).assertNoActiveDuplicate(anyString(), any());
 
     EntryRequest req = new EntryRequest(
         "moto-dup-plate", "DUP12M", "MOTORCYCLE", "CO", null, false, null,
@@ -373,10 +331,11 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldCreateEntry_WhenValidMotorcyclePlateWithMixedCase() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
-    Mockito.when(plateValidator.validatePlate("CO", "MOTORCYCLE", "xyz99z"))
+    Mockito.when(entryValidation.validateAndNormalizePlate("CO", "MOTORCYCLE", "xyz99z"))
         .thenReturn(PlateValidationResult.valid("XYZ99Z"));
-    Rate rate = activeRate();
-    Mockito.when(rateRepository.findFirstApplicableRate("MAIN", "MOTORCYCLE", companyId)).thenReturn(Optional.of(rate));
+
+    Vehicle vehicle = new Vehicle(); vehicle.setType("MOTORCYCLE");
+    Mockito.when(vehicleResolver.resolveAndSave("XYZ99Z", "MOTORCYCLE", companyId)).thenReturn(vehicle);
 
     EntryRequest req = new EntryRequest(
         "moto-lowercase", "xyz99z", "MOTORCYCLE", "CO", null, false, null,
@@ -392,17 +351,15 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldCreateEntry_WhenHelmetWithMultipleCustodiedItems() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
-    Mockito.when(plateValidator.validatePlate("CO", "MOTORCYCLE", "ABC12D"))
+    Mockito.when(entryValidation.validateAndNormalizePlate("CO", "MOTORCYCLE", "ABC12D"))
         .thenReturn(PlateValidationResult.valid("ABC12D"));
-    Rate rate = activeRate();
-    Mockito.when(rateRepository.findFirstApplicableRate("MAIN", "MOTORCYCLE", companyId)).thenReturn(Optional.of(rate));
     Mockito.when(custodiedItemRepository.existsActiveHelmetByIdentifierAndCompany("LOCKER-01", companyId)).thenReturn(false);
     Mockito.when(custodiedItemRepository.existsActiveHelmetByIdentifierAndCompany("LOCKER-02", companyId)).thenReturn(false);
     Locker locker1 = Locker.builder().id(UUID.randomUUID()).code("LOCKER-01").status(LockerStatus.DISPONIBLE).build();
     Locker locker2 = Locker.builder().id(UUID.randomUUID()).code("LOCKER-02").status(LockerStatus.DISPONIBLE).build();
     Mockito.when(lockerPort.findByCompanyIdAndCode(companyId, "LOCKER-01")).thenReturn(Optional.of(locker1));
     Mockito.when(lockerPort.findByCompanyIdAndCode(companyId, "LOCKER-02")).thenReturn(Optional.of(locker2));
-    Mockito.lenient().when(lockerPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    lenient().when(lockerPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     EntryRequest req = new EntryRequest(
         "moto-2helmets", "ABC12D", "MOTORCYCLE", "CO", null, false, null,
@@ -410,8 +367,7 @@ class RegisterEntryServiceMotorcycleTest {
         List.of(), List.of(),
         List.of(
             new CustodiedItemRequest("LOCKER-01", "Negro", null),
-            new CustodiedItemRequest("LOCKER-02", "Blanco", null)
-        ));
+            new CustodiedItemRequest("LOCKER-02", "Blanco", null)));
 
     var res = service.execute(req);
 
@@ -423,10 +379,12 @@ class RegisterEntryServiceMotorcycleTest {
   @Test
   void execute_ShouldReject_WhenRateNotFound() {
     Mockito.when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(activeOperator()));
-    Mockito.when(plateValidator.validatePlate("CO", "MOTORCYCLE", "ABC12D"))
+    Mockito.when(entryValidation.validateAndNormalizePlate("CO", "MOTORCYCLE", "ABC12D"))
         .thenReturn(PlateValidationResult.valid("ABC12D"));
+
     UUID rateId = UUID.randomUUID();
-    Mockito.when(rateRepository.findByIdAndCompanyId(rateId, companyId)).thenReturn(Optional.empty());
+    Mockito.doThrow(new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"))
+        .when(entryValidation).resolveRate(any(), anyString(), any(), any(), any());
 
     EntryRequest req = new EntryRequest(
         "moto-rate-missing", "ABC12D", "MOTORCYCLE", "CO", null, false, null,
@@ -441,23 +399,16 @@ class RegisterEntryServiceMotorcycleTest {
 
   private AppUser activeOperator() {
     AppUser operator = new AppUser();
-    operator.setId(operatorId);
-    operator.setName("Operator");
-    operator.setEmail("operator@test.com");
-    operator.setActive(true);
-    operator.setRole(UserRole.OPERADOR);
-    operator.setCompanyId(companyId);
+    operator.setId(operatorId); operator.setName("Operator");
+    operator.setEmail("operator@test.com"); operator.setActive(true);
+    operator.setRole(UserRole.OPERADOR); operator.setCompanyId(companyId);
     return operator;
   }
 
   private Rate activeRate() {
     Rate rate = new Rate();
-    rate.setId(UUID.randomUUID());
-    rate.setName("Moto Rate");
-    rate.setVehicleType("MOTORCYCLE");
-    rate.setActive(true);
-    rate.setCompanyId(companyId);
+    rate.setId(UUID.randomUUID()); rate.setName("Moto Rate");
+    rate.setVehicleType("MOTORCYCLE"); rate.setActive(true); rate.setCompanyId(companyId);
     return rate;
   }
 }
-

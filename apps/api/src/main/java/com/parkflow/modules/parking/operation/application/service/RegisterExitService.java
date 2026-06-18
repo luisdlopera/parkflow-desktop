@@ -7,13 +7,12 @@ import com.parkflow.modules.configuration.domain.repository.OperationalParameter
 import com.parkflow.modules.cash.application.port.in.ParkingCashIntegrationUseCase;
 import com.parkflow.modules.cash.domain.CashMovementType;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import com.parkflow.modules.configuration.domain.OperationalParameter;
-import com.parkflow.modules.configuration.repository.*;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.settings.application.port.in.ParkingParametersUseCase;
 import com.parkflow.modules.parking.operation.application.port.in.ParkingPricingUseCase;
 import com.parkflow.modules.parking.operation.application.port.in.RegisterExitUseCase;
@@ -26,6 +25,7 @@ import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
 import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.repository.*;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.tickets.domain.PrintDocumentType;
@@ -49,8 +49,8 @@ public class RegisterExitService implements RegisterExitUseCase {
 
   private final ParkingSessionRepository parkingSessionRepository;
   private final PaymentPort paymentRepository;
-  private final AppUserRepository appUserRepository;
-  private final ParkingSiteRepository parkingSiteRepository;
+  private final AppUserPort appUserRepository;
+  private final ParkingSitePort parkingSitePort;
   private final OperationalParameterPort operationalParameterRepository;
   private final OperationAuditService operationAuditService;
   private final OperationPrintService operationPrintService;
@@ -60,7 +60,6 @@ public class RegisterExitService implements RegisterExitUseCase {
   private final ParkingSpaceService parkingSpaceService;
   private final CustodiedItemPort custodiedItemRepository;
   private final LockerPort lockerPort;
-  private final ObjectMapper objectMapper;
   private final ParkingCashIntegrationUseCase parkingCashIntegrationUseCase;
   private final ParkingParametersUseCase parkingParametersUseCase;
   private final ParkingPricingUseCase parkingPricingUseCase;
@@ -86,14 +85,7 @@ public class RegisterExitService implements RegisterExitUseCase {
     assertExitPhotoIfRequired(session, request.exitImageUrl());
     processCustodiedItemReturn(session, request, operator);
 
-    session.setExitAt(exitAt);
-    session.setExitOperator(operator);
-    session.setStatus(SessionStatus.CLOSED);
-    session.setExitNotes(request.observations());
-    session.setExitImageUrl(blankToNull(request.exitImageUrl()));
-    session.setTotalAmount(price.total());
-    session.setUpdatedAt(OffsetDateTime.now());
-    session.setSyncStatus(SessionSyncStatus.PENDING);
+    session.close(operator, exitAt, price, request.observations(), blankToNull(request.exitImageUrl()));
     parkingSessionRepository.save(session);
 
     if (price.total().compareTo(BigDecimal.ZERO) > 0 && request.paymentMethod() != null) {
@@ -203,8 +195,8 @@ public class RegisterExitService implements RegisterExitUseCase {
   private Optional<OperationalParameter> resolveOperationalParameter(ParkingSession session) {
     String siteKey = session.getSite();
     if (siteKey == null || siteKey.isBlank()) return Optional.empty();
-    return parkingSiteRepository.findByCodeAndCompany_Id(siteKey.trim(), session.getCompanyId())
-        .or(() -> parkingSiteRepository.findByNameIgnoreCaseAndCompany_Id(siteKey.trim(), session.getCompanyId()))
+    return parkingSitePort.findByCodeAndCompanyId(siteKey.trim(), session.getCompanyId())
+        .or(() -> parkingSitePort.findByNameIgnoreCase(siteKey.trim(), session.getCompanyId()))
         .flatMap(site -> operationalParameterRepository.findBySite_Id(site.getId()));
   }
 
@@ -317,8 +309,8 @@ public class RegisterExitService implements RegisterExitUseCase {
     report.setSession(session);
     report.setStage(stage);
     report.setObservations(blankToNull(observations));
-    report.setChecklistJson(writeJsonArray(normalizeList(checklist)));
-    report.setPhotoUrlsJson(writeJsonArray(normalizeList(photoUrls)));
+    report.setChecklist(normalizeList(checklist));
+    report.setPhotoUrls(normalizeList(photoUrls));
     report.setCreatedBy(operator);
     vehicleConditionReportRepository.save(report);
   }
@@ -375,9 +367,5 @@ public class RegisterExitService implements RegisterExitUseCase {
   private List<String> normalizeList(List<String> l) {
     if (l == null) return Collections.emptyList();
     return l.stream().filter(s -> s != null && !s.isBlank()).map(String::trim).toList();
-  }
-  private String writeJsonArray(List<String> l) {
-    try { return objectMapper.writeValueAsString(l); }
-    catch (Exception e) { throw new RuntimeException(e); }
   }
 }
