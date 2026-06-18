@@ -1,6 +1,9 @@
 package com.parkflow.modules.parking.operation.domain;
 
 import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.common.exception.domain.BusinessValidationException;
+import com.parkflow.modules.parking.operation.domain.event.*;
+import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -150,5 +153,92 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
   @PreUpdate
   public void preUpdate() {
     this.updatedAt = OffsetDateTime.now();
+  }
+
+  // -------------------------------------------------------------------------
+  // Domain behaviour — all state transitions go through these methods
+  // -------------------------------------------------------------------------
+
+  /**
+   * Close a session after a vehicle exits. Encapsulates all field mutations so
+   * invariants (e.g. can only close an ACTIVE session) are enforced by the aggregate.
+   */
+  public void close(AppUser operator, OffsetDateTime exitAt,
+                    PriceBreakdown price, String notes, String imageUrl) {
+    if (this.status != SessionStatus.ACTIVE) {
+      throw new BusinessValidationException("SESSION_NOT_ACTIVE",
+          "Solo se puede cerrar una sesión activa. Estado actual: " + status);
+    }
+    this.exitAt = exitAt;
+    this.exitOperator = operator;
+    this.exitNotes = notes;
+    this.exitImageUrl = imageUrl;
+    this.status = SessionStatus.CLOSED;
+    this.totalAmount = price.total();
+    this.discountAmount = price.discount();
+    this.appliedPrepaidMinutes = price.deductedMinutes();
+    this.syncStatus = SessionSyncStatus.PENDING;
+    this.updatedAt = OffsetDateTime.now();
+    registerEvent(new SessionClosedEvent(this, operator, price.total()));
+  }
+
+  /**
+   * Cancel (void) a session. Can only be done before a session is fully closed.
+   */
+  public void cancel(AppUser operator, String reason) {
+    if (this.status == SessionStatus.CLOSED || this.status == SessionStatus.CANCELED) {
+      throw new BusinessValidationException("SESSION_ALREADY_TERMINAL",
+          "No se puede anular una sesión en estado " + status);
+    }
+    this.status = SessionStatus.CANCELED;
+    this.exitNotes = reason;
+    this.updatedAt = OffsetDateTime.now();
+    registerEvent(new SessionVoidedEvent(this, operator, reason));
+  }
+
+  /**
+   * Process a lost ticket exit — charges a surcharge, closes session as LOST_TICKET.
+   */
+  public void processLostTicket(AppUser operator, OffsetDateTime exitAt,
+                                 PriceBreakdown price, String reason, String imageUrl) {
+    if (this.status != SessionStatus.ACTIVE) {
+      throw new BusinessValidationException("SESSION_NOT_ACTIVE",
+          "Solo se puede procesar ticket perdido de una sesión activa");
+    }
+    this.lostTicket = true;
+    this.lostTicketReason = reason;
+    this.exitAt = exitAt;
+    this.exitOperator = operator;
+    this.exitImageUrl = imageUrl;
+    this.status = SessionStatus.LOST_TICKET;
+    this.totalAmount = price.total();
+    this.appliedPrepaidMinutes = price.deductedMinutes();
+    this.syncStatus = SessionSyncStatus.SYNCED;
+    this.updatedAt = OffsetDateTime.now();
+    registerEvent(new SessionLostTicketEvent(this, operator, price.total(), reason));
+  }
+
+  /**
+   * Correct a plate number on an active session. Returns the old plate for audit.
+   */
+  public String correctPlate(String newPlate) {
+    if (this.status != SessionStatus.ACTIVE) {
+      throw new BusinessValidationException("SESSION_NOT_ACTIVE",
+          "Solo se puede corregir la placa de una sesión activa");
+    }
+    String oldPlate = this.plate;
+    this.plate = newPlate;
+    this.updatedAt = OffsetDateTime.now();
+    return oldPlate;
+  }
+
+  /**
+   * Increment the reprint counter. Returns the new count.
+   */
+  public int incrementReprint() {
+    this.reprintCount++;
+    this.updatedAt = OffsetDateTime.now();
+    registerEvent(new TicketReprintedEvent(this, null, reprintCount, null));
+    return this.reprintCount;
   }
 }

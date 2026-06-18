@@ -19,7 +19,7 @@ public class OperationAuditService {
 
     private final SessionEventPort sessionEventPort;
 
-    @Async
+    @Async("auditExecutor")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordEvent(ParkingSession session, SessionEventType type, AppUser operator, String metadata) {
         SessionEvent event = new SessionEvent();

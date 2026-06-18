@@ -1,35 +1,25 @@
 package com.parkflow.modules.parking.operation.application.service;
+
+import com.parkflow.modules.auth.domain.AppUser;
+import com.parkflow.modules.auth.security.SecurityUtils;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.licensing.domain.Company;
+import com.parkflow.modules.licensing.domain.repository.CompanyPort;
+import com.parkflow.modules.parking.locker.domain.Locker;
+import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
+import com.parkflow.modules.parking.operation.application.port.in.RegisterEntryUseCase;
+import com.parkflow.modules.parking.operation.domain.*;
+import com.parkflow.modules.parking.operation.domain.event.SessionCreatedEvent;
 import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
-import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.settings.domain.MasterVehicleType;
-import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;
-import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
-import com.parkflow.modules.licensing.domain.Company;
-import com.parkflow.modules.licensing.domain.repository.CompanyPort;
-import com.parkflow.modules.onboarding.application.service.CompanySettingsService;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
-import com.parkflow.modules.parking.operation.application.port.in.RegisterEntryUseCase;
-import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.*;
-import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.locker.domain.Locker;
-import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.repository.*;
-import com.parkflow.modules.parking.operation.repository.BlacklistedPlateRepository;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.configuration.service.OperationalConfigurationService;
-import com.parkflow.modules.parking.operation.validation.PlateValidator;
+import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -47,35 +37,32 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RegisterEntryService implements RegisterEntryUseCase {
 
-  private final AppUserRepository appUserRepository;
-  private final VehicleRepository vehicleRepository;
-  private final RateRepository rateRepository;
-  private final ParkingSiteRepository parkingSiteRepository;
+  // Collaborator services (extracted from God Service)
+  private final EntryValidationService entryValidation;
+  private final VehicleResolverService vehicleResolver;
+  private final TicketNumberService ticketNumbers;
+
+  // Infrastructure ports
+  private final AppUserPort appUserRepository;
   private final ParkingSessionRepository parkingSessionRepository;
-  private final TicketCounterPort ticketCounterRepository;
   private final VehicleConditionReportPort vehicleConditionReportRepository;
   private final OperationIdempotencyPort operationIdempotencyRepository;
-  private final OperationAuditService operationAuditService;
-  private final OperationPrintService operationPrintService;
-  private final PlateValidator plateValidator;
-  private final MonthlyContractRepository monthlyContractRepository;
-  private final ParkingSpaceService parkingSpaceService;
   private final CustodiedItemPort custodiedItemRepository;
   private final LockerPort lockerPort;
-  private final ObjectMapper objectMapper;
-  private final MeterRegistry meterRegistry;
-  private final MasterVehicleTypePort masterVehicleTypePort;
+
+  // Domain services
+  private final OperationPrintService operationPrintService;
+  private final ParkingSpaceService parkingSpaceService;
+
+  // Cross-cutting
   private final CompanyPort companyRepository;
-  private final CompanySettingsService companySettingsService;
-  private final OperationalConfigurationService operationalConfigurationService;
   private final ApplicationEventPublisher eventPublisher;
-  private final BlacklistedPlateRepository blacklistedPlateRepository;
+  private final MeterRegistry meterRegistry;
 
   @Override
   @Transactional
   public OperationResultResponse execute(EntryRequest request) {
     String idempotencyKey = request.idempotencyKey();
-    String rawPlate = request.plate();
     String vehicleType = request.type();
     String site = request.site();
     String countryCode = normalizeCountryCode(request.countryCode());
@@ -83,9 +70,9 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     boolean noPlateEntry = Boolean.TRUE.equals(request.noPlate());
     UUID companyId = SecurityUtils.requireCompanyId();
 
-    String correlationId = org.slf4j.MDC.get(com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
     log.info("registerEntry: plate={} type={} site={} idempotencyKey={} correlationId={}",
-        rawPlate, vehicleType, site, idempotencyKey, correlationId);
+        request.plate(), vehicleType, site, idempotencyKey,
+        org.slf4j.MDC.get(com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY));
 
     Company company = companyRepository.findById(companyId)
         .orElseThrow(() -> new OperationException(HttpStatus.FORBIDDEN, "Empresa no encontrada"));
@@ -93,25 +80,16 @@ public class RegisterEntryService implements RegisterEntryUseCase {
       throw new OperationException(HttpStatus.FORBIDDEN, "Empresa no activa o licencia vencida");
     }
 
-    Optional<OperationResultResponse> replay =
-        tryReplay(idempotencyKey, IdempotentOperationType.ENTRY);
-    if (replay.isPresent()) {
-      return replay.get();
-    }
+    Optional<OperationResultResponse> replay = tryReplay(idempotencyKey, IdempotentOperationType.ENTRY);
+    if (replay.isPresent()) return replay.get();
 
-    MasterVehicleType vehicleTypeConfig = masterVehicleTypePort.findByCode(vehicleType)
-        .orElseThrow(() -> new OperationException(HttpStatus.BAD_REQUEST, "Tipo de vehículo no existe"));
-    if (!vehicleTypeConfig.isActive()) {
-      throw new OperationException(HttpStatus.BAD_REQUEST, "Tipo de vehículo está inactivo");
-    }
+    var vehicleTypeConfig = entryValidation.requireActiveVehicleType(vehicleType);
     if (!noPlateEntry && !vehicleTypeConfig.isRequiresPlate()) {
       throw new OperationException(HttpStatus.BAD_REQUEST, "El tipo de vehículo no admite placa");
     }
 
-    operationalConfigurationService.validateEntryPayload(
-        companyId, vehicleType,
-        entryMode != null ? entryMode.name() : null,
-        request.lane(), request.terminal(), null);
+    entryValidation.validateOperationalPayload(companyId, vehicleType,
+        entryMode.name(), request.lane(), request.terminal());
 
     String normalizedPlate;
     if (noPlateEntry) {
@@ -120,59 +98,24 @@ public class RegisterEntryService implements RegisterEntryUseCase {
       }
       normalizedPlate = generateNoPlateIdentifier();
     } else {
-      var validationResult = plateValidator.validatePlate(countryCode, vehicleType, rawPlate);
-      if (!validationResult.isValid()) {
-        throw new OperationException(HttpStatus.BAD_REQUEST, validationResult.errorMessage());
-      }
-      normalizedPlate = validationResult.normalizedPlate();
-    }
-
-    if (!noPlateEntry) {
-      parkingSessionRepository
-          .findActiveByPlateForUpdate(SessionStatus.ACTIVE, normalizedPlate, companyId)
-          .ifPresent(s -> {
-            throw new OperationException(HttpStatus.CONFLICT, "El vehículo ya tiene una sesión activa");
-          });
-      blacklistedPlateRepository
-          .findByCompanyIdAndPlateIgnoreCaseAndActiveTrue(companyId, normalizedPlate)
-          .ifPresent(b -> {
-            throw new OperationException(HttpStatus.FORBIDDEN, "PLATE_BLACKLISTED",
-                "La placa " + normalizedPlate + " se encuentra en lista negra" + (isBlank(b.getReason()) ? "" : ": " + b.getReason()));
-          });
+      normalizedPlate = entryValidation.validateAndNormalizePlate(countryCode, vehicleType, request.plate())
+          .normalizedPlate();
+      entryValidation.assertNoActiveDuplicate(normalizedPlate, companyId);
+      entryValidation.assertNotBlacklisted(normalizedPlate, companyId);
     }
 
     AppUser operator = findRequiredOperator(request.operatorUserId());
-
-    Vehicle vehicle = vehicleRepository.findByPlateIgnoreCase(normalizedPlate)
-        .map(v -> {
-          v.setType(vehicleType);
-          v.setUpdatedAt(OffsetDateTime.now());
-          return v;
-        })
-        .orElseGet(() -> {
-          Vehicle v = new Vehicle();
-          v.setPlate(normalizedPlate);
-          v.setType(vehicleType);
-          v.setCompanyId(companyId);
-          return v;
-        });
-    vehicle = vehicleRepository.save(vehicle);
+    Vehicle vehicle = vehicleResolver.resolveAndSave(normalizedPlate, vehicleType, companyId);
 
     OffsetDateTime entryAt = request.entryAt() != null ? request.entryAt() : OffsetDateTime.now();
-    boolean isMonthly = monthlyContractRepository
-        .findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-            normalizedPlate, entryAt.toLocalDate(), entryAt.toLocalDate()).isPresent();
-    
-    if (isMonthly) {
-      entryMode = EntryMode.SUBSCRIBER;
-    }
+    boolean isMonthly = entryValidation.isMonthlySubscriber(normalizedPlate, entryAt.toLocalDate(), companyId);
+    if (isMonthly) entryMode = EntryMode.SUBSCRIBER;
 
-    Rate rate = resolveRate(request.rateId(), vehicleType, site, entryAt, companyId);
-
-    assertParkingCapacityAvailable(site, companyId);
+    Rate rate = entryValidation.resolveRate(request.rateId(), vehicleType, site, entryAt, companyId);
+    entryValidation.assertCapacityAvailable(site, companyId);
 
     ParkingSession session = ParkingSession.builder()
-        .ticketNumber(nextTicketNumber(entryAt.toLocalDate(), companyId))
+        .ticketNumber(ticketNumbers.next(entryAt.toLocalDate(), company))
         .plate(normalizedPlate)
         .countryCode(countryCode)
         .entryMode(entryMode)
@@ -203,11 +146,10 @@ public class RegisterEntryService implements RegisterEntryUseCase {
 
     saveVehicleCondition(session, ConditionStage.ENTRY, request.vehicleCondition(),
         request.conditionChecklist(), request.conditionPhotoUrls(), operator);
+    saveCustodiedItems(session, request, operator, companyId);
 
-    saveCustodiedItem(session, request, operator);
+    eventPublisher.publishEvent(new SessionCreatedEvent(session, operator));
 
-    eventPublisher.publishEvent(new com.parkflow.modules.parking.operation.domain.event.SessionCreatedEvent(session, operator));
-    
     com.parkflow.modules.parking.spaces.domain.ParkingSpace assignedSpace = null;
     if (request.parkingSpaceId() != null) {
       assignedSpace = parkingSpaceService.assignSpecificSpace(companyId, request.parkingSpaceId(), session);
@@ -232,6 +174,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   }
 
   private AppUser findRequiredOperator(UUID userId) {
+    UUID companyId = SecurityUtils.requireCompanyId();
     AppUser operator;
     if (userId == null) {
       operator = appUserRepository.findGlobalByEmail("system@parkflow.local")
@@ -243,70 +186,10 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     if (!operator.isActive()) {
       throw new OperationException(HttpStatus.FORBIDDEN, "Operador inactivo");
     }
-    UUID companyId = SecurityUtils.requireCompanyId();
     if (operator.getCompanyId() != null && !operator.getCompanyId().equals(companyId)) {
       throw new OperationException(HttpStatus.FORBIDDEN, "Operador no pertenece a la empresa");
     }
     return operator;
-  }
-
-  private Rate resolveRate(UUID rateId, String vehicleType, String site, OffsetDateTime entryAt, UUID companyId) {
-    Rate rate;
-    if (rateId != null) {
-      rate = rateRepository.findByIdAndCompanyId(rateId, companyId)
-          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
-    } else {
-      rate = rateRepository.findFirstApplicableRate(site, vehicleType, companyId)
-          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "No se encontró tarifa aplicable"));
-    }
-    if (!rate.isActive()) {
-      throw new OperationException(HttpStatus.BAD_REQUEST, "Tarifa inactiva");
-    }
-    return rate;
-  }
-
-  private String nextTicketNumber(LocalDate date, UUID companyId) {
-    String key = date.format(DateTimeFormatter.BASIC_ISO_DATE);
-    TicketCounter counter = ticketCounterRepository.findByIdForUpdate(key)
-        .orElseGet(() -> {
-          TicketCounter c = new TicketCounter();
-          c.setCounterKey(key);
-          c.setLastNumber(0);
-          c.setCompanyId(companyId);
-          return c;
-        });
-    counter.setLastNumber(counter.getLastNumber() + 1);
-    counter.setUpdatedAt(OffsetDateTime.now());
-    ticketCounterRepository.save(counter);
-    String prefix = resolveTicketPrefix(companyId);
-    return prefix + key + "-" + String.format("%06d", counter.getLastNumber());
-  }
-
-  private String resolveTicketPrefix(UUID companyId) {
-    try {
-      Company company = companyRepository.findById(companyId).orElse(null);
-      if (company == null) {
-        return "T-";
-      }
-      java.util.Map<String, Object> settings = companySettingsService.getSettingsOrDefault(company);
-      Object tickets = settings.get("tickets");
-      if (tickets instanceof java.util.Map<?, ?> ticketsMap) {
-        Object prefix = ticketsMap.get("ticketPrefix");
-        if (prefix != null && !String.valueOf(prefix).isBlank()) {
-          return String.valueOf(prefix);
-        }
-      }
-      Object operationConfiguration = settings.get("operationConfiguration");
-      if (operationConfiguration instanceof java.util.Map<?, ?> opConfigMap) {
-        Object prefix = opConfigMap.get("ticketPrefix");
-        if (prefix != null && !String.valueOf(prefix).isBlank()) {
-          return String.valueOf(prefix);
-        }
-      }
-    } catch (Exception e) {
-      log.warn("Could not resolve ticket prefix for company {}, using default. Reason: {}", companyId, e.getMessage());
-    }
-    return "T-";
   }
 
   private void saveVehicleCondition(ParkingSession session, ConditionStage stage, String observations,
@@ -318,45 +201,33 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     report.setSession(session);
     report.setStage(stage);
     report.setObservations(blankToNull(observations));
-    report.setChecklistJson(writeJsonArray(normalizeList(checklist)));
-    report.setPhotoUrlsJson(writeJsonArray(normalizeList(photoUrls)));
+    report.setChecklist(normalizeList(checklist));
+    report.setPhotoUrls(normalizeList(photoUrls));
     report.setCreatedBy(operator);
     vehicleConditionReportRepository.save(report);
   }
 
-  private void saveCustodiedItem(ParkingSession session, EntryRequest request, AppUser operator) {
+  private void saveCustodiedItems(ParkingSession session, EntryRequest request, AppUser operator, UUID companyId) {
     if (request.custodiedItems() == null || request.custodiedItems().isEmpty()) return;
-    UUID companyId = SecurityUtils.requireCompanyId();
     for (CustodiedItemRequest itemReq : request.custodiedItems()) {
-        String identifier = blankToNull(itemReq.identifier());
-        if (identifier != null && custodiedItemRepository.existsActiveHelmetByIdentifierAndCompany(identifier, companyId)) {
-          throw new OperationException(HttpStatus.CONFLICT, "HELMET_IDENTIFIER_IN_USE",
-              "El locker " + identifier + " ya está asignado a otro vehículo activo.");
-        }
-
-        Locker locker = null;
-        if (identifier != null) {
-          locker = lockerPort.findByCompanyIdAndCode(companyId, identifier).orElse(null);
-        }
-
-        CustodiedItem item = CustodiedItem.builder()
-            .session(session)
-            .itemType(CustodiedItemType.HELMET)
-            .identifier(identifier)
-            .locker(locker)
-            .status(CustodiedItemStatus.RECEIVED)
-            .observations(blankToNull(itemReq.observations()))
-            .photoUrl(blankToNull(itemReq.photoUrl()))
-            .receivedBy(operator)
-            .receivedAt(OffsetDateTime.now())
-            .companyId(companyId)
-            .build();
-        custodiedItemRepository.save(item);
-
-        if (locker != null) {
-          locker.setStatus(com.parkflow.modules.parking.locker.domain.LockerStatus.OCUPADO);
-          lockerPort.save(locker);
-        }
+      String identifier = blankToNull(itemReq.identifier());
+      if (identifier != null && custodiedItemRepository.existsActiveHelmetByIdentifierAndCompany(identifier, companyId)) {
+        throw new OperationException(HttpStatus.CONFLICT, "HELMET_IDENTIFIER_IN_USE",
+            "El locker " + identifier + " ya está asignado a otro vehículo activo.");
+      }
+      Locker locker = identifier != null
+          ? lockerPort.findByCompanyIdAndCode(companyId, identifier).orElse(null)
+          : null;
+      CustodiedItem item = CustodiedItem.builder()
+          .session(session).itemType(CustodiedItemType.HELMET).identifier(identifier).locker(locker)
+          .status(CustodiedItemStatus.RECEIVED).observations(blankToNull(itemReq.observations()))
+          .photoUrl(blankToNull(itemReq.photoUrl())).receivedBy(operator)
+          .receivedAt(OffsetDateTime.now()).companyId(companyId).build();
+      custodiedItemRepository.save(item);
+      if (locker != null) {
+        locker.setStatus(com.parkflow.modules.parking.locker.domain.LockerStatus.OCUPADO);
+        lockerPort.save(locker);
+      }
     }
   }
 
@@ -364,19 +235,19 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     if (isBlank(key)) return Optional.empty();
     return operationIdempotencyRepository.findByIdempotencyKey(key)
         .map(i -> {
-           if (i.getOperationType() != type) {
-             throw new OperationException(HttpStatus.CONFLICT, "Clave de idempotencia ya usada con otra operacion");
-           }
-           ParkingSession session = i.getSession();
-           com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment existingAssignment =
-               parkingSpaceService.findAssignmentBySessionId(session.getId());
-           com.parkflow.modules.parking.spaces.domain.ParkingSpace space =
-               existingAssignment != null ? existingAssignment.getParkingSpace() : null;
-           return new OperationResultResponse(
-               session.getId().toString(),
-               toReceipt(session, 0L, "0h 0m", space),
-               "Ingreso (idempotente)",
-               null, null, null, null, null);
+          if (i.getOperationType() != type) {
+            throw new OperationException(HttpStatus.CONFLICT, "Clave de idempotencia ya usada con otra operacion");
+          }
+          ParkingSession session = i.getSession();
+          com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment existing =
+              parkingSpaceService.findAssignmentBySessionId(session.getId());
+          com.parkflow.modules.parking.spaces.domain.ParkingSpace space =
+              existing != null ? existing.getParkingSpace() : null;
+          return new OperationResultResponse(
+              session.getId().toString(),
+              toReceipt(session, 0L, "0h 0m", space),
+              "Ingreso (idempotente)",
+              null, null, null, null, null);
         });
   }
 
@@ -388,25 +259,6 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     i.setSession(session);
     i.setCreatedAt(OffsetDateTime.now());
     operationIdempotencyRepository.save(i);
-  }
-
-
-
-  private void assertParkingCapacityAvailable(String site, UUID companyId) {
-    if (isBlank(site)) return;
-    UUID cid = companyId;
-    parkingSiteRepository.findByCodeOrNameForUpdate(site.trim(), cid)
-        .ifPresent(parkingSite -> {
-          if (!parkingSite.isActive()) {
-            throw new OperationException(HttpStatus.BAD_REQUEST, "La sede está inactiva");
-          }
-          int maxCapacity = parkingSite.getMaxCapacity();
-          if (maxCapacity <= 0) return;
-          long activeSessions = parkingSessionRepository.countByStatusAndSiteAndCompanyId(SessionStatus.ACTIVE, parkingSite.getName(), cid);
-          if (activeSessions >= maxCapacity) {
-            throw new OperationException(HttpStatus.CONFLICT, "Parqueadero lleno para la sede");
-          }
-        });
   }
 
   private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration,
@@ -421,36 +273,18 @@ public class RegisterEntryService implements RegisterEntryUseCase {
             item.getReturnedAt()))
         .toList();
     return new ReceiptResponse(
-        session.getTicketNumber(),
-        session.getPlate(),
-        session.getVehicle().getType(),
-        session.getSite(),
-        session.getLane(),
-        session.getBooth(),
+        session.getTicketNumber(), session.getPlate(),
+        session.getVehicle().getType(), session.getSite(), session.getLane(), session.getBooth(),
         session.getTerminal(),
         session.getEntryOperator() != null ? session.getEntryOperator().getName() : null,
-        null,
-        session.getEntryAt(),
-        null,
-        totalMinutes,
-        duration,
-        null,
+        null, session.getEntryAt(), null, totalMinutes, duration, null,
         session.getRate() != null ? session.getRate().getName() : null,
-        session.getStatus(),
-        false,
-        0,
-        session.getEntryImageUrl(),
-        null,
-        session.getSyncStatus(),
-        session.getEntryMode(),
-        session.isMonthlySession(),
-        null,
-        0,
+        session.getStatus(), false, 0, session.getEntryImageUrl(), null,
+        session.getSyncStatus(), session.getEntryMode(), session.isMonthlySession(), null, 0,
         space != null ? space.getId() : null,
         space != null ? space.getCode() : null,
         space != null ? space.getLabel() : null,
-        session.isHasHelmet(),
-        items);
+        session.isHasHelmet(), items);
   }
 
   private String normalizeCountryCode(String code) {
@@ -467,9 +301,5 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private List<String> normalizeList(List<String> l) {
     if (l == null) return Collections.emptyList();
     return l.stream().filter(s -> s != null && !s.isBlank()).map(String::trim).toList();
-  }
-  private String writeJsonArray(List<String> l) {
-    try { return objectMapper.writeValueAsString(l); }
-    catch (Exception e) { throw new RuntimeException(e); }
   }
 }

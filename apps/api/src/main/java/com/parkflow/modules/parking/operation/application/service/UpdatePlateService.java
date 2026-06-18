@@ -8,7 +8,7 @@ import com.parkflow.modules.parking.operation.domain.SessionEventType;
 import com.parkflow.modules.parking.operation.domain.LicensePlate;
 import com.parkflow.modules.parking.operation.dto.UpdatePlateRequest;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import org.springframework.http.HttpStatus;
@@ -22,9 +22,9 @@ public class UpdatePlateService implements UpdatePlateUseCase {
 
     private final ParkingSessionRepository sessionRepository;
     private final OperationAuditService auditService;
-    private final AppUserRepository userRepository;
+    private final AppUserPort userRepository;
 
-    public UpdatePlateService(ParkingSessionRepository sessionRepository, OperationAuditService auditService, AppUserRepository userRepository) {
+    public UpdatePlateService(ParkingSessionRepository sessionRepository, OperationAuditService auditService, AppUserPort userRepository) {
         this.sessionRepository = sessionRepository;
         this.auditService = auditService;
         this.userRepository = userRepository;

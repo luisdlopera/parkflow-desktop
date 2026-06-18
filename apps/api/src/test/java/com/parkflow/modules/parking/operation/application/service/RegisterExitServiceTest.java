@@ -4,14 +4,13 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.cash.application.port.in.ParkingCashIntegrationUseCase;
 import com.parkflow.modules.configuration.domain.ParkingSite;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
 import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
@@ -25,7 +24,7 @@ import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.parking.operation.dto.ExitRequest;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import com.parkflow.modules.settings.application.port.in.ParkingParametersUseCase;
@@ -54,8 +53,8 @@ class RegisterExitServiceTest {
 
   @Mock private ParkingSessionRepository parkingSessionRepository;
   @Mock private PaymentPort paymentRepository;
-  @Mock private AppUserRepository appUserRepository;
-  @Mock private ParkingSiteRepository parkingSiteRepository;
+  @Mock private AppUserPort appUserRepository;
+  @Mock private ParkingSitePort parkingSitePort;
   @Mock private OperationalParameterPort operationalParameterRepository;
   @Mock private OperationAuditService operationAuditService;
   @Mock private OperationPrintService operationPrintService;
@@ -65,7 +64,6 @@ class RegisterExitServiceTest {
   @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private CustodiedItemPort custodiedItemRepository;
   @Mock private LockerPort lockerPort;
-  @Mock private ObjectMapper objectMapper;
   @Mock private ParkingCashIntegrationUseCase parkingCashIntegrationUseCase;
   @Mock private ParkingParametersUseCase parkingParametersUseCase;
   @Mock private ParkingPricingUseCase parkingPricingUseCase;
@@ -128,7 +126,7 @@ class RegisterExitServiceTest {
         .setAuthentication(new TestingAuthenticationToken(principal, null, setupAuths));
 
     service = new RegisterExitService(
-        parkingSessionRepository, paymentRepository, appUserRepository,        parkingSiteRepository,
+        parkingSessionRepository, paymentRepository, appUserRepository, parkingSitePort,
         operationalParameterRepository,
         operationAuditService,
         operationPrintService,
@@ -138,7 +136,6 @@ class RegisterExitServiceTest {
         parkingSpaceService,
         custodiedItemRepository,
         lockerPort,
-        objectMapper,
         parkingCashIntegrationUseCase,
         parkingParametersUseCase,
         parkingPricingUseCase);
@@ -380,7 +377,7 @@ class RegisterExitServiceTest {
       param.setRequirePhotoExit(true);
       ParkingSite site = new ParkingSite();
       site.setId(UUID.randomUUID());
-      when(parkingSiteRepository.findByCodeAndCompany_Id(eq("Test Site"), eq(companyId)))
+      when(parkingSitePort.findByCodeAndCompanyId(eq("Test Site"), eq(companyId)))
           .thenReturn(Optional.of(site));
       when(operationalParameterRepository.findBySite_Id(site.getId()))
           .thenReturn(Optional.of(param));
@@ -400,7 +397,7 @@ class RegisterExitServiceTest {
       param.setAllowExitWithoutPayment(true);
       ParkingSite site = new ParkingSite();
       site.setId(UUID.randomUUID());
-      when(parkingSiteRepository.findByCodeAndCompany_Id(eq("Test Site"), eq(companyId)))
+      when(parkingSitePort.findByCodeAndCompanyId(eq("Test Site"), eq(companyId)))
           .thenReturn(Optional.of(site));
       when(operationalParameterRepository.findBySite_Id(site.getId()))
           .thenReturn(Optional.of(param));
@@ -872,7 +869,7 @@ class RegisterExitServiceTest {
       param.setRequirePhotoExit(true);
       ParkingSite site = new ParkingSite();
       site.setId(UUID.randomUUID());
-      when(parkingSiteRepository.findByCodeAndCompany_Id(eq("Test Site"), eq(companyId)))
+      when(parkingSitePort.findByCodeAndCompanyId(eq("Test Site"), eq(companyId)))
           .thenReturn(Optional.of(site));
       when(operationalParameterRepository.findBySite_Id(site.getId()))
           .thenReturn(Optional.of(param));

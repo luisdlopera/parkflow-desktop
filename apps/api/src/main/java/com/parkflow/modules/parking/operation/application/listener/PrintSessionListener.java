@@ -18,7 +18,7 @@ public class PrintSessionListener {
     private final OperationPrintService operationPrintService;
 
     // Execute asynchronously after the transaction has successfully committed
-    @Async
+    @Async("printExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSessionCreated(SessionCreatedEvent event) {
         log.debug("Enqueuing print job for session: {}", event.session().getId());
@@ -34,7 +34,7 @@ public class PrintSessionListener {
         }
     }
 
-    @Async
+    @Async("printExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSessionClosed(SessionClosedEvent event) {
         log.debug("Enqueuing print job for closed session: {}", event.session().getId());
@@ -50,7 +50,7 @@ public class PrintSessionListener {
         }
     }
 
-    @Async
+    @Async("printExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSessionLostTicket(SessionLostTicketEvent event) {
         log.debug("Enqueuing print job for lost ticket session: {}", event.session().getId());
@@ -66,7 +66,7 @@ public class PrintSessionListener {
         }
     }
 
-    @Async
+    @Async("printExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onTicketReprinted(TicketReprintedEvent event) {
         log.debug("Enqueuing print job for reprinted ticket: {}", event.session().getId());
