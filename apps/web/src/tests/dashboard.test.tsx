@@ -141,7 +141,7 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("No se pudo cargar resumen de supervisor")).toBeDefined();
+      expect(screen.getByText("API no disponible (resumen)")).toBeDefined();
     });
   });
 
@@ -240,7 +240,7 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("No se pudo listar sesiones activas")).toBeDefined();
+      expect(screen.getByText("API no disponible (sesiones activas)")).toBeDefined();
     });
   });
 });
