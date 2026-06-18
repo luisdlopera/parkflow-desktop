@@ -39,18 +39,23 @@ export function MotorcycleEntryFormUI({
   noPlate,
 }: MotorcycleEntryFormUIProps) {
   const { config } = useRuntimeConfig();
-  const enableCustodiedItem = config?.operationConfiguration?.enableCustodiedItem ?? true;
+  const helmetHandling = config?.operationConfiguration?.helmetHandling as string | undefined;
+  const enableCustodiedItem = config?.operationConfiguration?.enableCustodiedItem ?? false;
+  // Si hay configuración explícita de cascos, respétala; si no, usa el flag legacy.
+  const showHelmetSection = helmetHandling ? helmetHandling !== "NONE" : enableCustodiedItem;
+  // Solo necesitamos lockers cuando el modo es por lockers numerados.
+  const usesLockers = helmetHandling === "LOCKERS";
 
   const [availableTokens, setAvailableTokens] = useState<{ id: string; code: string }[]>([]);
   const { contains } = useFilter({ sensitivity: "base" });
 
   useEffect(() => {
-    if (enableCustodiedItem) {
+    if (showHelmetSection && usesLockers) {
       fetchAvailableLockers()
         .then((lockers) => setAvailableTokens(lockers.map((l) => ({ id: l.id, code: l.code }))))
         .catch(() => setAvailableTokens([]));
     }
-  }, [enableCustodiedItem]);
+  }, [showHelmetSection, usesLockers]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -169,7 +174,7 @@ export function MotorcycleEntryFormUI({
       </div>
 
       {/* Sección de Casco Interactiva */}
-      {enableCustodiedItem && (
+      {showHelmetSection && (
         <div className="space-y-3 pt-2">
           <p className="text-sm font-semibold text-slate-600">Gestión de Cascos</p>
           <div className="grid grid-cols-2 gap-3">

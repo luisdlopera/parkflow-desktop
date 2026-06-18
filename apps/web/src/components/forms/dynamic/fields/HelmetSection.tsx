@@ -25,17 +25,20 @@ export function HelmetSection({ control, selectedVehicleType }: HelmetSectionPro
     name: "custodiedItems",
   });
 
-  const enableCustodiedItem = config?.operationConfiguration?.enableCustodiedItem ?? true;
+  const helmetHandling = config?.operationConfiguration?.helmetHandling as string | undefined;
+  const enableCustodiedItem = config?.operationConfiguration?.enableCustodiedItem ?? false;
+  const showHelmetSection = helmetHandling ? helmetHandling !== "NONE" : enableCustodiedItem;
+  const usesLockers = helmetHandling === "LOCKERS";
 
   useEffect(() => {
-    if (enableCustodiedItem && selectedVehicleType === "MOTORCYCLE") {
+    if (showHelmetSection && usesLockers && selectedVehicleType === "MOTORCYCLE") {
       fetchAvailableLockers()
         .then((lockers) => setAvailableTokens(lockers.map((l) => ({ id: l.id, code: l.code }))))
         .catch(() => setAvailableTokens([]));
     }
-  }, [enableCustodiedItem, selectedVehicleType]);
+  }, [showHelmetSection, usesLockers, selectedVehicleType]);
 
-  if (selectedVehicleType !== "MOTORCYCLE" || !enableCustodiedItem) {
+  if (selectedVehicleType !== "MOTORCYCLE" || !showHelmetSection) {
     return null;
   }
 
