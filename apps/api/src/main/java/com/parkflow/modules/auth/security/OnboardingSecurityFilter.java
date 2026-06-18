@@ -36,7 +36,8 @@ public class OnboardingSecurityFilter extends OncePerRequestFilter {
         "/swagger-ui/**",
         "/v3/api-docs/**",
         "/api/v1/auth/**",
-        "/api/v1/onboarding/**"
+        "/api/v1/onboarding/**",
+        "/api/v1/configuration/theme"
     );
 
     public OnboardingSecurityFilter(CompanyPort companyPort, ObjectMapper objectMapper) {

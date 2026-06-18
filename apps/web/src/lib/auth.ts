@@ -346,7 +346,10 @@ export async function currentUser(): Promise<AuthUser | null> {
 /** Updates the cached user in the active session (e.g. after profile edit). */
 export async function patchSessionUser(patch: Partial<AuthUser>): Promise<void> {
   const session = await loadSession();
-  if (!session) return;
+  if (!session) {
+    console.warn("patchSessionUser: no active session to patch", patch);
+    return;
+  }
   await saveSession({
     ...session,
     user: { ...session.user, ...patch }

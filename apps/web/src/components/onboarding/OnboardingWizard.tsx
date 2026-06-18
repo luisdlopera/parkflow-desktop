@@ -46,7 +46,6 @@ function OnboardingContent() {
     vehicleTypes,
     stepData,
     progress,
-    onDone,
     stepErrors,
     validateCurrentStep,
     clearStepErrors,
@@ -192,10 +191,9 @@ function OnboardingContent() {
                   await persistStep(step); // Ensure last data is saved
                   await completeOnboarding(companyId);
                   await patchSessionUser({ onboardingCompleted: true });
-                  window.dispatchEvent(new CustomEvent("parkflow-refresh-runtime-config"));
-                  // Small delay to ensure session is updated before navigation
-                  await new Promise(resolve => setTimeout(resolve, 500));
-                  onDone();
+                  // Hard navigation: recarga limpia para re-leer sesión y aplicar
+                  // configuración/tema sin estado cliente stale ni overlay colgado.
+                  window.location.assign("/");
                 } catch (err) {
                   console.error("Error completing onboarding:", err);
                   setSaveState("error");
@@ -255,18 +253,18 @@ function OnboardingContent() {
                   try {
                     await skipOnboarding(companyId);
                     await patchSessionUser({ onboardingCompleted: true });
-                    window.dispatchEvent(new CustomEvent("parkflow-refresh-runtime-config"));
-                    onDone();
+                    // Hard navigation: garantiza salir del overlay del onboarding y
+                    // re-leer la sesión actualizada sin rebote de AuthGate.
+                    window.location.assign("/");
                   } catch (err) {
                     if (err instanceof ApiError && err.status === 401) {
                       await logoutAndRedirectToLogin("expired");
                     } else {
                       console.error("Error skipping onboarding:", err);
                       setSaveState("error");
+                      setIsSkipping(false);
+                      setShowSkipModal(false);
                     }
-                  } finally {
-                    setIsSkipping(false);
-                    setShowSkipModal(false);
                   }
                 }}
               >
