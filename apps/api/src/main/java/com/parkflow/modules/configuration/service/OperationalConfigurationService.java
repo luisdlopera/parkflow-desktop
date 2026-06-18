@@ -4,6 +4,7 @@ import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.licensing.enums.OperationalProfile;
 import com.parkflow.modules.configuration.domain.policy.OperationalProfilePolicy;
 import com.parkflow.modules.configuration.domain.model.OperationalCapability;
+import com.parkflow.modules.configuration.application.port.in.OperationalValidationUseCase;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-public class OperationalConfigurationService {
+public class OperationalConfigurationService implements OperationalValidationUseCase {
 
     private final CompanyPort companyPort;
     private final Map<OperationalProfile, OperationalProfilePolicy> policyMap;

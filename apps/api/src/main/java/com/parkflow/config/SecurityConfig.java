@@ -1,10 +1,13 @@
 package com.parkflow.config;
 
+import jakarta.annotation.PostConstruct;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.common.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,11 +38,16 @@ public class SecurityConfig {
   @Value("${app.security.api-key:parkflow-dev-key}")
   private String apiKey;
 
-  @Value("${spring.profiles.active:}")
-  private String activeProfiles;
+  private final Environment environment;
 
-  @Value("${app.security.swagger-public:true}")
+  @Value("${app.security.swagger-public:false}")
   private boolean swaggerPublic;
+
+  @Value("${app.security.seed-admin-password:}")
+  private String seedAdminPassword;
+
+  @Value("${app.security.jwt-secret:}")
+  private String jwtSecret;
 
   @Value("${app.security.password-encoder-strength:12}")
   private int passwordEncoderStrength;
@@ -48,10 +56,41 @@ public class SecurityConfig {
   private final com.parkflow.modules.auth.security.OnboardingSecurityFilter onboardingSecurityFilter;
   private final ObjectMapper objectMapper;
 
-  public SecurityConfig(JwtAuthFilter jwtAuthFilter, com.parkflow.modules.auth.security.OnboardingSecurityFilter onboardingSecurityFilter, ObjectMapper objectMapper) {
+  public SecurityConfig(JwtAuthFilter jwtAuthFilter,
+      com.parkflow.modules.auth.security.OnboardingSecurityFilter onboardingSecurityFilter,
+      ObjectMapper objectMapper,
+      Environment environment) {
     this.jwtAuthFilter = jwtAuthFilter;
     this.onboardingSecurityFilter = onboardingSecurityFilter;
     this.objectMapper = objectMapper;
+    this.environment = environment;
+  }
+
+  /**
+   * Fail fast if placeholder secrets are used outside the dev/test profiles.
+   * Prevents accidental production deployments with insecure defaults.
+   */
+  @PostConstruct
+  public void validateSecrets() {
+    Set<String> nonProdProfiles = Set.of("dev", "local", "test", "ci");
+    String[] profiles = environment.getActiveProfiles();
+    // If no profiles are active, assume local development to avoid blocking a common dev workflow
+    if (profiles == null || profiles.length == 0) return;
+    boolean isDev = Arrays.stream(profiles).anyMatch(p -> nonProdProfiles.contains(p.toLowerCase()));
+    if (isDev) return;
+
+    if (apiKey.isBlank() || apiKey.startsWith("REPLACE_") || apiKey.equals("parkflow-dev-key")) {
+      throw new IllegalStateException(
+          "SECURITY: app.security.api-key must be set to a secure value via PARKFLOW_API_KEY env var");
+    }
+    if (seedAdminPassword.isBlank() || seedAdminPassword.startsWith("REPLACE_")) {
+      throw new IllegalStateException(
+          "SECURITY: app.security.seed-admin-password must be set via PARKFLOW_SEED_ADMIN_PASSWORD env var");
+    }
+    if (jwtSecret.isBlank() || jwtSecret.startsWith("REPLACE_")) {
+      throw new IllegalStateException(
+          "SECURITY: app.security.jwt-secret must be set via PARKFLOW_JWT_SECRET_BASE64 env var");
+    }
   }
 
   @Bean
@@ -93,10 +132,8 @@ public class SecurityConfig {
     if (swaggerPublic) {
       return new String[] {"/swagger-ui/**", "/v3/api-docs/**"};
     }
-    boolean isDev =
-        Stream.of(activeProfiles.split(","))
-            .map(String::trim)
-            .anyMatch(p -> p.equalsIgnoreCase("dev") || p.equalsIgnoreCase("local"));
+    boolean isDev = Arrays.stream(environment.getActiveProfiles())
+        .anyMatch(p -> p.equalsIgnoreCase("dev") || p.equalsIgnoreCase("local"));
     return isDev ? new String[] {"/swagger-ui/**", "/v3/api-docs/**"} : new String[] {};
   }
 
