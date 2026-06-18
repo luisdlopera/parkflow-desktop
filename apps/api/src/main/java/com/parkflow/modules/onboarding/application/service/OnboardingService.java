@@ -121,15 +121,44 @@ public class OnboardingService implements OnboardingUseCase {
   public OnboardingStatusResponse skipAndApplyDefaults(UUID companyId) {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
-    company.setOperationalProfile(OperationalProfile.MIXED);
+
+    // "Omitir" preserva lo que el usuario alcanzó a configurar (métodos de pago,
+    // custodia de cascos, tipos de vehículo, etc.) y solo completa con valores
+    // estándar lo que falte. Si no hay progreso, aplica configuración por defecto.
+    Map<String, Object> progressData = progress.getProgressData();
+    boolean hasProgress = progressData != null && !progressData.isEmpty();
+
+    Map<String, Object> settings = hasProgress
+        ? settingsMapper.buildSettingsFromProgress(company, progressData)
+        : settingsMapper.defaultConfiguration(company);
+
+    Map<String, Object> step1 = settingsMapper.stepMap(
+        progressData != null ? progressData : new LinkedHashMap<>(), 1);
+    String opStr = String.valueOf(step1.getOrDefault("operationalProfile",
+        step1.getOrDefault("businessModel", "MIXED")));
+    try {
+      company.setOperationalProfile(OperationalProfile.valueOf(opStr));
+    } catch (Exception e) {
+      company.setOperationalProfile(OperationalProfile.MIXED);
+    }
     companyRepository.save(company);
-    companySettingsService.upsertSettings(company, settingsMapper.defaultConfiguration(company));
 
-    // Crear tipos de vehículo por defecto en el catálogo global + vínculo con la empresa
-    materializeVehicleTypes(companyId, List.of("MOTORCYCLE", "CAR"));
+    companySettingsService.upsertSettings(company, settings);
 
-    // Crear tarifas default para que el ingreso de vehículos no falle.
-    createDefaultRates(company);
+    // Crear tipos de vehículo en el catálogo global + vínculo con la empresa
+    @SuppressWarnings("unchecked")
+    List<String> vehicleTypeCodes = (List<String>) settings.getOrDefault(
+        "vehicleTypes", List.of("MOTORCYCLE", "CAR"));
+    materializeVehicleTypes(companyId, vehicleTypeCodes);
+
+    if (hasProgress) {
+      // Preservar lockers y tarifas configuradas por el usuario.
+      createLockersIfConfigured(companyId, step1);
+      createRatesFromOnboarding(company, progressData);
+    } else {
+      // Crear tarifas default para que el ingreso de vehículos no falle.
+      createDefaultRates(company);
+    }
 
     progress.setSkipped(true);
     progress.setCompleted(true);
