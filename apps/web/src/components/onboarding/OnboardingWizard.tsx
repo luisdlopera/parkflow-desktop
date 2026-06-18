@@ -61,7 +61,7 @@ function OnboardingContent() {
   const handleSkip = async () => {
     const ok = await confirm(
       "Se guardará lo que configuraste y se completará con valores estándar lo que falte. Podrás editarlo luego en Configuración.",
-      { title: "Omitir parametrización", confirmLabel: "Confirmar omitir" },
+      { title: "Omitir parametrización", confirmLabel: "Confirmar omitir", status: "warning" },
     );
     if (!ok) return;
     setIsSkipping(true);

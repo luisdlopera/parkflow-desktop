@@ -2,246 +2,54 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useRef,
-  useState,
-  useCallback,
   ReactNode,
 } from "react";
-import { fetchOnboardingStatus, saveOnboardingStep, OnboardingStatus } from "@/lib/onboarding-api";
+import { useOnboardingStore } from "@/lib/stores/onboardingStore";
+import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
+import { saveOnboardingStep, type OnboardingStatus } from "@/lib/onboarding-api";
+import {
+  REQUIRED_STEPS,
+  VEHICLE_OPTIONS,
+  validateStep,
+  areRequiredStepsCompleted,
+  inferOperationalProfile,
+  getNextEnabledStep,
+  getPrevEnabledStep,
+} from "./onboarding-logic";
 
-export type OperationalProfile = "MOTORCYCLE_ONLY" | "CAR_ONLY" | "MIXED";
+// Re-export all pure logic (constants, validators, navigation helpers, types)
+// so existing imports from "@/components/onboarding/OnboardingContext" keep
+// working without touching the 12 step components or the wizard.
+export * from "./onboarding-logic";
 
-export const REQUIRED_STEPS = [1, 2, 3, 4];
-export const BASE_ENABLED_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 12];
-export const STEP_TITLES = [
-  "Tipos de vehículo",
-  "Capacidad",
-  "Tarifas",
-  "Caja",
-  "Turnos",
-  "Métodos de pago",
-  "Tickets",
-  "Clientes y mensualidades",
-  "Convenios",
-  "Sedes",
-  "Roles y permisos",
-  "Auditoría",
-];
+const DEFAULT_ENABLED_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
-export const VEHICLE_OPTIONS: Array<{ code: string; label: string; description: string }> = [
-  { code: "MOTORCYCLE", label: "Moto", description: "Motocicletas y ciclomotores" },
-  { code: "CAR", label: "Carro", description: "Automóviles y sedanes" },
-  { code: "BICYCLE", label: "Bicicleta", description: "Bicicletas (no requiere placa)" },
-  { code: "VAN", label: "Camioneta", description: "Camionetas, SUVs y vans" },
-  { code: "TRUCK", label: "Camión", description: "Camiones de carga" },
-  { code: "BUS", label: "Bus", description: "Buses y transporte público" },
-  { code: "OTHER", label: "Otro", description: "Vehículos especiales o no categorizados" },
-];
+// ─── Internal context for server state ───────────────────────────────────────
+// Holds the SWR-managed OnboardingStatus and the actions that touch the server.
+// The 3 public hooks read from this context so they never need to know about SWR.
 
-export const PAYMENT_OPTIONS = [
-  { code: "CASH", label: "Efectivo" },
-  { code: "DEBIT_CARD", label: "Tarjeta débito" },
-  { code: "CREDIT_CARD", label: "Tarjeta crédito" },
-  { code: "NEQUI", label: "Nequi" },
-  { code: "DAVIPLATA", label: "DaviPlata" },
-  { code: "TRANSFER", label: "Transferencia" },
-  { code: "QR", label: "Pago QR" },
-  { code: "AGREEMENT", label: "Convenio" },
-  { code: "MIXED", label: "Mixto" },
-];
-
-export const COUNTRY_OPTIONS = [
-  { code: "CO", label: "Colombia", platePattern: "ABC123", plateExample: "ABC123" },
-  { code: "MX", label: "México", platePattern: "ABC1234", plateExample: "ABC1234" },
-  { code: "AR", label: "Argentina", platePattern: "AB123CD", plateExample: "AB123CD" },
-  { code: "CL", label: "Chile", platePattern: "ABCD12", plateExample: "ABCD12" },
-  { code: "PE", label: "Perú", platePattern: "ABC123", plateExample: "ABC123" },
-  { code: "US", label: "Estados Unidos", platePattern: "ABC1234", plateExample: "ABC1234" },
-  { code: "OTHER", label: "Otro", platePattern: "Libre", plateExample: "Libre" },
-];
-
-export const PRINTER_OPTIONS = [
-  { code: "THERMAL", label: "Impresora térmica", description: "Tiquetes pequeños y rápidos" },
-  { code: "DESKJET", label: "Impresora de escritorio", description: "Tiquetes normales" },
-  { code: "NONE", label: "Sin impresora", description: "Solo pantalla o digital" },
-];
-
-export type StepValidationErrors = Record<string, string>;
-
-export function isStepCompleted(progressData: Record<string, unknown>, step: number) {
-  const stepKey = `step_${step}`;
-  const data = progressData?.[stepKey] as Record<string, unknown> | undefined;
-  if (!data) return false;
-  return validateStep(
-    step,
-    data,
-    Array.isArray(data.vehicleTypes) ? (data.vehicleTypes as string[]) : [],
-  ).isValid;
-}
-
-export function validateStep(
-  step: number,
-  data: Record<string, unknown>,
-  vehicleTypes: string[],
-): { isValid: boolean; errors: StepValidationErrors } {
-  const errors: StepValidationErrors = {};
-
-  switch (step) {
-    case 1: {
-      if (!Array.isArray(data.vehicleTypes) || (data.vehicleTypes as string[]).length === 0) {
-        errors.vehicleTypes = "Selecciona al menos un tipo de vehículo.";
-      }
-      const selectedTypes = Array.isArray(data.vehicleTypes)
-        ? (data.vehicleTypes as string[])
-        : vehicleTypes;
-      if (selectedTypes.includes("MOTORCYCLE")) {
-        const handling = data.helmetHandling;
-        if (handling !== "LOCKERS" && handling !== "NONE") {
-          errors.helmetHandling = "Selecciona una opción de custodia de cascos.";
-        }
-        if (handling === "LOCKERS") {
-          const count =
-            typeof data.helmetTokenCount === "number"
-              ? data.helmetTokenCount
-              : Number(data.helmetTokenCount);
-          if (!Number.isFinite(count) || count <= 0) {
-            errors.helmetTokenCount = "La cantidad de lockers debe ser mayor a 0.";
-          } else if (count > 9999) {
-            errors.helmetTokenCount = "La cantidad de lockers no puede superar 9999.";
-          }
-        }
-      }
-      break;
-    }
-    case 2: {
-      const total =
-        typeof data.totalCapacity === "number" ? data.totalCapacity : Number(data.totalCapacity);
-      if (!Number.isFinite(total) || total <= 0) {
-        errors.totalCapacity = "La capacidad total debe ser mayor a 0.";
-      }
-      if (Boolean(data.controlSlots)) {
-        const byType = (data.capacityByType as Record<string, number>) ?? {};
-        const selectedTypes = vehicleTypes.length > 0 ? vehicleTypes : Object.keys(byType);
-        const sum = selectedTypes.reduce((acc, type) => acc + (Number(byType[type]) || 0), 0);
-        if (Number.isFinite(total) && sum > total) {
-          errors.capacityByType = `La suma de capacidades por tipo (${sum}) supera la capacidad total (${total}).`;
-        }
-      }
-      break;
-    }
-    case 3: {
-      const base = typeof data.baseValue === "number" ? data.baseValue : Number(data.baseValue);
-      if (!Number.isFinite(base) || base <= 0) {
-        errors.baseValue = "La tarifa base debe ser mayor a 0.";
-      }
-      break;
-    }
-    case 4: {
-      if (typeof data.countryCode !== "string" || data.countryCode.length === 0) {
-        errors.countryCode = "Selecciona un país.";
-      }
-      break;
-    }
-    case 6: {
-      if (!Array.isArray(data.paymentMethods) || (data.paymentMethods as string[]).length === 0) {
-        errors.paymentMethods = "Selecciona al menos un método de pago.";
-      }
-      break;
-    }
-  }
-
-  return { isValid: Object.keys(errors).length === 0, errors };
-}
-
-export function areRequiredStepsCompleted(progressData: Record<string, unknown>) {
-  return REQUIRED_STEPS.every((step) => isStepCompleted(progressData, step));
-}
-
-export function getNextEnabledStep(current: number, enabledSteps: number[]) {
-  const idx = enabledSteps.indexOf(current);
-  if (idx === -1 || idx === enabledSteps.length - 1) return current;
-  return enabledSteps[idx + 1];
-}
-
-export function getPrevEnabledStep(current: number, enabledSteps: number[]) {
-  const idx = enabledSteps.indexOf(current);
-  if (idx <= 0) return current;
-  return enabledSteps[idx - 1];
-}
-
-export function inferOperationalProfile(vehicleTypes: string[]): OperationalProfile {
-  const hasMoto = vehicleTypes.includes("MOTORCYCLE");
-  const hasCar = vehicleTypes.includes("CAR");
-  const hasOthers = vehicleTypes.some((v) => v !== "MOTORCYCLE" && v !== "CAR");
-
-  if (hasMoto && !hasCar && !hasOthers) return "MOTORCYCLE_ONLY";
-  if (hasCar && !hasMoto && !hasOthers) return "CAR_ONLY";
-  return "MIXED";
-}
-
-export function profileLabel(profile: OperationalProfile): string {
-  switch (profile) {
-    case "MOTORCYCLE_ONLY":
-      return "Parqueadero de motos";
-    case "CAR_ONLY":
-      return "Parqueadero de carros";
-    case "MIXED":
-      return "Parqueadero mixto";
-  }
-}
-
-export function profileDescription(profile: OperationalProfile): string {
-  switch (profile) {
-    case "MOTORCYCLE_ONLY":
-      return "La interfaz se adaptará solo para ingreso de motocicletas.";
-    case "CAR_ONLY":
-      return "La interfaz se adaptará solo para ingreso de automóviles.";
-    case "MIXED":
-      return "La interfaz mostrará opciones para todos los tipos de vehículos seleccionados.";
-  }
-}
-
-// ─── Context split: Navigation (changes on step transitions) ───
-interface OnboardingNavigationContextType {
-  step: number;
-  enabledSteps: number[];
-  totalEnabledSteps: number;
-  progress: number;
-  persistStep: (targetStep: number) => Promise<void>;
-  onDone: () => void;
-}
-const OnboardingNavigationContext = createContext<OnboardingNavigationContextType | undefined>(undefined);
-
-// ─── Context split: Data (changes on every keystroke) ───
-interface OnboardingDataContextType {
-  stepData: Record<string, unknown>;
-  setStepData: React.Dispatch<React.SetStateAction<Record<string, unknown>>>;
-  stepErrors: StepValidationErrors;
-  validateCurrentStep: () => boolean;
-  clearStepErrors: () => void;
-  getCapacityByType: () => Record<string, number>;
-  getRatesByType: () => Record<string, number>;
-}
-const OnboardingDataContext = createContext<OnboardingDataContextType | undefined>(undefined);
-
-// ─── Context split: Metadata (changes when API refetches) ───
-interface OnboardingMetadataContextType {
+type OnboardingServerCtx = {
   companyId: string;
   status: OnboardingStatus | null;
-  loading: boolean;
-  saveState: "idle" | "saving" | "saved" | "error";
-  setSaveState: React.Dispatch<React.SetStateAction<"idle" | "saving" | "saved" | "error">>;
-  requiredCompleted: boolean;
-  vehicleTypes: string[];
-  detectedProfile: OperationalProfile;
-  canMultiSite: boolean;
-  canAdvancedPermissions: boolean;
-  allProgressData: Record<string, unknown>;
+  isLoading: boolean;
+  persistStep: (targetStep: number) => Promise<void>;
+  onDone: () => void;
+};
+
+const OnboardingServerContext = createContext<OnboardingServerCtx | null>(null);
+
+function useOnboardingServerCtx(): OnboardingServerCtx {
+  const ctx = useContext(OnboardingServerContext);
+  if (!ctx) throw new Error("useOnboardingServerCtx must be used inside OnboardingProvider");
+  return ctx;
 }
-const OnboardingMetadataContext = createContext<OnboardingMetadataContextType | undefined>(undefined);
+
+// ─── Provider ────────────────────────────────────────────────────────────────
 
 export function OnboardingProvider({
   children,
@@ -252,77 +60,76 @@ export function OnboardingProvider({
   companyId: string;
   onDone: () => void;
 }) {
-  const [status, setStatus] = useState<OnboardingStatus | null>(null);
-  const [stepData, setStepData] = useState<Record<string, unknown>>({});
-  const [loading, setLoading] = useState(true);
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [stepErrors, setStepErrors] = useState<StepValidationErrors>({});
+  // Server state via SWR — handles caching, dedup, and invalidation after saves
+  const { data: status, isLoading, mutate } = useOnboardingStatus(companyId);
 
-  const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lastSavedData = useRef<string>("");
+  // Client state from Zustand
+  const stepData = useOnboardingStore((s) => s.stepData);
+  const saveState = useOnboardingStore((s) => s.saveState);
+  const setSaveState = useOnboardingStore((s) => s.setSaveState);
+  const loadStepFromStatus = useOnboardingStore((s) => s.loadStepFromStatus);
 
-  useEffect(() => {
-    fetchOnboardingStatus(companyId).then((s) => {
-      const safeStep = s.enabledSteps?.includes(s.currentStep)
-        ? s.currentStep
-        : (s.enabledSteps?.[0] ?? 1);
-      const statusWithSafeStep = { ...s, currentStep: safeStep };
-      setStatus(statusWithSafeStep);
-      const payload = (s.progressData?.[`step_${safeStep}`] as Record<string, unknown>) ?? {};
-      setStepData(payload);
-      lastSavedData.current = JSON.stringify(payload);
-      setLoading(false);
-      if (s.onboardingCompleted) onDone();
-    });
-  }, [companyId, onDone]);
-
-  const step = status?.currentStep ?? 1;
-  const enabledSteps = useMemo(
-    () => status?.enabledSteps ?? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    [status?.enabledSteps],
-  );
-  const totalEnabledSteps = enabledSteps.length;
-
-  const vehicleTypes = useMemo(() => {
-    const step1Data = status?.progressData?.step_1 as Record<string, unknown> | undefined;
-    return Array.isArray(step1Data?.vehicleTypes) ? (step1Data.vehicleTypes as string[]) : [];
-  }, [status?.progressData]);
-
-  const progress = useMemo(() => {
-    const idx = enabledSteps.indexOf(step);
-    if (idx === -1) return 0;
-    return Math.round(((idx + 1) / totalEnabledSteps) * 100);
-  }, [step, enabledSteps, totalEnabledSteps]);
-
-  const requiredCompleted = useMemo(() => {
-    const progressData = { ...(status?.progressData ?? {}) };
-    if (REQUIRED_STEPS.includes(step) && validateStep(step, stepData, vehicleTypes).isValid) {
-      progressData[`step_${step}`] = stepData;
-    }
-    return areRequiredStepsCompleted(progressData);
-  }, [status?.progressData, step, stepData, vehicleTypes]);
-
-  const canMultiSite = Boolean(status?.availableOptionsByPlan?.allowMultiLocation);
-  const canAdvancedPermissions = Boolean(status?.availableOptionsByPlan?.allowAdvancedPermissions);
-
-  const detectedProfile = useMemo(() => inferOperationalProfile(vehicleTypes), [vehicleTypes]);
+  // Track the last step we loaded so we only hydrate stepData on step changes
+  const loadedStepRef = useRef<number | null>(null);
+  // Track last persisted JSON for autosave dedup (reset when step changes)
+  const lastSavedDataRef = useRef<string>("");
 
   useEffect(() => {
-    if (autoSaveRef.current) {
-      clearInterval(autoSaveRef.current);
+    if (!status || isLoading) return;
+    if (status.onboardingCompleted) { onDone(); return; }
+
+    if (loadedStepRef.current !== status.currentStep) {
+      loadedStepRef.current = status.currentStep;
+      loadStepFromStatus(status, status.currentStep);
+      const fresh =
+        (status.progressData?.[`step_${status.currentStep}`] as Record<string, unknown>) ?? {};
+      lastSavedDataRef.current = JSON.stringify(fresh);
     }
+  }, [status, isLoading, onDone, loadStepFromStatus]);
 
-    autoSaveRef.current = setInterval(() => {
-      if (!status || !stepData || Object.keys(stepData).length === 0 || saveState === "saving") return;
-
-      const currentData = JSON.stringify(stepData);
-      if (currentData === lastSavedData.current) return;
+  // Saves current step and navigates to targetStep. Updates SWR cache directly
+  // via mutate(next, false) to avoid a redundant re-fetch.
+  const persistStep = useCallback(
+    async (targetStep: number) => {
+      if (!status || saveState === "saving") return;
+      const step = status.currentStep ?? 1;
+      const enabledSteps = status.enabledSteps ?? DEFAULT_ENABLED_STEPS;
+      const safeTarget = enabledSteps.includes(targetStep)
+        ? targetStep
+        : targetStep > step
+          ? getNextEnabledStep(step, enabledSteps)
+          : getPrevEnabledStep(step, enabledSteps);
 
       setSaveState("saving");
-      saveOnboardingStep(companyId, step, stepData, step)
-        .then((next) => {
-          setStatus({ ...next, currentStep: step });
-          lastSavedData.current = currentData;
+      try {
+        const next = await saveOnboardingStep(companyId, step, stepData, safeTarget);
+        await mutate(next, false);
+        loadStepFromStatus(next, safeTarget);
+        lastSavedDataRef.current = JSON.stringify(
+          (next.progressData?.[`step_${safeTarget}`] as Record<string, unknown>) ?? {}
+        );
+        setSaveState("saved");
+        setTimeout(() => setSaveState("idle"), 2000);
+      } catch {
+        setSaveState("error");
+        setTimeout(() => setSaveState("idle"), 3000);
+      }
+    },
+    [status, saveState, stepData, companyId, mutate, loadStepFromStatus, setSaveState]
+  );
+
+  // Stable 10s autosave — only fires when stepData has actually changed
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (!status || saveState === "saving") return;
+      const current = JSON.stringify(stepData);
+      if (current === lastSavedDataRef.current) return;
+
+      setSaveState("saving");
+      saveOnboardingStep(companyId, status.currentStep, stepData, status.currentStep)
+        .then(async (next) => {
+          await mutate(next, false);
+          lastSavedDataRef.current = current;
           setSaveState("saved");
           setTimeout(() => setSaveState("idle"), 2000);
         })
@@ -330,35 +137,66 @@ export function OnboardingProvider({
           setSaveState("error");
           setTimeout(() => setSaveState("idle"), 3000);
         });
-    }, 10000);
+    }, 10_000);
+    return () => clearInterval(id);
+  }, [stepData, saveState, status, companyId, mutate, setSaveState]);
 
-    return () => {
-      if (autoSaveRef.current) clearInterval(autoSaveRef.current);
-    };
-  }, [companyId, step, status, stepData, saveState]);
+  const serverCtxValue = useMemo<OnboardingServerCtx>(
+    () => ({ companyId, status: status ?? null, isLoading, persistStep, onDone }),
+    [companyId, status, isLoading, persistStep, onDone]
+  );
 
-  const persistStep = async (targetStep: number) => {
-    if (!status || saveState === "saving") return;
-    setSaveState("saving");
-    try {
-      const safeStep = enabledSteps.includes(targetStep)
-        ? targetStep
-        : targetStep > step
-          ? getNextEnabledStep(step, enabledSteps)
-          : getPrevEnabledStep(step, enabledSteps);
+  return (
+    <OnboardingServerContext.Provider value={serverCtxValue}>
+      {children}
+    </OnboardingServerContext.Provider>
+  );
+}
 
-      const next = await saveOnboardingStep(companyId, step, stepData, safeStep);
-      setStatus({ ...next, currentStep: safeStep });
-      const payload = (next.progressData?.[`step_${safeStep}`] as Record<string, unknown>) ?? {};
-      setStepData(payload);
-      lastSavedData.current = JSON.stringify(payload);
-      setSaveState("saved");
-      setTimeout(() => setSaveState("idle"), 2000);
-    } catch {
-      setSaveState("error");
-      setTimeout(() => setSaveState("idle"), 3000);
-    }
-  };
+// ─── Specialized hooks for granular subscriptions ───
+// Each hook subscribes only to the slices it needs to prevent unnecessary re-renders.
+
+export function useOnboardingNavigation() {
+  const { status, persistStep, onDone } = useOnboardingServerCtx();
+
+  const step = status?.currentStep ?? 1;
+  const enabledSteps = useMemo(
+    () => status?.enabledSteps ?? DEFAULT_ENABLED_STEPS,
+    [status?.enabledSteps]
+  );
+  const totalEnabledSteps = enabledSteps.length;
+  const progress = useMemo(() => {
+    const idx = enabledSteps.indexOf(step);
+    if (idx === -1) return 0;
+    return Math.round(((idx + 1) / totalEnabledSteps) * 100);
+  }, [step, enabledSteps, totalEnabledSteps]);
+
+  return useMemo(
+    () => ({ step, enabledSteps, totalEnabledSteps, progress, persistStep, onDone }),
+    [step, enabledSteps, totalEnabledSteps, progress, persistStep, onDone]
+  );
+}
+
+export function useOnboardingData() {
+  const { status } = useOnboardingServerCtx();
+
+  const stepData = useOnboardingStore((s) => s.stepData);
+  const setStepData = useOnboardingStore((s) => s.setStepData);
+  const stepErrors = useOnboardingStore((s) => s.stepErrors);
+  const validateStepData = useOnboardingStore((s) => s.validateStepData);
+  const clearStepErrors = useOnboardingStore((s) => s.clearStepErrors);
+
+  // Derive vehicleTypes from the status progressData for validation
+  const vehicleTypes = useMemo(() => {
+    const step1 = status?.progressData?.step_1 as Record<string, unknown> | undefined;
+    return Array.isArray(step1?.vehicleTypes) ? (step1!.vehicleTypes as string[]) : [];
+  }, [status?.progressData]);
+
+  // Wrap with current step + vehicleTypes so callers use the same no-arg API
+  const validateCurrentStep = useCallback(
+    () => validateStepData(status?.currentStep ?? 1, vehicleTypes),
+    [validateStepData, status?.currentStep, vehicleTypes]
+  );
 
   const getCapacityByType = useCallback(() => {
     const existing = (stepData.capacityByType as Record<string, number>) ?? {};
@@ -367,7 +205,7 @@ export function OnboardingProvider({
         acc[v.code] = existing[v.code] ?? 0;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     );
   }, [stepData.capacityByType]);
 
@@ -378,83 +216,86 @@ export function OnboardingProvider({
         acc[v.code] = existing[v.code] ?? (stepData.baseValue as number) ?? 0;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     );
   }, [stepData.ratesByType, stepData.baseValue]);
 
-  const validateCurrentStep = useCallback(() => {
-    const result = validateStep(step, stepData, vehicleTypes);
-    setStepErrors(result.errors);
-    return result.isValid;
-  }, [step, stepData, vehicleTypes]);
-
-  const clearStepErrors = useCallback(() => {
-    setStepErrors({});
-  }, []);
-
-  const allProgressData = useMemo(() => status?.progressData ?? {}, [status?.progressData]);
-
-  const navigationValue = useMemo(() => ({
-    step,
-    enabledSteps,
-    totalEnabledSteps,
-    progress,
-    persistStep,
-    onDone,
-  }), [step, enabledSteps, totalEnabledSteps, progress, persistStep, onDone]);
-
-  const dataValue = useMemo(() => ({
-    stepData,
-    setStepData,
-    stepErrors,
-    validateCurrentStep,
-    clearStepErrors,
-    getCapacityByType,
-    getRatesByType,
-  }), [stepData, setStepData, stepErrors, validateCurrentStep, clearStepErrors, getCapacityByType, getRatesByType]);
-
-  const metadataValue = useMemo(() => ({
-    companyId,
-    status,
-    loading,
-    saveState,
-    setSaveState,
-    requiredCompleted,
-    vehicleTypes,
-    detectedProfile,
-    canMultiSite,
-    canAdvancedPermissions,
-    allProgressData,
-  }), [companyId, status, loading, saveState, setSaveState, requiredCompleted, vehicleTypes, detectedProfile, canMultiSite, canAdvancedPermissions, allProgressData]);
-
-  return (
-    <OnboardingNavigationContext.Provider value={navigationValue}>
-      <OnboardingMetadataContext.Provider value={metadataValue}>
-        <OnboardingDataContext.Provider value={dataValue}>
-          {children}
-        </OnboardingDataContext.Provider>
-      </OnboardingMetadataContext.Provider>
-    </OnboardingNavigationContext.Provider>
+  return useMemo(
+    () => ({
+      stepData,
+      setStepData,
+      stepErrors,
+      validateCurrentStep,
+      clearStepErrors,
+      getCapacityByType,
+      getRatesByType,
+    }),
+    [
+      stepData,
+      setStepData,
+      stepErrors,
+      validateCurrentStep,
+      clearStepErrors,
+      getCapacityByType,
+      getRatesByType,
+    ]
   );
 }
 
-// ─── Specialized hooks for granular subscriptions ───
-export function useOnboardingNavigation() {
-  const context = useContext(OnboardingNavigationContext);
-  if (!context) throw new Error("useOnboardingNavigation must be used within an OnboardingProvider");
-  return context;
-}
-
-export function useOnboardingData() {
-  const context = useContext(OnboardingDataContext);
-  if (!context) throw new Error("useOnboardingData must be used within an OnboardingProvider");
-  return context;
-}
-
 export function useOnboardingMetadata() {
-  const context = useContext(OnboardingMetadataContext);
-  if (!context) throw new Error("useOnboardingMetadata must be used within an OnboardingProvider");
-  return context;
+  const { companyId, status, isLoading } = useOnboardingServerCtx();
+
+  const saveState = useOnboardingStore((s) => s.saveState);
+  const setSaveState = useOnboardingStore((s) => s.setSaveState);
+  const stepData = useOnboardingStore((s) => s.stepData);
+
+  const vehicleTypes = useMemo(() => {
+    const step1 = status?.progressData?.step_1 as Record<string, unknown> | undefined;
+    return Array.isArray(step1?.vehicleTypes) ? (step1!.vehicleTypes as string[]) : [];
+  }, [status?.progressData]);
+
+  const step = status?.currentStep ?? 1;
+  const requiredCompleted = useMemo(() => {
+    const progressData = { ...(status?.progressData ?? {}) };
+    if (REQUIRED_STEPS.includes(step) && validateStep(step, stepData, vehicleTypes).isValid) {
+      progressData[`step_${step}`] = stepData;
+    }
+    return areRequiredStepsCompleted(progressData);
+  }, [status?.progressData, step, stepData, vehicleTypes]);
+
+  const detectedProfile = useMemo(() => inferOperationalProfile(vehicleTypes), [vehicleTypes]);
+  const canMultiSite = Boolean(status?.availableOptionsByPlan?.allowMultiLocation);
+  const canAdvancedPermissions = Boolean(status?.availableOptionsByPlan?.allowAdvancedPermissions);
+  const allProgressData = useMemo(() => status?.progressData ?? {}, [status?.progressData]);
+
+  return useMemo(
+    () => ({
+      companyId,
+      status,
+      loading: isLoading,
+      saveState,
+      setSaveState,
+      requiredCompleted,
+      vehicleTypes,
+      detectedProfile,
+      canMultiSite,
+      canAdvancedPermissions,
+      allProgressData,
+    }),
+    [
+      companyId,
+      status,
+      isLoading,
+      saveState,
+      setSaveState,
+      requiredCompleted,
+      vehicleTypes,
+      detectedProfile,
+      canMultiSite,
+      canAdvancedPermissions,
+      allProgressData,
+    ]
+  );
 }
 
 // ─── Aggregate hook for backward compatibility ───
@@ -463,9 +304,8 @@ export function useOnboarding() {
   const data = useOnboardingData();
   const meta = useOnboardingMetadata();
 
-  return useMemo(() => ({
-    ...nav,
-    ...data,
-    ...meta,
-  }), [nav, data, meta]);
+  return useMemo(
+    () => ({ ...nav, ...data, ...meta }),
+    [nav, data, meta]
+  );
 }

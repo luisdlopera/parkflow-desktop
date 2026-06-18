@@ -5,5 +5,5 @@ import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import org.springframework.data.domain.Pageable;
 
 public interface ListRatesUseCase {
-    SettingsPageResponse<RateResponse> list(String site, String q, Boolean active, String category, Pageable pageable);
+    SettingsPageResponse<RateResponse> list(String site, String q, Boolean active, String category, java.util.UUID companyId, Pageable pageable);
 }

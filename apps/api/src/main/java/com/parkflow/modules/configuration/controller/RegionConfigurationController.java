@@ -10,6 +10,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import com.parkflow.modules.auth.security.TenantContext;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,8 +33,11 @@ public class RegionConfigurationController {
       responseCode = "200",
       description = "Region configuration retrieved successfully",
       content = @Content(schema = @Schema(implementation = RegionConfigurationResponse.class)))
-  public ResponseEntity<RegionConfigurationResponse> getRegionConfiguration(
-      @RequestParam UUID companyId) {
+  public ResponseEntity<RegionConfigurationResponse> getRegionConfiguration() {
+    UUID companyId = TenantContext.getTenantId();
+    if (companyId == null) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
+    }
     return ResponseEntity.ok(regionConfigurationUseCase.getRegionConfiguration(companyId));
   }
 
@@ -45,8 +51,11 @@ public class RegionConfigurationController {
   @ApiResponse(responseCode = "400", description = "Invalid region configuration")
   @ApiResponse(responseCode = "404", description = "Company not found")
   public ResponseEntity<RegionConfigurationResponse> updateRegionConfiguration(
-      @RequestParam UUID companyId,
       @Valid @RequestBody RegionConfigurationRequest request) {
+    UUID companyId = TenantContext.getTenantId();
+    if (companyId == null) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
+    }
     return ResponseEntity.ok(
         regionConfigurationUseCase.updateRegionConfiguration(companyId, request));
   }

@@ -131,7 +131,7 @@ describe('useActiveSessions', () => {
     });
 
     expect(result.current.rows).toEqual([]);
-    expect(result.current.meta.total).toBe(0);
+    expect(result.current.meta!.total).toBe(0);
   });
 
   it('should include pagination metadata', async () => {
@@ -280,7 +280,7 @@ describe('useActiveSessions', () => {
     });
 
     expect(result.current.rows).toHaveLength(2);
-    expect(result.current.meta.total).toBe(2);
+    expect(result.current.meta!.total).toBe(2);
   });
 
   it('should handle custodied items in response', async () => {
@@ -314,6 +314,6 @@ describe('useActiveSessions', () => {
     });
 
     expect(result.current.rows[0].custodiedItems).toHaveLength(1);
-    expect(result.current.rows[0].custodiedItems[0].identifier).toBe('CASCO-001');
+    expect(result.current.rows[0].custodiedItems![0].identifier).toBe('CASCO-001');
   });
 });

@@ -26,10 +26,13 @@ public class ListRatesService implements ListRatesUseCase {
   @Override
   @Transactional(readOnly = true)
   public SettingsPageResponse<RateResponse> list(
-      String site, String q, Boolean active, String category, Pageable pageable) {
+      String site, String q, Boolean active, String category, java.util.UUID companyId, Pageable pageable) {
     String s = site == null || site.isBlank() ? "DEFAULT" : site.trim();
     RateCategory parsedCategory = parseCategory(category);
-    UUID companyId = SecurityUtils.requireCompanyId();
+    // prefer explicit companyId parameter (controller-provided) otherwise require it from security context
+    if (companyId == null) {
+      companyId = SecurityUtils.requireCompanyId();
+    }
     Page<Rate> page = ratePort.search(s, normalizeQuery(q), active, parsedCategory, companyId, pageable);
     return SettingsPageResponse.of(page.map(rateMapper::toResponse));
   }

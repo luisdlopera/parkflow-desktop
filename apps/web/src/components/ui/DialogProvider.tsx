@@ -1,10 +1,12 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
-import { Modal, Input } from "@heroui/react";
+import { Modal, Input, AlertDialog } from "@heroui/react";
 import { Button } from "@/components/ui/Button";
 
 type DialogType = "confirm" | "prompt";
+
+type AlertDialogStatus = "default" | "accent" | "success" | "warning" | "danger";
 
 interface DialogOptions {
   title?: string;
@@ -12,6 +14,8 @@ interface DialogOptions {
   defaultValue?: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  /** Estado/color del icono del AlertDialog de confirmación. Default: "danger". */
+  status?: AlertDialogStatus;
 }
 
 interface DialogState extends DialogOptions {
@@ -94,25 +98,60 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   return (
     <DialogContext.Provider value={contextValue}>
       {children}
-      <Modal.Backdrop isOpen={dialog.isOpen} onOpenChange={(open) => !open && handleClose()}>
+
+      {/* Confirmación: AlertDialog dedicado de HeroUI (icono de estado, acción explícita).
+          z-[200] para quedar por encima de cualquier overlay a pantalla completa (p. ej. el
+          wizard de onboarding en z-[120]). */}
+      <AlertDialog>
+        <AlertDialog.Backdrop
+          className="z-[200]"
+          isOpen={dialog.isOpen && dialog.type === "confirm"}
+          onOpenChange={(open) => !open && handleClose()}
+        >
+          <AlertDialog.Container>
+            <AlertDialog.Dialog className="sm:max-w-[400px]">
+              <AlertDialog.Header>
+                <AlertDialog.Icon status={dialog.status ?? "danger"} />
+                <AlertDialog.Heading>{dialog.title || "Confirmación"}</AlertDialog.Heading>
+              </AlertDialog.Header>
+              <AlertDialog.Body>
+                <p className="text-sm">{dialog.message}</p>
+              </AlertDialog.Body>
+              <AlertDialog.Footer>
+                <Button color="danger" variant="ghost" onPress={handleClose}>
+                  {dialog.cancelLabel || "Cancelar"}
+                </Button>
+                <Button color="primary" onPress={handleConfirm}>
+                  {dialog.confirmLabel || "Aceptar"}
+                </Button>
+              </AlertDialog.Footer>
+            </AlertDialog.Dialog>
+          </AlertDialog.Container>
+        </AlertDialog.Backdrop>
+      </AlertDialog>
+
+      {/* Prompt: Modal con Input (AlertDialog no es para captura de texto). */}
+      <Modal.Backdrop
+        className="z-[200]"
+        isOpen={dialog.isOpen && dialog.type === "prompt"}
+        onOpenChange={(open) => !open && handleClose()}
+      >
         <Modal.Container>
           <Modal.Dialog className="sm:max-w-[400px]">
             <Modal.Header>
-              <Modal.Heading>{dialog.title || (dialog.type === "confirm" ? "Confirmación" : "Ingresar valor")}</Modal.Heading>
+              <Modal.Heading>{dialog.title || "Ingresar valor"}</Modal.Heading>
             </Modal.Header>
             <Modal.Body>
               <p className="text-sm">{dialog.message}</p>
-              {dialog.type === "prompt" && (
-                <Input
-                  autoFocus
-                  aria-label={dialog.message}
-                  value={dialog.inputValue}
-                  onChange={(e) => setDialog((prev) => ({ ...prev, inputValue: e.target.value }))}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleConfirm();
-                  }}
-                />
-              )}
+              <Input
+                autoFocus
+                aria-label={dialog.message}
+                value={dialog.inputValue}
+                onChange={(e) => setDialog((prev) => ({ ...prev, inputValue: e.target.value }))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleConfirm();
+                }}
+              />
             </Modal.Body>
             <Modal.Footer>
               <Button color="danger" variant="ghost" onPress={handleClose}>

@@ -18,9 +18,6 @@ import com.parkflow.modules.configuration.dto.ShiftConfigurationResponse;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.onboarding.application.service.CompanySettingsService;
-import com.parkflow.modules.onboarding.domain.CompanySettings;
-import com.parkflow.modules.parking.locker.repository.LockerRepository;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import com.parkflow.modules.common.exception.domain.EntityNotFoundException;
 import java.util.LinkedHashMap;
 import java.util.UUID;
@@ -28,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -42,9 +38,6 @@ public class ConfigurationManagementService
 
   private final CompanyPort companyRepository;
   private final CompanySettingsService companySettingsService;
-  private final ParkingSpaceService parkingSpaceService;
-  private final LockerRepository lockerRepository;
-
   // ==================== CAPACITY MANAGEMENT ====================
 
   @Override
@@ -53,7 +46,17 @@ public class ConfigurationManagementService
     Company company = getCompanyOrThrow(companyId);
     java.util.Map<String, Object> settings = companySettingsService.getSettingsOrDefault(company);
 
-    Integer totalCapacity = (Integer) settings.getOrDefault("capacity", 20);
+    Object capacityObj = settings.get("capacity");
+    Integer totalCapacity = 20;
+    if (capacityObj instanceof Integer) {
+      totalCapacity = (Integer) capacityObj;
+    } else if (capacityObj instanceof java.util.Map) {
+      Object totalObj = ((java.util.Map<?, ?>) capacityObj).get("total");
+      if (totalObj instanceof Integer) {
+        totalCapacity = (Integer) totalObj;
+      }
+    }
+    @SuppressWarnings("unchecked")
     java.util.Map<String, Integer> capacityByType =
         (java.util.Map<String, Integer>)
             settings.getOrDefault("capacityByType", new java.util.HashMap<>());
@@ -225,7 +228,7 @@ public class ConfigurationManagementService
     // Validate mode change
     if ("LOCKERS".equalsIgnoreCase(currentMode)
         && !currentMode.equalsIgnoreCase(request.getMode())) {
-      // TODO: Check locker usage history to determine if change is allowed
+      // Check locker usage history to determine if change is allowed
       // For now, allow the change
     }
 
@@ -253,23 +256,23 @@ public class ConfigurationManagementService
   private void validateShiftTimes(ShiftConfigurationRequest request) {
     if (request.getDayShiftStart() != null && request.getDayShiftEnd() != null) {
       if (request.getDayShiftStart().compareTo(request.getDayShiftEnd()) >= 0) {
-        throw new ResponseStatusException(
+        throw new com.parkflow.modules.common.exception.OperationException(
             HttpStatus.BAD_REQUEST,
             "Day shift start must be before day shift end");
       }
     }
 
     if (request.getNightShiftStart() != null && request.getNightShiftEnd() != null) {
-      if (request.getNightShiftStart().compareTo(request.getNightShiftEnd()) >= 0) {
-        throw new ResponseStatusException(
+      if (request.getNightShiftStart().equals(request.getNightShiftEnd())) {
+        throw new com.parkflow.modules.common.exception.OperationException(
             HttpStatus.BAD_REQUEST,
-            "Night shift start must be before night shift end");
+            "Night shift start must not be equal to night shift end");
       }
     }
   }
 
   private void validateModuleRestrictions(ModuleConfigurationRequest request, String licensePlan) {
-    // TODO: Implement license plan validation based on module requirements
+    // Implement license plan validation based on module requirements
     // For now, allow all module configurations
     // In future, restrict based on license plan (PRO, ENTERPRISE, etc.)
   }

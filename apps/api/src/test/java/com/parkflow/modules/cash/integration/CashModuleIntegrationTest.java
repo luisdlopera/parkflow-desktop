@@ -47,6 +47,9 @@ class CashModuleIntegrationTest {
         // Create operator
         com.parkflow.modules.auth.domain.AppUser operator = new com.parkflow.modules.auth.domain.AppUser();
         operator.setName("Test Operator");
+        operator.setEmail("test" + UUID.randomUUID() + "@example.com");
+        operator.setPasswordHash("dummy_hash");
+        operator.setRole(com.parkflow.modules.auth.domain.UserRole.CAJERO);
         operator.setCompanyId(UUID.randomUUID());
         com.parkflow.modules.auth.domain.AppUser savedOperator = appUserRepository.save(operator);
 
@@ -103,6 +106,9 @@ class CashModuleIntegrationTest {
         // Create operator
         com.parkflow.modules.auth.domain.AppUser operator = new com.parkflow.modules.auth.domain.AppUser();
         operator.setName("Test Operator 2");
+        operator.setEmail("test" + UUID.randomUUID() + "@example.com");
+        operator.setPasswordHash("dummy_hash");
+        operator.setRole(com.parkflow.modules.auth.domain.UserRole.CAJERO);
         operator.setCompanyId(UUID.randomUUID());
         com.parkflow.modules.auth.domain.AppUser savedOperator = appUserRepository.save(operator);
 
@@ -176,6 +182,9 @@ class CashModuleIntegrationTest {
         // Create operator
         com.parkflow.modules.auth.domain.AppUser operator = new com.parkflow.modules.auth.domain.AppUser();
         operator.setName("Test Operator 3");
+        operator.setEmail("test" + UUID.randomUUID() + "@example.com");
+        operator.setPasswordHash("dummy_hash");
+        operator.setRole(com.parkflow.modules.auth.domain.UserRole.CAJERO);
         operator.setCompanyId(UUID.randomUUID());
         com.parkflow.modules.auth.domain.AppUser savedOperator = appUserRepository.save(operator);
 

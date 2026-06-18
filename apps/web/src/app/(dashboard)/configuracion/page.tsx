@@ -525,6 +525,134 @@ function RatesSection({
     return base;
   }, [editing]);
 
+  // Stable column definition so DataTable's React.memo isn't invalidated on
+  // unrelated re-renders. Rebuilds only when the closure values it reads change.
+  const rateColumns = useMemo<DataTableColumn<RateRow>[]>(
+    () => [
+      { key: "name", label: "Nombre" },
+      {
+        key: "rateType",
+        label: "Tipo",
+        render: (r) => (
+          <span>
+            {r.rateType} / {r.vehicleType ?? "Cualquiera"}
+          </span>
+        )
+      },
+      {
+        key: "amount",
+        label: "Valor",
+        render: (r) => Number(r.amount).toFixed(2)
+      },
+      {
+        key: "active",
+        label: "Activa",
+        render: (r) => (r.active ? "Si" : "No")
+      },
+      {
+        key: "site",
+        label: "Sede",
+        render: (r) => r.site
+      },
+      {
+        key: "id",
+        label: "",
+        render: (r) =>
+          canEdit ? (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                color="primary"
+                className="font-semibold"
+                onPress={() =>
+                  void (async () => {
+                    setRateDetailLoading(true);
+                    setRateDetail(null);
+                    try {
+                      setRateDetail(await fetchRateById(r.id));
+                    } catch (e) {
+                      onNotify({
+                        kind: "err",
+                        text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA)
+                      });
+                    } finally {
+                      setRateDetailLoading(false);
+                    }
+                  })()
+                }
+              >
+                Detalle
+              </Button>
+              <Button
+                size="sm"
+                variant="tertiary"
+                color="primary"
+                className="font-semibold"
+                onPress={() => {
+                  setCreating(false);
+                  setEditing(r);
+                }}
+              >
+                Editar
+              </Button>
+              <Button
+                size="sm"
+                variant="tertiary"
+                color="primary"
+                className="font-semibold"
+                onPress={() =>
+                  void (async () => {
+                    try {
+                      await patchRateStatus(r.id, !r.active, auditReason);
+                      onNotify({
+                        kind: "ok",
+                        text: r.active ? "Tarifa desactivada." : "Tarifa activada."
+                      });
+                      await load();
+                    } catch (e) {
+                      onNotify({
+                        kind: "err",
+                        text: getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS)
+                      });
+                    }
+                  })()
+                }
+              >
+                {r.active ? "Desactivar" : "Activar"}
+              </Button>
+              <Button
+                size="sm"
+                variant="tertiary"
+                color="danger"
+                className="font-semibold"
+                onPress={async () => {
+                  if (!(await confirm("Eliminar tarifa? Solo permitido si no hay sesiones asociadas."))) {
+                    return;
+                  }
+                  try {
+                      await deleteRate(r.id, auditReason);
+                      onNotify({ kind: "ok", text: "Tarifa eliminada." });
+                      await load();
+                    } catch (e) {
+                      onNotify({
+                        kind: "err",
+                        text: getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA)
+                      });
+                    }
+                }}
+              >
+                Eliminar
+              </Button>
+            </div>
+          ) : (
+            ""
+          )
+      }
+    ],
+    [canEdit, auditReason, load, confirm, onNotify],
+  );
+
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4">
@@ -676,128 +804,7 @@ function RatesSection({
       ) : null}
 
       <DataTable<RateRow>
-        columns={[
-          { key: "name", label: "Nombre" },
-          {
-            key: "rateType",
-            label: "Tipo",
-            render: (r) => (
-              <span>
-                {r.rateType} / {r.vehicleType ?? "Cualquiera"}
-              </span>
-            )
-          },
-          {
-            key: "amount",
-            label: "Valor",
-            render: (r) => Number(r.amount).toFixed(2)
-          },
-          {
-            key: "active",
-            label: "Activa",
-            render: (r) => (r.active ? "Si" : "No")
-          },
-          {
-            key: "site",
-            label: "Sede",
-            render: (r) => r.site
-          },
-          {
-            key: "id",
-            label: "",
-            render: (r) =>
-              canEdit ? (
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    color="primary"
-                    className="font-semibold"
-                    onPress={() =>
-                      void (async () => {
-                        setRateDetailLoading(true);
-                        setRateDetail(null);
-                        try {
-                          setRateDetail(await fetchRateById(r.id));
-                        } catch (e) {
-                          onNotify({
-                            kind: "err",
-                            text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA)
-                          });
-                        } finally {
-                          setRateDetailLoading(false);
-                        }
-                      })()
-                    }
-                  >
-                    Detalle
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="tertiary"
-                    color="primary"
-                    className="font-semibold"
-                    onPress={() => {
-                      setCreating(false);
-                      setEditing(r);
-                    }}
-                  >
-                    Editar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="tertiary"
-                    color="primary"
-                    className="font-semibold"
-                    onPress={() =>
-                      void (async () => {
-                        try {
-                          await patchRateStatus(r.id, !r.active, auditReason);
-                          onNotify({
-                            kind: "ok",
-                            text: r.active ? "Tarifa desactivada." : "Tarifa activada."
-                          });
-                          await load();
-                        } catch (e) {
-                          onNotify({
-                            kind: "err",
-                            text: getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS)
-                          });
-                        }
-                      })()
-                    }
-                  >
-                    {r.active ? "Desactivar" : "Activar"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="tertiary"
-                    color="danger"
-                    className="font-semibold"
-                    onPress={async () => {
-                      if (!(await confirm("Eliminar tarifa? Solo permitido si no hay sesiones asociadas."))) {
-                        return;
-                      }
-                      try {
-                          await deleteRate(r.id, auditReason);
-                          onNotify({ kind: "ok", text: "Tarifa eliminada." });
-                          await load();
-                        } catch (e) {
-                          onNotify({
-                            kind: "err",
-                            text: getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA)
-                          });
-                        }
-                    }}
-                  >
-                    Eliminar
-                  </Button>
-                </div>
-              ) : (
-                ""
-              )
-          }
-        ]}
+        columns={rateColumns}
         rows={rows}
       />
 
@@ -1873,12 +1880,6 @@ function ParametersSection({
             onChange={(v: any) => setField("businessLegalName", v)}
           />
           <Field label="Direccion" value={data.address ?? ""} onChange={(v: any) => setField("address", v)} />
-          <Field label="Telefono" value={data.phone ?? ""} onChange={(v: any) => setField("phone", v)} />
-          <Field
-            label="Etiqueta sede (config)"
-            value={data.siteLabel ?? ""}
-            onChange={(v: any) => setField("siteLabel", v)}
-          />
           <Field label="Moneda" value={data.currency ?? ""} onChange={(v: any) => setField("currency", v)} />
           <Field label="Zona horaria" value={data.timeZone ?? ""} onChange={(v: any) => setField("timeZone", v)} />
           <Field label="Logo / URL marca" value={data.logoUrl ?? ""} onChange={(v: any) => setField("logoUrl", v)} />
@@ -2413,7 +2414,7 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
     return processedRows.slice(start, start + pageSize);
   }, [processedRows, page, pageSize]);
 
-  const columns: DataTableColumn<import("@/lib/settings-api").MasterVehicleTypeRow>[] = [
+  const columns = useMemo<DataTableColumn<import("@/lib/settings-api").MasterVehicleTypeRow>[]>(() => [
     {
       key: "icon",
       header: "",
@@ -2455,7 +2456,7 @@ function MastersSection({ onNotify, canEdit }: { onNotify: (n: { kind: "ok" | "e
       header: "Rápido",
       render: (r) => (r.quickAccess ? "Sí" : "No")
     },
-  ];
+  ], []);
 
   return (
     <div className="space-y-6">

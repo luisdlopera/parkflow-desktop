@@ -2,10 +2,7 @@ package com.parkflow.modules.parking.operation.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.parkflow.modules.parking.operation.domain.ParkingSession;
-import com.parkflow.modules.parking.operation.domain.SessionStatus;
-import com.parkflow.modules.parking.operation.domain.SessionSyncStatus;
-import com.parkflow.modules.parking.operation.domain.Vehicle;
+
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;

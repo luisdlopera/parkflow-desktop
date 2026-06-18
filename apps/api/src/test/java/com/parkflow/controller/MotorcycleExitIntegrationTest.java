@@ -31,8 +31,6 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
   @Autowired private OperationalParameterPort operationalParameterPort;
 
   private UUID motorcycleRateId;
-  private UUID motorcycleSessionId;
-  private UUID helmetItemId;
   private UUID lockerId;
   private String ticketNumber;
 
@@ -108,16 +106,10 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
             .andReturn();
 
     JsonNode entryJson = objectMapper.readTree(entryResult.getResponse().getContentAsString());
-    motorcycleSessionId = UUID.fromString(entryJson.path("sessionId").asText());
     ticketNumber = entryJson.path("receipt").path("ticketNumber").asText();
-    motorcycleSessionId = UUID.fromString(entryJson.path("sessionId").asText());
 
     // Find the helmet item
-    ParkingSession session = parkingSessionPort.findById(motorcycleSessionId).orElseThrow();
-    List<CustodiedItem> items = custodiedItemPort.findBySessionAndStatus(session, CustodiedItemStatus.RECEIVED);
-    if (!items.isEmpty()) {
-      helmetItemId = items.get(0).getId();
-    }
+
 
     // Open cash session
     openCashSession(token);

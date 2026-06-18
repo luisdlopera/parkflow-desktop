@@ -27,6 +27,7 @@ public class AuditAspect {
     }
 
     @Around("@annotation(com.parkflow.modules.audit.domain.Auditable)")
+    @SuppressWarnings("unchecked")
     public Object auditMethod(ProceedingJoinPoint joinPoint) throws Throwable {
         long startTime = System.currentTimeMillis();
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
