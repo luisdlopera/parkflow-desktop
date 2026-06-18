@@ -87,6 +87,7 @@ export default function VehicleEntryFormV2({
 
   const form = useForm<VehicleEntryFormValues>({
     resolver: zodResolver(vehicleEntrySchema),
+    mode: "onChange",
     defaultValues: {
       plate: "",
       type: settings.defaultVehicleType,
@@ -100,12 +101,14 @@ export default function VehicleEntryFormV2({
       booth: "",
       terminal: "",
       observations: "",
-      vehicleCondition: settings.skipConditionCheck ? "" : "Sin novedades al ingreso",
+      vehicleCondition: "Sin novedades al ingreso",
       conditionChecklist: "",
       conditionPhotoUrls: "",
       custodiedItems: [],
     },
   });
+
+  const { isValid, isSubmitting } = form.formState;
 
   // Sync initialPlate
   useEffect(() => {
@@ -316,6 +319,7 @@ export default function VehicleEntryFormV2({
         updateSettings={updateSettings}
         showSettings={showSettings}
         setShowSettings={setShowSettings}
+        isSingleType={isSingleType}
       />
 
       <VehicleEntrySettings
@@ -372,7 +376,7 @@ export default function VehicleEntryFormV2({
             isSubmitDisabled={
               !!printWarning ||
               (occupancy !== null && occupancy.availableSpaces <= 0) ||
-              !form.formState.isValid
+              !isValid
             }
             platePrefix={settings.platePrefix}
             noPlate={noPlate}
@@ -388,7 +392,7 @@ export default function VehicleEntryFormV2({
             isSubmitDisabled={
               !!printWarning ||
               (occupancy !== null && occupancy.availableSpaces <= 0) ||
-              !form.formState.isValid
+              !isValid
             }
             platePrefix={settings.platePrefix}
             noPlate={noPlate}
@@ -484,12 +488,12 @@ export default function VehicleEntryFormV2({
               <Button
                 type="submit"
                 size={isSpeed ? "lg" : "md"}
-                isLoading={form.formState.isSubmitting}
+                isLoading={isSubmitting}
                 isDisabled={!!printWarning}
-                className={`w-full font-bold bg-primary-500 text-white hover:bg-primary-600 ${isSpeed ? "text-lg border border-default-200" : ""}`}
+                className={`w-full font-bold bg-brand text-white hover:bg-brand-600 ${isSpeed ? "text-lg border border-brand" : ""}`}
                 data-testid="register-entry"
               >
-                {form.formState.isSubmitting
+                {isSubmitting
                   ? "Registrando..."
                   : isSpeed
                     ? "REGISTRAR INGRESO (Enter)"

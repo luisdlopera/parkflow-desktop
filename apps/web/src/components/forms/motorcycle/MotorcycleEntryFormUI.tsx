@@ -39,6 +39,7 @@ export function MotorcycleEntryFormUI({
   noPlate,
 }: MotorcycleEntryFormUIProps) {
   const { config } = useRuntimeConfig();
+  const { isSubmitting } = form.formState;
   const helmetHandling = config?.operationConfiguration?.helmetHandling as string | undefined;
   const enableCustodiedItem = config?.operationConfiguration?.enableCustodiedItem ?? false;
   // Si hay configuración explícita de cascos, respétala; si no, usa el flag legacy.
@@ -393,19 +394,19 @@ export function MotorcycleEntryFormUI({
               type="button"
               onClick={() => onSubmit()}
               size="lg"
-              isLoading={form.formState.isSubmitting}
+              isLoading={isSubmitting}
               isDisabled={isSubmitDisabled}
               className={`w-full font-black text-xl border h-16 rounded-2xl group relative overflow-hidden transition-colors ${
                 isSubmitDisabled
                   ? "bg-slate-300 text-slate-500 border-slate-200 cursor-not-allowed"
-                  : "bg-primary-500 text-white border-default-200 hover:bg-primary-600"
+                  : "bg-brand text-white border-brand hover:bg-brand-600"
               }`}
               data-testid="register-entry"
               aria-describedby={isSubmitDisabled ? "entry-disabled-reason" : undefined}
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
-                {form.formState.isSubmitting ? "REGISTRANDO..." : "REGISTRAR INGRESO"}
-                {!form.formState.isSubmitting && !isSubmitDisabled && (
+                {isSubmitting ? "REGISTRANDO..." : "REGISTRAR INGRESO"}
+                {!isSubmitting && !isSubmitDisabled && (
                   <svg
                     className="w-6 h-6 group-hover:translate-x-1 transition-transform"
                     fill="none"
