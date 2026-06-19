@@ -1,5 +1,7 @@
-import { Badge } from "@/components/bridge/Badge";
+"use client";
+
 import type { DataTableColumn } from "@/components/ui/DataTable";
+import { Badge } from "@/components/bridge/Badge";
 
 export function statusColumn<T extends { isActive?: boolean; status?: string }>(
   label: string = "Estado"
