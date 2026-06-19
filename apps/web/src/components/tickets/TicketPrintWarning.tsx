@@ -10,6 +10,7 @@ type Props = {
   onReprint: () => void;
   onClose: () => void;
   reprintLoading?: boolean;
+  allowTicketReprint?: boolean;
 };
 
 export default function TicketPrintWarning({
@@ -19,7 +20,8 @@ export default function TicketPrintWarning({
   onDownload,
   onReprint,
   onClose,
-  reprintLoading
+  reprintLoading,
+  allowTicketReprint = true
 }: Props) {
   return (
     <Modal.Backdrop isOpen={true} onOpenChange={(open) => { if (!open) onClose(); }} isDismissable={false}>
@@ -47,7 +49,7 @@ export default function TicketPrintWarning({
               Ticket <strong>{ticketNumber}</strong> &middot; Placa <strong>{plate}</strong>
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              La sesión del vehículo está activa. Puedes descargar el ticket o reimprimirlo más tarde.
+              La sesión del vehículo está activa. Puedes descargar el ticket{allowTicketReprint ? " o reimprimirlo más tarde" : ""}.
             </p>
 
             {previewLines.length > 0 && (
@@ -72,22 +74,24 @@ export default function TicketPrintWarning({
             >
               Descargar ticket
             </Button>
-            <Button
-              size="sm"
-              variant="tertiary"
-              color="primary"
-              onPress={onReprint}
-              isLoading={reprintLoading}
-              startContent={
-                !reprintLoading ? (
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                ) : null
-              }
-            >
-              Reimprimir
-            </Button>
+            {allowTicketReprint && (
+              <Button
+                size="sm"
+                variant="tertiary"
+                color="primary"
+                onPress={onReprint}
+                isLoading={reprintLoading}
+                startContent={
+                  !reprintLoading ? (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  ) : null
+                }
+              >
+                Reimprimir
+              </Button>
+            )}
             <Button
               size="sm"
               variant="ghost"

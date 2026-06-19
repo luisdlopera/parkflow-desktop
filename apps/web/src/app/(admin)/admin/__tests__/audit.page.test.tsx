@@ -2,7 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import AuditPage from "../audit/page";
 
-vi.mock("@/lib/auth", () => ({
+vi.mock("@/features/auth/api/auth.api", () => ({
+  authHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token", "X-API-Key": "test-key" }),
+}));
+vi.mock("@/features/auth/services/auth-storage.service", () => ({
+  authHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token", "X-API-Key": "test-key" }),
+}));
+vi.mock("@/features/auth/services/auth-domain.service", () => ({
   authHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token", "X-API-Key": "test-key" }),
 }));
 

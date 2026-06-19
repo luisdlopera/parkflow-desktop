@@ -94,8 +94,6 @@ export default function ParametersSection({
           <Field label="Direccion" value={data.address ?? ""} onChange={(v: any) => setField("address", v)} />
           <Field label="Moneda" value={data.currency ?? ""} onChange={(v: any) => setField("currency", v)} />
           <Field label="Zona horaria" value={data.timeZone ?? ""} onChange={(v: any) => setField("timeZone", v)} />
-          <Field label="Logo / URL marca" value={data.logoUrl ?? ""} onChange={(v: any) => setField("logoUrl", v)} />
-          <Field label="Color marca" value={data.brandColor ?? ""} onChange={(v: any) => setField("brandColor", v)} />
           <Field label="Impuesto" value={data.taxName ?? ""} onChange={(v: any) => setField("taxName", v)} />
           <Field
             label="Impuesto (%)"

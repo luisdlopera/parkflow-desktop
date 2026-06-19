@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { hasPermission } from "@/lib/auth";
+import { hasPermission } from "@/features/auth/services/auth-domain.service";
 import { ShieldAlert } from "lucide-react";
 import { useMassExit } from "@/features/vehicle-exit/hooks/useMassExit";
 import { MassExitFilters } from "@/features/vehicle-exit/components/MassExitFilters";

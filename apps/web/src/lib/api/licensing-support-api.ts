@@ -1,5 +1,4 @@
-import { authHeaders } from "@/lib/auth";
-
+import { authHeaders } from "@/features/auth/services/auth-domain.service";
 import { apiBase as getApiBase } from "./config";
 const API_BASE = getApiBase();
 

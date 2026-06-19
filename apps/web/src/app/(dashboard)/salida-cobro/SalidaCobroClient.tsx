@@ -11,11 +11,11 @@ import { ChangeCalculator } from "@/components/ui/ChangeCalculator";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { resolvePaperWidthMm } from "@/lib/tauri-print";
-import { PAYMENT_METHOD_CATALOG } from "@/lib/payment-method-catalog";
 import { useOsShortcut } from "@/hooks/core/useOsShortcut";
 import { useExitShortcuts } from "@/hooks/ui/useKeyboardShortcuts";
 import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
 import { useVehicleExit } from "@/features/vehicle-exit/hooks/useVehicleExit";
+import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
 
 const ENTRY_MODE_LABEL: Record<string, string> = {
   VISITOR: "Visitante",
@@ -27,6 +27,7 @@ const ENTRY_MODE_LABEL: Record<string, string> = {
 export default function SalidaCobroClient() {
   const { modifier } = useOsShortcut();
   const p = useVehicleExit();
+  const { agreements } = useFeatureFlags();
 
   useExitShortcuts({
     onCashPayment: () => p.processExitAction(p.firstMethod),
@@ -112,6 +113,7 @@ export default function SalidaCobroClient() {
           onReprint={() => void p.reprintTicket()}
           onClose={p.handleClosePrintWarning}
           reprintLoading={p.reprintLoading}
+          allowTicketReprint={p.allowTicketReprint}
         />
       ) : null}
 
@@ -149,16 +151,18 @@ export default function SalidaCobroClient() {
               )}
             </div>
           </div>
-          <div className="mt-4">
-            <Input
-              label="Código de convenio (opcional)"
-              placeholder="CONV-123"
-              value={p.agreementCode}
-              onChange={(e) => p.setAgreementCode(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void p.lookup(); } }}
-              classNames={{ input: "uppercase font-mono" }}
-            />
-          </div>
+          {agreements && (
+            <div className="mt-4">
+              <Input
+                label="Código de convenio (opcional)"
+                placeholder="CONV-123"
+                value={p.agreementCode}
+                onChange={(e) => p.setAgreementCode(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void p.lookup(); } }}
+                classNames={{ input: "uppercase font-mono" }}
+              />
+            </div>
+          )}
           <div className="mt-4">
             <Button
               color="primary"
@@ -244,10 +248,12 @@ export default function SalidaCobroClient() {
                     <span className="text-slate-500">Ticket:</span>
                     <span className="font-mono font-medium ml-1">{p.active.receipt.ticketNumber}</span>
                   </div>
-                  <div className="bg-white/70 rounded-lg p-3">
-                    <span className="text-slate-500">Reimpresiones:</span>
-                    <span className="font-medium ml-1">{p.active.receipt.reprintCount}</span>
-                  </div>
+                  {p.allowTicketReprint && (
+                    <div className="bg-white/70 rounded-lg p-3">
+                      <span className="text-slate-500">Reimpresiones:</span>
+                      <span className="font-medium ml-1">{p.active.receipt.reprintCount}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Custodied items */}
@@ -398,7 +404,7 @@ export default function SalidaCobroClient() {
                     <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
                     <Select.Popover>
                       <ListBox>
-                        {PAYMENT_METHOD_CATALOG.filter((m) => m.code !== "MIXED").map((method) => (
+                        {p.availablePaymentMethods.map((method) => (
                           <ListBox.Item key={method.code} textValue={method.label}>{method.label}</ListBox.Item>
                         ))}
                       </ListBox>
@@ -462,22 +468,26 @@ export default function SalidaCobroClient() {
 
           {/* Secondary actions */}
           <div className="mt-6 pt-4 border-t border-slate-200 space-y-3">
-            <input
-              value={p.reprintReason}
-              aria-label="Motivo de reimpresión"
-              onChange={(e) => p.setReprintReason(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Motivo reimpresion"
-            />
-            <Button
-              type="button"
-              disabled={!p.active || p.searching || p.processing}
-              onClick={() => void p.reprintTicket()}
-              variant="ghost"
-              data-testid="reprint-ticket"
-            >
-              Reimprimir ticket
-            </Button>
+            {p.allowTicketReprint && (
+              <>
+                <input
+                  value={p.reprintReason}
+                  aria-label="Motivo de reimpresión"
+                  onChange={(e) => p.setReprintReason(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  placeholder="Motivo reimpresion"
+                />
+                <Button
+                  type="button"
+                  disabled={!p.active || p.searching || p.processing}
+                  onClick={() => void p.reprintTicket()}
+                  variant="ghost"
+                  data-testid="reprint-ticket"
+                >
+                  Reimprimir ticket
+                </Button>
+              </>
+            )}
 
             <input
               value={p.lostReason}

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Modal } from "@heroui/react";
 import { Button } from "@/components/bridge/Button";
 import { useTerminalCaja } from "@/features/cash-register/hooks/useTerminalCaja";
-import { hasPermission } from "@/lib/auth";
+import { hasPermission } from "@/features/auth/services/auth-domain.service";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import VehicleEntryFormV2 from "@/components/forms/VehicleEntryFormV2";

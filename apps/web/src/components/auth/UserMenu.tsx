@@ -7,7 +7,9 @@ import { DropdownMenu } from "@/components/bridge/Dropdown";
 import { DropdownItem } from "@/components/bridge/Dropdown";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { clearSession, currentUser, canAccessSuperAdminPortal, logoutAllSessions } from "@/lib/auth";
+import { logoutAllSessions } from "@/features/auth/api/auth.api";
+import { clearSession } from "@/features/auth/services/auth-storage.service";
+import { currentUser, canAccessSuperAdminPortal } from "@/features/auth/services/auth-domain.service";
 import type { AuthUser } from "@parkflow/types";
 import { Shield } from "lucide-react";
 
@@ -97,7 +99,6 @@ export function UserMenu() {
           <DropdownItem
             key="edit-profile"
             textValue="Editar perfil"
-            description="Datos personales y contraseña"
             startContent={
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -110,17 +111,22 @@ export function UserMenu() {
             }
             onPress={() => router.push("/perfil")}
           >
-            Editar perfil
+            <div className="flex flex-col">
+              <span className="font-medium">Editar perfil</span>
+              <span className="text-xs text-default-400">Datos personales y contraseña</span>
+            </div>
           </DropdownItem>
           {user && canAccessSuperAdminPortal(user) ? (
             <DropdownItem
               key="admin"
               textValue="Panel Super Admin"
-              description="Empresas, licencias y dispositivos"
               startContent={<Shield className="w-4 h-4 shrink-0" aria-hidden />}
               onPress={() => router.push("/admin")}
             >
-              Panel Super Admin
+              <div className="flex flex-col">
+                <span className="font-medium">Panel Super Admin</span>
+                <span className="text-xs text-default-400">Empresas, licencias y dispositivos</span>
+              </div>
             </DropdownItem>
           ) : null}
         </DropdownSection>
@@ -129,29 +135,35 @@ export function UserMenu() {
             key="logout"
             textValue={isLoading ? "Cerrando sesión..." : "Cerrar sesión"}
             color="danger"
-            description="Cerrar sesión actual"
             startContent={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-danger shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
             }
+            className="text-danger data-[hover]:bg-danger-50 data-[hover]:text-danger-700"
             onPress={handleLogout}
           >
-            {isLoading ? "Cerrando sesión..." : "Cerrar sesión"}
+            <div className="flex flex-col">
+              <span className="font-medium">{isLoading ? "Cerrando sesión..." : "Cerrar sesión"}</span>
+              <span className="text-xs text-danger-400">Salir de tu cuenta de forma segura</span>
+            </div>
           </DropdownItem>
           <DropdownItem
             key="logout-all"
             textValue={isLoading ? "Cerrando sesiones..." : "Cerrar todas las sesiones"}
             color="danger"
-            description="Cerrar sesión en todos los dispositivos"
             startContent={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-danger shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             }
+            className="text-danger data-[hover]:bg-danger-50 data-[hover]:text-danger-700"
             onPress={handleLogoutAll}
           >
-            {isLoading ? "Cerrando sesiones..." : "Cerrar todas las sesiones"}
+            <div className="flex flex-col">
+              <span className="font-medium">{isLoading ? "Cerrando sesiones..." : "Cerrar todas las sesiones"}</span>
+              <span className="text-xs text-danger-400">Cerrar sesión en todos los dispositivos</span>
+            </div>
           </DropdownItem>
         </DropdownSection>
       </DropdownMenu>

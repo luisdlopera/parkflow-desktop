@@ -46,19 +46,23 @@ export function useFeatureFlags(): FeatureFlags {
     const opConfig = runtimeConfig.operationConfiguration || {};
 
     return {
-      agreements: !!features.agreements,
-      prepaidPlans: !!features.prepaid,
-      memberships: !!features.memberships,
-      loyaltyCustomers: !!features.frequentCustomers,
-      electronicInvoicing: !!features.electronicBilling,
-      specialRates: !!features.specialRates,
-      lockers: opConfig.helmetHandling === "LOCKERS" || !!features.lockerControl,
-      helmets: !!features.helmetControl || opConfig.helmetHandling !== "NONE",
-      accessories: !!features.accessoryControl,
-      reservations: !!features.reservations,
-      operation24Hours: !!features.operation24Hours,
-      motorcycles: vehicleTypes.includes("MOTORCYCLE") || !!features.motorcycleParking,
-      bicycles: vehicleTypes.includes("BICYCLE") || !!features.bicycleParking,
+      // Optional business features: only show if explicitly enabled in settings.
+      // Defaulting to false prevents UI from showing disabled modules when
+      // onboarding has set them to false but features map hasn't been fetched yet.
+      agreements: features.agreements === true,
+      prepaidPlans: features.prepaid === true,
+      memberships: features.memberships === true,
+      loyaltyCustomers: features.frequentCustomers === true,
+      electronicInvoicing: features.electronicBilling === true,
+      specialRates: features.specialRates === true,
+      reservations: features.reservations === true,
+      // Operational features: use vehicle types as primary signal, fall back to feature flag.
+      lockers: opConfig.helmetHandling === "LOCKERS" || features.lockerControl === true,
+      helmets: features.helmetControl === true || (opConfig.helmetHandling !== undefined && opConfig.helmetHandling !== "NONE"),
+      accessories: features.accessoryControl === true,
+      operation24Hours: features.operation24Hours === true,
+      motorcycles: vehicleTypes.includes("MOTORCYCLE") || features.motorcycleParking === true,
+      bicycles: vehicleTypes.includes("BICYCLE") || features.bicycleParking === true,
     };
   }, [runtimeConfig]);
 }

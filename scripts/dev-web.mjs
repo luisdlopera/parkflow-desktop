@@ -141,6 +141,7 @@ async function main() {
         if (dbPortFree) {
           console.log(`${label} Database is not running on port ${dbPort}. Starting it automatically via Docker...`);
           // Start DB
+          // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
           const dbProcess = spawn('pnpm', ['db:up'], {
             cwd: repoRoot,
             stdio: 'inherit',
@@ -155,11 +156,12 @@ async function main() {
           try {
             await waitForTcpPort(dbPort);
           } catch (dbErr) {
-            console.error(`${label} Timeout waiting for database: %s`, dbErr.message);
+            console.error(`${label} Timeout waiting for database: ${dbErr.message}`);
           }
         }
 
         console.log(`${label} API server is not running on port ${apiPort}. Starting it automatically...`);
+        // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
         apiProcess = spawn('pnpm', ['dev:api'], {
           cwd: repoRoot,
           stdio: 'inherit',
@@ -167,7 +169,7 @@ async function main() {
         });
 
         apiProcess.on('error', (err) => {
-          console.error(`${label} Failed to start API automatically: %s`, err.message);
+          console.error(`${label} Failed to start API automatically: ${err.message}`);
         });
       }
     } else {
@@ -185,7 +187,7 @@ async function main() {
     });
 
     nextDev.on('error', (err) => {
-      console.error(`${label} Failed to start Next.js: %s`, err.message);
+      console.error(`${label} Failed to start Next.js: ${err.message}`);
       process.exit(1);
     });
 

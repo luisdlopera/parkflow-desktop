@@ -5,6 +5,20 @@ import React from "react";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 import { DialogProvider } from "@/components/ui/DialogProvider";
 
+// Mock next/navigation so useRouter doesn't throw in jsdom
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/",
+}));
+
 // Mock useDialog so confirm() resolves immediately without rendering HeroUI AlertDialog
 // (which isn't fully supported in jsdom). The modal behavior is tested separately in
 // DialogProvider.test.tsx; here we only care about OnboardingWizard's flow.
@@ -18,6 +32,7 @@ vi.mock("@/components/ui/DialogProvider", async (importOriginal) => {
     }),
   };
 });
+
 
 vi.mock("@/lib/onboarding-api", () => ({
   fetchOnboardingStatus: vi.fn(async () => ({

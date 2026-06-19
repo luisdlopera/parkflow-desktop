@@ -1,12 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import DashboardPageClient from "@/app/(dashboard)/DashboardPageClient";
+import { SWRConfig } from "swr";
+
+function renderWithSWR(ui: React.ReactElement) {
+  return render(
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+      {ui}
+    </SWRConfig>
+  );
+}
 
 vi.mock("@/lib/api", () => ({
   buildApiHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token", "X-API-Key": "test-key" }),
 }));
 
-vi.mock("@/lib/auth", () => ({
+vi.mock("@/features/auth/api/auth.api", () => ({
+  currentUser: vi.fn().mockResolvedValue({ id: "123", role: "ADMIN" }),
+  canAccessSuperAdminPortal: vi.fn().mockReturnValue(true),
+}));
+vi.mock("@/features/auth/services/auth-storage.service", () => ({
+  currentUser: vi.fn().mockResolvedValue({ id: "123", role: "ADMIN" }),
+  canAccessSuperAdminPortal: vi.fn().mockReturnValue(true),
+}));
+vi.mock("@/features/auth/services/auth-domain.service", () => ({
   currentUser: vi.fn().mockResolvedValue({ id: "123", role: "ADMIN" }),
   canAccessSuperAdminPortal: vi.fn().mockReturnValue(true),
 }));
@@ -74,7 +91,7 @@ describe("DashboardPageClient", () => {
   });
 
   it("renders the dashboard root element", async () => {
-    render(<DashboardPageClient />);
+    renderWithSWR(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByTestId("dashboard-root")).toBeDefined();
@@ -82,7 +99,7 @@ describe("DashboardPageClient", () => {
   });
 
   it("renders KPI cards when summary data loads successfully", async () => {
-    render(<DashboardPageClient />);
+    renderWithSWR(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("15")).toBeDefined();
@@ -93,7 +110,7 @@ describe("DashboardPageClient", () => {
   });
 
   it("shows sync pending and print failure info", async () => {
-    render(<DashboardPageClient />);
+    renderWithSWR(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText(/Sync pendiente: 3/)).toBeDefined();
@@ -102,7 +119,7 @@ describe("DashboardPageClient", () => {
   });
 
   it("shows KPI cards with correct format", async () => {
-    render(<DashboardPageClient />);
+    renderWithSWR(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("15%")).toBeDefined();
@@ -112,7 +129,7 @@ describe("DashboardPageClient", () => {
   });
 
   it("shows sync pending info in the header", async () => {
-    render(<DashboardPageClient />);
+    renderWithSWR(<DashboardPageClient />);
 
     await waitFor(() => {
       const info = screen.getByText(/Sync pendiente/);
@@ -138,7 +155,7 @@ describe("DashboardPageClient", () => {
       return { ok: true, json: async () => ({}) };
     }));
 
-    render(<DashboardPageClient />);
+    renderWithSWR(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("API no disponible (resumen)")).toBeDefined();
@@ -148,7 +165,7 @@ describe("DashboardPageClient", () => {
   it("shows API unavailable message when fetch throws", async () => {
     vi.stubGlobal("fetch", vi.fn(() => { throw new Error("Network error"); }));
 
-    render(<DashboardPageClient />);
+    renderWithSWR(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("API no disponible (resumen)")).toBeDefined();
@@ -178,7 +195,7 @@ describe("DashboardPageClient", () => {
       return { ok: true, json: async () => ({}) };
     }));
 
-    render(<DashboardPageClient />);
+    renderWithSWR(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("OK")).toBeDefined();
@@ -188,7 +205,7 @@ describe("DashboardPageClient", () => {
   });
 
   it("renders active vehicles table with session data", async () => {
-    render(<DashboardPageClient />);
+    renderWithSWR(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("Vehículos en Patio")).toBeDefined();
@@ -212,7 +229,7 @@ describe("DashboardPageClient", () => {
       return { ok: true, json: async () => ({}) };
     }));
 
-    render(<DashboardPageClient />);
+    renderWithSWR(<DashboardPageClient />);
 
     await waitFor(() => {
       const msgs = screen.getAllByText("No hay vehículos activos en este momento.");
@@ -237,7 +254,7 @@ describe("DashboardPageClient", () => {
       return { ok: true, json: async () => ({}) };
     }));
 
-    render(<DashboardPageClient />);
+    renderWithSWR(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("API no disponible (sesiones activas)")).toBeDefined();

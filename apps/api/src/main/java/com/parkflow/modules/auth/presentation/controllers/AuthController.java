@@ -9,6 +9,7 @@ import com.parkflow.modules.auth.application.port.in.DeviceManagementUseCase;
 import com.parkflow.modules.auth.application.port.in.PasswordResetUseCase;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -52,31 +53,52 @@ public class AuthController {
 
   @PostMapping("/login")
   @ResponseStatus(HttpStatus.OK)
-  public LoginResponse login(@Valid @RequestBody LoginRequest request) {
-    return loginUseCase.login(request);
+  public LoginResponse login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+    LoginResponse result = loginUseCase.login(request);
+    setAuthCookies(response, result.accessToken(), result.refreshToken());
+    return result;
+  }
+
+  private void setAuthCookies(HttpServletResponse response, String accessToken, String refreshToken) {
+    int accessTokenMaxAge = 3600;
+    int refreshTokenMaxAge = 86400 * 7;
+    String cookieAttributes = "; HttpOnly; Secure; SameSite=Strict; Path=/";
+
+    response.addHeader("Set-Cookie", "parkflow_access=" + accessToken + "; Max-Age=" + accessTokenMaxAge + cookieAttributes);
+    response.addHeader("Set-Cookie", "parkflow_refresh=" + refreshToken + "; Max-Age=" + refreshTokenMaxAge + cookieAttributes);
   }
 
   @PostMapping("/refresh")
-  public LoginResponse refresh(@Valid @RequestBody RefreshRequest request) {
-    return tokenRefreshUseCase.refresh(request);
+  public LoginResponse refresh(@Valid @RequestBody RefreshRequest request, HttpServletResponse response) {
+    LoginResponse result = tokenRefreshUseCase.refresh(request);
+    setAuthCookies(response, result.accessToken(), result.refreshToken());
+    return result;
   }
 
   @PostMapping("/logout")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void logout(@Valid @RequestBody LogoutRequest request) {
+  public void logout(@Valid @RequestBody LogoutRequest request, HttpServletResponse response) {
     logoutUseCase.logout(request);
+    clearAuthCookies(response);
+  }
+
+  private void clearAuthCookies(HttpServletResponse response) {
+    response.addHeader("Set-Cookie", "parkflow_access=; Max-Age=0; HttpOnly; Secure; SameSite=Strict; Path=/");
+    response.addHeader("Set-Cookie", "parkflow_refresh=; Max-Age=0; HttpOnly; Secure; SameSite=Strict; Path=/");
   }
 
   @PostMapping("/logout/all")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void logoutAll() {
+  public void logoutAll(HttpServletResponse response) {
     logoutUseCase.logoutAll();
+    clearAuthCookies(response);
   }
 
   @PostMapping("/logout/device/{deviceId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void logoutDevice(@PathVariable String deviceId) {
+  public void logoutDevice(@PathVariable String deviceId, HttpServletResponse response) {
     logoutUseCase.logoutDevice(deviceId);
+    clearAuthCookies(response);
   }
 
   @GetMapping("/me")

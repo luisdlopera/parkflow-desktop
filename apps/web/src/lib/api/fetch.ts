@@ -1,20 +1,83 @@
 import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
+import { toast } from "@heroui/react";
 
-export async function safeFetch<T = any>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+const toastCooldownMs = 3000;
+const dedupe = new Map<string, number>();
+const shouldToast = (key: string): boolean => {
+  const now = Date.now();
+  const last = dedupe.get(key) ?? 0;
+  if (now - last < toastCooldownMs) {
+    return false;
+  }
+  dedupe.set(key, now);
+  return true;
+};
+
+const getHeader = (headers: HeadersInit | undefined, name: string): string | null => {
+  if (!headers) return null;
+  if (headers instanceof Headers) return headers.get(name);
+  if (Array.isArray(headers)) {
+    const hit = headers.find(([k]) => k.toLowerCase() === name.toLowerCase());
+    return hit?.[1] ?? null;
+  }
+  const recordValue = (headers as Record<string, string>)[name];
+  if (recordValue) return recordValue;
+  const lower = Object.entries(headers as Record<string, string>).find(
+    ([k]) => k.toLowerCase() === name.toLowerCase()
+  );
+  return lower?.[1] ?? null;
+};
+
+export async function safeFetch<T = unknown>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   try {
-    // Prefer an app-provided wrapper if present (set by Providers), otherwise fall back to native fetch.
-    // This prevents overriding global fetch which breaks testing tooling and Tauri.
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    let response: Response;
+
+    if (typeof window !== "undefined") {
+      try {
+        const { handleLocalFirstFetch } = await import("@/lib/local-first/fetch-interceptor");
+        const localResponse = await handleLocalFirstFetch(input, init);
+        if (localResponse) {
+          response = localResponse;
+        }
+      } catch (err) {
+        console.error("LocalFirst Interceptor load error:", err);
+      }
+    }
+
     // @ts-ignore
-    const wrapper = typeof window !== "undefined" ? (window.__parkflowFetchWrapper as typeof fetch | undefined) : undefined;
-    const fetcher =
-      typeof window !== "undefined"
-        ? wrapper ?? (window.__parkflowNativeFetch ?? window.fetch.bind(window))
-        : fetch;
-    const res = await fetcher(input as any, init as any);
-    if (!res.ok) throw await normalizeApiError(res);
-    if (res.status === 204) return {} as T;
-    return (await res.json()) as T;
+    if (!response) {
+      response = await fetch(input, init);
+    }
+
+    const requestUrl = typeof input === "string" || input instanceof URL ? String(input) : input.url;
+    const requestMethod = init?.method ?? (typeof input !== "string" && !(input instanceof URL) ? input.method : "GET");
+    const requestPath = new URL(response.url).pathname;
+    
+    const isLoginRequest = requestUrl.includes("/api/v1/auth/login");
+    const isLogoutRequest = requestPath.includes("/api/v1/auth/logout");
+    const isSilent = getHeader(init?.headers, "X-Parkflow-Auth-Toast-Silent") === "1";
+
+    if (!isLoginRequest && !isLogoutRequest && (response.status === 401 || response.status === 403)) {
+      if (typeof window !== "undefined") {
+        const key = `${response.status}:${requestMethod}:${requestPath}`;
+        if (response.status === 401) {
+          import("@/features/auth/services/auth-storage.service").then(({ clearSession }) => {
+            clearSession();
+            const currentPath = window.location.pathname + window.location.search;
+            const isOnboarding = currentPath.includes("/onboarding");
+            const nextUrl = isOnboarding ? "/onboarding" : "/";
+            window.location.href = `/login?next=${encodeURIComponent(nextUrl)}&reason=expired`;
+          });
+        }
+        if (!isSilent && response.status === 403 && shouldToast(key)) {
+          toast.warning("No tienes permisos para realizar esta accion");
+        }
+      }
+    }
+
+    if (!response.ok) throw await normalizeApiError(response);
+    if (response.status === 204) return {} as T;
+    return (await response.json()) as T;
   } catch (err) {
     if (err instanceof Error && err.name === "ApiError") throw err;
     throw handleNetworkError(err);

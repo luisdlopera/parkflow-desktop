@@ -20,6 +20,7 @@
 - Diseña pensando en escalabilidad horizontal y crecimiento futuro.
 - Mantén dependencias dirigidas hacia el dominio y no hacia la infraestructura.
 - Stack principal: UI con HeroUI v3 + TailwindCSS v4. Usa el MCP `heroui-react` para consultar documentación de componentes antes de implementarlos.
+- **Form Elements**: Todos los elementos de formulario (Select, Checkbox, Input, Dropdown, TextArea, etc.) DEBEN usar componentes de HeroUI v3, no HTML nativo. Prohibido usar `<select>`, `<input type="checkbox">`, `<textarea>` nativos. Consulta el MCP `heroui-react` antes de implementar cualquier componente UI.
 
 ## Clean Code
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Modal, Dropdown } from "@heroui/react";
 import { Button } from "@/components/bridge/Button";
 import DataTable from "@/components/ui/DataTable";
@@ -10,11 +10,12 @@ import { useTenantConfig } from "@/providers/TenantConfigProvider";
 import { fetchLockers, type LockerDto } from "@/lib/api/lockers-api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Eye, MoreVertical, Edit, Printer, LogOut } from "lucide-react";
+import { AlertTriangle, Eye, MoreVertical, Edit, Printer, LogOut, Columns } from "lucide-react";
 import { GetActiveSessionsQuery, ActiveSessionDto } from "@/lib/api/sessions-api";
 import { useBulkExit } from "@/features/active-vehicles/hooks/useBulkExit";
 import { TicketPreviewModal } from "@/features/active-vehicles/components/TicketPreviewModal";
 import { BulkExitConfirmModal, BulkExitSuccessModal } from "@/features/active-vehicles/components/BulkExitModals";
+import { useColumnVisibility } from "@/features/active-vehicles/hooks/useColumnVisibility";
 
 export default function VehiculosActivosClient({ fallbackData }: { fallbackData?: any }) {
   const [params, setParams] = useState<GetActiveSessionsQuery>({ page: 1, limit: 25, search: "", sortBy: "entryAt", sortDir: "desc" });
@@ -26,12 +27,36 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
   const [lockersLoading, setLockersLoading] = useState(false);
   const router = useRouter();
 
-  const { selectedKeys, setSelectedKeys, precalculation, finalResult, isCalculating, isProcessing, hasSelection, selectionCount, handleCalculate, handleConfirm, closeModal } = useBulkExit(rows, reload);
+  const { visible, toggleColumn, isVisible, resetColumns, columns: colDefs } = useColumnVisibility();
+
+  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+
+  const { selectedKeys, setSelectedKeys, precalculation, finalResult, isCalculating, isProcessing, hasSelection, selectionCount, availablePaymentMethods, selectedPaymentMethod, setSelectedPaymentMethod, handleCalculate, handleConfirm, closeModal } = useBulkExit(rows, reload);
 
   const enableCustodiedItem = (runtimeConfig?.operationConfiguration?.enableCustodiedItem as boolean) ?? true;
-  const vehicleTypes = runtimeConfig?.vehicleTypes ?? [];
+  const vehicleTypes = (runtimeConfig?.vehicleTypes ?? []) as string[];
   const hasMotorcycles = vehicleTypes.includes("MOTORCYCLE");
   const showHelmetAlert = !lockersLoading && enableCustodiedItem && hasMotorcycles && lockers.length === 0;
+
+  const vehicleTypeOptions = useMemo(
+    () => [
+      { label: "Todos los tipos", value: "all" },
+      ...vehicleTypes.map((vt: string) => ({ label: vt, value: vt })),
+    ],
+    [vehicleTypes],
+  );
+
+  const filterConfig = useMemo(() => [{
+    key: "vehicleType",
+    label: "Tipo de vehículo",
+    type: "select" as const,
+    options: vehicleTypeOptions,
+  }], [vehicleTypeOptions]);
+
+  const handleFilterChange = (values: Record<string, string>) => {
+    setFilterValues((prev) => ({ ...prev, ...values }));
+    setParams((p) => ({ ...p, page: 1 }));
+  };
 
   useEffect(() => {
     if (enableCustodiedItem && hasMotorcycles) {
@@ -39,6 +64,14 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
       fetchLockers().then(setLockers).catch(() => setLockers([])).finally(() => setLockersLoading(false));
     }
   }, [enableCustodiedItem, hasMotorcycles]);
+
+  const filteredRows = useMemo(() => {
+    let result = rows;
+    if (filterValues.vehicleType && filterValues.vehicleType !== "all") {
+      result = result.filter((r: any) => r.vehicleType === filterValues.vehicleType);
+    }
+    return result;
+  }, [rows, filterValues]);
 
   return (
     <div className="space-y-6">
@@ -154,39 +187,67 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
         </div>
       )}
 
+      <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white">
+        <div className="flex items-center justify-end gap-2 px-4 pt-4 pb-2 border-b border-slate-100">
+          <Dropdown>
+            <Button size="sm" variant="ghost" color="default" isIconOnly aria-label="Columnas visibles">
+              <Columns className="h-4 w-4 text-slate-500" />
+            </Button>
+            <Dropdown.Popover>
+              <Dropdown.Menu aria-label="Columnas visibles" onAction={(key) => { if (key === "reset") { resetColumns(); } else { toggleColumn(String(key)); } }}>
+                {colDefs.filter((c) => c.key !== "actions").map((col) => (
+                  <Dropdown.Item key={col.key} textValue={col.label}>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${isVisible(col.key) ? "bg-primary-500 border-primary-500" : "border-slate-300"}`}>
+                        {isVisible(col.key) && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                      </div>
+                      <span className="text-sm">{col.label}</span>
+                    </div>
+                  </Dropdown.Item>
+                ))}
+                <Dropdown.Item key="reset" textValue="Restaurar" className="border-t border-slate-100 mt-1 pt-1">
+                  <div className="flex items-center gap-2 text-xs text-primary-600 font-medium">Restaurar predeterminado</div>
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown>
+        </div>
+
       <DataTable
         selectable
-        selectedKeys={selectedKeys === "all" ? new Set(rows.map((r: any) => r.ticketNumber)) : selectedKeys}
+        selectedKeys={selectedKeys === "all" ? new Set(filteredRows.map((r: any) => r.ticketNumber)) : selectedKeys}
         onRowSelectionChange={(keys) => setSelectedKeys(keys as Set<string>)}
         serverSide
         searchable
         searchPlaceholder="Buscar por placa o ticket..."
         onSearchChange={(search) => setParams((p) => ({ ...p, search, page: 1 }))}
+        filters={filterConfig}
+        onFilterChange={handleFilterChange}
         sortDescriptor={{ column: params.sortBy || "entryAt", direction: params.sortDir === "asc" ? "ascending" : "descending" }}
         onSortChange={(desc) => setParams((p) => ({ ...p, sortBy: String(desc.column), sortDir: desc.direction === "ascending" ? "asc" : "desc" }))}
         pagination={{ page: params.page || 1, pageSize: params.limit || 25, total: meta?.total ?? 0 }}
         onPaginationChange={(page, limit) => setParams((p) => ({ ...p, page, limit }))}
         columns={[
-          {
-            key: "plate", label: "Placa", priority: "high", sortable: true,
-            render: (row) => !row.plate || row.plate.startsWith("NP-")
+          ...(isVisible("plate") ? [{
+            key: "plate" as const, label: "Placa", priority: "high" as const, sortable: true,
+            render: (row: any) => !row.plate || row.plate.startsWith("NP-")
               ? <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">SIN PLACA</span>
               : row.plate,
-          },
-          { key: "ticketNumber", label: "Ticket", priority: "medium", sortable: true },
-          { key: "vehicleType", label: "Tipo", priority: "high", sortable: false },
-          {
-            key: "parkingSpaceCode", label: "Celda", priority: "high", sortable: false,
-            render: (row) => row.parkingSpaceCode ?? <span className="text-slate-400">Sin asignar</span>,
-          },
-          { key: "duration", label: "Tiempo", priority: "medium", sortable: false },
-          {
-            key: "rateName", label: "Tarifa", priority: "low", sortable: false,
-            render: (row) => row.rateName ?? <span className="text-slate-400">Sin tarifa</span>,
-          },
-          {
-            key: "cascos", label: "Cascos", priority: "medium", sortable: false,
-            render: (row) => {
+          }] : []),
+          ...(isVisible("ticketNumber") ? [{ key: "ticketNumber" as const, label: "Ticket", priority: "medium" as const, sortable: true }] : []),
+          ...(isVisible("vehicleType") ? [{ key: "vehicleType" as const, label: "Tipo", priority: "high" as const, sortable: false }] : []),
+          ...(isVisible("parkingSpaceCode") ? [{
+            key: "parkingSpaceCode" as const, label: "Celda", priority: "high" as const, sortable: false,
+            render: (row: any) => row.parkingSpaceCode ?? <span className="text-slate-400">Sin asignar</span>,
+          }] : []),
+          ...(isVisible("duration") ? [{ key: "duration" as const, label: "Tiempo", priority: "medium" as const, sortable: false }] : []),
+          ...(isVisible("rateName") ? [{
+            key: "rateName" as const, label: "Tarifa", priority: "low" as const, sortable: false,
+            render: (row: any) => row.rateName ?? <span className="text-slate-400">Sin tarifa</span>,
+          }] : []),
+          ...(isVisible("cascos") ? [{
+            key: "cascos" as const, label: "Cascos", priority: "medium" as const, sortable: false,
+            render: (row: any) => {
               const items = (row as ActiveSessionDto).custodiedItems;
               if (!items || items.length === 0) return <span className="text-slate-400">—</span>;
               return (
@@ -201,10 +262,10 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
                 </div>
               );
             },
-          },
-          {
-            key: "actions", label: "", priority: "high",
-            render: (row) => (
+          }] : []),
+          ...(isVisible("actions") ? [{
+            key: "actions" as const, label: "", priority: "high" as const,
+            render: (row: any) => (
               <div className="flex justify-end relative">
                 <Dropdown>
                   <Button size="sm" variant="ghost" color="default" isIconOnly aria-label="Opciones">
@@ -221,9 +282,11 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
                       <Dropdown.Item id="edit" textValue="Editar">
                         <div className="flex items-center gap-2"><Edit className="w-4 h-4 text-slate-500" /><span>Editar</span></div>
                       </Dropdown.Item>
-                      <Dropdown.Item id="reprint" textValue="Reimprimir ticket">
-                        <div className="flex items-center gap-2"><Printer className="w-4 h-4 text-slate-500" /><span>Reimprimir ticket</span></div>
-                      </Dropdown.Item>
+                      {runtimeConfig?.tickets?.allowReprint !== false && (
+                        <Dropdown.Item id="reprint" textValue="Reimprimir ticket">
+                          <div className="flex items-center gap-2"><Printer className="w-4 h-4 text-slate-500" /><span>Reimprimir ticket</span></div>
+                        </Dropdown.Item>
+                      )}
                       <Dropdown.Item id="checkout" textValue="Registrar salida" variant="danger">
                         <div className="flex items-center gap-2 text-danger-500"><LogOut className="w-4 h-4" /><span>Registrar salida</span></div>
                       </Dropdown.Item>
@@ -232,14 +295,23 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
                 </Dropdown>
               </div>
             ),
-          },
+          }] : []),
         ]}
-        rows={rows}
+        rows={filteredRows}
         emptyMessage="No hay vehículos activos en este momento."
       />
+      </div>
 
       {precalculation && !finalResult && (
-        <BulkExitConfirmModal precalculation={precalculation} isProcessing={isProcessing} onConfirm={handleConfirm} onCancel={() => closeModal()} />
+        <BulkExitConfirmModal 
+          precalculation={precalculation} 
+          isProcessing={isProcessing} 
+          availablePaymentMethods={availablePaymentMethods}
+          selectedPaymentMethod={selectedPaymentMethod}
+          setSelectedPaymentMethod={setSelectedPaymentMethod}
+          onConfirm={handleConfirm} 
+          onCancel={closeModal} 
+        />
       )}
       {finalResult && <BulkExitSuccessModal result={finalResult} onClose={closeModal} />}
     </div>

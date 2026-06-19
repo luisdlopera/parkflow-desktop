@@ -4,7 +4,13 @@ import dynamic from "next/dynamic";
 import { AdminUsersPageClient as UsersPage } from "@/app/(admin)/admin/users/UsersPageClient";
 import { DialogProvider } from "@/components/ui/DialogProvider";
 
-vi.mock("@/lib/auth", () => ({
+vi.mock("@/features/auth/api/auth.api", () => ({
+  authHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token" }),
+}));
+vi.mock("@/features/auth/services/auth-storage.service", () => ({
+  authHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token" }),
+}));
+vi.mock("@/features/auth/services/auth-domain.service", () => ({
   authHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token" }),
 }));
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { currentUser } from "@/lib/auth";
+import { currentUser } from "@/features/auth/services/auth-domain.service";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
 import { FrontendActionError } from "@/lib/errors/error-messages";
 import {

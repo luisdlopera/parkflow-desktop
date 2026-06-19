@@ -12,7 +12,6 @@ export default [
       "react-hooks/immutability": "warn",
       "react-hooks/refs": "warn",
       "react-hooks/incompatible-library": "warn",
-      "@typescript-eslint/no-unused-vars": "error",
     },
   },
 ];

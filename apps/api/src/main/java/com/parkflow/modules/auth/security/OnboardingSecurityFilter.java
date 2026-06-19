@@ -37,7 +37,8 @@ public class OnboardingSecurityFilter extends OncePerRequestFilter {
         "/v3/api-docs/**",
         "/api/v1/auth/**",
         "/api/v1/onboarding/**",
-        "/api/v1/configuration/theme"
+        "/api/v1/configuration/theme",
+        "/api/v1/configuration/payment-methods"
     );
 
     public OnboardingSecurityFilter(CompanyPort companyPort, ObjectMapper objectMapper) {

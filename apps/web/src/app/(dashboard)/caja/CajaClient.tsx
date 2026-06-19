@@ -110,17 +110,7 @@ export default function CajaClient() {
             </p>
           </div>
         ) : null}
-        {p.policy ? (
-          <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
-            <p className="font-semibold text-slate-800">Politica efectiva ({p.policy.resolvedForSite})</p>
-            <p className="mt-1">{p.policy.operationsHint}</p>
-            <p className="mt-1">
-              Cobro exige caja abierta: <strong>{p.policy.requireOpenForPayment ? "Si" : "No"}</strong> — Cierre
-              offline permitido: <strong>{p.policy.offlineCloseAllowed ? "Si" : "No"}</strong> — Tope manual
-              offline: <strong>{p.policy.offlineMaxManualMovement.toLocaleString("es-CO")}</strong>
-            </p>
-          </div>
-        ) : null}
+
       </div>
 
       {/* Error banner */}
@@ -128,58 +118,60 @@ export default function CajaClient() {
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{p.error}</div>
       ) : null}
 
-      {/* Terminal selector */}
-      <div className={`grid gap-4 grid-cols-1 items-end ${p.siteCount > 1 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
-        {p.siteCount > 1 && (
-          <Input label="Sede" size="sm" value={p.site} onChange={(e) => p.setSite(e.target.value)} isDisabled={p.closed} />
-        )}
-        <div className="flex flex-col gap-2">
-          {p.registerRows.length > 0 && (
-            <Autocomplete
-              label="Terminal / caja"
-              placeholder="Seleccionar terminal"
-              selectionMode="single"
-              value={p.registerRows.some((r) => r.terminal === p.terminal) ? p.terminal : null}
-              onChange={(key: Key | null) => p.setTerminal(key as string)}
-              isDisabled={p.closed}
-            >
-              <Autocomplete.Trigger>
-                <Autocomplete.Value /><Autocomplete.ClearButton /><Autocomplete.Indicator />
-              </Autocomplete.Trigger>
-              <Autocomplete.Popover>
-                <Autocomplete.Filter filter={contains}>
-                  <SearchField autoFocus name="search" variant="secondary" aria-label="Buscar terminal">
-                    <SearchField.Group>
-                      <SearchField.SearchIcon />
-                      <SearchField.Input placeholder="Buscar terminal..." />
-                      <SearchField.ClearButton />
-                    </SearchField.Group>
-                  </SearchField>
-                  <ListBox>
-                    {p.registerRows.map((r) => (
-                      <ListBox.Item key={r.terminal} id={r.terminal} textValue={r.terminal}>
-                        {(r.label ?? r.terminal) + ` (${r.terminal})`}
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Autocomplete.Filter>
-              </Autocomplete.Popover>
-            </Autocomplete>
+      {/* Terminal selector — hide when only 1 register */}
+      {p.registerRows.length !== 1 ? (
+        <div className={`grid gap-4 grid-cols-1 items-end ${p.siteCount > 1 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+          {p.siteCount > 1 && (
+            <Input label="Sede" size="sm" value={p.site} onChange={(e) => p.setSite(e.target.value)} isDisabled={p.closed} />
           )}
-          <Input
-            placeholder="Terminal manual"
-            label="Terminal manual"
-            size="sm"
-            value={p.terminal}
-            onChange={(e) => p.setTerminal(e.target.value)}
-            isDisabled={p.closed}
-          />
+          <div className="flex flex-col gap-2">
+            {p.registerRows.length > 0 && (
+              <Autocomplete
+                label="Terminal / caja"
+                placeholder="Seleccionar terminal"
+                selectionMode="single"
+                value={p.registerRows.some((r) => r.terminal === p.terminal) ? p.terminal : null}
+                onChange={(key: Key | null) => p.setTerminal(key as string)}
+                isDisabled={p.closed}
+              >
+                <Autocomplete.Trigger>
+                  <Autocomplete.Value /><Autocomplete.ClearButton /><Autocomplete.Indicator />
+                </Autocomplete.Trigger>
+                <Autocomplete.Popover>
+                  <Autocomplete.Filter filter={contains}>
+                    <SearchField autoFocus name="search" variant="secondary" aria-label="Buscar terminal">
+                      <SearchField.Group>
+                        <SearchField.SearchIcon />
+                        <SearchField.Input placeholder="Buscar terminal..." />
+                        <SearchField.ClearButton />
+                      </SearchField.Group>
+                    </SearchField>
+                    <ListBox>
+                      {p.registerRows.map((r) => (
+                        <ListBox.Item key={r.terminal} id={r.terminal} textValue={r.terminal}>
+                          {(r.label ?? r.terminal) + ` (${r.terminal})`}
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Autocomplete.Filter>
+                </Autocomplete.Popover>
+              </Autocomplete>
+            )}
+            <Input
+              placeholder="Terminal manual"
+              label="Terminal manual"
+              size="sm"
+              value={p.terminal}
+              onChange={(e) => p.setTerminal(e.target.value)}
+              isDisabled={p.closed}
+            />
+          </div>
+          <Button variant="outline" color="primary" className="font-semibold h-[48px]"
+            onPress={() => { p.reload().catch(() => {}); }} isLoading={p.busy}>
+            Actualizar
+          </Button>
         </div>
-        <Button variant="outline" color="primary" className="font-semibold h-[48px]"
-          onPress={() => { p.reload().catch(() => {}); }} isLoading={p.busy}>
-          Actualizar
-        </Button>
-      </div>
+      ) : null}
 
       {/* No session — show status + open form */}
       <div className={`grid gap-4 sm:gap-6 grid-cols-1 ${p.session ? "" : "lg:grid-cols-2"}`}>

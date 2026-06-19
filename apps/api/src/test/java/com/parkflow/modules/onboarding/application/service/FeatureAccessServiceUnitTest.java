@@ -82,8 +82,8 @@ class FeatureAccessServiceUnitTest {
     List<?> methods = (List<?>) options.get("paymentMethods");
 
     assertNotNull(methods);
-    assertTrue(methods.contains("EFECTIVO"));
-    assertTrue(methods.contains("TARJETA_CREDITO"));
+    assertTrue(methods.contains("CASH"));
+    assertTrue(methods.contains("CREDIT_CARD"));
   }
 
   @Test
@@ -94,7 +94,7 @@ class FeatureAccessServiceUnitTest {
 
     assertNotNull(methods);
     assertEquals(1, methods.size());
-    assertEquals("EFECTIVO", methods.get(0));
+    assertEquals("CASH", methods.get(0));
   }
 
   @Test

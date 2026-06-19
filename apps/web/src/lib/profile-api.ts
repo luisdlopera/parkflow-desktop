@@ -1,4 +1,4 @@
-import { authHeaders } from "@/lib/auth";
+import { authHeaders } from "@/features/auth/services/auth-domain.service";
 import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import { authBase } from "@/lib/api/config";
 import type { UserRole } from "@/modules/settings/types";

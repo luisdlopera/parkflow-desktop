@@ -2,7 +2,7 @@
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { currentUser } from "@/lib/auth";
+import { currentUser } from "@/features/auth/services/auth-domain.service";
 import { usePermissions } from "@/hooks/auth/usePermissions";
 import type { Permission } from "@parkflow/types";
 

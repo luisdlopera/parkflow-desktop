@@ -59,7 +59,8 @@ export async function fetchOperationalHealth(): Promise<OperationalHealth | null
 export async function fetchActiveSessions(): Promise<ActiveSessionRow[]> {
   const res = await fetch(`${OPS_BASE}/sessions/active-list`, { headers: await buildApiHeaders() });
   if (!res.ok) throw new Error("No se pudo listar sesiones activas");
-  return res.json();
+  const payload = await res.json();
+  return Array.isArray(payload) ? payload : (payload.data ?? []);
 }
 
 export async function postOperationalAction(path: "retry-sync" | "test-printer"): Promise<string> {

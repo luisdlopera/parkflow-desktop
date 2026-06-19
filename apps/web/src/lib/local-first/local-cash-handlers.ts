@@ -1,3 +1,5 @@
+import { readCachedCashPolicy } from "@/features/cash-register/services/cash-policy.service";
+
 type InvokeFn = <T = unknown>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
 type GetBodyFn = () => Record<string, unknown>;
 
@@ -12,8 +14,7 @@ export async function handleCashRoutes(
   if (pathname.endsWith("/cash/policy") && method === "GET") {
     let policy;
     try {
-      const raw = typeof window !== "undefined" && window.localStorage.getItem("parkflow_cash_policy");
-      if (raw) policy = JSON.parse(raw);
+      policy = readCachedCashPolicy();
     } catch { /* ignore */ }
     if (!policy) {
       policy = {

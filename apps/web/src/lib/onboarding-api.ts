@@ -1,4 +1,4 @@
-import { authHeaders } from "@/lib/auth";
+import { authHeaders } from "@/features/auth/services/auth-domain.service";
 import { normalizeApiError } from "@/lib/errors/normalize-api-error";
 import { ApiError } from "@/lib/errors/api-error";
 import { apiBase } from "@/lib/api/config";

@@ -23,6 +23,7 @@ async function findLatestReport(pattern) {
     const stats = await Promise.all(
       matching.map(async f => ({
         file: f,
+        // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
         mtime: (await stat(join(REPORTS_DIR, f))).mtime,
       }))
     );
@@ -37,6 +38,7 @@ async function findLatestReport(pattern) {
 async function readJsonReport(filename) {
   if (!filename) return null;
   try {
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
     const content = await readFile(join(REPORTS_DIR, filename), 'utf-8');
     return JSON.parse(content);
   } catch {

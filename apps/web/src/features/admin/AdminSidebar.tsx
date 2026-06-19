@@ -14,6 +14,7 @@ import {
   ChevronsLeft,
   HelpCircle,
   LogOut,
+  DollarSign,
 } from "lucide-react";
 
 const adminNavItems = [
@@ -21,6 +22,11 @@ const adminNavItems = [
     label: "Empresas",
     href: "/admin/companies",
     icon: Building2,
+  },
+  {
+    label: "Planes",
+    href: "/admin/plans",
+    icon: DollarSign,
   },
   {
     label: "Licencias",
