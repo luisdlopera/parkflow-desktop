@@ -1,6 +1,7 @@
 package com.parkflow.modules.parking.locker.repository;
 
 import com.parkflow.modules.parking.locker.domain.Locker;
+import com.parkflow.modules.parking.locker.domain.LockerStatus;
 import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
 import java.util.List;
 import java.util.Optional;
@@ -47,5 +48,10 @@ public class LockerRepositoryAdapter implements LockerPort {
   @Override
   public boolean existsByCompanyIdAndCode(UUID companyId, String code) {
     return repository.existsByCompanyIdAndCode(companyId, code);
+  }
+
+  @Override
+  public long countByCompanyIdAndStatus(UUID companyId, LockerStatus status) {
+    return repository.countByCompanyIdAndStatus(companyId, status);
   }
 }

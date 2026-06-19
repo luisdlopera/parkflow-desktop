@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
+import { apiBase } from '@/lib/api/config';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:6011/api/v1';
+const API_BASE = apiBase();
 
 export function useConfigurationApi() {
   const [loading, setLoading] = useState(false);

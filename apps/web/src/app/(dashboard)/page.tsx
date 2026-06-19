@@ -10,7 +10,7 @@ import DataTable from "@/components/ui/DataTable";
 import Badge from "@/components/ui/Badge";
 import LocalPrintAgentStatus from "@/components/print/LocalPrintAgentStatus";
 import { PrintStatusMonitor } from "@/components/print/PrintStatusMonitor";
-import { fetchDashboardSummary, fetchOperationalHealth, fetchActiveSessions, postOperationalAction, type DashboardSummary, type OperationalHealth } from "@/services/dashboard.service";
+import { fetchDashboardSummary, fetchOperationalHealth, fetchActiveSessions, postOperationalAction, type DashboardSummary, type OperationalHealth } from "@/lib/api/dashboard-api";
 
 type Summary = DashboardSummary;
 

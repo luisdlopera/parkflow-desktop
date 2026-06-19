@@ -3,7 +3,7 @@
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminMobileSidebar } from "@/components/admin/AdminMobileSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
-import { useSidebar } from "@/lib/hooks/useSidebar";
+import { useSidebar } from "@/shared/hooks/ui/useSidebar";
 import OfflineFeatureGate from "@/components/feedback/OfflineFeatureGate";
 
 export default function AdminLayout({

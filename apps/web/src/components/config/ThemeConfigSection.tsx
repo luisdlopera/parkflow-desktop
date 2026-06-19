@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { DEFAULT_PRIMARY_COLOR, type BrandColors } from "@/lib/theme/ThemeProvider";
 import type { ThemeMode } from "@/lib/settings-api";
-import { useThemeConfig, type ThemeDraft } from "./hooks/useThemeConfig";
+import { useThemeConfig, type ThemeDraft } from "@/shared/hooks/ui/useThemeConfig";
 import { BrandingSection } from "./BrandingSection";
 
 const HEX_RE = /^#[0-9A-Fa-f]{6}$/;

@@ -8,7 +8,8 @@ import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 import { ListBox } from "@heroui/react";
-import { fetchAvailableLockers } from "@/services/lockers.service";
+import { fetchAvailableLockers } from "@/lib/api/lockers-api";
+import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
 
 interface HelmetSectionProps {
   control: Control<any>;
@@ -16,7 +17,7 @@ interface HelmetSectionProps {
 }
 
 export function HelmetSection({ control, selectedVehicleType }: HelmetSectionProps) {
-  const { config } = useRuntimeConfig();
+  const flags = useFeatureFlags();
 
   const [availableTokens, setAvailableTokens] = useState<{ id: string; code: string }[]>([]);
 
@@ -25,10 +26,8 @@ export function HelmetSection({ control, selectedVehicleType }: HelmetSectionPro
     name: "custodiedItems",
   });
 
-  const helmetHandling = config?.operationConfiguration?.helmetHandling as string | undefined;
-  const enableCustodiedItem = config?.operationConfiguration?.enableCustodiedItem ?? false;
-  const showHelmetSection = helmetHandling ? helmetHandling !== "NONE" : enableCustodiedItem;
-  const usesLockers = helmetHandling === "LOCKERS";
+  const showHelmetSection = flags.helmets;
+  const usesLockers = flags.lockers;
 
   useEffect(() => {
     if (showHelmetSection && usesLockers && selectedVehicleType === "MOTORCYCLE") {

@@ -1,11 +1,12 @@
 import { buildApiHeaders } from "@/lib/api";
+import { opsBase, apiBase } from "@/lib/api/config";
 
 export function getOperationsApiBase(): string {
-  return process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
+  return opsBase();
 }
 
 export function getCoreApiBase(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
+  return apiBase();
 }
 
 export type ActiveSessionDto = {

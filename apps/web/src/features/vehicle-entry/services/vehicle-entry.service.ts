@@ -2,8 +2,8 @@ import { buildApiHeaders } from "@/lib/api";
 import { operationEntryRequestSchema, operationReprintRequestSchema } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 
-const apiBase = () =>
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
+import { opsBase } from "@/lib/api/config";
+const apiBase = () => opsBase();
 
 export type EntryRequestBody = Record<string, unknown>;
 

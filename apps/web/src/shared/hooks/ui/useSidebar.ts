@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useIsMobile, useIsTablet, useIsDesktop } from "./useMediaQuery";
+import { useIsMobile, useIsTablet, useIsDesktop } from "../infrastructure/useMediaQuery";
 
 type SidebarState = "expanded" | "collapsed" | "hidden";
 

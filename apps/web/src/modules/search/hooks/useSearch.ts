@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { SearchResponse } from '../types/search.types';
 import { httpRequest } from '@/lib/http-client';
 import { authHeaders } from '@/lib/auth';
+import { apiBase } from '@/lib/api/config';
 
 function apiBaseUrl() {
-  return (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1").replace(/\/$/, "");
+  return apiBase();
 }
 
 export function useSearch(query: string, scope?: string) {

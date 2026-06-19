@@ -12,4 +12,5 @@ public interface LockerRepository extends JpaRepository<Locker, UUID> {
   Optional<Locker> findByIdAndCompanyId(UUID id, UUID companyId);
   Optional<Locker> findByCompanyIdAndCode(UUID companyId, String code);
   boolean existsByCompanyIdAndCode(UUID companyId, String code);
+  long countByCompanyIdAndStatus(UUID companyId, com.parkflow.modules.parking.locker.domain.LockerStatus status);
 }

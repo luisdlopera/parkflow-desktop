@@ -44,9 +44,10 @@ export type AuthHeaderOptions = {
   offline?: boolean;
 };
 
+import { authBase } from "@/lib/api/config";
+
 function authBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "http://localhost:6011/api/v1/auth";
-  return raw.replace(/\/$/, "");
+  return authBase();
 }
 
 function operationsApiKey(): string {

@@ -1,7 +1,8 @@
 import { buildApiHeaders } from "@/lib/api";
+import { opsBase, apiBase } from "@/lib/api/config";
 
-const OPS_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations").replace(/\/$/, "");
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
+const OPS_BASE = opsBase();
+const API_BASE = apiBase();
 
 export interface DashboardSummary {
   activeVehicles: number;

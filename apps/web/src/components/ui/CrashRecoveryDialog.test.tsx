@@ -1,12 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/hooks/useAutoSave", () => ({
+vi.mock("@/shared/hooks/infrastructure/useAutoSave", () => ({
   useCrashRecovery: vi.fn(),
 }));
 
 import { CrashRecoveryDialog } from "./CrashRecoveryDialog";
-import { useCrashRecovery } from "@/lib/hooks/useAutoSave";
+import { useCrashRecovery } from "@/shared/hooks/infrastructure/useAutoSave";
 
 describe("CrashRecoveryDialog", () => {
   beforeEach(() => {

@@ -12,8 +12,8 @@ import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { resolvePaperWidthMm } from "@/lib/tauri-print";
 import { PAYMENT_METHOD_CATALOG } from "@/lib/payment-method-catalog";
-import { useOsShortcut } from "@/hooks/useOsShortcut";
-import { useExitShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
+import { useOsShortcut } from "@/shared/hooks/ui/useOsShortcut";
+import { useExitShortcuts } from "@/shared/hooks/ui/useKeyboardShortcuts";
 import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
 import { useVehicleExit } from "@/features/vehicle-exit/hooks/useVehicleExit";
 

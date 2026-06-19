@@ -1,6 +1,7 @@
 import { authHeaders } from "@/lib/auth";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
+import { apiBase as getApiBase } from "./config";
+const API_BASE = getApiBase();
 
 export interface PriorityCase {
   companyId: string;

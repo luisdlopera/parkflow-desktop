@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ParkingSummaryDto } from "@/services/sessions.service";
+import type { ParkingSummaryDto } from "@/lib/api/sessions-api";
 
 interface ParkingState {
   occupancy: ParkingSummaryDto | null;

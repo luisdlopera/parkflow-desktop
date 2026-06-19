@@ -8,8 +8,8 @@ import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type { PaymentMethodCode } from "@/lib/payment-method-catalog";
 import type { SplitPaymentRow } from "../hooks/useSplitPayment";
 
-const apiBase = () =>
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
+import { opsBase } from "@/lib/api/config";
+const apiBase = () => opsBase();
 
 export async function lookupActiveSession(
   ticketNumber: string,

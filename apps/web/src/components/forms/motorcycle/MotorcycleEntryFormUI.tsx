@@ -11,7 +11,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User, CheckCircle2, AlertCircle } from "lucide-react";
 import { MotorRacingHelmet } from "@/components/ui/MotorRacingHelmet";
 import { Autocomplete, ListBox, SearchField, useFilter, Label, FieldError } from "@heroui/react";
-import { fetchAvailableLockers } from "@/services/lockers.service";
+import { fetchAvailableLockers } from "@/lib/api/lockers-api";
+import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
 
 interface MotorcycleEntryFormUIProps {
   form: UseFormReturn<VehicleEntryFormValues>;
@@ -38,14 +39,10 @@ export function MotorcycleEntryFormUI({
   platePrefix,
   noPlate,
 }: MotorcycleEntryFormUIProps) {
-  const { config } = useRuntimeConfig();
+  const flags = useFeatureFlags();
   const { isSubmitting } = form.formState;
-  const helmetHandling = config?.operationConfiguration?.helmetHandling as string | undefined;
-  const enableCustodiedItem = config?.operationConfiguration?.enableCustodiedItem ?? false;
-  // Si hay configuración explícita de cascos, respétala; si no, usa el flag legacy.
-  const showHelmetSection = helmetHandling ? helmetHandling !== "NONE" : enableCustodiedItem;
-  // Solo necesitamos lockers cuando el modo es por lockers numerados.
-  const usesLockers = helmetHandling === "LOCKERS";
+  const showHelmetSection = flags.helmets;
+  const usesLockers = flags.lockers;
 
   const [availableTokens, setAvailableTokens] = useState<{ id: string; code: string }[]>([]);
   const { contains } = useFilter({ sensitivity: "base" });

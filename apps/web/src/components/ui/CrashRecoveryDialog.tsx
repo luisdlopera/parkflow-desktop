@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useCrashRecovery } from "@/lib/hooks/useAutoSave";
+import { useCrashRecovery } from "@/shared/hooks/infrastructure/useAutoSave";
 import { Button } from "@/components/ui/Button";
 
 interface CrashRecoveryDialogProps {

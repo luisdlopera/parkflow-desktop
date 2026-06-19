@@ -10,7 +10,7 @@ import { ChevronRight, Clock3, Loader2, Search, Ticket, Car, User, Building2, Cr
 import { cn } from "@heroui/theme";
 import { useSearch } from "../hooks/useSearch";
 import { SearchResult, SearchType } from "../types/search.types";
-import { useOsShortcut } from "@/hooks/useOsShortcut";
+import { useOsShortcut } from "@/shared/hooks/ui/useOsShortcut";
 
 const RECENT_KEY = "parkflow.search.recent";
 const MAX_RECENT = 6;

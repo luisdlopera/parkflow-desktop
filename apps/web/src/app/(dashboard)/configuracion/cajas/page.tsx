@@ -1,6 +1,5 @@
 "use client";
 
-import { toast } from "@heroui/react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,15 +16,14 @@ import {
   fetchConfigurationSites,
   fetchConfigurationPrinters,
   fetchUsers,
-  type SettingsPage,
-  type UserAdminRow
+  type UserAdminRow,
 } from "@/lib/settings-api";
 import { cashRegisterSchema, type CashRegisterSchema } from "@/modules/settings/schemas";
 import type { CashRegisterRow, ParkingSiteRow, PrinterRow } from "@/modules/settings/types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { FormDrawer } from "@/components/settings/FormDrawer";
 import { StatusToggle } from "@/components/settings/StatusToggle";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { useConfigCrud } from "@/hooks/useConfigCrud";
 
 const COLS: ColumnDef<CashRegisterRow>[] = [
   { key: "code", label: "Código" },
@@ -44,28 +42,36 @@ const COLS: ColumnDef<CashRegisterRow>[] = [
   },
 ];
 
+const DEFAULTS: CashRegisterSchema = { site: "DEFAULT", siteId: "", code: "", name: "", terminal: "", label: "", printerId: "", responsibleUserId: "", active: true };
+
 export default function CajasPage() {
-  const [data, setData] = useState<SettingsPage<CashRegisterRow>>({ content: [], totalElements: 0, totalPages: 0, page: 0, size: 20 });
   const [sites, setSites] = useState<ParkingSiteRow[]>([]);
   const [printers, setPrinters] = useState<PrinterRow[]>([]);
   const [users, setUsers] = useState<UserAdminRow[]>([]);
-  const [loading, setLoading] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editing, setEditing] = useState<CashRegisterRow | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    control,
-    formState: { errors, isSubmitting },
-  } = useForm<CashRegisterSchema>({ resolver: zodResolver(cashRegisterSchema), defaultValues: { site: "DEFAULT", terminal: "", active: true } });
-  
+  const crud = useConfigCrud<CashRegisterRow>({
+    loadFn: (q?: unknown) => fetchConfigurationCashRegisters({ q: q as string, page: 0, size: 50 }),
+    createFn: (data) => createConfigurationCashRegister(data),
+    updateFn: (id, data) => updateConfigurationCashRegister(id, data),
+    toggleStatusFn: (id, active) => patchConfigurationCashRegisterStatus(id, active),
+  });
+
+  const { register, handleSubmit, reset, setValue, control, formState: { errors, isSubmitting } } = useForm<CashRegisterSchema>({
+    resolver: zodResolver(cashRegisterSchema),
+    defaultValues: DEFAULTS,
+  });
+
   const siteField = register("site");
   const siteIdField = register("siteId");
+
+  const siteOptions = useMemo(() => sites.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}`, code: s.code })), [sites]);
+  const printerOptions = useMemo(() => printers.map((p) => ({ value: p.id, label: `${p.name} (${p.isDefault ? "Default" : "Secundaria"})` })), [printers]);
+  const userOptions = useMemo(() => users.map((u) => ({ value: u.id, label: u.name })), [users]);
+  const currentSite = useWatch({ control, name: "site" });
+  const watchSiteId = useWatch({ control, name: "siteId" });
+  const watchPrinterId = useWatch({ control, name: "printerId" });
+  const watchResponsibleUserId = useWatch({ control, name: "responsibleUserId" });
 
   useEffect(() => {
     const loadCatalogs = async () => {
@@ -84,73 +90,22 @@ export default function CajasPage() {
       }
     };
     void loadCatalogs();
+    void crud.load();
   }, []);
 
-  const load = async (q?: string) => {
-    setLoading(true);
-    try {
-      const page = await fetchConfigurationCashRegisters({ q, page: 0, size: 50 });
-      setData(page);
-    } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
-    } finally {
-      setLoading(false);
-    }
+  const handleOpenCreate = () => {
+    reset(DEFAULTS);
+    crud.openCreate();
   };
 
-  const openCreate = () => {
-    setEditing(null);
-    reset({ site: "DEFAULT", siteId: "", code: "", name: "", terminal: "", label: "", printerId: "", responsibleUserId: "", active: true });
-    setDrawerOpen(true);
+  const handleOpenEdit = (row: CashRegisterRow) => {
+    reset({ site: row.site, siteId: row.siteId ?? "", code: row.code, name: row.name ?? "", terminal: row.terminal, label: row.label ?? "", printerId: row.printerId ?? "", responsibleUserId: row.responsibleUserId ?? "", active: row.active });
+    crud.openEdit(row);
   };
-
-  const openEdit = (row: CashRegisterRow) => {
-    setEditing(row);
-    reset({
-      site: row.site,
-      siteId: row.siteId ?? "",
-      code: row.code,
-      name: row.name ?? "",
-      terminal: row.terminal,
-      label: row.label ?? "",
-      printerId: row.printerId ?? "",
-      responsibleUserId: row.responsibleUserId ?? "",
-      active: row.active,
-    });
-    setDrawerOpen(true);
-  };
-
-  const siteOptions = useMemo(() => sites.map((site) => ({ value: site.id, label: `${site.code} - ${site.name}`, code: site.code })), [sites]);
-  const printerOptions = useMemo(() => printers.map((printer) => ({ value: printer.id, label: `${printer.name} (${printer.isDefault ? "Default" : "Secundaria"})` })), [printers]);
-  const userOptions = useMemo(() => users.map((user) => ({ value: user.id, label: user.name })), [users]);
-  const currentSite = useWatch({ control, name: "site" });
-  const watchSiteId = useWatch({ control, name: "siteId" });
-  const watchPrinterId = useWatch({ control, name: "printerId" });
-  const watchResponsibleUserId = useWatch({ control, name: "responsibleUserId" });
 
   const onSubmit = async (values: CashRegisterSchema) => {
-    setError(null);
-    try {
-      const payload = { ...values } as Record<string, unknown>;
-      if (editing) {
-        await updateConfigurationCashRegister(editing.id, payload);
-      } else {
-        await createConfigurationCashRegister(payload);
-      }
-      setDrawerOpen(false);
-      await load();
-    } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
-    }
-  };
-
-  const toggleStatus = async (row: CashRegisterRow) => {
-    try {
-      await patchConfigurationCashRegisterStatus(row.id, !row.active);
-      await load();
-    } catch (e) {
-      toast.danger(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
-    }
+    const ok = await crud.save(values as Record<string, unknown>);
+    if (ok) void crud.load();
   };
 
   return (
@@ -159,90 +114,56 @@ export default function CajasPage() {
       <DataTableSection
         title=""
         columns={COLS}
-        rows={data.content}
-        loading={loading}
-        onSearch={(q) => { void load(q); }}
-        onCreate={openCreate}
+        rows={crud.rows}
+        loading={crud.loading}
+        onSearch={(q) => { void crud.load(q); }}
+        onCreate={handleOpenCreate}
         emptyMessage="No hay cajas registradas"
         actions={(row) => (
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="tertiary"
-              color="primary"
-              className="font-semibold"
-              onPress={() => openEdit(row)}
-            >
+            <Button size="sm" variant="tertiary" color="primary" className="font-semibold" onPress={() => handleOpenEdit(row)}>
               Editar
             </Button>
-            <StatusToggle active={row.active} onChange={() => toggleStatus(row)} confirmMessage="¿Cambiar estado?" />
+            <StatusToggle active={row.active} onChange={() => crud.handleToggleStatus(row)} confirmMessage="¿Cambiar estado?" />
           </div>
         )}
       />
       <FormDrawer
-        open={drawerOpen}
-        title={editing ? "Editar Caja" : "Nueva Caja"}
-        onClose={() => setDrawerOpen(false)}
+        open={crud.drawerOpen}
+        title={crud.editing ? "Editar Caja" : "Nueva Caja"}
+        onClose={crud.closeDrawer}
         onSubmit={handleSubmit(onSubmit)}
         loading={isSubmitting}
-        error={error}
+        error={crud.error}
       >
         <div className="space-y-4">
-          <Input
-            {...register("code")}
-            label="Código"
-            
-            errorMessage={errors.code?.message}
-            isInvalid={!!errors.code}
-          />
-          <Input
-            {...register("name")}
-            label="Nombre"
-            
-          />
-          <Input
-            {...register("terminal")}
-            label="Terminal"
-            
-            errorMessage={errors.terminal?.message}
-            isInvalid={!!errors.terminal}
-          />
-          <Input
-            {...register("label")}
-            label="Etiqueta"
-            
-          />
-          
+          <Input {...register("code")} label="Código" errorMessage={errors.code?.message} isInvalid={!!errors.code} />
+          <Input {...register("name")} label="Nombre" />
+          <Input {...register("terminal")} label="Terminal" errorMessage={errors.terminal?.message} isInvalid={!!errors.terminal} />
+          <Input {...register("label")} label="Etiqueta" />
+
           <div className="space-y-1">
             <input type="hidden" {...siteField} />
             <Select
               {...siteIdField}
               label="Sede"
-              
               placeholder="Sin sede vinculada"
               isDisabled={catalogLoading}
               onChange={(keys) => {
                 const id = Array.from(keys)[0] as string;
-                const selected = sites.find((site) => site.id === id);
+                const selected = sites.find((s) => s.id === id);
                 setValue("siteId", id);
                 setValue("site", selected?.code ?? "DEFAULT");
               }}
               selectedKey={(watchSiteId ? watchSiteId : undefined) as any}
             >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
-      </Select.Trigger>
-      <Select.Popover>
-        <ListBox>
-
-              {siteOptions.map((site) => (
-                <ListBox.Item key={site.value} textValue={site.label}>{site.label}</ListBox.Item>
-              ))}
-            
-        </ListBox>
-      </Select.Popover>
-    </Select>
+              <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {siteOptions.map((s) => <ListBox.Item key={s.value} textValue={s.label}>{s.label}</ListBox.Item>)}
+                </ListBox>
+              </Select.Popover>
+            </Select>
             <p className="px-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
               Código operativo: {currentSite || "DEFAULT"}
             </p>
@@ -251,52 +172,34 @@ export default function CajasPage() {
           <Select
             {...register("printerId")}
             label="Impresora"
-            
             placeholder="Sin impresora"
             isDisabled={catalogLoading}
             value={watchPrinterId ? [watchPrinterId as string] : []}
           >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
-      </Select.Trigger>
-      <Select.Popover>
-        <ListBox>
-
-            {printerOptions.map((printer) => (
-              <ListBox.Item key={printer.value} textValue={printer.label}>{printer.label}</ListBox.Item>
-            ))}
-          
-        </ListBox>
-      </Select.Popover>
-    </Select>
+            <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {printerOptions.map((p) => <ListBox.Item key={p.value} textValue={p.label}>{p.label}</ListBox.Item>)}
+              </ListBox>
+            </Select.Popover>
+          </Select>
 
           <Select
             {...register("responsibleUserId")}
             label="Responsable"
-            
             placeholder="Sin responsable"
             isDisabled={catalogLoading}
             value={watchResponsibleUserId ? [watchResponsibleUserId as string] : []}
           >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
-      </Select.Trigger>
-      <Select.Popover>
-        <ListBox>
+            <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {userOptions.map((u) => <ListBox.Item key={u.value} textValue={u.label}>{u.label}</ListBox.Item>)}
+              </ListBox>
+            </Select.Popover>
+          </Select>
 
-            {userOptions.map((user) => (
-              <ListBox.Item key={user.value} textValue={user.label}>{user.label}</ListBox.Item>
-            ))}
-          
-        </ListBox>
-      </Select.Popover>
-    </Select>
-
-          <Checkbox {...register("active")}>
-            Activa
-          </Checkbox>
+          <Checkbox {...register("active")}>Activa</Checkbox>
         </div>
       </FormDrawer>
     </div>
