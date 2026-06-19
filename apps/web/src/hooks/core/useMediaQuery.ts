@@ -1,3 +1,4 @@
 "use client";
 
-export { default } from "@/shared/hooks/infrastructure/useMediaQuery";
+export * from "@/shared/hooks/infrastructure/useMediaQuery";
+export { useMediaQuery as default } from "@/shared/hooks/infrastructure/useMediaQuery";
