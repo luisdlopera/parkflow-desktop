@@ -138,6 +138,7 @@ export default function ConfiguracionPage() {
         title={config.title} 
         description={config.description} 
         groupLabel={currentGroup?.label ?? ""} 
+        groupId={currentGroup?.id}
         sectionLabel={config.label} 
       />
 

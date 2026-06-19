@@ -74,7 +74,7 @@ export default function MetodosPagoPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <ConfigPageHeader title="Métodos de Pago" groupLabel="Cobro" sectionLabel="Métodos de pago" />
+      <ConfigPageHeader title="Métodos de Pago" groupLabel="Cobro" groupId="cobro" sectionLabel="Métodos de pago" />
       <DataTableSection
         title=""
         columns={COLS}

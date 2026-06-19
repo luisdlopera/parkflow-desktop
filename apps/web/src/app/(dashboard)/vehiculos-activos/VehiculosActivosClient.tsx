@@ -17,7 +17,7 @@ import { TicketPreviewModal } from "@/features/active-vehicles/components/Ticket
 import { BulkExitConfirmModal, BulkExitSuccessModal } from "@/features/active-vehicles/components/BulkExitModals";
 import { useColumnVisibility } from "@/features/active-vehicles/hooks/useColumnVisibility";
 
-export default function VehiculosActivosClient({ fallbackData }: { fallbackData?: any }) {
+export default function VehiculosActivosClient({ fallbackData }: { fallbackData?: ActiveSessionDto[] }) {
   const [params, setParams] = useState<GetActiveSessionsQuery>({ page: 1, limit: 25, search: "", sortBy: "entryAt", sortDir: "desc" });
   const { rows, meta, summary, loading, error, reload } = useActiveSessions(params, fallbackData);
   const { caja, requireOpenForPayment } = useTerminalCaja();
@@ -68,7 +68,7 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
   const filteredRows = useMemo(() => {
     let result = rows;
     if (filterValues.vehicleType && filterValues.vehicleType !== "all") {
-      result = result.filter((r: any) => r.vehicleType === filterValues.vehicleType);
+      result = result.filter((r: ActiveSessionDto) => r.vehicleType === filterValues.vehicleType);
     }
     return result;
   }, [rows, filterValues]);
@@ -215,7 +215,7 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
 
       <DataTable
         selectable
-        selectedKeys={selectedKeys === "all" ? new Set(filteredRows.map((r: any) => r.ticketNumber)) : selectedKeys}
+        selectedKeys={selectedKeys === "all" ? new Set(filteredRows.map((r: ActiveSessionDto) => r.ticketNumber)) : selectedKeys}
         onRowSelectionChange={(keys) => setSelectedKeys(keys as Set<string>)}
         serverSide
         searchable
@@ -230,7 +230,7 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
         columns={[
           ...(isVisible("plate") ? [{
             key: "plate" as const, label: "Placa", priority: "high" as const, sortable: true,
-            render: (row: any) => !row.plate || row.plate.startsWith("NP-")
+            render: (row: ActiveSessionDto) => !row.plate || row.plate.startsWith("NP-")
               ? <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">SIN PLACA</span>
               : row.plate,
           }] : []),
@@ -238,12 +238,12 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
           ...(isVisible("vehicleType") ? [{ key: "vehicleType" as const, label: "Tipo", priority: "high" as const, sortable: false }] : []),
           ...(isVisible("parkingSpaceCode") ? [{
             key: "parkingSpaceCode" as const, label: "Celda", priority: "high" as const, sortable: false,
-            render: (row: any) => row.parkingSpaceCode ?? <span className="text-slate-400">Sin asignar</span>,
+            render: (row: ActiveSessionDto) => row.parkingSpaceCode ?? <span className="text-slate-400">Sin asignar</span>,
           }] : []),
           ...(isVisible("duration") ? [{ key: "duration" as const, label: "Tiempo", priority: "medium" as const, sortable: false }] : []),
           ...(isVisible("rateName") ? [{
             key: "rateName" as const, label: "Tarifa", priority: "low" as const, sortable: false,
-            render: (row: any) => row.rateName ?? <span className="text-slate-400">Sin tarifa</span>,
+            render: (row: ActiveSessionDto) => row.rateName ?? <span className="text-slate-400">Sin tarifa</span>,
           }] : []),
           ...(isVisible("cascos") ? [{
             key: "cascos" as const, label: "Cascos", priority: "medium" as const, sortable: false,

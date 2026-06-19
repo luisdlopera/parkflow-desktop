@@ -76,8 +76,8 @@ export default function FraccionesPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <ConfigPageHeader title="Fracciones de Tarifa" groupLabel="Cobro" sectionLabel="Fracciones de tiempo y cobro" />
-      <div className="flex items-center gap-3">
+      <ConfigPageHeader title="Fracciones de Tarifa" groupLabel="Cobro" groupId="cobro" sectionLabel="Fracciones de tiempo y cobro" />
+      <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200">
         <Input
           type="text"
           placeholder="ID de tarifa"

@@ -111,7 +111,7 @@ export default function CajasPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <ConfigPageHeader title="Cajas / Terminales" groupLabel="Cajas" sectionLabel="Puntos de caja y terminales" />
+      <ConfigPageHeader title="Cajas / Terminales" groupLabel="Cajas" groupId="organizacion" sectionLabel="Puntos de caja y terminales" />
       <DataTableSection
         title=""
         columns={COLS}

@@ -5,23 +5,28 @@ interface ConfigPageHeaderProps {
   title: string;
   description?: string;
   groupLabel: string;
+  groupId?: string;
   sectionLabel: string;
 }
 
-export function ConfigPageHeader({ title, description, groupLabel, sectionLabel }: ConfigPageHeaderProps) {
+export function ConfigPageHeader({ title, description, groupLabel, groupId, sectionLabel }: ConfigPageHeaderProps) {
   return (
     <div className="flex flex-col gap-4 mb-2">
-      <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 w-fit transition-colors" aria-label="Volver a configuración">
+      <Link href={groupId ? `/configuracion?group=${groupId}` : "/configuracion"} className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 w-fit transition-colors" aria-label="Volver">
         <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-        Volver a configuración
+        Volver
       </Link>
       <div>
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-          <span>Configuración</span>
+          <Link href="/configuracion" className="hover:text-amber-700/80 transition-colors">Configuración</Link>
           {groupLabel && (
             <>
               <ChevronRight className="w-3 h-3" aria-hidden="true" />
-              <span>{groupLabel}</span>
+              {groupId ? (
+                <Link href={`/configuracion?group=${groupId}`} className="hover:text-amber-700/80 transition-colors">{groupLabel}</Link>
+              ) : (
+                <span>{groupLabel}</span>
+              )}
             </>
           )}
           <ChevronRight className="w-3 h-3" aria-hidden="true" />

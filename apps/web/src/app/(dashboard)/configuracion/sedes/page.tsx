@@ -104,7 +104,7 @@ export default function SedesPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <ConfigPageHeader title="Sedes / Parqueaderos" groupLabel="Organización" sectionLabel="Administrar sedes del parqueadero" />
+      <ConfigPageHeader title="Sedes / Parqueaderos" groupLabel="Organización" groupId="organizacion" sectionLabel="Administrar sedes del parqueadero" />
 
       <Card border border-default-200="sm" className="border border-slate-200 bg-slate-50/50">
         <Card.Content className="p-4 flex flex-col sm:flex-row sm:items-end gap-4">

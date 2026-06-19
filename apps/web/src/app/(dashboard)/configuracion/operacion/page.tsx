@@ -108,7 +108,7 @@ export default function OperacionPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-5xl p-6">
-        <ConfigPageHeader title="Parámetros Operativos" groupLabel="Operación" sectionLabel="Reglas y parámetros operativos" />
+        <ConfigPageHeader title="Parámetros Operativos" groupLabel="Operación" groupId="operacion" sectionLabel="Reglas y parámetros operativos" />
         <p className="mt-4 text-sm text-slate-500 italic">Cargando configuración...</p>
       </div>
     );
@@ -120,6 +120,7 @@ export default function OperacionPage() {
         title="Parámetros Operativos" 
         description="Configuración global de la operación del parqueadero." 
         groupLabel="Operación" 
+        groupId="operacion"
         sectionLabel="Reglas y parámetros operativos" 
       />
 

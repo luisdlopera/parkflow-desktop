@@ -102,7 +102,7 @@ export default function ImpresorasPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <ConfigPageHeader title="Impresoras" groupLabel="Infraestructura" sectionLabel="Dispositivos de impresión" />
+      <ConfigPageHeader title="Impresoras" groupLabel="Infraestructura" groupId="infraestructura" sectionLabel="Dispositivos de impresión" />
 
       <Card border border-default-200="sm" className="border border-slate-200 bg-slate-50/50">
         <Card.Content className="p-4 flex flex-col sm:flex-row sm:items-end gap-4">
