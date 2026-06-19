@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Chip } from "@/components/ui/Chip";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Chip } from "@/components/bridge/Chip";
+import { Card } from "@/components/bridge/Card";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
 import { ArrowRight, Car, Search, Ticket, User, Building2, Loader2 } from "lucide-react";
 import { useSearch } from "@/modules/search/hooks/useSearch";
-import type { SearchResult, SearchType } from "@/modules/search/types/search.types";
+import type { SearchResult, SearchType } from "@/modules/search/search.types";
 
 const RECENT_KEY = "parkflow.search.recent";
 

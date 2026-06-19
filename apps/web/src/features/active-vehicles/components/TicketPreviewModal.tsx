@@ -1,6 +1,6 @@
 "use client";
 import { Modal } from "@heroui/react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/bridge/Button";
 import type { ActiveSessionDto } from "@/lib/api/sessions-api";
 
 export function TicketPreviewModal({ ticket, onClose }: { ticket: ActiveSessionDto; onClose: () => void }) {

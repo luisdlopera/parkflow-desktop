@@ -11,13 +11,13 @@ import {
 } from "@/lib/settings-api";
 import { paymentMethodSchema, type PaymentMethodSchema } from "@/modules/settings/schemas";
 import type { PaymentMethodRow } from "@/modules/settings/types";
-import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/bridge/Button";
+import { Checkbox } from "@/components/bridge/Checkbox";
+import { Input } from "@/components/bridge/Input";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
-import { FormDrawer } from "@/components/settings/FormDrawer";
-import { useConfigCrud } from "@/features/configuration/hooks/useConfigCrud";
+import { FormDrawer } from "@/components/ui/FormDrawer";
+import { useConfigCrud } from "@/hooks/core/useConfigCrud";
 
 const COLS: ColumnDef<PaymentMethodRow>[] = [
   { key: "code", label: "Código" },

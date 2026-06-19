@@ -1,8 +1,8 @@
 "use client";
 import { ListBox } from "@heroui/react";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/bridge/Select";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
 import { useDialog } from "@/components/ui/DialogProvider";
 import DataTable from "@/components/ui/DataTable";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -58,7 +58,7 @@ export default function RatesSection({
     }
   }, [site, q, activeFilter, page]);
 
-  useEffect(() => { load().catch(console.error); }, [load]);
+  useEffect(() => { load().catch(() => {}); }, [load]);
 
   const formState = useMemo(() => {
     const base = editing ?? {
@@ -209,7 +209,7 @@ export default function RatesSection({
               </ListBox>
             </Select.Popover>
           </Select>
-          <Button variant="outline" color="primary" size="md" className="font-semibold" onPress={() => { load().catch(console.error); }} isLoading={loading}>
+          <Button variant="outline" color="primary" size="md" className="font-semibold" onPress={() => { load().catch(() => {}); }} isLoading={loading}>
             Actualizar
           </Button>
           {canEdit ? (

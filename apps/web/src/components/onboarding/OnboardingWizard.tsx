@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/bridge/Button";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { Check, Save, AlertTriangle } from "lucide-react";
 import { skipOnboarding, completeOnboarding } from "@/lib/onboarding-api";

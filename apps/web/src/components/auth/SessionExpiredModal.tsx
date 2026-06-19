@@ -1,6 +1,6 @@
 "use client";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
-import { Button } from "@/components/ui/Button";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/bridge/Modal";
+import { Button } from "@/components/bridge/Button";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/Button";
-import { Switch } from "@/components/ui/Switch";
-import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
-import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/bridge/Button";
+import { Switch } from "@/components/bridge/Switch";
+import { Card } from "@/components/bridge/Card";
+import { Badge } from "@/components/bridge/Badge";
+import { Alert } from "@/components/bridge/Alert";
 import {
   fetchOnboardingQuestions,
   batchSaveOnboardingQuestions,

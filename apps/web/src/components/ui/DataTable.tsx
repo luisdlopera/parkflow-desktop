@@ -12,8 +12,8 @@ import {
   type SortDescriptor,
   type Selection,
 } from "@heroui/react";
-import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+import { Input } from "@/components/bridge/Input";
+import { Select } from "@/components/bridge/Select";
 import { ChevronUp, Inbox, Search } from "lucide-react";
 
 export type DataTableColumn<T> = {

@@ -1,4 +1,17 @@
-"use client";
+import { useState, useEffect } from "react";
 
-export * from "@/shared/hooks/infrastructure/useDebounce";
-export { useDebounce as default } from "@/shared/hooks/infrastructure/useDebounce";
+export function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}

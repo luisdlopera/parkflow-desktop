@@ -1,4 +1,4 @@
-import { Checkbox } from "@/components/ui/Checkbox";
+import { Checkbox } from "@/components/bridge/Checkbox";
 import QuestionHelp from "../QuestionHelp";
 import { memo } from "react";
 import { useOnboardingData, PAYMENT_OPTIONS } from "../OnboardingContext";

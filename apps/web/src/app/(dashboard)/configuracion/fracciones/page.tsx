@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/bridge/Button";
+import { Checkbox } from "@/components/bridge/Checkbox";
+import { Input } from "@/components/bridge/Input";
 import {
   fetchConfigurationRateFractions,
   createConfigurationRateFraction,
@@ -15,9 +15,9 @@ import {
 import { rateFractionSchema, type RateFractionSchema } from "@/modules/settings/schemas";
 import type { RateFractionRow } from "@/modules/settings/types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
-import { FormDrawer } from "@/components/settings/FormDrawer";
+import { FormDrawer } from "@/components/ui/FormDrawer";
 import { useDialog } from "@/components/ui/DialogProvider";
-import { useConfigCrud } from "@/features/configuration/hooks/useConfigCrud";
+import { useConfigCrud } from "@/hooks/core/useConfigCrud";
 
 const COLS: ColumnDef<RateFractionRow>[] = [
   { key: "fromMinute", label: "Desde (min)" },

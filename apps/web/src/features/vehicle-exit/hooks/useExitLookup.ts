@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { lookupActiveSession } from "../services/vehicle-exit.service";
-import { useOperationSounds } from "@/shared/hooks/ui/useOperationSounds";
+import { useOperationSounds } from "@/hooks/ui/useOperationSounds";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import type { ActiveLookup, CustodiedItemInfo } from "./useVehicleExit";
 import type { PaymentMethodCode } from "@/lib/payment-method-catalog";

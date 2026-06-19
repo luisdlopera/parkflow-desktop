@@ -21,7 +21,7 @@ vi.mock("@/lib/licensing/hooks", () => ({
   }),
 }));
 
-vi.mock("@/components/admin/CompanyForm", () => ({
+vi.mock("@/features/admin/CompanyForm", () => ({
   CompanyForm: ({ onSubmit, isLoading }: { onSubmit: (data: CreateCompanyRequest) => Promise<void>; isLoading: boolean }) => (
     <div data-testid="company-form">
       <button

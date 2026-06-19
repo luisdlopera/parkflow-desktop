@@ -2,18 +2,18 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { useOverlayState, Button as HeroButton, Skeleton } from "@heroui/react";
-import { Chip } from "@/components/ui/Chip";
-import { DropdownItem } from "@/components/ui/Dropdown";
-import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
-import { Tabs, Tab } from "@/components/ui/Tabs";
-import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
+import { Chip } from "@/components/bridge/Chip";
+import { DropdownItem } from "@/components/bridge/Dropdown";
+import { Card } from "@/components/bridge/Card";
+import { Badge } from "@/components/bridge/Badge";
+import { Tabs, Tab } from "@/components/bridge/Tabs";
+import { Button } from "@/components/bridge/Button";
+import { Modal } from "@/components/bridge/Modal";
 import { Monitor, Eye, RefreshCw, Send, Pause, Play, Ban, Building2, Cpu } from "lucide-react";
 import { useCompanies } from "@/lib/licensing/hooks";
 import type { LicensedDevice } from "@/lib/licensing/types";
 import type { DataTableColumn } from "@/components/ui/DataTable";
-import { EntityManagementPage } from "@/shared/components/crud/EntityManagementPage";
+import { EntityManagementPage } from "@/features/admin/EntityManagementPage";
 
 interface DeviceWithCompany extends LicensedDevice {
   companyName: string;

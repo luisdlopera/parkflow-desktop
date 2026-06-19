@@ -23,9 +23,9 @@ public class ParkingSpaceController {
 
   @GetMapping
   @PreAuthorize("hasAuthority('configuracion:editar') or hasAuthority('reportes:leer')")
-  public ResponseEntity<List<ParkingSpaceDto>> listSpaces() {
+  public ResponseEntity<List<ParkingSpaceDto>> listSpaces(@RequestParam(required = false, defaultValue = "ACTIVE") String filter) {
     UUID companyId = SecurityUtils.requireCompanyId();
-    return ResponseEntity.ok(parkingSpaceService.listSpaces(companyId));
+    return ResponseEntity.ok(parkingSpaceService.listSpaces(companyId, filter));
   }
 
   @GetMapping("/summary")

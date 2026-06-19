@@ -3,7 +3,7 @@
 import React from "react";
 import { Controller, Control } from "react-hook-form";
 
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/bridge/Input";
 import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 
 interface ObservationsInputProps {

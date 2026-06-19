@@ -130,14 +130,21 @@ export function useTheme() {
 
   const applyBrandColors = useCallback((colors: BrandColors) => {
     const root = document.documentElement;
+    const isDark = root.classList.contains("dark") || root.getAttribute("data-theme") === "dark";
 
     const primaryScale = generateColorScale(colors.primaryColor);
 
+    // HeroUI v3: set --accent (hex works in color-mix() calculations)
+    root.style.setProperty("--accent", colors.primaryColor);
+    root.style.setProperty("--accent-foreground", "#ffffff");
+
+    // Legacy HeroUI v2 format kept for any remaining HSL references
     root.style.setProperty("--heroui-primary", hexToHsl(colors.primaryColor));
     root.style.setProperty("--heroui-secondary", hexToHsl(colors.secondaryColor));
     root.style.setProperty("--heroui-success", hexToHsl(colors.successColor));
     root.style.setProperty("--heroui-warning", hexToHsl(colors.warningColor));
     root.style.setProperty("--heroui-danger", hexToHsl(colors.dangerColor));
+    root.style.setProperty("--heroui-focus", hexToHsl(colors.primaryColor));
 
     Object.entries(primaryScale).forEach(([level, hex]) => {
       root.style.setProperty(`--color-primary-${level}`, hex);
@@ -151,17 +158,20 @@ export function useTheme() {
     root.style.setProperty("--color-warning", colors.warningColor);
     root.style.setProperty("--color-danger", colors.dangerColor);
 
-    root.style.setProperty("--heroui-focus", hexToHsl(colors.primaryColor));
-
     const p = colors.primaryColor;
     const r = parseInt(p.slice(1, 3), 16);
     const g = parseInt(p.slice(3, 5), 16);
     const b = parseInt(p.slice(5, 7), 16);
-    root.style.setProperty("--color-ash", primaryScale["50"]);
+
+    // In dark mode, keep the near-black base — don't replace with brand light tint
+    if (!isDark) {
+      root.style.setProperty("--color-ash", primaryScale["50"]);
+      root.style.setProperty("--color-bg-glow-1", primaryScale["100"]);
+      root.style.setProperty("--color-bg-glow-2", primaryScale["200"]);
+    }
+
     root.style.setProperty("--color-ember", primaryScale["600"]);
     root.style.setProperty("--color-moss", primaryScale["700"]);
-    root.style.setProperty("--color-bg-glow-1", primaryScale["100"]);
-    root.style.setProperty("--color-bg-glow-2", primaryScale["200"]);
     root.style.setProperty("--color-grid-dot", `rgba(${r}, ${g}, ${b}, 0.2)`);
     root.style.setProperty("--color-primary-ring", `rgba(${r}, ${g}, ${b}, 0.08)`);
     root.style.setProperty("--color-primary-ring-strong", `rgba(${r}, ${g}, ${b}, 0.15)`);
@@ -170,6 +180,7 @@ export function useTheme() {
   const clearBrandColors = useCallback(() => {
     const root = document.documentElement;
     const vars = [
+      "--accent", "--accent-foreground",
       "--heroui-primary", "--heroui-secondary", "--heroui-success",
       "--heroui-warning", "--heroui-danger", "--heroui-focus",
       "--color-brand-500", "--color-primary", "--color-secondary",

@@ -1,15 +1,16 @@
 "use client";
 import { Separator } from "@heroui/react";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Card } from "@/components/bridge/Card";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { changePassword, fetchProfile, updateProfile, type UserProfile } from "@/lib/profile-api";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { useAsyncAction } from "@/lib/errors/use-async-action";
 import { clearSession, patchSessionUser } from "@/lib/auth";
-import type { UserRole } from "@/modules/users/types";
-import { PageBackButton } from "@/components/ui/PageBackButton";
+import type { UserRole } from "@/modules/settings/types";
+import { PageBackButton } from "@/components/layout/PageBackButton";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   SUPER_ADMIN: "Super Administrador",
@@ -35,7 +36,6 @@ export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   const [name, setName] = useState("");
@@ -48,7 +48,25 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [changingPassword, setChangingPassword] = useState(false);
+
+  const saveProfile = useAsyncAction<UserProfile>({
+    showErrorToast: false,
+    errorContext: FrontendActionError.SAVE_DATA,
+    onSuccess: (updated) => {
+      applyProfile(updated);
+      void patchSessionUser({ name: updated.name, email: updated.email });
+      setMessage({ kind: "ok", text: "Perfil actualizado correctamente" });
+    },
+  });
+
+  const changePass = useAsyncAction<void>({
+    showErrorToast: false,
+    errorContext: FrontendActionError.SAVE_DATA,
+    onSuccess: async () => {
+      await clearSession();
+      router.push("/login?reason=password-changed");
+    },
+  });
 
   const applyProfile = useCallback((data: UserProfile) => {
     setProfile(data);
@@ -82,28 +100,17 @@ export default function ProfilePage() {
       setMessage({ kind: "err", text: "Nombre y correo son obligatorios" });
       return;
     }
-    setSaving(true);
     setMessage(null);
-    try {
-      const updated = await updateProfile({
+    await saveProfile.run(() =>
+      updateProfile({
         name: name.trim(),
         email: email.trim(),
         document: document.trim() || null,
         phone: phone.trim() || null,
         site: site.trim() || null,
-        terminal: terminal.trim() || null
-      });
-      applyProfile(updated);
-      await patchSessionUser({ name: updated.name, email: updated.email });
-      setMessage({ kind: "ok", text: "Perfil actualizado correctamente" });
-    } catch (e) {
-      setMessage({
-        kind: "err",
-        text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA)
-      });
-    } finally {
-      setSaving(false);
-    }
+        terminal: terminal.trim() || null,
+      })
+    );
   };
 
   const handleChangePassword = async () => {
@@ -115,20 +122,8 @@ export default function ProfilePage() {
       setMessage({ kind: "err", text: "La confirmación de contraseña no coincide" });
       return;
     }
-    setChangingPassword(true);
     setMessage(null);
-    try {
-      await changePassword(currentPassword, newPassword);
-      await clearSession();
-      router.push("/login?reason=password-changed");
-    } catch (e) {
-      setMessage({
-        kind: "err",
-        text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA)
-      });
-    } finally {
-      setChangingPassword(false);
-    }
+    await changePass.run(() => changePassword(currentPassword, newPassword));
   };
 
   if (loading) {
@@ -159,16 +154,16 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {message ? (
+      {(message || saveProfile.error || changePass.error) ? (
         <p
           className={`text-sm rounded-lg px-4 py-3 ${
-            message.kind === "ok"
+            message?.kind === "ok"
               ? "bg-emerald-50 text-emerald-800"
               : "bg-red-50 text-red-800"
           }`}
           role="status"
         >
-          {message.text}
+          {message?.text ?? saveProfile.error ?? changePass.error}
         </p>
       ) : null}
 
@@ -224,7 +219,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="flex justify-end">
-            <Button color="primary" isLoading={saving} onPress={() => void handleSaveProfile()}>
+            <Button color="primary" isLoading={saveProfile.isLoading} onPress={() => void handleSaveProfile()}>
               Guardar cambios
             </Button>
           </div>
@@ -317,7 +312,7 @@ export default function ProfilePage() {
             <Button
               color="warning"
               variant="tertiary"
-              isLoading={changingPassword}
+              isLoading={changePass.isLoading}
               onPress={() => void handleChangePassword()}
             >
               Cambiar contraseña

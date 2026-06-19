@@ -41,7 +41,8 @@ public final class RolePermissions {
           AuthPermission.CONFIGURACION_LEER,
           AuthPermission.CONFIGURACION_EDITAR,
           AuthPermission.DEVICES_AUTORIZAR,
-          AuthPermission.DEVICES_REVOCAR);
+          AuthPermission.DEVICES_REVOCAR,
+          AuthPermission.PARKING_MASS_EXIT);
 
   private static final Set<AuthPermission> SUPER_ADMIN_EXTRA =
       EnumSet.of(

@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { ListBox } from "@heroui/react";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/bridge/Select";
+import { Button } from "@/components/bridge/Button";
+import { Checkbox } from "@/components/bridge/Checkbox";
+import { Input } from "@/components/bridge/Input";
 import { saveRate, type RateRow } from "@/lib/settings-api";
 import type { RateCategory } from "@/lib/settings-api";
 import type { RateType } from "@/modules/parking/types";

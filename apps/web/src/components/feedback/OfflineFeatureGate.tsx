@@ -1,7 +1,7 @@
 "use client";
 import { Spinner } from "@heroui/react";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/bridge/Card";
+import { Button } from "@/components/bridge/Button";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CloudOff, ArrowLeft, Home } from "lucide-react";

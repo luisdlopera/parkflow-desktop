@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
 import DataTable from "@/components/ui/DataTable";
 
 export type ColumnDef<T> = {

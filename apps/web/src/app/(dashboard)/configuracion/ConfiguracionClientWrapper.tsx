@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import ConfigSidebar from "@/components/config/ConfigSidebar";
+import ConfigSidebar from "@/features/configuration/components/ui/ConfigSidebar";
 
 export default function ConfiguracionClientWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

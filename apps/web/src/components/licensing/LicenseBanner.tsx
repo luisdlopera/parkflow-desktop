@@ -1,8 +1,8 @@
 "use client";
 
 import { useDesktopLicense, getLicenseStatusColor } from "@/lib/licensing/hooks";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/bridge/Alert";
+import { Button } from "@/components/bridge/Button";
 import { useState } from "react";
 import { LicenseActivationDialog } from "./LicenseActivationDialog";
 

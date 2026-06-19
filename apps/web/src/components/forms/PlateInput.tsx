@@ -1,8 +1,15 @@
 "use client";
 import React from "react";
 import { Controller } from "react-hook-form";
+import { getPlatePlaceholder, getPlateFormatHint } from "@/lib/validation/plate-validator";
 
-export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, platePrefix }: any) {
+const DEFAULT_VEHICLE_TYPE = "CAR";
+
+export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, platePrefix, vehicleType }: any) {
+  const type = vehicleType || DEFAULT_VEHICLE_TYPE;
+  const placeholder = getPlatePlaceholder(type);
+  const formatHint = getPlateFormatHint(type);
+
   return (
     <div className="relative group">
       <div className="absolute -inset-0.5 bg-gradient-to-r from-primary-500 to-primary-500 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500" />
@@ -28,7 +35,7 @@ export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, 
                 }}
                 type="text"
                 data-testid="plate"
-                placeholder="ABC123"
+                placeholder={placeholder}
                 disabled={noPlate}
                 autoFocus
                 value={field.value || ""}
@@ -48,7 +55,7 @@ export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, 
                 <p className="text-xs text-danger px-3 pt-1 pb-2">{fieldState.error.message}</p>
               ) : (
                 <p className="text-xs text-slate-400 px-3 pt-1 pb-2 text-center">
-                  Formato esperado: 3 letras + 3 números · Ej: ABC123
+                  Formato esperado: {formatHint} · Ej: {placeholder}
                 </p>
               )}
             </div>

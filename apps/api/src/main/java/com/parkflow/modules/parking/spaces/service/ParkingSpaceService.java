@@ -131,17 +131,33 @@ public class ParkingSpaceService {
     long activeSpaces = allSpaces.stream().filter(s -> s.getStatus() == ParkingSpaceStatus.ACTIVE).count();
 
     if (newCapacity > activeSpaces) {
-      int toCreate = (int) (newCapacity - activeSpaces);
-      int next = allSpaces.size() + 1;
-      for (int i = 0; i < toCreate; i++) {
-        ParkingSpace space = new ParkingSpace();
-        space.setCompanyId(companyId);
-        space.setCode(String.format("C%03d", next + i));
-        space.setLabel("Celda " + String.format("%03d", next + i));
-        space.setType(ParkingSpaceType.GENERAL);
+      int toActivate = (int) (newCapacity - activeSpaces);
+      
+      List<ParkingSpace> inactiveSpaces = allSpaces.stream()
+          .filter(s -> s.getStatus() == ParkingSpaceStatus.INACTIVE)
+          .sorted(Comparator.comparingInt(ParkingSpace::getSortOrder))
+          .toList();
+          
+      for (ParkingSpace space : inactiveSpaces) {
+        if (toActivate == 0) break;
         space.setStatus(ParkingSpaceStatus.ACTIVE);
-        space.setSortOrder(next + i);
         parkingSpaceRepository.save(space);
+        toActivate--;
+      }
+      
+      if (toActivate > 0) {
+        int maxSortOrder = allSpaces.stream().mapToInt(ParkingSpace::getSortOrder).max().orElse(0);
+        int next = maxSortOrder + 1;
+        for (int i = 0; i < toActivate; i++) {
+          ParkingSpace space = new ParkingSpace();
+          space.setCompanyId(companyId);
+          space.setCode(String.format("C%03d", next + i));
+          space.setLabel("Celda " + String.format("%03d", next + i));
+          space.setType(ParkingSpaceType.GENERAL);
+          space.setStatus(ParkingSpaceStatus.ACTIVE);
+          space.setSortOrder(next + i);
+          parkingSpaceRepository.save(space);
+        }
       }
     } else if (newCapacity < activeSpaces) {
       int toDisable = (int) (activeSpaces - newCapacity);
@@ -156,6 +172,7 @@ public class ParkingSpaceService {
         if (parkingSpaceAssignmentRepository.existsByParkingSpace_IdAndReleasedAtIsNull(space.getId())) {
           continue;
         }
+        
         space.setStatus(ParkingSpaceStatus.INACTIVE);
         parkingSpaceRepository.save(space);
         toDisable--;
@@ -173,8 +190,13 @@ public class ParkingSpaceService {
   }
 
   @Transactional(readOnly = true)
-  public List<ParkingSpaceDto> listSpaces(UUID companyId) {
+  public List<ParkingSpaceDto> listSpaces(UUID companyId, String filter) {
     return parkingSpaceRepository.findByCompanyIdOrderBySortOrderAscCodeAsc(companyId).stream()
+        .filter(s -> {
+          if ("ALL".equalsIgnoreCase(filter)) return true;
+          if ("INACTIVE".equalsIgnoreCase(filter)) return s.getStatus() == ParkingSpaceStatus.INACTIVE;
+          return s.getStatus() == ParkingSpaceStatus.ACTIVE || s.getStatus() == ParkingSpaceStatus.MAINTENANCE;
+        })
         .map(
             s -> {
               boolean occupied = parkingSpaceAssignmentRepository.existsByParkingSpace_IdAndReleasedAtIsNull(s.getId());

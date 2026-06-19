@@ -81,7 +81,7 @@ public class RegisterExitService implements RegisterExitUseCase {
     PriceBreakdown price = parkingPricingUseCase.calculateComplexPrice(session, exitAt, request.agreementCode(), false, false);
     price = parkingPricingUseCase.applyCourtesyPricing(session, price, false);
 
-    assertExitPaymentPolicy(session, request.paymentMethod(), price);
+    assertExitPaymentPolicy(session, request.paymentMethod(), price, request.exemptPayment());
     assertExitPhotoIfRequired(session, request.exitImageUrl());
     processCustodiedItemReturn(session, request, operator);
 
@@ -177,7 +177,9 @@ public class RegisterExitService implements RegisterExitUseCase {
   // Helper methods moved from OperationService
   
   private void assertExitPaymentPolicy(
-      ParkingSession session, com.parkflow.modules.parking.operation.domain.PaymentMethod paymentMethod, PriceBreakdown price) {
+      ParkingSession session, com.parkflow.modules.parking.operation.domain.PaymentMethod paymentMethod,
+      PriceBreakdown price, Boolean exemptPayment) {
+    if (Boolean.TRUE.equals(exemptPayment)) return;
     BigDecimal due = price.total();
     boolean allowWaive = due.compareTo(BigDecimal.ZERO) == 0 || isAllowExitWithoutPayment(session);
     if (!allowWaive && paymentMethod == null) {

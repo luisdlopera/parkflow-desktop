@@ -1,7 +1,7 @@
 import { memo } from "react";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Checkbox } from "@/components/bridge/Checkbox";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
 import QuestionHelp from "../QuestionHelp";
 import {
   useOnboardingData,

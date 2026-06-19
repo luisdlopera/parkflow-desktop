@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Alert } from "@/components/ui/Alert";
-import { Tabs, Tab } from "@/components/ui/Tabs";
-import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/bridge/Alert";
+import { Tabs, Tab } from "@/components/bridge/Tabs";
+import { Button } from "@/components/bridge/Button";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { Save, RefreshCw } from "lucide-react";
-import { DEFAULT_SETTINGS, type SystemSettings, type UpdateSetting } from "@/features/admin-settings/types";
-import { GeneralSettingsTab } from "@/features/admin-settings/components/GeneralSettingsTab";
-import { SecuritySettingsTab } from "@/features/admin-settings/components/SecuritySettingsTab";
-import { LicensingSettingsTab } from "@/features/admin-settings/components/LicensingSettingsTab";
-import { NotificationsSettingsTab } from "@/features/admin-settings/components/NotificationsSettingsTab";
-import { BackupSettingsTab } from "@/features/admin-settings/components/BackupSettingsTab";
+import { DEFAULT_SETTINGS, type SystemSettings, type UpdateSetting } from "@/features/admin/types";
+import { GeneralSettingsTab } from "@/features/admin/GeneralSettingsTab";
+import { SecuritySettingsTab } from "@/features/admin/SecuritySettingsTab";
+import { LicensingSettingsTab } from "@/features/admin/LicensingSettingsTab";
+import { NotificationsSettingsTab } from "@/features/admin/NotificationsSettingsTab";
+import { BackupSettingsTab } from "@/features/admin/BackupSettingsTab";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);

@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useOverlayState } from "@heroui/react";
-import { Alert } from "@/components/ui/Alert";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
-import { Chip } from "@/components/ui/Chip";
-import { AccordionItem } from "@/components/ui/Accordion";
-import { Accordion } from "@/components/ui/Accordion";
-import { Card } from "@/components/ui/Card";
-import DateRangeInput from "@/components/ui/DateRangeInput";
-import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/bridge/Alert";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/bridge/Modal";
+import { Chip } from "@/components/bridge/Chip";
+import { AccordionItem } from "@/components/bridge/Accordion";
+import { Accordion } from "@/components/bridge/Accordion";
+import { Card } from "@/components/bridge/Card";
+import DateRangeInput from "@/components/bridge/DateRangeInput";
+import { Button } from "@/components/bridge/Button";
 import {
   Receipt,
   RefreshCw,

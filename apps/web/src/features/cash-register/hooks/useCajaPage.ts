@@ -126,29 +126,33 @@ export function useCajaPage() {
 
   useEffect(() => {
     startLocalPrintQueueWorker();
-    refreshOutbox().catch(console.error);
+    refreshOutbox().catch(() => {});
     flushCashMovementOutbox()
-      .then(() => refreshOutbox().catch(console.error))
-      .catch(console.error);
+      .then(() => refreshOutbox().catch(() => {}))
+      .catch(() => {});
   }, [refreshOutbox]);
 
   useEffect(() => {
     (async () => {
-      const [canOpenP, canCloseP, canMoveP, canVoidP, reportsP] = await Promise.all([
-        hasPermission("cierres_caja:abrir"),
-        hasPermission("cierres_caja:cerrar"),
-        hasPermission("cobros:registrar"),
-        hasPermission("anulaciones:crear"),
-        hasPermission("reportes:leer"),
-      ]);
-      setPerms({
-        canOpen: canOpenP,
-        canClose: canCloseP,
-        canMove: canMoveP,
-        canVoid: canVoidP,
-        canAudit: reportsP || canCloseP,
-      });
-    })().catch(console.error);
+      try {
+        const [canOpenP, canCloseP, canMoveP, canVoidP, reportsP] = await Promise.all([
+          hasPermission("cierres_caja:abrir"),
+          hasPermission("cierres_caja:cerrar"),
+          hasPermission("cobros:registrar"),
+          hasPermission("anulaciones:crear"),
+          hasPermission("reportes:leer"),
+        ]);
+        setPerms({
+          canOpen: canOpenP,
+          canClose: canCloseP,
+          canMove: canMoveP,
+          canVoid: canVoidP,
+          canAudit: reportsP || canCloseP,
+        });
+      } catch {
+        // Permissions default to false on error
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -162,7 +166,7 @@ export function useCajaPage() {
   }, [session?.id, perms.canAudit]);
 
   useEffect(() => {
-    if (session?.id) loadMovements().catch(console.error);
+    if (session?.id) loadMovements().catch(() => {});
   }, [session?.id, loadMovements]);
 
   // ─── Action handlers ───
@@ -218,7 +222,7 @@ export function useCajaPage() {
       );
       manualForm.setValue("manualAmount", "");
       manualForm.setValue("manualReason", "");
-      refreshOutbox().catch(console.error);
+      refreshOutbox().catch(() => {});
     } catch (e) {
       if (typeof navigator !== "undefined" && !navigator.onLine) {
         const { enqueueCashMovementOffline } = await import("@/lib/cash/cash-outbox-idb");
@@ -230,7 +234,7 @@ export function useCajaPage() {
           idempotencyKey: `offline:${session.id}:${Date.now()}`,
         });
         setError("Sin conexion: movimiento guardado en cola local para sincronizar.");
-        refreshOutbox().catch(console.error);
+        refreshOutbox().catch(() => {});
       } else {
         setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
       }

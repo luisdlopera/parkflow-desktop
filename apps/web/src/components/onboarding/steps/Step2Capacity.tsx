@@ -1,5 +1,5 @@
-import { Input } from "@/components/ui/Input";
-import { Switch } from "@/components/ui/Switch";
+import { Input } from "@/components/bridge/Input";
+import { Switch } from "@/components/bridge/Switch";
 import QuestionHelp from "../QuestionHelp";
 import { useOnboardingData, useOnboardingMetadata, VEHICLE_OPTIONS } from "../OnboardingContext";
 import { memo } from "react";

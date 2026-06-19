@@ -1,4 +1,4 @@
-import { Switch } from "@/components/ui/Switch";
+import { Switch } from "@/components/bridge/Switch";
 import { memo } from "react";
 import { useOnboardingData } from "../OnboardingContext";
 

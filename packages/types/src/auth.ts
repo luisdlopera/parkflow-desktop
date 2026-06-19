@@ -17,7 +17,8 @@ export type Permission =
   | "sync:push"
   | "sync:reconcile"
   | "devices:autorizar"
-  | "devices:revocar";
+  | "devices:revocar"
+  | "parking:salida_masiva";
 
 export type OfflineEventOrigin = "ONLINE" | "OFFLINE_PENDING_SYNC";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/bridge/Button";
 import { Search } from "lucide-react";
 
 interface EmptyStateProps {

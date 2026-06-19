@@ -1,8 +1,8 @@
 "use client";
 
 import { memo } from "react";
-import { Tooltip } from "@/components/ui/Tooltip";
-import Badge from "@/components/ui/Badge";
+import { Tooltip } from "@/components/bridge/Tooltip";
+import Badge from "@/components/bridge/Badge";
 import type { CashSummaryDto } from "@/lib/cash/cash-api";
 
 function getDifferenceCardClass(

@@ -117,9 +117,22 @@ export function validateStep(
       break;
     }
     case 3: {
-      const base = typeof data.baseValue === "number" ? data.baseValue : Number(data.baseValue);
-      if (!Number.isFinite(base) || base <= 0) {
-        errors.baseValue = "La tarifa base debe ser mayor a 0.";
+      const model = data.billingModel as string;
+      if (!model) {
+        errors.billingModel = "Selecciona un modelo de cobro.";
+      } else {
+        if (model === "HOURLY" || model === "MIXED") {
+          const base = typeof data.baseValue === "number" ? data.baseValue : Number(data.baseValue);
+          if (!Number.isFinite(base) || base <= 0) {
+            errors.baseValue = "La tarifa por hora debe ser mayor a 0.";
+          }
+        }
+        if (model === "FLAT" || model === "FULL_DAY") {
+          const flatRate = typeof data.flatRate === "number" ? data.flatRate : Number(data.flatRate);
+          if (!Number.isFinite(flatRate) || flatRate <= 0) {
+            errors.flatRate = "La tarifa única/día completo debe ser mayor a 0.";
+          }
+        }
       }
       break;
     }

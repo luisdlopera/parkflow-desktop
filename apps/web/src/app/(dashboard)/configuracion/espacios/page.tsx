@@ -2,8 +2,9 @@
 
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Tabs, Tab } from "@/components/bridge/Tabs";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
 import DataTable from "@/components/ui/DataTable";
 import { useDialog } from "@/components/ui/DialogProvider";
 import {
@@ -19,6 +20,7 @@ export default function EspaciosPage() {
   const [summary, setSummary] = useState<ParkingSpaceSummary | null>(null);
   const [spaces, setSpaces] = useState<ParkingSpace[]>([]);
   const [capacity, setCapacity] = useState("0");
+  const [filter, setFilter] = useState("ACTIVE");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { confirm } = useDialog();
@@ -29,7 +31,7 @@ export default function EspaciosPage() {
     try {
       const [sumPayload, spacesPayload] = await Promise.all([
         fetchParkingSpacesSummary(),
-        fetchParkingSpaces(),
+        fetchParkingSpaces(filter),
       ]);
       setSummary(sumPayload);
       setSpaces(spacesPayload);
@@ -39,10 +41,10 @@ export default function EspaciosPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filter]);
 
   useEffect(() => {
-    load().catch(console.error);
+    load().catch(() => {});
   }, [load]);
 
   const canReduce = useMemo(() => {
@@ -98,7 +100,7 @@ export default function EspaciosPage() {
           <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80 font-medium">Configuración</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Espacios del parqueadero</h1>
         </div>
-        <Button size="sm" color="primary" variant="tertiary" onPress={() => { load().catch(console.error); }} isLoading={loading}>Actualizar</Button>
+        <Button size="sm" color="primary" variant="tertiary" onPress={() => { load().catch(() => {}); }} isLoading={loading}>Actualizar</Button>
       </div>
 
       {error ? <p className="text-sm text-rose-700 font-medium">{error}</p> : null}
@@ -122,7 +124,21 @@ export default function EspaciosPage() {
           onChange={(e) => setCapacity(e.target.value)}
           className="max-w-xs"
         />
-        <Button color="primary" onPress={() => { onResize().catch(console.error); }} isDisabled={!canReduce || loading}>Guardar capacidad</Button>
+        <Button color="primary" onPress={() => { onResize().catch(() => {}); }} isDisabled={!canReduce || loading}>Guardar capacidad</Button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <Tabs 
+          selectedKey={filter} 
+          onSelectionChange={(k) => setFilter(String(k))}
+
+
+          className="gap-6"
+        >
+          <Tab key="ACTIVE" title="Activas" />
+          <Tab key="INACTIVE" title="Inactivas" />
+          <Tab key="ALL" title="Todas" />
+        </Tabs>
       </div>
 
       <DataTable
@@ -138,9 +154,9 @@ export default function EspaciosPage() {
             priority: "high",
             render: (row) => (
               <div className="flex gap-2">
-                <Button size="sm" variant="tertiary" onPress={() => { onPatchSpace(row.id, { status: "MAINTENANCE" }).catch(console.error); }} isDisabled={row.occupied}>Mantenimiento</Button>
-                <Button size="sm" variant="tertiary" onPress={() => { onPatchSpace(row.id, { status: "ACTIVE" }).catch(console.error); }}>Activar</Button>
-                <Button size="sm" variant="tertiary" onPress={() => { onPatchSpace(row.id, { status: "INACTIVE" }).catch(console.error); }} isDisabled={row.occupied}>Desactivar</Button>
+                <Button size="sm" variant="tertiary" onPress={() => { onPatchSpace(row.id, { status: "MAINTENANCE" }).catch(() => {}); }} isDisabled={row.occupied}>Mantenimiento</Button>
+                <Button size="sm" variant="tertiary" onPress={() => { onPatchSpace(row.id, { status: "ACTIVE" }).catch(() => {}); }}>Activar</Button>
+                <Button size="sm" variant="tertiary" onPress={() => { onPatchSpace(row.id, { status: "INACTIVE" }).catch(() => {}); }} isDisabled={row.occupied}>Desactivar</Button>
               </div>
             )
           },

@@ -2,8 +2,8 @@
 import React from "react";
 import { Controller } from "react-hook-form";
 import { ListBox } from "@heroui/react";
-import { Select } from "@/components/ui/Select";
-import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/bridge/Select";
+import { Input } from "@/components/bridge/Input";
 import { FormLayoutFactory } from "@/components/forms/dynamic/FormLayoutFactory";
 
 export default function AdvancedEntryOptions({

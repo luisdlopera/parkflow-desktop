@@ -9,8 +9,8 @@ import {
   useRef,
   ReactNode,
 } from "react";
-import { useOnboardingStore } from "@/lib/stores/onboarding-store";
-import { useOnboardingStatus } from "@/features/auth/hooks/useOnboardingStatus";
+import { useOnboardingStore } from "@/lib/stores/onboarding.store";
+import { useOnboardingStatus } from "@/hooks/auth/useOnboardingStatus";
 import { saveOnboardingStep, type OnboardingStatus } from "@/lib/onboarding-api";
 import {
   REQUIRED_STEPS,

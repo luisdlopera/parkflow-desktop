@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton } from "@heroui/react";
-import { Card } from "@/components/ui/Card";
-import { CompanyForm } from "@/components/admin/CompanyForm";
+import { Card } from "@/components/bridge/Card";
+import { CompanyForm } from "@/features/admin/CompanyForm";
 import type { Company } from "@/lib/licensing/types";
 import { getCompany, updateCompany } from "@/lib/licensing/api";
 
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/bridge/Button";
 
 export default function ClientPage() {
   const router = useRouter();

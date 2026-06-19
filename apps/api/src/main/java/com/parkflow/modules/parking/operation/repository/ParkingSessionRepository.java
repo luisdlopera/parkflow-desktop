@@ -74,6 +74,23 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
   @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.syncStatus = 'PENDING' AND s.companyId = :cid")
   long countSyncPending(@Param("cid") UUID companyId);
 
+  @Query("""
+      SELECT s FROM ParkingSession s
+      JOIN FETCH s.vehicle v LEFT JOIN FETCH s.rate r
+      WHERE s.status = 'ACTIVE' AND s.companyId = :cid
+      AND (:vehicleType IS NULL OR v.type = :vehicleType)
+      AND (:site IS NULL OR s.site = :site)
+      AND (:entryFrom IS NULL OR s.entryAt >= :entryFrom)
+      AND (:entryTo IS NULL OR s.entryAt <= :entryTo)
+      ORDER BY s.entryAt ASC
+      """)
+  List<ParkingSession> findAllActiveByFilters(
+      @Param("cid") UUID companyId,
+      @Param("vehicleType") String vehicleType,
+      @Param("site") String site,
+      @Param("entryFrom") OffsetDateTime entryFrom,
+      @Param("entryTo") OffsetDateTime entryTo);
+
   // -- Default methods (use TenantContext) --
 
   default long countActive() {
@@ -98,6 +115,11 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
 
   default List<ParkingSession> findActiveWithAssociations(SessionStatus status) {
     return findActiveWithAssociations(status, TenantContext.getTenantId());
+  }
+
+  default List<ParkingSession> findAllActiveByFilters(
+      String vehicleType, String site, OffsetDateTime entryFrom, OffsetDateTime entryTo) {
+    return findAllActiveByFilters(TenantContext.getTenantId(), vehicleType, site, entryFrom, entryTo);
   }
 
   default Optional<ParkingSession> findByStatusAndVehicle_Plate(SessionStatus status, String plate) {

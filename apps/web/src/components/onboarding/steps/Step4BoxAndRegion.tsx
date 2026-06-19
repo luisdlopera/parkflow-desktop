@@ -1,6 +1,6 @@
-import { Input } from "@/components/ui/Input";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Switch } from "@/components/ui/Switch";
+import { Input } from "@/components/bridge/Input";
+import { Checkbox } from "@/components/bridge/Checkbox";
+import { Switch } from "@/components/bridge/Switch";
 import { Globe } from "lucide-react";
 import { memo } from "react";
 import { useOnboardingData, COUNTRY_OPTIONS } from "../OnboardingContext";

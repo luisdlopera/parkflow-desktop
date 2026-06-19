@@ -9,7 +9,7 @@ import {
   type CashSessionDto,
   type CashPolicyDto,
 } from "@/lib/cash/cash-api";
-import { useCashRegisterStore } from "@/lib/stores/cash-register-store";
+import { useCashRegisterStore } from "@/lib/stores/cash-register.store";
 
 export function useCajaSession(site: string, terminal: string) {
   const setStoreSession = useCashRegisterStore((s) => s.setSession);

@@ -1,10 +1,10 @@
 "use client";
-import { DropdownSection } from "@/components/ui/Dropdown";
-import { DropdownTrigger } from "@/components/ui/Dropdown";
-import { Dropdown } from "@/components/ui/Dropdown";
-import { Avatar } from "@/components/ui/Avatar";
-import { DropdownMenu } from "@/components/ui/Dropdown";
-import { DropdownItem } from "@/components/ui/Dropdown";
+import { DropdownSection } from "@/components/bridge/Dropdown";
+import { DropdownTrigger } from "@/components/bridge/Dropdown";
+import { Dropdown } from "@/components/bridge/Dropdown";
+import { Avatar } from "@/components/bridge/Avatar";
+import { DropdownMenu } from "@/components/bridge/Dropdown";
+import { DropdownItem } from "@/components/bridge/Dropdown";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { clearSession, currentUser, canAccessSuperAdminPortal, logoutAllSessions } from "@/lib/auth";

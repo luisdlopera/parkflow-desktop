@@ -1,10 +1,10 @@
 "use client";
 import { ListBox } from "@heroui/react";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Input } from "@/components/ui/Input";
-import { TextArea } from "@/components/ui/TextArea";
+import { Select } from "@/components/bridge/Select";
+import { Button } from "@/components/bridge/Button";
+import { Checkbox } from "@/components/bridge/Checkbox";
+import { Input } from "@/components/bridge/Input";
+import { TextArea } from "@/components/bridge/TextArea";
 import { useState, useEffect, useCallback } from "react";
 import {
   fetchParameters,
@@ -56,7 +56,7 @@ export default function ParametersSection({
     }
   }, [paramSite]);
 
-  useEffect(() => { load().catch(console.error); }, [load]);
+  useEffect(() => { load().catch(() => {}); }, [load]);
 
   if (loading && !data) return <p className="text-sm text-slate-500">Cargando parametros...</p>;
   if (error && !data) return <p className="text-sm text-rose-700">{error}</p>;
@@ -82,7 +82,7 @@ export default function ParametersSection({
             onChange={(e) => setParamSite(e.target.value)}
             placeholder="DEFAULT"
           />
-          <Button variant="outline" color="primary" size="md" className="font-semibold" onPress={() => { load().catch(console.error); }} isLoading={loading}>
+          <Button variant="outline" color="primary" size="md" className="font-semibold" onPress={() => { load().catch(() => {}); }} isLoading={loading}>
             Cargar sede
           </Button>
         </div>

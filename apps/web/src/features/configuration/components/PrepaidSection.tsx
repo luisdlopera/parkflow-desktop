@@ -1,6 +1,6 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/bridge/Button";
 import DataTable from "@/components/ui/DataTable";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import type { PrepaidPackageRow } from "@/lib/settings-api";
@@ -30,13 +30,13 @@ export default function PrepaidSection({
     }
   }, [onNotify]);
 
-  useEffect(() => { load().catch(console.error); }, [load]);
+  useEffect(() => { load().catch(() => {}); }, [load]);
 
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex justify-between items-center">
         <h2 className="text-lg font-semibold text-slate-900">Paquetes Prepagados</h2>
-        <Button color="primary" variant="outline" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Actualizar</Button>
+        <Button color="primary" variant="outline" size="md" onPress={() => { load().catch(() => {}); }} isLoading={loading}>Actualizar</Button>
       </div>
       <DataTable
         columns={[

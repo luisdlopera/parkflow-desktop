@@ -1,6 +1,6 @@
 "use client";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/bridge/Card";
+import { Button } from "@/components/bridge/Button";
 import React from "react";
 import { AlertCircle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";

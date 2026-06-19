@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import DashboardPage from "@/app/(dashboard)/page";
+import DashboardPageClient from "@/app/(dashboard)/DashboardPageClient";
 
 vi.mock("@/lib/api", () => ({
   buildApiHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token", "X-API-Key": "test-key" }),
@@ -54,7 +54,7 @@ function buildActiveSessions(overrides: any[] = []) {
   ];
 }
 
-describe("DashboardPage", () => {
+describe("DashboardPageClient", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
       if (url.toString().includes("print-agent")) {
@@ -74,7 +74,7 @@ describe("DashboardPage", () => {
   });
 
   it("renders the dashboard root element", async () => {
-    render(<DashboardPage />);
+    render(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByTestId("dashboard-root")).toBeDefined();
@@ -82,7 +82,7 @@ describe("DashboardPage", () => {
   });
 
   it("renders KPI cards when summary data loads successfully", async () => {
-    render(<DashboardPage />);
+    render(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("15")).toBeDefined();
@@ -93,7 +93,7 @@ describe("DashboardPage", () => {
   });
 
   it("shows sync pending and print failure info", async () => {
-    render(<DashboardPage />);
+    render(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText(/Sync pendiente: 3/)).toBeDefined();
@@ -102,7 +102,7 @@ describe("DashboardPage", () => {
   });
 
   it("shows KPI cards with correct format", async () => {
-    render(<DashboardPage />);
+    render(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("15%")).toBeDefined();
@@ -112,7 +112,7 @@ describe("DashboardPage", () => {
   });
 
   it("shows sync pending info in the header", async () => {
-    render(<DashboardPage />);
+    render(<DashboardPageClient />);
 
     await waitFor(() => {
       const info = screen.getByText(/Sync pendiente/);
@@ -138,7 +138,7 @@ describe("DashboardPage", () => {
       return { ok: true, json: async () => ({}) };
     }));
 
-    render(<DashboardPage />);
+    render(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("API no disponible (resumen)")).toBeDefined();
@@ -148,7 +148,7 @@ describe("DashboardPage", () => {
   it("shows API unavailable message when fetch throws", async () => {
     vi.stubGlobal("fetch", vi.fn(() => { throw new Error("Network error"); }));
 
-    render(<DashboardPage />);
+    render(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("API no disponible (resumen)")).toBeDefined();
@@ -178,7 +178,7 @@ describe("DashboardPage", () => {
       return { ok: true, json: async () => ({}) };
     }));
 
-    render(<DashboardPage />);
+    render(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("OK")).toBeDefined();
@@ -188,7 +188,7 @@ describe("DashboardPage", () => {
   });
 
   it("renders active vehicles table with session data", async () => {
-    render(<DashboardPage />);
+    render(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("Vehículos en Patio")).toBeDefined();
@@ -212,7 +212,7 @@ describe("DashboardPage", () => {
       return { ok: true, json: async () => ({}) };
     }));
 
-    render(<DashboardPage />);
+    render(<DashboardPageClient />);
 
     await waitFor(() => {
       const msgs = screen.getAllByText("No hay vehículos activos en este momento.");
@@ -237,7 +237,7 @@ describe("DashboardPage", () => {
       return { ok: true, json: async () => ({}) };
     }));
 
-    render(<DashboardPage />);
+    render(<DashboardPageClient />);
 
     await waitFor(() => {
       expect(screen.getByText("API no disponible (sesiones activas)")).toBeDefined();

@@ -1,6 +1,6 @@
 import useSWR from "swr";
 import { fetchActiveSessions, fetchParkingSummary, GetActiveSessionsQuery } from "@/lib/api/sessions-api";
-import { useDebounce } from "@/shared/hooks/infrastructure/useDebounce";
+import { useDebounce } from "@/hooks/core/useDebounce";
 
 async function fetchSessionsData([key, params]: [string, GetActiveSessionsQuery]) {
   const [sessionsRes, summary] = await Promise.all([

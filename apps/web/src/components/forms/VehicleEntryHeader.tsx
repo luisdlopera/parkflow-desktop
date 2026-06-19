@@ -1,9 +1,9 @@
 "use client";
 import React from "react";
 import { ListBox } from "@heroui/react";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
+import { Select } from "@/components/bridge/Select";
+import { Button } from "@/components/bridge/Button";
+import { Checkbox } from "@/components/bridge/Checkbox";
 import type { OperatorMode } from "@/features/vehicle-entry/hooks/useOperatorSettings";
 
 export default function VehicleEntryHeader({

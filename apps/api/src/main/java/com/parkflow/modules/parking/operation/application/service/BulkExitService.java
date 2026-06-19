@@ -57,7 +57,8 @@ public class BulkExitService implements BulkExitCalculateUseCase, BulkExitProces
                         null,
                         null,
                         null,
-                        request.cashSessionId()
+                        request.cashSessionId(),
+                        null
                 );
 
                 OperationResultResponse result = registerExitUseCase.precalculate(singleRequest);
@@ -125,7 +126,8 @@ public class BulkExitService implements BulkExitCalculateUseCase, BulkExitProces
                         null,
                         null,
                         null,
-                        request.cashSessionId()
+                        request.cashSessionId(),
+                        null
                 );
 
                 OperationResultResponse result = registerExitUseCase.execute(singleRequest);

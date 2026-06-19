@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import UsersPage from "../users/page";
+import dynamic from "next/dynamic";
+import { AdminUsersPageClient as UsersPage } from "@/app/(admin)/admin/users/UsersPageClient";
 import { DialogProvider } from "@/components/ui/DialogProvider";
 
 vi.mock("@/lib/auth", () => ({
@@ -16,11 +17,12 @@ describe("UsersPage", () => {
   it("shows stats cards", () => {
     render(<DialogProvider><UsersPage /></DialogProvider>);
     expect(screen.getByText("Total")).toBeDefined();
-    expect(screen.getByText("4")).toBeDefined();
+    expect(screen.getByText("Activos")).toBeDefined();
+    expect(screen.getAllByText("0").length).toBe(2);
   });
 
-  it("renders the mock users list", () => {
+  it("renders the empty users list", () => {
     render(<DialogProvider><UsersPage /></DialogProvider>);
-    expect(screen.getByText("admin@parkflow.local")).toBeDefined();
+    expect(screen.getByText("No se encontraron registros")).toBeDefined();
   });
 });

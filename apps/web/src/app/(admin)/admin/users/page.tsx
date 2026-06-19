@@ -1,177 +1,29 @@
-"use client";
+import dynamic from "next/dynamic";
+import { Card } from "@/components/bridge/Card";
 
-import React, { useState } from "react";
-import { Chip } from "@/components/ui/Chip";
-import { Avatar } from "@/components/ui/Avatar";
-import { Switch } from "@/components/ui/Switch";
-import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
-import { Alert } from "@/components/ui/Alert";
-import { Card } from "@/components/ui/Card";
-import { Users, Check, Shield } from "lucide-react";
-import { EntityManagementPage } from "@/shared/components/crud/EntityManagementPage";
-import type { DataTableColumn } from "@/components/ui/DataTable";
-
-interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  role: "SUPER_ADMIN" | "ADMIN" | "SUPPORT" | "AUDITOR";
-  active: boolean;
-  lastAccessAt?: string;
-  createdAt: string;
-  permissions: string[];
-}
-
-const ROLES = [
-  { value: "SUPER_ADMIN", label: "Super Admin", color: "danger" as const },
-  { value: "ADMIN", label: "Administrador", color: "primary" as const },
-  { value: "SUPPORT", label: "Soporte", color: "warning" as const },
-  { value: "AUDITOR", label: "Auditor", color: "default" as const },
-];
-
-const AVAILABLE_PERMISSIONS = [
-  { value: "companies:read", label: "Ver empresas" },
-  { value: "companies:write", label: "Editar empresas" },
-  { value: "licenses:read", label: "Ver licencias" },
-  { value: "licenses:write", label: "Gestionar licencias" },
-];
-
-const MOCK_USERS: AdminUser[] = [
+const UsersPageClient = dynamic(
+  () => import("./UsersPageClient").then((mod) => mod.AdminUsersPageClient),
   {
-    id: "1",
-    name: "Super Administrador",
-    email: "admin@parkflow.local",
-    role: "SUPER_ADMIN",
-    active: true,
-    lastAccessAt: new Date().toISOString(),
-    createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
-    permissions: AVAILABLE_PERMISSIONS.map((p) => p.value),
-  },
-];
-
-function UserForm({ initialData, onSave }: { initialData?: AdminUser | null, onSave: (data: Partial<AdminUser>) => void }) {
-  const [formName, setFormName] = useState(initialData?.name || "");
-  const [formEmail, setFormEmail] = useState(initialData?.email || "");
-  const [formRole, setFormRole] = useState<AdminUser["role"]>(initialData?.role || "ADMIN");
-  const [formActive, setFormActive] = useState(initialData?.active ?? true);
-  const [formPermissions, setFormPermissions] = useState<string[]>(initialData?.permissions || []);
-
-  const togglePermission = (permission: string) => {
-    setFormPermissions((prev) =>
-      prev.includes(permission) ? prev.filter((p) => p !== permission) : [...prev, permission]
-    );
-  };
-
-  // Expose save function to parent or let parent handle the actual submit button?
-  // The EntityManagementPage wraps the form but provides the Footer.
-  // We need to auto-save or render our own save button inside FormComponent, OR the FormComponent itself manages its state and calls onSave when submitted.
-  // Wait, EntityManagementPage right now doesn't pass a submit button from footer to form. Let's fix EntityManagementPage to accept a render prop or let the form have the submit button.
-  // To be safe, I'll put a save button inside the form.
-
-  return (
-    <form className="space-y-4" onSubmit={(e) => {
-      e.preventDefault();
-      onSave({
-        name: formName,
-        email: formEmail,
-        role: formRole,
-        active: formActive,
-        permissions: formPermissions
-      });
-    }}>
-      <div className="grid grid-cols-2 gap-4">
-        <Input label="Nombre" value={formName} onChange={(e) => setFormName(e.target.value)} required />
-        <Input label="Email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} type="email" required />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        {/* Simplified Select for code reduction */}
-        <select value={formRole} onChange={(e) => setFormRole(e.target.value as any)} className="w-full p-2 border rounded">
-          {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-        </select>
-        <div className="flex items-center gap-2 pt-2">
-          <Switch isSelected={formActive} onChange={setFormActive} />
-          <span>Activo</span>
+    ssr: false,
+    loading: () => (
+      <div className="space-y-6 animate-pulse">
+        <div className="flex justify-between items-center">
+          <div>
+            <div className="h-8 bg-default-200 rounded w-48 mb-2"></div>
+            <div className="h-4 bg-default-200 rounded w-64"></div>
+          </div>
+          <div className="h-10 bg-default-200 rounded w-32"></div>
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-4 h-24 bg-default-100">{null}</Card>
+          <Card className="p-4 h-24 bg-default-100">{null}</Card>
+        </div>
+        <div className="h-64 bg-default-100 rounded-xl"></div>
       </div>
-      <div className="mt-4 flex justify-end">
-         <button type="submit" className="bg-primary text-white px-4 py-2 rounded-lg">Guardar</button>
-      </div>
-    </form>
-  );
-}
+    ),
+  }
+);
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS);
-
-  const handleSave = async (data: Partial<AdminUser>, id?: string) => {
-    if (id) {
-      setUsers(prev => prev.map(u => u.id === id ? { ...u, ...data } as AdminUser : u));
-    } else {
-      setUsers(prev => [...prev, { ...data, id: String(Date.now()), createdAt: new Date().toISOString() } as AdminUser]);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    setUsers(prev => prev.filter(u => u.id !== id));
-  };
-
-  const columns: DataTableColumn<AdminUser>[] = [
-    {
-      key: "name",
-      header: "Usuario",
-      render: (user) => (
-        <div className="flex items-center gap-3">
-          <Avatar name={user.name.charAt(0)} className="bg-primary text-white" />
-          <div>
-            <p className="font-medium">{user.name}</p>
-            <p className="text-sm text-default-500">{user.email}</p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "role",
-      header: "Rol",
-      render: (user) => (
-        <Chip variant="soft" size="sm">
-          {ROLES.find(r => r.value === user.role)?.label || user.role}
-        </Chip>
-      ),
-    },
-    {
-      key: "active",
-      header: "Estado",
-      render: (user) => (
-        <Switch isSelected={user.active} size="sm" color="success" />
-      ),
-    }
-  ];
-
-  const renderStats = () => (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-      <Card><Card.Content className="flex items-center gap-3"><Users className="w-5 h-5 text-primary" /><div><p>Total</p><p className="font-bold">{users.length}</p></div></Card.Content></Card>
-      <Card><Card.Content className="flex items-center gap-3"><Check className="w-5 h-5 text-success" /><div><p>Activos</p><p className="font-bold">{users.filter(u => u.active).length}</p></div></Card.Content></Card>
-    </div>
-  );
-
-  return (
-    <>
-      <Alert color="warning" title="Disponible próximamente" className="mb-4">
-        La gestión de usuarios administrativos se encuentra en desarrollo y utiliza datos de prueba.
-      </Alert>
-      <EntityManagementPage
-        title="Usuarios Administrativos"
-        description="Gestione los usuarios con acceso al panel de super administración"
-        icon={Users}
-        data={users}
-        columns={columns}
-        getRowKey={(u) => u.id}
-        FormComponent={UserForm}
-        onSave={handleSave}
-        onDelete={handleDelete}
-        renderStats={renderStats}
-      />
-    </>
-  );
+  return <UsersPageClient />;
 }

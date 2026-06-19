@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
-import { Card } from "@/components/ui/Card";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Select } from "@/components/ui/Select";
+import { Card } from "@/components/bridge/Card";
+import { Checkbox } from "@/components/bridge/Checkbox";
+import { Select } from "@/components/bridge/Select";
 import { ListBox } from "@heroui/react";
 import { VehicleTypeIcon } from "@/components/vehicles/VehicleTypeIcon";
 

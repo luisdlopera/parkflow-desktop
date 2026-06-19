@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
 import DataTable from "@/components/ui/DataTable";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import type { AgreementRow } from "@/lib/settings-api";
@@ -35,13 +35,13 @@ export default function AgreementsSection({
     }
   }, [q, page, onNotify]);
 
-  useEffect(() => { load().catch(console.error); }, [load]);
+  useEffect(() => { load().catch(() => {}); }, [load]);
 
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex gap-3 items-end">
         <Input label="Buscar"  size="sm" value={q} onChange={(e) => setQ(e.target.value)} className="w-64" placeholder="Empresa o código..." />
-        <Button color="primary" variant="outline" size="md" onPress={() => { load().catch(console.error); }} isLoading={loading}>Buscar</Button>
+        <Button color="primary" variant="outline" size="md" onPress={() => { load().catch(() => {}); }} isLoading={loading}>Buscar</Button>
       </div>
       <DataTable
         columns={[

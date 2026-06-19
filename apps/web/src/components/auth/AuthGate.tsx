@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { currentUser, loadSession, logoutAndRedirectToLogin } from "@/lib/auth";
-import { useSessionMonitor } from "@/features/auth/hooks/useSessionMonitor";
+import { useSessionMonitor } from "@/hooks/auth/useSessionMonitor";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();

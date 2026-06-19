@@ -18,7 +18,7 @@ import { toUserMessageFromClientValidation } from "@/lib/validation/request-guar
 import { currentUser } from "@/lib/auth";
 import type { VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
 import type { VehicleType } from "@parkflow/types";
-import { createParkingEntry } from "../services/vehicle-entry.service";
+import { createParkingEntry } from "@/features/vehicle-entry/services/vehicle-entry.service";
 import type { OperatorSettings } from "./useOperatorSettings";
 
 interface UseVehicleEntryOptions {
@@ -239,19 +239,22 @@ export function useVehicleEntry({
           ? "SIN PLACA"
           : payload?.receipt?.plate;
 
-        onSuccess({
+        const successPayload = {
           ticketNumber: payload.receipt.ticketNumber,
           plate: plateLabel,
           previewLines,
           printWarning,
           spaceCode: payload?.receipt?.parkingSpaceCode,
-        });
+        };
+        console.log("CALLING_ON_SUCCESS", successPayload);
+        onSuccess(successPayload);
 
         onIncrementStats();
         onReloadOccupancy();
         idempotencyKeyRef.current = newIdempotencyKey();
         form.reset(buildFormResetValues(values, settings, isMotorcycleOnly));
       } catch (err) {
+        console.error("USE_VEHICLE_ENTRY_ERROR", err);
         const validationMessage = toUserMessageFromClientValidation(err);
         if (validationMessage) {
           onError(validationMessage);
