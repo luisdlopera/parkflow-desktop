@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import { useOverlayState } from "@heroui/react";
-import { Alert } from "@/components/ui/Alert";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
-import { Chip } from "@/components/ui/Chip";
-import { Progress } from "@/components/ui/Progress";
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import { Tabs, Tab } from "@/components/ui/Tabs";
-import { Button } from "@/components/ui/Button";
-import { TextArea } from "@/components/ui/TextArea";
+import { Alert } from "@/components/bridge/Alert";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/bridge/Modal";
+import { Chip } from "@/components/bridge/Chip";
+import { Progress } from "@/components/bridge/Progress";
+import { Badge } from "@/components/bridge/Badge";
+import { Card } from "@/components/bridge/Card";
+import { Tabs, Tab } from "@/components/bridge/Tabs";
+import { Button } from "@/components/bridge/Button";
+import { TextArea } from "@/components/bridge/TextArea";
 import { BarChart3, RefreshCw, AlertTriangle, Building2, Monitor, Check, Flag, Activity } from "lucide-react";
 import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 import { useMonitoring, type PriorityCase, type BlockEvent } from "@/features/admin/monitoring/hooks/useMonitoring";

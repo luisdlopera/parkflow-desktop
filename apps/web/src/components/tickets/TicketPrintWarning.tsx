@@ -1,6 +1,6 @@
 "use client";
 import { Modal } from "@heroui/react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/bridge/Button";
 
 type Props = {
   ticketNumber: string;

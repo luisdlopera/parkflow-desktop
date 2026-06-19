@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Chip } from "@/components/ui/Chip";
-import { Progress } from "@/components/ui/Progress";
-import { Button } from "@/components/ui/Button";
+import { Chip } from "@/components/bridge/Chip";
+import { Progress } from "@/components/bridge/Progress";
+import { Button } from "@/components/bridge/Button";
 import DataTable from "@/components/ui/DataTable";
 import dynamic from "next/dynamic";
-import DateRangeInput from "@/components/ui/DateRangeInput";
+import DateRangeInput from "@/components/bridge/DateRangeInput";
 import { hasPermission } from "@/lib/auth";
 import { BarChart3, Lock, Car, Receipt, Ban, DollarSign, TrendingUp, User, CreditCard } from "lucide-react";
 import { useReports, fmt, fmtPct, dateLabel, shortDate, pmLabel, getOccupancyColor } from "@/features/reports/hooks/useReports";
@@ -47,7 +47,7 @@ export default function ReportesClient() {
     hasPermission("reportes:leer").then(setCanView).catch(() => setCanView(false));
   }, []);
 
-  const openReport = (r: ReportView) => { setView(r); loadReport(r).catch(console.error); };
+  const openReport = (r: ReportView) => { setView(r); loadReport(r).catch(() => {}); };
   const backToGrid = () => { setView(null); setError(null); };
 
   const PAGE_SIZE = 50;
@@ -95,7 +95,7 @@ export default function ReportesClient() {
         {view && (
           <div className="flex items-center gap-2">
             <Button size="sm" variant="tertiary" color="default" onPress={backToGrid}>← Volver</Button>
-            <Button size="sm" variant="tertiary" color="primary" isDisabled={loading} isLoading={loading} onPress={() => loadReport(view).catch(console.error)}>Actualizar</Button>
+            <Button size="sm" variant="tertiary" color="primary" isDisabled={loading} isLoading={loading} onPress={() => loadReport(view).catch(() => {})}>Actualizar</Button>
             <Button size="sm" variant="outline" color="primary" onPress={() => handleExport(view)}>
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

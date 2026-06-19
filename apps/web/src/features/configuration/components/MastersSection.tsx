@@ -1,12 +1,12 @@
 "use client";
 import { ListBox } from "@heroui/react";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
-import { Switch } from "@/components/ui/Switch";
-import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/bridge/Select";
+import { Button } from "@/components/bridge/Button";
+import { Switch } from "@/components/bridge/Switch";
+import { Input } from "@/components/bridge/Input";
 import { useDialog } from "@/components/ui/DialogProvider";
 import DataTable from "@/components/ui/DataTable";
-import { Dropdown, DropdownMenu, DropdownItem } from "@/components/ui/Dropdown";
+import { Dropdown, DropdownMenu, DropdownItem } from "@/components/bridge/Dropdown";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { VehicleTypeIcon } from "@/components/vehicles/VehicleTypeIcon";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -94,7 +94,7 @@ export default function MastersSection({
     }
   }, [onNotify]);
 
-  useEffect(() => { load().catch(console.error); }, [load]);
+  useEffect(() => { load().catch(() => {}); }, [load]);
 
   const toggleActive = useCallback(async (id: string, current: boolean) => {
     try {

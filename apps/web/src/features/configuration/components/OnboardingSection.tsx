@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/bridge/Card";
+import { Button } from "@/components/bridge/Button";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { resetOnboarding } from "@/lib/onboarding-api";
 import { currentUser, loadSession, saveSession, refreshIfNeeded } from "@/lib/auth";

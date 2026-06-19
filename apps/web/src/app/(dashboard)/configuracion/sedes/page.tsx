@@ -4,11 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ListBox } from "@heroui/react";
-import { Card } from "@/components/ui/Card";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Input } from "@/components/ui/Input";
+import { Card } from "@/components/bridge/Card";
+import { Select } from "@/components/bridge/Select";
+import { Button } from "@/components/bridge/Button";
+import { Checkbox } from "@/components/bridge/Checkbox";
+import { Input } from "@/components/bridge/Input";
 import {
   fetchConfigurationSites,
   createConfigurationSite,
@@ -21,9 +21,9 @@ import type { ParkingSiteRow } from "@/modules/settings/types";
 import type { Company } from "@/lib/licensing/types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
-import { FormDrawer } from "@/components/settings/FormDrawer";
+import { FormDrawer } from "@/components/ui/FormDrawer";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
-import { useConfigCrud } from "@/features/configuration/hooks/useConfigCrud";
+import { useConfigCrud } from "@/hooks/core/useConfigCrud";
 
 const SITE_COLUMNS: ColumnDef<ParkingSiteRow>[] = [
   { key: "code", label: "Código" },

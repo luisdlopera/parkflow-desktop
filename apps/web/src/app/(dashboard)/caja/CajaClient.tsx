@@ -3,23 +3,23 @@
 import { useMemo } from "react";
 import { Controller } from "react-hook-form";
 import { ListBox, SearchField, useFilter, Tabs, type Key } from "@heroui/react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
-import { Autocomplete } from "@/components/ui/Autocomplete";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { TextArea } from "@/components/ui/TextArea";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/bridge/Modal";
+import { Autocomplete } from "@/components/bridge/Autocomplete";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
+import { TextArea } from "@/components/bridge/TextArea";
 import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 import { CashSummaryTotals } from "./CashSummaryTotals";
 import { CashAuditLog } from "./CashAuditLog";
-import Badge from "@/components/ui/Badge";
+import Badge from "@/components/bridge/Badge";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { useCajaPage } from "@/features/cash-register/hooks/useCajaPage";
-import StepProgress from "@/components/caja/StepProgress";
-import SessionStatusCard from "@/components/caja/SessionStatusCard";
-import ManualMovementForm from "@/components/caja/ManualMovementForm";
-import MovementsPanel from "@/components/caja/MovementsPanel";
-import ArqueoForm from "@/components/caja/ArqueoForm";
-import CloseSessionPanel from "@/components/caja/CloseSessionPanel";
+import StepProgress from "@/features/cash-register/components/StepProgress";
+import SessionStatusCard from "@/features/cash-register/components/SessionStatusCard";
+import ManualMovementForm from "@/features/cash-register/components/ManualMovementForm";
+import MovementsPanel from "@/features/cash-register/components/MovementsPanel";
+import ArqueoForm from "@/features/cash-register/components/ArqueoForm";
+import CloseSessionPanel from "@/features/cash-register/components/CloseSessionPanel";
 import type { CashMovementDto } from "@/lib/cash/cash-api";
 
 function getStepColor(done: boolean, isCountPending: boolean, index: number): string {
@@ -176,7 +176,7 @@ export default function CajaClient() {
           />
         </div>
         <Button variant="outline" color="primary" className="font-semibold h-[48px]"
-          onPress={() => { p.reload().catch(console.error); }} isLoading={p.busy}>
+          onPress={() => { p.reload().catch(() => {}); }} isLoading={p.busy}>
           Actualizar
         </Button>
       </div>
@@ -218,7 +218,7 @@ export default function CajaClient() {
               <Button className="w-full font-bold" color="primary" size="lg"
                 isDisabled={p.busy || !!p.session || !p.perms.canOpen}
                 isLoading={p.busy}
-                onPress={() => { p.onOpen().catch(console.error); }}>
+                onPress={() => { p.onOpen().catch(() => {}); }}>
                 Abrir caja
               </Button>
             </div>
@@ -342,7 +342,7 @@ export default function CajaClient() {
           <div className="mt-6 w-full sm:max-w-md">
             <Button className="w-full font-bold" color="primary"
               isDisabled={p.busy} isLoading={p.busy}
-              onPress={() => { p.onPrintClosing().catch(console.error); }}>
+              onPress={() => { p.onPrintClosing().catch(() => {}); }}>
               Imprimir cierre
             </Button>
           </div>
@@ -361,7 +361,7 @@ export default function CajaClient() {
           </Modal.Body>
           <Modal.Footer>
             <Button variant="ghost" onPress={() => p.setShowShiftChangeModal(false)}>Cancelar</Button>
-            <Button color="primary" isLoading={p.busy} onPress={() => { p.onShiftChange().catch(console.error); }}>
+            <Button color="primary" isLoading={p.busy} onPress={() => { p.onShiftChange().catch(() => {}); }}>
               Confirmar Cambio
             </Button>
           </Modal.Footer>
@@ -382,7 +382,7 @@ export default function CajaClient() {
           </Modal.Body>
           <Modal.Footer>
             <Button variant="ghost" color="primary" onPress={() => p.setVoidTarget(null)}>Cancelar</Button>
-            <Button color="danger" isLoading={p.busy} onPress={() => { p.onVoid().catch(console.error); }}>
+            <Button color="danger" isLoading={p.busy} onPress={() => { p.onVoid().catch(() => {}); }}>
               Confirmar anulacion
             </Button>
           </Modal.Footer>

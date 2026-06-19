@@ -1,7 +1,7 @@
 import { authHeaders } from "@/lib/auth";
 import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import { authBase } from "@/lib/api/config";
-import type { UserRole } from "@/modules/users/types";
+import type { UserRole } from "@/modules/settings/types";
 
 function authBaseUrl(): string {
   if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {

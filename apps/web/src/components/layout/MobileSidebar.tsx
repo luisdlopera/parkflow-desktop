@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useParkingShortcuts } from "@/shared/hooks/ui/useKeyboardShortcuts";
+import { useParkingShortcuts } from "@/hooks/ui/useKeyboardShortcuts";
 import { useEffect, useState } from "react";
 import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
 

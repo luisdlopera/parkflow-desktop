@@ -29,7 +29,7 @@ vi.mock("@/lib/onboarding-api", () => ({
     progressData: {
       step_1: { vehicleTypes: ["CAR"], helmetHandling: "NONE" },
       step_2: { totalCapacity: 10 },
-      step_3: { baseValue: 1000 },
+      step_3: { billingModel: "HOURLY", baseValue: 1000 },
       step_4: { countryCode: "CO" },
       step_6: { paymentMethods: ["CASH"] },
     },
@@ -44,7 +44,7 @@ vi.mock("@/lib/onboarding-api", () => ({
     progressData: {
       step_1: { vehicleTypes: ["CAR"], helmetHandling: "NONE" },
       step_2: { totalCapacity: 10 },
-      step_3: { baseValue: 1000 },
+      step_3: { billingModel: "HOURLY", baseValue: 1000 },
       step_4: { countryCode: "CO" },
       step_6: { paymentMethods: ["CASH"] },
     },

@@ -1,9 +1,9 @@
 import React from "react";
 import { Controller } from "react-hook-form";
 import { ListBox } from "@heroui/react";
-import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/bridge/Input";
+import { Select } from "@/components/bridge/Select";
+import { Button } from "@/components/bridge/Button";
 import PlateInput from "@/components/forms/PlateInput";
 import VehicleTypeSelector from "@/components/forms/VehicleTypeSelector";
 import type { VehicleType } from "@parkflow/types";
@@ -50,6 +50,7 @@ export function MixedEntryFormUI({
         plateInputRef={plateInputRef}
         noPlate={noPlate}
         platePrefix={platePrefix}
+        vehicleType={selectedTypeCode}
       />
 
       {noPlate && (

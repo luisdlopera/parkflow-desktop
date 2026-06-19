@@ -1,19 +1,19 @@
 "use client";
 
 import { Modal, ListBox } from "@heroui/react";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { TextArea } from "@/components/ui/TextArea";
-import Badge from "@/components/ui/Badge";
+import { Select } from "@/components/bridge/Select";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
+import { TextArea } from "@/components/bridge/TextArea";
+import Badge from "@/components/bridge/Badge";
 import TicketReceiptPreview from "@/components/tickets/TicketReceiptPreview";
 import { ChangeCalculator } from "@/components/ui/ChangeCalculator";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { resolvePaperWidthMm } from "@/lib/tauri-print";
 import { PAYMENT_METHOD_CATALOG } from "@/lib/payment-method-catalog";
-import { useOsShortcut } from "@/shared/hooks/ui/useOsShortcut";
-import { useExitShortcuts } from "@/shared/hooks/ui/useKeyboardShortcuts";
+import { useOsShortcut } from "@/hooks/core/useOsShortcut";
+import { useExitShortcuts } from "@/hooks/ui/useKeyboardShortcuts";
 import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
 import { useVehicleExit } from "@/features/vehicle-exit/hooks/useVehicleExit";
 

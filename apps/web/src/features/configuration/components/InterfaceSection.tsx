@@ -1,10 +1,10 @@
 "use client";
 import dynamic from "next/dynamic";
-import { Card } from "@/components/ui/Card";
-import { Switch } from "@/components/ui/Switch";
+import { Card } from "@/components/bridge/Card";
+import { Switch } from "@/components/bridge/Switch";
 
 const ThemeConfigSection = dynamic(
-  () => import("@/components/config/ThemeConfigSection").then((m) => ({ default: m.ThemeConfigSection })),
+  () => import("@/features/configuration/components/ui/ThemeConfigSection").then((m) => ({ default: m.ThemeConfigSection })),
   { ssr: false, loading: () => <p className="text-sm text-slate-600">Cargando personalización...</p> }
 );
 

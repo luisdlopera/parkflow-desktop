@@ -3,19 +3,19 @@
 import { toast } from "@heroui/react";
 import { useState, useCallback } from "react";
 import { Skeleton, useOverlayState, AlertDialog, Button as HeroButton } from "@heroui/react";
-import { Chip } from "@/components/ui/Chip";
-import { DropdownItem } from "@/components/ui/Dropdown";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { Chip } from "@/components/bridge/Chip";
+import { DropdownItem } from "@/components/bridge/Dropdown";
+import { Card } from "@/components/bridge/Card";
+import { Button } from "@/components/bridge/Button";
 import { Building2, FileBadge, Pencil, Trash2, Eye } from "lucide-react";
 import { useCompanies, translatePlan, translateStatus } from "@/lib/licensing/hooks";
 import type { Company } from "@/lib/licensing/types";
-import { GenerateLicenseDialog } from "@/components/admin/GenerateLicenseDialog";
+import { GenerateLicenseDialog } from "@/features/admin/GenerateLicenseDialog";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
 import { ApiError } from "@/lib/errors/api-error";
 import type { DataTableColumn } from "@/components/ui/DataTable";
-import { EntityManagementPage } from "@/shared/components/crud/EntityManagementPage";
+import { EntityManagementPage } from "@/features/admin/EntityManagementPage";
 
 export default function CompaniesPage() {
   const { data: companies, isLoading, error, mutate } = useCompanies();
@@ -157,16 +157,17 @@ export default function CompaniesPage() {
 
   return (
     <>
-      <EntityManagementPage
-        title="Empresas"
-        description="Gestione las empresas licenciadas en el sistema"
-        data={companies || []}
-        columns={columns}
-        isLoading={isLoading}
-        getRowKey={(c) => c.id}
-        createHref="/admin/companies/new"
-        onSave={async () => {}} // Not used due to createHref
-        renderStats={renderStats}
+    <EntityManagementPage
+      title="Empresas"
+      description="Gestione las empresas licenciadas en el sistema"
+      data={companies || []}
+      columns={columns}
+      isLoading={isLoading}
+      getRowKey={(c) => c.id}
+      createHref="/admin/companies/new"
+      createLabel="Nueva Empresa"
+      onSave={async () => {}} // Not used due to createHref
+      renderStats={renderStats}
         searchable
         searchPlaceholder="Buscar por nombre, NIT o email..."
         filters={[

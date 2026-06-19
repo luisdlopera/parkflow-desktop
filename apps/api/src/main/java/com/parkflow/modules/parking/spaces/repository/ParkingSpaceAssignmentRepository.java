@@ -29,6 +29,8 @@ public interface ParkingSpaceAssignmentRepository extends JpaRepository<ParkingS
 
   boolean existsByParkingSpace_IdAndReleasedAtIsNull(UUID parkingSpaceId);
 
+  boolean existsByParkingSpace_Id(UUID parkingSpaceId);
+
   long countByCompanyIdAndReleasedAtIsNull(UUID companyId);
 
   long countByCompanyIdAndStatusAndReleasedAtIsNull(

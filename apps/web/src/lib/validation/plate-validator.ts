@@ -57,6 +57,22 @@ export const translateVehicleType = (type: string) => {
   }
 };
 
+export function getPlateFormatHint(vehicleType: string, countryCode = "CO"): string {
+  const targetCountry = countryCode.toUpperCase();
+  const targetType = vehicleType.toUpperCase();
+  const rule = plateRules.find(r => r.enabled && r.countryCode.toUpperCase() === targetCountry && r.vehicleType.toUpperCase() === targetType);
+  if (!rule) return "3 letras + 3 números";
+  const parts = rule.errorMessage.replace(/^Para\s+\S+\s+en\s+\S+\s+se\s+esperan\s+/i, "").replace(/\.$/, "");
+  return parts || "3 letras + 3 números";
+}
+
+export function getPlatePlaceholder(vehicleType: string, countryCode = "CO"): string {
+  const targetCountry = countryCode.toUpperCase();
+  const targetType = vehicleType.toUpperCase();
+  const rule = plateRules.find(r => r.enabled && r.countryCode.toUpperCase() === targetCountry && r.vehicleType.toUpperCase() === targetType);
+  return rule?.example || "ABC123";
+}
+
 export function validatePlate(countryCode: string | undefined | null, vehicleType: string, plate: string): PlateValidationResult {
   const normalized = normalizePlate(plate);
   

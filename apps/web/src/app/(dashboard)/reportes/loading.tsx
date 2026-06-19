@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/Card";
+import { Card } from "@/components/bridge/Card";
 import { Skeleton } from "@heroui/react";
 
 export default function ReportesLoading() {

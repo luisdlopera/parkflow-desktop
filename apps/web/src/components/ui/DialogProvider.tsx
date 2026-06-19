@@ -2,7 +2,7 @@
 
 import React, { ReactNode } from "react";
 import { Modal, Input, AlertDialog } from "@heroui/react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/bridge/Button";
 import { useDialogStore } from "./dialog-store";
 
 export function useDialog() {

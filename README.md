@@ -1,4 +1,4 @@
-# <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/parking-circle.svg" width="32" height="32" align="center" /> Parkflow Monorepo
+# Parkflow Monorepo
 
 <div align="center">
   <p>A comprehensive, desktop-first parking management platform built for scalability, offline resilience, and enterprise needs.</p>
@@ -7,14 +7,14 @@
   [![Node.js Version](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)](#)
   [![Java Version](https://img.shields.io/badge/Java-21-007396?logo=java&logoColor=white)](#)
   [![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131?logo=tauri&logoColor=white)](#)
-  [![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=next.js&logoColor=white)](#)
+  [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](#)
   [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.0-6DB33F?logo=spring-boot&logoColor=white)](#)
   [![Code Quality](https://img.shields.io/badge/Code_Quality-SonarQube-4E9BCD?logo=sonarqube&logoColor=white)](#)
 </div>
 
 ---
 
-## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/list.svg" width="24" height="24" /> Table of Contents
+## Table of Contents
 
 - [Architecture](#architecture)
 - [Key Features](#key-features)
@@ -27,7 +27,7 @@
 
 ---
 
-## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/blocks.svg" width="24" height="24" /> Architecture
+## Architecture
 
 ParkFlow implements a true **Local-First Architecture**, ensuring 100% autonomous operation without relying on a central cloud database when offline.
 
@@ -55,7 +55,7 @@ graph TD;
 
 ---
 
-## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/sparkles.svg" width="24" height="24" /> Key Features
+## Key Features
 
 - **Hybrid Execution Modes (`PARKFLOW_MODE`)**:
   - `local`: 100% standalone operation using SQLite (encrypted via SQLCipher).
@@ -67,7 +67,7 @@ graph TD;
 
 ---
 
-## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/rocket.svg" width="24" height="24" /> Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -119,7 +119,7 @@ pnpm dev:print-agent
 
 ---
 
-## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/test-tube.svg" width="24" height="24" /> Testing
+## Testing
 
 The repository uses robust testing practices encompassing Unit, Integration, and E2E tests:
 
@@ -139,7 +139,7 @@ pnpm test:e2e
 
 ---
 
-## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/lock.svg" width="24" height="24" /> Default Credentials
+## Default Credentials
 
 Upon the first launch in `local` or `sync` mode, the database is seeded automatically:
 
@@ -153,7 +153,7 @@ Upon the first launch in `local` or `sync` mode, the database is seeded automati
 
 ---
 
-## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/book-open.svg" width="24" height="24" /> Documentation & Resources
+## Documentation & Resources
 
 - **Architecture & Auth**: [Hybrid Auth v1](docs/architecture/auth-hybrid-v1.md)
 - **Port Management**: [Port Architecture Guide](docs/architecture/ports.md)
@@ -163,7 +163,7 @@ Upon the first launch in `local` or `sync` mode, the database is seeded automati
 
 ---
 
-## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/shield-check.svg" width="24" height="24" /> Security Practices
+## Security Practices
 
 - **Rate Limiting**: Defends against brute-force attacks (10 login attempts/min) and API abuse.
 - **Auditing**: All logins are tracked by IP and device ID. Passwords are masked in logs.
@@ -177,7 +177,7 @@ pnpm security:deps:fix
 
 ---
 
-## <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/users.svg" width="24" height="24" /> Contributing
+## Contributing
 
 1. Follow the SOLID principles and clean architecture guidelines.
 2. Run the `pnpm validate` script before creating a Pull Request to ensure all builds and tests pass.

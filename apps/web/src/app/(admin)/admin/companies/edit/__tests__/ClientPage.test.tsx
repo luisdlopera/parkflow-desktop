@@ -18,7 +18,7 @@ vi.mock("@/lib/licensing/api", () => ({
   updateCompany: (id: string, data: any) => mockUpdateCompany(id, data),
 }));
 
-vi.mock("@/components/admin/CompanyForm", () => ({
+vi.mock("@/features/admin/CompanyForm", () => ({
   CompanyForm: ({ onSubmit, isLoading, initialData }: { onSubmit: (data: any) => Promise<void>; isLoading: boolean; initialData?: any }) => (
     <div data-testid="company-form">
       <div data-testid="initial-data">{initialData ? initialData.name : "no-data"}</div>

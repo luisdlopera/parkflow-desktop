@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Modal, Dropdown } from "@heroui/react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/bridge/Button";
 import DataTable from "@/components/ui/DataTable";
 import { useActiveSessions } from "@/features/active-vehicles/hooks/useActiveSessions";
 import { useTerminalCaja } from "@/features/cash-register/hooks/useTerminalCaja";
-import { useTenantConfig } from "@/lib/providers/TenantConfigProvider";
+import { useTenantConfig } from "@/providers/TenantConfigProvider";
 import { fetchLockers, type LockerDto } from "@/lib/api/lockers-api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

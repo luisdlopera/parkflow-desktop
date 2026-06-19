@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { useTenantConfig } from "@/lib/providers/TenantConfigProvider";
+import { useTenantConfig } from "@/providers/TenantConfigProvider";
 
 export interface FeatureFlags {
   agreements: boolean;

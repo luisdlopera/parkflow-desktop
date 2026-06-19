@@ -1,10 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
-import { AdminMobileSidebar } from "@/components/admin/AdminMobileSidebar";
-import { AdminHeader } from "@/components/admin/AdminHeader";
-import { useSidebar } from "@/shared/hooks/ui/useSidebar";
+import { AdminSidebar } from "@/features/admin/AdminSidebar";
+import { AdminMobileSidebar } from "@/features/admin/AdminMobileSidebar";
+import { AdminHeader } from "@/features/admin/AdminHeader";
+import { useSidebar } from "@/hooks/ui/useSidebar";
 
 export default function AdminClientWrapper({ children }: { children: ReactNode }) {
   const { isOpen, isCollapsed, toggle, open, close } = useSidebar();

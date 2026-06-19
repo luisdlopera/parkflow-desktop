@@ -86,13 +86,34 @@ public class OnboardingSettingsMapper {
     capacity.put("byType", extractMap(step2.get("capacityByType")));
 
     Map<String, Object> rates = new LinkedHashMap<>();
-    rates.put("type", "HOURLY");
+    rates.put("type", String.valueOf(step3.getOrDefault("billingModel", "HOURLY")));
     rates.put("baseValue", extractNumber(step3.get("baseValue"), 0));
-    rates.put("byType", extractMap(step3.get("ratesByType")));
-    rates.put("minRateMinutes", extractNumber(step3.get("minRateMinutes"), 0));
-    rates.put("dailyRate", extractNumber(step3.get("dailyRate"), 0));
+    rates.put("flatRate", extractNumber(step3.get("flatRate"), 0));
+    rates.put("fullDayRate", extractNumber(step3.get("fullDayRate"), 0));
+    
+    // Night Rate Config
+    rates.put("hasNightRate", Boolean.TRUE.equals(step3.get("hasNightRate")));
+    rates.put("nightStartTime", String.valueOf(step3.getOrDefault("nightStartTime", "20:00")));
+    rates.put("nightEndTime", String.valueOf(step3.getOrDefault("nightEndTime", "06:00")));
     rates.put("nightRate", extractNumber(step3.get("nightRate"), 0));
+    
+    // Fractions
+    rates.put("hasFractions", Boolean.TRUE.equals(step3.get("hasFractions")));
+    rates.put("minFractionMinutes", extractNumber(step3.get("minFractionMinutes"), 0));
+    rates.put("fractionValue", extractNumber(step3.get("fractionValue"), 0));
+    
+    // Rounding & Courtesy
+    rates.put("rounding", String.valueOf(step3.getOrDefault("rounding", "EXACT")));
+    rates.put("hasCourtesy", Boolean.TRUE.equals(step3.get("hasCourtesy")));
     rates.put("graceMinutes", extractNumber(step3.get("graceMinutes"), 0));
+    
+    // Weekend/Holidays
+    rates.put("hasWeekendRate", Boolean.TRUE.equals(step3.get("hasWeekendRate")));
+    rates.put("weekendRate", extractNumber(step3.get("weekendRate"), 0));
+    
+    // Rates by Vehicle Type
+    rates.put("enableRateByType", Boolean.TRUE.equals(step3.get("enableRateByType")));
+    rates.put("byType", extractMap(step3.get("ratesByType")));
 
     Map<String, Object> region = new LinkedHashMap<>();
     region.put("countryCode", String.valueOf(step4.getOrDefault("countryCode", "CO")));
@@ -165,11 +186,22 @@ public class OnboardingSettingsMapper {
     Map<String, Object> rates = new LinkedHashMap<>();
     rates.put("type", "HOURLY");
     rates.put("baseValue", 0);
-    rates.put("byType", Map.of());
-    rates.put("minRateMinutes", 0);
-    rates.put("dailyRate", 0);
+    rates.put("flatRate", 0);
+    rates.put("fullDayRate", 0);
+    rates.put("hasNightRate", false);
+    rates.put("nightStartTime", "20:00");
+    rates.put("nightEndTime", "06:00");
     rates.put("nightRate", 0);
+    rates.put("hasFractions", false);
+    rates.put("minFractionMinutes", 0);
+    rates.put("fractionValue", 0);
+    rates.put("rounding", "EXACT");
+    rates.put("hasCourtesy", false);
     rates.put("graceMinutes", 0);
+    rates.put("hasWeekendRate", false);
+    rates.put("weekendRate", 0);
+    rates.put("enableRateByType", false);
+    rates.put("byType", Map.of());
 
     Map<String, Object> region = new LinkedHashMap<>();
     region.put("countryCode", "CO");

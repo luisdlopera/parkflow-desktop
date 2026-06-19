@@ -143,7 +143,7 @@ class RegisterExitServiceTest {
 
   private ExitRequest request(String ticket, String plate, PaymentMethod method) {
     return new ExitRequest("idem-key", ticket, plate, operatorId, method, null, null,
-        "Salida de prueba", null, null, null, null, null, null, null);
+        "Salida de prueba", null, null, null, null, null, null, null, null);
   }
 
   private void mockSessionLookup() {
@@ -277,7 +277,7 @@ class RegisterExitServiceTest {
       when(custodiedItemRepository.findBySession(activeSession)).thenReturn(Collections.emptyList());
 
       ExitRequest req = new ExitRequest("idem-key", "T-100", null, operatorId, null,
-          "CORP10", null, "Salida", null, null, null, null, null, null, null);
+          "CORP10", null, "Salida", null, null, null, null, null, null, null, null);
       OperationResultResponse result = service.execute(req);
 
       assertThat(result.total()).isEqualByComparingTo(BigDecimal.ZERO);
@@ -466,7 +466,7 @@ class RegisterExitServiceTest {
           .thenReturn(List.of(helmet));
 
       ExitRequest req = new ExitRequest("idem-key", "T-100", null, operatorId, PaymentMethod.CASH,
-          null, null, "Salida", null, null, null, null, List.of(helmetId), "Devuelto en salida", null);
+          null, null, "Salida", null, null, null, null, List.of(helmetId), "Devuelto en salida", null, null);
       service.execute(req);
 
       ArgumentCaptor<CustodiedItem> captor = ArgumentCaptor.forClass(CustodiedItem.class);
@@ -620,7 +620,7 @@ class RegisterExitServiceTest {
 
       ExitRequest req = new ExitRequest("idem-key", "T-100", null, operatorId, PaymentMethod.CASH,
           null, null, "Salida", null, "Sin novedades", List.of("carroceria_ok", "luces_ok"),
-          List.of("https://example.test/exit-photo.jpg"), null, null, null);
+          List.of("https://example.test/exit-photo.jpg"), null, null, null, null);
       service.execute(req);
 
       ArgumentCaptor<VehicleConditionReport> captor = ArgumentCaptor.forClass(VehicleConditionReport.class);
@@ -877,7 +877,7 @@ class RegisterExitServiceTest {
       when(custodiedItemRepository.findBySession(activeSession)).thenReturn(Collections.emptyList());
 
       ExitRequest req = new ExitRequest("idem-key", "T-100", null, operatorId, PaymentMethod.CASH,
-          null, null, "Salida", "https://example.test/exit.jpg", null, null, null, null, null, null);
+          null, null, "Salida", "https://example.test/exit.jpg", null, null, null, null, null, null, null);
       OperationResultResponse result = service.execute(req);
 
       assertThat(result).isNotNull();
@@ -902,7 +902,7 @@ class RegisterExitServiceTest {
 
       OffsetDateTime customTime = OffsetDateTime.now().minusMinutes(30);
       ExitRequest req = new ExitRequest("idem-key", "T-100", null, operatorId, PaymentMethod.CASH,
-          null, customTime, "Salida", null, null, null, null, null, null, null);
+          null, customTime, "Salida", null, null, null, null, null, null, null, null);
       service.execute(req);
 
       assertThat(activeSession.getExitAt()).isEqualTo(customTime);

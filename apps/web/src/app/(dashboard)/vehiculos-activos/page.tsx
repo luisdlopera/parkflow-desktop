@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { fetchActiveSessions, fetchParkingSummary } from "@/lib/api/sessions-api";
+
+export const metadata: Metadata = { title: "Vehículos Activos" };
 import VehiculosActivosClient from "./VehiculosActivosClient";
 
 export default async function VehiculosActivosPage() {

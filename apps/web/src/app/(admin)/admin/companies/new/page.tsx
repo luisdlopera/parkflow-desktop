@@ -2,12 +2,12 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/bridge/Button";
 import { ArrowLeft } from "lucide-react";
 import { useCreateCompany } from "@/lib/licensing/hooks";
 import type { CreateCompanyRequest, Company } from "@/lib/licensing/types";
-import { CompanyForm } from "@/components/admin/CompanyForm";
-import { CompanyCreatedDialog } from "@/components/admin/CompanyCreatedDialog";
+import { CompanyForm } from "@/features/admin/CompanyForm";
+import { CompanyCreatedDialog } from "@/features/admin/CompanyCreatedDialog";
 
 export default function NewCompanyPage() {
   const router = useRouter();

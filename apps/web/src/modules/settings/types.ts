@@ -86,6 +86,8 @@ export type CashRegisterRow = {
   updatedAt: string;
 };
 
+export type UserRole = "SUPER_ADMIN" | "ADMIN" | "CAJERO" | "OPERADOR" | "AUDITOR";
+
 export type VehicleTypeRow = {
   id: string;
   code: string;

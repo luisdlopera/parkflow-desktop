@@ -1,10 +1,10 @@
 "use client";
 import { ListBox } from "@heroui/react";
-import { Card } from "@/components/ui/Card";
-import { Select } from "@/components/ui/Select";
-import { Switch } from "@/components/ui/Switch";
+import { Card } from "@/components/bridge/Card";
+import { Select } from "@/components/bridge/Select";
+import { Switch } from "@/components/bridge/Switch";
 import { useEffect, useState } from "react";
-import { PageBackButton } from "@/components/ui/PageBackButton";
+import { PageBackButton } from "@/components/layout/PageBackButton";
 
 const UI_SETTINGS_KEY = "parkflow_ui_settings";
 const UI_SETTINGS_EVENT = "parkflow-ui-settings-changed";

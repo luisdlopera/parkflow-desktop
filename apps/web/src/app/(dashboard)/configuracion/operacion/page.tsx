@@ -4,12 +4,12 @@ import { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Separator, ListBox } from "@heroui/react";
-import { Card } from "@/components/ui/Card";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
-import { Switch } from "@/components/ui/Switch";
-import { Input } from "@/components/ui/Input";
-import { TextArea } from "@/components/ui/TextArea";
+import { Card } from "@/components/bridge/Card";
+import { Select } from "@/components/bridge/Select";
+import { Button } from "@/components/bridge/Button";
+import { Switch } from "@/components/bridge/Switch";
+import { Input } from "@/components/bridge/Input";
+import { TextArea } from "@/components/bridge/TextArea";
 import {
   fetchConfigurationSites,
   fetchConfigurationOperationalParameters,
@@ -18,13 +18,17 @@ import {
 import { operationalParameterSchema, type OperationalParameterSchema } from "@/modules/settings/schemas";
 import type { ParkingSiteRow } from "@/modules/settings/types";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { useAsyncAction } from "@/lib/errors/use-async-action";
 
 export default function OperacionPage() {
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [sites, setSites] = useState<ParkingSiteRow[]>([]);
+
+  const saveOp = useAsyncAction<unknown>({
+    successMsg: "Parámetros guardados correctamente",
+    errorContext: FrontendActionError.SAVE_DATA,
+  });
   const [siteId, setSiteId] = useState("");
   const [catalogLoading, setCatalogLoading] = useState(false);
 
@@ -90,21 +94,14 @@ export default function OperacionPage() {
   }, [reset, siteId]);
 
   const onSubmit = async (values: OperationalParameterSchema) => {
-    setSaving(true);
-    setError(null);
-    setSuccess(false);
-    try {
-      if (!siteId) {
-        setError("Selecciona una sede para guardar los parámetros operativos");
-        return;
-      }
-      await putConfigurationOperationalParameters(siteId, { ...values } as Record<string, unknown>);
-      setSuccess(true);
-    } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
-    } finally {
-      setSaving(false);
+    if (!siteId) {
+      setError("Selecciona una sede para guardar los parámetros operativos");
+      return;
     }
+    setError(null);
+    await saveOp.run(() =>
+      putConfigurationOperationalParameters(siteId, { ...values } as Record<string, unknown>)
+    );
   };
 
   if (loading) {
@@ -160,12 +157,6 @@ export default function OperacionPage() {
         </div>
       )}
       
-      {success && (
-        <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700 border border-emerald-100">
-          Parámetros guardados correctamente.
-        </div>
-      )}
-
       <form onSubmit={handleSubmit(onSubmit)}>
         <Card border border-default-200="sm" className="border border-slate-200">
           <Card.Content className="p-6 space-y-8">
@@ -311,7 +302,7 @@ export default function OperacionPage() {
                 color="success"
                 size="lg"
                 className="font-bold text-white"
-                isLoading={saving}
+                isLoading={saveOp.isLoading}
               >
                 Guardar parámetros
               </Button>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SearchResponse } from '../types/search.types';
+import { SearchResponse } from '../search.types';
 import { httpRequest } from '@/lib/http-client';
 import { authHeaders } from '@/lib/auth';
 import { apiBase } from '@/lib/api/config';

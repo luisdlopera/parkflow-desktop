@@ -33,6 +33,8 @@ public class OperationController {
   private final UpdatePlateUseCase updatePlateUseCase;
   private final BulkExitCalculateUseCase bulkExitCalculateUseCase;
   private final BulkExitProcessUseCase bulkExitProcessUseCase;
+  private final MassExitPreviewUseCase massExitPreviewUseCase;
+  private final MassExitProcessUseCase massExitProcessUseCase;
 
   public OperationController(
       SupervisorService supervisorService,
@@ -46,7 +48,9 @@ public class OperationController {
       FindActiveSessionUseCase findActiveSessionUseCase,
       UpdatePlateUseCase updatePlateUseCase,
       BulkExitCalculateUseCase bulkExitCalculateUseCase,
-      BulkExitProcessUseCase bulkExitProcessUseCase) {
+      BulkExitProcessUseCase bulkExitProcessUseCase,
+      MassExitPreviewUseCase massExitPreviewUseCase,
+      MassExitProcessUseCase massExitProcessUseCase) {
     this.supervisorService = supervisorService;
     this.registerEntryUseCase = registerEntryUseCase;
     this.registerExitUseCase = registerExitUseCase;
@@ -59,6 +63,8 @@ public class OperationController {
     this.updatePlateUseCase = updatePlateUseCase;
     this.bulkExitCalculateUseCase = bulkExitCalculateUseCase;
     this.bulkExitProcessUseCase = bulkExitProcessUseCase;
+    this.massExitPreviewUseCase = massExitPreviewUseCase;
+    this.massExitProcessUseCase = massExitProcessUseCase;
   }
 
   @GetMapping("/supervisor/summary")
@@ -210,5 +216,25 @@ public class OperationController {
       content = @Content(schema = @Schema(implementation = BulkExitResponse.class)))
   public BulkExitResponse processBulkExit(@Valid @RequestBody BulkExitRequest request) {
     return bulkExitProcessUseCase.process(request);
+  }
+
+  @PostMapping("/mass-exit/calculate")
+  @PreAuthorize("hasAuthority('parking:salida_masiva')")
+  @Operation(summary = "Preview mass vehicle exit", description = "Calculates estimated amounts for a filtered set of active sessions without committing")
+  @ApiResponse(responseCode = "200", description = "Preview calculated")
+  @ApiResponse(responseCode = "403", description = "Forbidden: requires parking:salida_masiva permission")
+  public com.parkflow.modules.parking.operation.dto.MassExitPreviewResponse previewMassExit(
+      @Valid @RequestBody com.parkflow.modules.parking.operation.dto.MassExitFilterRequest request) {
+    return massExitPreviewUseCase.preview(request);
+  }
+
+  @PostMapping("/mass-exit")
+  @PreAuthorize("hasAuthority('parking:salida_masiva')")
+  @Operation(summary = "Process mass vehicle exit", description = "Registers exits for all active sessions matching the given filters. Continue-on-error: individual failures do not roll back the batch.")
+  @ApiResponse(responseCode = "200", description = "Mass exit processed")
+  @ApiResponse(responseCode = "403", description = "Forbidden: requires parking:salida_masiva permission")
+  public com.parkflow.modules.parking.operation.dto.MassExitResponse processMassExit(
+      @Valid @RequestBody com.parkflow.modules.parking.operation.dto.MassExitFilterRequest request) {
+    return massExitProcessUseCase.process(request);
   }
 }

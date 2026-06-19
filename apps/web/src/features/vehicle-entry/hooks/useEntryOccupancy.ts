@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { fetchParkingSpaces, fetchParkingSummary, type ParkingSpaceDto } from "@/lib/api/sessions-api";
-import { useParkingStore } from "@/lib/stores/parking-store";
+import { useParkingFacade } from "./useParkingFacade";
 
 interface OccupancyState {
   availableSpaces: number;
@@ -9,8 +9,7 @@ interface OccupancyState {
 }
 
 export function useEntryOccupancy(enabled: boolean) {
-  const setOccupancy = useParkingStore((s) => s.setOccupancy);
-  const storedOccupancy = useParkingStore((s) => s.occupancy);
+  const { occupancy: storedOccupancy, setOccupancy } = useParkingFacade();
 
   const [localOccupancy, setLocalOccupancy] = useState<OccupancyState | null>(null);
   const [spaces, setSpaces] = useState<ParkingSpaceDto[]>([]);

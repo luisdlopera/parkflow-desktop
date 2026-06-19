@@ -2,17 +2,17 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { useOverlayState, Button as HeroButton } from "@heroui/react";
-import { Modal } from "@/components/ui/Modal";
-import { Chip } from "@/components/ui/Chip";
-import { DropdownItem } from "@/components/ui/Dropdown";
-import { Card } from "@/components/ui/Card";
-import { Tabs, Tab } from "@/components/ui/Tabs";
-import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/bridge/Modal";
+import { Chip } from "@/components/bridge/Chip";
+import { DropdownItem } from "@/components/bridge/Dropdown";
+import { Card } from "@/components/bridge/Card";
+import { Tabs, Tab } from "@/components/bridge/Tabs";
+import { Button } from "@/components/bridge/Button";
 import { FileBadge, Eye, RefreshCw, Monitor, Building2, Key } from "lucide-react";
 import { useCompanies, translatePlan, translateStatus } from "@/lib/licensing/hooks";
 import type { Company, LicensedDevice } from "@/lib/licensing/types";
 import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
-import { EntityManagementPage } from "@/shared/components/crud/EntityManagementPage";
+import { EntityManagementPage } from "@/features/admin/EntityManagementPage";
 
 export default function LicensesPage() {
   const { data: companies, isLoading, error, mutate } = useCompanies();

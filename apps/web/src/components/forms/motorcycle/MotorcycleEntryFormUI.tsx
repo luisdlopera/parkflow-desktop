@@ -3,13 +3,13 @@
 import React, { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { UseFormReturn, Controller, useFieldArray, useWatch } from "react-hook-form";
 import { VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
-import { Tooltip } from "@/components/ui/Tooltip";
+import { Input } from "@/components/bridge/Input";
+import { Button } from "@/components/bridge/Button";
+import { Tooltip } from "@/components/bridge/Tooltip";
 import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, CheckCircle2, AlertCircle } from "lucide-react";
-import { MotorRacingHelmet } from "@/components/ui/MotorRacingHelmet";
+import { MotorRacingHelmet } from "@/features/vehicle-entry/components/MotorRacingHelmet";
 import { Autocomplete, ListBox, SearchField, useFilter, Label, FieldError } from "@heroui/react";
 import { fetchAvailableLockers } from "@/lib/api/lockers-api";
 import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";

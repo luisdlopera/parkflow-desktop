@@ -1,16 +1,16 @@
 "use client";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
-import { Chip } from "@/components/ui/Chip";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/bridge/Modal";
+import { Chip } from "@/components/bridge/Chip";
+import { Card } from "@/components/bridge/Card";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Clock3, Loader2, Search, Ticket, Car, User, Building2, CreditCard, Bell, Wand2, Sparkles, ArrowRight } from "lucide-react";
 import { cn } from "@heroui/theme";
 import { useSearch } from "../hooks/useSearch";
-import { SearchResult, SearchType } from "../types/search.types";
-import { useOsShortcut } from "@/shared/hooks/ui/useOsShortcut";
+import { SearchResult, SearchType } from "../search.types";
+import { useOsShortcut } from "@/hooks/core/useOsShortcut";
 
 const RECENT_KEY = "parkflow.search.recent";
 const MAX_RECENT = 6;
@@ -94,21 +94,27 @@ export function QuickSearch() {
 
   useEffect(() => {
     if (!isOpen) return;
-      const onKeyDown = (event: KeyboardEvent) => {
-        const metaOrCtrl = event.metaKey || event.ctrlKey;
-        if (metaOrCtrl && event.key.toLowerCase() === "k") {
-          event.preventDefault();
-          setIsOpen(true);
-        }
-        if (!isOpen) return;
-        if (event.key === "Escape") {
-          event.preventDefault();
-          setIsOpen(false);
-        }
-      };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsOpen(false);
+      }
+    };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isOpen]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const metaOrCtrl = event.metaKey || event.ctrlKey;
+      if (metaOrCtrl && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setIsOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {

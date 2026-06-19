@@ -3,9 +3,9 @@
 import React, { KeyboardEvent, memo } from "react";
 import { UseFormReturn, Controller } from "react-hook-form";
 import { VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
-import { Tooltip } from "@/components/ui/Tooltip";
+import { Input } from "@/components/bridge/Input";
+import { Button } from "@/components/bridge/Button";
+import { Tooltip } from "@/components/bridge/Tooltip";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 
 interface CarEntryFormUIProps {

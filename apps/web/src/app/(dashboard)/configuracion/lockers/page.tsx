@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useMemo, useState, useEffect } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Switch } from "@/components/ui/Switch";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
+import { Switch } from "@/components/bridge/Switch";
 import DataTable from "@/components/ui/DataTable";
 import { useDialog } from "@/components/ui/DialogProvider";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { FrontendActionError } from "@/lib/errors/error-messages";
+import { useAsyncAction } from "@/lib/errors/use-async-action";
 import {
   fetchLockers,
   createLocker,
@@ -16,7 +17,7 @@ import {
   type LockerDto,
 } from "@/lib/api/lockers-api";
 import { Plus, Trash2, PackagePlus, Tags } from "lucide-react";
-import { Select } from "@/components/ui/Select";
+import { Select } from "@/components/bridge/Select";
 import { ListBox } from "@heroui/react";
 import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
 import Link from "next/link";
@@ -26,9 +27,12 @@ export default function LockersPage() {
   const isEnabled = flags.lockers;
 
   const [lockers, setLockers] = useState<LockerDto[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { confirm } = useDialog();
+
+  const asyncOp = useAsyncAction<unknown>({
+    showErrorToast: false,
+    errorContext: FrontendActionError.LOAD_DATA,
+  });
 
   const [showCreateSingle, setShowCreateSingle] = useState(false);
   const [singleCode, setSingleCode] = useState("");
@@ -41,15 +45,10 @@ export default function LockersPage() {
 
   const load = useCallback(async () => {
     if (!isEnabled) return;
-    setLoading(true);
-    setError(null);
-    try {
+    await asyncOp.run(async () => {
       setLockers(await fetchLockers());
-    } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
-    } finally {
-      setLoading(false);
-    }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEnabled]);
 
   useEffect(() => {
@@ -66,23 +65,21 @@ export default function LockersPage() {
 
   const handleCreateSingle = useCallback(async () => {
     if (!singleCode.trim()) return;
-    setError(null);
-    try {
+    await asyncOp.run(async () => {
       await createLocker(singleCode.trim(), singleLabel.trim() || undefined);
       setSingleCode("");
       setSingleLabel("");
       setShowCreateSingle(false);
       await load();
-    } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
-    }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [singleCode, singleLabel, load]);
 
   const handleBatch = useCallback(async () => {
     const start = Number(batchStart);
     const end = Number(batchEnd);
     if (!Number.isFinite(start) || !Number.isFinite(end) || start < 1 || end < start) {
-      setError("Rango inválido. El inicio debe ser >= 1 y el final >= inicio.");
+      await asyncOp.run(() => Promise.reject(new Error("Rango inválido. El inicio debe ser >= 1 y el final >= inicio.")));
       return;
     }
     const count = end - start + 1;
@@ -90,42 +87,36 @@ export default function LockersPage() {
       const ok = await confirm(`Vas a crear ${count} lockers. ¿Continuar?`);
       if (!ok) return;
     }
-    setError(null);
-    try {
-      const created = await createBatchLockers(batchPrefix, start, end);
+    await asyncOp.run(async () => {
+      await createBatchLockers(batchPrefix, start, end);
       setBatchPrefix("L-");
       setBatchStart("1");
       setBatchEnd("10");
       setShowBatch(false);
       await load();
-    } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
-    }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [batchPrefix, batchStart, batchEnd, load, confirm]);
 
   const handleToggle = useCallback(
     async (locker: LockerDto) => {
-      setError(null);
-      try {
+      await asyncOp.run(async () => {
         await patchLocker(locker.id, { isActive: !locker.isActive });
         await load();
-      } catch (e) {
-        setError(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
-      }
+      });
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [load],
   );
 
   const handleStatusChange = useCallback(
     async (locker: LockerDto, newStatus: string) => {
-      setError(null);
-      try {
+      await asyncOp.run(async () => {
         await patchLocker(locker.id, { status: newStatus });
         await load();
-      } catch (e) {
-        setError(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
-      }
+      });
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [load],
   );
 
@@ -133,14 +124,12 @@ export default function LockersPage() {
     async (locker: LockerDto) => {
       const ok = await confirm(`¿Eliminar locker "${locker.code}"?`);
       if (!ok) return;
-      setError(null);
-      try {
+      await asyncOp.run(async () => {
         await deleteLocker(locker.id);
         await load();
-      } catch (e) {
-        setError(getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA));
-      }
+      });
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [load, confirm],
   );
 
@@ -203,16 +192,16 @@ export default function LockersPage() {
             color="primary"
             variant="outline"
             onPress={() => load()}
-            isLoading={loading}
+            isLoading={asyncOp.isLoading}
           >
             Actualizar
           </Button>
         </div>
       </div>
 
-      {error && (
+      {asyncOp.error && (
         <div className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 border border-rose-100">
-          {error}
+          {asyncOp.error}
         </div>
       )}
 

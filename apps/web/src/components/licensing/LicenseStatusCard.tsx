@@ -7,9 +7,9 @@ import {
   translateStatus,
 } from "@/lib/licensing/hooks";
 import { Skeleton, Separator } from "@heroui/react";
-import { Chip } from "@/components/ui/Chip";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { Chip } from "@/components/bridge/Chip";
+import { Card } from "@/components/bridge/Card";
+import { Button } from "@/components/bridge/Button";
 import { useState } from "react";
 import { FileBadge, Fingerprint, Building2, Clock } from "lucide-react";
 import { LicenseActivationDialog } from "./LicenseActivationDialog";

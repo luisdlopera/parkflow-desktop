@@ -1,15 +1,15 @@
 "use client";
 
 import { ListBox } from "@heroui/react";
-import { Alert } from "@/components/ui/Alert";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
-import { Card } from "@/components/ui/Card";
-import { Select } from "@/components/ui/Select";
-import { Tabs } from "@/components/ui/Tabs";
-import { Tab } from "@/components/ui/Tabs";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Steps, Step } from "@/components/ui/Steps";
+import { Alert } from "@/components/bridge/Alert";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/bridge/Modal";
+import { Card } from "@/components/bridge/Card";
+import { Select } from "@/components/bridge/Select";
+import { Tabs } from "@/components/bridge/Tabs";
+import { Tab } from "@/components/bridge/Tabs";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
+import { Steps, Step } from "@/components/licensing/Steps";
 import { useEffect, useMemo, useState } from "react";
 import {
   useDeviceFingerprint,

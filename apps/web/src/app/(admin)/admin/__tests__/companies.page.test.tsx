@@ -57,7 +57,7 @@ vi.mock("@/lib/licensing/hooks", () => ({
     ({ ACTIVE: "Activa", EXPIRED: "Expirada" })[status] || status,
 }));
 
-vi.mock("@/components/admin/CompanyForm", () => ({
+vi.mock("@/features/admin/CompanyForm", () => ({
   CompanyForm: ({ onSubmit }: { onSubmit: (data: unknown) => void }) => (
     <button data-testid="mock-company-form" onClick={() => onSubmit({ name: "Test", plan: "SYNC" })}>
       Submit Form
@@ -65,7 +65,7 @@ vi.mock("@/components/admin/CompanyForm", () => ({
   ),
 }));
 
-vi.mock("@/components/admin/GenerateLicenseDialog", () => ({
+vi.mock("@/features/admin/GenerateLicenseDialog", () => ({
   GenerateLicenseDialog: ({ isOpen }: { isOpen: boolean }) =>
     isOpen ? <div data-testid="license-dialog" /> : null,
 }));

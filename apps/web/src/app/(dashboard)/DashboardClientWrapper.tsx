@@ -4,15 +4,23 @@ import type { ReactNode } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileSidebar from "@/components/layout/MobileSidebar";
-import { useSidebar } from "@/shared/hooks/ui/useSidebar";
+import { useSidebar } from "@/hooks/ui/useSidebar";
+import { useCallback } from "react";
+import { useUIFacade } from "@/features/admin/hooks/useUIFacade";
 
 export default function DashboardClientWrapper({ children }: { children: ReactNode }) {
   const { isOpen, isCollapsed, toggle, open, close } = useSidebar();
+  const { setSidebarState } = useUIFacade();
+
+  const handleToggle = useCallback(() => {
+    setSidebarState(isCollapsed ? "expanded" : "collapsed");
+    toggle();
+  }, [isCollapsed, toggle, setSidebarState]);
 
   return (
     <>
       <div className="min-h-screen flex">
-        <Sidebar collapsed={isCollapsed} onToggle={toggle} />
+        <Sidebar collapsed={isCollapsed} onToggle={handleToggle} />
         <MobileSidebar isOpen={isOpen} onClose={close} />
         <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
           <Header onMenuClick={open} />

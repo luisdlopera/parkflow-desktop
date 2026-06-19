@@ -17,7 +17,8 @@ public enum AuthPermission {
   SYNC_PUSH("sync:push"),
   SYNC_RECONCILE("sync:reconcile"),
   DEVICES_AUTORIZAR("devices:autorizar"),
-  DEVICES_REVOCAR("devices:revocar");
+  DEVICES_REVOCAR("devices:revocar"),
+  PARKING_MASS_EXIT("parking:salida_masiva");
 
   private final String authority;
 

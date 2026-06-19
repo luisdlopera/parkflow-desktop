@@ -11,7 +11,7 @@ import {
   Chip,
   Input
 } from "@heroui/react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/bridge/Button";
 
 export default function AuditPage() {
   const [search, setSearch] = useState("");

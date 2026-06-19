@@ -3,14 +3,14 @@ import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { currentUser } from "@/lib/auth";
-import { usePermissions } from "@/features/auth/hooks/usePermissions";
+import { usePermissions } from "@/hooks/auth/usePermissions";
 import type { Permission } from "@parkflow/types";
 
-const SetupBasicoTab = dynamic(() => import("@/components/config/SetupBasicoTab").then((m) => ({ default: m.SetupBasicoTab })), {
+const SetupBasicoTab = dynamic(() => import("@/features/configuration/components/ui/SetupBasicoTab").then((m) => ({ default: m.SetupBasicoTab })), {
   ssr: false,
   loading: () => <p className="text-sm text-slate-600">Cargando configuración...</p>,
 });
-const ModulesTab = dynamic(() => import("@/components/config/ModulesTab").then((m) => ({ default: m.ModulesTab })), {
+const ModulesTab = dynamic(() => import("@/features/configuration/components/ui/ModulesTab").then((m) => ({ default: m.ModulesTab })), {
   ssr: false,
   loading: () => <p className="text-sm text-slate-600">Cargando módulos...</p>,
 });
@@ -50,7 +50,7 @@ const OnboardingSection = dynamic(() => import("@/features/configuration/compone
   ssr: false,
   loading: () => <p className="text-sm text-slate-600">Cargando asistente...</p>,
 });
-const FeatureFlagsSection = dynamic(() => import("@/components/config/FeatureFlagsSection").then((m) => ({ default: m.FeatureFlagsSection })), {
+const FeatureFlagsSection = dynamic(() => import("@/features/configuration/components/ui/FeatureFlagsSection").then((m) => ({ default: m.FeatureFlagsSection })), {
   ssr: false,
   loading: () => <p className="text-sm text-slate-600">Cargando características...</p>,
 });
@@ -102,10 +102,10 @@ export default function ConfiguracionPage() {
     localStorage.setItem("parkflow_ui_settings", JSON.stringify(updated));
   };
 
-  useEffect(() => { refreshPerms(["tarifas:leer", "tarifas:editar", "usuarios:leer", "usuarios:editar", "configuracion:leer", "configuracion:editar"]).catch(console.error); }, [refreshPerms]);
+  useEffect(() => { refreshPerms(["tarifas:leer", "tarifas:editar", "usuarios:leer", "usuarios:editar", "configuracion:leer", "configuracion:editar"]).catch(() => {}); }, [refreshPerms]);
 
   useEffect(() => {
-    currentUser().then((user) => { if (user?.companyId) setCompanyId(user.companyId); }).catch(console.error);
+    currentUser().then((user) => { if (user?.companyId) setCompanyId(user.companyId); }).catch(() => {});
   }, []);
 
   const can = useMemo(() => ({

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/bridge/Button";
+import { Input } from "@/components/bridge/Input";
 import { Calculator, ChevronDown, ChevronUp, RotateCcw, Banknote } from "lucide-react";
 
 interface ChangeCalculatorProps {

@@ -149,15 +149,16 @@
   .hover\:border-primary-900:hover { border-color: var(--color-primary-900); }
 }
 
-/* Dark mode support — neutral / zinc palette (solvy-style: black + zinc surfaces) */
+/* Dark mode support — near-black surfaces with HeroUI v3 semantic tokens */
 [data-theme="dark"] {
-  --color-ash: #000000;
-  --color-ink: #fafafa;
-  --color-sand: #18181b;
+  /* Near-black base — NOT pure #000 (causes eye strain at 21:1 contrast) */
+  --color-ash: #0f0f13;
+  --color-ink: #f4f4f6;
+  --color-sand: #1c1c22;
   --color-ember: #f97316;
   --color-moss: #fb923c;
 
-  /* Brand colors — dark mode adjustments */
+  /* Brand colors — dark mode adjustments (inverted scale) */
   --color-brand-50: #2d1a05;
   --color-brand-100: #3d2208;
   --color-brand-200: #5c330c;
@@ -169,8 +170,28 @@
   --color-brand-800: #fed7aa;
   --color-brand-900: #ffedd5;
 
-  /* HeroUI primary color — orange brand (dark mode) */
-  --heroui-primary: 32.93 100% 50.39%;
+  /* HeroUI v3 semantic dark mode variables — drives all component theming automatically */
+  --background: oklch(12% 0.005 285.823);
+  --foreground: oklch(0.9911 0 0);
+  --surface: oklch(0.2103 0.0059 285.89);
+  --surface-secondary: oklch(0.257 0.0037 286.14);
+  --surface-tertiary: oklch(0.2721 0.0024 247.91);
+  --overlay: oklch(0.2103 0.0059 285.89);
+  --border: oklch(28% 0.006 286.033);
+  --separator: oklch(25% 0.006 286.033);
+  --muted: oklch(70.5% 0.015 286.067);
+  --field-background: oklch(0.2103 0.0059 285.89);
+  --field-foreground: oklch(0.9911 0 0);
+  --default: oklch(27.4% 0.006 286.033);
+  --default-foreground: oklch(0.9911 0 0);
+  /* --accent overridden at runtime by ThemeProvider.applyBrandColors() */
+  --accent: #f97316;
+  --accent-foreground: #ffffff;
+
+  /* Surface elevation system — lighter = higher (dark mode principle) */
+  --elevation-1: color-mix(in oklab, white 5%, var(--background));
+  --elevation-2: color-mix(in oklab, white 7%, var(--background));
+  --elevation-3: color-mix(in oklab, white 9%, var(--background));
 }
 
 /* Invert slate scale in dark only — text-slate-900, bg-slate-50, border-slate-*, etc. */
@@ -213,7 +234,7 @@ body {
 }
 
 [data-theme="dark"] body {
-  background: linear-gradient(to bottom, transparent, rgb(0, 0, 0)),
+  background: linear-gradient(to bottom, transparent, var(--color-ash)),
     radial-gradient(1200px 600px at 10% 5%, rgba(39, 39, 42, 0.35) 0%, transparent 60%),
     radial-gradient(900px 500px at 90% 10%, rgba(63, 63, 70, 0.2) 0%, transparent 55%),
     var(--color-ash);
@@ -352,8 +373,8 @@ select:-webkit-autofill:focus {
 [data-theme="dark"] select:-webkit-autofill,
 [data-theme="dark"] select:-webkit-autofill:hover,
 [data-theme="dark"] select:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px #27272a inset;
-  -webkit-text-fill-color: #fafafa;
+  -webkit-box-shadow: 0 0 0px 1000px #1c1c22 inset;
+  -webkit-text-fill-color: var(--color-ink);
 }
 
 /* ── Input Bordered-Subtle: hover & focus states (light mode) ── */
@@ -407,7 +428,7 @@ textarea:focus-within,
 [data-theme="dark"] [data-slot="label"],
 [data-theme="dark"] [data-slot="description"],
 [data-theme="dark"] [data-slot="error-message"] {
-  color: hsl(var(--heroui-foreground)) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="input-wrapper"],
@@ -418,33 +439,33 @@ textarea:focus-within,
 
 .dark [data-slot="input-wrapper"]:hover,
 [data-theme="dark"] [data-slot="input-wrapper"]:hover {
-  background-color: hsl(var(--heroui-default-200)) !important;
+  background-color: var(--surface-secondary) !important;
 }
 
 .dark [data-slot="inner-wrapper"],
 [data-theme="dark"] [data-slot="inner-wrapper"] {
-  color: hsl(var(--heroui-foreground)) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="trigger"],
 [data-theme="dark"] [data-slot="trigger"] {
   background-color: rgba(39, 39, 42, 0.6) !important; /* zinc-800/60 */
   border-color: #3f3f46 !important; /* neutral-700 */
-  color: hsl(var(--heroui-foreground)) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="value"],
 .dark [data-slot="placeholder"],
 [data-theme="dark"] [data-slot="value"],
 [data-theme="dark"] [data-slot="placeholder"] {
-  color: hsl(var(--heroui-foreground)) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="selectorIcon"],
 .dark [data-slot="clear-button"],
 [data-theme="dark"] [data-slot="selectorIcon"],
 [data-theme="dark"] [data-slot="clear-button"] {
-  color: hsl(var(--heroui-default-500)) !important;
+  color: var(--muted) !important;
 }
 
 .dark [data-slot="popover-content"],
@@ -455,9 +476,9 @@ textarea:focus-within,
 [data-theme="dark"] [data-slot="content"],
 [data-theme="dark"] [data-slot="menu"],
 [data-theme="dark"] [data-slot="listbox"] {
-  background-color: hsl(var(--heroui-content1)) !important;
-  color: hsl(var(--heroui-foreground)) !important;
-  border-color: hsl(var(--heroui-divider)) !important;
+  background-color: var(--overlay) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
 }
 
 .dark [data-slot="listbox-item"],
@@ -466,7 +487,7 @@ textarea:focus-within,
 [data-theme="dark"] [data-slot="listbox-item"],
 [data-theme="dark"] [data-slot="option"],
 [data-theme="dark"] [data-slot="menu-item"] {
-  color: hsl(var(--heroui-foreground)) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="listbox-item"][data-hover="true"],
@@ -481,21 +502,21 @@ textarea:focus-within,
 [data-theme="dark"] [data-slot="option"][data-focus="true"],
 [data-theme="dark"] [data-slot="menu-item"][data-hover="true"],
 [data-theme="dark"] [data-slot="menu-item"][data-focus="true"] {
-  background-color: hsl(var(--heroui-default-100)) !important;
+  background-color: var(--surface-secondary) !important;
 }
 
 .dark [data-slot="backdrop"],
 [data-theme="dark"] [data-slot="backdrop"] {
-  background-color: hsl(var(--heroui-overlay) / 0.75) !important;
+  background-color: color-mix(in oklab, var(--overlay) 75%, transparent) !important;
 }
 
 .dark [data-slot="wrapper"] > [data-slot="base"],
 .dark [role="dialog"][data-slot="base"],
 [data-theme="dark"] [data-slot="wrapper"] > [data-slot="base"],
 [data-theme="dark"] [role="dialog"][data-slot="base"] {
-  background-color: hsl(var(--heroui-content1)) !important;
-  color: hsl(var(--heroui-foreground)) !important;
-  border-color: hsl(var(--heroui-divider)) !important;
+  background-color: var(--overlay) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
 }
 
 .dark [data-slot="header"],
@@ -504,99 +525,99 @@ textarea:focus-within,
 [data-theme="dark"] [data-slot="header"],
 [data-theme="dark"] [data-slot="body"],
 [data-theme="dark"] [data-slot="footer"] {
-  color: hsl(var(--heroui-foreground)) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="tabList"],
 [data-theme="dark"] [data-slot="tabList"] {
-  background-color: hsl(var(--heroui-default-100)) !important;
+  background-color: var(--surface-secondary) !important;
 }
 
 .dark [data-slot="tab"][data-selected="true"],
 [data-theme="dark"] [data-slot="tab"][data-selected="true"] {
-  background-color: hsl(var(--heroui-content1)) !important;
-  color: hsl(var(--heroui-foreground)) !important;
+  background-color: var(--overlay) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="tab"]:not([data-selected="true"]),
 [data-theme="dark"] [data-slot="tab"]:not([data-selected="true"]) {
-  color: hsl(var(--heroui-default-500)) !important;
+  color: var(--muted) !important;
 }
 
 .dark [data-slot="panel"],
 [data-theme="dark"] [data-slot="panel"] {
-  color: hsl(var(--heroui-foreground)) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="table"],
 .dark table[data-slot="table"],
 [data-theme="dark"] [data-slot="table"],
 [data-theme="dark"] table[data-slot="table"] {
-  background-color: hsl(var(--heroui-content1)) !important;
-  color: hsl(var(--heroui-foreground)) !important;
+  background-color: var(--overlay) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="thead"],
 [data-theme="dark"] [data-slot="thead"] {
-  background-color: hsl(var(--heroui-default-100)) !important;
+  background-color: var(--surface-secondary) !important;
 }
 
 .dark [data-slot="th"],
 .dark [data-slot="td"],
 [data-theme="dark"] [data-slot="th"],
 [data-theme="dark"] [data-slot="td"] {
-  color: hsl(var(--heroui-foreground)) !important;
-  border-color: hsl(var(--heroui-divider)) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
 }
 
 .dark [data-slot="tr"][data-hover="true"],
 [data-theme="dark"] [data-slot="tr"][data-hover="true"] {
-  background-color: hsl(var(--heroui-default-100)) !important;
+  background-color: var(--surface-secondary) !important;
 }
 
 .dark [data-slot="divider"],
 [data-theme="dark"] [data-slot="divider"] {
-  background-color: hsl(var(--heroui-divider)) !important;
+  background-color: var(--border) !important;
 }
 
 .dark [data-slot="helper-wrapper"] [data-slot="description"],
 [data-theme="dark"] [data-slot="helper-wrapper"] [data-slot="description"] {
-  color: hsl(var(--heroui-default-500)) !important;
+  color: var(--muted) !important;
 }
 
 .dark label[data-slot="base"],
 [data-theme="dark"] label[data-slot="base"] {
-  color: hsl(var(--heroui-foreground)) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="wrapper"] [data-slot="label"],
 [data-theme="dark"] [data-slot="wrapper"] [data-slot="label"] {
-  color: hsl(var(--heroui-foreground)) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="base"][data-slot="base"].bg-content1,
 .dark [data-slot="base"].border border-default-200,
 [data-theme="dark"] [data-slot="base"].bg-content1,
 [data-theme="dark"] [data-slot="base"].border border-default-200 {
-  background-color: hsl(var(--heroui-content1)) !important;
-  color: hsl(var(--heroui-foreground)) !important;
+  background-color: var(--overlay) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="cursor"],
 [data-theme="dark"] [data-slot="cursor"] {
-  background-color: hsl(var(--heroui-primary)) !important;
+  background-color: var(--accent) !important;
 }
 
 .dark [data-slot="segment"],
 [data-theme="dark"] [data-slot="segment"] {
-  background-color: hsl(var(--heroui-default-200)) !important;
+  background-color: var(--surface-secondary) !important;
 }
 
 .dark [data-slot="startContent"],
 .dark [data-slot="endContent"],
 [data-theme="dark"] [data-slot="startContent"],
 [data-theme="dark"] [data-slot="endContent"] {
-  color: hsl(var(--heroui-default-500)) !important;
+  color: var(--muted) !important;
 }
 
 /* Admin panel — indigo accents (dark only) */
@@ -617,13 +638,13 @@ textarea:focus-within,
 [data-theme="dark"] [data-slot="base"].border border-default-200,
 [data-theme="dark"] [data-slot="base"].border border-default-200,
 [data-theme="dark"] [data-slot="base"].border border-default-200 {
-  background-color: hsl(var(--heroui-content1)) !important;
-  color: hsl(var(--heroui-foreground)) !important;
+  background-color: var(--overlay) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="skeleton"],
 [data-theme="dark"] [data-slot="skeleton"] {
-  background-color: hsl(var(--heroui-default-200)) !important;
+  background-color: var(--surface-secondary) !important;
 }
 
 /* Emerald utility classes — dark only */
@@ -710,7 +731,7 @@ textarea:focus-within,
 [data-theme="dark"] [data-slot="autocomplete-trigger"] {
   background-color: rgba(39, 39, 42, 0.6) !important;
   border-color: #3f3f46 !important;
-  color: hsl(var(--heroui-foreground)) !important;
+  color: var(--foreground) !important;
 }
 
 /* HeroUI Input - Remove default ring/outline (keep our custom focus glow) */
@@ -757,12 +778,12 @@ textarea:focus-within,
 
 .dark [data-slot="input"],
 [data-theme="dark"] [data-slot="input"] {
-  color: hsl(var(--heroui-foreground)) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-slot="input"]::placeholder,
 [data-theme="dark"] [data-slot="input"]::placeholder {
-  color: hsl(var(--heroui-default-500) / 0.75) !important;
+  color: color-mix(in oklab, var(--muted) 75%, transparent) !important;
 }
 
 @layer components {

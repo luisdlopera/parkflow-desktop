@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { ListBox } from "@heroui/react";
-import { Select } from "@/components/ui/Select";
+import { Select } from "@/components/bridge/Select";
 import { Controller } from "react-hook-form";
 import { VehicleTypeIcon } from "@/components/vehicles/VehicleTypeIcon";
 

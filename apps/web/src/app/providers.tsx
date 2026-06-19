@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { HeroUIProvider } from "@heroui/system";
 import { Toast, toast } from "@heroui/react";
 import { useRouter } from "next/navigation";
-import { handleAuthFailureStatus } from "@/lib/auth";
+import { handleAuthFailureStatus, loadSession } from "@/lib/auth";
+import { useAuthStore } from "@/lib/stores/auth.store";
 import { SWRConfig } from "swr";
 
 import { DialogProvider } from "@/components/ui/DialogProvider";
@@ -109,6 +110,22 @@ function GlobalAuthEffects() {
       // @ts-ignore
       delete window.__parkflowFetchWrapper;
     };
+  }, []);
+
+  useEffect(() => {
+    loadSession().then((session) => {
+      if (!session) return;
+      useAuthStore.getState().setUser({
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+        role: session.user.role,
+      });
+      useAuthStore.getState().setPermissions(session.user.permissions as string[]);
+    });
+    const onLogout = () => useAuthStore.getState().logout();
+    window.addEventListener("parkflow-logout", onLogout);
+    return () => window.removeEventListener("parkflow-logout", onLogout);
   }, []);
 
   return null;
