@@ -1,2 +1,14 @@
-// Export all types from centralized location
-export type { TableRow, ActiveSession, ConfigRow, CashRegisterRow, CashSession, Vehicle, VehicleType, ApiErrorDetail, ApiErrorResponse } from './common.types';
+// Core domain types
+export type { TableRow, ActiveSession, ConfigRow, CashRegisterRow } from './common.types';
+
+// Auth domain
+export type { User, UserRole, Session, Permission, AuthState } from './auth.types';
+
+// Cash domain
+export type { CashSession, CashMovement, CashPolicy } from './cash.types';
+
+// Parking domain
+export type { Vehicle, VehicleType, ParkingSession, ParkingSpace } from './parking.types';
+
+// API layer
+export type { ApiResponse, PaginatedResponse, ApiErrorDetail, ApiErrorResponse, ApiError } from './api.types';
