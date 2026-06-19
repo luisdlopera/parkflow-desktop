@@ -62,7 +62,7 @@ export const SelectBase = React.forwardRef<any, SelectProps>(
         onChange={handleSelectionChange as any}
         classNames={{
           ...classNames,
-          trigger: `!bg-[#f4f4f5] data-[hover=true]:!bg-[#e4e4e7] shadow-none border-none dark:!bg-zinc-800/60 dark:data-[hover=true]:!bg-zinc-700/60 rounded-xl transition-colors ${classNames?.trigger || ""}`,
+          trigger: `!bg-[#f4f4f5] data-[hover=true]:!bg-[#e4e4e7] border-none dark:!bg-zinc-800/60 dark:data-[hover=true]:!bg-zinc-700/60 rounded-xl transition-colors ${classNames?.trigger || ""}`,
         }}
         className={className}
         isInvalid={isInvalid}

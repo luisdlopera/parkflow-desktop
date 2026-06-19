@@ -123,7 +123,7 @@ const Step3Rates = memo(function Step3Rates() {
         </RadioGroup>
 
         {showBaseRate && (
-          <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg mt-4 shadow-sm">
+          <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg mt-4">
             <span className="text-sm font-medium">
               Tarifa base por hora <RequiredMark />
             </span>
@@ -142,7 +142,7 @@ const Step3Rates = memo(function Step3Rates() {
         )}
 
         {showFullDayAlways && (
-          <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg mt-4 shadow-sm">
+          <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg mt-4">
             <span className="text-sm font-medium">
               Tarifa por día completo <RequiredMark />
             </span>
@@ -169,7 +169,7 @@ const Step3Rates = memo(function Step3Rates() {
             
             <div className="space-y-3">
               {/* Tarifa Nocturna */}
-              <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg shadow-sm">
+              <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
                 <div className="flex items-center justify-between">
                   <Switch isSelected={hasNightRate} onChange={(v) => setStepData({ ...stepData, hasNightRate: v })}>
                     <span className="text-sm font-medium">¿Maneja tarifa nocturna?</span>
@@ -186,7 +186,7 @@ const Step3Rates = memo(function Step3Rates() {
 
               {/* Día Completo (si no es el modelo principal) */}
               {!showFullDayAlways && (
-                <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg shadow-sm">
+                <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
                   <div className="flex items-center justify-between">
                     <Switch isSelected={hasFullDayRate} onChange={(v) => setStepData({ ...stepData, hasFullDayRate: v })}>
                       <span className="text-sm font-medium">¿Maneja tarifa de día completo (24h)?</span>
@@ -199,7 +199,7 @@ const Step3Rates = memo(function Step3Rates() {
               )}
 
               {/* Fines de semana */}
-              <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg shadow-sm">
+              <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
                 <div className="flex items-center justify-between">
                   <Switch isSelected={hasWeekendRate} onChange={(v) => setStepData({ ...stepData, hasWeekendRate: v })}>
                     <span className="text-sm font-medium">¿Tarifa diferente en fines de semana/festivos?</span>
@@ -218,7 +218,7 @@ const Step3Rates = memo(function Step3Rates() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Fracciones */}
-              <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg shadow-sm space-y-3">
+              <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg space-y-3">
                 <Switch isSelected={hasFractions} onChange={(v) => setStepData({ ...stepData, hasFractions: v })}>
                   <span className="text-sm font-medium">¿Cobra fracciones?</span>
                 </Switch>
@@ -231,7 +231,7 @@ const Step3Rates = memo(function Step3Rates() {
               </div>
 
               {/* Cortesía */}
-              <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg shadow-sm space-y-3">
+              <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg space-y-3">
                 <Switch isSelected={hasCourtesy} onChange={(v) => setStepData({ ...stepData, hasCourtesy: v })}>
                   <span className="text-sm font-medium">¿Minutos de cortesía (Gratis)?</span>
                 </Switch>
@@ -242,7 +242,7 @@ const Step3Rates = memo(function Step3Rates() {
             </div>
 
             {/* Redondeo */}
-            <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg shadow-sm flex items-center justify-between">
+            <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg flex items-center justify-between">
               <span className="text-sm font-medium">¿Cómo desea redondear el tiempo?</span>
               <Select 
                 className="w-48"
@@ -269,7 +269,7 @@ const Step3Rates = memo(function Step3Rates() {
           {/* 4. Tarifas por Vehículo */}
           <div className="space-y-4">
             <p className="text-sm font-semibold border-b border-default-200 pb-2">Tarifas por Vehículo</p>
-            <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg shadow-sm">
+            <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
               <Switch isSelected={enableRateByType} onChange={(v) => setStepData({ ...stepData, enableRateByType: v })}>
                 <span className="text-sm font-medium">¿Desea manejar tarifas diferentes por tipo de vehículo?</span>
               </Switch>

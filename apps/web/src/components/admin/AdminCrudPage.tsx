@@ -13,7 +13,7 @@ export function AdminCrudPage({ title, description, children }: AdminCrudPagePro
         <h1 className="text-2xl font-bold">{title}</h1>
         {description && <p className="text-default-500">{description}</p>}
       </div>
-      <div className="flex-1 bg-content1 rounded-large shadow-small p-4">
+      <div className="flex-1 bg-content1 rounded-large p-4">
         {children}
       </div>
     </div>

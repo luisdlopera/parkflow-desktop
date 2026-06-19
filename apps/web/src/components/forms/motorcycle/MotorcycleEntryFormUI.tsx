@@ -181,8 +181,8 @@ export function MotorcycleEntryFormUI({
               onClick={handleClearHelmets}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 !helmetDelivered
-                  ? "border-brand-500 bg-brand-500 text-white scale-[1.02] shadow-md"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
+                  ? "border-brand-500 bg-brand-500 text-white scale-[1.02]"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
               }`}
             >
               <User
@@ -207,8 +207,8 @@ export function MotorcycleEntryFormUI({
               onClick={handleAddHelmets}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 helmetDelivered
-                  ? "border-brand-500 bg-brand-500 text-white scale-[1.02] shadow-md"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:bg-brand-50 hover:shadow-sm"
+                  ? "border-brand-500 bg-brand-500 text-white scale-[1.02]"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:bg-brand-50"
               }`}
             >
               <MotorRacingHelmet

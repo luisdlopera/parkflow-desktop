@@ -224,7 +224,7 @@ export function QuickSearch() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Busca placas, tickets, usuarios, sedes..."
                 startContent={isLoading ? <Loader2 className="h-4 w-4 animate-spin text-primary-500" /> : <Search className="h-4 w-4 text-slate-400" />}
-                classNames={{ inputWrapper: "h-12 rounded-2xl bg-slate-50 shadow-none dark:bg-neutral-900/80" }}
+                classNames={{ inputWrapper: "h-12 rounded-2xl bg-slate-50 dark:bg-neutral-900/80" }}
               />
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-neutral-400">
                 <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 dark:bg-neutral-900"><Clock3 className="h-3.5 w-3.5" /> {modifier} + K</span>
@@ -236,7 +236,7 @@ export function QuickSearch() {
             <div className="max-h-[70vh] overflow-y-auto p-2 sm:p-3">
               {query.trim().length < 2 ? (
                 <div className="grid gap-4 p-3 sm:grid-cols-[1.3fr_1fr]">
-                  <Card className="border border-slate-200/70 bg-slate-50/80 shadow-none dark:border-neutral-800/70 dark:bg-neutral-900/40">
+                  <Card className="border border-slate-200/70 bg-slate-50/80 dark:border-neutral-800/70 dark:bg-neutral-900/40">
                     <Card.Content className="space-y-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Acceso rápido</p>
                       <div className="grid gap-2 sm:grid-cols-2">
@@ -260,7 +260,7 @@ export function QuickSearch() {
                     </Card.Content>
                   </Card>
 
-                  <Card className="border border-slate-200/70 bg-white shadow-none dark:border-neutral-800/70 dark:bg-neutral-950/50">
+                  <Card className="border border-slate-200/70 bg-white dark:border-neutral-800/70 dark:bg-neutral-950/50">
                     <Card.Content className="space-y-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Recientes</p>
                       <div className="space-y-2">
@@ -294,7 +294,7 @@ export function QuickSearch() {
                         </div>
                         <span className="text-xs text-slate-400">{items.length} resultados</span>
                       </div>
-                      <Card className="overflow-hidden border border-slate-200/70 shadow-none dark:border-neutral-800/70">
+                      <Card className="overflow-hidden border border-slate-200/70 dark:border-neutral-800/70">
                         <Card.Content className="p-0">
                           {items.map((item) => {
                             const isSelected = flatResults[selectedIndex]?.id === item.id;

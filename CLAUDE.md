@@ -163,9 +163,10 @@ Estas reglas provienen de una auditoría completa del frontend. Están en vigor 
 - ❌ NO usar `.catch(console.error)` en código de producción — manejar errores con `useAsyncAction` o `toast.error`
 
 7. **UI Visual Style**:
-   - ❌ NO box shadows (`shadow-*`, `drop-shadow-*`) anywhere in the UI
-   - ✅ Use thin borders instead: `border border-slate-200` for cards, inputs, panels
-   - ✅ Elevation via `border` + subtle `bg-*` background contrast, never shadow
+   - 🚫 **STRICTLY NO BOX SHADOWS**: (`shadow-*`, `shadow-sm`, `shadow-md`, `drop-shadow-*`) anywhere in the UI.
+   - 🚫 Do not use shadows for ANY component (Cards, Inputs, Selects, Modals, etc.).
+   - ✅ Use thin borders instead: `border border-slate-200` (or `border-default-200`) for cards, inputs, panels.
+   - ✅ Elevation via `border` + subtle `bg-*` background contrast, never shadow.
    - ✅ All color pickers and pickers: use HeroUI `ColorPicker`, `ColorArea`, `ColorSlider`, `ColorField`
    - ✅ Consistent border radius: `rounded-xl` for cards, `rounded-lg` for inputs/buttons
 

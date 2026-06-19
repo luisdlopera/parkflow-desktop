@@ -359,7 +359,7 @@ export default function VehicleEntryFormV2({
       <form
         onSubmit={handleChildSubmit}
         onKeyDown={handleFormKeyDown}
-        className={`rounded-2xl space-y-4 ${isSingleType ? "p-4 sm:p-8 border-none shadow-none bg-transparent" : "p-6"}`}
+        className={`rounded-2xl space-y-4 ${isSingleType ? "p-4 sm:p-8 border-none bg-transparent" : "p-6"}`}
       >
         {isMotorcycleOnly ? (
           <MotorcycleEntryFormUI

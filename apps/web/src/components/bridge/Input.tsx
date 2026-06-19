@@ -32,8 +32,8 @@ export interface InputProps extends Omit<HeroInputProps, "size" | "color" | "var
 }
 
 /** Default styling: white bg + subtle border for clear contrast against any container */
-const INPUT_BASE_CLASS = "bg-[#f4f4f5] text-slate-900 shadow-none border-none dark:bg-zinc-800/60 dark:text-white rounded-xl transition-colors";
-const INPUT_BORDERED_CLASS = "bg-transparent text-slate-900 border-2 border-default-200 rounded-xl transition-colors shadow-none dark:text-white";
+const INPUT_BASE_CLASS = "bg-[#f4f4f5] text-slate-900 border-none dark:bg-zinc-800/60 dark:text-white rounded-xl transition-colors";
+const INPUT_BORDERED_CLASS = "bg-transparent text-slate-900 border-2 border-default-200 rounded-xl transition-colors dark:text-white";
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, description, errorMessage, isInvalid, isRequired, className, classNames, startContent, endContent, isClearable, onClear, size, color, variant, radius, isDisabled, disabled, value, defaultValue, name, onChange, onBlur, "aria-label": ariaLabel, ...props }, ref) => {

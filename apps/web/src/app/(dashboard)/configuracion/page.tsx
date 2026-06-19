@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { currentUser } from "@/features/auth/services/auth-domain.service";
 import { usePermissions } from "@/hooks/auth/usePermissions";
 import type { Permission } from "@parkflow/types";
+import ConfigSidebar from "@/features/configuration/components/ui/ConfigSidebar";
 
 const SetupBasicoTab = dynamic(() => import("@/features/configuration/components/ui/SetupBasicoTab").then((m) => ({ default: m.SetupBasicoTab })), {
   ssr: false,
@@ -117,7 +118,7 @@ export default function ConfiguracionPage() {
     cfgEdit: perm["configuracion:editar"] ?? false
   }), [perm]);
 
-  if (!section) return null;
+  if (!section) return <ConfigSidebar />;
 
   const config = SECTION_CONFIG[section];
   if (!config) return null;

@@ -26,8 +26,8 @@ export interface TextAreaProps extends Omit<HeroTextAreaProps, "size" | "color" 
 }
 
 /** Default styling: white bg + subtle border for clear contrast against any container */
-const TEXTAREA_BASE_CLASS = "bg-[#f4f4f5] shadow-none border-none dark:bg-zinc-800/60 rounded-xl transition-colors";
-const TEXTAREA_BORDERED_CLASS = "bg-transparent border-2 border-default-200 rounded-xl transition-colors shadow-none";
+const TEXTAREA_BASE_CLASS = "bg-[#f4f4f5] border-none dark:bg-zinc-800/60 rounded-xl transition-colors";
+const TEXTAREA_BORDERED_CLASS = "bg-transparent border-2 border-default-200 rounded-xl transition-colors";
 
 export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
   ({ label, description, errorMessage, isInvalid, isRequired, className, classNames, minRows, maxRows, size, color, variant, radius, value, defaultValue, name, onChange, onBlur, "aria-label": ariaLabel, ...props }, ref) => {

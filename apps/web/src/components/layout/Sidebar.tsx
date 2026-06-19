@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useParkingShortcuts } from "@/hooks/ui/useKeyboardShortcuts";
 import { useState, useEffect } from "react";
 import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
 import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
 import { useAuthStore } from "@/lib/stores/auth.store";
+import { CONFIG_NAVIGATION } from "@/features/configuration/constants/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { label: "Dashboard", href: "/", shortcut: "", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
@@ -18,25 +20,14 @@ const navItems = [
   { label: "Configuración", href: "/configuracion", shortcut: "", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
 ];
 
-const CONFIG_SUBITEMS = [
-  { key: "agreements", label: "Convenios", icon: "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" },
-  { key: "prepaid", label: "Prepagados", icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" },
-  { key: "users", label: "Usuarios", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" },
-  { key: "parameters", label: "Parámetros", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
-  { key: "interface", label: "Interfaz", icon: "M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" },
-  { key: "onboarding", label: "Asistente Inicial", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
-  { key: "masters", label: "Maestros", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
-  { key: "espacios", label: "Espacios", href: "/configuracion/espacios", icon: "M3 3h18v18H3z M3 9h18 M3 15h18 M9 3v18 M15 3v18" },
-  { key: "lockers", label: "Lockers", href: "/configuracion/lockers", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" },
-];
-
 export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   useParkingShortcuts();
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
-  const [configView, setConfigView] = useState(false);
-  const currentSection = searchParams.get("section") || "rates";
+  const [configView, setConfigView] = useState<string | false>(false);
+  const currentSection = searchParams.get("section");
   const flags = useFeatureFlags();
   const authUser = useAuthStore((s) => s.user);
   const isAuditor = authUser?.role === "AUDITOR";
@@ -67,6 +58,17 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
   }
 
   const sidePad = collapsed ? "px-2" : "px-4";
+
+  // Framer Motion variants for slide animation
+  const slideVariants = {
+    initial: { opacity: 0, x: -10 },
+    animate: { opacity: 1, x: 0, transition: { duration: 0.2, ease: "easeOut" as const } },
+    exit: { opacity: 0, x: 10, transition: { duration: 0.2, ease: "easeIn" as const } },
+  };
+
+  const activeCategory = configView && configView !== "ROOT" 
+    ? CONFIG_NAVIGATION.find(c => c.id === configView) 
+    : null;
 
   return (
     <aside data-testid="desktop-sidebar" className={`
@@ -107,7 +109,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className={`space-y-1 ${sidePad}`}>
           {collapsed && (
             <button
@@ -122,123 +124,174 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
             </button>
           )}
 
-          {!collapsed && configView ? (
-            /* Vista de configuración: botón volver + título + sub-items */
-            <div className="space-y-3">
-              <button
-                onClick={() => setConfigView(false)}
-                className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors px-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Volver
-              </button>
+          {!collapsed && (
+            <AnimatePresence mode="wait">
+              {configView === "ROOT" && (
+                <motion.div key="root-view" variants={slideVariants} initial="initial" animate="animate" exit="exit" className="space-y-3">
+                  <button
+                    onClick={() => setConfigView(false)}
+                    className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors px-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Volver al inicio
+                  </button>
 
-              <div className="flex items-center gap-3 px-1">
-                <svg className="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={navItems[6].icon} />
-                </svg>
-                <span className="text-sm font-semibold text-slate-800">Configuración</span>
-              </div>
+                  <div className="flex items-center gap-3 px-1">
+                    <svg className="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={navItems[6].icon} />
+                    </svg>
+                    <span className="text-sm font-semibold text-slate-800">Configuración</span>
+                  </div>
 
-              <nav className="space-y-1">
-                {CONFIG_SUBITEMS.filter((sub) => {
-                  if (sub.key === "agreements") return flags.agreements;
-                  if (sub.key === "prepaid") return flags.prepaidPlans;
-                  if (sub.key === "lockers") return flags.lockers;
-                  return true;
-                }).map((sub) => {
-                  const href = (sub as any).href || `/configuracion?section=${sub.key}`;
-                  const subActive = (sub as any).href ? pathname === (sub as any).href : currentSection === sub.key;
-                  return (
-                    <Link
-                      key={sub.key}
-                      href={href}
-                      className={`
-                        flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
-                        ${subActive
-                          ? "bg-brand text-white border border-default-200"
-                          : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
-                      `}
-                    >
-                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={sub.icon} />
-                      </svg>
-                      <span>{sub.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
-          ) : (
-            /* Vista normal: todos los items de navegación */
-            <nav className="space-y-1">
-              {allNavItems.map((item) => {
-                const active = pathname === item.href;
-                const isConfig = item.href === "/configuracion";
-
-                if (isConfig) {
-                  return (
-                    <div key={item.href}>
+                  <nav className="space-y-1">
+                    {CONFIG_NAVIGATION.map((group) => (
                       <button
-                        onClick={() => setConfigView(true)}
-                        className={`
-                          w-full flex items-center rounded-xl font-medium transition-all
-                          ${pathname?.startsWith("/configuracion")
-                            ? "bg-brand text-white border border-default-200"
-                            : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
-                          ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
-                        `}
-                        title={collapsed ? item.label : undefined}
+                        key={group.id}
+                        onClick={() => setConfigView(group.id)}
+                        className="w-full flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"
                       >
                         <div className="flex items-center gap-3">
-                          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
-                          </svg>
-                          {!collapsed && <span className="truncate">{item.label}</span>}
+                          <group.icon className="w-5 h-5 flex-shrink-0" />
+                          <span>{group.label}</span>
                         </div>
-                        {!collapsed && (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        )}
+                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </button>
-                    </div>
-                  );
-                }
+                    ))}
+                  </nav>
+                </motion.div>
+              )}
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`
-                      flex items-center rounded-xl font-medium transition-all
-                      ${active
-                        ? "bg-brand text-white border border-default-200"
-                        : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
-                      ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
-                    `}
-                    title={collapsed ? item.label : undefined}
+              {activeCategory && (
+                <motion.div key="category-view" variants={slideVariants} initial="initial" animate="animate" exit="exit" className="space-y-3">
+                  <button
+                    onClick={() => setConfigView("ROOT")}
+                    className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors px-1"
                   >
-                    <div className="flex items-center gap-3">
-                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
-                      </svg>
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                    </div>
-                    {!collapsed && item.shortcut && (
-                      <kbd className={`
-                        inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded flex-shrink-0
-                        ${active ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500 dark:bg-gray-700 dark:text-gray-200"}
-                      `}>
-                        {item.shortcut}
-                      </kbd>
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Volver a categorías
+                  </button>
+
+                  <div className="flex items-center gap-3 px-1">
+                    <activeCategory.icon className="w-5 h-5 text-brand" />
+                    <span className="text-sm font-semibold text-slate-800">{activeCategory.label}</span>
+                  </div>
+
+                  <nav className="space-y-1">
+                    {activeCategory.items.filter((item) => {
+                      if (item.flag === "cash") return shouldShowModule(runtimeConfig, "cash", true);
+                      if (item.flag === "lockers") return runtimeConfig?.operationConfiguration?.helmetHandling === "LOCKERS" || flags.lockers;
+                      if (item.flag === "agreements") return flags.agreements;
+                      if (item.flag === "prepaidPlans") return flags.prepaidPlans;
+                      return true;
+                    }).map((sub) => {
+                      const url = new URL(sub.href, "http://localhost");
+                      const itemSection = url.searchParams.get("section");
+                      const subActive = itemSection 
+                        ? currentSection === itemSection 
+                        : (pathname === sub.href && !currentSection);
+
+                      const Icon = sub.icon;
+                      
+                      return (
+                        <Link
+                          key={sub.key}
+                          href={sub.href}
+                          className={`
+                            flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
+                            ${subActive
+                              ? "bg-brand text-white border border-default-200"
+                              : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
+                          `}
+                        >
+                          <Icon className="w-5 h-5 flex-shrink-0" />
+                          <span>{sub.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                </motion.div>
+              )}
+
+              {!configView && (
+                <motion.div key="main-nav" variants={slideVariants} initial="initial" animate="animate" exit="exit">
+                  <nav className="space-y-1">
+                    {allNavItems.map((item) => {
+                      const active = pathname === item.href;
+                      const isConfig = item.href === "/configuracion";
+
+                      if (isConfig) {
+                        return (
+                          <div key={item.href}>
+                            <button
+                              onClick={() => {
+                                setConfigView("ROOT");
+                                router.push("/configuracion");
+                              }}
+                              className={`
+                                w-full flex items-center rounded-xl font-medium transition-all
+                                ${pathname?.startsWith("/configuracion")
+                                  ? "bg-brand text-white border border-default-200"
+                                  : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
+                                ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
+                              `}
+                              title={collapsed ? item.label : undefined}
+                            >
+                              <div className="flex items-center gap-3">
+                                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+                                </svg>
+                                {!collapsed && <span className="truncate">{item.label}</span>}
+                              </div>
+                              {!collapsed && (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`
+                            flex items-center rounded-xl font-medium transition-all
+                            ${active
+                              ? "bg-brand text-white border border-default-200"
+                              : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
+                            ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
+                          `}
+                          title={collapsed ? item.label : undefined}
+                        >
+                          <div className="flex items-center gap-3">
+                            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+                            </svg>
+                            {!collapsed && <span className="truncate">{item.label}</span>}
+                          </div>
+                          {!collapsed && item.shortcut && (
+                            <kbd className={`
+                              inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded flex-shrink-0
+                              ${active ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500 dark:bg-gray-700 dark:text-gray-200"}
+                            `}>
+                              {item.shortcut}
+                            </kbd>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                </motion.div>
+              )}
+            </AnimatePresence>
           )}
         </div>
       </div>

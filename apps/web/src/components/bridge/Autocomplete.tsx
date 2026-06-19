@@ -16,7 +16,7 @@ export const AutocompleteBase = React.forwardRef<any, AutocompleteProps>(
         classNames={{
           ...classNames,
           base: `${className || ""} ${classNames?.base || ""}`,
-          trigger: `shadow-none border-none rounded-xl transition-colors ${classNames?.trigger || ""}`,
+          trigger: `border-none rounded-xl transition-colors ${classNames?.trigger || ""}`,
         }}
         {...props}
       />

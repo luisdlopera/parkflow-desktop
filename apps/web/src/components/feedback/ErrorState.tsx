@@ -73,7 +73,7 @@ export function ErrorState({
                   exit={{ height: 0, opacity: 0 }}
                   className="overflow-hidden"
                 >
-                  <Card className="mt-4 max-w-lg border-none bg-default-50 shadow-none">
+                  <Card className="mt-4 max-w-lg border-none bg-default-50">
                     <Card.Content className="p-4 text-left font-mono text-[10px] text-default-500 leading-relaxed">
                       {errorCode && (
                         <div className="mb-1">

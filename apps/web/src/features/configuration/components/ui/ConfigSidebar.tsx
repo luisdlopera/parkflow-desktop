@@ -1,144 +1,114 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
-import {
-  SlidersHorizontal,
-  Building2,
-  CreditCard,
-  Printer,
-  Clock,
-  Wallet,
-  Cog,
-  Grid3x3,
-  Tags,
-  type LucideIcon,
-} from "lucide-react";
-
-type GridItem = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  description: string;
-};
-
-const GRID_GROUPS: { label: string; items: GridItem[] }[] = [
-  {
-    label: "Administración",
-    items: [
-      { href: "/configuracion", label: "General", icon: SlidersHorizontal, description: "Configuración general del sistema" },
-    ],
-  },
-  {
-    label: "Organización",
-    items: [
-      { href: "/configuracion/sedes", label: "Sedes", icon: Building2, description: "Administrar sedes del parqueadero" },
-      { href: "/configuracion/cajas", label: "Cajas", icon: CreditCard, description: "Puntos de caja y terminales" },
-    ],
-  },
-  {
-    label: "Operación",
-    items: [
-      { href: "/configuracion/operacion", label: "Operación", icon: Cog, description: "Reglas y parámetros operativos" },
-    ],
-  },
-  {
-    label: "Cobro",
-    items: [
-      { href: "/configuracion/metodos-pago", label: "Métodos de pago", icon: Wallet, description: "Medios de cobro aceptados" },
-      { href: "/configuracion/fracciones", label: "Fracciones", icon: Clock, description: "Fracciones de tiempo y cobro" },
-    ],
-  },
-  {
-    label: "Infraestructura",
-    items: [
-      { href: "/configuracion/impresoras", label: "Impresoras", icon: Printer, description: "Dispositivos de impresión" },
-    ],
-  },
-  {
-    label: "Estacionamiento",
-    items: [
-      { href: "/configuracion/espacios", label: "Espacios", icon: Grid3x3, description: "Distribución de espacios" },
-      { href: "/configuracion/lockers", label: "Lockers", icon: Tags, description: "Lockers numerados para cascos" },
-    ],
-  },
-];
+import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
+import { CONFIG_NAVIGATION } from "../../constants/navigation";
+import { motion } from "framer-motion";
 
 export default function ConfigSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
+  const flags = useFeatureFlags();
 
   useEffect(() => {
     fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
   }, []);
 
+  const currentSection = searchParams.get("section");
+
   const filteredGridGroups = useMemo(
     () =>
-      GRID_GROUPS.map((group) => ({
+      CONFIG_NAVIGATION.map((group) => ({
         ...group,
         items: group.items.filter((item) => {
-          if (item.href === "/configuracion/cajas") {
-            return shouldShowModule(runtimeConfig, "cash", true);
-          }
-          if (item.href === "/configuracion/lockers") {
-            return runtimeConfig?.operationConfiguration?.helmetHandling === "LOCKERS";
-          }
+          if (item.flag === "cash") return shouldShowModule(runtimeConfig, "cash", true);
+          if (item.flag === "lockers") return runtimeConfig?.operationConfiguration?.helmetHandling === "LOCKERS" || flags.lockers;
+          if (item.flag === "agreements") return flags.agreements;
+          if (item.flag === "prepaidPlans") return flags.prepaidPlans;
           return true;
         }),
       })).filter((group) => group.items.length > 0),
-    [runtimeConfig]
+    [runtimeConfig, flags]
   );
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="space-y-6">
+    <motion.div 
+      variants={containerVariants} 
+      initial="hidden" 
+      animate="show" 
+      className="space-y-8"
+    >
       {filteredGridGroups.map((group) => (
-        <div key={group.label}>
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
-            {group.label}
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <motion.div key={group.id} variants={itemVariants}>
+          <div className="flex items-center gap-2 mb-4">
+            <group.icon className="w-5 h-5 text-slate-400" />
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">
+              {group.label}
+            </h2>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {group.items.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const url = new URL(item.href, "http://localhost");
+              const itemSection = url.searchParams.get("section");
+              const isActive = itemSection 
+                ? currentSection === itemSection 
+                : (pathname === item.href && !currentSection);
+
               return (
                 <Link
-                  key={item.href}
+                  key={item.key}
                   href={item.href}
-                  className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${
+                  className={`group relative flex flex-col gap-3 rounded-2xl border p-5 transition-all hover:-translate-y-1 hover:shadow-md ${
                     isActive
-                      ? "border-primary-200 bg-primary-50 border border-default-200"
-                      : "border-slate-200 bg-white hover:border-slate-300 hover:border border-default-200"
+                      ? "border-primary-200 bg-primary-50/50 shadow-sm"
+                      : "border-slate-200 bg-white hover:border-primary-300"
                   }`}
                 >
-                  <div
-                    className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${
-                      isActive
-                        ? "bg-primary-500 text-white"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl transition-colors ${
+                        isActive
+                          ? "bg-primary-500 text-white shadow-sm"
+                          : "bg-slate-100 text-slate-500 group-hover:bg-primary-100 group-hover:text-primary-600"
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                    </div>
                     <p
-                      className={`text-sm font-semibold ${
-                        isActive ? "text-primary-900" : "text-slate-900"
+                      className={`text-sm font-bold ${
+                        isActive ? "text-primary-900" : "text-slate-700 group-hover:text-slate-900"
                       }`}
                     >
                       {item.label}
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
-                      {item.description}
-                    </p>
                   </div>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    {item.description}
+                  </p>
                 </Link>
               );
             })}
           </div>
-        </div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }

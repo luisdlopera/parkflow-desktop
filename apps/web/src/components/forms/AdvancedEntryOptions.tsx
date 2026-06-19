@@ -1,12 +1,22 @@
 "use client";
 import React from "react";
-import { Controller } from "react-hook-form";
+import { Controller, FieldValues } from "react-hook-form";
 import { ListBox } from "@heroui/react";
 import { Select } from "@/components/bridge/Select";
 import { Input } from "@/components/bridge/Input";
 import { FormLayoutFactory } from "@/components/forms/dynamic/FormLayoutFactory";
 
-export default function AdvancedEntryOptions({
+interface AdvancedEntryOptionsProps<T extends FieldValues> {
+  configuredSites: Array<{ code?: string; name?: string }>;
+  hasMultipleSites: boolean;
+  spaces: Array<{ id: string; code: string; label?: string }>;
+  control: any; // From react-hook-form useForm hook
+  ENTRY_FORM_LAYOUT: any; // Dynamic form layout configuration
+  settings: { skipConditionCheck?: boolean };
+  selectedTypeCode: string;
+}
+
+export default function AdvancedEntryOptions<T extends FieldValues>({
   configuredSites,
   hasMultipleSites,
   spaces,
@@ -14,14 +24,14 @@ export default function AdvancedEntryOptions({
   ENTRY_FORM_LAYOUT,
   settings,
   selectedTypeCode,
-}: any) {
+}: AdvancedEntryOptionsProps<T>) {
   return (
     <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-200">
       <div className="grid grid-cols-2 gap-3">
         {hasMultipleSites && (
           <Controller
             name="site"
-            control={control as any}
+            control={control}
             render={({ field }) => (
               <Select
                 aria-label="Sede"
@@ -53,29 +63,29 @@ export default function AdvancedEntryOptions({
         )}
         <Controller
           name="lane"
-          control={control as any}
+          control={control}
           render={({ field }) => <Input {...field} label="Carril" placeholder="1" size="sm" />}
         />
         <Controller
           name="booth"
-          control={control as any}
+          control={control}
           render={({ field }) => <Input {...field} label="Caja" placeholder="Caja 1" size="sm" />}
         />
         <Controller
           name="terminal"
-          control={control as any}
+          control={control}
           render={({ field }) => <Input {...field} label="Terminal" placeholder="T1" size="sm" />}
         />
       </div>
 
       <Controller
         name="countryCode"
-        control={control as any}
+        control={control}
         render={({ field }) => <Input {...field} label="País placa" placeholder="CO" size="sm" maxLength={2} />}
       />
       <Controller
         name="rateId"
-        control={control as any}
+        control={control}
         render={({ field }) => (
           <Input {...field} label="Tarifa (opcional)" placeholder="ID de tarifa específica" size="sm" />
         )}
@@ -83,7 +93,7 @@ export default function AdvancedEntryOptions({
 
       <Controller
         name="parkingSpaceId"
-        control={control as any}
+        control={control}
         render={({ field: { value, onChange, ...field } }) => (
           <Select
             {...field}
@@ -113,7 +123,7 @@ export default function AdvancedEntryOptions({
         )}
       />
 
-      <FormLayoutFactory layout={ENTRY_FORM_LAYOUT} control={control as any} selectedVehicleType={selectedTypeCode} skipConditionCheck={settings.skipConditionCheck} />
+      <FormLayoutFactory layout={ENTRY_FORM_LAYOUT} control={control} selectedVehicleType={selectedTypeCode} skipConditionCheck={settings.skipConditionCheck} />
     </div>
   );
 }
