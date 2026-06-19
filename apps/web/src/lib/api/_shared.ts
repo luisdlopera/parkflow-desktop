@@ -1,6 +1,6 @@
 import { buildApiHeaders, type AuthHeaderOptions } from "../api";
-import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import { apiBase, cfgBase as cfgBaseUrl } from "./config";
+import safeFetch from "./fetch";
 
 export type { AuthHeaderOptions };
 export { buildApiHeaders };
@@ -27,13 +27,5 @@ export function cfgBase(): string {
 }
 
 export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  try {
-    const res = await fetch(url, options);
-    if (!res.ok) throw await normalizeApiError(res);
-    if (res.status === 204) return {} as T;
-    return (await res.json()) as T;
-  } catch (error) {
-    if (error instanceof Error && error.name === "ApiError") throw error;
-    throw handleNetworkError(error);
-  }
+  return safeFetch<T>(url, options);
 }

@@ -7,9 +7,7 @@ import { useRouter } from "next/navigation";
 import { handleAuthFailureStatus } from "@/lib/auth";
 import { SWRConfig } from "swr";
 
-import { TenantConfigProvider } from "@/lib/providers/TenantConfigProvider";
 import { DialogProvider } from "@/components/ui/DialogProvider";
-import { FeatureFlagProvider } from "@/components/providers/FeatureFlagProvider";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -22,14 +20,10 @@ export function Providers({ children }: ProvidersProps) {
     <SWRConfig value={{ revalidateOnFocus: false }}>
       <HeroUIProvider navigate={router.push}>
         <Toast.Provider placement="top end" />
-        <TenantConfigProvider>
-          <FeatureFlagProvider>
-            <DialogProvider>
-              <GlobalAuthEffects />
-              {children}
-            </DialogProvider>
-          </FeatureFlagProvider>
-        </TenantConfigProvider>
+        <DialogProvider>
+          <GlobalAuthEffects />
+          {children}
+        </DialogProvider>
       </HeroUIProvider>
     </SWRConfig>
   );
@@ -101,12 +95,19 @@ function GlobalAuthEffects() {
     if (!window.__parkflowNativeFetch) {
       window.__parkflowNativeFetch = window.fetch.bind(window);
     }
-    window.fetch = wrapped;
+    // Expose a namespaced wrapper instead of replacing global fetch to avoid breaking
+    // integrations (Tauri native fetch bridge, MSW in tests, etc.). Consumers should
+    // use the centralized API wrapper in /lib/api/fetch.ts which will prefer this wrapper
+    // when present.
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    window.__parkflowFetchWrapper = wrapped;
 
     return () => {
-      if (window.__parkflowNativeFetch) {
-        window.fetch = window.__parkflowNativeFetch;
-      }
+      // cleanup wrapper
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      delete window.__parkflowFetchWrapper;
     };
   }, []);
 
@@ -116,5 +117,6 @@ function GlobalAuthEffects() {
 declare global {
   interface Window {
     __parkflowNativeFetch?: typeof fetch;
+    __parkflowFetchWrapper?: typeof fetch;
   }
 }
