@@ -1,10 +1,10 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useCallback, useMemo } from "react";
-import useSWR from "swr";
+import { useEffect, useCallback, useMemo } from "react";
+import useSWR, { mutate as globalMutate } from "swr";
 import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 
-interface TenantConfigContextType {
+export interface TenantConfigContextType {
   runtimeConfig: RuntimeConfig | null;
   loading: boolean;
   error: boolean;
@@ -15,9 +15,7 @@ interface TenantConfigContextType {
   getOperationConfigValue: <T>(key: string, defaultValue: T) => T;
 }
 
-const TenantConfigContext = createContext<TenantConfigContextType | null>(null);
-
-export function TenantConfigProvider({ children }: { children: React.ReactNode }) {
+export function useTenantConfig(): TenantConfigContextType {
   const { data: runtimeConfig, error: swrError, isLoading, mutate } = useSWR<RuntimeConfig | null>(
     "tenant-runtime-config",
     fetchRuntimeConfig,
@@ -35,11 +33,11 @@ export function TenantConfigProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     const handleRefreshRequest = () => {
-      void mutate();
+      void globalMutate("tenant-runtime-config");
     };
     window.addEventListener("parkflow-refresh-runtime-config", handleRefreshRequest);
     return () => window.removeEventListener("parkflow-refresh-runtime-config", handleRefreshRequest);
-  }, [mutate]);
+  }, []);
 
   const supportsVehicleType = useCallback((typeCode: string): boolean => {
     if (!runtimeConfig?.vehicleTypes) return false;
@@ -64,7 +62,7 @@ export function TenantConfigProvider({ children }: { children: React.ReactNode }
     return value !== undefined ? (value as T) : defaultValue;
   }, [runtimeConfig]);
 
-  const value = useMemo(
+  return useMemo(
     () => ({
       runtimeConfig: runtimeConfig ?? null,
       loading,
@@ -77,18 +75,11 @@ export function TenantConfigProvider({ children }: { children: React.ReactNode }
     }),
     [runtimeConfig, loading, error, refresh, supportsVehicleType, isModuleEnabled, isFeatureEnabled, getOperationConfigValue],
   );
-
-  return (
-    <TenantConfigContext.Provider value={value}>
-      {children}
-    </TenantConfigContext.Provider>
-  );
 }
 
-export function useTenantConfig() {
-  const context = useContext(TenantConfigContext);
-  if (!context) {
-    throw new Error("useTenantConfig must be used within a TenantConfigProvider");
-  }
-  return context;
+// Para compatibilidad y evitar fallos al eliminar el Provider de app/providers.tsx
+export function TenantConfigProvider({ children }: { children: React.ReactNode }) {
+  // Inicializamos la data temprano, pero retornamos children directamente
+  useTenantConfig();
+  return <>{children}</>;
 }

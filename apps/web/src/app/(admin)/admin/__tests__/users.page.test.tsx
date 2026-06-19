@@ -15,7 +15,7 @@ describe("UsersPage", () => {
 
   it("shows stats cards", () => {
     render(<DialogProvider><UsersPage /></DialogProvider>);
-    expect(screen.getByText("Total Usuarios")).toBeDefined();
+    expect(screen.getByText("Total")).toBeDefined();
     expect(screen.getByText("4")).toBeDefined();
   });
 

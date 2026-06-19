@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/Input";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/settings/FormDrawer";
-import { useConfigCrud } from "@/hooks/useConfigCrud";
+import { useConfigCrud } from "@/features/configuration/hooks/useConfigCrud";
 
 const COLS: ColumnDef<PaymentMethodRow>[] = [
   { key: "code", label: "Código" },

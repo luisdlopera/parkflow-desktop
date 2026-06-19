@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
-import { useConfigurationApi } from '@/hooks/useConfigurationApi';
+import { useConfigurationApi } from '@/features/configuration/hooks/useConfigurationApi';
 
 interface ModulesTabProps {
   companyId: string;

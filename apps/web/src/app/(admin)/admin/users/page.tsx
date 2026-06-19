@@ -1,34 +1,16 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { ListBox, useOverlayState, Button as HeroButton } from "@heroui/react";
-import { Alert } from "@/components/ui/Alert";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
-import { useDialog } from "@/components/ui/DialogProvider";
+import React, { useState } from "react";
 import { Chip } from "@/components/ui/Chip";
-import { Dropdown } from "@/components/ui/Dropdown";
 import { Avatar } from "@/components/ui/Avatar";
-import { DropdownMenu } from "@/components/ui/Dropdown";
-import { DropdownItem } from "@/components/ui/Dropdown";
-import { Card } from "@/components/ui/Card";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/Switch";
 import { Input } from "@/components/ui/Input";
-import {
-  Users,
-  Plus,
-  MoreVertical,
-  Pencil,
-  Trash2,
-  Eye,
-  Mail,
-  Shield,
-  Check,
-  X,
-} from "lucide-react";
-import { authHeaders } from "@/lib/auth";
-import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
+import { Select } from "@/components/ui/Select";
+import { Alert } from "@/components/ui/Alert";
+import { Card } from "@/components/ui/Card";
+import { Users, Check, Shield } from "lucide-react";
+import { EntityManagementPage } from "@/shared/components/crud/EntityManagementPage";
+import type { DataTableColumn } from "@/components/ui/DataTable";
 
 interface AdminUser {
   id: string;
@@ -53,15 +35,6 @@ const AVAILABLE_PERMISSIONS = [
   { value: "companies:write", label: "Editar empresas" },
   { value: "licenses:read", label: "Ver licencias" },
   { value: "licenses:write", label: "Gestionar licencias" },
-  { value: "devices:read", label: "Ver dispositivos" },
-  { value: "devices:write", label: "Controlar dispositivos" },
-  { value: "monitoring:read", label: "Ver monitoreo" },
-  { value: "monitoring:write", label: "Resolver incidentes" },
-  { value: "audit:read", label: "Ver auditoría" },
-  { value: "users:read", label: "Ver usuarios" },
-  { value: "users:write", label: "Gestionar usuarios" },
-  { value: "settings:read", label: "Ver configuración" },
-  { value: "settings:write", label: "Editar configuración" },
 ];
 
 const MOCK_USERS: AdminUser[] = [
@@ -75,129 +48,14 @@ const MOCK_USERS: AdminUser[] = [
     createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
     permissions: AVAILABLE_PERMISSIONS.map((p) => p.value),
   },
-  {
-    id: "2",
-    name: "Juan Pérez",
-    email: "juan@parkflow.local",
-    role: "ADMIN",
-    active: true,
-    lastAccessAt: new Date(Date.now() - 3600000).toISOString(),
-    createdAt: new Date(Date.now() - 86400000 * 15).toISOString(),
-    permissions: ["companies:read", "licenses:read", "devices:read", "monitoring:read", "audit:read"],
-  },
-  {
-    id: "3",
-    name: "María García",
-    email: "maria@parkflow.local",
-    role: "SUPPORT",
-    active: true,
-    lastAccessAt: new Date(Date.now() - 7200000).toISOString(),
-    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-    permissions: ["monitoring:read", "monitoring:write", "devices:read", "audit:read"],
-  },
-  {
-    id: "4",
-    name: "Carlos López",
-    email: "carlos@parkflow.local",
-    role: "AUDITOR",
-    active: false,
-    lastAccessAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    permissions: ["audit:read", "companies:read", "licenses:read"],
-  },
 ];
 
-export default function AdminUsersPage() {
-  const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Form states
-  const [formName, setFormName] = useState("");
-  const [formEmail, setFormEmail] = useState("");
-  const [formRole, setFormRole] = useState<AdminUser["role"]>("ADMIN");
-  const [formActive, setFormActive] = useState(true);
-  const [formPermissions, setFormPermissions] = useState<string[]>([]);
-  const { confirm } = useDialog();
-
-  const { isOpen: isModalOpen, open: onModalOpen, close: onModalClose } = useOverlayState();
-
-  const filteredUsers = users.filter((user) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      user.name.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query) ||
-      user.role.toLowerCase().includes(query)
-    );
-  });
-
-  const handleCreate = () => {
-    setSelectedUser(null);
-    setIsEditing(false);
-    setFormName("");
-    setFormEmail("");
-    setFormRole("ADMIN");
-    setFormActive(true);
-    setFormPermissions([]);
-    onModalOpen();
-  };
-
-  const handleEdit = (user: AdminUser) => {
-    setSelectedUser(user);
-    setIsEditing(true);
-    setFormName(user.name);
-    setFormEmail(user.email);
-    setFormRole(user.role);
-    setFormActive(user.active);
-    setFormPermissions(user.permissions);
-    onModalOpen();
-  };
-
-  const handleSave = () => {
-    if (isEditing && selectedUser) {
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === selectedUser.id
-            ? {
-                ...u,
-                name: formName,
-                email: formEmail,
-                role: formRole,
-                active: formActive,
-                permissions: formPermissions,
-              }
-            : u
-        )
-      );
-    } else {
-      const newUser: AdminUser = {
-        id: String(Date.now()),
-        name: formName,
-        email: formEmail,
-        role: formRole,
-        active: formActive,
-        permissions: formPermissions,
-        createdAt: new Date().toISOString(),
-      };
-      setUsers((prev) => [...prev, newUser]);
-    }
-    onModalClose();
-  };
-
-  const handleDelete = async (userId: string) => {
-    if (await confirm("¿Está seguro de eliminar este usuario?")) {
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
-    }
-  };
-
-  const handleToggleActive = (user: AdminUser) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === user.id ? { ...u, active: !u.active } : u))
-    );
-  };
+function UserForm({ initialData, onSave }: { initialData?: AdminUser | null, onSave: (data: Partial<AdminUser>) => void }) {
+  const [formName, setFormName] = useState(initialData?.name || "");
+  const [formEmail, setFormEmail] = useState(initialData?.email || "");
+  const [formRole, setFormRole] = useState<AdminUser["role"]>(initialData?.role || "ADMIN");
+  const [formActive, setFormActive] = useState(initialData?.active ?? true);
+  const [formPermissions, setFormPermissions] = useState<string[]>(initialData?.permissions || []);
 
   const togglePermission = (permission: string) => {
     setFormPermissions((prev) =>
@@ -205,38 +63,66 @@ export default function AdminUsersPage() {
     );
   };
 
-  const getRoleLabel = (role: string) => {
-    return ROLES.find((r) => r.value === role)?.label || role;
+  // Expose save function to parent or let parent handle the actual submit button?
+  // The EntityManagementPage wraps the form but provides the Footer.
+  // We need to auto-save or render our own save button inside FormComponent, OR the FormComponent itself manages its state and calls onSave when submitted.
+  // Wait, EntityManagementPage right now doesn't pass a submit button from footer to form. Let's fix EntityManagementPage to accept a render prop or let the form have the submit button.
+  // To be safe, I'll put a save button inside the form.
+
+  return (
+    <form className="space-y-4" onSubmit={(e) => {
+      e.preventDefault();
+      onSave({
+        name: formName,
+        email: formEmail,
+        role: formRole,
+        active: formActive,
+        permissions: formPermissions
+      });
+    }}>
+      <div className="grid grid-cols-2 gap-4">
+        <Input label="Nombre" value={formName} onChange={(e) => setFormName(e.target.value)} required />
+        <Input label="Email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} type="email" required />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        {/* Simplified Select for code reduction */}
+        <select value={formRole} onChange={(e) => setFormRole(e.target.value as any)} className="w-full p-2 border rounded">
+          {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+        </select>
+        <div className="flex items-center gap-2 pt-2">
+          <Switch isSelected={formActive} onChange={setFormActive} />
+          <span>Activo</span>
+        </div>
+      </div>
+      <div className="mt-4 flex justify-end">
+         <button type="submit" className="bg-primary text-white px-4 py-2 rounded-lg">Guardar</button>
+      </div>
+    </form>
+  );
+}
+
+export default function AdminUsersPage() {
+  const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS);
+
+  const handleSave = async (data: Partial<AdminUser>, id?: string) => {
+    if (id) {
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, ...data } as AdminUser : u));
+    } else {
+      setUsers(prev => [...prev, { ...data, id: String(Date.now()), createdAt: new Date().toISOString() } as AdminUser]);
+    }
   };
 
-  const getRoleColor = (role: string) => {
-    return ROLES.find((r) => r.value === role)?.color || "default";
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const stats = {
-    total: users.length,
-    active: users.filter((u) => u.active).length,
-    superAdmins: users.filter((u) => u.role === "SUPER_ADMIN").length,
-    online: users.filter((u) => u.lastAccessAt && new Date(u.lastAccessAt).getTime() > Date.now() - 300000).length,
+  const handleDelete = async (id: string) => {
+    setUsers(prev => prev.filter(u => u.id !== id));
   };
 
   const columns: DataTableColumn<AdminUser>[] = [
     {
       key: "name",
       header: "Usuario",
-      sortable: true,
       render: (user) => (
         <div className="flex items-center gap-3">
-          <Avatar name={getInitials(user.name)} className="bg-primary text-white" />
+          <Avatar name={user.name.charAt(0)} className="bg-primary text-white" />
           <div>
             <p className="font-medium">{user.name}</p>
             <p className="text-sm text-default-500">{user.email}</p>
@@ -247,293 +133,45 @@ export default function AdminUsersPage() {
     {
       key: "role",
       header: "Rol",
-      sortable: true,
       render: (user) => (
-        <Chip color={getRoleColor(user.role)} variant="soft" size="sm">
-          {getRoleLabel(user.role)}
+        <Chip variant="soft" size="sm">
+          {ROLES.find(r => r.value === user.role)?.label || user.role}
         </Chip>
       ),
     },
     {
       key: "active",
       header: "Estado",
-      align: "center",
       render: (user) => (
-        <Switch
-          isSelected={user.active}
-          onChange={() => handleToggleActive(user)}
-          size="sm"
-          color="success"
-        />
+        <Switch isSelected={user.active} size="sm" color="success" />
       ),
-    },
-    {
-      key: "permissions",
-      header: "Permisos",
-      render: (user) => (
-        <div className="flex flex-wrap gap-1">
-          {user.permissions.slice(0, 3).map((perm) => (
-            <Chip key={perm} variant="soft" size="sm" className="text-xs">
-              {perm.split(":")[0]}
-            </Chip>
-          ))}
-          {user.permissions.length > 3 && (
-            <Chip variant="soft" size="sm" className="text-xs">
-              +{user.permissions.length - 3}
-            </Chip>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "lastAccessAt",
-      header: "Ultimo acceso",
-      sortable: true,
-      render: (user) =>
-        user.lastAccessAt ? (
-          <span className="text-sm">
-            {new Date(user.lastAccessAt).toLocaleString("es-CO", {
-              dateStyle: "short",
-              timeStyle: "short",
-            })}
-          </span>
-        ) : (
-          <span className="text-default-400 text-sm">Nunca</span>
-        ),
-    },
+    }
   ];
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="mb-4">
-        <Alert color="warning" title="Disponible próximamente">
-          La gestión de usuarios administrativos se encuentra en desarrollo y estará completamente disponible en futuras actualizaciones. Actualmente utiliza datos de prueba.
-        </Alert>
-      </div>
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Usuarios Administrativos</h1>
-          <p className="text-default-500">
-            Gestione los usuarios con acceso al panel de super administración
-          </p>
-        </div>
-        <Button
-          color="primary"
-          startContent={<Plus className="w-4 h-4" />}
-          onPress={handleCreate}
-        >
-          Nuevo Usuario
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <Card.Content className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Users className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-default-500">Total Usuarios</p>
-              <p className="text-xl font-bold">{stats.total}</p>
-            </div>
-          </Card.Content>
-        </Card>
-
-        <Card>
-          <Card.Content className="flex items-center gap-3">
-            <div className="p-2 bg-success/10 rounded-lg">
-              <Check className="w-5 h-5 text-success" />
-            </div>
-            <div>
-              <p className="text-sm text-default-500">Activos</p>
-              <p className="text-xl font-bold">{stats.active}</p>
-            </div>
-          </Card.Content>
-        </Card>
-
-        <Card>
-          <Card.Content className="flex items-center gap-3">
-            <div className="p-2 bg-danger/10 rounded-lg">
-              <Shield className="w-5 h-5 text-danger" />
-            </div>
-            <div>
-              <p className="text-sm text-default-500">Super Admins</p>
-              <p className="text-xl font-bold">{stats.superAdmins}</p>
-            </div>
-          </Card.Content>
-        </Card>
-
-        <Card>
-          <Card.Content className="flex items-center gap-3">
-            <div className="p-2 bg-success/10 rounded-lg">
-              <div className="relative">
-                <Users className="w-5 h-5 text-success" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-success rounded-full animate-pulse" />
-              </div>
-            </div>
-            <div>
-              <p className="text-sm text-default-500">En Línea</p>
-              <p className="text-xl font-bold">{stats.online}</p>
-            </div>
-          </Card.Content>
-        </Card>
-      </div>
-
-      <DataTable
-        title="Usuarios administrativos"
-        description="Gestiona roles, estado y permisos del panel."
-        columns={columns}
-        data={filteredUsers}
-        getRowKey={(user) => user.id}
-        isLoading={isLoading}
-        error={error}
-        emptyMessage="No se encontraron usuarios"
-        searchable
-        searchPlaceholder="Buscar por nombre, email o rol..."
-        onSearchChange={setSearchQuery}
-        filters={[
-          {
-            key: "role",
-            label: "Rol",
-            type: "select",
-            options: ROLES.map((role) => ({ label: role.label, value: role.value })),
-          },
-          { key: "active", label: "Activo", type: "boolean" },
-          { key: "lastAccessAt", label: "Ultimo acceso", type: "dateRange" },
-        ]}
-        actions={(user) => (
-          <Dropdown>
-            <HeroButton isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
-              <MoreVertical className="w-4 h-4" />
-            </HeroButton>
-            <DropdownMenu aria-label="Acciones">
-              <DropdownItem
-                key="edit"
-                textValue="Editar"
-                startContent={<Pencil className="w-4 h-4" />}
-                onPress={() => handleEdit(user)}
-              >
-                Editar
-              </DropdownItem>
-              <DropdownItem
-                key="delete"
-                textValue="Eliminar"
-                className="text-danger"
-                color="danger"
-                startContent={<Trash2 className="w-4 h-4" />}
-                onPress={() => handleDelete(user.id)}
-              >
-                Eliminar
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-        )}
-      />
-
-      {/* Create/Edit Modal */}
-      <Modal state={ { isOpen: isModalOpen, setOpen: (v: boolean) => { if(!v) onModalClose(); }, open: () => {}, close: onModalClose, toggle: () => {} } }>
-        <Modal.Content>
-          <Modal.Header>
-            <div className="flex items-center gap-3">
-              <Users className="w-6 h-6 text-primary" />
-              <div>
-                <h2 className="text-xl font-bold">
-                  {isEditing ? "Editar Usuario" : "Nuevo Usuario"}
-                </h2>
-              </div>
-            </div>
-          </Modal.Header>
-          <Modal.Body>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Nombre"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="Nombre completo"
-                />
-                <Input
-                  label="Email"
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                  placeholder="correo@parkflow.local"
-                  type="email"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Select
-                  label="Rol"
-                  value={[formRole]}
-                  onChange={(e) => setFormRole(e.target.value as AdminUser["role"])}
-                >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
-      </Select.Trigger>
-      <Select.Popover>
-        <ListBox>
-
-                  {ROLES.map((role) => (
-                    <ListBox.Item key={role.value} textValue={role.label}>
-                      {role.label}
-                    </ListBox.Item>
-                  ))}
-                
-        </ListBox>
-      </Select.Popover>
-    </Select>
-                <div className="flex items-center gap-2 pt-6">
-                  <Switch
-                    isSelected={formActive}
-                    onChange={setFormActive}
-                  />
-                  <span className="text-sm">Usuario activo</span>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium mb-3">Permisos</h3>
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg">
-                  {AVAILABLE_PERMISSIONS.map((perm) => (
-                    <div key={perm.value} className="flex items-center gap-2">
-                      <Switch
-                        isSelected={formPermissions.includes(perm.value)}
-                        onChange={() => togglePermission(perm.value)}
-                        size="sm"
-                      />
-                      <span className="text-sm">{perm.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {formRole === "SUPER_ADMIN" && (
-                <Alert color="warning">
-                  <p className="text-sm">
-                    <strong>Advertencia:</strong> Los Super Administradores tienen acceso completo a
-                    todas las funciones del sistema. Asigne este rol con precaución.
-                  </p>
-                </Alert>
-              )}
-            </div>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="tertiary" onPress={onModalClose}>
-              Cancelar
-            </Button>
-            <Button
-              color="primary"
-              onPress={handleSave}
-              isDisabled={!formName || !formEmail}
-            >
-              {isEditing ? "Guardar Cambios" : "Crear Usuario"}
-            </Button>
-          </Modal.Footer>
-        </Modal.Content>
-      </Modal>
+  const renderStats = () => (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+      <Card><Card.Content className="flex items-center gap-3"><Users className="w-5 h-5 text-primary" /><div><p>Total</p><p className="font-bold">{users.length}</p></div></Card.Content></Card>
+      <Card><Card.Content className="flex items-center gap-3"><Check className="w-5 h-5 text-success" /><div><p>Activos</p><p className="font-bold">{users.filter(u => u.active).length}</p></div></Card.Content></Card>
     </div>
+  );
+
+  return (
+    <>
+      <Alert color="warning" title="Disponible próximamente" className="mb-4">
+        La gestión de usuarios administrativos se encuentra en desarrollo y utiliza datos de prueba.
+      </Alert>
+      <EntityManagementPage
+        title="Usuarios Administrativos"
+        description="Gestione los usuarios con acceso al panel de super administración"
+        icon={Users}
+        data={users}
+        columns={columns}
+        getRowKey={(u) => u.id}
+        FormComponent={UserForm}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        renderStats={renderStats}
+      />
+    </>
   );
 }

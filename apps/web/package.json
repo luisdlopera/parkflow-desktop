@@ -22,6 +22,7 @@
     "@internationalized/date": "^3.12.2",
     "@parkflow/print-core": "workspace:*",
     "@parkflow/types": "workspace:*",
+    "@tanstack/react-virtual": "^3.14.3",
     "@tauri-apps/api": "^2.0.0",
     "framer-motion": "^12.38.0",
     "idb": "^8.0.0",

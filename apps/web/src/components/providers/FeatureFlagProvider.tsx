@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
-import { fetchRuntimeConfig } from "@/lib/runtime-config";
+import React, { useMemo } from "react";
+import { useTenantConfig } from "@/lib/providers/TenantConfigProvider";
 
 export interface FeatureFlags {
   agreements: boolean;
@@ -35,48 +35,32 @@ const DEFAULT_FLAGS: FeatureFlags = {
   bicycles: false,
 };
 
-const FeatureFlagContext = createContext<FeatureFlags>(DEFAULT_FLAGS);
-
-export function FeatureFlagProvider({ children }: { children: React.ReactNode }) {
-  const [flags, setFlags] = useState<FeatureFlags>(DEFAULT_FLAGS);
-
-  useEffect(() => {
-    // In a real scenario we could use SWR, but keeping it simple like the runtime config
-    fetchRuntimeConfig().then((config) => {
-      if (!config) return;
-      
-      const vehicleTypes = config.vehicleTypes || [];
-      const features = config.features || {};
-      const modules = config.modules || {};
-      const opConfig = config.operationConfiguration || {};
-      
-      setFlags({
-        agreements: !!features.agreements,
-        prepaidPlans: !!features.prepaid,
-        memberships: !!features.memberships,
-        loyaltyCustomers: !!features.frequentCustomers,
-        electronicInvoicing: !!features.electronicBilling,
-        specialRates: !!features.specialRates,
-        lockers: opConfig.helmetHandling === "LOCKERS" || !!features.lockerControl,
-        helmets: !!features.helmetControl || opConfig.helmetHandling !== "NONE",
-        accessories: !!features.accessoryControl,
-        reservations: !!features.reservations,
-        operation24Hours: !!features.operation24Hours,
-        motorcycles: vehicleTypes.includes("MOTORCYCLE") || !!features.motorcycleParking,
-        bicycles: vehicleTypes.includes("BICYCLE") || !!features.bicycleParking,
-      });
-    }).catch((e) => console.error("Error fetching feature flags", e));
-  }, []);
-
-  return (
-    <FeatureFlagContext.Provider value={flags}>
-      {children}
-    </FeatureFlagContext.Provider>
-  );
-}
-
 export function useFeatureFlags(): FeatureFlags {
-  return useContext(FeatureFlagContext);
+  const { runtimeConfig } = useTenantConfig();
+
+  return useMemo(() => {
+    if (!runtimeConfig) return DEFAULT_FLAGS;
+
+    const vehicleTypes = runtimeConfig.vehicleTypes || [];
+    const features = runtimeConfig.features || {};
+    const opConfig = runtimeConfig.operationConfiguration || {};
+
+    return {
+      agreements: !!features.agreements,
+      prepaidPlans: !!features.prepaid,
+      memberships: !!features.memberships,
+      loyaltyCustomers: !!features.frequentCustomers,
+      electronicInvoicing: !!features.electronicBilling,
+      specialRates: !!features.specialRates,
+      lockers: opConfig.helmetHandling === "LOCKERS" || !!features.lockerControl,
+      helmets: !!features.helmetControl || opConfig.helmetHandling !== "NONE",
+      accessories: !!features.accessoryControl,
+      reservations: !!features.reservations,
+      operation24Hours: !!features.operation24Hours,
+      motorcycles: vehicleTypes.includes("MOTORCYCLE") || !!features.motorcycleParking,
+      bicycles: vehicleTypes.includes("BICYCLE") || !!features.bicycleParking,
+    };
+  }, [runtimeConfig]);
 }
 
 export function useFeature(feature: keyof FeatureFlags): boolean {
@@ -97,5 +81,10 @@ export function FeatureGuard({
   if (!isEnabled) {
     return <>{fallback}</>;
   }
+  return <>{children}</>;
+}
+
+// Para compatibilidad
+export function FeatureFlagProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

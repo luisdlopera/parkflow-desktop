@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useConfigurationApi } from '@/hooks/useConfigurationApi';
+import { useConfigurationApi } from '@/features/configuration/hooks/useConfigurationApi';
 
 interface SetupBasicoTabProps {
   companyId: string;

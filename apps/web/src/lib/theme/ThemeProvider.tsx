@@ -1,29 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from "react";
-
-type Theme = "light" | "dark" | "auto";
-
-/** Single source of truth for the brand's default primary color (used as seed/fallback). */
-export const DEFAULT_PRIMARY_COLOR = "#f97316";
-
-export interface BrandColors {
-  primaryColor: string;
-  secondaryColor: string;
-  successColor: string;
-  warningColor: string;
-  dangerColor: string;
-}
-
-interface ThemeContextType {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  isDark: boolean;
-  applyBrandColors: (colors: BrandColors) => void;
-  clearBrandColors: () => void;
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+import { useEffect, useCallback, type ReactNode } from "react";
 
 function getSystemDark(): boolean {
   if (typeof window === "undefined") return false;
@@ -113,16 +90,12 @@ function generateColorScale(hex: string): Record<string, string> {
   return scale;
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("parkflow-theme") as Theme;
-      return saved || "auto";
-    }
-    return "auto";
-  });
+import { useThemeStore, Theme, BrandColors, DEFAULT_PRIMARY_COLOR } from "./theme-store";
 
-  const [isDark, setIsDark] = useState(false);
+export { DEFAULT_PRIMARY_COLOR, type Theme, type BrandColors };
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const { theme, setIsDark } = useThemeStore();
 
   const applyTheme = useCallback((shouldBeDark: boolean) => {
     setIsDark(shouldBeDark);
@@ -134,7 +107,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.removeAttribute("data-theme");
       root.classList.remove("dark");
     }
-  }, []);
+  }, [setIsDark]);
 
   useEffect(() => {
     if (theme === "auto") {
@@ -149,31 +122,28 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyTheme(theme === "dark");
   }, [theme, applyTheme]);
 
-  const setTheme = useCallback((newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem("parkflow-theme", newTheme);
-  }, []);
+  return <>{children}</>;
+}
+
+export function useTheme() {
+  const themeState = useThemeStore();
 
   const applyBrandColors = useCallback((colors: BrandColors) => {
     const root = document.documentElement;
 
-    // Generate primary color scale (50-900)
     const primaryScale = generateColorScale(colors.primaryColor);
 
-    // Set HeroUI semantic colors (HSL format)
     root.style.setProperty("--heroui-primary", hexToHsl(colors.primaryColor));
     root.style.setProperty("--heroui-secondary", hexToHsl(colors.secondaryColor));
     root.style.setProperty("--heroui-success", hexToHsl(colors.successColor));
     root.style.setProperty("--heroui-warning", hexToHsl(colors.warningColor));
     root.style.setProperty("--heroui-danger", hexToHsl(colors.dangerColor));
 
-    // Set primary color scale (all shades)
     Object.entries(primaryScale).forEach(([level, hex]) => {
       root.style.setProperty(`--color-primary-${level}`, hex);
-      root.style.setProperty(`--color-brand-${level}`, hex); // Also update brand colors
+      root.style.setProperty(`--color-brand-${level}`, hex);
     });
 
-    // Set primary color aliases
     root.style.setProperty("--color-primary", colors.primaryColor);
     root.style.setProperty("--color-brand-500", colors.primaryColor);
     root.style.setProperty("--color-secondary", colors.secondaryColor);
@@ -181,15 +151,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.style.setProperty("--color-warning", colors.warningColor);
     root.style.setProperty("--color-danger", colors.dangerColor);
 
-    // HeroUI focus ring follows primary (hero.ts focus default is static otherwise)
     root.style.setProperty("--heroui-focus", hexToHsl(colors.primaryColor));
 
-    // Brand-tinted background surfaces (page base, focus-visible outline, body glows, grid dots, focus rings)
     const p = colors.primaryColor;
     const r = parseInt(p.slice(1, 3), 16);
     const g = parseInt(p.slice(3, 5), 16);
     const b = parseInt(p.slice(5, 7), 16);
-    root.style.setProperty("--color-ash", primaryScale["50"]); // Page base tone follows primary (lightest)
+    root.style.setProperty("--color-ash", primaryScale["50"]);
     root.style.setProperty("--color-ember", primaryScale["600"]);
     root.style.setProperty("--color-moss", primaryScale["700"]);
     root.style.setProperty("--color-bg-glow-1", primaryScale["100"]);
@@ -210,7 +178,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       "--color-bg-glow-1", "--color-bg-glow-2", "--color-grid-dot",
       "--color-primary-ring", "--color-primary-ring-strong"
     ];
-    // Also clear all primary color scale vars (50-900)
     for (let i = 0; i <= 9; i++) {
       const scale = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
       vars.push(`--color-primary-${scale[i]}`);
@@ -219,22 +186,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     vars.forEach(v => root.style.removeProperty(v));
   }, []);
 
-  const value = useMemo(
-    () => ({ theme, setTheme, isDark, applyBrandColors, clearBrandColors }),
-    [theme, setTheme, isDark, applyBrandColors, clearBrandColors],
-  );
-
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}
-
-export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-  return context;
+  return {
+    theme: themeState.theme,
+    setTheme: themeState.setTheme,
+    isDark: themeState.isDark,
+    applyBrandColors,
+    clearBrandColors,
+  };
 }

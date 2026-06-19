@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useCallback, memo } from "react";
+import { useMemo, useState, useCallback, useRef, memo } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   Pagination,
   Table,
@@ -177,6 +178,17 @@ function DataTableInner<T extends object>({
       return cmp;
     });
   }, [source, sortDescriptor, columns, serverSide]);
+
+  const VIRTUALIZATION_THRESHOLD = 100;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const shouldVirtualize = sortedSource.length > VIRTUALIZATION_THRESHOLD && !isLoading && source.length > 0;
+
+  const rowVirtualizer = useVirtualizer({
+    count: shouldVirtualize ? sortedSource.length : 0,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 48,
+    overscan: 5,
+  });
 
   const getKey = useCallback((row: T, index: number) =>
     getRowKey ? getRowKey(row) : String(rowKey(row, index)),
@@ -386,6 +398,82 @@ function DataTableInner<T extends object>({
           {skeletonRow("sk-2")}
           {skeletonRow("sk-3")}
         </Table.Body>
+      ) : shouldVirtualize ? (
+        <div ref={scrollRef} className="overflow-auto" style={{ maxHeight: '600px' }}>
+          <table className="w-full" style={{ tableLayout: 'fixed' }}>
+            <thead className="sticky top-0 z-20">
+              <tr>
+                {displayColumns.map((col, idx) => (
+                  <th
+                    key={String(col.key)}
+                    className={cn(
+                      "text-[11px] font-bold uppercase tracking-[0.15em] bg-default-100 dark:bg-zinc-800/60 p-3 text-left",
+                      getAlignClass(col.align),
+                      getPriorityClass(col.priority),
+                      col.key === "_selection" ? "w-[48px]" : "",
+                    )}
+                    style={col.width ? { width: typeof col.width === 'number' ? col.width : col.width } : undefined}
+                  >
+                    {col.key === "_selection" ? (
+                      <HeroCheckbox
+                        aria-label="Seleccionar todas"
+                        slot="selection"
+                        variant="secondary"
+                      >
+                        <HeroCheckbox.Control>
+                          <HeroCheckbox.Indicator />
+                        </HeroCheckbox.Control>
+                      </HeroCheckbox>
+                    ) : getDisplayLabel(col)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px` }}>
+              {sortedSource.length === 0 ? (
+                <tr>
+                  <td colSpan={displayColumns.length} className="text-center py-16 text-slate-500">
+                    {emptyMessage}
+                  </td>
+                </tr>
+              ) : (
+                rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const row = sortedSource[virtualRow.index];
+                  return (
+                    <tr
+                      key={getKey(row, virtualRow.index)}
+                      className="border-b border-slate-100 dark:border-zinc-800"
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: `${virtualRow.size}px`,
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                    >
+                      {displayColumns.map((col) => (
+                        <td
+                          key={String(col.key)}
+                          className={cn(
+                            "p-3 text-sm",
+                            getAlignClass(col.align),
+                            getPriorityClass(col.priority),
+                            col.key === "_actions"
+                              ? "sticky right-0 z-10 border-l border-default-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                              : "",
+                          )}
+                        >
+                          {renderCell(col, row, virtualRow.index)}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <Table.Body
           renderEmptyState={() => (
@@ -428,28 +516,46 @@ function DataTableInner<T extends object>({
   return (
     <div className="flex flex-col gap-4">
       {topContent}
-      <Table variant="primary">
-        <Table.ScrollContainer>
-          {resizable ? (
-            <Table.ResizableContainer>{tableContent}</Table.ResizableContainer>
-          ) : (
-            tableContent
-          )}
-        </Table.ScrollContainer>
+      {shouldVirtualize ? (
+        <div className="border border-slate-200 dark:border-zinc-700 rounded-xl overflow-hidden">
+          {tableContent}
+        </div>
+      ) : (
+        <Table variant="primary">
+          <Table.ScrollContainer>
+            {resizable ? (
+              <Table.ResizableContainer>{tableContent}</Table.ResizableContainer>
+            ) : (
+              tableContent
+            )}
+          </Table.ScrollContainer>
 
-        {paginationConfig && onPaginationChange && (
-          <Table.Footer>
-            <TableFooterContent
-              config={paginationConfig}
-              onChange={onPaginationChange}
-              selectionCount={
-                selectable ? (controlledSelectedKeys?.size ?? 0) : undefined
-              }
-              totalItems={source.length}
-            />
-          </Table.Footer>
-        )}
-      </Table>
+          {paginationConfig && onPaginationChange && (
+            <Table.Footer>
+              <TableFooterContent
+                config={paginationConfig}
+                onChange={onPaginationChange}
+                selectionCount={
+                  selectable ? (controlledSelectedKeys?.size ?? 0) : undefined
+                }
+                totalItems={source.length}
+              />
+            </Table.Footer>
+          )}
+        </Table>
+      )}
+      {shouldVirtualize && paginationConfig && onPaginationChange && (
+        <Table.Footer>
+          <TableFooterContent
+            config={paginationConfig}
+            onChange={onPaginationChange}
+            selectionCount={
+              selectable ? (controlledSelectedKeys?.size ?? 0) : undefined
+            }
+            totalItems={source.length}
+          />
+        </Table.Footer>
+      )}
     </div>
   );
 }

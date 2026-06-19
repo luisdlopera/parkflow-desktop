@@ -22,7 +22,7 @@ import { DataTableSection, type ColumnDef } from "@/components/settings/DataTabl
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/settings/FormDrawer";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
-import { useConfigCrud } from "@/hooks/useConfigCrud";
+import { useConfigCrud } from "@/features/configuration/hooks/useConfigCrud";
 
 const COLS: ColumnDef<PrinterRow>[] = [
   { key: "name", label: "Nombre" },
