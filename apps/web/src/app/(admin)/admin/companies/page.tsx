@@ -62,10 +62,10 @@ export default function CompaniesPage() {
       setCompanyToDelete(null);
       setSelectedKeys(new Set());
       toast.success("Eliminación exitosa");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error al eliminar empresa", err);
-      const isUnauthorized = err?.status === 401 || err?.status === 403;
-      toast.danger(isUnauthorized ? "No tienes permisos suficientes (SUPER_ADMIN) o tu sesión expiró." : "Ocurrió un error al eliminar.");
+      const isUnauthorized = (err as any)?.status === 401 || (err as any)?.status === 403;
+      toast.danger(isUnauthorized ? "No tienes permisos suficientes (SUPER_ADMIN) o tu sesión expiró" : "No se pudo eliminar la empresa. Intenta nuevamente.");
     } finally {
       setIsDeactivating(false);
     }

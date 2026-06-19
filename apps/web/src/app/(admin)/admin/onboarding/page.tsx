@@ -29,7 +29,7 @@ export default function AdminOnboardingPage() {
       const data = await fetchOnboardingQuestions();
       setQuestions(data);
       setHasChanges(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || "No se pudo cargar la configuración del onboarding");
     } finally {
       setLoading(false);
@@ -56,7 +56,7 @@ export default function AdminOnboardingPage() {
       setSuccess(true);
       setHasChanges(false);
       setTimeout(() => setSuccess(false), 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || "Error al guardar cambios");
     } finally {
       setSaving(false);
@@ -69,7 +69,7 @@ export default function AdminOnboardingPage() {
     try {
       await seedOnboardingQuestions();
       await loadQuestions();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || "Error al inicializar configuración");
     } finally {
       setLoading(false);

@@ -26,7 +26,7 @@ export default function OperacionPage() {
   const [error, setError] = useState<string | null>(null);
   const [sites, setSites] = useState<ParkingSiteRow[]>([]);
 
-  const saveOp = useAsyncAction<unknown>({
+  const { run: runSaveOp, isLoading: isSaveOpLoading } = useAsyncAction<unknown>({
     successMsg: "Parámetros guardados correctamente",
     errorContext: FrontendActionError.SAVE_DATA,
   });
@@ -100,7 +100,7 @@ export default function OperacionPage() {
       return;
     }
     setError(null);
-    await saveOp.run(() =>
+    await runSaveOp(() =>
       putConfigurationOperationalParameters(siteId, { ...values } as Record<string, unknown>)
     );
   };
@@ -306,7 +306,7 @@ export default function OperacionPage() {
                 color="success"
                 size="lg"
                 className="font-bold text-white"
-                isLoading={saveOp.isLoading}
+                isLoading={isSaveOpLoading}
               >
                 Guardar parámetros
               </Button>

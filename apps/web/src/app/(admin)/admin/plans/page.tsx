@@ -58,7 +58,7 @@ export default function PlansPage() {
       mutate();
       setPlanToDelete(null);
       toast.success("Plan eliminado correctamente");
-    } catch (err: any) {
+    } catch (err: unknown) {
       const isUnauthorized = err?.status === 401 || err?.status === 403;
       toast.danger(
         isUnauthorized
@@ -78,7 +78,7 @@ export default function PlansPage() {
         toast.success(
           plan.isActive ? "Plan desactivado" : "Plan activado"
         );
-      } catch (err: any) {
+      } catch (err: unknown) {
         toast.danger(
           err?.message || "Error al cambiar estado del plan"
         );
@@ -93,7 +93,7 @@ export default function PlansPage() {
         await duplicatePlan(plan.id);
         mutate();
         toast.success("Plan duplicado correctamente");
-      } catch (err: any) {
+      } catch (err: unknown) {
         toast.danger(
           err?.message || "Error al duplicar el plan"
         );

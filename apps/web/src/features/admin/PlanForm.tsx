@@ -87,7 +87,7 @@ export function PlanForm({ onSubmit, isLoading, initialData }: PlanFormProps) {
 
     try {
       await onSubmit(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const msg =
         err?.message || "Error al guardar el plan. Intente nuevamente.";
       setSubmitError(msg);

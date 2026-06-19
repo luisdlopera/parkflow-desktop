@@ -90,12 +90,13 @@ function generateColorScale(hex: string): Record<string, string> {
   return scale;
 }
 
-import { useThemeStore, Theme, BrandColors, DEFAULT_PRIMARY_COLOR } from "./theme-store";
+import { useUIStore } from "@/lib/stores/ui.store";
+import { Theme, BrandColors, DEFAULT_PRIMARY_COLOR } from "./theme.types";
 
 export { DEFAULT_PRIMARY_COLOR, type Theme, type BrandColors };
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const { theme, setIsDark } = useThemeStore();
+  const { theme, setIsDark } = useUIStore();
 
   const applyTheme = useCallback((shouldBeDark: boolean) => {
     setIsDark(shouldBeDark);
@@ -126,7 +127,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 }
 
 export function useTheme() {
-  const themeState = useThemeStore();
+  const themeState = useUIStore();
 
   const applyBrandColors = useCallback((colors: BrandColors) => {
     const root = document.documentElement;

@@ -1,12 +1,12 @@
 import React from 'react'
 import { render } from '@testing-library/react'
 import { ThemeProvider } from '@/lib/theme/ThemeProvider'
-import { useThemeStore } from '@/lib/theme/theme-store'
+import { useUIStore } from '@/lib/stores/ui.store'
 
 describe('ThemeProvider', () => {
   beforeEach(() => {
     document.documentElement.classList.remove('dark')
-    useThemeStore.setState({ theme: 'auto', isDark: false })
+    useUIStore.setState({ theme: 'system', isDark: false })
   })
 
   test('applies dark class when saved as dark', () => {

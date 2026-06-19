@@ -19,20 +19,23 @@ export default function ConfigSidebar() {
   }, []);
 
   const currentSection = searchParams.get("section");
+  const groupParam = searchParams.get("group");
 
   const filteredGridGroups = useMemo(
     () =>
-      CONFIG_NAVIGATION.map((group) => ({
-        ...group,
-        items: group.items.filter((item) => {
-          if (item.flag === "cash") return shouldShowModule(runtimeConfig, "cash", true);
-          if (item.flag === "lockers") return runtimeConfig?.operationConfiguration?.helmetHandling === "LOCKERS" || flags.lockers;
-          if (item.flag === "agreements") return flags.agreements;
-          if (item.flag === "prepaidPlans") return flags.prepaidPlans;
-          return true;
-        }),
-      })).filter((group) => group.items.length > 0),
-    [runtimeConfig, flags]
+      CONFIG_NAVIGATION
+        .filter((group) => !groupParam || group.id === groupParam)
+        .map((group) => ({
+          ...group,
+          items: group.items.filter((item) => {
+            if (item.flag === "cash") return shouldShowModule(runtimeConfig, "cash", true);
+            if (item.flag === "lockers") return runtimeConfig?.operationConfiguration?.helmetHandling === "LOCKERS" || flags.lockers;
+            if (item.flag === "agreements") return flags.agreements;
+            if (item.flag === "prepaidPlans") return flags.prepaidPlans;
+            return true;
+          }),
+        })).filter((group) => group.items.length > 0),
+    [runtimeConfig, flags, groupParam]
   );
 
   const containerVariants = {

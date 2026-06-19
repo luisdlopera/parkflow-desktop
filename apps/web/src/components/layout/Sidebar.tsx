@@ -150,7 +150,10 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                     {CONFIG_NAVIGATION.map((group) => (
                       <button
                         key={group.id}
-                        onClick={() => setConfigView(group.id)}
+                        onClick={() => {
+                          setConfigView(group.id);
+                          router.push(`/configuracion?group=${group.id}`);
+                        }}
                         aria-label={`Ver opciones de ${group.label}`}
                         className="w-full flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"
                       >

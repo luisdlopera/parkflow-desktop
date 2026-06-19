@@ -30,7 +30,7 @@ export default function LockersPage() {
   const [lockers, setLockers] = useState<LockerDto[]>([]);
   const { confirm } = useDialog();
 
-  const asyncOp = useAsyncAction<unknown>({
+  const { run: runOp, isLoading: isOpLoading, error: opError } = useAsyncAction<unknown>({
     showErrorToast: false,
     errorContext: FrontendActionError.LOAD_DATA,
   });
@@ -46,11 +46,10 @@ export default function LockersPage() {
 
   const load = useCallback(async () => {
     if (!isEnabled) return;
-    await asyncOp.run(async () => {
+    await runOp(async () => {
       setLockers(await fetchLockers());
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEnabled]);
+  }, [isEnabled, runOp]);
 
   useEffect(() => {
     load();
@@ -66,21 +65,20 @@ export default function LockersPage() {
 
   const handleCreateSingle = useCallback(async () => {
     if (!singleCode.trim()) return;
-    await asyncOp.run(async () => {
+    await runOp(async () => {
       await createLocker(singleCode.trim(), singleLabel.trim() || undefined);
       setSingleCode("");
       setSingleLabel("");
       setShowCreateSingle(false);
       await load();
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [singleCode, singleLabel, load]);
+  }, [singleCode, singleLabel, load, runOp]);
 
   const handleBatch = useCallback(async () => {
     const start = Number(batchStart);
     const end = Number(batchEnd);
     if (!Number.isFinite(start) || !Number.isFinite(end) || start < 1 || end < start) {
-      await asyncOp.run(() => Promise.reject(new Error("Rango inválido. El inicio debe ser >= 1 y el final >= inicio.")));
+      await runOp(() => Promise.reject(new Error("Rango inválido. El inicio debe ser >= 1 y el final >= inicio.")));
       return;
     }
     const count = end - start + 1;
@@ -88,7 +86,7 @@ export default function LockersPage() {
       const ok = await confirm(`Vas a crear ${count} lockers. ¿Continuar?`);
       if (!ok) return;
     }
-    await asyncOp.run(async () => {
+    await runOp(async () => {
       await createBatchLockers(batchPrefix, start, end);
       setBatchPrefix("L-");
       setBatchStart("1");
@@ -96,42 +94,38 @@ export default function LockersPage() {
       setShowBatch(false);
       await load();
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [batchPrefix, batchStart, batchEnd, load, confirm]);
+  }, [batchPrefix, batchStart, batchEnd, load, confirm, runOp]);
 
   const handleToggle = useCallback(
     async (locker: LockerDto) => {
-      await asyncOp.run(async () => {
+      await runOp(async () => {
         await patchLocker(locker.id, { isActive: !locker.isActive });
         await load();
       });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [load],
+    [load, runOp],
   );
 
   const handleStatusChange = useCallback(
     async (locker: LockerDto, newStatus: string) => {
-      await asyncOp.run(async () => {
+      await runOp(async () => {
         await patchLocker(locker.id, { status: newStatus });
         await load();
       });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [load],
+    [load, runOp],
   );
 
   const handleDelete = useCallback(
     async (locker: LockerDto) => {
       const ok = await confirm(`¿Eliminar locker "${locker.code}"?`);
       if (!ok) return;
-      await asyncOp.run(async () => {
+      await runOp(async () => {
         await deleteLocker(locker.id);
         await load();
       });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [load, confirm],
+    [load, confirm, runOp],
   );
 
   if (!isEnabled) {
@@ -153,7 +147,7 @@ export default function LockersPage() {
 
   return (
     <div className="space-y-6">
-      <ConfigPageHeader title="Lockers de Cascos" groupLabel="Estacionamiento" sectionLabel="Administra los lockers numerados para guardar cascos de moto." />
+      <ConfigPageHeader title="Lockers de Cascos" groupLabel="Estacionamiento" groupId="estacionamiento" sectionLabel="Administra los lockers numerados para guardar cascos de moto." />
 
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="flex gap-2">
@@ -181,23 +175,23 @@ export default function LockersPage() {
           >
             Crear en lote
           </Button>
-          <Button
-            size="sm"
-            color="primary"
-            variant="outline"
-            onPress={() => load()}
-            isLoading={asyncOp.isLoading}
-          >
-            Actualizar
-          </Button>
+            <Button
+              size="sm"
+              color="primary"
+              variant="outline"
+              onPress={() => load()}
+              isLoading={isOpLoading}
+            >
+              Actualizar
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {asyncOp.error && (
-        <div className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 border border-rose-100">
-          {asyncOp.error}
-        </div>
-      )}
+        {opError && (
+          <div className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 border border-rose-100">
+            {opError}
+          </div>
+        )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Stat label="Total" value={stats.total} />

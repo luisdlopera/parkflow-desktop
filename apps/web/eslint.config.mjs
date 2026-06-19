@@ -13,7 +13,8 @@ export default [
       "react-hooks/incompatible-library": "warn",
       // Enforce React Hooks rules strictly
       "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/exhaustive-deps": "error",
+      "@typescript-eslint/no-explicit-any": "warn",
       
       // Accessibility rules specific to our HeroUI components
       "jsx-a11y/control-has-associated-label": [

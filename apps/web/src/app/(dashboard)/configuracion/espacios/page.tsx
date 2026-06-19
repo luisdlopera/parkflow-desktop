@@ -25,11 +25,11 @@ export default function EspaciosPage() {
   const [filter, setFilter] = useState("ACTIVE");
   const [error, setError] = useState<string | null>(null);
   const { confirm } = useDialog();
-  const loadAction = useAsyncAction({ errorContext: FrontendActionError.LOAD_DATA, showErrorToast: true });
-  const saveAction = useAsyncAction({ errorContext: FrontendActionError.SAVE_DATA, showErrorToast: true });
+  const { run: runLoad, isLoading: isLoadLoading } = useAsyncAction({ errorContext: FrontendActionError.LOAD_DATA, showErrorToast: true });
+  const { run: runSave, isLoading: isSaveLoading } = useAsyncAction({ errorContext: FrontendActionError.SAVE_DATA, showErrorToast: true });
 
   const load = useCallback(async () => {
-    await loadAction.run(async () => {
+    await runLoad(async () => {
       const [sumPayload, spacesPayload] = await Promise.all([
         fetchParkingSpacesSummary(),
         fetchParkingSpaces(filter),
@@ -38,7 +38,7 @@ export default function EspaciosPage() {
       setSpaces(spacesPayload);
       setCapacity(String(sumPayload.activeSpaces ?? 0));
     });
-  }, [filter, loadAction]);
+  }, [filter, runLoad]);
 
   useEffect(() => {
     load().catch(() => {});
@@ -65,24 +65,24 @@ export default function EspaciosPage() {
       if (!ok) return;
     }
 
-    await saveAction.run(async () => {
+    await runSave(async () => {
       await putParkingSpacesCapacity(next);
       await load();
     });
-  }, [capacity, load, summary, confirm]);
+  }, [capacity, load, summary, confirm, runSave]);
 
   const onPatchSpace = useCallback(async (id: string, body: Record<string, unknown>) => {
-    await saveAction.run(async () => {
+    await runSave(async () => {
       await patchParkingSpace(id, body);
       await load();
     });
-  }, [load, saveAction]);
+  }, [load, runSave]);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <ConfigPageHeader title="Espacios del parqueadero" groupLabel="Estacionamiento" sectionLabel="Distribución de espacios" />
-        <Button size="sm" color="primary" variant="tertiary" onPress={() => { load().catch(() => {}); }} isLoading={loadAction.isLoading || saveAction.isLoading}>Actualizar</Button>
+        <ConfigPageHeader title="Espacios del parqueadero" groupLabel="Estacionamiento" groupId="estacionamiento" sectionLabel="Distribución de espacios" />
+        <Button size="sm" color="primary" variant="tertiary" onPress={() => { load().catch(() => {}); }} isLoading={isLoadLoading || isSaveLoading}>Actualizar</Button>
       </div>
 
       {error ? <p className="text-sm text-rose-700 font-medium">{error}</p> : null}
@@ -106,7 +106,7 @@ export default function EspaciosPage() {
           onChange={(e) => setCapacity(e.target.value)}
           className="max-w-xs"
         />
-        <Button color="primary" onPress={() => { onResize().catch(() => {}); }} isDisabled={!canReduce || saveAction.isLoading}>Guardar capacidad</Button>
+        <Button color="primary" onPress={() => { onResize().catch(() => {}); }} isDisabled={!canReduce || isSaveLoading}>Guardar capacidad</Button>
       </div>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
