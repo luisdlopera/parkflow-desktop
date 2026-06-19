@@ -1,60 +1,70 @@
-/**
- * Table column and rendering utilities to reduce duplication in DataTable usage.
- */
+import { Badge } from "@/components/bridge/Badge";
+import type { DataTableColumn } from "@/components/ui/DataTable";
 
-export interface ColumnDef<T> {
-  key: keyof T;
-  label: string;
-  render?: (row: T) => React.ReactNode;
-  width?: number;
-}
-
-/**
- * Status column renderer — returns green badge for active, gray for inactive.
- * Replaces the 8+ reimplementations of:
- *   render: (r) => <span className={r.isActive ? "bg-emerald-100..." : "bg-slate-100..."}>...
- */
-export function statusColumn<T extends { isActive?: boolean; active?: boolean }>(
-  key: keyof T,
-  label: string = 'Estado',
-): ColumnDef<T> {
+export function statusColumn<T extends { isActive?: boolean; status?: string }>(
+  label: string = "Estado"
+): DataTableColumn<T> {
   return {
-    key,
+    key: "status",
     label,
-    render: (row: T) => {
-      const isActive = row.isActive ?? row.active ?? false;
+    priority: "high",
+    render: (row) => {
+      const isActive = row.isActive ?? (row.status === "ACTIVE");
       return (
-        <span
-          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-            isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
-          }`}
-        >
-          {isActive ? 'Sí' : 'No'}
-        </span>
+        <Badge color={isActive ? "success" : "default"}>
+          {isActive ? "Activo" : "Inactivo"}
+        </Badge>
       );
     },
   };
 }
 
-/**
- * Date column renderer — formats ISO string to locale string.
- */
-export function dateColumn<T extends Record<string, unknown>>(
-  key: keyof T,
-  label: string,
-  locale: string = 'es-CO',
-): ColumnDef<T> {
+export function dateColumn<T extends { createdAt?: string; updatedAt?: string }>(
+  key: "createdAt" | "updatedAt",
+  label: string
+): DataTableColumn<T> {
   return {
     key,
     label,
-    render: (row: T) => {
-      const val = row[key];
-      if (!val) return '—';
-      try {
-        return new Date(val as string).toLocaleString(locale);
-      } catch {
-        return String(val);
-      }
+    priority: "medium",
+    render: (row) => {
+      const date = row[key];
+      if (!date) return "—";
+      return new Date(date).toLocaleDateString("es-CO", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+      });
     },
+  };
+}
+
+export function actionsColumn<T>(
+  label: string = "Acciones",
+  actions: Array<{
+    label: string;
+    onClick: (row: T) => void;
+    variant?: "tertiary" | "destructive";
+    disabled?: (row: T) => boolean;
+  }>
+): DataTableColumn<T> {
+  return {
+    key: "actions",
+    label,
+    priority: "high",
+    render: (row) => (
+      <div className="flex gap-2">
+        {actions.map((action) => (
+          <button
+            key={action.label}
+            onClick={() => action.onClick(row)}
+            disabled={action.disabled?.(row)}
+            className="px-3 py-1 text-sm rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {action.label}
+          </button>
+        ))}
+      </div>
+    ),
   };
 }

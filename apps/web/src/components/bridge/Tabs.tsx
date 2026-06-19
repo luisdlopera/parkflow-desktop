@@ -7,7 +7,7 @@ export interface TabProps extends Omit<HeroTabProps, "title" | "children"> {
   children?: React.ReactNode;
 }
 
-export const Tab = HeroTab;
+export const Tab = HeroTab as React.FC<TabProps>;
 
 export interface TabsProps extends Omit<HeroTabsProps, "onSelectionChange"> {
   onSelectionChange?: (key: any) => void;

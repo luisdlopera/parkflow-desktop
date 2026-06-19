@@ -17,7 +17,7 @@ import { TicketPreviewModal } from "@/features/active-vehicles/components/Ticket
 import { BulkExitConfirmModal, BulkExitSuccessModal } from "@/features/active-vehicles/components/BulkExitModals";
 import { useColumnVisibility } from "@/features/active-vehicles/hooks/useColumnVisibility";
 
-export default function VehiculosActivosClient({ fallbackData }: { fallbackData?: ActiveSessionDto[] }) {
+export default function VehiculosActivosClient({ fallbackData }: { fallbackData?: { sessions: any; summary: any } | undefined }) {
   const [params, setParams] = useState<GetActiveSessionsQuery>({ page: 1, limit: 25, search: "", sortBy: "entryAt", sortDir: "desc" });
   const { rows, meta, summary, loading, error, reload } = useActiveSessions(params, fallbackData);
   const { caja, requireOpenForPayment } = useTerminalCaja();
@@ -215,7 +215,7 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
 
       <DataTable
         selectable
-        selectedKeys={selectedKeys === "all" ? new Set(filteredRows.map((r: ActiveSessionDto) => r.ticketNumber)) : selectedKeys}
+        selectedKeys={selectedKeys === "all" ? (new Set(filteredRows.map((r: ActiveSessionDto) => r.ticketNumber)) as any) : selectedKeys}
         onRowSelectionChange={(keys) => setSelectedKeys(keys as Set<string>)}
         serverSide
         searchable

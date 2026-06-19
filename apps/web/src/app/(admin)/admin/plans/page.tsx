@@ -59,11 +59,11 @@ export default function PlansPage() {
       setPlanToDelete(null);
       toast.success("Plan eliminado correctamente");
     } catch (err: unknown) {
-      const isUnauthorized = err?.status === 401 || err?.status === 403;
+      const isUnauthorized = (err as any)?.status === 401 || (err as any)?.status === 403;
       toast.danger(
         isUnauthorized
           ? "No tienes permisos suficientes (SUPER_ADMIN) o tu sesión expiró."
-          : err?.message || "Ocurrió un error al eliminar el plan."
+          : (err as any)?.message || "Ocurrió un error al eliminar el plan."
       );
     } finally {
       setIsDeleting(false);
@@ -80,7 +80,7 @@ export default function PlansPage() {
         );
       } catch (err: unknown) {
         toast.danger(
-          err?.message || "Error al cambiar estado del plan"
+          (err as any)?.message || "Error al cambiar estado del plan"
         );
       }
     },
@@ -95,7 +95,7 @@ export default function PlansPage() {
         toast.success("Plan duplicado correctamente");
       } catch (err: unknown) {
         toast.danger(
-          err?.message || "Error al duplicar el plan"
+          (err as any)?.message || "Error al duplicar el plan"
         );
       }
     },

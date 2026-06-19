@@ -51,7 +51,7 @@ export function useBulkExit(rows: ActiveSessionDto[], reload: () => void) {
       const result = await precalculateBulkExit({ locators: locators as string[], operatorUserId: user.id });
       setPrecalculation(result);
     } catch (err: unknown) {
-      alert("Error en pre-liquidación: " + err.message);
+      alert("Error en pre-liquidación: " + (err as any).message);
     } finally {
       setIsCalculating(false);
     }
@@ -69,7 +69,7 @@ export function useBulkExit(rows: ActiveSessionDto[], reload: () => void) {
       setSelectedKeys(new Set());
       reload();
     } catch (err: unknown) {
-      alert("Error procesando salida masiva: " + err.message);
+      alert("Error procesando salida masiva: " + (err as any).message);
     } finally {
       setIsProcessing(false);
     }

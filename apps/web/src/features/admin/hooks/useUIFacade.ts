@@ -9,7 +9,7 @@ export function useUIFacade() {
   const setSidebarState = useUIStore((s) => s.setSidebarState);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
 
-  const handleSetTheme = useCallback((newTheme: "light" | "dark" | "system") => {
+  const handleSetTheme = useCallback((newTheme: "light" | "dark" | "auto") => {
     setTheme(newTheme);
   }, [setTheme]);
 

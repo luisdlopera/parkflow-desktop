@@ -6,7 +6,7 @@ import { useUIStore } from '@/lib/stores/ui.store'
 describe('ThemeProvider', () => {
   beforeEach(() => {
     document.documentElement.classList.remove('dark')
-    useUIStore.setState({ theme: 'system', isDark: false })
+    useUIStore.setState({ theme: 'auto', isDark: false })
   })
 
   test('applies dark class when saved as dark', () => {
