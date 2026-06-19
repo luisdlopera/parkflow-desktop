@@ -1,8 +1,8 @@
 "use client";
 
 import { newIdempotencyKey } from "@/lib/idempotency";
-import { isOfflineLeaseValid, loadSession } from "@/lib/auth";
-
+import { loadSession } from "@/features/auth/services/auth-storage.service";
+import { isOfflineLeaseValid } from "@/features/auth/services/auth-domain.service";
 type OfflineEventType =
   | "ENTRY_RECORDED"
   | "EXIT_RECORDED"

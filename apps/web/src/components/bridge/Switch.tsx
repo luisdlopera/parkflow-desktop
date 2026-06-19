@@ -1,9 +1,10 @@
 import React from "react";
 import { Switch as HeroSwitch, Label, SwitchProps as HeroSwitchProps } from "@heroui/react";
 
-export interface SwitchProps extends Omit<HeroSwitchProps, "onChange" | "children" | "color"> {
+export interface SwitchProps extends Omit<HeroSwitchProps, "onChange" | "children" | "color" | "onValueChange"> {
   isSelected?: boolean;
   onChange?: (isSelected: boolean) => void;
+  onValueChange?: (isSelected: boolean) => void;
   color?: string; // v2 prop
   children?: React.ReactNode;
 }
@@ -14,7 +15,10 @@ export const Switch = React.forwardRef<HTMLLabelElement, SwitchProps>(
       <HeroSwitch 
         ref={ref}
         isSelected={isSelected} 
-        onChange={onChange} 
+        onChange={(isSelected: boolean) => {
+          if (onChange) onChange(isSelected);
+          if (props.onValueChange) props.onValueChange(isSelected);
+        }}  
         size={size} 
         className={className}
         {...props}

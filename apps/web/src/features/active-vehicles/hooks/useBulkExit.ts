@@ -1,9 +1,13 @@
 "use client";
 import { useState } from "react";
-import { currentUser } from "@/lib/auth";
+import { currentUser } from "@/features/auth/services/auth-domain.service";
 import { precalculateBulkExit, processBulkExit, BulkExitCalculateResponseDto, BulkExitResponseDto } from "@/lib/api/bulk-exit-api";
 import type { ActiveSessionDto } from "@/lib/api/sessions-api";
 import type { Selection } from "@heroui/react";
+import useSWR from "swr";
+import { fetchConfigurationPaymentMethods } from "@/lib/settings-api";
+import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
+import { useMemo } from "react";
 
 export function useBulkExit(rows: ActiveSessionDto[], reload: () => void) {
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set());
@@ -11,6 +15,22 @@ export function useBulkExit(rows: ActiveSessionDto[], reload: () => void) {
   const [finalResult, setFinalResult] = useState<BulkExitResponseDto | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const { hasPaymentMethod } = useRuntimeConfig();
+  const { data: dbMethodsData, isLoading: methodsLoading } = useSWR(
+    "active-payment-methods",
+    () => fetchConfigurationPaymentMethods({ active: true, size: 50 }),
+    { revalidateOnFocus: false }
+  );
+
+  const availablePaymentMethods = useMemo(() => {
+    if (methodsLoading || !dbMethodsData) return [];
+    return dbMethodsData.content
+      .filter((m) => hasPaymentMethod(m.code))
+      .map((m) => ({ code: m.code, label: m.name }));
+  }, [dbMethodsData, methodsLoading, hasPaymentMethod]);
+
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("CASH");
 
   const hasSelection =
     (selectedKeys === "all" && rows.length > 0) ||
@@ -44,7 +64,7 @@ export function useBulkExit(rows: ActiveSessionDto[], reload: () => void) {
 
     setIsProcessing(true);
     try {
-      const result = await processBulkExit({ locators, operatorUserId: user.id, paymentMethod: "CASH" });
+      const result = await processBulkExit({ locators, operatorUserId: user.id, paymentMethod: selectedPaymentMethod });
       setFinalResult(result);
       setSelectedKeys(new Set());
       reload();
@@ -62,6 +82,7 @@ export function useBulkExit(rows: ActiveSessionDto[], reload: () => void) {
     precalculation, finalResult,
     isCalculating, isProcessing,
     hasSelection, selectionCount,
+    availablePaymentMethods, selectedPaymentMethod, setSelectedPaymentMethod,
     handleCalculate, handleConfirm, closeModal,
   };
 }

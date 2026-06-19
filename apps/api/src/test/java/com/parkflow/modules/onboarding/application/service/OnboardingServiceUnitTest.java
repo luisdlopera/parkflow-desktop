@@ -73,7 +73,7 @@ class OnboardingServiceUnitTest {
 
     assertNotNull(syncPayments);
     assertTrue(syncPayments.size() > 0);
-    assertTrue(syncPayments.contains("EFECTIVO"));
+    assertTrue(syncPayments.contains("CASH"));
   }
 
   @Test

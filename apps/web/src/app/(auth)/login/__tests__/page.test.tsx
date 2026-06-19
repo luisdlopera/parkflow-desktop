@@ -1,11 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LoginPage from '../page';
-import { login, loadSession, currentUser } from '@/lib/auth';
+import { login } from "@/features/auth/api/auth.api";
+import { loadSession } from "@/features/auth/services/auth-storage.service";
+import { currentUser } from "@/features/auth/services/auth-domain.service";
 import { useRouter } from 'next/navigation';
 
 // Mock auth
-vi.mock('@/lib/auth', () => ({
+vi.mock("@/features/auth/api/auth.api", () => ({
+  login: vi.fn(),
+  loadSession: vi.fn(),
+  currentUser: vi.fn(),
+}));
+vi.mock("@/features/auth/services/auth-storage.service", () => ({
+  login: vi.fn(),
+  loadSession: vi.fn(),
+  currentUser: vi.fn(),
+}));
+vi.mock("@/features/auth/services/auth-domain.service", () => ({
   login: vi.fn(),
   loadSession: vi.fn(),
   currentUser: vi.fn(),

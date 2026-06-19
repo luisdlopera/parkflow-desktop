@@ -1405,3 +1405,166 @@ CREATE TABLE IF NOT EXISTS onboarding_question_config (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+
+-- From V002__add_plan_features.sql
+-- ============================================================================
+-- V002: Add Plan Features & Soft Delete
+-- ============================================================================
+-- Adds feature flags (JSONB), description, and soft-delete support to plans.
+-- ============================================================================
+
+ALTER TABLE plans
+  ADD COLUMN IF NOT EXISTS description TEXT,
+  ADD COLUMN IF NOT EXISTS features JSONB NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+
+-- Update existing seed plans with default features
+UPDATE plans
+SET features = '{"clients":true,"contracts":true,"memberships":true,"reports":true,"appointments":false,"attendanceControl":false,"integrations":false,"apiAccess":false,"mobileAppAccess":false,"billing":false,"customBranding":false}'
+WHERE code = 'basic' AND features = '{}';
+
+UPDATE plans
+SET features = '{"clients":true,"contracts":true,"memberships":true,"reports":true,"appointments":true,"attendanceControl":true,"integrations":true,"apiAccess":false,"mobileAppAccess":false,"billing":true,"customBranding":false}'
+WHERE code = 'pro' AND features = '{}';
+
+UPDATE plans
+SET features = '{"clients":true,"contracts":true,"memberships":true,"reports":true,"appointments":true,"attendanceControl":true,"integrations":true,"apiAccess":true,"mobileAppAccess":true,"billing":true,"customBranding":true}'
+WHERE code = 'enterprise' AND features = '{}';
+
+-- Add description for seed plans
+UPDATE plans SET description = 'Plan básico para operaciones locales offline' WHERE code = 'basic' AND description IS NULL;
+UPDATE plans SET description = 'Plan profesional con sincronización cloud y dashboard web' WHERE code = 'pro' AND description IS NULL;
+UPDATE plans SET description = 'Plan enterprise con todas las funcionalidades y SLA garantizado' WHERE code = 'enterprise' AND description IS NULL;
+
+
+-- From V002__create_audit_schema.sql
+-- ==============================================================================
+-- Migration: V002__create_audit_schema.sql
+-- Description: Creates the enterprise audit log table with support for JSONB,
+--              integrity hashing, and advanced indexing for rapid querying.
+-- ==============================================================================
+
+CREATE TABLE audit_event (
+    id UUID PRIMARY KEY,
+    correlation_id VARCHAR(100) NOT NULL,
+    timestamp_utc TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    
+    -- User Context
+    user_id UUID,
+    username VARCHAR(150),
+    role VARCHAR(100),
+    branch_id UUID,
+    
+    -- Request Context
+    ip_address VARCHAR(45),
+    user_agent VARCHAR(500),
+    device VARCHAR(100),
+    
+    -- Action Context
+    module VARCHAR(100) NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    entity_name VARCHAR(100),
+    entity_id VARCHAR(100),
+    status VARCHAR(20) NOT NULL, -- EXITOSA, FALLIDA
+    
+    -- Data Changes (JSONB for flexibility and performance)
+    old_data JSONB,
+    new_data JSONB,
+    modified_fields JSONB,
+    
+    -- Additional Info
+    reason TEXT,
+    observations TEXT,
+    execution_time_ms BIGINT,
+    
+    -- Security / Blockchain-like integrity
+    integrity_hash VARCHAR(256) NOT NULL,
+    previous_hash VARCHAR(256)
+);
+
+-- Indexes for performance
+CREATE INDEX idx_audit_event_timestamp ON audit_event(timestamp_utc DESC);
+CREATE INDEX idx_audit_event_correlation ON audit_event(correlation_id);
+CREATE INDEX idx_audit_event_user ON audit_event(user_id);
+CREATE INDEX idx_audit_event_module_action ON audit_event(module, action);
+CREATE INDEX idx_audit_event_entity ON audit_event(entity_name, entity_id);
+
+-- Optional: GIN Index if we need to search within the JSONB data frequently
+-- CREATE INDEX idx_audit_event_old_data ON audit_event USING GIN (old_data);
+-- CREATE INDEX idx_audit_event_new_data ON audit_event USING GIN (new_data);
+
+-- Comment to document table purpose
+COMMENT ON TABLE audit_event IS 'Enterprise audit log table with immutability hashing and JSONB data tracking';
+
+
+-- From V003__vehicle_plate_unique_constraint.sql
+-- Align vehicle table with JPA entity: enforce plate uniqueness per company.
+-- Global uniqueness was declared in the JPA entity but missing in the baseline schema.
+
+ALTER TABLE vehicle
+    ADD CONSTRAINT uq_vehicle_company_plate UNIQUE (company_id, plate);
+
+
+-- From V004__blacklisted_plate.sql
+CREATE TABLE IF NOT EXISTS blacklisted_plate (
+    id UUID DEFAULT gen_random_uuid() NOT NULL,
+    company_id UUID NOT NULL,
+    plate VARCHAR(20) NOT NULL,
+    reason VARCHAR(255),
+    active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+
+    CONSTRAINT blacklisted_plate_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_blacklisted_plate_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_blacklisted_plate_company_plate_active
+    ON blacklisted_plate (company_id, plate, active);
+
+
+-- From V005__theme_configuration.sql
+CREATE TABLE IF NOT EXISTS theme_configuration (
+    id              UUID        DEFAULT gen_random_uuid() NOT NULL,
+    company_id      UUID        NOT NULL,
+    primary_color   VARCHAR(7)  NOT NULL DEFAULT '#f97316',
+    secondary_color VARCHAR(7)  NOT NULL DEFAULT '#64748b',
+    success_color   VARCHAR(7)  NOT NULL DEFAULT '#22c55e',
+    warning_color   VARCHAR(7)  NOT NULL DEFAULT '#f59e0b',
+    danger_color    VARCHAR(7)  NOT NULL DEFAULT '#ef4444',
+    theme_mode      VARCHAR(10) NOT NULL DEFAULT 'auto',
+    logo_url        TEXT,
+    favicon_url     TEXT,
+    created_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+
+    CONSTRAINT theme_configuration_pkey PRIMARY KEY (id),
+    CONSTRAINT theme_configuration_company_unique UNIQUE (company_id),
+    CONSTRAINT fk_theme_configuration_company
+        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT chk_theme_mode CHECK (theme_mode IN ('light', 'dark', 'auto'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_theme_configuration_company_id
+    ON theme_configuration (company_id);
+
+
+-- From V006__fix_email_unique_per_tenant.sql
+-- P09: Scope app_user.email uniqueness to company — two companies can share the same email
+-- The global constraint prevents multi-tenant SaaS from having admin@empresa.com at two tenants.
+ALTER TABLE app_user DROP CONSTRAINT IF EXISTS app_user_email_key;
+DROP INDEX IF EXISTS app_user_email_key;
+DROP INDEX IF EXISTS uq_app_user_email;
+
+CREATE UNIQUE INDEX uq_app_user_company_email ON app_user (company_id, email);
+
+
+-- From V007__fix_device_fingerprint_per_tenant.sql
+-- P10: Scope licensed_devices.device_fingerprint uniqueness to company
+-- A device registered at company A should be registerable at company B (different tenant).
+ALTER TABLE licensed_devices DROP CONSTRAINT IF EXISTS licensed_devices_device_fingerprint_key;
+DROP INDEX IF EXISTS licensed_devices_device_fingerprint_key;
+DROP INDEX IF EXISTS uq_licensed_device_fingerprint;
+
+CREATE UNIQUE INDEX uq_licensed_device_company_fingerprint ON licensed_devices (company_id, device_fingerprint);

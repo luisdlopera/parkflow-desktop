@@ -7,11 +7,17 @@ import type { BulkExitCalculateResponseDto, BulkExitResponseDto } from "@/lib/ap
 export function BulkExitConfirmModal({
   precalculation,
   isProcessing,
+  availablePaymentMethods,
+  selectedPaymentMethod,
+  setSelectedPaymentMethod,
   onConfirm,
   onCancel,
 }: {
   precalculation: BulkExitCalculateResponseDto;
   isProcessing: boolean;
+  availablePaymentMethods: { code: string; label: string }[];
+  selectedPaymentMethod: string;
+  setSelectedPaymentMethod: (m: string) => void;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -79,9 +85,25 @@ export function BulkExitConfirmModal({
               </table>
             </div>
           </Modal.Body>
-          <Modal.Footer>
-            <Button color="default" variant="ghost" onPress={onCancel}>Cancelar</Button>
-            <Button color="warning" onPress={onConfirm} isLoading={isProcessing}>Confirmar e Imprimir</Button>
+          <Modal.Footer className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <label htmlFor="paymentMethod" className="text-sm font-semibold text-slate-700">Método de pago:</label>
+              <select
+                id="paymentMethod"
+                value={selectedPaymentMethod}
+                onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                className="text-sm border border-slate-300 rounded-md px-2 py-1"
+                disabled={isProcessing}
+              >
+                {availablePaymentMethods.map((m) => (
+                  <option key={m.code} value={m.code}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <Button color="default" variant="ghost" onPress={onCancel}>Cancelar</Button>
+              <Button color="warning" onPress={onConfirm} isLoading={isProcessing}>Confirmar e Imprimir</Button>
+            </div>
           </Modal.Footer>
         </Modal.Dialog>
       </Modal.Container>

@@ -1,5 +1,5 @@
-import { loadSession, extractCompanyIdFromToken } from "@/lib/auth";
-
+import { loadSession } from "@/features/auth/services/auth-storage.service";
+import { extractCompanyIdFromToken } from "@/features/auth/services/auth-domain.service";
 export async function resolveCurrentCompanyId(): Promise<string | null> {
   const session = await loadSession();
   if (!session) return null;

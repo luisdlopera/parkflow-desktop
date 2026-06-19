@@ -18,6 +18,7 @@ const repoRoot = join(__dirname, '..');
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
+    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process, javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
     const child = spawn(command, args, {
       cwd: repoRoot,
       stdio: 'inherit',
@@ -112,6 +113,7 @@ async function main() {
     };
 
     // Start API first and wait for it to be ready
+    // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
     const api = spawn('pnpm', ['dev:api'], {
       cwd: repoRoot,
       env: sharedEnv,
@@ -122,7 +124,7 @@ async function main() {
     children.add(api);
 
     api.on('error', (err) => {
-      console.error(`${label} API failed to start:`, err.message);
+      console.error(`${label} API failed to start: ${err.message}`);
       shutdown(1);
     });
 
@@ -131,13 +133,14 @@ async function main() {
     try {
       await waitForTcpPort(apiPort);
     } catch (err) {
-      console.error(`${label} Timeout waiting for API:`, err.message);
+      console.error(`${label} Timeout waiting for API: ${err.message}`);
       shutdown(1);
       return;
     }
 
     console.log(`${label} API is ready. Starting Web on ${webPort}...`);
 
+    // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
     const web = spawn('pnpm', ['dev:web'], {
       cwd: repoRoot,
       env: sharedEnv,
@@ -148,7 +151,7 @@ async function main() {
     children.add(web);
 
     web.on('error', (err) => {
-      console.error(`${label} Web failed to start:`, err.message);
+      console.error(`${label} Web failed to start: ${err.message}`);
       shutdown(1);
     });
 

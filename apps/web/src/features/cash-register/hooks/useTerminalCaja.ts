@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { cashCurrent, cashPolicy, type CashPolicyDto } from "@/lib/cash/cash-api";
+import { cashCurrent, type CashPolicyDto } from "@/lib/cash/cash-api";
+import { getAndCacheCashPolicy } from "@/features/cash-register/services/cash-policy.service";
 
 export type CajaState =
   | { status: "loading" }
@@ -16,7 +17,7 @@ export function useTerminalCaja() {
       window.localStorage.getItem("parkflow_terminal_id")?.trim() || "";
     const site = process.env.NEXT_PUBLIC_PARKING_SITE?.trim() || "default";
 
-    cashPolicy(site || "default")
+    getAndCacheCashPolicy(site || "default")
       .then(setPolicy)
       .catch(() => setPolicy(null));
 

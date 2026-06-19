@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useParkingShortcuts } from "@/hooks/ui/useKeyboardShortcuts";
 import { useEffect, useState } from "react";
 import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
+import { useAuthStore } from "@/lib/stores/auth.store";
 
 const navItems = [
   { label: "Dashboard", href: "/", shortcut: "", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
@@ -26,6 +27,9 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
   useParkingShortcuts();
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
 
+  const authUser = useAuthStore((s) => s.user);
+  const isAuditor = authUser?.role === "AUDITOR";
+
   useEffect(() => {
     fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
   }, []);
@@ -34,6 +38,16 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
     if (item.href === "/caja") return shouldShowModule(runtimeConfig, "cash", true);
     return true;
   });
+
+  const allNavItems = [...visibleItems];
+  if (isAuditor) {
+    allNavItems.push({
+      label: "Auditoría",
+      href: "/admin/audit",
+      shortcut: "",
+      icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+    });
+  }
 
   return (
     <>
@@ -89,7 +103,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
 
           {/* Navigation */}
           <nav className="mt-6 space-y-1 flex-1">
-            {visibleItems.map((item) => {
+            {allNavItems.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link

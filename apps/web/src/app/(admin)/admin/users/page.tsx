@@ -4,7 +4,6 @@ import { Card } from "@/components/bridge/Card";
 const UsersPageClient = dynamic(
   () => import("./UsersPageClient").then((mod) => mod.AdminUsersPageClient),
   {
-    ssr: false,
     loading: () => (
       <div className="space-y-6 animate-pulse">
         <div className="flex justify-between items-center">

@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useOverlayState } from "@heroui/react";
 import { Button } from "@/components/bridge/Button";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/bridge/Modal";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@/components/bridge/Dropdown";
+import { Dropdown, DropdownMenu, DropdownItem } from "@/components/bridge/Dropdown";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { Button as HeroButton } from "@heroui/react";
 import { Plus, MoreVertical, Pencil, Trash2, LucideIcon } from "lucide-react";
@@ -136,11 +136,9 @@ export function EntityManagementPage<T extends object>({
         filters={filters}
         actions={(entity) => (
           <Dropdown>
-            <DropdownTrigger>
-              <HeroButton isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
-                <MoreVertical className="w-4 h-4" />
-              </HeroButton>
-            </DropdownTrigger>
+            <HeroButton isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
+              <MoreVertical className="w-4 h-4" />
+            </HeroButton>
             <DropdownMenu aria-label="Acciones">
               {FormComponent && onSave && (
                 <DropdownItem

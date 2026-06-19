@@ -1,4 +1,4 @@
-import { authHeaders } from "@/lib/auth";
+import { authHeaders } from "@/features/auth/services/auth-domain.service";
 import { authBase, apiBase } from "@/lib/api/config";
 import { API_CONFIG } from "@/lib/api/config";
 

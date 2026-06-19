@@ -4,9 +4,12 @@ import { Button } from "@/components/bridge/Button";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { Check, Save, AlertTriangle } from "lucide-react";
 import { skipOnboarding, completeOnboarding } from "@/lib/onboarding-api";
-import { patchSessionUser, logoutAndRedirectToLogin } from "@/lib/auth";
+import { patchSessionUser } from "@/features/auth/services/auth-domain.service";
 import { ApiError } from "@/lib/errors/api-error";
+import { useRouter } from "next/navigation";
+import { clearSession } from "@/features/auth/services/auth-storage.service";
 import { useState } from "react";
+import { Spinner } from "@heroui/react";
 import {
   OnboardingProvider,
   useOnboarding,
@@ -57,6 +60,7 @@ function OnboardingContent() {
 
   const [isSkipping, setIsSkipping] = useState(false);
   const { confirm } = useDialog();
+  const router = useRouter();
 
   const handleSkip = async () => {
     const ok = await confirm(
@@ -73,7 +77,8 @@ function OnboardingContent() {
       window.location.assign("/");
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        await logoutAndRedirectToLogin("expired");
+        await clearSession();
+        router.push("/login?reason=expired");
       } else {
         console.error("Error skipping onboarding:", err);
         setSaveState("error");
@@ -84,8 +89,9 @@ function OnboardingContent() {
 
   if (loading || !status)
     return (
-      <div className="fixed inset-0 z-[120] grid place-items-center bg-white">
-        Cargando onboarding...
+      <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-white dark:bg-zinc-950">
+        <Spinner size="lg" color="current" />
+        <p className="text-default-500 font-medium">Cargando configuración...</p>
       </div>
     );
 

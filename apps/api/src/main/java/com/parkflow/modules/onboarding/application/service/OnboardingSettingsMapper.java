@@ -174,6 +174,9 @@ public class OnboardingSettingsMapper {
     settings.put("operationConfiguration", operationConfiguration);
     settings.put("wizard", progressData);
     settings.put("modules", inferModules(progressData));
+    // Sync the 'features' map from the wizard answers so that FeatureFlagsSection
+    // and useFeatureFlags() always reflect what the user configured in onboarding.
+    settings.put("features", inferFeatureFlags(progressData, vehicleTypes, helmetConfig, paymentMethods));
     return settings;
   }
 
@@ -256,9 +259,31 @@ public class OnboardingSettingsMapper {
             "monthly", false,
             "agreements", false,
             "advancedAudit", true)),
+        Map.entry("features", defaultFeaturesMap()),
         Map.entry("sites", List.of(Map.of("code", "PRINCIPAL", "name", "Sede principal"))),
         Map.entry("roles", List.of("ADMIN", "OPERADOR")),
         Map.entry("criticalAudit", List.of("COBROS", "ANULACIONES", "CIERRE_CAJA")));
+  }
+
+  /** Returns the default feature-flags map for companies without onboarding data. */
+  private Map<String, Object> defaultFeaturesMap() {
+    Map<String, Object> f = new LinkedHashMap<>();
+    f.put("agreements", false);
+    f.put("prepaid", false);
+    f.put("memberships", false);
+    f.put("electronicBilling", false);
+    f.put("lockerControl", false);
+    f.put("motorcycleParking", true);
+    f.put("bicycleParking", false);
+    f.put("multiplePaymentMethods", false);
+    f.put("plateValidation", true);
+    f.put("specialRates", false);
+    f.put("frequentCustomers", false);
+    f.put("helmetControl", false);
+    f.put("accessoryControl", false);
+    f.put("reservations", false);
+    f.put("operation24Hours", false);
+    return f;
   }
 
   public Map<String, Object> stepMap(Map<String, Object> progressData, int step) {
@@ -404,6 +429,60 @@ public class OnboardingSettingsMapper {
         "monthly", clients,
         "agreements", agreements,
         "advancedAudit", true);
+  }
+
+  /**
+   * Derives the {@code features} map from wizard progress so that the UI switches
+   * in FeatureFlagsSection stay aligned after onboarding completes or is re-run.
+   *
+   * <p>Only features that the wizard explicitly controls are overwritten. Features
+   * not represented in any wizard step (e.g. {@code electronicBilling},
+   * {@code specialRates}) are carried forward from the previous settings to avoid
+   * erasing manual configurations made outside the wizard.
+   *
+   * @param progressData    wizard step data keyed by "step_N"
+   * @param vehicleTypes    normalised vehicle type codes (e.g. "MOTORCYCLE", "CAR")
+   * @param helmetConfig    resolved helmet configuration from resolveHelmetConfig()
+   * @param paymentMethods  normalised payment method codes
+   * @return mutable feature-flags map compatible with FeatureConfigurationResponse
+   */
+  private Map<String, Object> inferFeatureFlags(
+      Map<String, Object> progressData,
+      List<String> vehicleTypes,
+      Map<String, Object> helmetConfig,
+      List<String> paymentMethods) {
+
+    boolean agreementsEnabled = containsYes(progressData.get("step_9"));
+    boolean membershipsEnabled = containsYes(progressData.get("step_8"));
+
+    boolean hasMoto = vehicleTypes.contains("MOTORCYCLE");
+    boolean hasBicycle = vehicleTypes.contains("BICYCLE");
+
+    String helmetHandling = String.valueOf(helmetConfig.getOrDefault("helmetHandling", "NONE"));
+    boolean helmetControl = !"NONE".equals(helmetHandling);
+    boolean lockerControl = "LOCKERS".equals(helmetHandling);
+
+    boolean multiplePaymentMethods = paymentMethods.size() > 1;
+
+    Map<String, Object> features = new LinkedHashMap<>();
+    // Features directly controlled by wizard steps:
+    features.put("agreements", agreementsEnabled);        // step 9
+    features.put("memberships", membershipsEnabled);      // step 8
+    features.put("motorcycleParking", hasMoto);           // step 1
+    features.put("bicycleParking", hasBicycle);           // step 1
+    features.put("helmetControl", helmetControl);         // step 1 helmetHandling
+    features.put("lockerControl", lockerControl);         // step 1 helmetHandling=LOCKERS
+    features.put("multiplePaymentMethods", multiplePaymentMethods); // step 6
+    // Features not yet covered by wizard — keep false as safe default:
+    features.put("prepaid", false);
+    features.put("electronicBilling", false);
+    features.put("plateValidation", true);
+    features.put("specialRates", false);
+    features.put("frequentCustomers", false);
+    features.put("accessoryControl", false);
+    features.put("reservations", false);
+    features.put("operation24Hours", false);
+    return features;
   }
 
   private boolean containsYes(Object rawStep) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { currentUser } from "@/lib/auth";
+import { currentUser } from "@/features/auth/services/auth-domain.service";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
 export default function OnboardingPage() {

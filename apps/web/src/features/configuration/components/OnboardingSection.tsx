@@ -4,8 +4,11 @@ import { Card } from "@/components/bridge/Card";
 import { Button } from "@/components/bridge/Button";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { resetOnboarding } from "@/lib/onboarding-api";
-import { currentUser, loadSession, saveSession, refreshIfNeeded } from "@/lib/auth";
+import { refreshIfNeeded } from "@/features/auth/api/auth.api";
+import { loadSession, saveSession } from "@/features/auth/services/auth-storage.service";
+import { currentUser } from "@/features/auth/services/auth-domain.service";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { backupOnboardingConfig, restoreOnboardingConfig } from "@/lib/config/config-merge";
 
 export default function OnboardingSection({
   onNotify
@@ -27,13 +30,14 @@ export default function OnboardingSection({
           </p>
           <p className="text-sm text-slate-600">
             Al confirmar, se reiniciará el progreso y serás redirigido al asistente inicial.
+            Las configuraciones críticas del onboarding serán preservadas automáticamente.
           </p>
           <div>
             <Button
               color="primary"
               isLoading={loading}
               onPress={async () => {
-                if (!(await confirm("¿Seguro que deseas re-ejecutar la parametrización inicial?"))) return;
+                if (!(await confirm("¿Seguro que deseas re-ejecutar la parametrización inicial? Las configuraciones manuales se preservarán."))) return;
                 setLoading(true);
                 try {
                   const user = await currentUser();
@@ -43,7 +47,9 @@ export default function OnboardingSection({
                     onNotify({ kind: "err", text: "No se pudo identificar la empresa actual" });
                     return;
                   }
+                  backupOnboardingConfig();
                   await resetOnboarding(compId, "Reinicio desde configuración");
+                  restoreOnboardingConfig();
                   const session = await loadSession();
                   if (session) {
                     const refreshed = await refreshIfNeeded(session);

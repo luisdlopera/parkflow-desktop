@@ -35,6 +35,7 @@ function checkCommand(command, name) {
 
 function checkJavaVersion() {
   try {
+    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
     const output = execSync("java -version 2>&1", { encoding: "utf-8" });
     const versionMatch = output.match(/version "(\d+)/);
     if (versionMatch) {

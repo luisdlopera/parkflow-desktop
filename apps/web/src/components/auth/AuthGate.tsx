@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { currentUser, loadSession, logoutAndRedirectToLogin } from "@/lib/auth";
+import { loadSession, clearSession } from "@/features/auth/services/auth-storage.service";
+import { currentUser } from "@/features/auth/services/auth-domain.service";
 import { useSessionMonitor } from "@/hooks/auth/useSessionMonitor";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
@@ -53,7 +54,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isExpired && ready) {
-      void logoutAndRedirectToLogin("expired");
+      clearSession().then(() => router.push("/login?reason=expired"));
     }
   }, [isExpired, ready]);
 

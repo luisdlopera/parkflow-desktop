@@ -34,7 +34,7 @@ export type BulkExitResponseDto = {
   totalCharged: number;
   successfulCount: number;
   failedCount: number;
-  successfulReceipts: any[];
+  successfulReceipts: Record<string, unknown>[];
   errors: string[];
 };
 

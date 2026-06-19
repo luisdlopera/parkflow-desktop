@@ -7,7 +7,7 @@ import { Button } from "@/components/bridge/Button";
 import DataTable from "@/components/ui/DataTable";
 import dynamic from "next/dynamic";
 import DateRangeInput from "@/components/bridge/DateRangeInput";
-import { hasPermission } from "@/lib/auth";
+import { hasPermission } from "@/features/auth/services/auth-domain.service";
 import { BarChart3, Lock, Car, Receipt, Ban, DollarSign, TrendingUp, User, CreditCard } from "lucide-react";
 import { useReports, fmt, fmtPct, dateLabel, shortDate, pmLabel, getOccupancyColor } from "@/features/reports/hooks/useReports";
 import type { ReportView } from "@/features/reports/hooks/useReports";

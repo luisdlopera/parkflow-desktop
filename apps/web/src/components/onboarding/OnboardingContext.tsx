@@ -102,6 +102,17 @@ export function OnboardingProvider({
 
       setSaveState("saving");
       try {
+        const optimisticNext = {
+          ...status,
+          currentStep: safeTarget,
+          progressData: {
+            ...(status.progressData || {}),
+            [`step_${step}`]: stepData,
+          },
+        };
+        await mutate(optimisticNext, false);
+        loadStepFromStatus(optimisticNext as OnboardingStatus, safeTarget);
+
         const next = await saveOnboardingStep(companyId, step, stepData, safeTarget);
         await mutate(next, false);
         loadStepFromStatus(next, safeTarget);
@@ -113,6 +124,9 @@ export function OnboardingProvider({
       } catch {
         setSaveState("error");
         setTimeout(() => setSaveState("idle"), 3000);
+        // Rollback on error
+        await mutate(status, false);
+        loadStepFromStatus(status, status.currentStep ?? 1);
       }
     },
     [status, saveState, stepData, companyId, mutate, loadStepFromStatus, setSaveState]

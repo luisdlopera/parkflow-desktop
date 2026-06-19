@@ -1,11 +1,12 @@
 "use client";
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import useSWR from "swr";
 import {
   processExit as serviceProcessExit,
   reprintExitTicket,
   reportLostTicket,
-  buildExitBody,
 } from "../services/vehicle-exit.service";
+import { buildExitBody } from "../mappers/vehicle-exit.mapper";
 import { useSplitPayment } from "./useSplitPayment";
 import { useChangeCalculator } from "./useChangeCalculator";
 import { useExitLookup } from "./useExitLookup";
@@ -14,8 +15,9 @@ import { cashCurrent, cashPolicy } from "@/lib/cash/cash-api";
 import { getOrCreateIdempotencyKey, clearIdempotencyKey } from "@/lib/idempotency";
 import { buildTicketPreviewForOperation, printReceiptIfTauri, type OperationPayload } from "@/lib/tauri-print";
 import { downloadTicketAsHtml } from "@/lib/print/ticket-download";
-import { currentUser } from "@/lib/auth";
+import { currentUser } from "@/features/auth/services/auth-domain.service";
 import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
+import { fetchConfigurationPaymentMethods } from "@/lib/settings-api";
 import { useTerminalCaja } from "@/features/cash-register/hooks/useTerminalCaja";
 import { useOperationSounds } from "@/hooks/ui/useOperationSounds";
 import { PAYMENT_METHOD_CATALOG, type PaymentMethodCode } from "@/lib/payment-method-catalog";
@@ -105,13 +107,38 @@ export function useVehicleExit() {
   const operationLock = useRef(false);
   const reprintLock = useRef(false);
 
-  const availablePaymentMethods = useMemo(() => {
-    if (configLoading || config == null) return [];
-    if (!config.paymentMethods || config.paymentMethods.length === 0) return [];
-    return PAYMENT_METHOD_CATALOG.filter((m) => config.paymentMethods!.includes(m.code));
-  }, [config, configLoading]);
+  const { data: dbMethodsData, isLoading: methodsLoading } = useSWR(
+    "active-payment-methods",
+    () => fetchConfigurationPaymentMethods({ active: true, size: 50 }),
+    { revalidateOnFocus: false }
+  );
 
-  const isPaymentConfigMissing = !configLoading && config != null && availablePaymentMethods.length === 0;
+  const availablePaymentMethods = useMemo(() => {
+    if (methodsLoading || !dbMethodsData) return [];
+    return dbMethodsData.content
+      .filter((m) => hasPaymentMethod(m.code))
+      .map((m) => {
+        let tone = "bg-slate-700 hover:bg-slate-800 border border-default-200";
+        if (m.code === "CASH") tone = "bg-emerald-500 hover:bg-emerald-600 border border-default-200";
+        else if (m.code === "DEBIT_CARD") tone = "bg-sky-500 hover:bg-sky-600 border border-default-200";
+        else if (m.code === "CREDIT_CARD") tone = "bg-indigo-500 hover:bg-indigo-600 border border-default-200";
+        else if (m.code === "TRANSFER") tone = "bg-cyan-600 hover:bg-cyan-700 border border-default-200";
+        else if (m.code === "NEQUI") tone = "bg-fuchsia-500 hover:bg-fuchsia-600 border border-default-200";
+        else if (m.code === "DAVIPLATA") tone = "bg-rose-500 hover:bg-rose-600 border border-default-200";
+        else if (m.code === "AGREEMENT") tone = "bg-amber-500 hover:bg-amber-600 border border-default-200";
+
+        return {
+          code: m.code as PaymentMethodCode,
+          label: m.name,
+          hint: m.requiresReference ? "Referencia requerida" : "",
+          tone,
+          requiresReference: m.requiresReference,
+          availableInOnboarding: true,
+        };
+      });
+  }, [dbMethodsData, methodsLoading, hasPaymentMethod]);
+
+  const isPaymentConfigMissing = !methodsLoading && dbMethodsData && availablePaymentMethods.length === 0;
   const firstMethod = availablePaymentMethods[0]?.code ?? ("CASH" as PaymentMethodCode);
   const secondMethod = availablePaymentMethods[1]?.code ?? firstMethod;
   const enableVehicleCondition = config?.operationConfiguration?.enableVehicleCondition ?? true;
@@ -181,7 +208,7 @@ export function useVehicleExit() {
           const detail = splitPayments
             .filter((row) => (Number(row.amount) || 0) > 0)
             .map((row) => {
-              const label = PAYMENT_METHOD_CATALOG.find((m) => m.code === row.method)?.label ?? row.method;
+              const label = availablePaymentMethods.find((m) => m.code === row.method)?.label ?? row.method;
               return `${label} $${Number(row.amount).toLocaleString("es-CO")}`;
             })
             .join(" + ");
@@ -407,7 +434,7 @@ export function useVehicleExit() {
     // Derived
     totalDue, isSplitPayment, changeDue, singleCashReceived,
     availablePaymentMethods, isPaymentConfigMissing, firstMethod, secondMethod,
-    enableVehicleCondition, enableCustodiedItem,
+    enableVehicleCondition, enableCustodiedItem, allowTicketReprint: config?.tickets?.allowReprint ?? true,
     splitPayments: splitPaymentHook.splitPayments,
     splitTotal: splitPaymentHook.splitTotal,
     splitRemaining: splitPaymentHook.splitRemaining,

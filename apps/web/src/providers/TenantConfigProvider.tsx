@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useCallback, useMemo } from "react";
-import useSWR, { mutate as globalMutate } from "swr";
 import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 import { useTenantStore } from "@/lib/stores/tenant.store";
 
@@ -18,36 +17,22 @@ export interface TenantConfigContextType {
 
 export function useTenantConfig(): TenantConfigContextType {
   const runtimeConfig = useTenantStore((s) => s.runtimeConfig);
-  const storeLoading = useTenantStore((s) => s.loading);
-  const storeError = useTenantStore((s) => s.error);
+  const loading = useTenantStore((s) => s.loading);
+  const error = useTenantStore((s) => s.error);
   const fetchConfig = useTenantStore((s) => s.fetchConfig);
 
-  const { data: swrData, error: swrError, isLoading, mutate } = useSWR<RuntimeConfig | null>(
-    "tenant-runtime-config",
-    fetchRuntimeConfig,
-    {
-      revalidateOnFocus: false,
-    }
-  );
-
-  const data = runtimeConfig ?? swrData;
-  const loading = storeLoading || isLoading;
-  const error = storeError || !!swrError;
-
   useEffect(() => {
-    if (swrData && !runtimeConfig) {
-      useTenantStore.setState({ runtimeConfig: swrData, loading: false });
+    if (!runtimeConfig && !loading && !error) {
+      fetchConfig();
     }
-  }, [swrData, runtimeConfig]);
+  }, [runtimeConfig, loading, error, fetchConfig]);
 
   const refresh = useCallback(async () => {
-    await mutate();
     await fetchConfig();
-  }, [mutate, fetchConfig]);
+  }, [fetchConfig]);
 
   useEffect(() => {
     const handleRefreshRequest = () => {
-      void globalMutate("tenant-runtime-config");
       void fetchConfig();
     };
     window.addEventListener("parkflow-refresh-runtime-config", handleRefreshRequest);
@@ -72,7 +57,7 @@ export function useTenantConfig(): TenantConfigContextType {
 
   return useMemo(
     () => ({
-      runtimeConfig: data ?? null,
+      runtimeConfig,
       loading,
       error,
       refresh,
@@ -81,7 +66,7 @@ export function useTenantConfig(): TenantConfigContextType {
       isFeatureEnabled,
       getOperationConfigValue,
     }),
-    [data, loading, error, refresh, supportsVehicleType, isModuleEnabled, isFeatureEnabled, getOperationConfigValue],
+    [runtimeConfig, loading, error, refresh, supportsVehicleType, isModuleEnabled, isFeatureEnabled, getOperationConfigValue],
   );
 }
 

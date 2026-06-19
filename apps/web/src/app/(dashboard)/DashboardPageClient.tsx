@@ -1,85 +1,35 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { currentUser, canAccessSuperAdminPortal } from "@/lib/auth";
+import { currentUser, canAccessSuperAdminPortal } from "@/features/auth/services/auth-domain.service";
 import { Separator } from "@heroui/react";
 import { Card } from "@/components/bridge/Card";
 import { Button } from "@/components/bridge/Button";
 import KpiCard from "@/components/ui/KpiCard";
 import DataTable from "@/components/ui/DataTable";
 import Badge from "@/components/bridge/Badge";
-import LocalPrintAgentStatus from "@/components/print/LocalPrintAgentStatus";
-import { PrintStatusMonitor } from "@/components/print/PrintStatusMonitor";
-import { fetchDashboardSummary, fetchOperationalHealth, fetchActiveSessions, postOperationalAction, type DashboardSummary, type OperationalHealth } from "@/lib/api/dashboard-api";
+import { useDashboardData } from "@/features/dashboard/hooks/useDashboardData";
 
-type Summary = DashboardSummary;
-
-type ActiveRow = {
-  plate: string;
-  type: string;
-  started: string;
-  status: string;
-  amount: string;
-};
 
 export default function DashboardPageClient() {
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<ActiveRow[]>([]);
-  const [sessionsError, setSessionsError] = useState<string | null>(null);
-  const [operational, setOperational] = useState<OperationalHealth | null>(null);
-  const [opsMessage, setOpsMessage] = useState<string | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
 
-  const load = useCallback(async () => {
-    setSummaryError(null);
-    setSessionsError(null);
-
-    try {
-      const user = await currentUser();
-      setIsSuperAdmin(canAccessSuperAdminPortal(user));
-    } catch {}
-
-    try {
-      setSummary(await fetchDashboardSummary());
-    } catch {
-      setSummaryError("API no disponible (resumen)");
-      setSummary(null);
-    }
-
-    try {
-      setOperational(await fetchOperationalHealth());
-    } catch {
-      setOperational(null);
-    }
-
-    try {
-      const list = await fetchActiveSessions();
-      setSessions(list.map((row) => ({
-        plate: row.plate,
-        type: row.vehicleType,
-        started: row.entryAt ? new Date(row.entryAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }) : "—",
-        status: row.status === "ACTIVE" ? "Activo" : row.status,
-        amount: row.totalAmount != null ? `$ ${Number(row.totalAmount).toLocaleString("es-CO")}` : "—",
-      })));
-    } catch {
-      setSessionsError("API no disponible (sesiones activas)");
-      setSessions([]);
-    }
-  }, []);
+  const {
+    summary,
+    summaryError,
+    operational,
+    activeSessions,
+    sessionsError,
+    opsMessage,
+    refreshAll,
+    executeOperationalAction,
+  } = useDashboardData();
 
   useEffect(() => {
-    load().catch(() => {});
-  }, [load]);
-
-  const callOperationalAction = useCallback(async (path: "retry-sync" | "test-printer") => {
-    try {
-      setOpsMessage(await postOperationalAction(path));
-    } catch {
-      setOpsMessage("Error al ejecutar acción");
-    }
-    await load();
-  }, [load]);
+    currentUser()
+      .then((user) => setIsSuperAdmin(canAccessSuperAdminPortal(user)))
+      .catch(() => {});
+  }, []);
 
   const tone = (status?: string) => status === "CRITICAL" ? "text-red-700" : status === "WARNING" ? "text-amber-700" : "text-emerald-700";
 
@@ -128,7 +78,7 @@ export default function DashboardPageClient() {
         <div>
           <button
             type="button"
-            onClick={() => void load()}
+            onClick={() => void refreshAll()}
             className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:border-gray-700 dark:text-slate-300 dark:hover:bg-gray-800"
           >
             Actualizar
@@ -173,8 +123,8 @@ export default function DashboardPageClient() {
             </div>
 
             <div className="flex gap-3 mb-6">
-              <Button size="sm" variant="tertiary" color="primary" onPress={() => { callOperationalAction("retry-sync").catch(() => {}); }}>Reintentar Sync</Button>
-              <Button size="sm" variant="tertiary" color="primary" onPress={() => { callOperationalAction("test-printer").catch(() => {}); }}>Probar Impresora</Button>
+              <Button size="sm" variant="tertiary" color="primary" onPress={() => { executeOperationalAction("retry-sync").catch(() => {}); }}>Reintentar Sync</Button>
+              <Button size="sm" variant="tertiary" color="primary" onPress={() => { executeOperationalAction("test-printer").catch(() => {}); }}>Probar Impresora</Button>
             </div>
 
             <DataTable
@@ -199,7 +149,7 @@ export default function DashboardPageClient() {
             { key: "status", label: "Estado", priority: "medium" },
             { key: "amount", label: "Acumulado", priority: "high", align: "right" }
           ]}
-          rows={sessions}
+          rows={activeSessions}
           emptyMessage="No hay vehículos activos en este momento."
         />
       </section>

@@ -8,8 +8,9 @@ import {
   TextAreaProps as HeroTextAreaProps,
 } from "@heroui/react";
 
-export interface TextAreaProps extends Omit<HeroTextAreaProps, "size" | "color" | "variant" | "radius" | "classNames" | "minRows" | "maxRows" | "className"> {
+export interface TextAreaProps extends Omit<HeroTextAreaProps, "size" | "color" | "variant" | "radius" | "classNames" | "minRows" | "maxRows" | "className" | "onValueChange"> {
   label?: string;
+  onValueChange?: (value: string) => void;
   description?: string;
   errorMessage?: string;
   isInvalid?: boolean;
@@ -40,7 +41,10 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
           preventDefault: () => {},
           stopPropagation: () => {},
         } as unknown as React.ChangeEvent<HTMLTextAreaElement>;
-        (onChange as any)(syntheticEvent);
+        (onChange as unknown as (e: React.ChangeEvent<HTMLTextAreaElement>) => void)(syntheticEvent);
+        if (props.onValueChange) {
+          props.onValueChange(val);
+        }
       }
     }, [onChange, name]);
 
@@ -48,16 +52,16 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       <TextField 
         isInvalid={isInvalid} 
         isRequired={isRequired} 
-        className={className as any}
+        className={className}
         value={value as string}
         defaultValue={defaultValue as string}
         name={name}
         onChange={handleValueChange}
-        onBlur={onBlur as any}
+        onBlur={onBlur as unknown as React.FocusEventHandler<HTMLInputElement>}
         aria-label={ariaLabel}
       >
         {label && <Label>{label}</Label>}
-        <HeroTextArea ref={ref} rows={minRows} className={textareaClass} {...props as any} />
+        <HeroTextArea ref={ref} rows={minRows} className={textareaClass} {...props} />
         {description && !isInvalid && <Description>{description}</Description>}
         {errorMessage && isInvalid && <FieldError>{errorMessage}</FieldError>}
       </TextField>

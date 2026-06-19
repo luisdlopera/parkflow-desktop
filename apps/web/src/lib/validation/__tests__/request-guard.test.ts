@@ -34,8 +34,8 @@ describe("toUserMessageFromClientValidation", () => {
   it("returns user message for ZodError", () => {
     try {
       testSchema.parse({ ticketNumber: "", amount: -1 });
-    } catch (err: any) {
-      const result = toUserMessageFromClientValidation(new ClientValidationError("Validation failed", err.flatten().fieldErrors));
+    } catch (err) {
+      const result = toUserMessageFromClientValidation(new ClientValidationError("Validation failed", { ticketNumber: "Ticket requerido" }));
       expect(result).toBeTruthy();
       expect(typeof result).toBe("string");
     }

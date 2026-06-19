@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { loadSession, refreshIfNeeded, clearSession } from "@/lib/auth";
-
+import { refreshIfNeeded } from "@/features/auth/api/auth.api";
+import { loadSession, clearSession } from "@/features/auth/services/auth-storage.service";
 interface SessionMonitorState {
   isExpired: boolean;
   timeRemaining: number | null;

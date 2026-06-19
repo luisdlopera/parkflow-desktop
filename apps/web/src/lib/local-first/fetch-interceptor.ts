@@ -33,19 +33,18 @@ export async function handleLocalFirstFetch(
     try { return JSON.parse(String(init.body)); } catch { return {}; }
   };
 
+  const handlers = [
+    handleAuthRoutes,
+    (path: string, meth: string, getBodyFn: () => Record<string, unknown>, inv: typeof invoke) => handleOperationsRoutes(path, meth, searchParams, getBodyFn, inv),
+    (path: string, meth: string, getBodyFn: () => Record<string, unknown>, inv: typeof invoke) => handleCashRoutes(path, meth, searchParams, getBodyFn, inv),
+    handleOnboardingRoutes
+  ];
+
   try {
-    const authResult = await handleAuthRoutes(pathname, method, getBody, invoke);
-    if (authResult) return authResult;
-
-    const opsResult = await handleOperationsRoutes(pathname, method, searchParams, getBody, invoke);
-    if (opsResult) return opsResult;
-
-    const cashResult = await handleCashRoutes(pathname, method, searchParams, getBody, invoke);
-    if (cashResult) return cashResult;
-
-    const onboardingResult = await handleOnboardingRoutes(pathname, method, getBody, invoke);
-    if (onboardingResult) return onboardingResult;
-
+    for (const handler of handlers) {
+      const result = await handler(pathname, method, getBody, invoke);
+      if (result) return result as Response;
+    }
   } catch (err) {
     console.error("Local first interceptor error matching path:", pathname, err);
     return new Response(JSON.stringify({ error: String(err) }), {
@@ -55,10 +54,11 @@ export async function handleLocalFirstFetch(
   }
 
   // Settings / Configuration endpoints not available in local-first mode
-  const isSettingsEndpoint =
-    pathname.includes("/settings/") || pathname.includes("/configuration/") ||
-    pathname.includes("/monthly-contracts") || pathname.includes("/agreements") ||
-    pathname.includes("/prepaid/");
+  const settingsPatterns = [
+    /^\/api\/v1\/(?:settings|configuration)\b/,
+    /^\/api\/v1\/(?:monthly-contracts|agreements|prepaid)\b/
+  ];
+  const isSettingsEndpoint = settingsPatterns.some(pattern => pattern.test(pathname));
 
   if (isSettingsEndpoint) {
     return new Response(

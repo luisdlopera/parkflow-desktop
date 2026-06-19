@@ -1,7 +1,6 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
 import {
-  cashPolicy,
   cashCurrent,
   cashOpen,
   cashClose,
@@ -10,6 +9,7 @@ import {
   type CashPolicyDto,
 } from "@/lib/cash/cash-api";
 import { useCashRegisterStore } from "@/lib/stores/cash-register.store";
+import { getAndCacheCashPolicy } from "@/features/cash-register/services/cash-policy.service";
 
 export function useCajaSession(site: string, terminal: string) {
   const setStoreSession = useCashRegisterStore((s) => s.setSession);
@@ -43,7 +43,7 @@ export function useCajaSession(site: string, terminal: string) {
 
   const loadPolicy = useCallback(async () => {
     try {
-      const p = await cashPolicy(site || undefined);
+      const p = await getAndCacheCashPolicy(site || undefined);
       setPolicy(p);
       setStorePolicy(p);
     } catch {
