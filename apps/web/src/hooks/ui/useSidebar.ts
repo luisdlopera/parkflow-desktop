@@ -1,3 +1,4 @@
 "use client";
 
-export { default } from "@/shared/hooks/ui/useSidebar";
+export * from "@/shared/hooks/ui/useSidebar";
+export { useSidebar as default } from "@/shared/hooks/ui/useSidebar";
