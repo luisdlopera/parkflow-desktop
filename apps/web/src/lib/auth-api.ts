@@ -1,6 +1,7 @@
 import { authHeaders } from "@/lib/auth";
+import { authBase, apiBase } from "@/lib/api/config";
 
-const AUTH_BASE = (process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "http://localhost:6011/api/v1/auth").replace(/\/$/, "");
+const AUTH_BASE = authBase();
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY ?? "dev-api-key-123";
 
 const apiKeyHeader = { "Content-Type": "application/json", "X-API-Key": API_KEY };
@@ -56,8 +57,7 @@ export async function confirmPasswordReset(token: string, newPassword: string): 
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   const headers = await authHeaders();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
-  const res = await fetch(`${API_URL}/auth/change-password`, {
+  const res = await fetch(`${apiBase()}/auth/change-password`, {
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json" },
     body: JSON.stringify({ currentPassword, newPassword }),

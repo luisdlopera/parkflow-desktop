@@ -1,5 +1,7 @@
 package com.parkflow.modules.configuration.application.service;
 
+import com.parkflow.modules.audit.domain.AuditAction;
+import com.parkflow.modules.audit.service.AuditService;
 import com.parkflow.modules.configuration.application.port.in.CapacityManagementUseCase;
 import com.parkflow.modules.configuration.application.port.in.FeatureConfigurationUseCase;
 import com.parkflow.modules.configuration.application.port.in.HelmetHandlingUseCase;
@@ -21,14 +23,21 @@ import com.parkflow.modules.configuration.dto.ShiftConfigurationResponse;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.onboarding.application.service.CompanySettingsService;
+import com.parkflow.modules.parking.locker.domain.LockerStatus;
+import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
 import com.parkflow.modules.common.exception.domain.EntityNotFoundException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -42,28 +51,31 @@ public class ConfigurationManagementService
 
   private final CompanyPort companyRepository;
   private final CompanySettingsService companySettingsService;
+  private final AuditService auditService;
+  private final LockerPort lockerPort;
+  private final ObjectMapper objectMapper;
   // ==================== CAPACITY MANAGEMENT ====================
 
   @Override
   @Transactional(readOnly = true)
   public CapacityResponse getCapacity(UUID companyId) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> settings = companySettingsService.getSettingsOrDefault(company);
+    Map<String, Object> settings = companySettingsService.getSettingsOrDefault(company);
 
     Object capacityObj = settings.get("capacity");
     Integer totalCapacity = 20;
     if (capacityObj instanceof Integer) {
       totalCapacity = (Integer) capacityObj;
     } else if (capacityObj instanceof java.util.Map) {
-      Object totalObj = ((java.util.Map<?, ?>) capacityObj).get("total");
+      Object totalObj = ((Map<?, ?>) capacityObj).get("total");
       if (totalObj instanceof Integer) {
         totalCapacity = (Integer) totalObj;
       }
     }
     @SuppressWarnings("unchecked")
-    java.util.Map<String, Integer> capacityByType =
-        (java.util.Map<String, Integer>)
-            settings.getOrDefault("capacityByType", new java.util.HashMap<>());
+    Map<String, Integer> capacityByType =
+        (Map<String, Integer>)
+            settings.getOrDefault("capacityByType", new HashMap<>());
 
     return CapacityResponse.builder()
         .companyId(companyId.toString())
@@ -77,13 +89,16 @@ public class ConfigurationManagementService
   @Override
   public CapacityResponse updateCapacity(UUID companyId, CapacityRequest request) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> settings = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
+    Map<String, Object> settings = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
+    String previous = toJson(settings.get("capacity"));
     settings.put("capacity", request.getTotalCapacity());
     if (request.getCapacityByType() != null) {
       settings.put("capacityByType", request.getCapacityByType());
     }
     companySettingsService.upsertSettings(company, settings);
+    auditService.record(AuditAction.CAMBIAR_CONFIGURACION, companyId, null,
+        previous, String.valueOf(request.getTotalCapacity()), "section=capacity");
 
     return getCapacity(companyId);
   }
@@ -94,7 +109,7 @@ public class ConfigurationManagementService
   @Transactional(readOnly = true)
   public ShiftConfigurationResponse getShiftConfiguration(UUID companyId) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
+    Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
 
     return ShiftConfigurationResponse.builder()
         .companyId(companyId.toString())
@@ -110,11 +125,16 @@ public class ConfigurationManagementService
   public ShiftConfigurationResponse updateShiftConfiguration(
       UUID companyId, ShiftConfigurationRequest request) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
+    Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
     if (Boolean.TRUE.equals(request.getShiftsEnabled())) {
       validateShiftTimes(request);
     }
+
+    String previous = toJson(Map.of(
+        "shiftsEnabled", json.getOrDefault("shiftsEnabled", false),
+        "dayShiftStart", json.getOrDefault("dayShiftStart", "06:00"),
+        "dayShiftEnd", json.getOrDefault("dayShiftEnd", "18:00")));
 
     json.put("shiftsEnabled", request.getShiftsEnabled());
     json.put("dayShiftStart", request.getDayShiftStart());
@@ -123,6 +143,8 @@ public class ConfigurationManagementService
     json.put("nightShiftEnd", request.getNightShiftEnd());
 
     companySettingsService.upsertSettings(company, json);
+    auditService.record(AuditAction.CAMBIAR_CONFIGURACION, companyId, null,
+        previous, toJson(request), "section=shifts");
 
     return getShiftConfiguration(companyId);
   }
@@ -133,7 +155,7 @@ public class ConfigurationManagementService
   @Transactional(readOnly = true)
   public ModuleConfigurationResponse getModuleConfiguration(UUID companyId) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
+    Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
 
     return ModuleConfigurationResponse.builder()
         .companyId(companyId.toString())
@@ -151,9 +173,13 @@ public class ConfigurationManagementService
   public ModuleConfigurationResponse updateModuleConfiguration(
       UUID companyId, ModuleConfigurationRequest request) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
+    Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
     validateModuleRestrictions(request, company.getPlan().name());
+
+    String previous = toJson(Map.of(
+        "clientsEnabled", json.getOrDefault("clientsEnabled", false),
+        "cashEnabled", json.getOrDefault("cashEnabled", true)));
 
     json.put("clientsEnabled", request.getClientsEnabled());
     json.put("agreementsEnabled", request.getAgreementsEnabled());
@@ -163,6 +189,8 @@ public class ConfigurationManagementService
     json.put("advancedAuditEnabled", request.getAdvancedAuditEnabled());
 
     companySettingsService.upsertSettings(company, json);
+    auditService.record(AuditAction.CAMBIAR_CONFIGURACION, companyId, null,
+        previous, toJson(request), "section=modules");
 
     return getModuleConfiguration(companyId);
   }
@@ -173,7 +201,7 @@ public class ConfigurationManagementService
   @Transactional(readOnly = true)
   public RegionConfigurationResponse getRegionConfiguration(UUID companyId) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
+    Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
 
     return RegionConfigurationResponse.builder()
         .companyId(companyId.toString())
@@ -188,7 +216,11 @@ public class ConfigurationManagementService
   public RegionConfigurationResponse updateRegionConfiguration(
       UUID companyId, RegionConfigurationRequest request) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
+    Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
+
+    String previous = toJson(Map.of(
+        "countryCode", json.getOrDefault("countryCode", "CO"),
+        "timezone", json.getOrDefault("timezone", "America/Bogota")));
 
     json.put("countryCode", request.getCountryCode());
     json.put("platePattern", request.getPlatePattern());
@@ -196,6 +228,8 @@ public class ConfigurationManagementService
     json.put("timezone", request.getTimezone());
 
     companySettingsService.upsertSettings(company, json);
+    auditService.record(AuditAction.CAMBIAR_CONFIGURACION, companyId, null,
+        previous, toJson(request), "section=region");
 
     return getRegionConfiguration(companyId);
   }
@@ -206,10 +240,10 @@ public class ConfigurationManagementService
   @Transactional(readOnly = true)
   public HelmetHandlingResponse getHelmetHandling(UUID companyId) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
+    Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
 
     @SuppressWarnings("unchecked")
-    java.util.Map<String, Object> opConfig = (java.util.Map<String, Object>) json.getOrDefault("operationConfiguration", new java.util.LinkedHashMap<>());
+    Map<String, Object> opConfig = (Map<String, Object>) json.getOrDefault("operationConfiguration", new LinkedHashMap<>());
 
     String currentMode = (String) opConfig.getOrDefault("helmetHandling", "NONE");
 
@@ -228,19 +262,22 @@ public class ConfigurationManagementService
   public HelmetHandlingResponse updateHelmetHandling(
       UUID companyId, HelmetHandlingRequest request) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
+    Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
     @SuppressWarnings("unchecked")
-    java.util.Map<String, Object> opConfig = (java.util.Map<String, Object>) json.getOrDefault("operationConfiguration", new java.util.LinkedHashMap<>());
-    java.util.Map<String, Object> mutableOpConfig = new java.util.LinkedHashMap<>(opConfig);
+    Map<String, Object> opConfig = (Map<String, Object>) json.getOrDefault("operationConfiguration", new LinkedHashMap<>());
+    Map<String, Object> mutableOpConfig = new LinkedHashMap<>(opConfig);
 
     String currentMode = (String) mutableOpConfig.getOrDefault("helmetHandling", "NONE");
 
-    // Validate mode change
-    if ("LOCKERS".equalsIgnoreCase(currentMode)
-        && !currentMode.equalsIgnoreCase(request.getMode())) {
-      // Check locker usage history to determine if change is allowed
-      // For now, allow the change
+    if ("LOCKERS".equalsIgnoreCase(currentMode) && !currentMode.equalsIgnoreCase(request.getMode())) {
+      long occupiedLockers = lockerPort.countByCompanyIdAndStatus(companyId, LockerStatus.OCUPADO);
+      if (occupiedLockers > 0) {
+        throw new com.parkflow.modules.common.exception.OperationException(
+            HttpStatus.CONFLICT,
+            "No se puede cambiar el modo de casco: hay " + occupiedLockers +
+            " casillero(s) en uso actualmente.");
+      }
     }
 
     boolean usesLockers = "LOCKERS".equalsIgnoreCase(request.getMode());
@@ -258,6 +295,8 @@ public class ConfigurationManagementService
 
     json.put("operationConfiguration", mutableOpConfig);
     companySettingsService.upsertSettings(company, json);
+    auditService.record(AuditAction.CAMBIAR_CONFIGURACION, companyId, null,
+        currentMode, request.getMode(), "section=helmet-handling");
 
     return getHelmetHandling(companyId);
   }
@@ -268,10 +307,10 @@ public class ConfigurationManagementService
   @Transactional(readOnly = true)
   public FeatureConfigurationResponse getFeatureConfiguration(UUID companyId) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
+    Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
 
     @SuppressWarnings("unchecked")
-    java.util.Map<String, Object> features = (java.util.Map<String, Object>) json.getOrDefault("features", new java.util.LinkedHashMap<>());
+    Map<String, Object> features = (Map<String, Object>) json.getOrDefault("features", new LinkedHashMap<>());
 
     return FeatureConfigurationResponse.builder()
         .companyId(companyId.toString())
@@ -297,11 +336,11 @@ public class ConfigurationManagementService
   public FeatureConfigurationResponse updateFeatureConfiguration(
       UUID companyId, FeatureConfigurationRequest request) {
     Company company = getCompanyOrThrow(companyId);
-    java.util.Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
+    Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
     @SuppressWarnings("unchecked")
-    java.util.Map<String, Object> features = (java.util.Map<String, Object>) json.getOrDefault("features", new java.util.LinkedHashMap<>());
-    java.util.Map<String, Object> mutableFeatures = new LinkedHashMap<>(features);
+    Map<String, Object> features = (Map<String, Object>) json.getOrDefault("features", new LinkedHashMap<>());
+    Map<String, Object> mutableFeatures = new LinkedHashMap<>(features);
 
     putIfNotNull(mutableFeatures, "agreements", request.getAgreements());
     putIfNotNull(mutableFeatures, "prepaid", request.getPrepaid());
@@ -321,22 +360,33 @@ public class ConfigurationManagementService
 
     json.put("features", mutableFeatures);
     companySettingsService.upsertSettings(company, json);
+    auditService.record(AuditAction.CAMBIAR_CONFIGURACION, companyId, null,
+        toJson(features), toJson(request), "section=features");
 
     return getFeatureConfiguration(companyId);
   }
 
-  private boolean getFeature(java.util.Map<String, Object> features, String key, boolean defaultValue) {
+  private boolean getFeature(Map<String, Object> features, String key, boolean defaultValue) {
     Object value = features.get(key);
     return value instanceof Boolean ? (Boolean) value : defaultValue;
   }
 
-  private void putIfNotNull(java.util.Map<String, Object> map, String key, Boolean value) {
+  private void putIfNotNull(Map<String, Object> map, String key, Boolean value) {
     if (value != null) {
       map.put(key, value);
     }
   }
 
   // ==================== HELPER METHODS ====================
+
+  private String toJson(Object value) {
+    try {
+      return objectMapper.writeValueAsString(value);
+    } catch (Exception e) {
+      log.warn("Could not serialize audit payload", e);
+      return String.valueOf(value);
+    }
+  }
 
   private Company getCompanyOrThrow(UUID companyId) {
     return companyRepository

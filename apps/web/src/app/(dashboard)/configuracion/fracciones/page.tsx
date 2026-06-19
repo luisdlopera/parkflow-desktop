@@ -1,6 +1,5 @@
 "use client";
 
-import { toast } from "@heroui/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,19 +15,15 @@ import {
 import { rateFractionSchema, type RateFractionSchema } from "@/modules/settings/schemas";
 import type { RateFractionRow } from "@/modules/settings/types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { FormDrawer } from "@/components/settings/FormDrawer";
 import { useDialog } from "@/components/ui/DialogProvider";
+import { useConfigCrud } from "@/hooks/useConfigCrud";
 
 const COLS: ColumnDef<RateFractionRow>[] = [
   { key: "fromMinute", label: "Desde (min)" },
   { key: "toMinute", label: "Hasta (min)" },
   { key: "value", label: "Valor" },
-  {
-    key: "roundUp",
-    label: "Redondeo",
-    render: (r) => (r.roundUp ? "Arriba" : "Abajo"),
-  },
+  { key: "roundUp", label: "Redondeo", render: (r) => (r.roundUp ? "Arriba" : "Abajo") },
   {
     key: "isActive",
     label: "Activo",
@@ -40,71 +35,42 @@ const COLS: ColumnDef<RateFractionRow>[] = [
   },
 ];
 
+const DEFAULTS: RateFractionSchema = { fromMinute: 0, toMinute: 0, value: 0, roundUp: true, isActive: true };
+
 export default function FraccionesPage() {
   const [rateId, setRateId] = useState("");
-  const [rows, setRows] = useState<RateFractionRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editing, setEditing] = useState<RateFractionRow | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const { confirm } = useDialog();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<RateFractionSchema>({ resolver: zodResolver(rateFractionSchema), defaultValues: { roundUp: true, isActive: true } });
+  const crud = useConfigCrud<RateFractionRow>({
+    loadFn: (id) => fetchConfigurationRateFractions(id as string),
+    createFn: (data) => createConfigurationRateFraction(rateId, data),
+    updateFn: (id, data) => updateConfigurationRateFraction(id, data),
+    deleteFn: (id) => deleteConfigurationRateFraction(id),
+  });
 
-  const load = async () => {
-    if (!rateId.trim()) return;
-    setLoading(true);
-    try {
-      const list = await fetchConfigurationRateFractions(rateId);
-      setRows(list);
-    } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
-    } finally {
-      setLoading(false);
-    }
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<RateFractionSchema>({
+    resolver: zodResolver(rateFractionSchema),
+    defaultValues: DEFAULTS,
+  });
+
+  const handleOpenCreate = () => {
+    reset(DEFAULTS);
+    crud.openCreate();
   };
 
-  const openCreate = () => {
-    setEditing(null);
-    reset({ fromMinute: 0, toMinute: 0, value: 0, roundUp: true, isActive: true });
-    setDrawerOpen(true);
-  };
-
-  const openEdit = (row: RateFractionRow) => {
-    setEditing(row);
+  const handleOpenEdit = (row: RateFractionRow) => {
     reset({ fromMinute: row.fromMinute, toMinute: row.toMinute, value: row.value, roundUp: row.roundUp, isActive: row.isActive });
-    setDrawerOpen(true);
+    crud.openEdit(row);
   };
 
   const onSubmit = async (values: RateFractionSchema) => {
-    setError(null);
-    try {
-      const payload = { ...values } as Record<string, unknown>;
-      if (editing) {
-        await updateConfigurationRateFraction(editing.id, payload);
-      } else {
-        await createConfigurationRateFraction(rateId, payload);
-      }
-      setDrawerOpen(false);
-      await load();
-    } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
-    }
+    const ok = await crud.save(values as Record<string, unknown>);
+    if (ok) void crud.load(rateId);
   };
 
   const handleDelete = async (id: string) => {
-    if (!(await confirm("¿Eliminar esta fracción?"))) return;
-    try {
-      await deleteConfigurationRateFraction(id);
-      await load();
-    } catch (e) {
-      toast.danger(getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA));
-    }
+    await crud.handleDelete(id, () => confirm("¿Eliminar esta fracción?"));
+    void crud.load(rateId);
   };
 
   return (
@@ -114,18 +80,17 @@ export default function FraccionesPage() {
         <Input
           type="text"
           placeholder="ID de tarifa"
-          
           size="sm"
           className="max-w-xs"
           value={rateId}
           onChange={(e) => setRateId(e.target.value)}
         />
-        <Button 
-          size="sm" 
-          color="primary" 
-          className="font-bold" 
-          onPress={() => { void load(); }}
-          isLoading={loading}
+        <Button
+          size="sm"
+          color="primary"
+          className="font-bold"
+          onPress={() => { void crud.load(rateId); }}
+          isLoading={crud.loading}
         >
           Cargar
         </Button>
@@ -133,73 +98,35 @@ export default function FraccionesPage() {
       <DataTableSection
         title=""
         columns={COLS}
-        rows={rows}
-        loading={loading}
-        onCreate={openCreate}
+        rows={crud.rows}
+        loading={crud.loading}
+        onCreate={handleOpenCreate}
         emptyMessage="No hay fracciones para esta tarifa"
         actions={(row) => (
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="tertiary"
-              color="primary"
-              className="font-semibold"
-              onPress={() => openEdit(row)}
-            >
+            <Button size="sm" variant="tertiary" color="primary" className="font-semibold" onPress={() => handleOpenEdit(row)}>
               Editar
             </Button>
-            <Button
-              size="sm"
-              variant="tertiary"
-              color="danger"
-              className="font-semibold"
-              onPress={() => handleDelete(row.id)}
-            >
+            <Button size="sm" variant="tertiary" color="danger" className="font-semibold" onPress={() => handleDelete(row.id)}>
               Eliminar
             </Button>
           </div>
         )}
       />
       <FormDrawer
-        open={drawerOpen}
-        title={editing ? "Editar Fracción" : "Nueva Fracción"}
-        onClose={() => setDrawerOpen(false)}
+        open={crud.drawerOpen}
+        title={crud.editing ? "Editar Fracción" : "Nueva Fracción"}
+        onClose={crud.closeDrawer}
         onSubmit={handleSubmit(onSubmit)}
         loading={isSubmitting}
-        error={error}
+        error={crud.error}
       >
         <div className="space-y-4">
-          <Input
-            {...register("fromMinute", { valueAsNumber: true })}
-            label="Desde (minutos)"
-            type="number"
-            
-            errorMessage={errors.fromMinute?.message}
-            isInvalid={!!errors.fromMinute}
-          />
-          <Input
-            {...register("toMinute", { valueAsNumber: true })}
-            label="Hasta (minutos)"
-            type="number"
-            
-            errorMessage={errors.toMinute?.message}
-            isInvalid={!!errors.toMinute}
-          />
-          <Input
-            {...register("value", { valueAsNumber: true })}
-            label="Valor"
-            type="number"
-            step="0.01"
-            
-            errorMessage={errors.value?.message}
-            isInvalid={!!errors.value}
-          />
-          <Checkbox {...register("roundUp")}>
-            Redondear hacia arriba
-          </Checkbox>
-          <Checkbox {...register("isActive")}>
-            Activa
-          </Checkbox>
+          <Input {...register("fromMinute", { valueAsNumber: true })} label="Desde (minutos)" type="number" errorMessage={errors.fromMinute?.message} isInvalid={!!errors.fromMinute} />
+          <Input {...register("toMinute", { valueAsNumber: true })} label="Hasta (minutos)" type="number" errorMessage={errors.toMinute?.message} isInvalid={!!errors.toMinute} />
+          <Input {...register("value", { valueAsNumber: true })} label="Valor" type="number" step="0.01" errorMessage={errors.value?.message} isInvalid={!!errors.value} />
+          <Checkbox {...register("roundUp")}>Redondear hacia arriba</Checkbox>
+          <Checkbox {...register("isActive")}>Activa</Checkbox>
         </div>
       </FormDrawer>
     </div>

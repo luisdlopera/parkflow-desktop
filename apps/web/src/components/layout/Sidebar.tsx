@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useParkingShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
+import { useParkingShortcuts } from "@/shared/hooks/ui/useKeyboardShortcuts";
 import { useState, useEffect } from "react";
 import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
+import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
 
 const navItems = [
   { label: "Dashboard", href: "/", shortcut: "", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
@@ -35,6 +36,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
   const [configView, setConfigView] = useState(false);
   const currentSection = searchParams.get("section") || "rates";
+  const flags = useFeatureFlags();
 
   useEffect(() => {
     if (!pathname?.startsWith("/configuracion")) {
@@ -129,9 +131,9 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
 
               <nav className="space-y-1">
                 {CONFIG_SUBITEMS.filter((sub) => {
-                  if (sub.key === "lockers") {
-                    return runtimeConfig?.operationConfiguration?.helmetHandling === "LOCKERS";
-                  }
+                  if (sub.key === "agreements") return flags.agreements;
+                  if (sub.key === "prepaid") return flags.prepaidPlans;
+                  if (sub.key === "lockers") return flags.lockers;
                   return true;
                 }).map((sub) => {
                   const href = (sub as any).href || `/configuracion?section=${sub.key}`;

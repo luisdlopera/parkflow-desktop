@@ -6,7 +6,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import MobileSidebar from "@/components/layout/MobileSidebar";
 import AuthGate from "@/components/auth/AuthGate";
 import { ThemeInitializer } from "@/components/theme/ThemeInitializer";
-import { useSidebar } from "@/lib/hooks/useSidebar";
+import { useSidebar } from "@/shared/hooks/ui/useSidebar";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { isOpen, isCollapsed, toggle, open, close } = useSidebar();

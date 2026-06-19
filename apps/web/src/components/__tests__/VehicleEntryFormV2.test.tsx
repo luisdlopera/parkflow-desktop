@@ -36,12 +36,16 @@ function flushPromises() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+import { FeatureFlagProvider } from "@/components/providers/FeatureFlagProvider";
+
 function renderWithProviders(ui: React.ReactElement) {
   return render(
     <HeroUIProvider>
       <Toast.Provider />
       <TenantConfigProvider>
-        {ui}
+        <FeatureFlagProvider>
+          {ui}
+        </FeatureFlagProvider>
       </TenantConfigProvider>
     </HeroUIProvider>
   );

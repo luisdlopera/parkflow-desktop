@@ -10,7 +10,7 @@ import {
   ReactNode,
 } from "react";
 import { useOnboardingStore } from "@/lib/stores/onboarding-store";
-import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
+import { useOnboardingStatus } from "@/features/auth/hooks/useOnboardingStatus";
 import { saveOnboardingStep, type OnboardingStatus } from "@/lib/onboarding-api";
 import {
   REQUIRED_STEPS,

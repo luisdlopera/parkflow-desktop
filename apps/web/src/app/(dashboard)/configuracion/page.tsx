@@ -3,7 +3,7 @@ import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { currentUser } from "@/lib/auth";
-import { usePermissions } from "@/lib/hooks/usePermissions";
+import { usePermissions } from "@/features/auth/hooks/usePermissions";
 import type { Permission } from "@parkflow/types";
 
 const SetupBasicoTab = dynamic(() => import("@/components/config/SetupBasicoTab").then((m) => ({ default: m.SetupBasicoTab })), {

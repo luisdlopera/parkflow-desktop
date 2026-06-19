@@ -1,6 +1,6 @@
 import useSWR from "swr";
-import { fetchActiveSessions, fetchParkingSummary, GetActiveSessionsQuery } from "@/services/sessions.service";
-import { useDebounce } from "use-debounce";
+import { fetchActiveSessions, fetchParkingSummary, GetActiveSessionsQuery } from "@/lib/api/sessions-api";
+import { useDebounce } from "@/shared/hooks/infrastructure/useDebounce";
 
 async function fetchSessionsData([key, params]: [string, GetActiveSessionsQuery]) {
   const [sessionsRes, summary] = await Promise.all([
@@ -12,7 +12,7 @@ async function fetchSessionsData([key, params]: [string, GetActiveSessionsQuery]
 
 export function useActiveSessions(params: GetActiveSessionsQuery = {}) {
   // Debounce the search term to avoid spamming the API while typing
-  const [debouncedSearch] = useDebounce(params.search, 500);
+  const debouncedSearch = useDebounce(params.search, 500);
   
   const queryKey: [string, GetActiveSessionsQuery] = ["active-sessions", { ...params, search: debouncedSearch }];
 

@@ -1,8 +1,9 @@
 import { authHeaders } from "@/lib/auth";
 import { normalizeApiError } from "@/lib/errors/normalize-api-error";
 import { ApiError } from "@/lib/errors/api-error";
+import { apiBase } from "@/lib/api/config";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
+const API_BASE = apiBase();
 
 export type OnboardingStatus = {
   companyId: string;

@@ -10,6 +10,9 @@ import com.parkflow.modules.configuration.dto.*;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.licensing.enums.PlanType;
+import com.parkflow.modules.parking.locker.domain.Locker;
+import com.parkflow.modules.parking.locker.domain.LockerStatus;
+import com.parkflow.modules.parking.locker.repository.LockerRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
@@ -34,6 +37,7 @@ class ConfigurationManagementControllerTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private CompanyPort companyPort;
+  @Autowired private LockerRepository lockerRepository;
   @MockBean private AuditService auditService;
   private UUID testCompanyId;
 
@@ -333,6 +337,63 @@ class ConfigurationManagementControllerTest {
     mockMvc
         .perform(
             get("/api/v1/configuration/capacity").header("X-Company-ID", testCompanyId.toString()))
+        .andExpect(status().isOk());
+  }
+
+  // ==================== HELMET IMMUTABILITY TESTS ====================
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  @DisplayName("Should reject helmet mode change when lockers are occupied")
+  void shouldRejectHelmetModeChangeWhenLockersOccupied() throws Exception {
+    HelmetHandlingRequest setLockers = HelmetHandlingRequest.builder().mode("LOCKERS").lockerCount(5).build();
+    mockMvc.perform(
+        patch("/api/v1/configuration/helmet-handling")
+            .with(csrf())
+            .header("X-Company-ID", testCompanyId.toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(setLockers)))
+        .andExpect(status().isOk());
+
+    Locker occupiedLocker = Locker.builder()
+        .companyId(testCompanyId)
+        .code("L001")
+        .status(LockerStatus.OCUPADO)
+        .build();
+    lockerRepository.save(occupiedLocker);
+
+    HelmetHandlingRequest changeToNone = HelmetHandlingRequest.builder().mode("NONE").build();
+    mockMvc.perform(
+        patch("/api/v1/configuration/helmet-handling")
+            .with(csrf())
+            .header("X-Company-ID", testCompanyId.toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(changeToNone)))
+        .andExpect(status().isConflict());
+
+    lockerRepository.delete(occupiedLocker);
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  @DisplayName("Should allow helmet mode change when no lockers are occupied")
+  void shouldAllowHelmetModeChangeWhenNoLockersOccupied() throws Exception {
+    HelmetHandlingRequest setLockers = HelmetHandlingRequest.builder().mode("LOCKERS").lockerCount(5).build();
+    mockMvc.perform(
+        patch("/api/v1/configuration/helmet-handling")
+            .with(csrf())
+            .header("X-Company-ID", testCompanyId.toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(setLockers)))
+        .andExpect(status().isOk());
+
+    HelmetHandlingRequest changeToManual = HelmetHandlingRequest.builder().mode("MANUAL").build();
+    mockMvc.perform(
+        patch("/api/v1/configuration/helmet-handling")
+            .with(csrf())
+            .header("X-Company-ID", testCompanyId.toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(changeToManual)))
         .andExpect(status().isOk());
   }
 

@@ -9,6 +9,7 @@ import { SWRConfig } from "swr";
 
 import { TenantConfigProvider } from "@/lib/providers/TenantConfigProvider";
 import { DialogProvider } from "@/components/ui/DialogProvider";
+import { FeatureFlagProvider } from "@/components/providers/FeatureFlagProvider";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -22,10 +23,12 @@ export function Providers({ children }: ProvidersProps) {
       <HeroUIProvider navigate={router.push}>
         <Toast.Provider placement="top end" />
         <TenantConfigProvider>
-          <DialogProvider>
-            <GlobalAuthEffects />
-            {children}
-          </DialogProvider>
+          <FeatureFlagProvider>
+            <DialogProvider>
+              <GlobalAuthEffects />
+              {children}
+            </DialogProvider>
+          </FeatureFlagProvider>
         </TenantConfigProvider>
       </HeroUIProvider>
     </SWRConfig>

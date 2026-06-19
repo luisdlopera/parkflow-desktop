@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { fetchParkingSpaces, fetchParkingSummary, type ParkingSpaceDto } from "@/services/sessions.service";
+import { fetchParkingSpaces, fetchParkingSummary, type ParkingSpaceDto } from "@/lib/api/sessions-api";
 import { useParkingStore } from "@/lib/stores/parking-store";
 
 interface OccupancyState {
@@ -18,7 +18,6 @@ export function useEntryOccupancy(enabled: boolean) {
   const load = useCallback(async () => {
     if (!enabled) return;
     try {
-      const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
       const [summaryData, spacesData] = await Promise.all([fetchParkingSummary(), fetchParkingSpaces()]);
       if (summaryData) {
         setLocalOccupancy({

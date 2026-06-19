@@ -1,7 +1,6 @@
 "use client";
 
-import { toast } from "@heroui/react";
-import { useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -9,7 +8,6 @@ import {
   createConfigurationPaymentMethod,
   updateConfigurationPaymentMethod,
   patchConfigurationPaymentMethodStatus,
-  type SettingsPage,
 } from "@/lib/settings-api";
 import { paymentMethodSchema, type PaymentMethodSchema } from "@/modules/settings/schemas";
 import type { PaymentMethodRow } from "@/modules/settings/types";
@@ -19,7 +17,7 @@ import { Input } from "@/components/ui/Input";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/settings/FormDrawer";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { useConfigCrud } from "@/hooks/useConfigCrud";
 
 const COLS: ColumnDef<PaymentMethodRow>[] = [
   { key: "code", label: "Código" },
@@ -41,67 +39,36 @@ const COLS: ColumnDef<PaymentMethodRow>[] = [
   },
 ];
 
+const DEFAULTS: PaymentMethodSchema = { code: "", name: "", requiresReference: false, isActive: true, displayOrder: 0 };
+
 export default function MetodosPagoPage() {
-  const [data, setData] = useState<SettingsPage<PaymentMethodRow>>({ content: [], totalElements: 0, totalPages: 0, page: 0, size: 20 });
-  const [loading, setLoading] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editing, setEditing] = useState<PaymentMethodRow | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const crud = useConfigCrud<PaymentMethodRow>({
+    loadFn: (q?: unknown) => fetchConfigurationPaymentMethods({ q: q as string, page: 0, size: 50 }),
+    createFn: (data) => createConfigurationPaymentMethod(data),
+    updateFn: (id, data) => updateConfigurationPaymentMethod(id, data),
+    toggleStatusFn: (id, active) => patchConfigurationPaymentMethodStatus(id, active),
+  });
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<PaymentMethodSchema>({ resolver: zodResolver(paymentMethodSchema), defaultValues: { requiresReference: false, isActive: true, displayOrder: 0 } });
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<PaymentMethodSchema>({
+    resolver: zodResolver(paymentMethodSchema),
+    defaultValues: DEFAULTS,
+  });
 
-  const load = async (q?: string) => {
-    setLoading(true);
-    try {
-      const page = await fetchConfigurationPaymentMethods({ q, page: 0, size: 50 });
-      setData(page);
-    } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => { void crud.load(); }, []);
+
+  const handleOpenCreate = () => {
+    reset(DEFAULTS);
+    crud.openCreate();
   };
 
-  const openCreate = () => {
-    setEditing(null);
-    reset({ code: "", name: "", requiresReference: false, isActive: true, displayOrder: 0 });
-    setDrawerOpen(true);
-  };
-
-  const openEdit = (row: PaymentMethodRow) => {
-    setEditing(row);
+  const handleOpenEdit = (row: PaymentMethodRow) => {
     reset({ code: row.code, name: row.name, requiresReference: row.requiresReference, isActive: row.isActive, displayOrder: row.displayOrder });
-    setDrawerOpen(true);
+    crud.openEdit(row);
   };
 
   const onSubmit = async (values: PaymentMethodSchema) => {
-    setError(null);
-    try {
-      const payload = { ...values } as Record<string, unknown>;
-      if (editing) {
-        await updateConfigurationPaymentMethod(editing.id, payload);
-      } else {
-        await createConfigurationPaymentMethod(payload);
-      }
-      setDrawerOpen(false);
-      await load();
-    } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
-    }
-  };
-
-  const toggleStatus = async (row: PaymentMethodRow) => {
-    try {
-      await patchConfigurationPaymentMethodStatus(row.id, !row.isActive);
-      await load();
-    } catch (e) {
-      toast.danger(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
-    }
+    const ok = await crud.save(values as Record<string, unknown>);
+    if (ok) void crud.load();
   };
 
   return (
@@ -110,63 +77,34 @@ export default function MetodosPagoPage() {
       <DataTableSection
         title=""
         columns={COLS}
-        rows={data.content}
-        loading={loading}
-        onSearch={(q) => { void load(q); }}
-        onCreate={openCreate}
+        rows={crud.rows}
+        loading={crud.loading}
+        onSearch={(q) => { void crud.load(q); }}
+        onCreate={handleOpenCreate}
         emptyMessage="No hay métodos de pago registrados"
         actions={(row) => (
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="tertiary"
-              color="primary"
-              className="font-semibold"
-              onPress={() => openEdit(row)}
-            >
+            <Button size="sm" variant="tertiary" color="primary" className="font-semibold" onPress={() => handleOpenEdit(row)}>
               Editar
             </Button>
-            <StatusToggle active={row.isActive} onChange={() => toggleStatus(row)} confirmMessage="¿Cambiar estado?" />
+            <StatusToggle active={row.isActive} onChange={() => crud.handleToggleStatus(row)} confirmMessage="¿Cambiar estado?" />
           </div>
         )}
       />
       <FormDrawer
-        open={drawerOpen}
-        title={editing ? "Editar Método" : "Nuevo Método"}
-        onClose={() => setDrawerOpen(false)}
+        open={crud.drawerOpen}
+        title={crud.editing ? "Editar Método" : "Nuevo Método"}
+        onClose={crud.closeDrawer}
         onSubmit={handleSubmit(onSubmit)}
         loading={isSubmitting}
-        error={error}
+        error={crud.error}
       >
         <div className="space-y-4">
-          <Input
-            {...register("code")}
-            label="Código"
-            placeholder="CASH"
-            
-            errorMessage={errors.code?.message}
-            isInvalid={!!errors.code}
-          />
-          <Input
-            {...register("name")}
-            label="Nombre"
-            placeholder="Efectivo"
-            
-            errorMessage={errors.name?.message}
-            isInvalid={!!errors.name}
-          />
-          <Input
-            {...register("displayOrder", { valueAsNumber: true })}
-            label="Orden de visualización"
-            type="number"
-            
-          />
-          <Checkbox {...register("requiresReference")}>
-            Requiere referencia
-          </Checkbox>
-          <Checkbox {...register("isActive")}>
-            Activo
-          </Checkbox>
+          <Input {...register("code")} label="Código" placeholder="CASH" errorMessage={errors.code?.message} isInvalid={!!errors.code} />
+          <Input {...register("name")} label="Nombre" placeholder="Efectivo" errorMessage={errors.name?.message} isInvalid={!!errors.name} />
+          <Input {...register("displayOrder", { valueAsNumber: true })} label="Orden de visualización" type="number" />
+          <Checkbox {...register("requiresReference")}>Requiere referencia</Checkbox>
+          <Checkbox {...register("isActive")}>Activo</Checkbox>
         </div>
       </FormDrawer>
     </div>

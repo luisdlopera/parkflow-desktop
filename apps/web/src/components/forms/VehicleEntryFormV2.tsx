@@ -10,14 +10,14 @@ import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
 import { vehicleEntrySchema, VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
-import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
+import { useOperationSounds } from "@/shared/hooks/ui/useOperationSounds";
 import { toast } from "@heroui/react";
-import { useAutoSave } from "@/lib/hooks/useAutoSave";
+import { useAutoSave } from "@/shared/hooks/infrastructure/useAutoSave";
 import { CrashRecoveryDialog } from "@/components/ui/CrashRecoveryDialog";
 import type { VehicleType } from "@parkflow/types";
 import { useTenantConfig } from "@/lib/providers/TenantConfigProvider";
 import { FormLayoutFactory } from "@/components/forms/dynamic/FormLayoutFactory";
-import { type RegisteredFieldKey } from "@/components/forms/dynamic/form-registry";
+
 import { MotorcycleEntryFormUI } from "@/components/forms/motorcycle/MotorcycleEntryFormUI";
 import { CarEntryFormUI } from "@/components/forms/car/CarEntryFormUI";
 import { VehicleTypeIcon } from "@/components/vehicles/VehicleTypeIcon";
@@ -25,7 +25,7 @@ import VehicleEntryHeader from "@/components/forms/VehicleEntryHeader";
 import VehicleEntrySettings from "@/components/forms/VehicleEntrySettings";
 import PlateInput from "@/components/forms/PlateInput";
 import VehicleTypeSelector from "@/components/forms/VehicleTypeSelector";
-import AdvancedEntryOptions from "@/components/forms/AdvancedEntryOptions";
+
 
 // Feature hooks
 import { useOperatorSettings, type OperatorMode } from "@/features/vehicle-entry/hooks/useOperatorSettings";
@@ -34,12 +34,6 @@ import { useEntryStats } from "@/features/vehicle-entry/hooks/useEntryStats";
 import { useVehicleTypes } from "@/features/vehicle-entry/hooks/useVehicleTypes";
 import { useVehicleEntry } from "@/features/vehicle-entry/hooks/useVehicleEntry";
 import { useEntryPrinting } from "@/features/vehicle-entry/hooks/useEntryPrinting";
-
-const ENTRY_FORM_LAYOUT: RegisteredFieldKey[] = [
-  "vehicle_condition",
-  "helmet_section",
-  "observations",
-];
 
 const modeOptions = [
   { key: "beginner", label: "Principiante" },
@@ -51,6 +45,8 @@ function vehicleTypeView(type: { code: string; name: string; color?: string }) {
   return { label: type.name || type.code, color: type.color || "" };
 }
 
+import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
+
 export default function VehicleEntryFormV2({
   initialPlate = "",
   disableRecovery = false,
@@ -58,6 +54,7 @@ export default function VehicleEntryFormV2({
   initialPlate?: string;
   disableRecovery?: boolean;
 }) {
+  const flags = useFeatureFlags();
   const [error, setError] = useState("");
   const plateInputRef = useRef<HTMLInputElement>(null);
   const { runtimeConfig } = useTenantConfig();
@@ -66,7 +63,6 @@ export default function VehicleEntryFormV2({
   const toastError = toast.danger;
 
   const { settings, update: updateSettings } = useOperatorSettings();
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   const capacityEnabled = Boolean(runtimeConfig?.capacity && runtimeConfig.capacity.total > 0);
@@ -167,7 +163,6 @@ export default function VehicleEntryFormV2({
     () => (Array.isArray(runtimeConfig?.sites) ? runtimeConfig.sites : []),
     [runtimeConfig],
   );
-  const hasMultipleSites = configuredSites.length > 1;
 
   useEffect(() => {
     if (configuredSites.length !== 1) return;
@@ -427,15 +422,11 @@ export default function VehicleEntryFormV2({
                   { key: "VISITOR", label: "Visitante" },
                   { key: "EMPLOYEE", label: "Empleado" },
                 ];
-                if (runtimeConfig?.modules?.agreements)
+                if (flags.agreements)
                   opts.push({ key: "AGREEMENT", label: "Convenio" });
-                if (runtimeConfig?.modules?.clients || runtimeConfig?.modules?.monthly)
+                if (flags.memberships)
                   opts.push({ key: "SUBSCRIBER", label: "Abonado" });
-                if (
-                  opts.length <= 2 &&
-                  !runtimeConfig?.modules?.agreements &&
-                  !runtimeConfig?.modules?.clients
-                )
+                if (opts.length <= 2 && !flags.agreements && !flags.memberships)
                   return <></>;
                 return (
                   <Select
@@ -503,45 +494,7 @@ export default function VehicleEntryFormV2({
           </div>
         )}
 
-        {/* Sección avanzada — solo multi-tipo */}
-        {!isSingleType &&
-          !isSpeed &&
-          runtimeConfig?.operationConfiguration?.showAdvancedSection !== false && (
-            <div className="border-t border-slate-200 pt-4">
-              <button
-                type="button"
-                onClick={() => setShowAdvanced((v) => !v)}
-                className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
-              >
-                <svg
-                  className={`w-4 h-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-                {showAdvanced ? "Ocultar opciones avanzadas" : "Mostrar opciones avanzadas"}
-              </button>
 
-              {showAdvanced && (
-                <AdvancedEntryOptions
-                  configuredSites={configuredSites}
-                  hasMultipleSites={hasMultipleSites}
-                  spaces={spaces}
-                  control={form.control}
-                  ENTRY_FORM_LAYOUT={ENTRY_FORM_LAYOUT}
-                  settings={settings}
-                  selectedTypeCode={selectedTypeCode}
-                />
-              )}
-            </div>
-          )}
 
         {/* Error */}
         {error && (

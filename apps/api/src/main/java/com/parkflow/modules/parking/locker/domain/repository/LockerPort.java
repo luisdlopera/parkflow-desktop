@@ -1,6 +1,7 @@
 package com.parkflow.modules.parking.locker.domain.repository;
 
 import com.parkflow.modules.parking.locker.domain.Locker;
+import com.parkflow.modules.parking.locker.domain.LockerStatus;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,4 +14,5 @@ public interface LockerPort {
   Locker save(Locker locker);
   void delete(Locker locker);
   boolean existsByCompanyIdAndCode(UUID companyId, String code);
+  long countByCompanyIdAndStatus(UUID companyId, LockerStatus status);
 }

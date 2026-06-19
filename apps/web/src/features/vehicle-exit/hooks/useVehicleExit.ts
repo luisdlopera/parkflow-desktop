@@ -17,7 +17,7 @@ import { downloadTicketAsHtml } from "@/lib/print/ticket-download";
 import { currentUser } from "@/lib/auth";
 import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 import { useTerminalCaja } from "@/hooks/useTerminalCaja";
-import { useOperationSounds } from "@/lib/hooks/useOperationSounds";
+import { useOperationSounds } from "@/shared/hooks/ui/useOperationSounds";
 import { PAYMENT_METHOD_CATALOG, type PaymentMethodCode } from "@/lib/payment-method-catalog";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { toUserMessageFromClientValidation } from "@/lib/validation/request-guard";

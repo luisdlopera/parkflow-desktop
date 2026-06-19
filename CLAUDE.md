@@ -90,6 +90,78 @@ apps/
    - Error handling: Show `<Alert variant="destructive">` with user-friendly message
    - Loading: Show spinner via HeroUI `<Spinner />`
 
+---
+
+## Frontend Architecture Rules (Post-Audit — 2026-06-18)
+
+Estas reglas provienen de una auditoría completa del frontend. Están en vigor y NO deben revertirse.
+
+### Hooks — Ubicación Canónica
+
+- ✅ Hooks globales van en `src/hooks/` (NO en `src/lib/hooks/` — ese directorio fue eliminado)
+- ✅ Hooks de feature van en `src/features/<feature>/hooks/`
+- ❌ NO crear `src/lib/hooks/` — fue consolidado en `src/hooks/` en la auditoría
+- ❌ NO instalar `use-debounce` npm — usar el hook local `src/hooks/useDebounce.ts`
+
+### BASE_URL de la API
+
+- ✅ Usar siempre `src/lib/api/config.ts` para las URLs base:
+  ```ts
+  import { apiBase, authBase, opsBase, cfgBase } from "@/lib/api/config";
+  ```
+- ❌ NO definir `process.env.NEXT_PUBLIC_API_URL` inline en servicios
+- ❌ NO crear nuevas variables de entorno de URL — todo deriva de `NEXT_PUBLIC_API_URL`
+
+### Páginas de Configuración (CRUD estándar)
+
+- ✅ Usar el hook `useConfigCrud<T>` de `src/hooks/useConfigCrud.ts` para páginas con patrón DataTable + FormDrawer
+- ✅ Páginas que YA usan `useConfigCrud`: metodos-pago, fracciones, sedes, cajas, impresoras
+- ❌ NO reimplementar `useState` manual para `rows`, `loading`, `error`, `drawerOpen`, `editing` — eso es exactamente lo que `useConfigCrud` encapsula
+- ⚠️ Excepciones válidas (NO usar `useConfigCrud`): `espacios` (status machine + capacity), `lockers` (batch creation), `operacion` (single PUT sin tabla)
+
+### Operaciones Asíncronas
+
+- ✅ Usar `useAsyncAction` de `src/lib/errors/useAsyncAction.ts` para eliminar el patrón repetitivo try/catch/toast/setState
+- ❌ NO duplicar el bloque:
+  ```ts
+  // ❌ PATRÓN A ELIMINAR
+  setLoading(true);
+  try { ... toast.success(...) } catch (e) { toast.error(...) } finally { setLoading(false) }
+  ```
+
+### Error y Loading por Ruta
+
+- ✅ Toda nueva route segment debe incluir `error.tsx` y `loading.tsx`
+- ✅ Rutas que YA tienen estos archivos: `(dashboard)/`, `(dashboard)/configuracion/`, `(admin)/admin/`
+- ❌ NO dejar rutas nuevas sin `error.tsx` — un error de red rompe la página completa sin él
+
+### Metadata de Página (SEO / títulos)
+
+- ✅ `generateMetadata` solo funciona en Server Components (layouts sin `"use client"`)
+- ✅ Usar el template del root layout: `title: { template: "%s | ParkFlow" }` — solo pasar el título de la sección
+- ❌ NO intentar `export const metadata` en archivos con `"use client"` — TypeScript no lo impide pero Next.js lo ignora silenciosamente
+
+### Imágenes
+
+- ❌ NO cambiar el `<img>` en `BrandingSection.tsx` a `next/image` — tiene `// eslint-disable-next-line @next/next/no-img-element` intencional porque la app usa `output: "export"` (no hay servidor de imágenes) y las URLs son dinámicas del usuario
+
+### Wrappers de HeroUI
+
+- ✅ Los wrappers en `src/components/ui/` se mantienen durante HeroUI v3 Beta por estabilidad de tipos
+- ❌ NO eliminar wrappers — existen para absorber los `as any` casts necesarios por la API inestable de v3 Beta
+- ❌ NO agregar nuevos wrappers pass-through sin lógica propia — solo wrappear si agrega comportamiento real
+
+### Tokens de Sesión
+
+- ⚠️ Los tokens de sesión están en `localStorage` (conocido, pendiente de migrar a httpOnly cookies)
+- ❌ NO agregar más datos sensibles a `localStorage`
+- ❌ NO mover tokens a sessionStorage como "fix" — la migración correcta requiere coordinación con el backend (Spring Boot emitiendo `Set-Cookie: HttpOnly`)
+
+### Archivos Basura
+
+- ❌ NO commitear archivos `.bak`, `.orig`, o copias de seguridad — fueron eliminados en la auditoría
+- ❌ NO usar `.catch(console.error)` en código de producción — manejar errores con `useAsyncAction` o `toast.error`
+
 7. **UI Visual Style**:
    - ❌ NO box shadows (`shadow-*`, `drop-shadow-*`) anywhere in the UI
    - ✅ Use thin borders instead: `border border-slate-200` for cards, inputs, panels
@@ -272,4 +344,4 @@ Closes #issue-number (if applicable)
 
 ---
 
-**Last Updated**: 2026-06-16 | **Plan**: Onboarding-to-Configuration Editability
+**Last Updated**: 2026-06-18 | **Plan**: Onboarding-to-Configuration Editability | **Audit**: Frontend arquitectura completa (Sprint 0–3 done)

@@ -1,5 +1,5 @@
 import { buildApiHeaders } from "@/lib/api";
-import { getOperationsApiBase } from "./sessions.service";
+import { opsBase } from "@/lib/api/config";
 
 export type BulkExitRequestDto = {
   locators: string[];
@@ -34,12 +34,12 @@ export type BulkExitResponseDto = {
   totalCharged: number;
   successfulCount: number;
   failedCount: number;
-  successfulReceipts: any[]; // OperationResultResponse
+  successfulReceipts: any[];
   errors: string[];
 };
 
 export async function precalculateBulkExit(request: BulkExitRequestDto): Promise<BulkExitCalculateResponseDto> {
-  const res = await fetch(`${getOperationsApiBase().replace(/\/$/, "")}/bulk-exits/calculate`, {
+  const res = await fetch(`${opsBase().replace(/\/$/, "")}/bulk-exits/calculate`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(request)
@@ -52,7 +52,7 @@ export async function precalculateBulkExit(request: BulkExitRequestDto): Promise
 }
 
 export async function processBulkExit(request: BulkExitRequestDto): Promise<BulkExitResponseDto> {
-  const res = await fetch(`${getOperationsApiBase().replace(/\/$/, "")}/bulk-exits`, {
+  const res = await fetch(`${opsBase().replace(/\/$/, "")}/bulk-exits`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(request)

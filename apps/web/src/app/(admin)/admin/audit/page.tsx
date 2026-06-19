@@ -19,6 +19,7 @@ import {
   Download,
 } from "lucide-react";
 import { authHeaders } from "@/lib/auth";
+import { apiBase } from "@/lib/api/config";
 import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 
 interface AuditLogEntry {
@@ -52,7 +53,7 @@ const ACTION_TYPES = [
   { value: "BLOCK_EVENT_RESOLVED", label: "Evento Resuelto" },
 ];
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:6011/api/v1";
+const API_BASE = apiBase();
 
 export default function AuditPage() {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);

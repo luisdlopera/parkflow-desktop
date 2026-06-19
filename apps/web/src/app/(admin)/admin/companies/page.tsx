@@ -2,7 +2,7 @@
 
 import { toast } from "@heroui/react";
 import { useState, useCallback } from "react";
-import { useUrlPagination } from "@/hooks/useUrlPagination";
+import { useUrlPagination } from "@/shared/hooks/infrastructure/useUrlPagination";
 import { Skeleton, useOverlayState, AlertDialog, Button as HeroButton } from "@heroui/react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Chip } from "@/components/ui/Chip";

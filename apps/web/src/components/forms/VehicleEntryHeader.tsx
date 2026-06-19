@@ -26,12 +26,7 @@ export default function VehicleEntryHeader({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div className="flex items-center gap-2 sm:gap-3">
-        <div className="bg-brand-50 rounded-xl px-3 py-2">
-          <span className="text-xs text-brand-600 font-medium whitespace-nowrap">Hoy: {stats.today}</span>
-        </div>
-        <div className="bg-slate-100 rounded-xl px-3 py-2">
-          <span className="text-xs text-slate-600 font-medium whitespace-nowrap">Sesión: {stats.session}</span>
-        </div>
+
         {occupancy && (
           <div className={`${occupancy.availableSpaces <= 0 ? "bg-rose-50 border border-rose-100" : "bg-primary-50 border border-primary-100"} rounded-xl px-3 py-2`}>
             <span className={`text-xs ${occupancy.availableSpaces <= 0 ? "text-rose-700 font-bold" : "text-primary-700 font-medium"} whitespace-nowrap`}>Disponibles: {occupancy.availableSpaces} / {occupancy.activeSpaces}</span>

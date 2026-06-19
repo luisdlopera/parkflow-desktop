@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
 import { currentUser } from "@/lib/auth";
-import { precalculateBulkExit, processBulkExit, BulkExitCalculateResponseDto, BulkExitResponseDto } from "@/services/bulk-exit.service";
-import type { ActiveSessionDto } from "@/services/sessions.service";
+import { precalculateBulkExit, processBulkExit, BulkExitCalculateResponseDto, BulkExitResponseDto } from "@/lib/api/bulk-exit-api";
+import type { ActiveSessionDto } from "@/lib/api/sessions-api";
 import type { Selection } from "@heroui/react";
 
 export function useBulkExit(rows: ActiveSessionDto[], reload: () => void) {

@@ -14,17 +14,16 @@ import {
   patchLocker,
   deleteLocker,
   type LockerDto,
-} from "@/services/lockers.service";
+} from "@/lib/api/lockers-api";
 import { Plus, Trash2, PackagePlus, Tags } from "lucide-react";
 import { Select } from "@/components/ui/Select";
 import { ListBox } from "@heroui/react";
-import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
+import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
 import Link from "next/link";
 
 export default function LockersPage() {
-  const { config } = useRuntimeConfig();
-  const helmetHandling = config?.operationConfiguration?.helmetHandling;
-  const isEnabled = helmetHandling === "LOCKERS";
+  const flags = useFeatureFlags();
+  const isEnabled = flags.lockers;
 
   const [lockers, setLockers] = useState<LockerDto[]>([]);
   const [loading, setLoading] = useState(false);

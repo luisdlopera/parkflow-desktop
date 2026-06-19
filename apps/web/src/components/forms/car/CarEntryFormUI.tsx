@@ -91,22 +91,7 @@ export const CarEntryFormUI = memo(function CarEntryFormUI({
         </div>
       </div>
 
-      {/* Stats rápidos */}
-      <div className="flex items-center gap-3">
-        <div className="bg-primary-50 rounded-xl px-3 py-2">
-          <span className="text-xs text-primary-600 font-medium">Hoy: {stats.today}</span>
-        </div>
-        <div className="bg-slate-100 rounded-xl px-3 py-2">
-          <span className="text-xs text-slate-600 font-medium">Sesión: {stats.session}</span>
-        </div>
-        {occupancy && (
-          <div className={`${occupancy.availableSpaces <= 0 ? "bg-rose-50 border border-rose-100" : "bg-emerald-50 border border-emerald-100"} rounded-xl px-3 py-2`}>
-            <span className={`text-xs ${occupancy.availableSpaces <= 0 ? "text-rose-700 font-bold" : "text-emerald-700 font-medium"}`}>
-              {occupancy.availableSpaces} / {occupancy.activeSpaces}
-            </span>
-          </div>
-        )}
-      </div>
+
 
       {/* Estado del formulario */}
       <div

@@ -18,9 +18,12 @@ const bodyFont = Instrument_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Parkflow Desktop",
-  description: "Parking management desktop app - Offline first",
-  icons: { icon: "/favicon.svg" }
+  title: {
+    default: "ParkFlow",
+    template: "%s | ParkFlow",
+  },
+  description: "Sistema de gestión de parqueaderos — offline-first, tiempo real",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({

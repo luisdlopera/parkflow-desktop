@@ -1,5 +1,6 @@
 import { buildApiHeaders, type AuthHeaderOptions } from "../api";
 import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
+import { apiBase, cfgBase as cfgBaseUrl } from "./config";
 
 export type { AuthHeaderOptions };
 export { buildApiHeaders };
@@ -18,13 +19,11 @@ export type SettingsPage<T> = {
 };
 
 export function apiV1Base(): string {
-  const raw = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
-  return raw.replace(/\/?operations\/?$/i, "");
+  return apiBase();
 }
 
 export function cfgBase(): string {
-  const raw = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:6011/api/v1/operations";
-  return raw.replace(/\/?operations\/?$/i, "/configuration");
+  return cfgBaseUrl();
 }
 
 export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
