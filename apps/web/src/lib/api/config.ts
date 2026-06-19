@@ -10,10 +10,12 @@
  *   authBase() = http://host/api/v1/auth  (or NEXT_PUBLIC_AUTH_BASE_URL)
  */
 
+import { API_CONFIG } from "@/shared/config/api";
+
 const OPS_DEFAULT = "http://localhost:6011/api/v1/operations";
 
 function rawOps(): string {
-  return (process.env.NEXT_PUBLIC_API_BASE_URL ?? OPS_DEFAULT).replace(/\/$/, "");
+  return (API_CONFIG.baseUrl ?? OPS_DEFAULT).replace(/\/$/, "");
 }
 
 /** Base URL for the v1 API: http://host/api/v1 */
@@ -33,6 +35,6 @@ export function cfgBase(): string {
 
 /** Auth endpoint: http://host/api/v1/auth */
 export function authBase(): string {
-  const explicit = process.env.NEXT_PUBLIC_AUTH_BASE_URL?.trim();
+  const explicit = API_CONFIG.authBaseUrl?.trim();
   return explicit ? explicit.replace(/\/$/, "") : `${apiBase()}/auth`;
 }

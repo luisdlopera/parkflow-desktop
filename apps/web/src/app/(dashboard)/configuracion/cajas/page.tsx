@@ -23,7 +23,7 @@ import type { CashRegisterRow, ParkingSiteRow, PrinterRow } from "@/modules/sett
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { FormDrawer } from "@/components/settings/FormDrawer";
 import { StatusToggle } from "@/components/settings/StatusToggle";
-import { useConfigCrud } from "@/hooks/useConfigCrud";
+import { useConfigCrud } from "@/features/configuration/hooks/useConfigCrud";
 
 const COLS: ColumnDef<CashRegisterRow>[] = [
   { key: "code", label: "Código" },

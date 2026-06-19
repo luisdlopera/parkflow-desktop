@@ -17,7 +17,7 @@ import type { RateFractionRow } from "@/modules/settings/types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { FormDrawer } from "@/components/settings/FormDrawer";
 import { useDialog } from "@/components/ui/DialogProvider";
-import { useConfigCrud } from "@/hooks/useConfigCrud";
+import { useConfigCrud } from "@/features/configuration/hooks/useConfigCrud";
 
 const COLS: ColumnDef<RateFractionRow>[] = [
   { key: "fromMinute", label: "Desde (min)" },

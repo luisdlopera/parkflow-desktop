@@ -2,70 +2,46 @@
 
 import { toast } from "@heroui/react";
 import { useState, useCallback } from "react";
-import { useUrlPagination } from "@/shared/hooks/infrastructure/useUrlPagination";
 import { Skeleton, useOverlayState, AlertDialog, Button as HeroButton } from "@heroui/react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Chip } from "@/components/ui/Chip";
-
-import { Dropdown } from "@/components/ui/Dropdown";
-import { DropdownMenu } from "@/components/ui/Dropdown";
 import { DropdownItem } from "@/components/ui/Dropdown";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import {
-  Building2,
-  Plus,
-  MoreVertical,
-  Pencil,
-  FileBadge,
-  Trash2,
-  Eye,
-} from "lucide-react";
-import { 
-  useCompanies, 
-  useCreateCompany, 
-  translatePlan, 
-  translateStatus 
-} from "@/lib/licensing/hooks";
-import type { Company, CreateCompanyRequest } from "@/lib/licensing/types";
-import { CompanyForm } from "@/components/admin/CompanyForm";
+import { Building2, FileBadge, Pencil, Trash2, Eye } from "lucide-react";
+import { useCompanies, translatePlan, translateStatus } from "@/lib/licensing/hooks";
+import type { Company } from "@/lib/licensing/types";
 import { GenerateLicenseDialog } from "@/components/admin/GenerateLicenseDialog";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
 import { ApiError } from "@/lib/errors/api-error";
-import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
+import type { DataTableColumn } from "@/components/ui/DataTable";
+import { EntityManagementPage } from "@/shared/components/crud/EntityManagementPage";
 
 export default function CompaniesPage() {
   const { data: companies, isLoading, error, mutate } = useCompanies();
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [isPurging, setIsPurging] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
   const {
-    paginatedData: paginatedCompanies,
-    totalItems,
-    searchQuery,
-    setSearchQuery,
-    activeFilters,
-    setActiveFilters,
-    page,
-    pageSize,
-    handlePaginationChange,
-  } = useUrlPagination<Company>({
-    data: companies,
-    searchFields: ["name", "nit", "email"],
-    initialPageSize: 10,
-  });
+    isOpen: isLicenseOpen,
+    open: onLicenseOpen,
+    close: onLicenseClose,
+  } = useOverlayState();
 
-  const handleDelete = (company: Company) => {
+  const handleGenerateLicense = useCallback((company: Company) => {
+    setSelectedCompany(company);
+    onLicenseOpen();
+  }, [onLicenseOpen]);
+
+  const handleDeleteTrigger = (company: Company) => {
     setCompanyToDelete(company);
     setIsPurging(false);
   };
 
-  const handlePurge = (company: Company) => {
+  const handlePurgeTrigger = (company: Company) => {
     setCompanyToDelete(company);
     setIsPurging(true);
   };
@@ -75,7 +51,6 @@ export default function CompaniesPage() {
     try {
       setIsDeactivating(true);
       const { apiDeleteCompany, apiPurgeCompany } = await import("@/lib/licensing/api");
-      
       const apiCall = isPurging ? apiPurgeCompany : apiDeleteCompany;
       
       if (companyToDelete.id === "bulk") {
@@ -83,7 +58,6 @@ export default function CompaniesPage() {
       } else {
         await apiCall(companyToDelete.id);
       }
-
       mutate();
       setCompanyToDelete(null);
       setSelectedKeys(new Set());
@@ -97,36 +71,17 @@ export default function CompaniesPage() {
     }
   };
 
-  const {
-    isOpen: isLicenseOpen,
-    open: onLicenseOpen,
-    close: onLicenseClose,
-  } = useOverlayState();
-
-  const handleGenerateLicense = useCallback((company: Company) => {
-    setSelectedCompany(company);
-    onLicenseOpen();
-  }, [onLicenseOpen]);
-
   const getStatusColor = (status: string) => {
     const colors: Record<string, "success" | "warning" | "danger" | "default" | "primary"> = {
-      ACTIVE: "success",
-      TRIAL: "primary",
-      PAST_DUE: "warning",
-      SUSPENDED: "danger",
-      EXPIRED: "danger",
-      BLOCKED: "danger",
-      CANCELLED: "default",
+      ACTIVE: "success", TRIAL: "primary", PAST_DUE: "warning", SUSPENDED: "danger",
+      EXPIRED: "danger", BLOCKED: "danger", CANCELLED: "default",
     };
     return colors[status] || "default";
   };
 
   const getPlanColor = (plan: string) => {
     const colors: Record<string, "default" | "primary" | "secondary" | "success"> = {
-      LOCAL: "default",
-      SYNC: "primary",
-      PRO: "secondary",
-      ENTERPRISE: "success",
+      LOCAL: "default", SYNC: "primary", PRO: "secondary", ENTERPRISE: "success",
     };
     return colors[plan] || "default";
   };
@@ -148,9 +103,7 @@ export default function CompaniesPage() {
       header: "Plan",
       sortable: true,
       render: (company) => (
-        <Chip color={getPlanColor(company.plan)} variant="soft" size="sm">
-          {translatePlan(company.plan)}
-        </Chip>
+        <Chip color={getPlanColor(company.plan)} variant="soft" size="sm">{translatePlan(company.plan)}</Chip>
       ),
     },
     {
@@ -158,9 +111,7 @@ export default function CompaniesPage() {
       header: "Estado",
       sortable: true,
       render: (company) => (
-        <Chip color={getStatusColor(company.status)} variant="soft" size="sm">
-          {translateStatus(company.status)}
-        </Chip>
+        <Chip color={getStatusColor(company.status)} variant="soft" size="sm">{translateStatus(company.status)}</Chip>
       ),
     },
     {
@@ -172,273 +123,69 @@ export default function CompaniesPage() {
           <div>
             <p>{new Date(company.expiresAt).toLocaleDateString("es-CO")}</p>
             {company.graceUntil && company.status === "PAST_DUE" && (
-              <p className="text-xs text-warning">
-                Gracia hasta: {new Date(company.graceUntil).toLocaleDateString("es-CO")}
-              </p>
+              <p className="text-xs text-warning">Gracia hasta: {new Date(company.graceUntil).toLocaleDateString("es-CO")}</p>
             )}
           </div>
-        ) : (
-          <span className="text-default-400">-</span>
-        ),
+        ) : (<span className="text-default-400">-</span>),
     },
     {
       key: "maxDevices",
       header: "Dispositivos",
       align: "right",
-      render: (company) => (
-        <p className="text-sm">
-          {company.devices?.length || 0} / {company.maxDevices}
-        </p>
-      ),
+      render: (company) => <p className="text-sm">{company.devices?.length || 0} / {company.maxDevices}</p>,
     },
   ];
 
   if (error) {
     const userError = getUserErrorMessage(error, "companies.load");
     const apiErr = error instanceof ApiError ? error : undefined;
-
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <ErrorState
-          title={userError.title}
-          description={userError.description}
-          actionLabel={userError.actionLabel}
-          onRetry={() => mutate()}
-          errorCode={apiErr?.code as string}
-          correlationId={apiErr?.correlationId}
-          technicalDetails={apiErr?.message}
-        />
+        <ErrorState title={userError.title} description={userError.description} actionLabel={userError.actionLabel} onRetry={() => mutate()} errorCode={apiErr?.code as string} correlationId={apiErr?.correlationId} technicalDetails={apiErr?.message} />
       </div>
     );
   }
 
+  const renderStats = () => (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+      <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-primary/10 rounded-lg"><Building2 className="w-5 h-5 text-primary" /></div><div><p className="text-sm text-default-500">Total Empresas</p><div className="text-xl font-bold">{isLoading ? <Skeleton className="w-8 h-6 rounded-md" /> : <span>{companies?.length ?? 0}</span>}</div></div></Card.Content></Card>
+      <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-success/10 rounded-lg"><FileBadge className="w-5 h-5 text-success" /></div><div><p className="text-sm text-default-500">Activas</p><div className="text-xl font-bold">{isLoading ? <Skeleton className="w-8 h-6 rounded-md" /> : <span>{companies?.filter(c => c.status === "ACTIVE" || c.status === "TRIAL").length ?? 0}</span>}</div></div></Card.Content></Card>
+      <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-warning/10 rounded-lg"><FileBadge className="w-5 h-5 text-warning" /></div><div><p className="text-sm text-default-500">Por Vencer</p><div className="text-xl font-bold">{isLoading ? <Skeleton className="w-8 h-6 rounded-md" /> : <span>{companies?.filter(c => c.expiresAt && Math.ceil((new Date(c.expiresAt).getTime() - Date.now()) / 86400000) <= 14 && Math.ceil((new Date(c.expiresAt).getTime() - Date.now()) / 86400000) > 0).length ?? 0}</span>}</div></div></Card.Content></Card>
+      <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-danger/10 rounded-lg"><FileBadge className="w-5 h-5 text-danger" /></div><div><p className="text-sm text-default-500">Problemas</p><div className="text-xl font-bold">{isLoading ? <Skeleton className="w-8 h-6 rounded-md" /> : <span>{companies?.filter(c => ["EXPIRED", "BLOCKED", "SUSPENDED"].includes(c.status)).length ?? 0}</span>}</div></div></Card.Content></Card>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Empresas</h1>
-          <p className="text-default-500">
-            Gestione las empresas licenciadas en el sistema
-          </p>
-        </div>
-        <a href="/admin/companies/new">
-          <Button
-            color="primary"
-            startContent={<Plus className="w-4 h-4" />}
-          >
-            Nueva Empresa
-          </Button>
-        </a>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <Card.Content className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Building2 className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-default-500">Total Empresas</p>
-              <div className="text-xl font-bold">
-                {isLoading ? <Skeleton className="w-8 h-6 rounded-md" /> : <span>{companies?.length ?? 0}</span>}
-              </div>
-            </div>
-          </Card.Content>
-        </Card>
-
-        <Card>
-          <Card.Content className="flex items-center gap-3">
-            <div className="p-2 bg-success/10 rounded-lg">
-              <FileBadge className="w-5 h-5 text-success" />
-            </div>
-            <div>
-              <p className="text-sm text-default-500">Activas</p>
-              <div className="text-xl font-bold">
-                {isLoading ? (
-                  <Skeleton className="w-8 h-6 rounded-md" />
-                ) : (
-                  <span>{companies?.filter((c) => c.status === "ACTIVE" || c.status === "TRIAL").length ?? 0}</span>
-                )}
-              </div>
-            </div>
-          </Card.Content>
-        </Card>
-
-        <Card>
-          <Card.Content className="flex items-center gap-3">
-            <div className="p-2 bg-warning/10 rounded-lg">
-              <FileBadge className="w-5 h-5 text-warning" />
-            </div>
-            <div>
-              <p className="text-sm text-default-500">Por Vencer</p>
-              <div className="text-xl font-bold">
-                {isLoading ? (
-                  <Skeleton className="w-8 h-6 rounded-md" />
-                ) : (
-                  <span>
-                    {companies?.filter((c) => {
-                      if (!c.expiresAt) return false;
-                      const days = Math.ceil(
-                        (new Date(c.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-                      );
-                      return days <= 14 && days > 0;
-                    }).length ?? 0}
-                  </span>
-                )}
-              </div>
-            </div>
-          </Card.Content>
-        </Card>
-
-        <Card>
-          <Card.Content className="flex items-center gap-3">
-            <div className="p-2 bg-danger/10 rounded-lg">
-              <FileBadge className="w-5 h-5 text-danger" />
-            </div>
-            <div>
-              <p className="text-sm text-default-500">Problemas</p>
-              <div className="text-xl font-bold">
-                {isLoading ? (
-                  <Skeleton className="w-8 h-6 rounded-md" />
-                ) : (
-                  <span>
-                    {companies?.filter(
-                      (c) => c.status === "EXPIRED" || c.status === "BLOCKED" || c.status === "SUSPENDED"
-                    ).length ?? 0}
-                  </span>
-                )}
-              </div>
-            </div>
-          </Card.Content>
-        </Card>
-      </div>
-
-      {selectedKeys.size > 0 && (
-        <div className="flex items-center justify-between bg-danger-50 dark:bg-danger-900/20 p-4 rounded-xl border border-danger-100 dark:border-danger-800 transition-all mb-4">
-          <span className="text-danger-700 dark:text-danger-300 font-medium">
-            {selectedKeys.size} {selectedKeys.size === 1 ? "empresa seleccionada" : "empresas seleccionadas"}
-          </span>
-          <div className="flex gap-2">
-            <Button color="danger" variant="flat" onPress={() => {
-              setCompanyToDelete({ id: "bulk", name: `${selectedKeys.size} empresas` } as any);
-              setIsPurging(false);
-            }}>
-              Eliminar seleccionadas
-            </Button>
-            <Button color="danger" variant="bordered" onPress={() => {
-              setCompanyToDelete({ id: "bulk", name: `${selectedKeys.size} empresas` } as any);
-              setIsPurging(true);
-            }}>
-              Purgar seleccionadas
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <DataTable
-        title="Empresas licenciadas"
-        description="Busca, filtra y revisa el estado de cada empresa."
+    <>
+      <EntityManagementPage
+        title="Empresas"
+        description="Gestione las empresas licenciadas en el sistema"
+        data={companies || []}
         columns={columns}
-        data={paginatedCompanies}
-        getRowKey={(company) => company.id}
         isLoading={isLoading}
-        emptyMessage="No se encontraron empresas"
-        selectable
-        selectedKeys={selectedKeys}
-        onRowSelectionChange={setSelectedKeys}
+        getRowKey={(c) => c.id}
+        createHref="/admin/companies/new"
+        onSave={async () => {}} // Not used due to createHref
+        renderStats={renderStats}
         searchable
         searchPlaceholder="Buscar por nombre, NIT o email..."
-        onSearchChange={setSearchQuery}
-        onFilterChange={setActiveFilters}
-        pagination={{
-          page,
-          pageSize,
-          total: totalItems,
-        }}
-        onPaginationChange={handlePaginationChange}
         filters={[
-          {
-            key: "plan",
-            label: "Plan",
-            type: "select",
-            options: ["LOCAL", "SYNC", "PRO", "ENTERPRISE"].map((plan) => ({
-              label: translatePlan(plan),
-              value: plan,
-            })),
-          },
-          {
-            key: "status",
-            label: "Estado",
-            type: "select",
-            options: ["ACTIVE", "TRIAL", "PAST_DUE", "SUSPENDED", "EXPIRED", "BLOCKED", "CANCELLED"].map((status) => ({
-              label: translateStatus(status),
-              value: status,
-            })),
-          },
-          { key: "expiresAt", label: "Vencimiento", type: "dateRange" },
+          { key: "plan", label: "Plan", type: "select", options: ["LOCAL", "SYNC", "PRO", "ENTERPRISE"].map(p => ({ label: translatePlan(p), value: p })) },
+          { key: "status", label: "Estado", type: "select", options: ["ACTIVE", "TRIAL", "PAST_DUE", "SUSPENDED", "EXPIRED", "BLOCKED", "CANCELLED"].map(s => ({ label: translateStatus(s), value: s })) }
         ]}
-        actions={(company) => (
-          <Dropdown>
-            <HeroButton isIconOnly variant="ghost" size="sm" aria-label="Más acciones">
-              <MoreVertical className="w-4 h-4" />
-            </HeroButton>
-            <DropdownMenu aria-label="Acciones">
-              <DropdownItem key="view" textValue="Ver detalle" startContent={<Eye className="w-4 h-4" />}>
-                Ver detalle
-              </DropdownItem>
-              <DropdownItem 
-                key="edit" 
-                textValue="Editar" 
-                startContent={<Pencil className="w-4 h-4" />} 
-                href={`/admin/companies/edit?id=${company.id}`}
-                as="a"
-              >
-                Editar
-              </DropdownItem>
-              <DropdownItem
-                key="license"
-                textValue="Generar licencia"
-                startContent={<FileBadge className="w-4 h-4" />}
-                onPress={() => handleGenerateLicense(company)}
-              >
-                Generar licencia
-              </DropdownItem>
-              <DropdownItem
-                key="delete"
-                textValue="Eliminar"
-                startContent={<Trash2 className="w-4 h-4" />}
-                onPress={() => handleDelete(company)}
-              >
-                Eliminar
-              </DropdownItem>
-              <DropdownItem
-                key="purge"
-                textValue="Purgar"
-                className="text-danger"
-                color="danger"
-                startContent={<Trash2 className="w-4 h-4" />}
-                onPress={() => handlePurge(company)}
-              >
-                Purgar (Hard Delete)
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-        )}
+        customActions={(company) => [
+          <DropdownItem key="view" textValue="Ver detalle" startContent={<Eye className="w-4 h-4" />}>Ver detalle</DropdownItem>,
+          <DropdownItem key="edit" textValue="Editar" startContent={<Pencil className="w-4 h-4" />} href={`/admin/companies/edit?id=${company.id}`} as="a">Editar</DropdownItem>,
+          <DropdownItem key="license" textValue="Generar licencia" startContent={<FileBadge className="w-4 h-4" />} onPress={() => handleGenerateLicense(company)}>Generar licencia</DropdownItem>,
+          <DropdownItem key="delete" textValue="Eliminar" startContent={<Trash2 className="w-4 h-4" />} onPress={() => handleDeleteTrigger(company)}>Eliminar</DropdownItem>,
+          <DropdownItem key="purge" textValue="Purgar" className="text-danger" color="danger" startContent={<Trash2 className="w-4 h-4" />} onPress={() => handlePurgeTrigger(company)}>Purgar (Hard Delete)</DropdownItem>
+        ]}
       />
 
-      {/* Generate License Modal */}
       {selectedCompany && (
-        <GenerateLicenseDialog
-          isOpen={isLicenseOpen}
-          onClose={onLicenseClose}
-          company={selectedCompany}
-        />
+        <GenerateLicenseDialog isOpen={isLicenseOpen} onClose={onLicenseClose} company={selectedCompany} />
       )}
 
-      {/* Delete Confirmation Alert */}
       <AlertDialog>
         <AlertDialog.Backdrop isOpen={!!companyToDelete} onOpenChange={(open) => !open && setCompanyToDelete(null)}>
           <AlertDialog.Container>
@@ -450,23 +197,19 @@ export default function CompaniesPage() {
               <AlertDialog.Body>
                 <p>
                   {isPurging 
-                    ? <>Esto eliminará <strong>permanentemente</strong> la empresa <strong>{companyToDelete?.name}</strong> y todos sus datos de la base de datos. Esta acción no se puede deshacer.</>
-                    : <>Esto ocultará la empresa <strong>{companyToDelete?.name}</strong> (Soft Delete) deteniendo sus licencias y acceso a la plataforma.</>
+                    ? <>Esto eliminará <strong>permanentemente</strong> la empresa y todos sus datos. Esta acción no se puede deshacer.</>
+                    : <>Esto ocultará la empresa deteniendo sus licencias y acceso a la plataforma.</>
                   }
                 </p>
               </AlertDialog.Body>
               <AlertDialog.Footer>
-                <HeroButton variant="tertiary" onPress={() => setCompanyToDelete(null)}>
-                  Cancelar
-                </HeroButton>
-                <Button className="bg-danger text-white hover:bg-danger/90" onPress={confirmDelete as any} isLoading={isDeactivating}>
-                  Eliminar
-                </Button>
+                <HeroButton variant="tertiary" onPress={() => setCompanyToDelete(null)}>Cancelar</HeroButton>
+                <Button className="bg-danger text-white hover:bg-danger/90" onPress={confirmDelete as any} isLoading={isDeactivating}>Eliminar</Button>
               </AlertDialog.Footer>
             </AlertDialog.Dialog>
           </AlertDialog.Container>
         </AlertDialog.Backdrop>
       </AlertDialog>
-    </div>
+    </>
   );
 }

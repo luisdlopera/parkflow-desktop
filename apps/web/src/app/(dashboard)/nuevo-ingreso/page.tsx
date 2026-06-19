@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Modal } from "@heroui/react";
 import { Button } from "@/components/ui/Button";
-import { useTerminalCaja } from "@/hooks/useTerminalCaja";
+import { useTerminalCaja } from "@/features/cash-register/hooks/useTerminalCaja";
 import { hasPermission } from "@/lib/auth";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
 import Link from "next/link";

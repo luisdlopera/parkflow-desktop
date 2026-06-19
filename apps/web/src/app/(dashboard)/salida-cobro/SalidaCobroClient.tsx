@@ -24,7 +24,7 @@ const ENTRY_MODE_LABEL: Record<string, string> = {
   EMPLOYEE: "Empleado / cortesía",
 };
 
-export default function SalidaCobroPage() {
+export default function SalidaCobroClient() {
   const { modifier } = useOsShortcut();
   const p = useVehicleExit();
 

@@ -10,7 +10,7 @@ import { Button as HeroButton } from "@heroui/react";
 import { Plus, MoreVertical, Pencil, Trash2, LucideIcon } from "lucide-react";
 import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 
-export interface EntityManagementPageProps<T> {
+export interface EntityManagementPageProps<T extends object> {
   title: string;
   description: string;
   icon?: LucideIcon;
@@ -21,6 +21,7 @@ export interface EntityManagementPageProps<T> {
   getRowKey: (item: T) => string;
   
   // Create / Edit
+  createHref?: string;
   FormComponent?: React.ComponentType<{ 
     initialData?: T | null; 
     onSave: (data: Partial<T>) => void;
@@ -41,7 +42,7 @@ export interface EntityManagementPageProps<T> {
   renderStats?: () => React.ReactNode;
 }
 
-export function EntityManagementPage<T>({
+export function EntityManagementPage<T extends object>({
   title,
   description,
   icon: Icon,
@@ -59,6 +60,7 @@ export function EntityManagementPage<T>({
   filters,
   customActions,
   renderStats,
+  createHref,
 }: EntityManagementPageProps<T>) {
   const [selectedEntity, setSelectedEntity] = useState<T | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -100,14 +102,20 @@ export function EntityManagementPage<T>({
           <h1 className="text-2xl font-bold">{title}</h1>
           <p className="text-default-500">{description}</p>
         </div>
-        {FormComponent && onSave && (
-          <Button
-            color="primary"
-            startContent={<Plus className="w-4 h-4" />}
-            onPress={handleCreate}
-          >
-            Nuevo Registro
-          </Button>
+        {((FormComponent && onSave) || createHref) && (
+          createHref ? (
+            <a href={createHref}>
+              <Button color="primary" startContent={<Plus className="w-4 h-4" />}>Nuevo Registro</Button>
+            </a>
+          ) : (
+            <Button
+              color="primary"
+              startContent={<Plus className="w-4 h-4" />}
+              onPress={handleCreate}
+            >
+              Nuevo Registro
+            </Button>
+          )
         )}
       </div>
 

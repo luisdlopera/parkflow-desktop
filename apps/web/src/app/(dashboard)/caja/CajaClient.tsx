@@ -65,7 +65,7 @@ const SESSION_STEPS = [
   { label: "Cerrar" },
 ];
 
-export default function CajaPage() {
+export default function CajaClient() {
   const { confirm } = useDialog();
   const { contains } = useFilter({ sensitivity: "base" });
   const p = useCajaPage();

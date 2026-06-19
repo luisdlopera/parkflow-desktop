@@ -1,8 +1,9 @@
 import { authHeaders } from "@/lib/auth";
 import { authBase, apiBase } from "@/lib/api/config";
+import { API_CONFIG } from "@/shared/config/api";
 
 const AUTH_BASE = authBase();
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY ?? "dev-api-key-123";
+const API_KEY = API_CONFIG.apiKey;
 
 const apiKeyHeader = { "Content-Type": "application/json", "X-API-Key": API_KEY };
 

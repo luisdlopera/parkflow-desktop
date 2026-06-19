@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Chip } from "@/components/ui/Chip";
 import { Progress } from "@/components/ui/Progress";
 import { Button } from "@/components/ui/Button";
@@ -38,7 +38,7 @@ const GRID = [
   { key: "by-payment-method" as ReportView, label: "Por método de pago", desc: "Recaudo segmentado por método" },
 ];
 
-export default function ReportesPage() {
+export default function ReportesClient() {
   const [canView, setCanView] = useState(false);
   const [view, setView] = useState<ReportView | null>(null);
   const { dateFrom, setDateFrom, dateTo, setDateTo, loading, error, setError, dailyOps, cashSessions, cashSummary, vehicleType, paidTickets, voidedTickets, incomeExpense, occupancy, operators, paymentMethods, loadReport, handleExport } = useReports();
@@ -49,6 +49,25 @@ export default function ReportesPage() {
 
   const openReport = (r: ReportView) => { setView(r); loadReport(r).catch(console.error); };
   const backToGrid = () => { setView(null); setError(null); };
+
+  const PAGE_SIZE = 50;
+  const [ticketPage, setTicketPage] = useState(1);
+  const [opsPage, setOpsPage] = useState(1);
+
+  const paginatedPaidTickets = useMemo(() => {
+    const start = (ticketPage - 1) * PAGE_SIZE;
+    return paidTickets.slice(start, start + PAGE_SIZE);
+  }, [paidTickets, ticketPage]);
+
+  const paginatedDailyOps = useMemo(() => {
+    const start = (opsPage - 1) * PAGE_SIZE;
+    return dailyOps.slice(start, start + PAGE_SIZE);
+  }, [dailyOps, opsPage]);
+
+  useEffect(() => {
+    setTicketPage(1);
+    setOpsPage(1);
+  }, [view]);
 
   if (!canView) {
     return (
@@ -124,7 +143,10 @@ export default function ReportesPage() {
               { key: "cardTotal", label: "Tarjeta", align: "right", render: (r) => fmt(r.cardTotal) },
               { key: "transferTotal", label: "Transferencia", align: "right", render: (r) => fmt(r.transferTotal) },
               { key: "grandTotal", label: "Total", align: "right", render: (r) => fmt(r.grandTotal) },
-            ]} rows={dailyOps} emptyMessage="No hay operaciones en el periodo seleccionado." />
+            ]} rows={paginatedDailyOps} emptyMessage="No hay operaciones en el periodo seleccionado."
+              pagination={{ page: opsPage, pageSize: PAGE_SIZE, total: dailyOps.length }}
+              onPaginationChange={(page, _size) => setOpsPage(page)}
+            />
           </div>
         </>
       )}
@@ -210,7 +232,10 @@ export default function ReportesPage() {
               { key: "amount", label: "Monto", align: "right", render: (r) => fmt(r.amount) },
               { key: "paymentMethod", label: "Método", render: (r) => pmLabel(r.paymentMethod) },
               { key: "paidAt", label: "Pagado", render: (r) => shortDate(r.paidAt) },
-            ]} rows={paidTickets} emptyMessage="No hay tickets cobrados en el periodo seleccionado." />
+            ]} rows={paginatedPaidTickets} emptyMessage="No hay tickets cobrados en el periodo seleccionado."
+              pagination={{ page: ticketPage, pageSize: PAGE_SIZE, total: paidTickets.length }}
+              onPaginationChange={(page, _size) => setTicketPage(page)}
+            />
           </div>
         </>
       )}
