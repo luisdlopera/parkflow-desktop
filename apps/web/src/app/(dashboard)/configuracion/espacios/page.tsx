@@ -1,6 +1,8 @@
 "use client";
 
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { FrontendActionError } from "@/lib/errors/error-messages";
+import { useAsyncAction } from "@/lib/errors/use-async-action";
+import { ConfigPageHeader } from "@/features/configuration/components/ui/ConfigPageHeader";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Tabs, Tab } from "@/components/bridge/Tabs";
 import { Button } from "@/components/bridge/Button";
@@ -21,14 +23,13 @@ export default function EspaciosPage() {
   const [spaces, setSpaces] = useState<ParkingSpace[]>([]);
   const [capacity, setCapacity] = useState("0");
   const [filter, setFilter] = useState("ACTIVE");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { confirm } = useDialog();
+  const loadAction = useAsyncAction({ errorContext: FrontendActionError.LOAD_DATA, showErrorToast: true });
+  const saveAction = useAsyncAction({ errorContext: FrontendActionError.SAVE_DATA, showErrorToast: true });
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+    await loadAction.run(async () => {
       const [sumPayload, spacesPayload] = await Promise.all([
         fetchParkingSpacesSummary(),
         fetchParkingSpaces(filter),
@@ -36,12 +37,8 @@ export default function EspaciosPage() {
       setSummary(sumPayload);
       setSpaces(spacesPayload);
       setCapacity(String(sumPayload.activeSpaces ?? 0));
-    } catch (err) {
-      setError(getUserFriendlyErrorMessage(err, FrontendActionError.LOAD_DATA));
-    } finally {
-      setLoading(false);
-    }
-  }, [filter]);
+    });
+  }, [filter, loadAction]);
 
   useEffect(() => {
     load().catch(() => {});
@@ -68,39 +65,24 @@ export default function EspaciosPage() {
       if (!ok) return;
     }
 
-    setLoading(true);
-    setError(null);
-    try {
+    await saveAction.run(async () => {
       await putParkingSpacesCapacity(next);
       await load();
-    } catch (err) {
-      setError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
-    } finally {
-      setLoading(false);
-    }
+    });
   }, [capacity, load, summary, confirm]);
 
   const onPatchSpace = useCallback(async (id: string, body: Record<string, unknown>) => {
-    setLoading(true);
-    setError(null);
-    try {
+    await saveAction.run(async () => {
       await patchParkingSpace(id, body);
       await load();
-    } catch (err) {
-      setError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
-    } finally {
-      setLoading(false);
-    }
-  }, [load]);
+    });
+  }, [load, saveAction]);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80 font-medium">Configuración</p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Espacios del parqueadero</h1>
-        </div>
-        <Button size="sm" color="primary" variant="tertiary" onPress={() => { load().catch(() => {}); }} isLoading={loading}>Actualizar</Button>
+        <ConfigPageHeader title="Espacios del parqueadero" groupLabel="Estacionamiento" sectionLabel="Distribución de espacios" />
+        <Button size="sm" color="primary" variant="tertiary" onPress={() => { load().catch(() => {}); }} isLoading={loadAction.isLoading || saveAction.isLoading}>Actualizar</Button>
       </div>
 
       {error ? <p className="text-sm text-rose-700 font-medium">{error}</p> : null}
@@ -124,7 +106,7 @@ export default function EspaciosPage() {
           onChange={(e) => setCapacity(e.target.value)}
           className="max-w-xs"
         />
-        <Button color="primary" onPress={() => { onResize().catch(() => {}); }} isDisabled={!canReduce || loading}>Guardar capacidad</Button>
+        <Button color="primary" onPress={() => { onResize().catch(() => {}); }} isDisabled={!canReduce || saveAction.isLoading}>Guardar capacidad</Button>
       </div>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

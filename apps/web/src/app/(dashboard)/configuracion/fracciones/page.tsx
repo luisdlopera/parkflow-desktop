@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ConfigPageHeader } from "@/features/configuration/components/ui/ConfigPageHeader";
 import { Button } from "@/components/bridge/Button";
 import { Checkbox } from "@/components/bridge/Checkbox";
 import { Input } from "@/components/bridge/Input";
@@ -74,8 +75,8 @@ export default function FraccionesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <h1 className="text-2xl font-bold text-slate-900">Fracciones de Tarifa</h1>
+    <div className="mx-auto max-w-5xl space-y-6 p-6">
+      <ConfigPageHeader title="Fracciones de Tarifa" groupLabel="Cobro" sectionLabel="Fracciones de tiempo y cobro" />
       <div className="flex items-center gap-3">
         <Input
           type="text"

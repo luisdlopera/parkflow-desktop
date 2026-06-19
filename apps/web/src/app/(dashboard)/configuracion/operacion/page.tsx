@@ -1,5 +1,6 @@
 "use client";
 
+import { ConfigPageHeader } from "@/features/configuration/components/ui/ConfigPageHeader";
 import { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -106,19 +107,21 @@ export default function OperacionPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl p-6">
-        <h1 className="text-2xl font-bold text-slate-900">Parámetros Operativos</h1>
+      <div className="mx-auto max-w-5xl p-6">
+        <ConfigPageHeader title="Parámetros Operativos" groupLabel="Operación" sectionLabel="Reglas y parámetros operativos" />
         <p className="mt-4 text-sm text-slate-500 italic">Cargando configuración...</p>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Parámetros Operativos</h1>
-        <p className="text-sm text-slate-500 mt-1">Configuración global de la operación del parqueadero.</p>
-      </div>
+    <div className="mx-auto max-w-5xl space-y-6 p-6">
+      <ConfigPageHeader 
+        title="Parámetros Operativos" 
+        description="Configuración global de la operación del parqueadero." 
+        groupLabel="Operación" 
+        sectionLabel="Reglas y parámetros operativos" 
+      />
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <Select

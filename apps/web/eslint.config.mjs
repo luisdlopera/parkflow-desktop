@@ -12,9 +12,6 @@ export default [
       "react-hooks/immutability": "warn",
       "react-hooks/refs": "warn",
       "react-hooks/incompatible-library": "warn",
-      // Enforce TypeScript type safety — surface `any` uses to developer awareness
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unsafe-assignment": "off",
       // Enforce React Hooks rules strictly
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",

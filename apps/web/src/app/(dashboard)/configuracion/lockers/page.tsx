@@ -21,6 +21,7 @@ import { Select } from "@/components/bridge/Select";
 import { ListBox } from "@heroui/react";
 import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
 import Link from "next/link";
+import { ConfigPageHeader } from "@/features/configuration/components/ui/ConfigPageHeader";
 
 export default function LockersPage() {
   const flags = useFeatureFlags();
@@ -152,16 +153,9 @@ export default function LockersPage() {
 
   return (
     <div className="space-y-6">
+      <ConfigPageHeader title="Lockers de Cascos" groupLabel="Estacionamiento" sectionLabel="Administra los lockers numerados para guardar cascos de moto." />
+
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80 font-medium">
-            Configuración
-          </p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Lockers de Cascos</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Administra los lockers numerados para guardar cascos de moto.
-          </p>
-        </div>
         <div className="flex gap-2">
           <Button
             size="sm"

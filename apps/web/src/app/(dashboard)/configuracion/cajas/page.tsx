@@ -1,5 +1,6 @@
 "use client";
 
+import { ConfigPageHeader } from "@/features/configuration/components/ui/ConfigPageHeader";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -110,7 +111,7 @@ export default function CajasPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <h1 className="text-2xl font-bold text-slate-900">Cajas / Terminales</h1>
+      <ConfigPageHeader title="Cajas / Terminales" groupLabel="Cajas" sectionLabel="Puntos de caja y terminales" />
       <DataTableSection
         title=""
         columns={COLS}

@@ -6,6 +6,8 @@ import { currentUser } from "@/features/auth/services/auth-domain.service";
 import { usePermissions } from "@/hooks/auth/usePermissions";
 import type { Permission } from "@parkflow/types";
 import ConfigSidebar from "@/features/configuration/components/ui/ConfigSidebar";
+import { CONFIG_NAVIGATION } from "@/features/configuration/constants/navigation";
+import { ConfigPageHeader } from "@/features/configuration/components/ui/ConfigPageHeader";
 
 const SetupBasicoTab = dynamic(() => import("@/features/configuration/components/ui/SetupBasicoTab").then((m) => ({ default: m.SetupBasicoTab })), {
   ssr: false,
@@ -123,13 +125,21 @@ export default function ConfiguracionPage() {
   const config = SECTION_CONFIG[section];
   if (!config) return null;
 
+  const currentGroup = CONFIG_NAVIGATION.find(group => 
+    group.items.some(item => {
+      const url = new URL(item.href, "http://localhost");
+      return url.searchParams.get("section") === section;
+    })
+  );
+
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">{config.label}</p>
-        <h1 className="text-3xl font-semibold text-slate-900">{config.title}</h1>
-        <p className="mt-2 max-w-3xl text-sm text-slate-600">{config.description}</p>
-      </div>
+      <ConfigPageHeader 
+        title={config.title} 
+        description={config.description} 
+        groupLabel={currentGroup?.label ?? ""} 
+        sectionLabel={config.label} 
+      />
 
       {notice ? <Notice kind={notice.kind} text={notice.text} /> : null}
 

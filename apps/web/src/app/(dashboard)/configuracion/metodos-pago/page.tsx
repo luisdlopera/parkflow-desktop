@@ -1,5 +1,6 @@
 "use client";
 
+import { ConfigPageHeader } from "@/features/configuration/components/ui/ConfigPageHeader";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -73,7 +74,7 @@ export default function MetodosPagoPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <h1 className="text-2xl font-bold text-slate-900">Métodos de Pago</h1>
+      <ConfigPageHeader title="Métodos de Pago" groupLabel="Cobro" sectionLabel="Métodos de pago" />
       <DataTableSection
         title=""
         columns={COLS}

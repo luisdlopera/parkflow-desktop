@@ -129,10 +129,11 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
               {configView === "ROOT" && (
                 <motion.div key="root-view" variants={slideVariants} initial="initial" animate="animate" exit="exit" className="space-y-3">
                   <button
-                    onClick={() => setConfigView(false)}
+                    onClick={() => { setConfigView(false); router.push("/"); }}
+                    aria-label="Volver al inicio"
                     className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors px-1"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                     Volver al inicio
@@ -150,13 +151,14 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                       <button
                         key={group.id}
                         onClick={() => setConfigView(group.id)}
+                        aria-label={`Ver opciones de ${group.label}`}
                         className="w-full flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"
                       >
                         <div className="flex items-center gap-3">
-                          <group.icon className="w-5 h-5 flex-shrink-0" />
+                          <group.icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                           <span>{group.label}</span>
                         </div>
-                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
@@ -168,10 +170,11 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
               {activeCategory && (
                 <motion.div key="category-view" variants={slideVariants} initial="initial" animate="animate" exit="exit" className="space-y-3">
                   <button
-                    onClick={() => setConfigView("ROOT")}
+                    onClick={() => { setConfigView("ROOT"); router.push("/configuracion"); }}
+                    aria-label="Volver a categorías"
                     className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors px-1"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                     Volver a categorías
@@ -241,15 +244,16 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                                 ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
                               `}
                               title={collapsed ? item.label : undefined}
+                              aria-label={item.label}
                             >
                               <div className="flex items-center gap-3">
-                                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
                                 </svg>
                                 {!collapsed && <span className="truncate">{item.label}</span>}
                               </div>
                               {!collapsed && (
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>
                               )}
@@ -270,9 +274,10 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                             ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
                           `}
                           title={collapsed ? item.label : undefined}
+                          aria-label={item.label}
                         >
                           <div className="flex items-center gap-3">
-                            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
                             </svg>
                             {!collapsed && <span className="truncate">{item.label}</span>}
@@ -281,7 +286,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                             <kbd className={`
                               inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded flex-shrink-0
                               ${active ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500 dark:bg-gray-700 dark:text-gray-200"}
-                            `}>
+                            `} aria-hidden="true">
                               {item.shortcut}
                             </kbd>
                           )}
