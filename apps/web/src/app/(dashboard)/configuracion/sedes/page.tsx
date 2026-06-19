@@ -116,11 +116,11 @@ export default function SedesPage() {
               onChange={(keys) => setCompanyId(Array.from(keys)[0] as string)}
               isDisabled={catalogLoading || companies.length <= 1}
             >
-              <Select.Trigger>
-                <Select.Value />
-                <Select.Indicator />
+              <Select.Trigger aria-label="Seleccionar opción">
+                <Select.Value aria-label="Seleccionar opción" />
+                <Select.Indicator aria-label="Seleccionar opción" />
               </Select.Trigger>
-              <Select.Popover>
+              <Select.Popover aria-label="Seleccionar opción">
                 <ListBox>
                   {companies.map((company) => (
                     <ListBox.Item key={company.id} textValue={`${company.name} ${company.status ? `(${company.status})` : ""}`}>

@@ -48,7 +48,7 @@ export function SecuritySettingsTab({ settings, onUpdate }: { settings: SystemSe
               <p className="font-medium">Requerir 2FA para Super Admins</p>
               <p className="text-sm text-default-500">Obliga autenticación de dos factores a usuarios con rol Super Admin</p>
             </div>
-            <Switch isSelected={settings.requireTwoFactor} onChange={(v) => onUpdate("requireTwoFactor", v)} color="warning" />
+            <Switch isSelected={settings.requireTwoFactor} onChange={(v) => onUpdate("requireTwoFactor", v)} color="warning" aria-label="Alternar opción" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -57,7 +57,7 @@ export function SecuritySettingsTab({ settings, onUpdate }: { settings: SystemSe
               <Slider size="sm" step={1} minValue={6} maxValue={16} value={settings.passwordMinLength} onChange={(v) => onUpdate("passwordMinLength", v as number)} />
             </div>
             <div className="flex items-center gap-2 pt-6">
-              <Switch isSelected={settings.passwordRequireSpecialChars} onChange={(v) => onUpdate("passwordRequireSpecialChars", v)} />
+              <Switch isSelected={settings.passwordRequireSpecialChars} onChange={(v) => onUpdate("passwordRequireSpecialChars", v)} aria-label="Alternar opción" />
               <span className="text-sm">Requerir caracteres especiales</span>
             </div>
           </div>

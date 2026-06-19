@@ -37,11 +37,11 @@ export default function VehicleEntrySettings({
             }}
             className="w-40"
           >
-            <Select.Trigger>
-              <Select.Value />
-              <Select.Indicator />
+            <Select.Trigger aria-label="Seleccionar opción">
+              <Select.Value aria-label="Seleccionar opción" />
+              <Select.Indicator aria-label="Seleccionar opción" />
             </Select.Trigger>
-            <Select.Popover>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 {vehicleTypes.map((t: any) => {
                   const config = vehicleTypeView(t);

@@ -71,7 +71,7 @@ function UserForm({ initialData, onSave }: { initialData?: AdminUser | null, onS
           {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
         </select>
         <div className="flex items-center gap-2 pt-2">
-          <Switch isSelected={formActive} onChange={setFormActive} />
+          <Switch isSelected={formActive} onChange={setFormActive} aria-label="Alternar opción" />
           <span>Activo</span>
         </div>
       </div>
@@ -124,7 +124,7 @@ export function AdminUsersPageClient() {
       key: "active",
       header: "Estado",
       render: (user) => (
-        <Switch isSelected={user.active} size="sm" color="success" />
+        <Switch isSelected={user.active} size="sm" color="success" aria-label="Alternar opción" />
       ),
     }
   ];

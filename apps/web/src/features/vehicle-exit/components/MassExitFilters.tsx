@@ -71,8 +71,8 @@ export function MassExitFilters({
               setFilters((f) => ({ ...f, vehicleTypeCode: String(Array.from(keys)[0] ?? "") }))
             }
           >
-            <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-            <Select.Popover>
+            <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 {VEHICLE_TYPES.map((t) => (
                   <ListBox.Item key={t.code} textValue={t.label}>{t.label}</ListBox.Item>
@@ -120,8 +120,8 @@ export function MassExitFilters({
             value={[chargeMode]}
             onChange={(keys: any) => setChargeMode(String(Array.from(keys)[0] ?? "NORMAL") as typeof chargeMode)}
           >
-            <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-            <Select.Popover>
+            <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 <ListBox.Item key="NORMAL" textValue="Cobro normal">Cobro normal</ListBox.Item>
                 <ListBox.Item key="FREE" textValue="Sin cobro (exoneración)">Sin cobro (exoneración)</ListBox.Item>
@@ -148,8 +148,8 @@ export function MassExitFilters({
               value={[paymentMethod]}
               onChange={(keys: any) => setPaymentMethod(String(Array.from(keys)[0] ?? "CASH"))}
             >
-              <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-              <Select.Popover>
+              <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+              <Select.Popover aria-label="Seleccionar opción">
                 <ListBox>
                   {PAYMENT_METHODS.map((m) => (
                     <ListBox.Item key={m.code} textValue={m.label}>{m.label}</ListBox.Item>

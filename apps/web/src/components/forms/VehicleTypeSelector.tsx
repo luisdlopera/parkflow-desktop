@@ -76,11 +76,11 @@ export default function VehicleTypeSelector({
               void trigger("plate");
             }}
           >
-            <Select.Trigger>
-              <Select.Value />
-              <Select.Indicator />
+            <Select.Trigger aria-label="Seleccionar opción">
+              <Select.Value aria-label="Seleccionar opción" />
+              <Select.Indicator aria-label="Seleccionar opción" />
             </Select.Trigger>
-            <Select.Popover>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 {vehicleTypes.map((t: any) => {
                   const config = { label: t.name || t.code, color: t.color || "" };

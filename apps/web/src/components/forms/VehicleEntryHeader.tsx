@@ -43,11 +43,11 @@ export default function VehicleEntryHeader({
           className="w-28 sm:w-32"
           classNames={{ trigger: "min-h-0 h-8" }}
         >
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
+          <Select.Trigger aria-label="Seleccionar opción">
+            <Select.Value aria-label="Seleccionar opción" />
+            <Select.Indicator aria-label="Seleccionar opción" />
           </Select.Trigger>
-          <Select.Popover>
+          <Select.Popover aria-label="Seleccionar opción">
             <ListBox>
               {modeOptions.map((o) => (
                 <ListBox.Item key={o.key} textValue={o.label}>{o.label}</ListBox.Item>

@@ -158,8 +158,8 @@ export default function CajasPage() {
               }}
               selectedKey={(watchSiteId ? watchSiteId : undefined) as any}
             >
-              <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-              <Select.Popover>
+              <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+              <Select.Popover aria-label="Seleccionar opción">
                 <ListBox>
                   {siteOptions.map((s) => <ListBox.Item key={s.value} textValue={s.label}>{s.label}</ListBox.Item>)}
                 </ListBox>
@@ -177,8 +177,8 @@ export default function CajasPage() {
             isDisabled={catalogLoading}
             value={watchPrinterId ? [watchPrinterId as string] : []}
           >
-            <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-            <Select.Popover>
+            <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 {printerOptions.map((p) => <ListBox.Item key={p.value} textValue={p.label}>{p.label}</ListBox.Item>)}
               </ListBox>
@@ -192,8 +192,8 @@ export default function CajasPage() {
             isDisabled={catalogLoading}
             value={watchResponsibleUserId ? [watchResponsibleUserId as string] : []}
           >
-            <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-            <Select.Popover>
+            <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 {userOptions.map((u) => <ListBox.Item key={u.value} textValue={u.label}>{u.label}</ListBox.Item>)}
               </ListBox>

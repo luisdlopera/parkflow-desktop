@@ -160,7 +160,7 @@ export function PlanForm({ onSubmit, isLoading, initialData }: PlanFormProps) {
           />
         </div>
 
-        <Switch isSelected={isActive} onValueChange={setIsActive}>
+        <Switch isSelected={isActive} onValueChange={setIsActive} aria-label="Alternar opción">
           Plan activo
         </Switch>
       </section>
@@ -223,7 +223,7 @@ export function PlanForm({ onSubmit, isLoading, initialData }: PlanFormProps) {
                       id={`feature-${key}`}
                       isSelected={features[key]}
                       onValueChange={() => toggleFeature(key)}
-                      size="sm"
+                      size="sm" aria-label="Alternar opción"
                     />
                   </div>
                 ))}

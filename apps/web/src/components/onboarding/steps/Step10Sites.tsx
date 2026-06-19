@@ -9,7 +9,7 @@ const Step10Sites = memo(function Step10Sites() {
 
   return (
     <div>
-      <Switch isSelected={Boolean(stepData.multiSite)} isDisabled={!canMultiSite} onChange={(v) => setStepData({ ...stepData, multiSite: v })}>
+      <Switch isSelected={Boolean(stepData.multiSite)} isDisabled={!canMultiSite} onChange={(v) => setStepData({ ...stepData, multiSite: v })} aria-label="Alternar opción">
         ¿Varias sedes?
       </Switch>
       {!canMultiSite && <p className="text-xs text-warning mt-1">Disponible en plan superior.</p>}

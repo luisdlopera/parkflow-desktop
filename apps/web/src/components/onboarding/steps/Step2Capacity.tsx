@@ -50,7 +50,7 @@ const Step2Capacity = memo(function Step2Capacity() {
           />
         </div>
         
-        <Switch isSelected={Boolean(stepData.controlSlots)} onChange={(v) => setStepData({ ...stepData, controlSlots: v })}>
+        <Switch isSelected={Boolean(stepData.controlSlots)} onChange={(v) => setStepData({ ...stepData, controlSlots: v })} aria-label="Alternar opción">
           ¿Quieres controlar cupos?
         </Switch>
         

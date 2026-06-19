@@ -180,7 +180,7 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
               type="number"
               value={capacity.toString()}
               onChange={(e) => setCapacity(parseInt(e.target.value))}
-              disabled={loading}
+              disabled={loading} aria-label="Entrada de texto"
             />
           </div>
           <p className="text-sm text-slate-500">Tienes {capacity} espacios activos, 0 inactivos</p>
@@ -216,7 +216,7 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
                     type="time"
                     value={dayShiftStart}
                     onChange={(e) => setDayShiftStart(e.target.value)}
-                    disabled={loading}
+                    disabled={loading} aria-label="Entrada de texto"
                   />
                 </div>
                 <div>
@@ -225,7 +225,7 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
                     type="time"
                     value={dayShiftEnd}
                     onChange={(e) => setDayShiftEnd(e.target.value)}
-                    disabled={loading}
+                    disabled={loading} aria-label="Entrada de texto"
                   />
                 </div>
               </div>

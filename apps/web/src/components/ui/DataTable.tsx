@@ -299,10 +299,10 @@ function DataTableInner<T extends object>({
                       onFilterChange({ [filter.key]: value });
                     }}
                   >
-                    <Select.Trigger>
-                      <Select.Value />
+                    <Select.Trigger aria-label="Seleccionar opción">
+                      <Select.Value aria-label="Seleccionar opción" />
                     </Select.Trigger>
-                    <Select.Popover>
+                    <Select.Popover aria-label="Seleccionar opción">
                       <ListBox>
                         {filter.options.map((opt) => (
                           <ListBox.Item

@@ -245,11 +245,11 @@ export default function MastersSection({
                   if (std) setForm({ code: std.code, name: std.name, icon: std.icon, color: std.color, displayOrder: std.displayOrder, requiresPlate: std.requiresPlate, hasOwnRate: std.hasOwnRate, quickAccess: std.quickAccess, requiresPhoto: std.requiresPhoto });
                 }}
               >
-                <Select.Trigger>
-                  <Select.Value placeholder="Selecciona un tipo..." />
-                  <Select.Indicator />
+                <Select.Trigger aria-label="Seleccionar opción">
+                  <Select.Value placeholder="Selecciona un tipo..." aria-label="Seleccionar opción" />
+                  <Select.Indicator aria-label="Seleccionar opción" />
                 </Select.Trigger>
-                <Select.Popover>
+                <Select.Popover aria-label="Seleccionar opción">
                   <ListBox>
                     {STANDARD_VEHICLE_TYPES
                       .filter((t) => !rows.some((r) => r.code === t.code))
@@ -288,10 +288,10 @@ export default function MastersSection({
             )}
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-4">
-            <Switch isSelected={form.requiresPlate} onChange={(val) => setForm({ ...form, requiresPlate: val })} size="sm">Requiere placa</Switch>
-            <Switch isSelected={form.hasOwnRate} onChange={(val) => setForm({ ...form, hasOwnRate: val })} size="sm">Tarifa propia</Switch>
-            <Switch isSelected={form.quickAccess} onChange={(val) => setForm({ ...form, quickAccess: val })} size="sm">Acceso rápido</Switch>
-            <Switch isSelected={form.requiresPhoto} onChange={(val) => setForm({ ...form, requiresPhoto: val })} size="sm">Requiere foto</Switch>
+            <Switch isSelected={form.requiresPlate} onChange={(val) => setForm({ ...form, requiresPlate: val })} size="sm" aria-label="Alternar opción">Requiere placa</Switch>
+            <Switch isSelected={form.hasOwnRate} onChange={(val) => setForm({ ...form, hasOwnRate: val })} size="sm" aria-label="Alternar opción">Tarifa propia</Switch>
+            <Switch isSelected={form.quickAccess} onChange={(val) => setForm({ ...form, quickAccess: val })} size="sm" aria-label="Alternar opción">Acceso rápido</Switch>
+            <Switch isSelected={form.requiresPhoto} onChange={(val) => setForm({ ...form, requiresPhoto: val })} size="sm" aria-label="Alternar opción">Requiere foto</Switch>
           </div>
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="ghost" color="primary" className="font-semibold" onPress={() => { setCreating(false); setEditing(null); setSelectedStdType(""); }}>Cancelar</Button>

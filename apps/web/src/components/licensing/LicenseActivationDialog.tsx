@@ -155,11 +155,11 @@ export function LicenseActivationDialog({
                 isDisabled={loadingCompanies}
                 placeholder="Selecciona una empresa"
               >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
+      <Select.Trigger aria-label="Seleccionar opción">
+        <Select.Value aria-label="Seleccionar opción" />
+        <Select.Indicator aria-label="Seleccionar opción" />
       </Select.Trigger>
-      <Select.Popover>
+      <Select.Popover aria-label="Seleccionar opción">
         <ListBox>
 
                 {companies.map((company) => (

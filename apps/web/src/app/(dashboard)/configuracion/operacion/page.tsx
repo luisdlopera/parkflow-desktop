@@ -133,11 +133,11 @@ export default function OperacionPage() {
           onChange={(keys) => setSiteId(Array.from(keys)[0] as string)}
           isDisabled={catalogLoading || sites.length <= 1}
         >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
+      <Select.Trigger aria-label="Seleccionar opción">
+        <Select.Value aria-label="Seleccionar opción" />
+        <Select.Indicator aria-label="Seleccionar opción" />
       </Select.Trigger>
-      <Select.Popover>
+      <Select.Popover aria-label="Seleccionar opción">
         <ListBox>
 
           {sites.map((site) => (
@@ -176,7 +176,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Entrada sin impresora</p>
                         <p className="text-xs text-slate-500">Permitir ingreso si falla la impresión</p>
                       </div>
-                      <Switch isSelected={field.value} onChange={field.onChange} />
+                      <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
                   )}
                 />
@@ -190,7 +190,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Salida sin pago</p>
                         <p className="text-xs text-slate-500">Para cortesías o convenios especiales</p>
                       </div>
-                      <Switch isSelected={field.value} onChange={field.onChange} />
+                      <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
                   )}
                 />
@@ -204,7 +204,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Permitir reimpresión</p>
                         <p className="text-xs text-slate-500">Habilitar botón de copia de ticket</p>
                       </div>
-                      <Switch isSelected={field.value} onChange={field.onChange} />
+                      <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
                   )}
                 />
@@ -218,7 +218,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Permitir anulación</p>
                         <p className="text-xs text-slate-500">Anular servicios ya registrados</p>
                       </div>
-                      <Switch isSelected={field.value} onChange={field.onChange} />
+                      <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
                   )}
                 />
@@ -236,7 +236,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Foto en entrada</p>
                         <p className="text-xs text-slate-500">Obligatorio capturar imagen al ingresar</p>
                       </div>
-                      <Switch isSelected={field.value} onChange={field.onChange} />
+                      <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
                   )}
                 />
@@ -250,7 +250,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Foto en salida</p>
                         <p className="text-xs text-slate-500">Obligatorio capturar imagen al salir</p>
                       </div>
-                      <Switch isSelected={field.value} onChange={field.onChange} />
+                      <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
                   )}
                 />
@@ -264,7 +264,7 @@ export default function OperacionPage() {
                         <p className="text-sm font-semibold text-slate-700">Modo offline</p>
                         <p className="text-xs text-slate-500">Habilitar operación sin internet</p>
                       </div>
-                      <Switch isSelected={field.value} onChange={field.onChange} />
+                      <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
                   )}
                 />

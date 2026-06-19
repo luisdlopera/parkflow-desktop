@@ -401,8 +401,8 @@ export default function SalidaCobroClient() {
                       if (next) p.updateSplitRow(row.id, { method: next });
                     }}
                   >
-                    <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-                    <Select.Popover>
+                    <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+                    <Select.Popover aria-label="Seleccionar opción">
                       <ListBox>
                         {p.availablePaymentMethods.map((method) => (
                           <ListBox.Item key={method.code} textValue={method.label}>{method.label}</ListBox.Item>

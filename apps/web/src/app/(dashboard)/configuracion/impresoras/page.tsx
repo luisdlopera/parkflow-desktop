@@ -114,8 +114,8 @@ export default function ImpresorasPage() {
               onChange={(keys) => setSiteId(Array.from(keys)[0] as string)}
               isDisabled={catalogLoading || sites.length <= 1}
             >
-              <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-              <Select.Popover>
+              <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+              <Select.Popover aria-label="Seleccionar opción">
                 <ListBox>
                   {sites.map((s) => (
                     <ListBox.Item key={s.id} textValue={`${s.code} - ${s.name}`}>
@@ -171,8 +171,8 @@ export default function ImpresorasPage() {
           </div>
 
           <Select {...register("type")} label="Tipo" defaultSelectedKey="THERMAL">
-            <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-            <Select.Popover>
+            <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 <ListBox.Item key="THERMAL" textValue="Térmica">Térmica</ListBox.Item>
                 <ListBox.Item key="PDF" textValue="PDF">PDF</ListBox.Item>
@@ -182,8 +182,8 @@ export default function ImpresorasPage() {
           </Select>
 
           <Select {...register("connection")} label="Conexión" defaultSelectedKey="USB">
-            <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-            <Select.Popover>
+            <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 <ListBox.Item key="USB" textValue="USB">USB</ListBox.Item>
                 <ListBox.Item key="NET" textValue="Red">Red</ListBox.Item>
@@ -194,8 +194,8 @@ export default function ImpresorasPage() {
           </Select>
 
           <Select {...register("paperWidthMm", { valueAsNumber: true })} label="Ancho papel (mm)" defaultSelectedKey="80">
-            <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-            <Select.Popover>
+            <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 <ListBox.Item key="58" textValue="58">58</ListBox.Item>
                 <ListBox.Item key="80" textValue="80">80</ListBox.Item>

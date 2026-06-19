@@ -28,14 +28,14 @@ export function GeneralSettingsTab({ settings, onUpdate }: { settings: SystemSet
               <p className="font-medium">Modo Mantenimiento</p>
               <p className="text-sm text-default-500">Bloquea el acceso a la API para mantenimiento</p>
             </div>
-            <Switch isSelected={settings.maintenanceMode} onChange={(v) => onUpdate("maintenanceMode", v)} color="warning" />
+            <Switch isSelected={settings.maintenanceMode} onChange={(v) => onUpdate("maintenanceMode", v)} color="warning" aria-label="Alternar opción" />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Modo Debug</p>
               <p className="text-sm text-default-500">Habilita logs detallados (solo para desarrollo)</p>
             </div>
-            <Switch isSelected={settings.debugMode} onChange={(v) => onUpdate("debugMode", v)} color="primary" />
+            <Switch isSelected={settings.debugMode} onChange={(v) => onUpdate("debugMode", v)} color="primary" aria-label="Alternar opción" />
           </div>
         </div>
         {settings.maintenanceMode && (

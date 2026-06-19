@@ -234,11 +234,11 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
           setValue("plan", plan);
         }}
       >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
+      <Select.Trigger aria-label="Seleccionar opción">
+        <Select.Value aria-label="Seleccionar opción" />
+        <Select.Indicator aria-label="Seleccionar opción" />
       </Select.Trigger>
-      <Select.Popover>
+      <Select.Popover aria-label="Seleccionar opción">
         <ListBox>
 
         {plans.map((plan) => (
@@ -332,11 +332,11 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
             setValue("offlineModeAllowed", allowed);
           }}
         >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
+      <Select.Trigger aria-label="Seleccionar opción">
+        <Select.Value aria-label="Seleccionar opción" />
+        <Select.Indicator aria-label="Seleccionar opción" />
       </Select.Trigger>
-      <Select.Popover>
+      <Select.Popover aria-label="Seleccionar opción">
         <ListBox>
 
           <ListBox.Item id="true" textValue="Sí">Sí</ListBox.Item>

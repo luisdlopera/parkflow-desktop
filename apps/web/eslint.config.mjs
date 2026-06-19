@@ -1,5 +1,4 @@
 import coreWebVitals from "eslint-config-next/core-web-vitals";
-
 export default [
   { ignores: [".next/**", "node_modules/**"] },
   ...coreWebVitals,
@@ -15,6 +14,39 @@ export default [
       // Enforce React Hooks rules strictly
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
+      
+      // Accessibility rules specific to our HeroUI components
+      "jsx-a11y/control-has-associated-label": [
+        "warn",
+        {
+          labelAttributes: ["label"],
+          controlComponents: ["Button", "Input", "Select", "Textarea", "Autocomplete", "DatePicker", "TimeInput", "Switch", "RadioGroup", "CheckboxGroup"],
+          ignoreElements: [
+            "audio",
+            "canvas",
+            "embed",
+            "iframe",
+            "input",
+            "select",
+            "textarea",
+            "video",
+            "tr",
+            "th",
+          ],
+          ignoreRoles: [
+            "grid",
+            "listbox",
+            "menu",
+            "menubar",
+            "radiogroup",
+            "row",
+            "tablist",
+            "toolbar",
+            "tree",
+            "treegrid",
+          ],
+        },
+      ],
     },
   },
 ];

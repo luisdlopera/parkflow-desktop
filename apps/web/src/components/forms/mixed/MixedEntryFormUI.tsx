@@ -87,11 +87,11 @@ export function MixedEntryFormUI({
               value={[field.value]}
               onChange={(keys) => field.onChange(Array.from(keys)[0] as string)}
             >
-              <Select.Trigger>
-                <Select.Value />
-                <Select.Indicator />
+              <Select.Trigger aria-label="Seleccionar opción">
+                <Select.Value aria-label="Seleccionar opción" />
+                <Select.Indicator aria-label="Seleccionar opción" />
               </Select.Trigger>
-              <Select.Popover>
+              <Select.Popover aria-label="Seleccionar opción">
                 <ListBox>
                   {opts.map((o) => (
                     <ListBox.Item key={o.key} textValue={o.label}>

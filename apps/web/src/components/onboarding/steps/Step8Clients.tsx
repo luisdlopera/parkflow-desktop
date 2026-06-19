@@ -7,7 +7,7 @@ const Step8Clients = memo(function Step8Clients() {
 
   return (
     <div className="space-y-5">
-      <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })}>
+      <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })} aria-label="Alternar opción">
         ¿Manejas clientes frecuentes o mensualidades?
       </Switch>
 

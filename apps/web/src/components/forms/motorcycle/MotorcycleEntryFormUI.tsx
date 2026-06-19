@@ -295,7 +295,7 @@ export function MotorcycleEntryFormUI({
                               }
                             }}
                             isDisabled={!hasTokens}
-                            isInvalid={!!fieldState.error}
+                            isInvalid={!!fieldState.error} aria-label="Campo Autocomplete"
                           >
                             <Label className="text-sm">Número de Locker</Label>
                             <Autocomplete.Trigger className="bg-white">

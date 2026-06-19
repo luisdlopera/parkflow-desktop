@@ -182,8 +182,8 @@ export default function RatesSection({
               setActiveFilter(v === "" ? null : v === "true");
             }}
           >
-            <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-            <Select.Popover>
+            <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 <ListBox.Item key="" textValue="Todos">Todos</ListBox.Item>
                 <ListBox.Item key="true" textValue="Activas">Activas</ListBox.Item>
@@ -197,8 +197,8 @@ export default function RatesSection({
             value={[categoryFilter]}
             onChange={(keys) => setCategoryFilter(Array.from(keys)[0] as string)}
           >
-            <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-            <Select.Popover>
+            <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 {[
                   <ListBox.Item key="" textValue="Todas">Todas</ListBox.Item>,

@@ -317,7 +317,7 @@ export default function LockersPage() {
               <Switch
                 isSelected={row.isActive}
                 onChange={() => handleToggle(row as LockerDto)}
-                size="sm"
+                size="sm" aria-label="Alternar opción"
               />
             ),
           },

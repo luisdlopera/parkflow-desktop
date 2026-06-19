@@ -61,13 +61,13 @@ const Step7Tickets = memo(function Step7Tickets() {
       </div>
       
       <div className="border-t border-default-200 pt-4">
-        <Switch isSelected={Boolean(stepData.allowReprint)} onChange={(v) => setStepData({ ...stepData, allowReprint: v })}>
+        <Switch isSelected={Boolean(stepData.allowReprint)} onChange={(v) => setStepData({ ...stepData, allowReprint: v })} aria-label="Alternar opción">
           Permitir reimpresión de tickets
         </Switch>
       </div>
       
       <div className="border-t border-default-200 pt-4">
-        <Switch isSelected={Boolean(stepData.showTicketPreview)} onChange={(v) => setStepData({ ...stepData, showTicketPreview: v })}>
+        <Switch isSelected={Boolean(stepData.showTicketPreview)} onChange={(v) => setStepData({ ...stepData, showTicketPreview: v })} aria-label="Alternar opción">
           Mostrar vista previa del ticket antes de imprimir
         </Switch>
       </div>

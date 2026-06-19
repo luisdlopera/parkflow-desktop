@@ -8,7 +8,7 @@ const Step9Agreements = memo(function Step9Agreements() {
 
   return (
     <div className="space-y-4">
-      <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })}>
+      <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })} aria-label="Alternar opción">
         ¿Tienes convenios con empresas?
       </Switch>
       

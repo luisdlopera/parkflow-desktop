@@ -105,11 +105,11 @@ export function HelmetSection({ control, selectedVehicleType }: HelmetSectionPro
                   cField.onChange(val);
                 }}
               >
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
+                <Select.Trigger aria-label="Seleccionar opción">
+                  <Select.Value aria-label="Seleccionar opción" />
+                  <Select.Indicator aria-label="Seleccionar opción" />
                 </Select.Trigger>
-                <Select.Popover>
+                <Select.Popover aria-label="Seleccionar opción">
                   <ListBox>
                     {availableTokens.map((token) => (
                       <ListBox.Item key={token.code} textValue={token.code}>

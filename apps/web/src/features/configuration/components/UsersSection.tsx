@@ -50,11 +50,11 @@ function UserCreatePanel({
           value={[role]}
           onChange={(keys) => setRole(Array.from(keys)[0] as UserRole)}
         >
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
+          <Select.Trigger aria-label="Seleccionar opción">
+            <Select.Value aria-label="Seleccionar opción" />
+            <Select.Indicator aria-label="Seleccionar opción" />
           </Select.Trigger>
-          <Select.Popover>
+          <Select.Popover aria-label="Seleccionar opción">
             <ListBox>
               {ROLES.map((r) => (
                 <ListBox.Item key={r} textValue={r}>
@@ -138,11 +138,11 @@ function UserEditPanel({
           value={[role]}
           onChange={(keys) => setRole(Array.from(keys)[0] as UserRole)}
         >
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
+          <Select.Trigger aria-label="Seleccionar opción">
+            <Select.Value aria-label="Seleccionar opción" />
+            <Select.Indicator aria-label="Seleccionar opción" />
           </Select.Trigger>
-          <Select.Popover>
+          <Select.Popover aria-label="Seleccionar opción">
             <ListBox>
               {ROLES.map((r) => (
                 <ListBox.Item key={r} textValue={r}>
@@ -250,11 +250,11 @@ export default function UsersSection({
             setActiveFilter(v === "" ? null : v === "true");
           }}
         >
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
+          <Select.Trigger aria-label="Seleccionar opción">
+            <Select.Value aria-label="Seleccionar opción" />
+            <Select.Indicator aria-label="Seleccionar opción" />
           </Select.Trigger>
-          <Select.Popover>
+          <Select.Popover aria-label="Seleccionar opción">
             <ListBox>
               <ListBox.Item key="" textValue="Todos">Todos</ListBox.Item>
               <ListBox.Item key="true" textValue="Activos">Activos</ListBox.Item>

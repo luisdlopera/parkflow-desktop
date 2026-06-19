@@ -37,7 +37,7 @@ export default function InterfaceSection({
               isSelected={settings.showSystemStatus}
               onChange={(checked) => onUpdate("showSystemStatus", checked)}
               size="lg"
-              color="primary"
+              color="primary" aria-label="Alternar opción"
             />
           </div>
 
@@ -52,7 +52,7 @@ export default function InterfaceSection({
               isSelected={settings.showKeyboardShortcuts}
               onChange={(checked) => onUpdate("showKeyboardShortcuts", checked)}
               size="lg"
-              color="primary"
+              color="primary" aria-label="Alternar opción"
             />
           </div>
         </Card.Content>

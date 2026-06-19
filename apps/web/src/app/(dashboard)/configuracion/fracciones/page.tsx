@@ -84,7 +84,7 @@ export default function FraccionesPage() {
           size="sm"
           className="max-w-xs"
           value={rateId}
-          onChange={(e) => setRateId(e.target.value)}
+          onChange={(e) => setRateId(e.target.value)} aria-label="Entrada de texto"
         />
         <Button
           size="sm"

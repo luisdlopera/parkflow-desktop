@@ -195,7 +195,7 @@ export default function AdminOnboardingPage() {
                   <div className="flex items-center gap-2">
                     <Switch
                       isSelected={q.enabled}
-                      onChange={(v) => handleToggle(q.stepNumber, "enabled", v)}
+                      onChange={(v) => handleToggle(q.stepNumber, "enabled", v)} aria-label="Alternar opción"
                     />
                     <span className="text-sm text-default-600">{q.enabled ? "Habilitada" : "Deshabilitada"}</span>
                   </div>

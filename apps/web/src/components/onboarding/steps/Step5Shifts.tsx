@@ -8,7 +8,7 @@ const Step5Shifts = memo(function Step5Shifts() {
 
   return (
     <div className="space-y-4">
-      <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })}>
+      <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })} aria-label="Alternar opción">
         ¿Trabajan por turnos?
       </Switch>
       

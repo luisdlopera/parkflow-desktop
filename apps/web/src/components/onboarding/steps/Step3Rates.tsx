@@ -112,7 +112,7 @@ const Step3Rates = memo(function Step3Rates() {
           orientation="horizontal" 
           value={billingModel}
           onChange={(val) => setStepData({ ...stepData, billingModel: val })}
-          isInvalid={Boolean(stepErrors.billingModel)}
+          isInvalid={Boolean(stepErrors.billingModel)} aria-label="Campo RadioGroup"
         >
           <Radio value="HOURLY">Por hora</Radio>
           <Radio value="FRACTION">Fracción</Radio>
@@ -171,7 +171,7 @@ const Step3Rates = memo(function Step3Rates() {
               {/* Tarifa Nocturna */}
               <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
                 <div className="flex items-center justify-between">
-                  <Switch isSelected={hasNightRate} onChange={(v) => setStepData({ ...stepData, hasNightRate: v })}>
+                  <Switch isSelected={hasNightRate} onChange={(v) => setStepData({ ...stepData, hasNightRate: v })} aria-label="Alternar opción">
                     <span className="text-sm font-medium">¿Maneja tarifa nocturna?</span>
                   </Switch>
                 </div>
@@ -188,7 +188,7 @@ const Step3Rates = memo(function Step3Rates() {
               {!showFullDayAlways && (
                 <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <Switch isSelected={hasFullDayRate} onChange={(v) => setStepData({ ...stepData, hasFullDayRate: v })}>
+                    <Switch isSelected={hasFullDayRate} onChange={(v) => setStepData({ ...stepData, hasFullDayRate: v })} aria-label="Alternar opción">
                       <span className="text-sm font-medium">¿Maneja tarifa de día completo (24h)?</span>
                     </Switch>
                     {hasFullDayRate && (
@@ -201,7 +201,7 @@ const Step3Rates = memo(function Step3Rates() {
               {/* Fines de semana */}
               <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
                 <div className="flex items-center justify-between">
-                  <Switch isSelected={hasWeekendRate} onChange={(v) => setStepData({ ...stepData, hasWeekendRate: v })}>
+                  <Switch isSelected={hasWeekendRate} onChange={(v) => setStepData({ ...stepData, hasWeekendRate: v })} aria-label="Alternar opción">
                     <span className="text-sm font-medium">¿Tarifa diferente en fines de semana/festivos?</span>
                   </Switch>
                   {hasWeekendRate && (
@@ -219,7 +219,7 @@ const Step3Rates = memo(function Step3Rates() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Fracciones */}
               <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg space-y-3">
-                <Switch isSelected={hasFractions} onChange={(v) => setStepData({ ...stepData, hasFractions: v })}>
+                <Switch isSelected={hasFractions} onChange={(v) => setStepData({ ...stepData, hasFractions: v })} aria-label="Alternar opción">
                   <span className="text-sm font-medium">¿Cobra fracciones?</span>
                 </Switch>
                 {hasFractions && (
@@ -232,7 +232,7 @@ const Step3Rates = memo(function Step3Rates() {
 
               {/* Cortesía */}
               <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg space-y-3">
-                <Switch isSelected={hasCourtesy} onChange={(v) => setStepData({ ...stepData, hasCourtesy: v })}>
+                <Switch isSelected={hasCourtesy} onChange={(v) => setStepData({ ...stepData, hasCourtesy: v })} aria-label="Alternar opción">
                   <span className="text-sm font-medium">¿Minutos de cortesía (Gratis)?</span>
                 </Switch>
                 {hasCourtesy && (
@@ -253,8 +253,8 @@ const Step3Rates = memo(function Step3Rates() {
                   if (val) setStepData({ ...stepData, rounding: val });
                 }}
               >
-                <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-                <Select.Popover>
+                <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+                <Select.Popover aria-label="Seleccionar opción">
                   <ListBox>
                     <ListBox.Item key="EXACT" textValue="Exacto al minuto">Exacto al minuto</ListBox.Item>
                     <ListBox.Item key="15_MIN" textValue="Cada 15 minutos">Cada 15 minutos</ListBox.Item>
@@ -270,7 +270,7 @@ const Step3Rates = memo(function Step3Rates() {
           <div className="space-y-4">
             <p className="text-sm font-semibold border-b border-default-200 pb-2">Tarifas por Vehículo</p>
             <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
-              <Switch isSelected={enableRateByType} onChange={(v) => setStepData({ ...stepData, enableRateByType: v })}>
+              <Switch isSelected={enableRateByType} onChange={(v) => setStepData({ ...stepData, enableRateByType: v })} aria-label="Alternar opción">
                 <span className="text-sm font-medium">¿Desea manejar tarifas diferentes por tipo de vehículo?</span>
               </Switch>
               

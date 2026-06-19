@@ -53,11 +53,11 @@ export default function SettingsPage() {
         onChange={(keys) => setLanguage(Array.from(keys)[0] as string)}
         data-testid="language-select"
       >
-      <Select.Trigger>
-        <Select.Value />
-        <Select.Indicator />
+      <Select.Trigger aria-label="Seleccionar opción">
+        <Select.Value aria-label="Seleccionar opción" />
+        <Select.Indicator aria-label="Seleccionar opción" />
       </Select.Trigger>
-      <Select.Popover>
+      <Select.Popover aria-label="Seleccionar opción">
         <ListBox>
 
         <ListBox.Item key="en" textValue="English">English</ListBox.Item>
@@ -104,7 +104,7 @@ export default function SettingsPage() {
               isSelected={uiSettings.showSystemStatus}
               onChange={(checked) => updateUiSetting("showSystemStatus", checked)}
               size="lg"
-              color="primary"
+              color="primary" aria-label="Alternar opción"
             />
           </div>
 
@@ -119,7 +119,7 @@ export default function SettingsPage() {
               isSelected={uiSettings.showKeyboardShortcuts}
               onChange={(checked) => updateUiSetting("showKeyboardShortcuts", checked)}
               size="lg"
-              color="primary"
+              color="primary" aria-label="Alternar opción"
             />
           </div>
         </Card.Content>

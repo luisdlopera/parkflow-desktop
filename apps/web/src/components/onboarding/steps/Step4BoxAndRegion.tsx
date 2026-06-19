@@ -73,7 +73,7 @@ const Step4BoxAndRegion = memo(function Step4BoxAndRegion() {
             min={1}
           />
         </div>
-        <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })}>
+        <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })} aria-label="Alternar opción">
           ¿Manejas caja por operador?
         </Switch>
       </div>

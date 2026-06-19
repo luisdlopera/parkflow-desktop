@@ -22,7 +22,7 @@ export function BackupSettingsTab({ settings, onUpdate }: { settings: SystemSett
             <p className="font-medium">Respaldo Automático</p>
             <p className="text-sm text-default-500">Crear respaldos automáticos de la base de datos</p>
           </div>
-          <Switch isSelected={settings.autoBackupEnabled} onChange={(v) => onUpdate("autoBackupEnabled", v)} color="success" />
+          <Switch isSelected={settings.autoBackupEnabled} onChange={(v) => onUpdate("autoBackupEnabled", v)} color="success" aria-label="Alternar opción" />
         </div>
         {settings.autoBackupEnabled && (
           <>

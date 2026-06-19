@@ -47,7 +47,7 @@ export default function AuditPage() {
               placeholder="Buscar por usuario o módulo..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-64"
+              className="w-64" aria-label="Entrada de texto"
             />
             <Button color="primary">Exportar PDF</Button>
         </div>

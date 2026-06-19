@@ -41,11 +41,11 @@ export default function AdvancedEntryOptions<T extends FieldValues>({
                   if (selected) field.onChange(selected);
                 }}
               >
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
+                <Select.Trigger aria-label="Seleccionar opción">
+                  <Select.Value aria-label="Seleccionar opción" />
+                  <Select.Indicator aria-label="Seleccionar opción" />
                 </Select.Trigger>
-                <Select.Popover>
+                <Select.Popover aria-label="Seleccionar opción">
                   <ListBox>
                     {configuredSites.map((site: any) => {
                       const key = String(site.code ?? site.name ?? "PRINCIPAL");
@@ -106,11 +106,11 @@ export default function AdvancedEntryOptions<T extends FieldValues>({
             }}
             size="sm"
           >
-            <Select.Trigger>
-              <Select.Value />
-              <Select.Indicator />
+            <Select.Trigger aria-label="Seleccionar opción">
+              <Select.Value aria-label="Seleccionar opción" />
+              <Select.Indicator aria-label="Seleccionar opción" />
             </Select.Trigger>
-            <Select.Popover>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 {spaces.map((s: any) => (
                   <ListBox.Item key={s.id} textValue={`${s.code} ${s.label ? `(${s.label})` : ""}`}>

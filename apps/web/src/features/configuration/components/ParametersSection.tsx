@@ -115,8 +115,8 @@ export default function ParametersSection({
             value={[data.lostTicketPolicy ?? "SURCHARGE_RATE"]}
             onChange={(keys) => setField("lostTicketPolicy", Array.from(keys)[0] as string)}
           >
-            <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-            <Select.Popover>
+            <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+            <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
                 {LOST_TICKET_POLICIES.map((p) => (
                   <ListBox.Item key={p.value} textValue={p.label}>{p.label}</ListBox.Item>
@@ -215,8 +215,8 @@ export default function ParametersSection({
                   setData((d) => ({ ...(d ?? {}), cashRequireOpenForPayment: v === "" ? undefined : v === "true" }));
                 }}
               >
-                <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-                <Select.Popover>
+                <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+                <Select.Popover aria-label="Seleccionar opción">
                   <ListBox>
                     <ListBox.Item key="" textValue="Heredar servidor (app.cash)">Heredar servidor (app.cash)</ListBox.Item>
                     <ListBox.Item key="true" textValue="Si, exigir">Si, exigir</ListBox.Item>
@@ -232,8 +232,8 @@ export default function ParametersSection({
                   setData((d) => ({ ...(d ?? {}), cashOfflineCloseAllowed: v === "" ? undefined : v === "true" }));
                 }}
               >
-                <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-                <Select.Popover>
+                <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+                <Select.Popover aria-label="Seleccionar opción">
                   <ListBox>
                     <ListBox.Item key="" textValue="Heredar servidor">Heredar servidor</ListBox.Item>
                     <ListBox.Item key="true" textValue="Permitir">Permitir</ListBox.Item>
