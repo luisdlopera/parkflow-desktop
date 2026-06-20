@@ -46,6 +46,7 @@ logs/
 .agents/
 .opencode/
 .claude/
+.jules/
 *.iml
 *.ipr
 *.iws
@@ -103,3 +104,32 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+
+# =====================================================
+# Added by Security Audit
+# =====================================================
+# Java Binaries
+*.jar
+*.war
+*.ear
+*.class
+apps/api/.mvn/
+apps/api/bin/
+
+# Node/React/Next Cache & Tooling
+.eslintcache
+.npm/
+.turbo/
+.vercel/
+npm-debug.log*
+yarn-error.log
+yarn-debug.log*
+pnpm-debug.log*
+
+# Databases
+*.sqlite
+*.sqlite3
+*.db
+
+# OS Trashes
+.Trashes

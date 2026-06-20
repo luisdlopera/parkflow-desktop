@@ -66,7 +66,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
   private Bucket resolveBucket(String path, String key) {
     if (path.contains("/auth/login")) {
       return rateLimitConfig.resolveLoginBucket(key);
-    } else if (path.contains("/entries") || path.contains("/exits") || path.contains("/reprint")) {
+    } else if (path.contains("/reprint")) {
+      return rateLimitConfig.resolveReprintBucket(key);
+    } else if (path.contains("/entries") || path.contains("/exits")) {
       return rateLimitConfig.resolveOperationBucket(key);
     } else {
       return rateLimitConfig.resolveGeneralBucket(key);

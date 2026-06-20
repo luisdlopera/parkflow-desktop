@@ -1,5 +1,7 @@
 package com.parkflow.modules.auth.application.service;
 
+import com.parkflow.modules.audit.domain.Auditable;
+
 import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.auth.application.port.in.LogoutUseCase;
 import com.parkflow.modules.auth.domain.AppUser;
@@ -36,6 +38,7 @@ public class LogoutUseCaseImpl implements LogoutUseCase {
 
   @Override
   @Transactional
+  @Auditable(module = "SEGURIDAD", action = "LOGOUT", entityClass = AuthSession.class)
   public void logout(LogoutRequest request) {
     UUID sessionId = Objects.requireNonNull(UUID.fromString(request.sessionId()));
     AuthSession session =
@@ -64,6 +67,7 @@ public class LogoutUseCaseImpl implements LogoutUseCase {
 
   @Override
   @Transactional
+  @Auditable(module = "SEGURIDAD", action = "LOGOUT_ALL", entityClass = AuthSession.class)
   public void logoutAll() {
     AppUser currentUser = requireCurrentUser();
     List<AuthSession> sessions = authSessionRepository.findByUserAndActiveTrue(currentUser);
@@ -88,6 +92,7 @@ public class LogoutUseCaseImpl implements LogoutUseCase {
 
   @Override
   @Transactional
+  @Auditable(module = "SEGURIDAD", action = "LOGOUT_DEVICE", entityClass = AuthorizedDevice.class)
   public void logoutDevice(String deviceId) {
     AppUser currentUser = requireCurrentUser();
     AuthorizedDevice device = authorizedDeviceRepository.findByDeviceId(deviceId)

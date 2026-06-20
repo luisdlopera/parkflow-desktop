@@ -1,5 +1,7 @@
 package com.parkflow.modules.auth.application.service;
 
+import com.parkflow.modules.audit.domain.Auditable;
+
 import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.auth.application.port.in.LoginUseCase;
 import com.parkflow.modules.auth.domain.AppUser;
@@ -47,6 +49,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
 
   @Override
   @Transactional
+  @Auditable(module = "SEGURIDAD", action = "LOGIN", entityClass = AuthSession.class)
   public LoginResult login(LoginRequest request) {
     String email = request.email().trim();
     String deviceId = request.deviceId();
@@ -58,7 +61,15 @@ public class LoginUseCaseImpl implements LoginUseCase {
 
     if (user == null) {
       log.warn("AUTH: Login failed - user not found - email={}, deviceId={}", maskEmail(email), deviceId);
-      throw invalidCredentials(email, deviceId);
+      throw invalidCredentials(null, email, deviceId);
+    }
+
+    if (user.isBlocked()) {
+      log.warn("AUTH: Login failed - account blocked - userId={}, email={}", user.getId(), maskEmail(email));
+      authAuditService.log(
+          AuthAuditAction.LOGIN_FAILED, user, null, "DENY_ACCOUNT_BLOCKED",
+          Map.of("email", email, "deviceId", deviceId));
+      throw new OperationException(HttpStatus.FORBIDDEN, "Cuenta bloqueada por múltiples intentos fallidos. Contacte al administrador.");
     }
 
     if (!user.isActive()) {
@@ -71,15 +82,20 @@ public class LoginUseCaseImpl implements LoginUseCase {
 
     if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
       log.warn("AUTH: Login failed - no password set - userId={}, email={}", user.getId(), maskEmail(email));
-      throw invalidCredentials(email, deviceId);
+      throw invalidCredentials(user, email, deviceId);
     }
 
     if (!passwordHashService.matchesPassword(request.password(), user.getPasswordHash())) {
       log.warn("AUTH: Login failed - invalid password - userId={}, email={}", user.getId(), maskEmail(email));
-      throw invalidCredentials(email, deviceId);
+      throw invalidCredentials(user, email, deviceId);
     }
 
     log.info("AUTH: Login credentials validated - userId={}, email={}", user.getId(), maskEmail(email));
+    
+    // Reset failed attempts on success
+    if (user.getFailedLoginAttempts() > 0) {
+      user.setFailedLoginAttempts(0);
+    }
 
     user.setLastAccessAt(OffsetDateTime.now());
     appUserRepository.save(user);
@@ -155,10 +171,18 @@ public class LoginUseCaseImpl implements LoginUseCase {
     return local.charAt(0) + "***@" + domain;
   }
 
-  private OperationException invalidCredentials(String email, String deviceId) {
+  private OperationException invalidCredentials(AppUser user, String email, String deviceId) {
+    if (user != null) {
+      user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
+      if (user.getFailedLoginAttempts() >= 5) {
+        user.setBlocked(true);
+      }
+      appUserRepository.save(user);
+    }
+
     authAuditService.log(
         AuthAuditAction.LOGIN_FAILED,
-        null,
+        user,
         null,
         "DENY_INVALID_CREDENTIALS",
         Map.of("email", email, "deviceId", deviceId));

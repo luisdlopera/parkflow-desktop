@@ -10,6 +10,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "app_user")
+@org.hibernate.annotations.SQLRestriction("deleted_at IS NULL")
 public class AppUser {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
@@ -43,16 +44,22 @@ public class AppUser {
   private OffsetDateTime passwordChangedAt;
 
   @Column(nullable = false)
-  private boolean canVoidTickets = false;
+  private boolean isBlocked = false;
 
   @Column(nullable = false)
-  private boolean canReprintTickets = false;
-
-  @Column(nullable = false)
-  private boolean canCloseCash = false;
+  private int failedLoginAttempts = 0;
 
   @Column(nullable = false)
   private boolean requirePasswordChange = false;
+
+  @Column(name = "can_void_tickets", nullable = false)
+  private boolean canVoidTickets = false;
+
+  @Column(name = "can_reprint_tickets", nullable = false)
+  private boolean canReprintTickets = false;
+
+  @Column(name = "can_close_cash", nullable = false)
+  private boolean canCloseCash = false;
 
   @Column(nullable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();

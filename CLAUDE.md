@@ -81,9 +81,14 @@ apps/
    - Audit fields: `created_at`, `updated_at` auto-populated via `@PrePersist`, `@PreUpdate`
    - Migrations: Use Flyway; immutable once deployed (v1.0+)
 
-6. **Frontend** (Next.js + TypeScript + HeroUI):
-   - Use HeroUI components (Button, Select, Input, Alert, Badge, etc.)
-   - **Always use HeroUI MCP** before building any UI — check available components and their props first
+6. **Frontend** (Next.js + TypeScript + HeroUI v3):
+   - **MANDATORY: Always use HeroUI v3 components from `@heroui/react`** (NOT bridge wrappers for new UI)
+     - Button, Select, Popover, Badge, Checkbox, Input, DatePicker, Table, Modal, etc.
+   - **MANDATORY: Use HeroUI MCP BEFORE building any UI** — query available components and their exact props/API first
+     - When uncertain about component usage, props, or variants → use `mcp__heroui-react__get_component_docs`
+     - When searching for the right component → use `mcp__heroui-react__list_components`
+     - This prevents building with wrong assumptions about component API
+   - Use HeroUI **compound component pattern** (e.g., `<Popover>` → `<Popover.Content>` → `<Popover.Dialog>`)
    - Patterns: Check `/apps/web/src/components/config/` for configuration UI examples
    - API calls: Use functions in `/lib/settings-api.ts` or create new in `/lib/`
    - State: Use React hooks (`useState`, `useEffect`); no external state management yet

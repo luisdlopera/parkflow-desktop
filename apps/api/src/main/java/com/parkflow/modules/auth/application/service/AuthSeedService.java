@@ -54,9 +54,6 @@ public class AuthSeedService implements CommandLineRunner {
     }
 
     user.setActive(true);
-    user.setCanVoidTickets(true);
-    user.setCanReprintTickets(true);
-    user.setCanCloseCash(true);
     user.setRequirePasswordChange(false);
     appUserRepository.save(user);
   }

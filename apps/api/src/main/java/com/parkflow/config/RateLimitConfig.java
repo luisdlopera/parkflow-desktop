@@ -20,6 +20,7 @@ public class RateLimitConfig {
   // In-memory buckets per IP address (for stateless rate limiting)
   private final Map<String, Bucket> loginBuckets = new ConcurrentHashMap<>();
   private final Map<String, Bucket> operationBuckets = new ConcurrentHashMap<>();
+  private final Map<String, Bucket> reprintBuckets = new ConcurrentHashMap<>();
   private final Map<String, Bucket> generalBuckets = new ConcurrentHashMap<>();
 
   /**
@@ -43,6 +44,16 @@ public class RateLimitConfig {
   }
 
   /**
+   * Reprint endpoints: 30 requests per minute.
+   * Stricter limit to prevent mass reprinting abuse.
+   */
+  public Bucket resolveReprintBucket(String key) {
+    return reprintBuckets.computeIfAbsent(key, k -> Bucket.builder()
+        .addLimit(Bandwidth.builder().capacity(30).refillIntervally(30, Duration.ofMinutes(1)).build())
+        .build());
+  }
+
+  /**
    * General API: 200 requests per minute.
    * Standard limit for read operations.
    */
@@ -58,6 +69,7 @@ public class RateLimitConfig {
   public void clearAllBuckets() {
     loginBuckets.clear();
     operationBuckets.clear();
+    reprintBuckets.clear();
     generalBuckets.clear();
   }
 }

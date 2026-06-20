@@ -97,9 +97,6 @@ public class CompanyManagementService implements CompanyManagementUseCase {
         adminUser.setRole(UserRole.ADMIN);
         adminUser.setPasswordHash(passwordHashService.encodePassword(rawPassword));
         adminUser.setRequirePasswordChange(true);
-        adminUser.setCanVoidTickets(true);
-        adminUser.setCanReprintTickets(true);
-        adminUser.setCanCloseCash(true);
         adminUser.setActive(true);
         appUserRepository.save(adminUser);
 

@@ -22,12 +22,24 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import java.util.concurrent.TimeUnit;
+
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
   private final JwtTokenService jwtTokenService;
   private final AuthSessionPort authSessionRepository;
   private final AppUserPort appUserRepository;
   private final ObjectMapper objectMapper;
+  
+  // Short-lived cache to avoid DB hits on every request
+  private final Cache<UUID, AppUserCacheEntry> userStatusCache = Caffeine.newBuilder()
+      .expireAfterWrite(30, TimeUnit.SECONDS)
+      .maximumSize(10000)
+      .build();
+
+  private record AppUserCacheEntry(boolean active, boolean blocked) {}
 
   public JwtAuthFilter(
       JwtTokenService jwtTokenService,
@@ -99,8 +111,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       return;
     }
 
-    var user = appUserRepository.findById(userId).orElse(null);
-    if (user == null || !user.isActive()) {
+    AppUserCacheEntry userStatus = userStatusCache.get(userId, id -> {
+      var u = appUserRepository.findById(id).orElse(null);
+      if (u == null) return null;
+      return new AppUserCacheEntry(u.isActive(), u.isBlocked());
+    });
+    
+    if (userStatus == null || !userStatus.active() || userStatus.blocked()) {
       writeUnauthorized(response, request.getRequestURI());
       return;
     }
