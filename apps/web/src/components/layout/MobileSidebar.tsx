@@ -64,7 +64,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
       <aside
         className={`
           fixed top-0 left-0 z-50 h-screen w-[280px]
-          border-r border-slate-200/70 bg-white/95 dark:bg-gray-900/95 dark:border-gray-700/70 backdrop-blur-xl
+          border-r border-slate-200/70 bg-[var(--color-sidebar)] dark:bg-gray-900/95 dark:border-gray-700/70 backdrop-blur-xl
           transform transition-transform duration-300 ease-in-out
           md:hidden
           ${isOpen ? "translate-x-0" : "-translate-x-full"}

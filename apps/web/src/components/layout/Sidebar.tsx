@@ -33,10 +33,46 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
   const isAuditor = authUser?.role === "AUDITOR";
 
   useEffect(() => {
-    if (!pathname?.startsWith("/configuracion")) {
+    if (pathname?.startsWith("/configuracion")) {
+      const currentSectionParams = searchParams.get("section");
+      const currentGroupParams = searchParams.get("group");
+      
+      let matchedGroupId: string | null = null;
+
+      if (currentGroupParams) {
+        matchedGroupId = currentGroupParams;
+      } else {
+        for (const group of CONFIG_NAVIGATION) {
+          for (const item of group.items) {
+            try {
+              const url = new URL(item.href, "http://localhost");
+              const itemPath = url.pathname;
+              const itemSection = url.searchParams.get("section");
+
+              if (itemPath === pathname) {
+                if (itemSection && currentSectionParams === itemSection) {
+                  matchedGroupId = group.id;
+                  break;
+                } else if (!itemSection && (!currentSectionParams || itemPath !== "/configuracion")) {
+                  matchedGroupId = group.id;
+                  break;
+                }
+              }
+            } catch (e) {}
+          }
+          if (matchedGroupId) break;
+        }
+      }
+
+      if (matchedGroupId) {
+        setConfigView((prev) => prev !== matchedGroupId ? matchedGroupId : prev);
+      } else if (pathname === "/configuracion" && !currentSectionParams) {
+        setConfigView((prev) => prev !== "ROOT" ? "ROOT" : prev);
+      }
+    } else {
       setConfigView(false);
     }
-  }, [pathname]);
+  }, [pathname, searchParams]);
 
   useEffect(() => {
     fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
@@ -72,7 +108,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
 
   return (
     <aside data-testid="desktop-sidebar" className={`
-      hidden md:flex sticky top-0 z-20 h-screen border-r border-slate-200/70 bg-white/60 dark:bg-black/60 dark:border-gray-800/70 backdrop-blur
+      hidden md:flex sticky top-0 z-20 h-screen border-r border-slate-200/70 bg-[var(--color-sidebar)] dark:bg-black/60 dark:border-gray-800/70 backdrop-blur
       flex-col transition-all duration-300 ease-in-out
       ${collapsed ? "w-[72px]" : "w-[260px]"}
     `}>
