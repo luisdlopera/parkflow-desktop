@@ -28,8 +28,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
         </button>
 
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 hidden sm:block">Parkflow Desktop</p>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Operación Diaria</h2>
+          <p className="text-[11px] uppercase tracking-[0.15em] text-slate-300/60 dark:text-slate-500/40 hidden sm:block font-normal">Parkflow Desktop</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">Operación Diaria</h2>
         </div>
       </div>
 

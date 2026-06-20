@@ -286,7 +286,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                               aria-label={item.label}
                             >
                               <div className="flex items-center gap-3">
-                                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <svg className={`w-5 h-5 flex-shrink-0 ${collapsed ? "text-slate-700 dark:text-gray-100" : "text-slate-600 dark:text-gray-200"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
                                 </svg>
                                 {!collapsed && <span className="truncate">{item.label}</span>}
@@ -316,7 +316,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                           aria-label={item.label}
                         >
                           <div className="flex items-center gap-3">
-                            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <svg className={`w-5 h-5 flex-shrink-0 ${collapsed ? "text-slate-700 dark:text-gray-100" : "text-slate-600 dark:text-gray-200"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
                             </svg>
                             {!collapsed && <span className="truncate">{item.label}</span>}

@@ -54,6 +54,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       mappedVariant = "ghost";
     } else if (variant === "bordered" || variant === "faded" || variant === "outline") {
       mappedVariant = "outline";
+      // Add hover state for outline buttons if not already in colorClasses
+      if (!colorClasses) {
+        colorClasses = "hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-400 dark:hover:border-slate-600 transition-all duration-200";
+      }
     } else if (variant === "tertiary") {
       mappedVariant = "tertiary";
     } else if (!variant || variant === "solid" || variant === "primary") {
@@ -75,7 +79,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       colorClasses = "bg-green-600 text-white hover:bg-green-700";
     } else if (color === "default" || variant === "default") {
       mappedColor = "default";
-      colorClasses = "bg-slate-200 text-slate-900 hover:bg-slate-300";
+      colorClasses = "bg-slate-200 text-slate-900 hover:bg-slate-300 hover:border-slate-400 transition-all duration-200";
     } else if (variant === "tertiary") {
       mappedColor = "default";
       colorClasses = ""; // let className prop control all styling

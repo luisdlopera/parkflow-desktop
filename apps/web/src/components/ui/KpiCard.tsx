@@ -31,13 +31,25 @@ export default function KpiCard({
   };
 
   const getStatusColor = () => {
-    if (status === "critical") return "border-red-200 bg-red-50/30 dark:bg-red-950/20 dark:border-red-900/50";
-    if (status === "warning") return "border-amber-200 bg-amber-50/30 dark:bg-amber-950/20 dark:border-amber-900/50";
-    return "border-slate-200 dark:border-slate-700";
+    if (status === "critical")
+      return "border-2 border-red-400 bg-red-50 dark:bg-red-950/40 dark:border-red-700 ring-2 ring-red-200 dark:ring-red-900/50";
+    if (status === "warning")
+      return "border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-700 ring-2 ring-amber-200 dark:ring-amber-900/50";
+    return "border border-slate-200 dark:border-slate-700";
   };
 
   return (
-    <div className={`surface rounded-2xl p-4 sm:p-5 border transition-all hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 ${getStatusColor()}`}>
+    <div className={`surface rounded-2xl p-4 sm:p-5 border transition-all hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 ${getStatusColor()} relative`}>
+      {status === "critical" && (
+        <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-md bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-200 text-[10px] font-bold uppercase tracking-wide">
+          <span className="text-sm">●</span> Crítico
+        </div>
+      )}
+      {status === "warning" && (
+        <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-md bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-200 text-[10px] font-bold uppercase tracking-wide">
+          <span className="text-sm">⚠</span> Atención
+        </div>
+      )}
       <p className="text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-slate-400 truncate">
         {title}
       </p>

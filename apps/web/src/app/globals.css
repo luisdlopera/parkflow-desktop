@@ -12,6 +12,38 @@
   --color-foreground: var(--color-ink);
 }
 
+/* Focus ring defaults for accessibility */
+@layer base {
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 dark:ring-offset-slate-900;
+  }
+
+  /* Typography standardization */
+  h1 { @apply font-semibold tracking-tight; }
+  h2 { @apply font-semibold tracking-tight; }
+  h3 { @apply font-semibold tracking-wide; }
+  h4 { @apply font-semibold tracking-wide; }
+
+  /* Consistent label styling */
+  label {
+    @apply text-sm font-medium text-slate-700 dark:text-slate-300;
+  }
+
+  /* Form field consistency */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  select,
+  textarea {
+    @apply focus:ring-2 focus:ring-brand-500 focus:ring-offset-0;
+  }
+}
+
 /* Brand colors (primary scale) — NON-inline @theme so bg-brand-*, text-brand-*, border-brand-*
    compile to var(--color-brand-*) and follow ThemeProvider's runtime overrides (not baked at build). */
 @theme {
@@ -74,8 +106,8 @@
   --color-sidebar-hover: #F5F5F2;
   --color-sidebar-active: #EFEFEB;
   --color-border: #E5E5E0;
-  --color-text-secondary: #666666;
-  --color-text-muted: #8A8A8A;
+  --color-text-secondary: #444444;
+  --color-text-muted: #777777;
 
   /* Ambient glow surfaces — overridden at runtime by ThemeProvider.applyBrandColors() */
   --color-bg-glow-1: #FAE8E2;
@@ -300,7 +332,77 @@ body {
   background-image: radial-gradient(var(--color-grid-dot) 1px, transparent 0);
 }
 
-/* Animaciones para feedback operacional */
+/* ── ANIMATIONS FOR PREMIUM UX ── */
+
+/* Page transitions */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-enter {
+  animation: pageSlideIn 0.3s ease-out forwards;
+}
+
+/* Loading and spinner animations */
+@keyframes spin-smooth {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-spin-smooth {
+  animation: spin-smooth 1s linear infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Shimmer skeleton animation */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.animate-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0.5) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  background-size: 200px 100%;
+  animation: shimmer 2s infinite;
+}
+
+.dark .animate-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.1) 20%,
+    rgba(255, 255, 255, 0.25) 60%,
+    rgba(255, 255, 255, 0)
+  );
+}
+
+/* Success pulse animation */
 @keyframes success-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.02); }
@@ -310,6 +412,7 @@ body {
   animation: success-pulse 0.3s ease-in-out;
 }
 
+/* Slide-in animations */
 @keyframes slide-in {
   from {
     transform: translateX(100%);
@@ -323,6 +426,133 @@ body {
 
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out;
+}
+
+@keyframes slide-in-top {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-top {
+  animation: slide-in-top 0.3s ease-out;
+}
+
+/* Scale animations */
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out;
+}
+
+/* Bounce/spring entrance */
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.95) translateY(10px);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Error shake animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* Status pulse for critical items */
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-status-pulse {
+  animation: status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Smooth transitions for interactive elements */
+@layer utilities {
+  /* Smooth all transitions except animations */
+  .transition-smooth {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .transition-smooth-slow {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  /* Button hover scale */
+  .button-hover-scale {
+    @apply transition-transform duration-200;
+  }
+
+  .button-hover-scale:hover {
+    @apply scale-102;
+  }
+
+  /* Card lift effect */
+  .card-hover-lift {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .card-hover-lift:hover {
+    @apply -translate-y-1;
+  }
+
+  /* Smooth scroll enabled */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
 }
 
 /* Mejoras de accesibilidad */
@@ -851,5 +1081,64 @@ textarea:focus-within,
   [data-required="true"] > .label::after,
   [data-slot="label"][data-required="true"]::after {
     color: theme('colors.pink.500') !important;
+  }
+
+  /* Mobile-First Responsive Utilities */
+  /* Minimum touch target: 44x44px for all interactive elements */
+  .touch-target {
+    @apply min-h-11 min-w-11;
+  }
+
+  /* Safe-area aware padding — handles notched devices (iPhone 14+, Android) */
+  .pad-safe-x {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .pad-safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .pad-safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  /* Responsive font sizes for mobile (prevent iOS zoom on 16px+ inputs) */
+  .text-input-safe {
+    @apply text-base;
+  }
+
+  /* Mobile-optimized form layout */
+  .form-stack-mobile {
+    @apply flex flex-col gap-4 sm:gap-6;
+  }
+
+  /* Horizontal scroll indicator for tables on mobile */
+  .scroll-hint {
+    position: relative;
+  }
+
+  .scroll-hint::after {
+    content: '';
+    @apply absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 bg-gradient-to-l from-white dark:from-zinc-900 pointer-events-none opacity-0 transition-opacity duration-200;
+  }
+
+  .scroll-hint.is-scrollable::after {
+    @apply opacity-100;
+  }
+
+  /* Touch-friendly button spacing */
+  .button-group-mobile {
+    @apply flex gap-3 flex-col sm:flex-row;
+  }
+
+  .button-group-mobile > button,
+  .button-group-mobile > a {
+    @apply min-h-11 sm:min-h-auto flex-1 sm:flex-auto;
+  }
+
+  /* Modal/Drawer safe area for keyboard on mobile */
+  .modal-keyboard-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }

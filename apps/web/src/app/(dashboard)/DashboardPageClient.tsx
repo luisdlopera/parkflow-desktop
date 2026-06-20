@@ -92,11 +92,21 @@ export default function DashboardPageClient() {
 
   return (
     <div className="space-y-10" data-testid="dashboard-root">
+      {/* Loading Overlay */}
+      {summaryLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-slate-900/20 dark:bg-black/40 z-50 rounded-3xl">
+          <div className="flex flex-col items-center gap-3 bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-xl">
+            <Spinner size="lg" color="current" />
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Actualizando datos...</p>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <section className="space-y-4" data-testid="summary-loaded">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2 flex-1">
-            <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Panel principal</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 font-semibold">Panel principal</p>
             <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100">Vision general del parqueadero</h1>
             {summaryError ? (
               <p className="text-sm text-amber-800 dark:text-amber-200">{summaryError}</p>
@@ -108,15 +118,27 @@ export default function DashboardPageClient() {
           </div>
         </div>
 
-        {/* Status summary bar */}
+        {/* Status summary grid */}
         {summary ? (
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 p-3 text-xs text-slate-600 dark:text-slate-400 space-y-1">
-            <p>
-              <span className="font-medium">Sync pendiente:</span> {summary.syncQueuePending} ·
-              <span className="ml-3 font-medium">Impresión fallida:</span> {summary.printFailedSinceMidnight} ·
-              <span className="ml-3 font-medium">Dead letter:</span> {summary.printDeadLetterSinceMidnight} ·
-              <span className="ml-3 font-medium">Tickets perdidos:</span> {summary.lostTicketSinceMidnight}
-            </p>
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 p-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 font-semibold mb-1">Sync pendiente</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{summary.syncQueuePending}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 font-semibold mb-1">Impresión fallida</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{summary.printFailedSinceMidnight}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 font-semibold mb-1">Dead letter</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{summary.printDeadLetterSinceMidnight}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 font-semibold mb-1">Tickets perdidos</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{summary.lostTicketSinceMidnight}</p>
+              </div>
+            </div>
           </div>
         ) : null}
 
@@ -135,7 +157,7 @@ export default function DashboardPageClient() {
       </section>
 
       {/* KPI Cards Grid */}
-      <section className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {kpis.map((kpi) => (
           <KpiCard key={kpi.title} {...kpi} />
         ))}
@@ -150,7 +172,7 @@ export default function DashboardPageClient() {
           </div>
 
           {/* Status cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {[
               ["Estado API", operational?.apiStatus],
               ["Base de datos", operational?.databaseStatus],
@@ -215,18 +237,26 @@ export default function DashboardPageClient() {
 
       {/* Active Sessions Section */}
       <section className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Vehículos en Patio</h2>
           <span className="text-xs text-slate-500 dark:text-slate-400">{activeSessions.length} activos</span>
         </div>
         {sessionsError ? <p className="text-sm text-amber-800 dark:text-amber-200">{sessionsError}</p> : null}
         <DataTable
           columns={[
-            { key: "plate", label: "Placa", priority: "high" },
-            { key: "type", label: "Tipo", priority: "high" },
-            { key: "started", label: "Ingreso", priority: "medium" },
-            { key: "status", label: "Estado", priority: "medium" },
-            { key: "amount", label: "Acumulado", priority: "high", align: "right" }
+            { key: "plate", label: "Placa", priority: "high", width: "12%" },
+            { key: "type", label: "Tipo", priority: "high", width: "10%" },
+            { key: "started", label: "Ingreso", priority: "high", width: "16%", render: (row: any) => row.started ? new Date(row.started).toLocaleTimeString("es-CO") : "—" },
+            { key: "elapsedTime", label: "Tiempo", priority: "high", width: "12%", render: (row: any) => {
+              if (!row.started) return "—";
+              const elapsed = Math.floor((Date.now() - new Date(row.started).getTime()) / 60000);
+              const hours = Math.floor(elapsed / 60);
+              const mins = elapsed % 60;
+              return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+            } },
+            { key: "section", label: "Sección", priority: "medium", width: "10%" },
+            { key: "status", label: "Estado", priority: "high", width: "12%" },
+            { key: "amount", label: "Acumulado", priority: "high", width: "12%", align: "right" }
           ]}
           rows={activeSessions}
           emptyMessage="No hay vehículos activos en este momento."
