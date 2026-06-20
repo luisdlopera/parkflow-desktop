@@ -12,4 +12,6 @@ public interface VehicleRepository extends JpaRepository<Vehicle, UUID> {
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   Optional<Vehicle> findByPlateIgnoreCase(String plate);
+
+  Optional<Vehicle> findFirstByCompanyIdAndPlateIgnoreCase(UUID companyId, String plate);
 }

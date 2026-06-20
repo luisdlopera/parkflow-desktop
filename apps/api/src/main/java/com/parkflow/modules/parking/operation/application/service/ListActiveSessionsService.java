@@ -89,6 +89,6 @@ public class ListActiveSessionsService implements ListActiveSessionsUseCase {
         space != null ? space.getId() : null,
         space != null ? space.getCode() : null,
         space != null ? space.getLabel() : null,
-        session.isHasHelmet(), items);
+        session.isHasHelmet(), items, null, null, null, null);
   }
 }

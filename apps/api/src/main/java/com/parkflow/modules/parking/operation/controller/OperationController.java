@@ -1,9 +1,13 @@
 package com.parkflow.modules.parking.operation.controller;
 
 import com.parkflow.modules.common.debug.AgentDebugNdjson;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.parking.operation.domain.SessionEvent;
+import com.parkflow.modules.parking.operation.domain.repository.SessionEventPort;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.parking.operation.application.port.in.*;
 import com.parkflow.modules.parking.operation.application.service.SupervisorService;
+import com.parkflow.modules.auth.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -11,8 +15,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Operations", description = "Parking operations: entries, exits, tickets, sessions")
 public class OperationController {
   private final SupervisorService supervisorService;
+  private final SessionEventPort sessionEventPort;
   private final RegisterEntryUseCase registerEntryUseCase;
   private final RegisterExitUseCase registerExitUseCase;
   private final ReprintTicketUseCase reprintTicketUseCase;
@@ -38,6 +46,7 @@ public class OperationController {
 
   public OperationController(
       SupervisorService supervisorService,
+      SessionEventPort sessionEventPort,
       RegisterEntryUseCase registerEntryUseCase,
       RegisterExitUseCase registerExitUseCase,
       ReprintTicketUseCase reprintTicketUseCase,
@@ -52,6 +61,7 @@ public class OperationController {
       MassExitPreviewUseCase massExitPreviewUseCase,
       MassExitProcessUseCase massExitProcessUseCase) {
     this.supervisorService = supervisorService;
+    this.sessionEventPort = sessionEventPort;
     this.registerEntryUseCase = registerEntryUseCase;
     this.registerExitUseCase = registerExitUseCase;
     this.reprintTicketUseCase = reprintTicketUseCase;
@@ -129,6 +139,34 @@ public class OperationController {
   @ApiResponse(responseCode = "404", description = "Ticket not found")
   public OperationResultResponse reprint(@Valid @RequestBody ReprintRequest request) {
     return reprintTicketUseCase.execute(request);
+  }
+
+  @GetMapping("/tickets/{ticketNumber}/reprints")
+  @PreAuthorize("hasAuthority('tickets:imprimir')")
+  @Operation(summary = "Get reprint history", description = "Returns the reprint history for a given ticket")
+  @ApiResponse(responseCode = "200", description = "Reprint history retrieved",
+      content = @Content(schema = @Schema(implementation = ReprintHistoryEntry.class)))
+  @ApiResponse(responseCode = "403", description = "Forbidden: missing tickets:imprimir permission")
+  public List<ReprintHistoryEntry> getReprintHistory(@PathVariable @Parameter(description = "Ticket number") String ticketNumber) {
+    UUID companyId = SecurityUtils.requireCompanyId();
+    List<SessionEvent> events = sessionEventPort.findReprintEventsByTicketNumber(ticketNumber.trim(), companyId);
+    return events.stream().map(event -> {
+      String reason = event.getMetadata();
+      int reprintNumber = 1;
+      try {
+        if (event.getMetadata() != null && event.getMetadata().contains("\"reprintNumber\"")) {
+          String numStr = event.getMetadata().replaceAll(".*\"reprintNumber\"\\s*:\\s*(\\d+).*", "$1");
+          reprintNumber = Integer.parseInt(numStr);
+        }
+      } catch (Exception ignored) {}
+      return new ReprintHistoryEntry(
+          event.getId(),
+          event.getActorUser() != null ? event.getActorUser().getName() : null,
+          event.getActorUser() != null ? event.getActorUser().getId() : null,
+          reason,
+          reprintNumber,
+          event.getCreatedAt());
+    }).toList();
   }
 
   @PostMapping("/tickets/lost")

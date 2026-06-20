@@ -42,6 +42,7 @@ public interface ParkingSessionPort {
   default long countReprintsInPeriod(OffsetDateTime start, OffsetDateTime end) {
     return countReprintsInPeriod(start, end, null);
   }
+  long countReprintsByOperatorInPeriod(OffsetDateTime start, OffsetDateTime end, UUID operatorId, UUID companyId);
   long countLostTicketsInPeriod(OffsetDateTime start, OffsetDateTime end, UUID companyId);
   default long countLostTicketsInPeriod(OffsetDateTime start, OffsetDateTime end) {
     return countLostTicketsInPeriod(start, end, null);

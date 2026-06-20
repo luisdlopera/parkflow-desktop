@@ -1,9 +1,13 @@
 package com.parkflow.modules.parking.operation.application.service;
 
+import com.parkflow.modules.audit.domain.Auditable;
+
 import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
+import com.parkflow.modules.auth.domain.AuthPermission;
+import com.parkflow.modules.auth.security.RolePermissions;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.parking.operation.application.port.in.VoidSessionUseCase;
 import com.parkflow.modules.parking.operation.domain.*;
@@ -11,6 +15,9 @@ import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.dto.VoidRequest;
 import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.cash.domain.CashMovement;
+import com.parkflow.modules.cash.domain.CashMovementStatus;
+import com.parkflow.modules.cash.domain.repository.CashMovementPort;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
@@ -22,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,9 +44,11 @@ public class VoidSessionService implements VoidSessionUseCase {
   private final OperationIdempotencyPort operationIdempotencyPort;
   private final OperationAuditService auditService;
   private final AuditPort globalAuditService;
+  private final CashMovementPort cashMovementPort;
 
   @Override
   @Transactional
+  @Auditable(module = "OPERACION", action = "ANULAR_INGRESO", entityClass = ParkingSession.class)
   public OperationResultResponse execute(VoidRequest request) {
     Optional<OperationResultResponse> replay =
         tryReplay(request.idempotencyKey(), IdempotentOperationType.VOID);
@@ -47,8 +57,7 @@ public class VoidSessionService implements VoidSessionUseCase {
     ParkingSession session = requireActiveSessionForUpdate(request.ticketNumber(), request.plate());
     AppUser operator = findRequiredOperator(request.operatorUserId());
 
-    if (operator.getRole() != UserRole.ADMIN && operator.getRole() != UserRole.SUPER_ADMIN
-        && !operator.isCanVoidTickets()) {
+    if (!RolePermissions.permissionsFor(operator.getRole()).contains(AuthPermission.ANULACIONES_CREAR)) {
       throw new OperationException(HttpStatus.FORBIDDEN, "No tiene permisos para anular tickets");
     }
 
@@ -56,6 +65,17 @@ public class VoidSessionService implements VoidSessionUseCase {
     session.setExitNotes(request.reason());
     session.setUpdatedAt(OffsetDateTime.now());
     session = parkingSessionPort.save(session);
+
+    // Void any POSTED cash movements linked to this session to prevent phantom ledger income
+    List<CashMovement> postedMovements = cashMovementPort.findPostedByParkingSessionId(session.getId());
+    OffsetDateTime now = OffsetDateTime.now();
+    for (CashMovement movement : postedMovements) {
+      movement.setStatus(CashMovementStatus.VOIDED);
+      movement.setVoidedAt(now);
+      movement.setVoidedBy(operator);
+      movement.setVoidReason("Sesión anulada: " + request.reason());
+      cashMovementPort.save(movement);
+    }
 
     auditService.recordEvent(session, SessionEventType.VOIDED, operator, request.reason());
     globalAuditService.record(AuditAction.ANULAR, operator,
@@ -143,6 +163,6 @@ public class VoidSessionService implements VoidSessionUseCase {
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
         session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
-        null, null, null, session.isHasHelmet(), null);
+        null, null, null, session.isHasHelmet(), null, null, null, null, null);
   }
 }

@@ -15,14 +15,39 @@ public class DailyPricingStrategy implements PricingStrategy {
 
   @Override
   public PriceBreakdown calculate(Rate rate, long billableMinutes, boolean lostTicket) {
-    BigDecimal minutesInDay = BigDecimal.valueOf(60 * 24);
+    if (billableMinutes <= 0) {
+      BigDecimal surcharge = lostTicket ? rate.getLostTicketSurcharge() : BigDecimal.ZERO;
+      return new PriceBreakdown(0, BigDecimal.ZERO, surcharge, BigDecimal.ZERO, 0, surcharge);
+    }
+    
+    long adjustedMinutes = billableMinutes;
+    int fraction = 60 * 24;
+    if (adjustedMinutes % fraction <= rate.getToleranceMinutes() && adjustedMinutes % fraction > 0) {
+       adjustedMinutes -= (adjustedMinutes % fraction);
+    }
+    
+    if (adjustedMinutes <= 0) {
+      BigDecimal surcharge = lostTicket ? rate.getLostTicketSurcharge() : BigDecimal.ZERO;
+      return new PriceBreakdown(0, BigDecimal.ZERO, surcharge, BigDecimal.ZERO, 0, surcharge);
+    }
+
+    BigDecimal minutesInDay = BigDecimal.valueOf(fraction);
     int units =
-        BigDecimal.valueOf(billableMinutes)
+        BigDecimal.valueOf(adjustedMinutes)
             .divide(minutesInDay, 0, java.math.RoundingMode.CEILING)
             .max(BigDecimal.ONE)
             .intValue();
 
     BigDecimal subtotal = rate.getAmount().multiply(BigDecimal.valueOf(units));
+    
+    if (rate.getMaxSessionValue() != null && rate.getMaxSessionValue().compareTo(BigDecimal.ZERO) > 0) {
+        subtotal = subtotal.min(rate.getMaxSessionValue());
+    }
+
+    if (rate.getMinSessionValue() != null && rate.getMinSessionValue().compareTo(BigDecimal.ZERO) > 0) {
+        subtotal = subtotal.max(rate.getMinSessionValue());
+    }
+
     BigDecimal surcharge = lostTicket ? rate.getLostTicketSurcharge() : BigDecimal.ZERO;
     BigDecimal total = subtotal.add(surcharge);
 

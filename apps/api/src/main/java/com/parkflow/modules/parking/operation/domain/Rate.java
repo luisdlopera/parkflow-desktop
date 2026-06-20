@@ -167,6 +167,16 @@ public class Rate {
   private BigDecimal lostTicketSurcharge = BigDecimal.ZERO;
 
   // -----------------------------------------------------------------------
+  // Impuestos
+  // -----------------------------------------------------------------------
+
+  @Column(nullable = false, precision = 5, scale = 2)
+  private BigDecimal taxPercentage = BigDecimal.ZERO;
+
+  @Column(nullable = false)
+  private boolean taxIncluded = true;
+
+  // -----------------------------------------------------------------------
   // Estado y auditoría
   // -----------------------------------------------------------------------
 

@@ -66,10 +66,10 @@ public class MassExitService implements MassExitPreviewUseCase, MassExitProcessU
             null,
             null, null, null, null, null, null,
             request.cashSessionId(),
-            request.chargeMode() == MassExitFilterRequest.ChargeMode.FREE);
+            null);
 
-        OperationResultResponse res = registerExitUseCase.precalculate(previewReq);
         boolean isFree = request.chargeMode() == MassExitFilterRequest.ChargeMode.FREE;
+        OperationResultResponse res = registerExitUseCase.precalculate(previewReq, isFree);
         BigDecimal amount = isFree ? BigDecimal.ZERO : (res.total() != null ? res.total() : BigDecimal.ZERO);
         estimatedTotal = estimatedTotal.add(amount);
         items.add(new MassExitItemResult(

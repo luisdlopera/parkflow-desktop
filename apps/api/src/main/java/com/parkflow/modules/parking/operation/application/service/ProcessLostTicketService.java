@@ -245,7 +245,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
         session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
-        null, null, null, session.isHasHelmet(), null);
+        null, null, null, session.isHasHelmet(), null, null, null, null, null);
   }
 
   private String blankToNull(String s) { return s == null || s.isBlank() ? null : s.trim(); }

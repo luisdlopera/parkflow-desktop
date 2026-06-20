@@ -1,5 +1,7 @@
 package com.parkflow.modules.parking.operation.application.service;
 
+import com.parkflow.modules.audit.domain.Auditable;
+
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.parking.operation.application.port.in.UpdatePlateUseCase;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
@@ -32,6 +34,7 @@ public class UpdatePlateService implements UpdatePlateUseCase {
 
     @Override
     @Transactional
+    @Auditable(module = "OPERACION", action = "ACTUALIZAR_PLACA", entityClass = ParkingSession.class)
     public void execute(UUID sessionId, UpdatePlateRequest request) {
         ParkingSession session = sessionRepository.findById(sessionId)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesión no encontrada"));

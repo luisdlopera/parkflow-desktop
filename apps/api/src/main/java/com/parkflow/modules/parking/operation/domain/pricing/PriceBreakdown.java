@@ -8,4 +8,12 @@ public record PriceBreakdown(
     BigDecimal surcharge,
     BigDecimal discount,
     int deductedMinutes,
-    BigDecimal total) {}
+    BigDecimal total,
+    BigDecimal taxPercentage,
+    BigDecimal taxAmount,
+    BigDecimal netAmount) {
+
+    public PriceBreakdown(int units, BigDecimal subtotal, BigDecimal surcharge, BigDecimal discount, int deductedMinutes, BigDecimal total) {
+        this(units, subtotal, surcharge, discount, deductedMinutes, total, BigDecimal.ZERO, BigDecimal.ZERO, total);
+    }
+}

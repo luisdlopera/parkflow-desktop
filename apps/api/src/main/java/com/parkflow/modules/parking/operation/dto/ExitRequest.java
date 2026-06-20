@@ -27,7 +27,7 @@ public record ExitRequest(
     List<UUID> returnedItemIds,
     @Size(max = 500) String custodiedItemObservations,
     UUID cashSessionId,
-    Boolean exemptPayment) {
+    List<PaymentBreakdownItem> paymentBreakdown) {
 
   @AssertTrue(message = "ticketNumber o plate es obligatorio")
   public boolean hasLocator() {

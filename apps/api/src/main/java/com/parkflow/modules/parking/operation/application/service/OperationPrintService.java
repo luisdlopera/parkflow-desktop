@@ -41,6 +41,7 @@ public class OperationPrintService {
 
             CreatePrintJobRequest printReq = new CreatePrintJobRequest(
                 session.getId(),
+                session.getCompanyId(),
                 operator.getId(),
                 documentType,
                 idempotencyKey,

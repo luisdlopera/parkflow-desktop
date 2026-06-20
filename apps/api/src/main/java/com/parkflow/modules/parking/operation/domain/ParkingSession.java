@@ -240,10 +240,18 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
   /**
    * Increment the reprint counter. Returns the new count.
    */
-  public int incrementReprint() {
+  public int incrementReprint(AppUser operator, String reason) {
+    if (this.status == SessionStatus.CANCELED) {
+      throw new BusinessValidationException("SESSION_CANCELED",
+          "No se puede reimprimir un ticket anulado");
+    }
+    if (this.status == SessionStatus.LOST_TICKET) {
+      throw new BusinessValidationException("SESSION_LOST_TICKET",
+          "No se puede reimprimir un ticket marcado como perdido");
+    }
     this.reprintCount++;
     this.updatedAt = OffsetDateTime.now();
-    registerEvent(new TicketReprintedEvent(this, null, reprintCount, null));
+    registerEvent(new TicketReprintedEvent(this, operator, reprintCount, reason));
     return this.reprintCount;
   }
 }

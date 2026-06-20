@@ -31,8 +31,8 @@ public class MassExitItemProcessor {
       String batchId) {
     try {
       ExitRequest exitReq = buildExitRequest(session, request, operator, batchId);
-      OperationResultResponse res = registerExitUseCase.execute(exitReq);
       boolean isFree = request.chargeMode() == MassExitFilterRequest.ChargeMode.FREE;
+      OperationResultResponse res = registerExitUseCase.execute(exitReq, isFree);
       BigDecimal charged = isFree ? BigDecimal.ZERO : (res.total() != null ? res.total() : BigDecimal.ZERO);
       return new MassExitItemResult(
           session.getTicketNumber(),
@@ -78,7 +78,7 @@ public class MassExitItemProcessor {
         null,
         null,
         null,
-        request.cashSessionId(),
-        isFree);
+        null,
+        null);
   }
 }

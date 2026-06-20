@@ -83,6 +83,6 @@ public class GetTicketService implements GetTicketUseCase {
         session.getEntryImageUrl(), session.getExitImageUrl(), session.getSyncStatus(),
         session.getEntryMode() != null ? session.getEntryMode() : EntryMode.VISITOR,
         session.isMonthlySession(), session.getAgreementCode(), session.getAppliedPrepaidMinutes(),
-        null, null, null, session.isHasHelmet(), items);
+        null, null, null, session.isHasHelmet(), items, null, null, null, null);
   }
 }

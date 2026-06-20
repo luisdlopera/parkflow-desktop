@@ -1,4 +1,6 @@
 package com.parkflow.modules.parking.operation.application.service;
+
+import com.parkflow.modules.audit.domain.Auditable;
 import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
@@ -42,6 +44,7 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -69,7 +72,15 @@ public class RegisterExitService implements RegisterExitUseCase {
 
   @Override
   @Transactional
+  @Auditable(module = "OPERACION", action = "SALIDA", entityClass = ParkingSession.class)
   public OperationResultResponse execute(ExitRequest request) {
+    return execute(request, false);
+  }
+
+  @Override
+  @Transactional
+  @Auditable(module = "OPERACION", action = "SALIDA", entityClass = ParkingSession.class)
+  public OperationResultResponse execute(ExitRequest request, boolean forceFree) {
     UUID companyId = SecurityUtils.requireCompanyId();
     OffsetDateTime exitAt = request.exitAt() != null ? request.exitAt() : OffsetDateTime.now();
 
@@ -84,7 +95,7 @@ public class RegisterExitService implements RegisterExitUseCase {
     PriceBreakdown price = parkingPricingUseCase.calculateComplexPrice(session, exitAt, request.agreementCode(), false, false);
     price = parkingPricingUseCase.applyCourtesyPricing(session, price, false);
 
-    assertExitPaymentPolicy(session, request.paymentMethod(), price, request.exemptPayment());
+    assertExitPaymentPolicy(session, request.paymentMethod(), price, request.paymentBreakdown(), forceFree);
     assertExitPhotoIfRequired(session, request.exitImageUrl());
     processCustodiedItemReturn(session, request, operator);
 
@@ -93,15 +104,29 @@ public class RegisterExitService implements RegisterExitUseCase {
 
     if (price.total().compareTo(BigDecimal.ZERO) > 0 && request.paymentMethod() != null) {
       parkingCashIntegrationUseCase.assertCashOpenForParkingPayment(session, request.cashSessionId());
-      Payment payment = new Payment();
-      payment.setSession(session);
-      payment.setMethod(request.paymentMethod());
-      payment.setAmount(price.total());
-      payment.setPaidAt(exitAt);
-      payment.setCompanyId(companyId);
-      paymentRepository.save(payment);
-      parkingCashIntegrationUseCase.recordParkingPayment(
-          session, payment, operator, request.idempotencyKey(), CashMovementType.PARKING_PAYMENT, request.cashSessionId());
+      if (request.paymentMethod() == com.parkflow.modules.parking.operation.domain.PaymentMethod.MIXED) {
+        for (com.parkflow.modules.parking.operation.dto.PaymentBreakdownItem item : request.paymentBreakdown()) {
+            Payment payment = new Payment();
+            payment.setSession(session);
+            payment.setMethod(item.method());
+            payment.setAmount(item.amount());
+            payment.setPaidAt(exitAt);
+            payment.setCompanyId(companyId);
+            paymentRepository.save(payment);
+            parkingCashIntegrationUseCase.recordParkingPayment(
+                session, payment, operator, request.idempotencyKey() + "-" + item.method(), CashMovementType.PARKING_PAYMENT, request.cashSessionId());
+        }
+      } else {
+        Payment payment = new Payment();
+        payment.setSession(session);
+        payment.setMethod(request.paymentMethod());
+        payment.setAmount(price.total());
+        payment.setPaidAt(exitAt);
+        payment.setCompanyId(companyId);
+        paymentRepository.save(payment);
+        parkingCashIntegrationUseCase.recordParkingPayment(
+            session, payment, operator, request.idempotencyKey(), CashMovementType.PARKING_PAYMENT, request.cashSessionId());
+      }
     }
 
     saveVehicleCondition(session, ConditionStage.EXIT, request.vehicleCondition(),
@@ -158,6 +183,12 @@ public class RegisterExitService implements RegisterExitUseCase {
   @Override
   @Transactional(readOnly = true)
   public OperationResultResponse precalculate(ExitRequest request) {
+    return precalculate(request, false);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public OperationResultResponse precalculate(ExitRequest request, boolean forceFree) {
     UUID companyId = SecurityUtils.requireCompanyId();
     OffsetDateTime exitAt = request.exitAt() != null ? request.exitAt() : OffsetDateTime.now();
 
@@ -183,13 +214,35 @@ public class RegisterExitService implements RegisterExitUseCase {
   
   private void assertExitPaymentPolicy(
       ParkingSession session, com.parkflow.modules.parking.operation.domain.PaymentMethod paymentMethod,
-      PriceBreakdown price, Boolean exemptPayment) {
-    if (Boolean.TRUE.equals(exemptPayment)) return;
+      PriceBreakdown price, List<com.parkflow.modules.parking.operation.dto.PaymentBreakdownItem> breakdown, boolean forceFree) {
+    if (forceFree) return;
     BigDecimal due = price.total();
     boolean allowWaive = due.compareTo(BigDecimal.ZERO) == 0 || isAllowExitWithoutPayment(session);
     if (!allowWaive && paymentMethod == null) {
       throw new OperationException(HttpStatus.BAD_REQUEST,
           "Registre medio de pago. Solo puede omitir el cobro si el total es cero o si \"Salida sin pago\" esta habilitada en parametros operativos.");
+    }
+    if (!allowWaive && paymentMethod == com.parkflow.modules.parking.operation.domain.PaymentMethod.MIXED) {
+      if (breakdown == null || breakdown.isEmpty()) {
+        throw new OperationException(HttpStatus.BAD_REQUEST, "Breakdown is required for MIXED payments");
+      }
+      for (com.parkflow.modules.parking.operation.dto.PaymentBreakdownItem item : breakdown) {
+        if (item.amount() == null || item.amount().compareTo(BigDecimal.ZERO) <= 0) {
+          throw new OperationException(HttpStatus.BAD_REQUEST,
+              "Cada monto del desglose de pago debe ser mayor a cero");
+        }
+      }
+      BigDecimal sum = breakdown.stream()
+          .map(com.parkflow.modules.parking.operation.dto.PaymentBreakdownItem::amount)
+          .reduce(BigDecimal.ZERO, BigDecimal::add);
+      if (sum.compareTo(due) < 0) {
+        throw new OperationException(HttpStatus.BAD_REQUEST,
+            "El total del desglose de pago es menor al monto a cobrar");
+      }
+      if (sum.compareTo(due.multiply(new java.math.BigDecimal("1.10"))) > 0) {
+        throw new OperationException(HttpStatus.BAD_REQUEST,
+            "El total del desglose excede el monto a cobrar en más del 10%");
+      }
     }
   }
 
@@ -254,6 +307,14 @@ public class RegisterExitService implements RegisterExitUseCase {
     if (pending.isEmpty()) return;
 
     List<UUID> returnedIds = request.returnedItemIds();
+    if (returnedIds != null && !returnedIds.isEmpty()) {
+      Set<UUID> pendingIds = pending.stream().map(CustodiedItem::getId).collect(java.util.stream.Collectors.toSet());
+      List<UUID> foreign = returnedIds.stream().filter(id -> !pendingIds.contains(id)).collect(java.util.stream.Collectors.toList());
+      if (!foreign.isEmpty()) {
+        throw new OperationException(HttpStatus.BAD_REQUEST,
+            "Los siguientes IDs de custodia no pertenecen a esta sesión: " + foreign);
+      }
+    }
     if (returnedIds == null || returnedIds.isEmpty()) {
       boolean hasOverride = org.springframework.security.core.context.SecurityContextHolder.getContext()
           .getAuthentication().getAuthorities().stream()
@@ -365,7 +426,7 @@ public class RegisterExitService implements RegisterExitUseCase {
         session.isMonthlySession(),
         session.getAgreementCode(),
         session.getAppliedPrepaidMinutes(),
-        null, null, null, session.isHasHelmet(), items);
+        null, null, null, session.isHasHelmet(), items, null, null, null, null);
   }
 
   private boolean isBlank(String s) { return s == null || s.isBlank(); }

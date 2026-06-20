@@ -53,11 +53,17 @@ public class AuditSessionListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onTicketReprinted(TicketReprintedEvent event) {
         log.debug("Auditing reprint for session: {}", event.session().getId());
+        String metadata = String.format(
+            "{\"action\":\"REPRINT\",\"reason\":\"%s\",\"reprintNumber\":%d,\"ticket\":\"%s\"}",
+            event.reason() != null ? event.reason().replace("\"", "\\\"") : "",
+            event.reprintCount(),
+            event.session().getTicketNumber()
+        );
         operationAuditService.recordEvent(
             event.session(), 
             SessionEventType.TICKET_REPRINTED, 
             event.operator(), 
-            "Ticket reimpreso: " + event.reason()
+            metadata
         );
     }
 

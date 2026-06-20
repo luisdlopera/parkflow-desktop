@@ -1,6 +1,7 @@
 package com.parkflow.modules.parking.operation.infrastructure.persistence;
 
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
+import com.parkflow.modules.parking.operation.domain.SessionEvent;
 import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import jakarta.persistence.LockModeType;
@@ -94,6 +95,11 @@ public class ParkingSessionJpaAdapter implements ParkingSessionPort {
   }
 
   @Override
+  public long countReprintsByOperatorInPeriod(OffsetDateTime start, OffsetDateTime end, UUID operatorId, UUID companyId) {
+    return jpaRepository.countReprintsByOperatorInPeriod(start, end, operatorId, companyId);
+  }
+
+  @Override
   public long countLostTicketsInPeriod(OffsetDateTime start, OffsetDateTime end, UUID companyId) {
     return jpaRepository.countLostTicketsInPeriod(start, end, companyId);
   }
@@ -171,6 +177,9 @@ public class ParkingSessionJpaAdapter implements ParkingSessionPort {
 
     @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.createdAt >= :start AND s.createdAt < :end AND s.reprintCount > 0 AND s.companyId = :cid")
     long countReprintsInPeriod(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end, @Param("cid") UUID companyId);
+
+    @Query("SELECT COUNT(e) FROM SessionEvent e WHERE e.type = 'TICKET_REPRINTED' AND e.actorUser.id = :opId AND e.createdAt >= :start AND e.createdAt < :end AND e.session.companyId = :cid")
+    long countReprintsByOperatorInPeriod(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end, @Param("opId") UUID operatorId, @Param("cid") UUID companyId);
 
     @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.createdAt >= :start AND s.createdAt < :end AND s.status = 'LOST_TICKET' AND s.companyId = :cid")
     long countLostTicketsInPeriod(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end, @Param("cid") UUID companyId);

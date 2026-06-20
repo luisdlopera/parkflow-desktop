@@ -4,5 +4,7 @@ public enum RateType {
   PER_MINUTE,
   HOURLY,
   DAILY,
-  FLAT
+  FLAT,
+  /** Stepped pricing: different rates apply for each configured time range (RateFraction). */
+  FRACTIONAL
 }

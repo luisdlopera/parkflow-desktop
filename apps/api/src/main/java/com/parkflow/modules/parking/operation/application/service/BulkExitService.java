@@ -93,7 +93,6 @@ public class BulkExitService implements BulkExitCalculateUseCase, BulkExitProces
     }
 
     @Override
-    @Transactional
     public BulkExitResponse process(BulkExitRequest request) {
         BigDecimal totalCharged = BigDecimal.ZERO;
         int successfulCount = 0;
@@ -143,9 +142,7 @@ public class BulkExitService implements BulkExitCalculateUseCase, BulkExitProces
         }
 
         if (failedCount > 0) {
-            // In a strict ACID approach we might throw here to rollback the entire batch.
-            // Let's throw if we want full ACID block.
-            throw new RuntimeException("Bulk exit partially failed. Rollback triggered. Errors: " + String.join(", ", errors));
+            log.warn("Bulk exit partially failed. Errors: " + String.join(", ", errors));
         }
 
         return new BulkExitResponse(totalCharged, successfulCount, failedCount, successfulReceipts, errors);

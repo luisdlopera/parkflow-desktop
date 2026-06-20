@@ -7,6 +7,6 @@ import java.util.UUID;
 
 public record ReprintRequest(
 	@NotBlank @Size(max = 200) String idempotencyKey,
-	@NotBlank String ticketNumber,
+	@NotBlank @Size(max = 50) String ticketNumber,
 	@NotNull UUID operatorUserId,
-	@NotBlank String reason) {}
+	@NotBlank @Size(min = 3, max = 500) String reason) {}

@@ -59,6 +59,10 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
   @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.status = 'ACTIVE' AND s.companyId = :cid")
   long countActive(@Param("cid") UUID companyId);
 
+  @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.status = :status AND s.companyId = :cid AND s.entryAt >= :from")
+  long countByStatusAndCompanyIdAndEntryAtGreaterThanEqual(
+      @Param("status") SessionStatus status, @Param("cid") UUID companyId, @Param("from") OffsetDateTime from);
+
   @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.entryAt >= :start AND s.entryAt < :end AND s.companyId = :cid")
   long countEntriesInPeriod(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end, @Param("cid") UUID companyId);
 
@@ -73,6 +77,17 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
 
   @Query("SELECT COUNT(s) FROM ParkingSession s WHERE s.syncStatus = 'PENDING' AND s.companyId = :cid")
   long countSyncPending(@Param("cid") UUID companyId);
+
+  // -- Reporting queries --
+
+  @Query("SELECT v.type, COUNT(s) FROM ParkingSession s JOIN s.vehicle v WHERE s.status = 'ACTIVE' AND s.companyId = :cid GROUP BY v.type")
+  List<Object[]> countActiveByVehicleType(@Param("cid") UUID companyId);
+
+  @Query("SELECT v.type, COUNT(s) FROM ParkingSession s JOIN s.vehicle v WHERE s.entryAt >= :start AND s.entryAt < :end AND s.companyId = :cid GROUP BY v.type")
+  List<Object[]> countEntriesByVehicleTypeInPeriod(@Param("cid") UUID companyId, @Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
+
+  @Query("SELECT v.type, COUNT(s) FROM ParkingSession s JOIN s.vehicle v WHERE s.exitAt >= :start AND s.exitAt < :end AND s.status IN ('CLOSED','LOST_TICKET') AND s.companyId = :cid GROUP BY v.type")
+  List<Object[]> countExitsByVehicleTypeInPeriod(@Param("cid") UUID companyId, @Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
 
   @Query("""
       SELECT s FROM ParkingSession s

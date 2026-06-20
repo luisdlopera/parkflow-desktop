@@ -1,5 +1,7 @@
 package com.parkflow.modules.parking.operation.application.service;
 
+import com.parkflow.modules.audit.domain.Auditable;
+
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.common.exception.OperationException;
@@ -61,6 +63,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
 
   @Override
   @Transactional
+  @Auditable(module = "OPERACION", action = "INGRESO", entityClass = ParkingSession.class)
   public OperationResultResponse execute(EntryRequest request) {
     String idempotencyKey = request.idempotencyKey();
     String vehicleType = request.type();
@@ -284,7 +287,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
         space != null ? space.getId() : null,
         space != null ? space.getCode() : null,
         space != null ? space.getLabel() : null,
-        session.isHasHelmet(), items);
+        session.isHasHelmet(), items, null, null, null, null);
   }
 
   private String normalizeCountryCode(String code) {

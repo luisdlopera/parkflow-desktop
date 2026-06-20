@@ -38,4 +38,8 @@ public record ReceiptResponse(
     String parkingSpaceCode,
     String parkingSpaceLabel,
     boolean hasHelmet,
-    List<CustodiedItemResponse> custodiedItems) {}
+    List<CustodiedItemResponse> custodiedItems,
+    String paymentMethod,
+    BigDecimal taxAmount,
+    BigDecimal discountAmount,
+    BigDecimal netAmount) {}

@@ -32,6 +32,9 @@ public class Vehicle {
   @Column(name = "vehicle_type_id")
   private UUID vehicleTypeId;
 
+  @Column(name = "client_id")
+  private UUID clientId;
+
   @Column(nullable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();
 

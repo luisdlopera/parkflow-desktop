@@ -15,6 +15,8 @@ public interface RegisterExitUseCase {
    */
   OperationResultResponse execute(ExitRequest request);
 
+  OperationResultResponse execute(ExitRequest request, boolean forceFree);
+
   /**
    * Pre-calculates the vehicle exit operation without committing to DB (dry-run).
    *
@@ -22,4 +24,6 @@ public interface RegisterExitUseCase {
    * @return the result of the calculation
    */
   OperationResultResponse precalculate(ExitRequest request);
+
+  OperationResultResponse precalculate(ExitRequest request, boolean forceFree);
 }

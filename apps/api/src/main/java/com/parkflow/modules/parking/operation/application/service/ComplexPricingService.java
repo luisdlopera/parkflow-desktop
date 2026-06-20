@@ -14,6 +14,7 @@ import com.parkflow.modules.parking.operation.domain.ParkingSession;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.parking.operation.domain.pricing.PricingCalculator;
+import com.parkflow.modules.parking.operation.domain.pricing.RateWindowResolver;
 import com.parkflow.modules.common.exception.OperationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -52,6 +53,7 @@ public class ComplexPricingService implements ComplexPricingPort {
   private final AgreementPort agreementRepository;
   private final PricingCalculator pricingCalculator;
   private final AuditPort auditPort;
+  private final RateWindowResolver rateWindowResolver;
 
   // -------------------------------------------------------------------------
   // ComplexPricingPort implementation
@@ -116,6 +118,26 @@ public class ComplexPricingService implements ComplexPricingPort {
     BigDecimal subtotal = basePrice.subtotal();
     BigDecimal surcharge = basePrice.surcharge();
     BigDecimal discount = BigDecimal.ZERO;
+    
+    // Apply Night Surcharge only when exit time falls inside the configured window
+    if (rate.isAppliesNight()
+        && rate.getNightSurchargePercent() != null
+        && rate.getNightSurchargePercent().compareTo(BigDecimal.ZERO) > 0
+        && rateWindowResolver.isInWindow(rate, exitAt)) {
+      BigDecimal nightAdditional = subtotal.multiply(rate.getNightSurchargePercent())
+          .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+      subtotal = subtotal.add(nightAdditional);
+    }
+
+    // Apply Holiday Surcharge (holiday resolution relies on the Rate.windowStart/windowEnd window too)
+    if (rate.isAppliesHoliday()
+        && rate.getHolidaySurchargePercent() != null
+        && rate.getHolidaySurchargePercent().compareTo(BigDecimal.ZERO) > 0
+        && rateWindowResolver.isInWindow(rate, exitAt)) {
+      BigDecimal holidayAdditional = subtotal.multiply(rate.getHolidaySurchargePercent())
+          .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+      subtotal = subtotal.add(holidayAdditional);
+    }
 
     // 6. Corporate agreement
     String effectiveAgreement =
@@ -151,8 +173,23 @@ public class ComplexPricingService implements ComplexPricingPort {
 
     BigDecimal total = subtotal.add(surcharge).subtract(discount).max(BigDecimal.ZERO);
 
+    BigDecimal taxPercentage = rate.getTaxPercentage() != null ? rate.getTaxPercentage() : BigDecimal.ZERO;
+    BigDecimal taxAmount = BigDecimal.ZERO;
+    BigDecimal netAmount = total;
+
+    if (total.compareTo(BigDecimal.ZERO) > 0 && taxPercentage.compareTo(BigDecimal.ZERO) > 0) {
+        if (rate.isTaxIncluded()) {
+            BigDecimal divisor = BigDecimal.ONE.add(taxPercentage.divide(BigDecimal.valueOf(100), 4, java.math.RoundingMode.HALF_UP));
+            netAmount = total.divide(divisor, 2, java.math.RoundingMode.HALF_UP);
+            taxAmount = total.subtract(netAmount);
+        } else {
+            taxAmount = netAmount.multiply(taxPercentage).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+            total = netAmount.add(taxAmount);
+        }
+    }
+
     return new PriceBreakdown(
-        basePrice.units(), subtotal, surcharge, discount, deductedMinutes, total);
+        basePrice.units(), subtotal, surcharge, discount, deductedMinutes, total, taxPercentage, taxAmount, netAmount);
   }
 
   @Override
@@ -169,12 +206,21 @@ public class ComplexPricingService implements ComplexPricingPort {
       return computed;
     }
     // Non-visitor entries (SUBSCRIBER, AGREEMENT, etc.) exit at zero cost
+    auditPort.record(
+        AuditAction.APLICAR_CORTESIA,
+        null,
+        "Total: " + computed.total(),
+        "Total: 0 (cortesía " + mode.name() + ")",
+        "Ticket: " + session.getTicketNumber() + ", Monto exonerado: " + computed.total());
     return new PriceBreakdown(
         computed.units(),
         computed.subtotal(),
         computed.surcharge(),
         BigDecimal.ZERO,
         computed.deductedMinutes(),
+        BigDecimal.ZERO,
+        BigDecimal.ZERO,
+        BigDecimal.ZERO,
         BigDecimal.ZERO);
   }
 
