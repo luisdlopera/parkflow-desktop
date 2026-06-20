@@ -9,6 +9,8 @@ public record MonthlyContractResponse(
     UUID id,
     UUID rateId,
     String rateName,
+    UUID clientId,
+    UUID vehicleId,
     String plate,
     String vehicleType,
     String holderName,
@@ -20,7 +22,8 @@ public record MonthlyContractResponse(
     LocalDate startDate,
     LocalDate endDate,
     BigDecimal amount,
-    boolean active,
+    com.parkflow.modules.configuration.domain.ContractStatus status,
+    boolean active, // Deprecated, keep for backwards compat temporarily
     String notes,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt) {}

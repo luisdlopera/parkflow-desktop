@@ -4,11 +4,16 @@ import com.parkflow.modules.configuration.dto.MonthlyContractRequest;
 import com.parkflow.modules.configuration.dto.MonthlyContractResponse;
 import com.parkflow.modules.configuration.domain.MonthlyContract;
 import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.domain.ContractStatus;
 import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
+import com.parkflow.modules.customers.domain.Client;
+import com.parkflow.modules.customers.repository.ClientRepository;
 import com.parkflow.modules.parking.operation.domain.Rate;
+import com.parkflow.modules.parking.operation.domain.Vehicle;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.parking.operation.repository.VehicleRepository;
 import com.parkflow.modules.settings.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -27,6 +32,8 @@ public class MonthlyContractService implements MonthlyContractUseCase {
   private final MonthlyContractRepository repo;
   private final RateRepository rateRepository;
   private final ParkingSiteRepository siteRepository;
+  private final ClientRepository clientRepository;
+  private final VehicleRepository vehicleRepository;
   private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
@@ -82,14 +89,15 @@ public class MonthlyContractService implements MonthlyContractUseCase {
   @Transactional
   public MonthlyContractResponse patchStatus(UUID id, boolean active) {
     MonthlyContract mc = findOrThrow(id);
-    boolean previous = mc.isActive();
-    mc.setActive(active);
+    ContractStatus previous = mc.getStatus();
+    ContractStatus newStatus = active ? ContractStatus.ACTIVE : ContractStatus.CANCELLED;
+    mc.setStatus(newStatus);
     mc.setUpdatedAt(OffsetDateTime.now());
     mc = repo.save(mc);
     globalAuditService.record(
         com.parkflow.modules.audit.domain.AuditAction.ELIMINAR,
-        "active=" + previous,
-        "active=" + active,
+        "status=" + previous,
+        "status=" + newStatus,
         "Monthly contract status changed: " + id);
     return toResponse(mc);
   }
@@ -107,13 +115,53 @@ public class MonthlyContractService implements MonthlyContractUseCase {
   private MonthlyContract fromRequest(MonthlyContractRequest req, MonthlyContract target) {
     Rate rate = rateRepository.findById(req.rateId())
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
+    
+    Client client = null;
+    if (req.clientId() != null) {
+      client = clientRepository.findById(req.clientId())
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
+    } else {
+      if (req.holderDocument() != null && !req.holderDocument().isBlank()) {
+          client = clientRepository.findFirstByCompanyIdAndDocument(rate.getCompanyId(), req.holderDocument()).orElse(null);
+      }
+      if (client == null && req.holderName() != null && !req.holderName().isBlank()) {
+          client = clientRepository.findFirstByCompanyIdAndNameIgnoreCase(rate.getCompanyId(), req.holderName().trim()).orElse(null);
+      }
+      if (client == null) {
+          client = new Client();
+          client.setCompanyId(rate.getCompanyId());
+          client.setName(req.holderName() != null && !req.holderName().isBlank() ? req.holderName().trim() : "Desconocido");
+          client.setDocument(req.holderDocument());
+          client.setPhone(req.holderPhone());
+          client.setEmail(req.holderEmail());
+          client = clientRepository.save(client);
+      }
+    }
+
+    Vehicle vehicle = null;
+    if (req.vehicleId() != null) {
+      vehicle = vehicleRepository.findById(req.vehicleId())
+          .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Vehiculo no encontrado"));
+    } else if (req.plate() != null && !req.plate().isBlank()) {
+      vehicle = vehicleRepository.findFirstByCompanyIdAndPlateIgnoreCase(rate.getCompanyId(), req.plate().trim()).orElse(null);
+      if (vehicle == null) {
+          vehicle = new Vehicle();
+          vehicle.setCompanyId(rate.getCompanyId());
+          vehicle.setPlate(req.plate().toUpperCase().trim());
+          vehicle.setType(req.vehicleType() != null ? req.vehicleType() : "AUTO");
+          vehicle.setClientId(client.getId());
+          vehicle = vehicleRepository.save(vehicle);
+      } else if (vehicle.getClientId() == null) {
+          vehicle.setClientId(client.getId());
+          vehicle = vehicleRepository.save(vehicle);
+      }
+    } else {
+        throw new OperationException(HttpStatus.BAD_REQUEST, "Debe proveer vehicleId o plate");
+    }
+
     target.setRate(rate);
-    target.setPlate(req.plate().toUpperCase().trim());
-    target.setVehicleType(req.vehicleType());
-    target.setHolderName(req.holderName().trim());
-    target.setHolderDocument(req.holderDocument());
-    target.setHolderPhone(req.holderPhone());
-    target.setHolderEmail(req.holderEmail());
+    target.setClient(client);
+    target.setVehicle(vehicle);
     target.setSite(req.site() == null || req.site().isBlank() ? "DEFAULT" : req.site().trim());
     if (req.siteId() != null) {
       ParkingSite site = siteRepository.findById(req.siteId())
@@ -123,7 +171,7 @@ public class MonthlyContractService implements MonthlyContractUseCase {
     target.setStartDate(req.startDate());
     target.setEndDate(req.endDate());
     target.setAmount(req.amount());
-    target.setActive(req.active());
+    target.setStatus(req.status());
     target.setNotes(req.notes());
     target.setUpdatedAt(OffsetDateTime.now());
     return target;
@@ -139,18 +187,21 @@ public class MonthlyContractService implements MonthlyContractUseCase {
         mc.getId(),
         mc.getRate() != null ? mc.getRate().getId() : null,
         mc.getRate() != null ? mc.getRate().getName() : null,
-        mc.getPlate(),
-        mc.getVehicleType(),
-        mc.getHolderName(),
-        mc.getHolderDocument(),
-        mc.getHolderPhone(),
-        mc.getHolderEmail(),
+        mc.getClient() != null ? mc.getClient().getId() : null,
+        mc.getVehicle() != null ? mc.getVehicle().getId() : null,
+        mc.getVehicle() != null ? mc.getVehicle().getPlate() : null,
+        mc.getVehicle() != null ? mc.getVehicle().getType() : null,
+        mc.getClient() != null ? mc.getClient().getName() : null,
+        mc.getClient() != null ? mc.getClient().getDocument() : null,
+        mc.getClient() != null ? mc.getClient().getPhone() : null,
+        mc.getClient() != null ? mc.getClient().getEmail() : null,
         mc.getSite(),
         mc.getSiteRef() != null ? mc.getSiteRef().getId() : null,
         mc.getStartDate(),
         mc.getEndDate(),
         mc.getAmount(),
-        mc.isActive(),
+        mc.getStatus(),
+        mc.getStatus() == ContractStatus.ACTIVE,
         mc.getNotes(),
         mc.getCreatedAt(),
         mc.getUpdatedAt());

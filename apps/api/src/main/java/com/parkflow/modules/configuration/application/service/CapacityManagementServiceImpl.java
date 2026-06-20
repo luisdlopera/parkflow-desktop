@@ -67,10 +67,20 @@ public class CapacityManagementServiceImpl implements CapacityManagementUseCase 
     Map<String, Object> settings = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
     String previous = toJson(settings.get("capacity"));
-    settings.put("capacity", request.getTotalCapacity());
+
+    @SuppressWarnings("unchecked")
+    Map<String, Object> capacity = new LinkedHashMap<>(
+        settings.get("capacity") instanceof Map
+            ? (Map<String, Object>) settings.get("capacity")
+            : new LinkedHashMap<>());
+
+    capacity.put("total", request.getTotalCapacity());
+    capacity.put("controlSlots", capacity.getOrDefault("controlSlots", false));
     if (request.getCapacityByType() != null) {
-      settings.put("capacityByType", request.getCapacityByType());
+      capacity.put("byType", request.getCapacityByType());
     }
+    settings.put("capacity", capacity);
+
     companySettingsService.upsertSettings(company, settings);
     auditService.record(AuditAction.CAMBIAR_CONFIGURACION, companyId, null,
         previous, String.valueOf(request.getTotalCapacity()), "section=capacity");

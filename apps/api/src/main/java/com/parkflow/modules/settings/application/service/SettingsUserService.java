@@ -78,9 +78,6 @@ public class SettingsUserService implements UserManagementUseCase {
     user.setSite(trimToNull(req.site()));
     user.setTerminal(trimToNull(req.terminal()));
     user.setRole(req.role());
-    user.setCanVoidTickets(req.canVoidTickets());
-    user.setCanReprintTickets(req.canReprintTickets());
-    user.setCanCloseCash(req.canCloseCash());
     user.setRequirePasswordChange(req.requirePasswordChange());
     user.setPasswordHash(passwordHashService.encodePassword(req.initialPassword()));
     user.setPasswordChangedAt(OffsetDateTime.now());
@@ -160,15 +157,6 @@ public class SettingsUserService implements UserManagementUseCase {
     }
     if (req.role() != null) {
       user.setRole(req.role());
-    }
-    if (req.canVoidTickets() != null) {
-      user.setCanVoidTickets(req.canVoidTickets());
-    }
-    if (req.canReprintTickets() != null) {
-      user.setCanReprintTickets(req.canReprintTickets());
-    }
-    if (req.canCloseCash() != null) {
-      user.setCanCloseCash(req.canCloseCash());
     }
     if (req.requirePasswordChange() != null) {
       user.setRequirePasswordChange(req.requirePasswordChange());
@@ -280,9 +268,7 @@ public class SettingsUserService implements UserManagementUseCase {
         u.getSite(),
         u.getTerminal(),
         u.isActive(),
-        u.isCanVoidTickets(),
-        u.isCanReprintTickets(),
-        u.isCanCloseCash(),
+        u.isBlocked(),
         u.isRequirePasswordChange(),
         u.getLastAccessAt(),
         u.getCreatedAt(),

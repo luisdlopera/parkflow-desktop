@@ -43,14 +43,22 @@ public class HelmetHandlingServiceImpl implements HelmetHandlingUseCase {
 
     String currentMode = (String) opConfig.getOrDefault("helmetHandling", "NONE");
 
+    int activeCount = (int) lockerPort.countByCompanyIdAndStatus(companyId, LockerStatus.DISPONIBLE);
+    int inactiveCount = (int) lockerPort.countByCompanyIdAndStatus(companyId, LockerStatus.FUERA_DE_SERVICIO);
+    long usedCount = lockerPort.countByCompanyIdAndStatus(companyId, LockerStatus.OCUPADO);
+
+    boolean isEditable = usedCount == 0;
+    String editabilityReason = isEditable ? null
+        : "No se puede cambiar el modo mientras haya " + usedCount + " casillero(s) en uso.";
+
     return HelmetHandlingResponse.builder()
         .companyId(companyId.toString())
         .currentMode(currentMode)
-        .activeLockerCount(0)
-        .inactiveLockerCount(0)
-        .usedLockerCount(0L)
-        .isEditable(true)
-        .editabilityReason(null)
+        .activeLockerCount(activeCount)
+        .inactiveLockerCount(inactiveCount)
+        .usedLockerCount(usedCount)
+        .isEditable(isEditable)
+        .editabilityReason(editabilityReason)
         .build();
   }
 

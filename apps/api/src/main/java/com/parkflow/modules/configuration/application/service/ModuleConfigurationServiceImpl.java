@@ -30,20 +30,31 @@ public class ModuleConfigurationServiceImpl implements ModuleConfigurationUseCas
   private final AuditService auditService;
   private final ObjectMapper objectMapper;
 
+  private boolean getModuleEnabled(Map<String, Object> modules, String moduleKey, boolean defaultValue) {
+    if (modules.containsKey(moduleKey)) {
+      Object v = modules.get(moduleKey);
+      if (v instanceof Boolean) return (Boolean) v;
+    }
+    return defaultValue;
+  }
+
   @Override
   @Transactional(readOnly = true)
   public ModuleConfigurationResponse getModuleConfiguration(UUID companyId) {
     Company company = getCompanyOrThrow(companyId);
     Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
 
+    @SuppressWarnings("unchecked")
+    Map<String, Object> modules = (Map<String, Object>) json.getOrDefault("modules", Map.of());
+
     return ModuleConfigurationResponse.builder()
         .companyId(companyId.toString())
-        .clientsEnabled((Boolean) json.getOrDefault("clientsEnabled", false))
-        .agreementsEnabled((Boolean) json.getOrDefault("agreementsEnabled", false))
-        .monthlyEnabled((Boolean) json.getOrDefault("monthlyEnabled", false))
-        .shiftsEnabled((Boolean) json.getOrDefault("shiftsEnabled", false))
-        .cashEnabled((Boolean) json.getOrDefault("cashEnabled", true))
-        .advancedAuditEnabled((Boolean) json.getOrDefault("advancedAuditEnabled", false))
+        .clientsEnabled(getModuleEnabled(modules, "clients", false))
+        .agreementsEnabled(getModuleEnabled(modules, "agreements", false))
+        .monthlyEnabled(getModuleEnabled(modules, "monthly", false))
+        .shiftsEnabled(getModuleEnabled(modules, "shifts", false))
+        .cashEnabled(getModuleEnabled(modules, "cash", true))
+        .advancedAuditEnabled(getModuleEnabled(modules, "advancedAudit", false))
         .licensePlan(company.getPlan().name())
         .build();
   }
@@ -54,10 +65,18 @@ public class ModuleConfigurationServiceImpl implements ModuleConfigurationUseCas
     Company company = getCompanyOrThrow(companyId);
     Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
-    String previous = toJson(Map.of(
-        "clientsEnabled", json.getOrDefault("clientsEnabled", false),
-        "cashEnabled", json.getOrDefault("cashEnabled", true)));
+    @SuppressWarnings("unchecked")
+    Map<String, Object> modules = new LinkedHashMap<>(
+        (Map<String, Object>) json.getOrDefault("modules", new LinkedHashMap<>()));
 
+    modules.put("clients", request.getClientsEnabled());
+    modules.put("agreements", request.getAgreementsEnabled());
+    modules.put("monthly", request.getMonthlyEnabled());
+    modules.put("shifts", request.getShiftsEnabled());
+    modules.put("cash", request.getCashEnabled());
+    modules.put("advancedAudit", request.getAdvancedAuditEnabled());
+
+    json.put("modules", modules);
     json.put("clientsEnabled", request.getClientsEnabled());
     json.put("agreementsEnabled", request.getAgreementsEnabled());
     json.put("monthlyEnabled", request.getMonthlyEnabled());
@@ -67,7 +86,7 @@ public class ModuleConfigurationServiceImpl implements ModuleConfigurationUseCas
 
     companySettingsService.upsertSettings(company, json);
     auditService.record(AuditAction.CAMBIAR_CONFIGURACION, companyId, null,
-        previous, toJson(request), "section=modules");
+        toJson(modules), toJson(request), "section=modules");
 
     return getModuleConfiguration(companyId);
   }

@@ -38,13 +38,16 @@ public class ShiftConfigurationServiceImpl implements ShiftConfigurationUseCase 
     Company company = getCompanyOrThrow(companyId);
     Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
 
+    @SuppressWarnings("unchecked")
+    Map<String, Object> shifts = (Map<String, Object>) json.getOrDefault("shifts", Map.of());
+
     return ShiftConfigurationResponse.builder()
         .companyId(companyId.toString())
-        .shiftsEnabled((Boolean) json.getOrDefault("shiftsEnabled", false))
-        .dayShiftStart((String) json.getOrDefault("dayShiftStart", "06:00"))
-        .dayShiftEnd((String) json.getOrDefault("dayShiftEnd", "18:00"))
-        .nightShiftStart((String) json.getOrDefault("nightShiftStart", "18:00"))
-        .nightShiftEnd((String) json.getOrDefault("nightShiftEnd", "06:00"))
+        .shiftsEnabled(readNestedOrFlat(json, shifts, "shiftsEnabled", "enabled", false))
+        .dayShiftStart(readNestedOrFlatStr(json, shifts, "dayShiftStart", "dayShiftStart", "06:00"))
+        .dayShiftEnd(readNestedOrFlatStr(json, shifts, "dayShiftEnd", "dayShiftEnd", "18:00"))
+        .nightShiftStart(readNestedOrFlatStr(json, shifts, "nightShiftStart", "nightShiftStart", "18:00"))
+        .nightShiftEnd(readNestedOrFlatStr(json, shifts, "nightShiftEnd", "nightShiftEnd", "06:00"))
         .build();
   }
 
@@ -59,10 +62,21 @@ public class ShiftConfigurationServiceImpl implements ShiftConfigurationUseCase 
     }
 
     String previous = toJson(Map.of(
-        "shiftsEnabled", json.getOrDefault("shiftsEnabled", false),
-        "dayShiftStart", json.getOrDefault("dayShiftStart", "06:00"),
-        "dayShiftEnd", json.getOrDefault("dayShiftEnd", "18:00")));
+        "shiftsEnabled", readNestedOrFlat(json, null, "shiftsEnabled", "enabled", false),
+        "dayShiftStart", readNestedOrFlatStr(json, null, "dayShiftStart", "dayShiftStart", "06:00"),
+        "dayShiftEnd", readNestedOrFlatStr(json, null, "dayShiftEnd", "dayShiftEnd", "18:00")));
 
+    @SuppressWarnings("unchecked")
+    Map<String, Object> shifts = new LinkedHashMap<>(
+        (Map<String, Object>) json.getOrDefault("shifts", new LinkedHashMap<>()));
+
+    shifts.put("enabled", request.getShiftsEnabled());
+    shifts.put("dayShiftStart", request.getDayShiftStart());
+    shifts.put("dayShiftEnd", request.getDayShiftEnd());
+    shifts.put("nightShiftStart", request.getNightShiftStart());
+    shifts.put("nightShiftEnd", request.getNightShiftEnd());
+
+    json.put("shifts", shifts);
     json.put("shiftsEnabled", request.getShiftsEnabled());
     json.put("dayShiftStart", request.getDayShiftStart());
     json.put("dayShiftEnd", request.getDayShiftEnd());
@@ -74,6 +88,28 @@ public class ShiftConfigurationServiceImpl implements ShiftConfigurationUseCase 
         previous, toJson(request), "section=shifts");
 
     return getShiftConfiguration(companyId);
+  }
+
+  private boolean readNestedOrFlat(Map<String, Object> root, Map<String, Object> nested,
+                                    String flatKey, String nestedKey, boolean defaultValue) {
+    if (nested != null && nested.containsKey(nestedKey)) {
+      Object v = nested.get(nestedKey);
+      if (v instanceof Boolean) return (Boolean) v;
+    }
+    Object v = root.get(flatKey);
+    if (v instanceof Boolean) return (Boolean) v;
+    return defaultValue;
+  }
+
+  private String readNestedOrFlatStr(Map<String, Object> root, Map<String, Object> nested,
+                                      String flatKey, String nestedKey, String defaultValue) {
+    if (nested != null && nested.containsKey(nestedKey)) {
+      Object v = nested.get(nestedKey);
+      if (v instanceof String) return (String) v;
+    }
+    Object v = root.get(flatKey);
+    if (v instanceof String) return (String) v;
+    return defaultValue;
   }
 
   private void validateShiftTimes(ShiftConfigurationRequest request) {

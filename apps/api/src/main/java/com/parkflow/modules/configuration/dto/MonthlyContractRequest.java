@@ -12,9 +12,11 @@ import java.util.UUID;
 
 public record MonthlyContractRequest(
     @NotNull UUID rateId,
-    @NotBlank @Size(max = 20) String plate,
+    UUID clientId,
+    UUID vehicleId,
+    @Size(max = 20) String plate,
     @Size(max = 30) String vehicleType,
-    @NotBlank @Size(max = 120) String holderName,
+    @Size(max = 120) String holderName,
     @Size(max = 40) String holderDocument,
     @Size(max = 30) String holderPhone,
     @Email @Size(max = 120) String holderEmail,
@@ -23,5 +25,5 @@ public record MonthlyContractRequest(
     @NotNull LocalDate startDate,
     @NotNull LocalDate endDate,
     @NotNull @DecimalMin("0.0") @Digits(integer = 10, fraction = 2) BigDecimal amount,
-    boolean active,
+    @NotNull com.parkflow.modules.configuration.domain.ContractStatus status,
     @Size(max = 500) String notes) {}

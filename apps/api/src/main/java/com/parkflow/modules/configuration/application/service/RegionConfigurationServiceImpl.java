@@ -36,13 +36,26 @@ public class RegionConfigurationServiceImpl implements RegionConfigurationUseCas
     Company company = getCompanyOrThrow(companyId);
     Map<String, Object> json = companySettingsService.getSettingsOrDefault(company);
 
+    @SuppressWarnings("unchecked")
+    Map<String, Object> region = (Map<String, Object>) json.getOrDefault("region", Map.of());
+
     return RegionConfigurationResponse.builder()
         .companyId(companyId.toString())
-        .countryCode((String) json.getOrDefault("countryCode", "CO"))
-        .platePattern((String) json.getOrDefault("platePattern", "^[A-Z]{3}[0-9]{3}$"))
-        .platePrefixes((String) json.getOrDefault("platePrefixes", ""))
-        .timezone((String) json.getOrDefault("timezone", "America/Bogota"))
+        .countryCode(regionString(json, region, "countryCode", "CO"))
+        .platePattern(regionString(json, region, "platePattern", "^[A-Z]{3}[0-9]{3}$"))
+        .platePrefixes(regionString(json, region, "platePrefixes", ""))
+        .timezone(regionString(json, region, "timezone", "America/Bogota"))
         .build();
+  }
+
+  private String regionString(Map<String, Object> root, Map<String, Object> region, String key, String def) {
+    if (region.containsKey(key)) {
+      Object v = region.get(key);
+      if (v instanceof String) return (String) v;
+    }
+    Object v = root.get(key);
+    if (v instanceof String) return (String) v;
+    return def;
   }
 
   @Override
@@ -51,10 +64,16 @@ public class RegionConfigurationServiceImpl implements RegionConfigurationUseCas
     Company company = getCompanyOrThrow(companyId);
     Map<String, Object> json = new LinkedHashMap<>(companySettingsService.getSettingsOrDefault(company));
 
-    String previous = toJson(Map.of(
-        "countryCode", json.getOrDefault("countryCode", "CO"),
-        "timezone", json.getOrDefault("timezone", "America/Bogota")));
+    @SuppressWarnings("unchecked")
+    Map<String, Object> region = new LinkedHashMap<>(
+        (Map<String, Object>) json.getOrDefault("region", new LinkedHashMap<>()));
 
+    region.put("countryCode", request.getCountryCode());
+    region.put("platePattern", request.getPlatePattern());
+    region.put("platePrefixes", request.getPlatePrefixes());
+    region.put("timezone", request.getTimezone());
+
+    json.put("region", region);
     json.put("countryCode", request.getCountryCode());
     json.put("platePattern", request.getPlatePattern());
     json.put("platePrefixes", request.getPlatePrefixes());
@@ -62,7 +81,7 @@ public class RegionConfigurationServiceImpl implements RegionConfigurationUseCas
 
     companySettingsService.upsertSettings(company, json);
     auditService.record(AuditAction.CAMBIAR_CONFIGURACION, companyId, null,
-        previous, toJson(request), "section=region");
+        toJson(region), toJson(request), "section=region");
 
     return getRegionConfiguration(companyId);
   }

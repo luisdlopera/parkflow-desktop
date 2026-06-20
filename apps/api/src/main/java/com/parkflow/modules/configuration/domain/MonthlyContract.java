@@ -19,8 +19,7 @@ import lombok.Setter;
 @Table(
     name = "monthly_contract",
     indexes = {
-      @Index(name = "idx_monthly_contract_plate", columnList = "plate"),
-      @Index(name = "idx_monthly_contract_active", columnList = "is_active"),
+      @Index(name = "idx_monthly_contract_status", columnList = "status"),
       @Index(name = "idx_monthly_contract_site", columnList = "site")
     })
 public class MonthlyContract {
@@ -36,23 +35,13 @@ public class MonthlyContract {
   @JoinColumn(name = "rate_id", nullable = false)
   private Rate rate;
 
-  @Column(nullable = false, length = 20)
-  private String plate;
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name = "client_id", nullable = false)
+  private com.parkflow.modules.customers.domain.Client client;
 
-  @Column(length = 30)
-  private String vehicleType;
-
-  @Column(nullable = false, length = 120)
-  private String holderName;
-
-  @Column(length = 40)
-  private String holderDocument;
-
-  @Column(length = 30)
-  private String holderPhone;
-
-  @Column(length = 120)
-  private String holderEmail;
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name = "vehicle_id", nullable = false)
+  private com.parkflow.modules.parking.operation.domain.Vehicle vehicle;
 
   @Column(nullable = false, length = 80)
   private String site = "DEFAULT";
@@ -70,8 +59,9 @@ public class MonthlyContract {
   @Column(nullable = false, precision = 12, scale = 2)
   private BigDecimal amount;
 
-  @Column(nullable = false)
-  private boolean isActive = true;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private ContractStatus status = ContractStatus.ACTIVE;
 
   @Column(columnDefinition = "TEXT")
   private String notes;

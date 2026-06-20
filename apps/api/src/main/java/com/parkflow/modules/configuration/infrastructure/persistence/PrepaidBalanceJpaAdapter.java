@@ -4,8 +4,11 @@ import com.parkflow.modules.configuration.domain.PrepaidBalance;
 import com.parkflow.modules.configuration.domain.repository.PrepaidBalancePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
@@ -49,6 +52,7 @@ public class PrepaidBalanceJpaAdapter implements PrepaidBalancePort {
 
   @Repository
   interface PrepaidBalanceJpaRepository extends JpaRepository<PrepaidBalance, UUID> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT pb FROM PrepaidBalance pb WHERE pb.plate = :plate AND pb.companyId = :cid " +
            "AND pb.isActive = true AND pb.remainingMinutes > 0 AND pb.expiresAt > :now ORDER BY pb.expiresAt ASC")
     List<PrepaidBalance> findActiveByPlate(@Param("plate") String plate, @Param("now") OffsetDateTime now, @Param("cid") UUID companyId);

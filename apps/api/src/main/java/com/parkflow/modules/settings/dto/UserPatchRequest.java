@@ -12,7 +12,4 @@ public record UserPatchRequest(
     UserRole role,
     @Size(max = 80) String site,
     @Size(max = 80) String terminal,
-    Boolean canVoidTickets,
-    Boolean canReprintTickets,
-    Boolean canCloseCash,
     Boolean requirePasswordChange) {}

@@ -52,6 +52,12 @@ public class ParkingParametersData {
   /** Si no es null, sustituye app.cash.offline-max-manual-movement para movimientos offline. */
   private BigDecimal cashOfflineMaxManualMovement;
 
+  /** Límite máximo (dinero) permitido para ajustes manuales en caja. */
+  private BigDecimal cashMaxManualAdjustment;
+
+  /** Límite de tiempo máximo en horas antes de que el auto-cierre actúe sobre la caja. */
+  private Integer cashMaxSessionHours;
+
   /** URL para webhook de salida al cerrar caja (PSC). */
   private String cashFeOutboundWebhookUrl;
 
