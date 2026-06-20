@@ -45,6 +45,7 @@ logs/
 .cursor/
 .agents/
 .opencode/
+.claude/
 *.iml
 *.ipr
 *.iws
