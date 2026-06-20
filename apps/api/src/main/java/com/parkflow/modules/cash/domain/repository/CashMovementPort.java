@@ -8,6 +8,8 @@ import java.util.UUID;
 public interface CashMovementPort {
     List<CashMovement> findByCashSession_IdOrderByCreatedAtDesc(UUID cashSessionId);
 
+    List<CashMovement> findPostedByParkingSessionId(UUID parkingSessionId);
+
     List<CashMovement> findByCashSessionIdFetchAllOrderByCreatedAtDesc(UUID cashSessionId);
 
     Optional<CashMovement> findByIdempotencyKey(String idempotencyKey);

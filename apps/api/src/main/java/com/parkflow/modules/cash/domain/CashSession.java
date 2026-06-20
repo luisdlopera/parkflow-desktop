@@ -4,9 +4,12 @@ import com.parkflow.modules.auth.domain.AppUser;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 @Getter
 @Setter
@@ -99,4 +102,9 @@ public class CashSession {
 
   @Column(nullable = false)
   private OffsetDateTime updatedAt = OffsetDateTime.now();
+
+  @OneToMany(mappedBy = "cashSession", fetch = FetchType.LAZY)
+  @BatchSize(size = 50)
+  @OrderBy("denomination DESC")
+  private List<CashSessionDenomination> denominations = new ArrayList<>();
 }

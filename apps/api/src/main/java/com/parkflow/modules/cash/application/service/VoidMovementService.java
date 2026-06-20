@@ -1,5 +1,7 @@
 package com.parkflow.modules.cash.application.service;
 
+import com.parkflow.modules.audit.domain.Auditable;
+
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
@@ -17,7 +19,6 @@ import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -44,10 +45,16 @@ public class VoidMovementService implements VoidCashMovementUseCase {
 
   @Override
   @Transactional
-  @PreAuthorize("hasAuthority('anulaciones:crear')")
+  @PreAuthorize("hasAuthority('cobros:anular')")
+  @Auditable(module = "CAJA", action = "ANULACION", entityClass = CashMovement.class)
   public CashMovementResponse voidMovement(UUID sessionId, UUID movementId, VoidMovementRequest request) {
     CashSession session = requireOpenSession(sessionId);
     validateOperator(session.getOperator().getId());
+
+    if (session.getCountedAt() != null) {
+      throw new OperationException(HttpStatus.CONFLICT,
+          "No se pueden anular movimientos después del arqueo. Registre observaciones en el cierre.");
+    }
 
     CashMovement m = cashMovementRepository.findById(movementId)
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Movimiento no encontrado"));
@@ -85,11 +92,7 @@ public class VoidMovementService implements VoidCashMovementUseCase {
       m.setIdempotencyKey(voidKey);
     }
 
-    try {
-      cashMovementRepository.save(m);
-    } catch (DataIntegrityViolationException ex) {
-      throw new OperationException(HttpStatus.CONFLICT, "Movimiento ya anulado o conflicto de concurrencia");
-    }
+    cashMovementRepository.save(m);
 
     UUID companyId = TenantContext.getTenantId() != null
         ? TenantContext.getTenantId()
@@ -103,7 +106,7 @@ public class VoidMovementService implements VoidCashMovementUseCase {
     offset.setCashSession(session);
     offset.setMovementType(CashMovementType.VOID_OFFSET);
     offset.setPaymentMethod(m.getPaymentMethod());
-    offset.setAmount(cashLedgerSummaryCalculator.ledgerContribution(m).negate());
+    offset.setAmount(cashLedgerSummaryCalculator.ledgerContribution(m.getMovementType(), m.getAmount()).negate());
     offset.setReason("Anulacion: " + request.reason());
     offset.setMetadata("{\"voidOf\":\"" + m.getId() + "\"}");
     offset.setCreatedBy(actor);
@@ -112,11 +115,7 @@ public class VoidMovementService implements VoidCashMovementUseCase {
       offset.setIdempotencyKey(voidKey + ":offset");
     }
 
-    try {
-      cashMovementRepository.save(offset);
-    } catch (DataIntegrityViolationException ex) {
-      throw new OperationException(HttpStatus.CONFLICT, "Error creando movimiento de contrapartida para anulación");
-    }
+    cashMovementRepository.save(offset);
 
     Map<String, Object> meta = responseMapper.baseMeta(session);
     meta.put("voidedMovementId", m.getId().toString());

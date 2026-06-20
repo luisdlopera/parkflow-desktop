@@ -6,8 +6,12 @@ import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.dto.CashAuditEntryResponse;
 import com.parkflow.modules.cash.dto.CashRegisterInfoResponse;
 import com.parkflow.modules.cash.dto.CashSessionResponse;
+import com.parkflow.modules.cash.dto.DenominationDto;
+import com.parkflow.modules.cash.repository.CashSessionDenominationRepository;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -37,6 +41,9 @@ public class CashSessionResponseMapper {
 
   public CashSessionResponse toSessionResponse(CashSession session) {
     CashRegister register = session.getCashRegister();
+    List<DenominationDto> denominations = session.getDenominations().stream()
+        .map(d -> new DenominationDto(d.getDenomination(), d.getQuantity()))
+        .toList();
     return new CashSessionResponse(
         session.getId(),
         new CashRegisterInfoResponse(
@@ -62,6 +69,7 @@ public class CashSessionResponseMapper {
         session.getSupportDocumentNumber(),
         session.getCountedAt(),
         session.getCountOperator() != null ? session.getCountOperator().getId() : null,
-        session.getCountOperator() != null ? session.getCountOperator().getName() : null);
+        session.getCountOperator() != null ? session.getCountOperator().getName() : null,
+        denominations.isEmpty() ? null : denominations);
   }
 }

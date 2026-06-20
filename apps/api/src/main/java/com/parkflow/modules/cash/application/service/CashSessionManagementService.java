@@ -13,7 +13,9 @@ import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.settings.dto.ParkingParametersData;
 import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import com.parkflow.modules.cash.repository.CashSessionDenominationRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -51,11 +54,14 @@ public class CashSessionManagementService implements CashSessionUseCase {
     private final CashClosingOutboundNotifier cashClosingOutboundNotifier;
     private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
     private final CashLedgerSummaryCalculator cashLedgerSummaryCalculator;
+    private final CashSessionDenominationRepository cashSessionDenominationRepository;
+    private final ParkingSessionRepository parkingSessionRepository;
 
     @Override
     @Transactional
     public CashSessionResponse open(OpenCashRequest request) {
-        validateOperator(request.operatorUserId());
+        String site = normalizeSite(request.site());
+        validateOperator(request.operatorUserId(), site);
         if (StringUtils.hasText(request.openIdempotencyKey())) {
             Optional<CashSession> existing =
                 cashSessionRepository.findByOpenIdempotencyKey(request.openIdempotencyKey().trim());
@@ -64,7 +70,6 @@ public class CashSessionManagementService implements CashSessionUseCase {
             }
         }
 
-        String site = normalizeSite(request.site());
         String terminal = request.terminal().trim();
         CashRegister register;
         try {
@@ -152,7 +157,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
     @Transactional
     public CashSessionResponse submitCount(UUID sessionId, CashCountRequest request) {
         CashSession session = requireOpenSession(sessionId);
-        validateOperator(session.getOperator().getId());
+        validateOperator(session.getOperator().getId(), session.getCashRegister().getSite());
         
         AppUser actor =
             appUserRepository
@@ -177,9 +182,30 @@ public class CashSessionManagementService implements CashSessionUseCase {
         session.setDifferenceAmount(diff);
         session.setCountedAt(OffsetDateTime.now());
         session.setCountOperator(actor);
+        
         session.setNotes(mergeNotes(session.getNotes(), request.observations()));
         session.setUpdatedAt(OffsetDateTime.now());
         session = cashSessionRepository.save(session);
+
+        // Persistir desglose de denominaciones en tabla normalizada (idempotente)
+        if (request.denominations() != null && !request.denominations().isEmpty()) {
+            cashSessionDenominationRepository.deleteByCashSessionId(session.getId());
+            final CashSession savedSession = session;
+            List<com.parkflow.modules.cash.domain.CashSessionDenomination> denomEntities =
+                request.denominations().stream()
+                    .filter(d -> d.denomination() != null && d.quantity() != null && d.quantity() > 0)
+                    .map(d -> {
+                        com.parkflow.modules.cash.domain.CashSessionDenomination e =
+                            new com.parkflow.modules.cash.domain.CashSessionDenomination();
+                        e.setCompanyId(savedSession.getCompanyId());
+                        e.setCashSession(savedSession);
+                        e.setDenomination(d.denomination());
+                        e.setQuantity(d.quantity());
+                        return e;
+                    })
+                    .toList();
+            cashSessionDenominationRepository.saveAll(denomEntities);
+        }
 
         if (diff.compareTo(ZERO) != 0 && !StringUtils.hasText(request.observations())) {
             throw new OperationException(
@@ -218,12 +244,21 @@ public class CashSessionManagementService implements CashSessionUseCase {
             }
         }
 
-        CashSession session = requireOpenSession(sessionId);
-        validateOperator(session.getOperator().getId());
+        CashSession session = requireOpenSessionWithLock(sessionId);
+        validateOperator(session.getOperator().getId(), session.getCashRegister().getSite());
         
         if (session.getCountedAt() == null) {
             throw new OperationException(HttpStatus.BAD_REQUEST, "Debe registrar arqueo antes de cerrar");
         }
+
+        long activeVehicles = parkingSessionRepository.countByStatusAndCompanyIdAndEntryAtGreaterThanEqual(
+                SessionStatus.ACTIVE, session.getCompanyId(), session.getOpenedAt());
+        if (activeVehicles > 0) {
+            throw new OperationException(HttpStatus.CONFLICT,
+                    "No se puede cerrar el turno: " + activeVehicles +
+                    " vehículo(s) activo(s) dentro. Registre las salidas antes de cerrar.");
+        }
+
         CashSummaryResponse sum = getSummary(sessionId);
         BigDecimal counted = session.getCountedAmount() != null ? session.getCountedAmount() : ZERO;
         BigDecimal diff = counted.subtract(sum.expectedLedgerTotal());
@@ -359,8 +394,23 @@ public class CashSessionManagementService implements CashSessionUseCase {
     @Transactional(readOnly = true)
     public CashSummaryResponse getSummary(UUID sessionId) {
         CashSession session = requireSession(sessionId);
-        List<CashMovement> movements = cashMovementRepository.findByCashSession_IdOrderByCreatedAtDesc(sessionId);
-        return cashLedgerSummaryCalculator.summarize(session, movements);
+        List<com.parkflow.modules.cash.repository.CashMovementSummaryProjection> projections = 
+            cashMovementRepository.getSummaryBySessionId(sessionId);
+        CashSummaryResponse response = cashLedgerSummaryCalculator.summarize(session, projections);
+        
+        UserRole role = SecurityUtils.requireUserRole();
+        if (session.getCountedAt() == null && role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN) {
+            return new CashSummaryResponse(
+                response.openingAmount(),
+                null, // expectedLedgerTotal oculto para cierre ciego
+                response.countedTotal(),
+                null, // difference oculto
+                response.totalsByPaymentMethod(),
+                response.totalsByMovementType(),
+                response.movementCount()
+            );
+        }
+        return response;
     }
 
     @Override
@@ -387,13 +437,19 @@ public class CashSessionManagementService implements CashSessionUseCase {
 
     // Helper methods ported from CashService
     
-    private void validateOperator(UUID operatorUserId) {
-        UUID actor = SecurityUtils.requireUserId();
+    private void validateOperator(UUID operatorUserId, String registerSite) {
+        UUID actorId = SecurityUtils.requireUserId();
         UserRole role = SecurityUtils.requireUserRole();
-        if (!operatorUserId.equals(actor)
-            && role != UserRole.ADMIN
-            && role != UserRole.SUPER_ADMIN) {
-            throw new OperationException(HttpStatus.FORBIDDEN, "Solo puede operar caja como su usuario");
+        if (!operatorUserId.equals(actorId)) {
+            if (role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN) {
+                throw new OperationException(HttpStatus.FORBIDDEN, "Solo puede operar caja como su usuario");
+            }
+            if (role == UserRole.ADMIN && registerSite != null) {
+                AppUser actor = appUserRepository.findById(actorId).orElse(null);
+                if (actor != null && StringUtils.hasText(actor.getSite()) && !actor.getSite().equals(registerSite)) {
+                    throw new OperationException(HttpStatus.FORBIDDEN, "El administrador no tiene acceso a operar cajas de esta sede");
+                }
+            }
         }
     }
 
@@ -423,6 +479,20 @@ public class CashSessionManagementService implements CashSessionUseCase {
         return s;
     }
 
+    private CashSession requireOpenSessionWithLock(UUID id) {
+        CashSession session = cashSessionRepository
+            .findByIdWithPessimisticLock(id)
+            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
+            
+        if (TenantContext.getTenantId() != null && !session.getCompanyId().equals(TenantContext.getTenantId())) {
+            throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a esta sesión");
+        }
+        if (session.getStatus() != CashSessionStatus.OPEN) {
+            throw new OperationException(HttpStatus.CONFLICT, "La sesion de caja ya esta cerrada");
+        }
+        return session;
+    }
+
     private String groupingSiteForParams(CashSession s) {
         if (s.getCashRegister().getSite() != null) return s.getCashRegister().getSite();
         return "default";
@@ -447,6 +517,9 @@ public class CashSessionManagementService implements CashSessionUseCase {
 
     private CashSessionResponse toSessionResponse(CashSession s) {
         CashRegister r = s.getCashRegister();
+        List<com.parkflow.modules.cash.dto.DenominationDto> denominations = s.getDenominations().stream()
+                .map(d -> new com.parkflow.modules.cash.dto.DenominationDto(d.getDenomination(), d.getQuantity()))
+                .toList();
         return new CashSessionResponse(
             s.getId(),
             new CashRegisterInfoResponse(r.getId(), r.getSite(), r.getTerminal(), r.getLabel()),
@@ -471,6 +544,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
             s.getSupportDocumentNumber(),
             s.getCountedAt(),
             s.getCountOperator() != null ? s.getCountOperator().getId() : null,
-            s.getCountOperator() != null ? s.getCountOperator().getName() : null);
+            s.getCountOperator() != null ? s.getCountOperator().getName() : null,
+            denominations.isEmpty() ? null : denominations);
     }
 }

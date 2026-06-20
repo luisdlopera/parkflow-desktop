@@ -9,6 +9,7 @@ import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.parkflow.modules.cash.repository.CashMovementSummaryProjection;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,49 +19,48 @@ public class CashLedgerSummaryCalculator {
   private static final int SCALE = 2;
   private static final RoundingMode ROUNDING = RoundingMode.HALF_UP;
 
-  public CashSummaryResponse summarize(CashSession session, List<CashMovement> movements) {
-    BigDecimal ledger = movements.stream()
-        .map(this::ledgerContribution)
-        .reduce(ZERO, (a, b) -> a.add(b).setScale(SCALE, ROUNDING));
-    BigDecimal opening = session.getOpeningAmount() != null ? session.getOpeningAmount() : ZERO;
-    BigDecimal expected = opening.add(ledger).setScale(SCALE, ROUNDING);
-
+  public CashSummaryResponse summarize(CashSession session, List<CashMovementSummaryProjection> projections) {
+    BigDecimal ledger = ZERO;
     Map<String, BigDecimal> byMethod = new HashMap<>();
     Map<String, BigDecimal> byType = new HashMap<>();
     long posted = 0;
-    for (CashMovement movement : movements) {
-      if (movement.getStatus() != CashMovementStatus.POSTED) {
-        continue;
-      }
-      posted++;
-      BigDecimal contribution = ledgerContribution(movement);
-      byMethod.merge(
-          movement.getPaymentMethod().name(),
-          contribution,
-          (a, b) -> a.add(b).setScale(SCALE, ROUNDING));
-      byType.merge(
-          movement.getMovementType().name(),
-          contribution,
-          (a, b) -> a.add(b).setScale(SCALE, ROUNDING));
+
+    for (CashMovementSummaryProjection p : projections) {
+        BigDecimal amount = p.getTotalAmount() != null ? p.getTotalAmount() : ZERO;
+        BigDecimal contribution = ledgerContribution(p.getMovementType(), amount);
+        
+        ledger = ledger.add(contribution).setScale(SCALE, ROUNDING);
+        posted += p.getCount();
+        
+        byMethod.merge(
+            p.getPaymentMethod().name(),
+            contribution,
+            (a, b) -> a.add(b).setScale(SCALE, ROUNDING));
+        
+        byType.merge(
+            p.getMovementType().name(),
+            contribution,
+            (a, b) -> a.add(b).setScale(SCALE, ROUNDING));
     }
+
+    BigDecimal opening = session.getOpeningAmount() != null ? session.getOpeningAmount() : ZERO;
+    BigDecimal expected = opening.add(ledger).setScale(SCALE, ROUNDING);
 
     BigDecimal counted = session.getCountedAmount() != null ? session.getCountedAmount() : null;
     BigDecimal diff = counted != null ? counted.subtract(expected).setScale(SCALE, ROUNDING) : null;
     return new CashSummaryResponse(opening, expected, counted, diff, byMethod, byType, posted);
   }
 
-  public BigDecimal ledgerContribution(CashMovement movement) {
-    if (movement.getStatus() != CashMovementStatus.POSTED) {
-      return ZERO;
-    }
-    return switch (movement.getMovementType()) {
+  public BigDecimal ledgerContribution(com.parkflow.modules.cash.domain.CashMovementType type, BigDecimal amount) {
+    return switch (type) {
       case PARKING_PAYMENT,
           MANUAL_INCOME,
           LOST_TICKET_PAYMENT,
           REPRINT_FEE,
-          ADJUSTMENT -> movement.getAmount();
-      case MANUAL_EXPENSE, WITHDRAWAL, CUSTOMER_REFUND, DISCOUNT -> movement.getAmount().negate();
-      case VOID_OFFSET -> movement.getAmount();
+          ADJUSTMENT -> amount;
+      case MANUAL_EXPENSE, WITHDRAWAL, CUSTOMER_REFUND, DISCOUNT -> amount.negate();
+      // VOID_OFFSET is a compensating entry; it nets to zero in the ledger
+      case VOID_OFFSET -> BigDecimal.ZERO;
     };
   }
 }

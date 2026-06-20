@@ -22,6 +22,11 @@ public class CashMovementJpaAdapter implements CashMovementPort {
     }
 
     @Override
+    public List<CashMovement> findPostedByParkingSessionId(UUID parkingSessionId) {
+        return cashMovementRepository.findPostedByParkingSessionId(parkingSessionId);
+    }
+
+    @Override
     public List<CashMovement> findByCashSessionIdFetchAllOrderByCreatedAtDesc(UUID cashSessionId) {
         return cashMovementRepository.findByCashSessionIdFetchAllOrderByCreatedAtDesc(cashSessionId);
     }

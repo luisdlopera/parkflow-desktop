@@ -2,6 +2,7 @@ package com.parkflow.modules.cash.repository;
 
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.domain.CashSessionStatus;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -45,4 +46,11 @@ public interface CashSessionRepository extends JpaRepository<CashSession, UUID> 
       @Param("status") CashSessionStatus status);
 
   long countByStatus(CashSessionStatus status);
+
+  @EntityGraph(attributePaths = {"cashRegister", "operator"})
+  java.util.List<CashSession> findByStatus(CashSessionStatus status);
+
+  @EntityGraph(attributePaths = {"cashRegister", "operator"})
+  Page<CashSession> findByCompanyIdAndOpenedAtBetweenOrderByOpenedAtDesc(
+      UUID companyId, OffsetDateTime from, OffsetDateTime to, Pageable pageable);
 }

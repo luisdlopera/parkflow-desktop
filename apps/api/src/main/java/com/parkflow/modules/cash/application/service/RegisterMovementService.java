@@ -1,5 +1,7 @@
 package com.parkflow.modules.cash.application.service;
 
+import com.parkflow.modules.audit.domain.Auditable;
+
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
@@ -40,7 +42,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RegisterMovementService implements RegisterCashMovementUseCase {
 
-  private static final BigDecimal MAX_CASHIER_ADJUST = new BigDecimal("500000.00");
+
 
   private final CashMovementRepository cashMovementRepository;
   private final CashSessionRepository cashSessionRepository;
@@ -55,6 +57,7 @@ public class RegisterMovementService implements RegisterCashMovementUseCase {
   @Override
   @Transactional
   @PreAuthorize("hasAuthority('cobros:registrar')")
+  @Auditable(module = "CAJA", action = "MOVIMIENTO", entityClass = CashMovement.class)
   public CashMovementResponse addMovement(UUID sessionId, CashMovementRequest request) {
     CashSession session = requireOpenSession(sessionId);
     validateOperator(session.getOperator().getId());
@@ -73,7 +76,8 @@ public class RegisterMovementService implements RegisterCashMovementUseCase {
     }
     if (request.type() == CashMovementType.ADJUSTMENT || request.type() == CashMovementType.CUSTOMER_REFUND) {
       UserRole role = SecurityUtils.requireUserRole();
-      if (request.amount().compareTo(MAX_CASHIER_ADJUST) > 0
+      BigDecimal maxAdjust = cashPolicyResolver.maxManualAdjustment(session.getCashRegister().getSite());
+      if (request.amount().compareTo(maxAdjust) > 0
           && role != UserRole.ADMIN
           && role != UserRole.SUPER_ADMIN) {
         throw new OperationException(

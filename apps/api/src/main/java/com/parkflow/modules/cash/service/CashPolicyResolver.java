@@ -45,6 +45,12 @@ public class CashPolicyResolver {
         .orElse(props.getOfflineMaxManualMovement());
   }
 
+  public BigDecimal maxManualAdjustment(String siteLabel) {
+    return resolveData(siteLabel)
+        .map(ParkingParametersData::getCashMaxManualAdjustment)
+        .orElse(new BigDecimal("500000.00"));
+  }
+
   public String operationsHint() {
     return props.getOperationsHint();
   }

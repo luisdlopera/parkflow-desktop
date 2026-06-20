@@ -10,4 +10,5 @@ public record CashCountRequest(
     @NotNull @DecimalMin("0.00") BigDecimal countCard,
     @NotNull @DecimalMin("0.00") BigDecimal countTransfer,
     @NotNull @DecimalMin("0.00") BigDecimal countOther,
-    @Size(max = 4000) String observations) {}
+    @Size(max = 4000) String observations,
+    java.util.List<DenominationDto> denominations) {}
