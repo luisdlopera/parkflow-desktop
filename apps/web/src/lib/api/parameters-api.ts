@@ -32,9 +32,12 @@ export type ParkingParametersPayload = {
   manualExitAllowed?: boolean;
   allowOfflineEntryExit?: boolean;
   printExitTicket?: boolean;
-  cashRequireOpenForPayment?: boolean;
-  cashOfflineCloseAllowed?: boolean;
-  cashOfflineMaxManualMovement?: number;
+  cashRequireOpenForPayment: boolean | null;
+  cashOfflineCloseAllowed: boolean | null;
+  cashOfflineMaxManualMovement: number | null;
+  cashMaxManualAdjustment: number | null;
+  cashMaxSessionHours: number | null;
+  cashFeOutboundWebhookUrl: string | null;
   businessLegalName?: string;
   taxIdCheckDigit?: string;
   dianInvoicePrefix?: string;
@@ -46,7 +49,6 @@ export type ParkingParametersPayload = {
   cashFeSequentialEnabled?: boolean;
   cashFeSequencePerTerminal?: boolean;
   cashFeSequenceDigits?: number;
-  cashFeOutboundWebhookUrl?: string;
   cashFeOutboundWebhookBearer?: string;
 };
 

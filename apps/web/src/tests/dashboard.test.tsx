@@ -134,9 +134,10 @@ describe("DashboardPageClient", () => {
     renderWithSWR(<DashboardPageClient />);
 
     await waitFor(() => {
-      const info = screen.getByText(/Sync pendiente/);
-      expect(info.parentElement?.textContent).toContain("3");
-      expect(info.parentElement?.textContent).toContain("1");
+      const syncInfo = screen.getByText(/Sync pendiente/);
+      expect(syncInfo.parentElement?.textContent).toContain("3");
+      const printInfo = screen.getByText(/Impresión fallida/i);
+      expect(printInfo.parentElement?.textContent).toContain("1");
     });
   });
 
@@ -202,7 +203,8 @@ describe("DashboardPageClient", () => {
     await waitFor(() => {
       expect(screen.getByText("OK")).toBeDefined();
       expect(screen.getByText("5")).toBeDefined();
-      expect(screen.getByText("1")).toBeDefined();
+      const ones = screen.getAllByText("1");
+      expect(ones.length).toBeGreaterThanOrEqual(1);
     });
   });
 

@@ -119,7 +119,11 @@ export const cashCountRequestSchema = z.object({
   countCard: z.number().min(0),
   countTransfer: z.number().min(0),
   countOther: z.number().min(0),
-  observations: z.string().max(4000).nullable().optional()
+  observations: z.string().max(4000).nullable().optional(),
+  denominations: z.array(z.object({
+    denomination: z.number().min(0),
+    quantity: z.number().min(0)
+  })).optional()
 });
 
 export const cashCloseRequestSchema = z.object({

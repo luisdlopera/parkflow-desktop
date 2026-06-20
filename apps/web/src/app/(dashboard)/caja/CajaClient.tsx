@@ -69,7 +69,6 @@ export default function CajaClient() {
   const { confirm } = useDialog();
   const { contains } = useFilter({ sensitivity: "base" });
   const p = useCajaPage();
-  console.log("CajaClient rendered! terminal:", p.terminal, "loading:", p.loading);
 
   const movementColumns = useMemo<DataTableColumn<CashMovementDto>[]>(
     () => [
@@ -358,25 +357,48 @@ export default function CajaClient() {
       </Modal>
 
       {/* Void movement modal */}
-      <Modal state={{ isOpen: !!p.voidTarget, setOpen: (v: boolean) => { if (!v) p.setVoidTarget(null); }, open: () => {}, close: () => p.setVoidTarget(null), toggle: () => {} }}>
-        <Modal.Content>
-          <Modal.Header>Anular movimiento</Modal.Header>
-          <Modal.Body>
-            <p className="text-sm text-slate-600 mb-2">Motivo obligatorio (auditoria).</p>
-            <Controller name="voidReason" control={p.voidForm.control}
-              render={({ field }) => (
-                <TextArea label="Motivo" placeholder="Describa la razón de la anulación..." {...field} />
-              )}
-            />
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="ghost" color="primary" onPress={() => p.setVoidTarget(null)}>Cancelar</Button>
-            <Button color="danger" isLoading={p.busy} onPress={() => { p.onVoid().catch(() => {}); }}>
-              Confirmar anulacion
-            </Button>
-          </Modal.Footer>
-        </Modal.Content>
-      </Modal>
+      {(() => {
+        const movToVoid = p.voidTarget ? p.movements.find((m) => m.id === p.voidTarget) : null;
+        const TYPE_LABEL: Record<string, string> = {
+          PARKING_PAYMENT: "Cobro parqueo",
+          MANUAL_INCOME: "Ingreso manual",
+          MANUAL_EXPENSE: "Egreso manual",
+          WITHDRAWAL: "Retiro / Transferencia",
+          CUSTOMER_REFUND: "Devolución al cliente",
+          DISCOUNT: "Descuento",
+          ADJUSTMENT: "Ajuste",
+          LOST_TICKET_PAYMENT: "Cobro ticket perdido",
+          REPRINT_FEE: "Reimpresión cobrada",
+        };
+        return (
+          <Modal state={{ isOpen: !!p.voidTarget, setOpen: (v: boolean) => { if (!v) p.setVoidTarget(null); }, open: () => {}, close: () => p.setVoidTarget(null), toggle: () => {} }}>
+            <Modal.Content>
+              <Modal.Header>Anular movimiento</Modal.Header>
+              <Modal.Body>
+                {movToVoid && (
+                  <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                    <p className="font-semibold mb-1">Vas a anular:</p>
+                    <p>{TYPE_LABEL[movToVoid.movementType] ?? movToVoid.movementType} — <strong>${movToVoid.amount.toLocaleString()}</strong> ({movToVoid.paymentMethod})</p>
+                    <p className="text-xs text-rose-600 mt-1">Esta acción genera una contrapartida contable y no se puede deshacer.</p>
+                  </div>
+                )}
+                <p className="text-sm text-slate-600 mb-2">Motivo obligatorio (auditoría).</p>
+                <Controller name="voidReason" control={p.voidForm.control}
+                  render={({ field }) => (
+                    <TextArea label="Motivo" placeholder="Describa la razón de la anulación..." {...field} />
+                  )}
+                />
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="ghost" color="primary" onPress={() => p.setVoidTarget(null)}>Cancelar</Button>
+                <Button color="danger" isLoading={p.busy} onPress={() => { p.onVoid().catch(() => {}); }}>
+                  Confirmar anulación
+                </Button>
+              </Modal.Footer>
+            </Modal.Content>
+          </Modal>
+        );
+      })()}
     </div>
   );
 }

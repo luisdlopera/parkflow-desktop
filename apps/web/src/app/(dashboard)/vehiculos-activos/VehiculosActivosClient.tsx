@@ -16,6 +16,8 @@ import { useBulkExit } from "@/features/active-vehicles/hooks/useBulkExit";
 import { TicketPreviewModal } from "@/features/active-vehicles/components/TicketPreviewModal";
 import { BulkExitConfirmModal, BulkExitSuccessModal } from "@/features/active-vehicles/components/BulkExitModals";
 import { useColumnVisibility } from "@/features/active-vehicles/hooks/useColumnVisibility";
+import { VehiculosActivosFilters } from "@/features/active-vehicles/components/VehiculosActivosFilters";
+import { hasPermission } from "@/features/auth/services/auth-domain.service";
 
 export default function VehiculosActivosClient({ fallbackData }: { fallbackData?: { sessions: any; summary: any } | undefined }) {
   const [params, setParams] = useState<GetActiveSessionsQuery>({ page: 1, limit: 25, search: "", sortBy: "entryAt", sortDir: "desc" });
@@ -25,7 +27,12 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
   const [ticketPreview, setTicketPreview] = useState<ActiveSessionDto | null>(null);
   const [lockers, setLockers] = useState<LockerDto[]>([]);
   const [lockersLoading, setLockersLoading] = useState(false);
+  const [userCanReprint, setUserCanReprint] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    hasPermission("tickets:imprimir").then(setUserCanReprint);
+  }, []);
 
   const { visible, toggleColumn, isVisible, resetColumns, columns: colDefs } = useColumnVisibility();
 
@@ -188,8 +195,15 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
       )}
 
       <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white">
-        <div className="flex items-center justify-end gap-2 px-4 pt-4 pb-2 border-b border-slate-100">
-          <Dropdown>
+        <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2 border-b border-slate-100">
+          <VehiculosActivosFilters
+            filterValues={filterValues}
+            onFilterChange={handleFilterChange}
+            vehicleTypeOptions={vehicleTypeOptions}
+            isLoading={loading}
+          />
+          <div className="flex items-center gap-2">
+            <Dropdown>
             <Button size="sm" variant="ghost" color="default" isIconOnly aria-label="Columnas visibles">
               <Columns className="h-4 w-4 text-slate-500" />
             </Button>
@@ -211,6 +225,7 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
               </Dropdown.Menu>
             </Dropdown.Popover>
           </Dropdown>
+            </div>
         </div>
 
       <DataTable
@@ -221,8 +236,6 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
         searchable
         searchPlaceholder="Buscar por placa o ticket..."
         onSearchChange={(search) => setParams((p) => ({ ...p, search, page: 1 }))}
-        filters={filterConfig}
-        onFilterChange={handleFilterChange}
         sortDescriptor={{ column: params.sortBy || "entryAt", direction: params.sortDir === "asc" ? "ascending" : "descending" }}
         onSortChange={(desc) => setParams((p) => ({ ...p, sortBy: String(desc.column), sortDir: desc.direction === "ascending" ? "asc" : "desc" }))}
         pagination={{ page: params.page || 1, pageSize: params.limit || 25, total: meta?.total ?? 0 }}
@@ -282,7 +295,7 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
                       <Dropdown.Item id="edit" textValue="Editar">
                         <div className="flex items-center gap-2"><Edit className="w-4 h-4 text-slate-500" /><span>Editar</span></div>
                       </Dropdown.Item>
-                      {runtimeConfig?.tickets?.allowReprint !== false && (
+                      {runtimeConfig?.tickets?.allowReprint !== false && userCanReprint && (
                         <Dropdown.Item id="reprint" textValue="Reimprimir ticket">
                           <div className="flex items-center gap-2"><Printer className="w-4 h-4 text-slate-500" /><span>Reimprimir ticket</span></div>
                         </Dropdown.Item>

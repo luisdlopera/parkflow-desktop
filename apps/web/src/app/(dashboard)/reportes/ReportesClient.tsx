@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Chip } from "@/components/bridge/Chip";
 import { Progress } from "@/components/bridge/Progress";
 import { Button } from "@/components/bridge/Button";
 import DataTable from "@/components/ui/DataTable";
 import dynamic from "next/dynamic";
-import DateRangeInput from "@/components/bridge/DateRangeInput";
+import ReportDateFilter from "@/features/reports/components/ReportDateFilter";
 import { hasPermission } from "@/features/auth/services/auth-domain.service";
 import { BarChart3, Lock, Car, Receipt, Ban, DollarSign, TrendingUp, User, CreditCard } from "lucide-react";
 import { useReports, fmt, fmtPct, dateLabel, shortDate, pmLabel, getOccupancyColor } from "@/features/reports/hooks/useReports";
 import type { ReportView } from "@/features/reports/hooks/useReports";
 
 const KpiCard = dynamic(() => import("@/components/ui/KpiCard"), { ssr: false });
+
+const INCOME_TYPES = new Set([
+  "PARKING_PAYMENT", "LOST_TICKET_PAYMENT", "MANUAL_INCOME", "REPRINT_FEE", "ADJUSTMENT",
+]);
 
 const CARD_ICONS: Record<ReportView, React.ReactNode> = {
   "daily-operations": <BarChart3 className="w-6 h-6" />,
@@ -39,9 +43,22 @@ const GRID = [
 ];
 
 export default function ReportesClient() {
-  const [canView, setCanView] = useState(false);
+  // null = loading, true/false = resolved
+  const [canView, setCanView] = useState<boolean | null>(null);
   const [view, setView] = useState<ReportView | null>(null);
-  const { dateFrom, setDateFrom, dateTo, setDateTo, loading, error, setError, dailyOps, cashSessions, cashSummary, vehicleType, paidTickets, voidedTickets, incomeExpense, occupancy, operators, paymentMethods, loadReport, handleExport } = useReports();
+
+  const {
+    dateFrom, setDateFrom, dateTo, setDateTo,
+    loading, error, setError,
+    dailyOps,
+    cashSessions, cashSessionsTotal, cashSessionPage,
+    cashSummary,
+    vehicleType,
+    paidTickets, paidTicketsTotal, paidTicketsPage,
+    voidedTickets, incomeExpense, occupancy,
+    operators, paymentMethods,
+    loadReport, handleExport,
+  } = useReports();
 
   useEffect(() => {
     hasPermission("reportes:leer").then(setCanView).catch(() => setCanView(false));
@@ -50,24 +67,19 @@ export default function ReportesClient() {
   const openReport = (r: ReportView) => { setView(r); loadReport(r).catch(() => {}); };
   const backToGrid = () => { setView(null); setError(null); };
 
-  const PAGE_SIZE = 50;
-  const [ticketPage, setTicketPage] = useState(1);
-  const [opsPage, setOpsPage] = useState(1);
-
-  const paginatedPaidTickets = useMemo(() => {
-    const start = (ticketPage - 1) * PAGE_SIZE;
-    return paidTickets.slice(start, start + PAGE_SIZE);
-  }, [paidTickets, ticketPage]);
-
-  const paginatedDailyOps = useMemo(() => {
-    const start = (opsPage - 1) * PAGE_SIZE;
-    return dailyOps.slice(start, start + PAGE_SIZE);
-  }, [dailyOps, opsPage]);
-
-  useEffect(() => {
-    setTicketPage(1);
-    setOpsPage(1);
-  }, [view]);
+  // Permission loading skeleton
+  if (canView === null) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 w-48 bg-slate-100 rounded-lg animate-pulse" />
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div key={i} className="h-24 bg-slate-100 rounded-2xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (!canView) {
     return (
@@ -122,8 +134,8 @@ export default function ReportesClient() {
 
       {view === "daily-operations" && (
         <>
-          <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <DateRangeInput from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+          <div className="flex items-center gap-4 bg-white rounded-xl border border-slate-200 px-4 py-3">
+            <ReportDateFilter dateFrom={dateFrom} dateTo={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
           </div>
           {dailyOps.length > 0 && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-4">
@@ -142,17 +154,18 @@ export default function ReportesClient() {
               { key: "cashTotal", label: "Efectivo", align: "right", render: (r) => fmt(r.cashTotal) },
               { key: "cardTotal", label: "Tarjeta", align: "right", render: (r) => fmt(r.cardTotal) },
               { key: "transferTotal", label: "Transferencia", align: "right", render: (r) => fmt(r.transferTotal) },
+              { key: "otherTotal", label: "Otros", align: "right", render: (r) => fmt(r.otherTotal) },
               { key: "grandTotal", label: "Total", align: "right", render: (r) => fmt(r.grandTotal) },
-            ]} rows={paginatedDailyOps} emptyMessage="No hay operaciones en el periodo seleccionado."
-              pagination={{ page: opsPage, pageSize: PAGE_SIZE, total: dailyOps.length }}
-              onPaginationChange={(page, _size) => setOpsPage(page)}
-            />
+            ]} rows={dailyOps} emptyMessage="No hay operaciones en el periodo seleccionado." />
           </div>
         </>
       )}
 
       {view === "cash-session" && (
         <>
+          <div className="flex items-center gap-4 bg-white rounded-xl border border-slate-200 px-4 py-3">
+            <ReportDateFilter dateFrom={dateFrom} dateTo={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+          </div>
           {cashSummary && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-4">
               <KpiCard title="Base" value={fmt(cashSummary.openingAmount)} />
@@ -185,7 +198,12 @@ export default function ReportesClient() {
               { key: "countedAmount", label: "Contado", align: "right", render: (r) => r.countedAmount != null ? fmt(r.countedAmount) : "—" },
               { key: "difference", label: "Dif.", align: "right", render: (r) => r.difference != null ? fmt(r.difference) : "—" },
               { key: "movementCount", label: "Movs", align: "right" },
-            ]} rows={cashSessions} emptyMessage="No hay sesiones de caja registradas." />
+            ]}
+            rows={cashSessions}
+            emptyMessage="No hay sesiones de caja en el periodo seleccionado."
+            pagination={{ page: cashSessionPage + 1, pageSize: 20, total: cashSessionsTotal }}
+            onPaginationChange={(page) => loadReport("cash-session", page - 1).catch(() => {})}
+            />
           </div>
         </>
       )}
@@ -214,14 +232,14 @@ export default function ReportesClient() {
 
       {view === "paid-tickets" && (
         <>
-          <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <DateRangeInput from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+          <div className="flex items-center gap-4 bg-white rounded-xl border border-slate-200 px-4 py-3">
+            <ReportDateFilter dateFrom={dateFrom} dateTo={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
           </div>
-          {paidTickets.length > 0 && (
+          {paidTicketsTotal > 0 && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-3">
-              <KpiCard title="Tickets" value={String(paidTickets.length)} />
+              <KpiCard title="Tickets" value={String(paidTicketsTotal)} />
               <KpiCard title="Total cobrado" value={fmt(paidTickets.reduce((s, r) => s + r.amount, 0))} />
-              <KpiCard title="Ticket promedio" value={paidTickets.length > 0 ? fmt(paidTickets.reduce((s, r) => s + r.amount, 0) / paidTickets.length) : "$0"} />
+              <KpiCard title="Ticket promedio" value={paidTickets.length > 0 ? fmt(paidTickets.reduce((s, r) => s + r.amount, 0) / paidTickets.filter(r => r.amount > 0).length || 0) : "$0"} />
             </div>
           )}
           <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6">
@@ -232,9 +250,9 @@ export default function ReportesClient() {
               { key: "amount", label: "Monto", align: "right", render: (r) => fmt(r.amount) },
               { key: "paymentMethod", label: "Método", render: (r) => pmLabel(r.paymentMethod) },
               { key: "paidAt", label: "Pagado", render: (r) => shortDate(r.paidAt) },
-            ]} rows={paginatedPaidTickets} emptyMessage="No hay tickets cobrados en el periodo seleccionado."
-              pagination={{ page: ticketPage, pageSize: PAGE_SIZE, total: paidTickets.length }}
-              onPaginationChange={(page, _size) => setTicketPage(page)}
+            ]} rows={paidTickets} emptyMessage="No hay tickets cobrados en el periodo seleccionado."
+              pagination={{ page: paidTicketsPage + 1, pageSize: 50, total: paidTicketsTotal }}
+              onPaginationChange={(page) => loadReport("paid-tickets", page - 1).catch(() => {})}
             />
           </div>
         </>
@@ -242,8 +260,8 @@ export default function ReportesClient() {
 
       {view === "voided-tickets" && (
         <>
-          <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <DateRangeInput from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+          <div className="flex items-center gap-4 bg-white rounded-xl border border-slate-200 px-4 py-3">
+            <ReportDateFilter dateFrom={dateFrom} dateTo={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
           </div>
           {voidedTickets.length > 0 && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-3">
@@ -266,36 +284,45 @@ export default function ReportesClient() {
         </>
       )}
 
-      {view === "income-expense" && incomeExpense && (
+      {view === "income-expense" && (
         <>
-          <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <DateRangeInput from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+          <div className="flex items-center gap-4 bg-white rounded-xl border border-slate-200 px-4 py-3">
+            <ReportDateFilter dateFrom={dateFrom} dateTo={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
           </div>
-          <div className="grid gap-4 sm:gap-5 grid-cols-3">
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
-              <p className="text-xs uppercase tracking-wide text-emerald-700 font-medium">Ingresos</p>
-              <p className="text-2xl font-bold text-emerald-900 mt-1">{fmt(incomeExpense.incomeTotal)}</p>
+          {incomeExpense && (
+            <>
+              <div className="grid gap-4 sm:gap-5 grid-cols-3">
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
+                  <p className="text-xs uppercase tracking-wide text-emerald-700 font-medium">Ingresos</p>
+                  <p className="text-2xl font-bold text-emerald-900 mt-1">{fmt(incomeExpense.incomeTotal)}</p>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
+                  <p className="text-xs uppercase tracking-wide text-red-700 font-medium">Egresos</p>
+                  <p className="text-2xl font-bold text-red-900 mt-1">{fmt(incomeExpense.expenseTotal)}</p>
+                </div>
+                <div className={`border rounded-2xl p-5 ${incomeExpense.netTotal >= 0 ? "bg-blue-50 border-blue-200" : "bg-primary-50 border-primary-200"}`}>
+                  <p className="text-xs uppercase tracking-wide font-medium">Neto</p>
+                  <p className={`text-2xl font-bold mt-1 ${incomeExpense.netTotal >= 0 ? "text-blue-900" : "text-primary-900"}`}>{fmt(incomeExpense.netTotal)}</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6">
+                <DataTable<(typeof incomeExpense.breakdown)[number]> columns={[
+                  { key: "displayName", label: "Movimiento", priority: "high" },
+                  { key: "amount", label: "Monto", align: "right", render: (r) => fmt(r.amount) },
+                  { key: "count", label: "Cantidad", align: "right" },
+                  { key: "movementType", label: "Tipo", render: (r) => {
+                    const isIncome = INCOME_TYPES.has(r.movementType);
+                    return <Chip size="sm" variant="soft" color={isIncome ? "success" : "danger"}>{isIncome ? "Ingreso" : "Egreso"}</Chip>;
+                  }},
+                ]} rows={incomeExpense.breakdown} emptyMessage="No hay movimientos en el periodo seleccionado." />
+              </div>
+            </>
+          )}
+          {!incomeExpense && !loading && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-500">
+              No hay movimientos en el periodo seleccionado.
             </div>
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
-              <p className="text-xs uppercase tracking-wide text-red-700 font-medium">Egresos</p>
-              <p className="text-2xl font-bold text-red-900 mt-1">{fmt(incomeExpense.expenseTotal)}</p>
-            </div>
-            <div className={`border rounded-2xl p-5 ${incomeExpense.netTotal >= 0 ? "bg-blue-50 border-blue-200" : "bg-primary-50 border-primary-200"}`}>
-              <p className="text-xs uppercase tracking-wide font-medium">Neto</p>
-              <p className={`text-2xl font-bold mt-1 ${incomeExpense.netTotal >= 0 ? "text-blue-900" : "text-primary-900"}`}>{fmt(incomeExpense.netTotal)}</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6">
-            <DataTable<(typeof incomeExpense.breakdown)[number]> columns={[
-              { key: "displayName", label: "Movimiento", priority: "high" },
-              { key: "amount", label: "Monto", align: "right", render: (r) => fmt(r.amount) },
-              { key: "count", label: "Cantidad", align: "right" },
-              { key: "movementType", label: "Tipo", render: (r) => {
-                const isIncome = ["PARKING_PAYMENT", "LOST_TICKET_PAYMENT", "MANUAL_INCOME", "REPRINT_FEE"].includes(r.movementType);
-                return <Chip size="sm" variant="soft" color={isIncome ? "success" : "danger"}>{isIncome ? "Ingreso" : "Egreso"}</Chip>;
-              }},
-            ]} rows={incomeExpense.breakdown} emptyMessage="No hay movimientos en el periodo seleccionado." />
-          </div>
+          )}
         </>
       )}
 
@@ -332,8 +359,8 @@ export default function ReportesClient() {
 
       {view === "by-operator" && (
         <>
-          <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <DateRangeInput from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+          <div className="flex items-center gap-4 bg-white rounded-xl border border-slate-200 px-4 py-3">
+            <ReportDateFilter dateFrom={dateFrom} dateTo={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
           </div>
           {operators.length > 0 && (
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-4">
@@ -350,6 +377,7 @@ export default function ReportesClient() {
               { key: "cashAmount", label: "Efectivo", align: "right", render: (r) => fmt(r.cashAmount) },
               { key: "cardAmount", label: "Tarjeta", align: "right", render: (r) => fmt(r.cardAmount) },
               { key: "transferAmount", label: "Transferencia", align: "right", render: (r) => fmt(r.transferAmount) },
+              { key: "otherAmount", label: "Otros", align: "right", render: (r) => fmt(r.otherAmount) },
             ]} rows={operators} emptyMessage="No hay movimientos de cajeros en el periodo seleccionado." />
           </div>
         </>
@@ -357,8 +385,8 @@ export default function ReportesClient() {
 
       {view === "by-payment-method" && (
         <>
-          <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-3">
-            <DateRangeInput from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+          <div className="flex items-center gap-4 bg-white rounded-xl border border-slate-200 px-4 py-3">
+            <ReportDateFilter dateFrom={dateFrom} dateTo={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
           </div>
           {paymentMethods.length > 0 && (
             <div className="flex flex-wrap gap-3">

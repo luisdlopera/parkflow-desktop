@@ -1,21 +1,10 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 test.describe("Cash Register (Caja)", () => {
   test("should test if /caja hangs with login", async ({ page }) => {
-    test.setTimeout(120000);
-    page.on("console", (msg) => {
-      console.log(`[browser] ${msg.text()}`);
-    });
-    
-    await page.route("**/*", async (route, request) => {
-      if (request.url().includes("/api/v1/")) {
-        console.log("-> REQUEST:", request.method(), request.url());
-      }
-      await route.fallback();
-    });
+    test.setTimeout(60000);
 
     await page.route("**/api/v1/cash/current*", async (route) => {
-      console.log("Mocked /cash/current hit!");
       await route.fulfill({
         status: 404,
         contentType: "application/json",
@@ -24,7 +13,6 @@ test.describe("Cash Register (Caja)", () => {
     });
 
     await page.route("**/api/v1/cash/policy*", async (route) => {
-      console.log("Mocked /cash/policy hit!");
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -44,14 +32,19 @@ test.describe("Cash Register (Caja)", () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify([
-          { id: "1", site: "default", terminal: "TERM-1", status: "CLOSED", description: "Caja Principal" },
-        ]),
+        body: JSON.stringify({
+          content: [
+            { id: "1", site: "default", terminal: "TERM-1", status: "CLOSED", description: "Caja Principal", label: "Caja Principal" },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+          size: 20,
+          page: 0
+        }),
       });
     });
 
     await page.route("**/api/v1/auth/login", async (route) => {
-      console.log("Mocked /auth/login hit!");
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -70,7 +63,6 @@ test.describe("Cash Register (Caja)", () => {
     });
 
     await page.route("**/api/v1/auth/restore-session", async (route) => {
-      console.log("Mocked /auth/restore-session hit!");
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -89,12 +81,10 @@ test.describe("Cash Register (Caja)", () => {
       });
     });
 
-    // Set terminal id so CajaClient doesn't hang loading
     await page.addInitScript(() => {
       window.localStorage.setItem("parkflow_terminal_id", "TERM-1");
     });
 
-    // Set up a session via context cookie
     await page.context().addCookies([
       {
         name: "parkflow_session",
@@ -104,69 +94,11 @@ test.describe("Cash Register (Caja)", () => {
       }
     ]);
 
-    // Mock /auth/me or whatever it needs
-    await page.route("**/api/v1/auth/me", async (route) => {
-      await route.fulfill({
-        status: 200,
-        body: JSON.stringify({
-          id: "1",
-          name: "Cashier",
-          email: "cashier@parkflow.local",
-          role: "CASHIER",
-          onboardingCompleted: true,
-          requirePasswordChange: false,
-          permissions: [
-            "cierres_caja:abrir",
-            "cierres_caja:cerrar",
-            "cobros:registrar",
-            "anulaciones:crear",
-            "reportes:leer"
-          ]
-        })
-      });
-    });
-
-    console.log("GOTO /caja directly");
     await page.goto("/caja");
-    
-    // Wait for the specific text
-    try {
-      await expect(page.getByText("No hay una caja abierta en este terminal.")).toBeVisible({ timeout: 5000 });
-      console.log("TEXT IS VISIBLE!");
-    } catch (e) {
-      console.log("TEXT NOT VISIBLE!");
-    }
-    
-    // Dump HTML without evaluate
-    const bodyText = await page.locator("body").innerText();
-    console.log("BODY TEXT:\n", bodyText);
-    const html = await page.locator("body").innerHTML();
-    console.log("BODY HTML:\n", html);
-    
-    // Fail immediately
-    expect(true).toBe(false);
 
-    // Start a background interception for /cash/open so we can see when it hits
-    await page.route("**/api/v1/cash/open", async (route) => {
-      console.log("Mocked /cash/open hit!");
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          id: "sess-123",
-          terminal: "TERM-1",
-          operator: "cashier1",
-          status: "OPEN",
-          openedAt: new Date().toISOString(),
-          initialAmount: 100000,
-        }),
-      });
-    });
-
-    const openButton = page.getByRole("button", { name: "Abrir caja" });
-    await openButton.click();
-
-    // After open, we expect the step "Movimientos" to be visible
-    await expect(page.getByText("Turno en curso")).toBeVisible();
+    // We expect the terminal to be loaded and to be in the CLOSED state (since current cash returns 404)
+    // There should be a message or button indicating that there is no active session and we need to open one.
+    await expect(page.getByText("No hay una caja abierta en este terminal.")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("button", { name: /Apertura de Caja|Abrir Caja/i })).toBeVisible();
   });
 });

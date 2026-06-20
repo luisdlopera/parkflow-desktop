@@ -45,7 +45,11 @@ function CashSummaryTotalsInner({ summary }: { summary: CashSummaryDto }) {
               <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
             </Tooltip>
           </div>
-          <p className="text-lg font-semibold text-slate-900">${summary.expectedLedgerTotal.toLocaleString()}</p>
+          <p className="text-lg font-semibold text-slate-900">
+            {summary.expectedLedgerTotal != null 
+              ? `$${summary.expectedLedgerTotal.toLocaleString()}` 
+              : <span className="text-slate-400 italic">Oculto (Cierre Ciego)</span>}
+          </p>
         </div>
         <div className={`rounded-xl p-3 border ${summary.countedTotal != null ? "bg-blue-50 border-blue-100" : "bg-slate-50 border-slate-200 border-dashed"}`}>
           <div className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-blue-600" : "text-slate-400"}`}>
@@ -63,7 +67,7 @@ function CashSummaryTotalsInner({ summary }: { summary: CashSummaryDto }) {
         <div className={`rounded-xl p-3 border ${getDifferenceCardClass(summary.countedTotal, summary.difference)}`}>
           <div className={`text-[10px] uppercase tracking-wider ${summary.countedTotal != null ? "text-slate-500" : "text-slate-400"}`}>
             Diferencia
-            <Tooltip content={summary.countedTotal != null ? `Contado − Esperado = ${summary.countedTotal.toLocaleString()} − ${summary.expectedLedgerTotal.toLocaleString()}` : "Realiza el arqueo para ver la diferencia"}>
+            <Tooltip content={summary.countedTotal != null && summary.expectedLedgerTotal != null ? `Contado − Esperado = ${summary.countedTotal.toLocaleString()} − ${summary.expectedLedgerTotal.toLocaleString()}` : "Realiza el arqueo para ver la diferencia"}>
               <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-[8px] text-white cursor-help">?</span>
             </Tooltip>
           </div>

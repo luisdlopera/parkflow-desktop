@@ -252,7 +252,7 @@ export function useCajaPage() {
       other: Number(data.countOther.replace(",", ".")) || 0,
     };
     const counted = vals.cash + vals.card + vals.transfer + vals.other;
-    if (summary && counted !== summary.expectedLedgerTotal && !data.countNotes.trim()) {
+    if (summary && summary.expectedLedgerTotal != null && counted !== summary.expectedLedgerTotal && !data.countNotes.trim()) {
       setError(
         `Hay diferencia de $${Math.abs(counted - summary.expectedLedgerTotal).toLocaleString()} respecto al esperado. Las observaciones son obligatorias cuando hay diferencia.`
       );

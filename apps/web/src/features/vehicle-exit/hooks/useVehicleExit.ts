@@ -169,7 +169,7 @@ export function useVehicleExit() {
   }
 
   const processExitAction = useCallback(async (paymentMethod: PaymentMethodCode = selectedPaymentMethod) => {
-    if (!active) { lookupHook.setError("Primero busca una sesion activa"); return; }
+    if (!active) { lookupHook.setError("Primero busca una sesión activa"); return; }
     if (operationLock.current) return;
 
     if (paymentMethod === "MIXED") {
@@ -189,7 +189,7 @@ export function useVehicleExit() {
 
     try {
       const user = await currentUser();
-      if (!user?.id) { lookupHook.setError("Sesion requerida para registrar salida"); return; }
+      if (!user?.id) { lookupHook.setError("Sesión requerida para registrar salida"); return; }
 
       const term = process.env.NEXT_PUBLIC_TERMINAL_ID?.trim() || window.localStorage.getItem("parkflow_terminal_id")?.trim() || "";
       const site = process.env.NEXT_PUBLIC_PARKING_SITE?.trim() || "default";
@@ -309,7 +309,7 @@ export function useVehicleExit() {
     const idempotencyFingerprint = JSON.stringify({ ticketNumber: active.receipt.ticketNumber, reason: reprintReason });
     try {
       const user = await currentUser();
-      if (!user?.id) { lookupHook.setError("Sesion requerida para reimprimir"); return; }
+      if (!user?.id) { lookupHook.setError("Sesión requerida para reimprimir"); return; }
       const idempotencyKey = getOrCreateIdempotencyKey("reprint", idempotencyFingerprint);
       const response = await reprintExitTicket(active.receipt.ticketNumber, user.id, idempotencyKey, reprintReason);
       const payload = await response.json();
@@ -354,7 +354,7 @@ export function useVehicleExit() {
     const idempotencyFingerprint = JSON.stringify({ ticketNumber: active.receipt.ticketNumber, reason: lostReason });
     try {
       const user = await currentUser();
-      if (!user?.id) { lookupHook.setError("Sesion requerida para procesar ticket perdido"); playError(); return; }
+      if (!user?.id) { lookupHook.setError("Sesión requerida para procesar ticket perdido"); playError(); return; }
       const idempotencyKey = getOrCreateIdempotencyKey("lost_ticket", idempotencyFingerprint);
       const response = await reportLostTicket(active.receipt.ticketNumber, active.receipt.plate, user.id, idempotencyKey, lostReason);
       const payload = await response.json();

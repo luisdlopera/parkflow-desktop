@@ -197,7 +197,7 @@ export default function VehicleEntryFormV2({
   }, []);
 
   const formValues = useWatch({ control: form.control });
-  const { clearAutoSave } = useAutoSave({
+  const { clearAutoSave, lastSavedAt } = useAutoSave({
     key: "entry_form",
     data: formValues,
     interval: 2000,
@@ -355,6 +355,11 @@ export default function VehicleEntryFormV2({
                 ? "Registrar entrada de carro"
                 : "Registrar entrada de vehículo"}
           </h1>
+          {lastSavedAt && (
+            <p className="text-xs text-slate-400 mt-0.5">
+              Borrador guardado {lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </p>
+          )}
         </div>
         {isSingleType && occupancy && (
           <p

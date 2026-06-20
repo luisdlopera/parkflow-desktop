@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Modal, ListBox } from "@heroui/react";
 import { Checkbox } from "@/components/bridge/Checkbox";
 import { Select } from "@/components/bridge/Select";
@@ -29,6 +30,7 @@ export default function SalidaCobroClient() {
   const { modifier } = useOsShortcut();
   const p = useVehicleExit();
   const { agreements } = useFeatureFlags();
+  const [reprintConfirmOpen, setReprintConfirmOpen] = useState(false);
 
   useExitShortcuts({
     onCashPayment: () => p.processExitAction(p.firstMethod),
@@ -36,6 +38,16 @@ export default function SalidaCobroClient() {
     onSearch: p.lookup,
     isActive: !!p.active && !p.processing,
   });
+
+  const handleReprintClick = () => {
+    if (!p.active || p.searching || p.processing) return;
+    setReprintConfirmOpen(true);
+  };
+
+  const handleReprintConfirm = () => {
+    setReprintConfirmOpen(false);
+    void p.reprintTicket();
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -117,6 +129,38 @@ export default function SalidaCobroClient() {
           allowTicketReprint={p.allowTicketReprint}
         />
       ) : null}
+
+      {/* Reprint confirmation modal */}
+      {reprintConfirmOpen && (
+        <Modal.Backdrop isOpen onOpenChange={() => setReprintConfirmOpen(false)}>
+          <Modal.Container size="sm">
+            <Modal.Dialog>
+              <Modal.Header>
+                <Modal.Heading>Confirmar reimpresión</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body>
+                <p className="text-sm text-slate-600">
+                  ¿Estás seguro de que deseas reimprimir el ticket <strong>{p.active?.receipt.ticketNumber}</strong>?
+                </p>
+                <p className="text-xs text-slate-400 mt-2">
+                  Motivo: {p.reprintReason}
+                  {p.active && (
+                    <> — Reimpresiones actuales: <strong>{p.active.receipt.reprintCount}</strong></>
+                  )}
+                </p>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button color="default" variant="flat" onPress={() => setReprintConfirmOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button color="warning" onPress={handleReprintConfirm} isLoading={p.reprintLoading}>
+                  Reimprimir
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      )}
 
       {/* Header */}
       <div>
@@ -250,9 +294,12 @@ export default function SalidaCobroClient() {
                     <span className="font-mono font-medium ml-1">{p.active.receipt.ticketNumber}</span>
                   </div>
                   {p.allowTicketReprint && (
-                    <div className="bg-white/70 rounded-lg p-3">
+                    <div className={`rounded-lg p-3 ${p.active.receipt.reprintCount > 2 ? "bg-amber-50 border border-amber-200" : "bg-white/70"}`}>
                       <span className="text-slate-500">Reimpresiones:</span>
-                      <span className="font-medium ml-1">{p.active.receipt.reprintCount}</span>
+                      <span className={`font-semibold ml-1 ${p.active.receipt.reprintCount > 2 ? "text-amber-700" : ""}`}>
+                        {p.active.receipt.reprintCount}
+                        {p.active.receipt.reprintCount > 2 && <span className="ml-1 text-xs font-normal">(⚠ inusual)</span>}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -480,7 +527,7 @@ export default function SalidaCobroClient() {
                 <Button
                   type="button"
                   disabled={!p.active || p.searching || p.processing}
-                  onClick={() => void p.reprintTicket()}
+                  onClick={handleReprintClick}
                   variant="ghost"
                   data-testid="reprint-ticket"
                 >

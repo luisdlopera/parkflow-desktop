@@ -63,7 +63,7 @@ export default function ParametersSection({
   if (!data) return <p className="text-sm text-slate-600">Sin datos.</p>;
 
   const setField = (k: keyof ParkingParametersPayload, v: string | number | boolean | undefined) => {
-    setData((d) => ({ ...(d ?? {}), [k]: v }));
+    setData((d) => ({ ...(d ?? {}) as ParkingParametersPayload, [k]: v }));
   };
   const setOptionalNumber = (k: keyof ParkingParametersPayload, v: string) => {
     setField(k, v.trim() === "" ? undefined : Number(v.replace(",", ".")));
@@ -177,10 +177,10 @@ export default function ParametersSection({
               Consecutivos y webhook se aplican cuando se ejecuta cerrar caja (commit). El servidor envia POST JSON con evento parkflow.cash.closed.v1; el PSC debe responder 2xx sin bloquear al cajero.
             </p>
             <div className="flex flex-wrap gap-x-10 gap-y-3 py-1">
-              <Checkbox isSelected={Boolean(data.cashFeSequentialEnabled)} onChange={(v: any) => setData((d) => ({ ...(d ?? {}), cashFeSequentialEnabled: v }))}>
+              <Checkbox isSelected={Boolean(data.cashFeSequentialEnabled)} onChange={(v: any) => setData((d) => ({ ...(d ?? {}) as ParkingParametersPayload, cashFeSequentialEnabled: v }))}>
                 Consecutivo soporte al cierre
               </Checkbox>
-              <Checkbox isSelected={Boolean(data.cashFeSequencePerTerminal)} onChange={(v: any) => setData((d) => ({ ...(d ?? {}), cashFeSequencePerTerminal: v }))}>
+              <Checkbox isSelected={Boolean(data.cashFeSequencePerTerminal)} onChange={(v: any) => setData((d) => ({ ...(d ?? {}) as ParkingParametersPayload, cashFeSequencePerTerminal: v }))}>
                 Llave correlativa por terminal
               </Checkbox>
             </div>
@@ -190,7 +190,7 @@ export default function ParametersSection({
                 value={data.cashFeSequenceDigits != null ? String(data.cashFeSequenceDigits) : ""}
                 onChange={(v: any) =>
                   setData((d) => ({
-                    ...(d ?? {}),
+                    ...(d ?? {}) as ParkingParametersPayload,
                     cashFeSequenceDigits: v.trim() === "" ? undefined : Number(v.replace(",", "."))
                   }))
                 }
@@ -212,7 +212,7 @@ export default function ParametersSection({
                 value={[data.cashRequireOpenForPayment === undefined ? "" : String(data.cashRequireOpenForPayment)]}
                 onChange={(keys) => {
                   const v = Array.from(keys)[0] as string;
-                  setData((d) => ({ ...(d ?? {}), cashRequireOpenForPayment: v === "" ? undefined : v === "true" }));
+                  setData((d) => ({ ...(d ?? {}) as ParkingParametersPayload, cashRequireOpenForPayment: v === "" ? null : v === "true" }));
                 }}
               >
                 <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
@@ -229,7 +229,7 @@ export default function ParametersSection({
                 value={[data.cashOfflineCloseAllowed === undefined ? "" : String(data.cashOfflineCloseAllowed)]}
                 onChange={(keys) => {
                   const v = Array.from(keys)[0] as string;
-                  setData((d) => ({ ...(d ?? {}), cashOfflineCloseAllowed: v === "" ? undefined : v === "true" }));
+                  setData((d) => ({ ...(d ?? {}) as ParkingParametersPayload, cashOfflineCloseAllowed: v === "" ? null : v === "true" }));
                 }}
               >
                 <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
@@ -246,8 +246,28 @@ export default function ParametersSection({
                 value={data.cashOfflineMaxManualMovement != null && !Number.isNaN(data.cashOfflineMaxManualMovement) ? String(data.cashOfflineMaxManualMovement) : ""}
                 onChange={(v: any) =>
                   setData((d) => ({
-                    ...(d ?? {}),
-                    cashOfflineMaxManualMovement: v.trim() === "" ? undefined : Number(v.replace(",", "."))
+                    ...(d ?? {}) as ParkingParametersPayload,
+                    cashOfflineMaxManualMovement: v.trim() === "" ? null : Number(v.replace(",", "."))
+                  }))
+                }
+              />
+              <Field
+                label="Límite ajuste manual (COP)"
+                value={data.cashMaxManualAdjustment != null && !Number.isNaN(data.cashMaxManualAdjustment) ? String(data.cashMaxManualAdjustment) : ""}
+                onChange={(v: any) =>
+                  setData((d) => ({
+                    ...(d ?? {}) as ParkingParametersPayload,
+                    cashMaxManualAdjustment: v.trim() === "" ? null : Number(v.replace(",", "."))
+                  }))
+                }
+              />
+              <Field
+                label="Horas máx auto-cierre"
+                value={data.cashMaxSessionHours != null && !Number.isNaN(data.cashMaxSessionHours) ? String(data.cashMaxSessionHours) : ""}
+                onChange={(v: any) =>
+                  setData((d) => ({
+                    ...(d ?? {}) as ParkingParametersPayload,
+                    cashMaxSessionHours: v.trim() === "" ? null : parseInt(v.trim(), 10)
                   }))
                 }
               />

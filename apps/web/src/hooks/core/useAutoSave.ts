@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 
 interface AutoSaveOptions<T> {
   key: string;
@@ -25,18 +25,21 @@ export function useAutoSave<T>({
 }: AutoSaveOptions<T>) {
   const savedRef = useRef(false);
   const keyRef = useRef(`parkflow_autosave_${key}`);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
 
     const saveData = () => {
+      const now = Date.now();
       const state: AutoSaveState<T> = {
         data,
-        timestamp: Date.now(),
+        timestamp: now,
         url: window.location.href
       };
       localStorage.setItem(keyRef.current, JSON.stringify(state));
       savedRef.current = true;
+      setLastSavedAt(new Date(now));
     };
 
     const timer = setInterval(saveData, interval);
@@ -89,7 +92,8 @@ export function useAutoSave<T>({
     clearAutoSave,
     restoreData,
     hasRestorableData,
-    isSaved: savedRef.current
+    isSaved: savedRef.current,
+    lastSavedAt,
   };
 }
 

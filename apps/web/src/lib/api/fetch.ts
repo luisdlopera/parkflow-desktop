@@ -70,7 +70,7 @@ export async function safeFetch<T = unknown>(input: RequestInfo | URL, init?: Re
           });
         }
         if (!isSilent && response.status === 403 && shouldToast(key)) {
-          toast.warning("No tienes permisos para realizar esta accion");
+          toast.warning("Acción denegada — sin permisos suficientes. Contacta al administrador si crees que esto es un error.");
         }
       }
     }

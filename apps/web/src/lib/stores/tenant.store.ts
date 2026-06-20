@@ -21,7 +21,11 @@ export const useTenantStore = create<TenantState>((set, get) => ({
     set({ loading: true, error: false });
     try {
       const config = await fetchRuntimeConfig();
-      set({ runtimeConfig: config, loading: false });
+      if (!config) {
+        set({ error: true, loading: false });
+      } else {
+        set({ runtimeConfig: config, loading: false });
+      }
     } catch {
       set({ error: true, loading: false });
     }

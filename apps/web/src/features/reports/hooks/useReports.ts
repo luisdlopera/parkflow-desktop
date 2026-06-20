@@ -59,7 +59,10 @@ export function shortDate(iso: string): string {
   } catch { return iso; }
 }
 
-export function todayStr(): string { return new Date().toISOString().split("T")[0]; }
+export function todayStr(): string {
+  // Use locale date in Colombia timezone to avoid UTC cutoff issues
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
+}
 
 export function getOccupancyColor(percentage: number): "danger" | "warning" | "success" {
   if (percentage > 80) return "danger";
@@ -68,7 +71,7 @@ export function getOccupancyColor(percentage: number): "danger" | "warning" | "s
 }
 
 function toCsv(headers: string[], rows: string[][], filename: string) {
-  const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(","))].join("\n");
+  const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(","))].join("\n");
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -77,24 +80,50 @@ function toCsv(headers: string[], rows: string[][], filename: string) {
   URL.revokeObjectURL(a.href);
 }
 
+const STORAGE_KEY_FROM = "parkflow_report_dateFrom";
+const STORAGE_KEY_TO = "parkflow_report_dateTo";
+
+function readPersistedDate(key: string, fallback: string): string {
+  try {
+    return sessionStorage.getItem(key) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function useReports() {
-  const [dateFrom, setDateFrom] = useState(todayStr());
-  const [dateTo, setDateTo] = useState(todayStr());
+  const today = todayStr();
+  const [dateFrom, _setDateFrom] = useState(() => readPersistedDate(STORAGE_KEY_FROM, today));
+  const [dateTo, _setDateTo] = useState(() => readPersistedDate(STORAGE_KEY_TO, today));
+
+  const setDateFrom = useCallback((v: string) => {
+    _setDateFrom(v);
+    try { sessionStorage.setItem(STORAGE_KEY_FROM, v); } catch { /* noop */ }
+  }, []);
+
+  const setDateTo = useCallback((v: string) => {
+    _setDateTo(v);
+    try { sessionStorage.setItem(STORAGE_KEY_TO, v); } catch { /* noop */ }
+  }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [dailyOps, setDailyOps] = useState<DailyOpsRow[]>([]);
   const [cashSessions, setCashSessions] = useState<CashSessionRow[]>([]);
+  const [cashSessionsTotal, setCashSessionsTotal] = useState(0);
+  const [cashSessionPage, setCashSessionPage] = useState(0);
   const [cashSummary, setCashSummary] = useState<CashSummary>(null);
   const [vehicleType, setVehicleType] = useState<VehicleTypeRow[]>([]);
   const [paidTickets, setPaidTickets] = useState<PaidTicketRow[]>([]);
+  const [paidTicketsTotal, setPaidTicketsTotal] = useState(0);
+  const [paidTicketsPage, setPaidTicketsPage] = useState(0);
   const [voidedTickets, setVoidedTickets] = useState<VoidedTicketRow[]>([]);
   const [incomeExpense, setIncomeExpense] = useState<IncomeExpense | null>(null);
   const [occupancy, setOccupancy] = useState<Occupancy | null>(null);
   const [operators, setOperators] = useState<OperatorRow[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodRow[]>([]);
 
-  const loadReport = useCallback(async (report: ReportView) => {
+  const loadReport = useCallback(async (report: ReportView, page = 0) => {
     setLoading(true);
     setError(null);
     try {
@@ -103,20 +132,28 @@ export function useReports() {
           setDailyOps(await fetchDailyOperations(dateFrom, dateTo));
           break;
         case "cash-session": {
-          const sessions = await fetchCashSessionHistory();
-          setCashSessions(sessions);
-          if (sessions.length > 0) {
-            try { setCashSummary(await fetchCashSessionSummary(sessions[0].id)); }
+          const result = await fetchCashSessionHistory(dateFrom, dateTo, page);
+          setCashSessions(result.content);
+          setCashSessionsTotal(result.totalElements);
+          setCashSessionPage(result.number);
+          if (result.content.length > 0) {
+            try { setCashSummary(await fetchCashSessionSummary(result.content[0].id)); }
             catch { setCashSummary(null); }
+          } else {
+            setCashSummary(null);
           }
           break;
         }
         case "vehicle-type":
           setVehicleType(await fetchVehicleTypeReport());
           break;
-        case "paid-tickets":
-          setPaidTickets(await fetchPaidTickets(dateFrom, dateTo));
+        case "paid-tickets": {
+          const result = await fetchPaidTickets(dateFrom, dateTo, page);
+          setPaidTickets(result.content);
+          setPaidTicketsTotal(result.totalElements);
+          setPaidTicketsPage(result.number);
           break;
+        }
         case "voided-tickets":
           setVoidedTickets(await fetchVoidedTickets(dateFrom, dateTo));
           break;
@@ -140,53 +177,70 @@ export function useReports() {
     }
   }, [dateFrom, dateTo]);
 
+  const loadCashSessionSummary = useCallback(async (sessionId: string) => {
+    try { setCashSummary(await fetchCashSessionSummary(sessionId)); }
+    catch { setCashSummary(null); }
+  }, []);
+
   const handleExport = useCallback((view: ReportView) => {
     const filename = `reporte-${view}-${todayStr()}.csv`;
     switch (view) {
       case "daily-operations":
-        toCsv(["Fecha", "Entradas", "Salidas", "Perdidos", "Efectivo", "Tarjeta", "Transferencia", "Otros", "Total"],
+        toCsv(
+          ["Fecha", "Entradas", "Salidas", "Perdidos", "Efectivo", "Tarjeta", "Transferencia", "Otros", "Total"],
           dailyOps.map((r) => [r.date, String(r.entries), String(r.exits), String(r.lostTickets), r.cashTotal.toFixed(0), r.cardTotal.toFixed(0), r.transferTotal.toFixed(0), r.otherTotal.toFixed(0), r.grandTotal.toFixed(0)]),
           filename);
         break;
       case "cash-session":
-        toCsv(["ID", "Apertura", "Cierre", "Operador", "Estado", "Base", "Esperado", "Contado", "Diferencia", "Movs"],
-          cashSessions.map((r) => [r.id, r.openedAt, r.closedAt ?? "", r.operatorName ?? "", r.status, r.openingAmount.toFixed(0), r.expectedAmount.toFixed(0), r.countedAmount != null ? r.countedAmount.toFixed(0) : "", r.difference != null ? r.difference.toFixed(0) : "", String(r.movementCount)]),
+        toCsv(
+          ["ID", "Apertura", "Cierre", "Operador", "Estado", "Base", "Esperado", "Contado", "Diferencia", "Movs"],
+          cashSessions.map((r) => [r.id, dateLabel(r.openedAt), r.closedAt ? dateLabel(r.closedAt) : "", r.operatorName ?? "", r.status, r.openingAmount.toFixed(0), r.expectedAmount.toFixed(0), r.countedAmount != null ? r.countedAmount.toFixed(0) : "", r.difference != null ? r.difference.toFixed(0) : "", String(r.movementCount)]),
           filename);
         break;
       case "vehicle-type":
-        toCsv(["Tipo", "Activos", "Entradas", "Salidas", "Recaudo"],
+        toCsv(
+          ["Tipo", "Activos", "Entradas hoy", "Salidas hoy", "Recaudo hoy"],
           vehicleType.map((r) => [r.vehicleType, String(r.activeCount), String(r.entriesToday), String(r.exitsToday), r.revenueToday.toFixed(0)]),
           filename);
         break;
       case "paid-tickets":
-        toCsv(["Ticket", "Placa", "Tipo", "Monto", "Método", "Pagado", "Ingreso"],
-          paidTickets.map((r) => [r.ticketNumber, r.plate, r.vehicleType, r.amount.toFixed(0), pmLabel(r.paymentMethod), shortDate(r.paidAt), shortDate(r.entryAt)]),
+        toCsv(
+          ["Ticket", "Placa", "Tipo", "Monto", "Método", "Pagado", "Ingreso"],
+          paidTickets.map((r) => [r.ticketNumber ?? "", r.plate ?? "", r.vehicleType ?? "", r.amount.toFixed(0), pmLabel(r.paymentMethod), dateLabel(r.paidAt), dateLabel(r.entryAt)]),
           filename);
         break;
       case "voided-tickets":
-        toCsv(["Tipo", "Método", "Monto", "Motivo", "Anulado por", "Anulado", "Creado"],
-          voidedTickets.map((r) => [r.displayName, pmLabel(r.paymentMethod), r.amount.toFixed(0), r.voidReason ?? "", r.voidedByName ?? "", shortDate(r.voidedAt), shortDate(r.createdAt)]),
+        toCsv(
+          ["Tipo", "Método", "Monto", "Motivo", "Anulado por", "Anulado", "Creado"],
+          voidedTickets.map((r) => [r.displayName, pmLabel(r.paymentMethod), r.amount.toFixed(0), r.voidReason ?? "", r.voidedByName ?? "", dateLabel(r.voidedAt), dateLabel(r.createdAt)]),
           filename);
         break;
       case "income-expense":
         if (!incomeExpense) return;
-        toCsv(["Tipo", "Movimiento", "Monto", "Cantidad"],
+        toCsv(
+          ["Tipo", "Movimiento", "Monto", "Cantidad"],
           incomeExpense.breakdown.map((r) => [r.amount >= 0 ? "Ingreso" : "Egreso", r.displayName, r.amount.toFixed(0), String(r.count)]),
           filename);
         break;
       case "occupancy":
         if (!occupancy) return;
-        toCsv(["Total", "Ocupados", "Disponibles", "% Ocupación"],
-          [[String(occupancy.totalSpaces), String(occupancy.occupiedSpaces), String(occupancy.availableSpaces), occupancy.occupancyPercentage.toFixed(1)]],
+        toCsv(
+          ["Total", "Ocupados", "Disponibles", "% Ocupación"],
+          [
+            [String(occupancy.totalSpaces), String(occupancy.occupiedSpaces), String(occupancy.availableSpaces), occupancy.occupancyPercentage.toFixed(1)],
+            ...occupancy.byVehicleType.map((vt) => [vt.vehicleType, String(vt.occupied), "", ""]),
+          ],
           filename);
         break;
       case "by-operator":
-        toCsv(["Operador", "Transacciones", "Total", "Efectivo", "Tarjeta", "Transferencia", "Otros"],
+        toCsv(
+          ["Operador", "Transacciones", "Total", "Efectivo", "Tarjeta", "Transferencia", "Otros"],
           operators.map((r) => [r.operatorName, String(r.transactionCount), r.totalAmount.toFixed(0), r.cashAmount.toFixed(0), r.cardAmount.toFixed(0), r.transferAmount.toFixed(0), r.otherAmount.toFixed(0)]),
           filename);
         break;
       case "by-payment-method":
-        toCsv(["Método", "Transacciones", "Total", "%"],
+        toCsv(
+          ["Método", "Transacciones", "Total", "%"],
           paymentMethods.map((r) => [r.displayName, String(r.transactionCount), r.totalAmount.toFixed(0), r.percentage.toFixed(1)]),
           filename);
         break;
@@ -196,8 +250,12 @@ export function useReports() {
   return {
     dateFrom, setDateFrom, dateTo, setDateTo,
     loading, error, setError,
-    dailyOps, cashSessions, cashSummary, vehicleType,
-    paidTickets, voidedTickets, incomeExpense, occupancy,
+    dailyOps,
+    cashSessions, cashSessionsTotal, cashSessionPage,
+    cashSummary, loadCashSessionSummary,
+    vehicleType,
+    paidTickets, paidTicketsTotal, paidTicketsPage,
+    voidedTickets, incomeExpense, occupancy,
     operators, paymentMethods,
     loadReport, handleExport,
   };

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { Skeleton } from "@heroui/react";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { currentUser } from "@/features/auth/services/auth-domain.service";
 
@@ -38,7 +39,14 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   }, [isLoading, isAuthenticated, pathname, router]);
 
   if (isLoading) {
-    return <div className="p-6 text-sm text-slate-600">Validando sesion...</div>;
+    return (
+      <div className="flex flex-col gap-4 p-6">
+        <Skeleton className="h-10 w-48 rounded-xl" />
+        <Skeleton className="h-6 w-full rounded-xl" />
+        <Skeleton className="h-6 w-3/4 rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+      </div>
+    );
   }
 
   if (!isAuthenticated) return null;

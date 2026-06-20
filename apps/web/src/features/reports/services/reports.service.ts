@@ -18,6 +18,7 @@ export type ReportView =
 
 export type DailyOpsRow = { date: string; entries: number; exits: number; lostTickets: number; cashTotal: number; cardTotal: number; transferTotal: number; otherTotal: number; grandTotal: number };
 export type CashSessionRow = { id: string; openedAt: string; closedAt: string | null; operatorName: string | null; status: string; openingAmount: number; expectedAmount: number; countedAmount: number | null; difference: number | null; movementCount: number };
+export type PaginatedResponse<T> = { content: T[]; totalElements: number; totalPages: number; number: number; size: number };
 export type CashSummary = { openingAmount: number; expectedLedgerTotal: number; countedTotal: number | null; difference: number | null; totalsByPaymentMethod: Record<string, number>; totalsByMovementType: Record<string, number>; movementCount: number } | null;
 export type VehicleTypeRow = { vehicleType: string; activeCount: number; entriesToday: number; exitsToday: number; revenueToday: number };
 export type PaidTicketRow = { ticketNumber: string; plate: string; vehicleType: string; amount: number; paymentMethod: string; paidAt: string; entryAt: string };
@@ -40,8 +41,14 @@ export async function fetchDailyOperations(dateFrom: string, dateTo: string): Pr
   return fetchJson<DailyOpsRow[]>(`/reports/daily-operations?${p.toString()}`);
 }
 
-export async function fetchCashSessionHistory(): Promise<CashSessionRow[]> {
-  return fetchJson<CashSessionRow[]>("/reports/cash-session-history?limit=20&offset=0");
+export async function fetchCashSessionHistory(
+  dateFrom: string,
+  dateTo: string,
+  page = 0,
+  size = 20,
+): Promise<PaginatedResponse<CashSessionRow>> {
+  const p = new URLSearchParams({ dateFrom, dateTo, page: String(page), size: String(size) });
+  return fetchJson<PaginatedResponse<CashSessionRow>>(`/reports/cash-session-history?${p.toString()}`);
 }
 
 export async function fetchCashSessionSummary(sessionId: string): Promise<CashSummary> {
@@ -52,11 +59,18 @@ export async function fetchVehicleTypeReport(): Promise<VehicleTypeRow[]> {
   return fetchJson<VehicleTypeRow[]>("/reports/vehicle-type");
 }
 
-export async function fetchPaidTickets(dateFrom: string, dateTo: string): Promise<PaidTicketRow[]> {
+export async function fetchPaidTickets(
+  dateFrom: string,
+  dateTo: string,
+  page = 0,
+  size = 50,
+): Promise<PaginatedResponse<PaidTicketRow>> {
   const p = new URLSearchParams();
   if (dateFrom) p.set("dateFrom", dateFrom);
   if (dateTo) p.set("dateTo", dateTo);
-  return fetchJson<PaidTicketRow[]>(`/reports/paid-tickets?${p.toString()}`);
+  p.set("page", String(page));
+  p.set("size", String(size));
+  return fetchJson<PaginatedResponse<PaidTicketRow>>(`/reports/paid-tickets?${p.toString()}`);
 }
 
 export async function fetchVoidedTickets(dateFrom: string, dateTo: string): Promise<VoidedTicketRow[]> {

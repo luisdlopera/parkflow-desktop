@@ -70,7 +70,7 @@ export function useCajaSession(site: string, terminal: string) {
         terminal,
         openingAmount: params.openingAmount,
         operatorUserId: params.operatorUserId,
-        openIdempotencyKey: `open:${terminal}:${Date.now()}`,
+        openIdempotencyKey: `open:${terminal}:${new Date().toDateString()}`,
         notes: params.notes,
       });
       setSession(result);
@@ -87,6 +87,7 @@ export function useCajaSession(site: string, terminal: string) {
       countTransfer: number;
       countOther: number;
       observations?: string | null;
+      denominations?: Array<{ denomination: number; quantity: number }>;
     }) => {
       if (!session) throw new Error("No hay sesión activa");
       const result = await cashCount(session.id, body);

@@ -170,9 +170,11 @@ export async function handleOperationsRoutes(
   if (pathname.endsWith("/operations/tickets/reprint") && method === "POST") {
     const body = getBody();
     const ticketNumber = body.ticketNumber as string;
+    const operatorUserId = (body.operatorUserId as string) || "";
     if (!ticketNumber) return new Response(JSON.stringify({ error: "ticketNumber es obligatorio" }), { status: 400, headers: { "Content-Type": "application/json" } });
+    if (!operatorUserId) return new Response(JSON.stringify({ error: "operatorUserId es obligatorio" }), { status: 400, headers: { "Content-Type": "application/json" } });
     const active = await invoke<ActiveTicketDto>("local_get_active_session", { plate: null, ticketNumber });
-    await invoke("local_reprint_ticket", { ticketId: active.id });
+    await invoke("local_reprint_ticket", { ticketId: active.id, operatorId: operatorUserId });
     return json(mapActiveSession(active));
   }
 
