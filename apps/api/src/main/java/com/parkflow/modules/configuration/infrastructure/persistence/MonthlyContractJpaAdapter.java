@@ -52,10 +52,10 @@ public class MonthlyContractJpaAdapter implements MonthlyContractPort {
   @Repository
   interface MonthlyContractJpaRepository extends JpaRepository<MonthlyContract, UUID> {
     @Query(
-        "SELECT mc FROM MonthlyContract mc WHERE mc.companyId = :cid AND "
+        "SELECT mc FROM MonthlyContract mc JOIN mc.vehicle v WHERE mc.companyId = :cid AND "
             + "(:site IS NULL OR :site = '' OR mc.site = :site) "
-            + "AND (:plate IS NULL OR :plate = '' OR UPPER(mc.plate) LIKE UPPER(CONCAT('%', :plate, '%'))) "
-            + "AND (:active IS NULL OR mc.isActive = :active)")
+            + "AND (:plate IS NULL OR :plate = '' OR UPPER(v.plate) LIKE UPPER(CONCAT('%', :plate, '%'))) "
+            + "AND (:active IS NULL OR (mc.status = com.parkflow.modules.configuration.domain.ContractStatus.ACTIVE AND :active = true) OR (mc.status != com.parkflow.modules.configuration.domain.ContractStatus.ACTIVE AND :active = false))")
     Page<MonthlyContract> search(
         @Param("site") String site,
         @Param("plate") String plate,
@@ -64,12 +64,13 @@ public class MonthlyContractJpaAdapter implements MonthlyContractPort {
         Pageable pageable);
 
     @Query(
-        "SELECT mc FROM MonthlyContract mc WHERE mc.plate = :plate AND mc.companyId = :cid AND mc.isActive = true "
+        "SELECT mc FROM MonthlyContract mc JOIN mc.vehicle v WHERE v.plate = :plate AND mc.companyId = :cid AND mc.status = com.parkflow.modules.configuration.domain.ContractStatus.ACTIVE "
             + "AND mc.startDate <= :date AND mc.endDate >= :date")
     List<MonthlyContract> findActiveForPlateAndDate(
         @Param("plate") String plate, @Param("date") LocalDate date, @Param("cid") UUID companyId);
 
+    @Query("SELECT mc FROM MonthlyContract mc JOIN mc.vehicle v WHERE v.plate = :plate AND mc.status = com.parkflow.modules.configuration.domain.ContractStatus.ACTIVE AND mc.startDate <= :dateEnd AND mc.endDate >= :dateStart AND mc.companyId = :companyId")
     Optional<MonthlyContract> findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndCompanyId(
-        String plate, LocalDate dateStart, LocalDate dateEnd, UUID companyId);
+        @Param("plate") String plate, @Param("dateStart") LocalDate dateStart, @Param("dateEnd") LocalDate dateEnd, @Param("companyId") UUID companyId);
   }
 }

@@ -22,7 +22,7 @@ app:
   security:
     password-encoder-strength: 4
     api-key: test-api-key-12345
-    jwt-secret: ***REMOVED***==
+    jwt-secret: "VmVyeVNlY3JldEtleUZvclRlc3RpbmdQdXJwb3NlczEyMw=="
     access-token-ttl-minutes: 15
     refresh-token-ttl-days: 7
     offline-lease-hours: 48
@@ -33,7 +33,7 @@ app:
 
 parkflow:
   jwt:
-    secret: ***REMOVED***==
+    secret: "VmVyeVNlY3JldEtleUZvclRlc3RpbmdQdXJwb3NlczEyMw=="
 
 server:
   port: 0  # Random port for tests

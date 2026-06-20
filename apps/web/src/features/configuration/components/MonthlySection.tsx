@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
+import { Modal } from "@/components/bridge/Modal";
 import DataTable from "@/components/ui/DataTable";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import type { MonthlyContractRow } from "@/lib/settings-api";
@@ -22,7 +23,9 @@ export default function MonthlySection({
   const [totalPages, setTotalPages] = useState(0);
 
   // Form State
-  const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(false);
+  const onOpen = () => setIsOpen(true);
+  const onClose = () => setIsOpen(false);
   const [saving, setSaving] = useState(false);
   const [rates, setRates] = useState<any[]>([]);
   const [formData, setFormData] = useState({
@@ -106,46 +109,42 @@ export default function MonthlySection({
         <Button size="sm" variant="tertiary" color="primary" isDisabled={page + 1 >= totalPages} onPress={() => setPage(p => p + 1)}>Siguiente</Button>
       </div>
 
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex flex-col gap-1">Crear Mensualidad (Creación Rápida)</ModalHeader>
-              <ModalBody>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <label className="text-sm font-medium">Tarifa Base</label>
-                    <select 
-                      className="w-full mt-1 p-2 border rounded-xl surface" 
-                      value={formData.rateId} 
-                      onChange={e => setFormData({...formData, rateId: e.target.value})}
-                    >
-                      {rates.map(r => <option key={r.id} value={r.id}>{r.name} - ${r.amount}</option>)}
-                    </select>
-                  </div>
-                  <Input label="Placa" value={formData.plate} onChange={(e) => setFormData({ ...formData, plate: e.target.value })} />
-                  <Input label="Titular" value={formData.holderName} onChange={(e) => setFormData({ ...formData, holderName: e.target.value })} />
-                  <Input label="Documento" value={formData.holderDocument} onChange={(e) => setFormData({ ...formData, holderDocument: e.target.value })} />
-                  <Input label="Teléfono" value={formData.holderPhone} onChange={(e) => setFormData({ ...formData, holderPhone: e.target.value })} />
-                  <Input label="Fecha Inicio" type="date" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
-                  <Input label="Fecha Fin" type="date" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
-                  <Input label="Valor" type="number" value={formData.amount.toString()} onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })} />
-                </div>
-                <p className="text-xs text-default-500 mt-2">
-                  Los datos del cliente y vehículo se normalizarán y guardarán automáticamente en la nueva arquitectura.
-                </p>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="danger" variant="light" onPress={onClose}>
-                  Cancelar
-                </Button>
-                <Button color="primary" onPress={handleSave} isLoading={saving} isDisabled={!formData.rateId || !formData.plate || !formData.holderName}>
-                  Guardar
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
+      <Modal state={{ isOpen, setOpen: setIsOpen, open: onOpen, close: onClose, toggle: () => setIsOpen(!isOpen) }}>
+        <Modal.Content>
+          <Modal.Header className="flex flex-col gap-1">Crear Mensualidad (Creación Rápida)</Modal.Header>
+          <Modal.Body>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="text-sm font-medium">Tarifa Base</label>
+                <select 
+                  className="w-full mt-1 p-2 border rounded-xl surface" 
+                  value={formData.rateId} 
+                  onChange={e => setFormData({...formData, rateId: e.target.value})}
+                >
+                  {rates.map(r => <option key={r.id} value={r.id}>{r.name} - ${r.amount}</option>)}
+                </select>
+              </div>
+              <Input label="Placa" value={formData.plate} onChange={(e) => setFormData({ ...formData, plate: e.target.value })} />
+              <Input label="Titular" value={formData.holderName} onChange={(e) => setFormData({ ...formData, holderName: e.target.value })} />
+              <Input label="Documento" value={formData.holderDocument} onChange={(e) => setFormData({ ...formData, holderDocument: e.target.value })} />
+              <Input label="Teléfono" value={formData.holderPhone} onChange={(e) => setFormData({ ...formData, holderPhone: e.target.value })} />
+              <Input label="Fecha Inicio" type="date" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
+              <Input label="Fecha Fin" type="date" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
+              <Input label="Valor" type="number" value={formData.amount.toString()} onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })} />
+            </div>
+            <p className="text-xs text-default-500 mt-2">
+              Los datos del cliente y vehículo se normalizarán y guardarán automáticamente en la nueva arquitectura.
+            </p>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button color="danger" variant="light" onPress={onClose}>
+              Cancelar
+            </Button>
+            <Button color="primary" onPress={handleSave} isLoading={saving} isDisabled={!formData.rateId || !formData.plate || !formData.holderName}>
+              Guardar
+            </Button>
+          </Modal.Footer>
+        </Modal.Content>
       </Modal>
     </div>
   );
