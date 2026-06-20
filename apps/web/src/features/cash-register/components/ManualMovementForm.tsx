@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Controller } from "react-hook-form";
-import { ListBox, SearchField } from "@heroui/react";
+import { ListBox, SearchField, Label } from "@heroui/react";
 import { Autocomplete } from "@/components/bridge/Autocomplete";
 import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
@@ -11,10 +11,11 @@ export default function ManualMovementForm({ p, contains }: any) {
     <>
       <h3 className="mt-8 text-base font-semibold text-slate-900">Ingreso / egreso manual</h3>
       <div className="mt-3 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 items-end">
-        <Autocomplete label="Tipo de movimiento" placeholder="Seleccionar tipo" selectionMode="single"
+        <Autocomplete placeholder="Seleccionar tipo" selectionMode="single"
           value={p.manualType}
           onChange={(key: any) => p.manualForm.setValue("manualType", (key as string) ?? "")}
           isDisabled={!p.perms.canMove}>
+          <Label>Tipo de movimiento</Label>
           <Autocomplete.Trigger><Autocomplete.Value /><Autocomplete.ClearButton /><Autocomplete.Indicator /></Autocomplete.Trigger>
           <Autocomplete.Popover>
             <Autocomplete.Filter filter={contains}>
@@ -33,10 +34,11 @@ export default function ManualMovementForm({ p, contains }: any) {
             </Autocomplete.Filter>
           </Autocomplete.Popover>
         </Autocomplete>
-        <Autocomplete label="Medio de pago" placeholder="Seleccionar medio" selectionMode="single"
+        <Autocomplete placeholder="Seleccionar medio" selectionMode="single"
           value={p.manualMethod}
           onChange={(key: any) => p.manualForm.setValue("manualMethod", (key as string) ?? "")}
           isDisabled={!p.perms.canMove}>
+          <Label>Medio de pago</Label>
           <Autocomplete.Trigger><Autocomplete.Value /><Autocomplete.ClearButton /><Autocomplete.Indicator /></Autocomplete.Trigger>
           <Autocomplete.Popover>
             <Autocomplete.Filter filter={contains}>

@@ -76,6 +76,6 @@ public class CashMovement {
   @Column(length = 80)
   private String terminal;
 
-  @Column(length = 120)
+  @Column(length = 120, unique = true)
   private String idempotencyKey;
 }

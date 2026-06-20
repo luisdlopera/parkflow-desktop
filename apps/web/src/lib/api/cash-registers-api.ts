@@ -1,7 +1,7 @@
 import { apiFetch, cfgBase, buildApiHeaders, hdr, type SettingsPage } from "./_shared";
-import { cashRegisterSchema } from "@/modules/settings/schemas";
+import { cashRegisterSchema } from "@/lib/schemas/config.schemas";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
-import type { CashRegisterRow } from "@/modules/settings/types";
+import type { CashRegisterRow } from "@/lib/types/settings.types";
 
 export type { CashRegisterRow };
 

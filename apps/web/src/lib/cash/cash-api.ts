@@ -10,6 +10,8 @@ import {
   cashVoidMovementRequestSchema
 } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 async function parseError(response: Response): Promise<string> {
   try {
@@ -99,7 +101,7 @@ export async function cashPolicy(site?: string | null): Promise<CashPolicyDto> {
   if (site) {
     u.searchParams.set("site", site);
   }
-  const res = await fetch(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+  const res = await fetchWithCredentials(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
   if (!res.ok) {
     throw new Error(await parseError(res));
   }
@@ -111,7 +113,7 @@ export async function cashRegisters(site?: string | null): Promise<CashRegisterR
   if (site) {
     u.searchParams.set("site", site);
   }
-  const res = await fetch(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+  const res = await fetchWithCredentials(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
   if (!res.ok) {
     throw new Error(await parseError(res));
   }
@@ -128,7 +130,7 @@ export async function cashOpen(body: {
   notes?: string | null;
 }): Promise<CashSessionDto> {
   const validatedBody = validatePayloadOrThrow(cashOpenRequestSchema, body);
-  const res = await fetch(`${apiV1Base()}/cash/open`, {
+  const res = await fetchWithCredentials(`${apiV1Base()}/cash/open`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(validatedBody)
@@ -147,7 +149,7 @@ export async function cashCurrent(site?: string | null, terminal?: string | null
   if (terminal) {
     u.searchParams.set("terminal", terminal);
   }
-  const res = await fetch(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
+  const res = await fetchWithCredentials(u.toString(), { cache: "no-store", headers: await buildApiHeaders() });
   if (!res.ok) {
     throw new Error(await parseError(res));
   }
@@ -155,7 +157,7 @@ export async function cashCurrent(site?: string | null, terminal?: string | null
 }
 
 export async function cashMovements(sessionId: string): Promise<CashMovementDto[]> {
-  const res = await fetch(`${apiV1Base()}/cash/sessions/${sessionId}/movements`, {
+  const res = await fetchWithCredentials(`${apiV1Base()}/cash/sessions/${sessionId}/movements`, {
     cache: "no-store",
     headers: await buildApiHeaders()
   });
@@ -166,7 +168,7 @@ export async function cashMovements(sessionId: string): Promise<CashMovementDto[
 }
 
 export async function cashSummary(sessionId: string): Promise<CashSummaryDto> {
-  const res = await fetch(`${apiV1Base()}/cash/sessions/${sessionId}/summary`, {
+  const res = await fetchWithCredentials(`${apiV1Base()}/cash/sessions/${sessionId}/summary`, {
     cache: "no-store",
     headers: await buildApiHeaders()
   });
@@ -191,7 +193,7 @@ export async function cashAddMovement(
   options?: { offline?: boolean }
 ): Promise<CashMovementDto> {
   const validatedBody = validatePayloadOrThrow(cashMovementRequestSchema, body);
-  const res = await fetch(`${apiV1Base()}/cash/sessions/${sessionId}/movements`, {
+  const res = await fetchWithCredentials(`${apiV1Base()}/cash/sessions/${sessionId}/movements`, {
     method: "POST",
     headers: await buildApiHeaders({
       offline: Boolean(options?.offline)
@@ -214,7 +216,7 @@ export async function cashVoidMovement(
     reason,
     idempotencyKey: idempotencyKey ?? undefined
   });
-  const res = await fetch(
+  const res = await fetchWithCredentials(
     `${apiV1Base()}/cash/sessions/${sessionId}/movements/${movementId}/void`,
     {
       method: "POST",
@@ -239,7 +241,7 @@ export async function cashCount(
   }
 ): Promise<CashSessionDto> {
   const validatedBody = validatePayloadOrThrow(cashCountRequestSchema, body);
-  const res = await fetch(`${apiV1Base()}/cash/sessions/${sessionId}/count`, {
+  const res = await fetchWithCredentials(`${apiV1Base()}/cash/sessions/${sessionId}/count`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(validatedBody)
@@ -265,7 +267,7 @@ export type CashAuditEntryDto = {
 };
 
 export async function cashAudit(sessionId: string): Promise<CashAuditEntryDto[]> {
-  const res = await fetch(`${apiV1Base()}/cash/sessions/${sessionId}/audit`, {
+  const res = await fetchWithCredentials(`${apiV1Base()}/cash/sessions/${sessionId}/audit`, {
     cache: "no-store",
     headers: await buildApiHeaders()
   });
@@ -284,7 +286,7 @@ export async function cashClose(
   }
 ): Promise<CashSessionDto> {
   const validatedBody = validatePayloadOrThrow(cashCloseRequestSchema, body);
-  const res = await fetch(`${apiV1Base()}/cash/sessions/${sessionId}/close`, {
+  const res = await fetchWithCredentials(`${apiV1Base()}/cash/sessions/${sessionId}/close`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(validatedBody)
@@ -296,7 +298,7 @@ export async function cashClose(
 }
 
 export async function cashPrintClosing(sessionId: string): Promise<CashClosingPrintDto> {
-  const res = await fetch(`${apiV1Base()}/cash/sessions/${sessionId}/print-closing`, {
+  const res = await fetchWithCredentials(`${apiV1Base()}/cash/sessions/${sessionId}/print-closing`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify({})
