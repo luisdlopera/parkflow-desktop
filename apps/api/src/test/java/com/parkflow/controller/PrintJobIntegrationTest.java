@@ -42,13 +42,14 @@ class PrintJobIntegrationTest extends BaseIntegrationTest {
         String jobRequest = """
             {
                 "sessionId": "%s",
+                "companyId": "%s",
                 "operatorUserId": "%s",
                 "documentType": "REPRINT",
                 "idempotencyKey": "unique-key-123",
                 "payloadHash": "abc123",
                 "terminalId": "TERM1"
             }
-            """.formatted(sessionId, adminUserId);
+            """.formatted(sessionId, companyId, adminUserId);
 
         mockMvc.perform(post("/api/v1/print-jobs")
                 .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
@@ -90,13 +91,14 @@ class PrintJobIntegrationTest extends BaseIntegrationTest {
         String jobRequest = """
             {
                 "sessionId": "%s",
+                "companyId": "%s",
                 "operatorUserId": "%s",
                 "documentType": "REPRINT",
                 "idempotencyKey": "unique-key-456",
                 "payloadHash": "def456",
                 "terminalId": "TERM1"
             }
-            """.formatted(sessionId, adminUserId);
+            """.formatted(sessionId, companyId, adminUserId);
 
         var jobResult = mockMvc.perform(post("/api/v1/print-jobs")
                 .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))

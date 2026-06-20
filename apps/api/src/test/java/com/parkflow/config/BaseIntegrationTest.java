@@ -192,10 +192,10 @@ public abstract class BaseIntegrationTest {
         admin.setPasswordHash(passwordHashService.encodePassword("admin123"));
         admin.setActive(true);
         admin.setCompanyId(companyId);
-        admin.setCanVoidTickets(true);
-        admin.setCanReprintTickets(true);
-        admin.setCanCloseCash(true);
         admin.setRequirePasswordChange(false);
+        admin.setCanReprintTickets(true);
+        admin.setCanVoidTickets(true);
+        admin.setCanCloseCash(true);
         admin = appUserRepository.save(admin);
         adminUserId = admin.getId();
 

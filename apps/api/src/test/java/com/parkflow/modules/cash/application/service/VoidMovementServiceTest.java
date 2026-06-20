@@ -103,7 +103,7 @@ class VoidMovementServiceTest {
         when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
         when(cashMovementRepository.findById(movementId)).thenReturn(Optional.of(original));
-        when(cashLedgerSummaryCalculator.ledgerContribution(original))
+        when(cashLedgerSummaryCalculator.ledgerContribution(original.getMovementType(), original.getAmount()))
                 .thenReturn(new BigDecimal("100.00"));
         when(cashMovementRepository.save(original)).thenReturn(original);
         when(cashMovementRepository.save(argThat(m -> m.getMovementType() == CashMovementType.VOID_OFFSET)))
@@ -133,7 +133,7 @@ class VoidMovementServiceTest {
         when(cashMovementRepository.findById(movementId)).thenReturn(Optional.of(original));
         when(cashMovementRepository.findByIdempotencyKey(
                 "void:" + movementId + ":idempotency-123")).thenReturn(Optional.empty());
-        when(cashLedgerSummaryCalculator.ledgerContribution(original))
+        when(cashLedgerSummaryCalculator.ledgerContribution(original.getMovementType(), original.getAmount()))
                 .thenReturn(new BigDecimal("100.00"));
         when(cashMovementRepository.save(any())).thenAnswer(inv -> {
             CashMovement m = inv.getArgument(0);

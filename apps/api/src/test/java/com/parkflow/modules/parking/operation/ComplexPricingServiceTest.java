@@ -44,14 +44,16 @@ class ComplexPricingServiceTest {
   @Mock private AgreementPort agreementRepository;
   @Mock private PricingCalculator pricingCalculator;
   @Mock private AuditPort auditPort;
+  @Mock private com.parkflow.modules.parking.operation.domain.pricing.RateWindowResolver rateWindowResolver;
 
   private ComplexPricingService service;
 
   @BeforeEach
   void setUp() {
+    when(rateWindowResolver.isInWindow(any(), any())).thenReturn(true);
     service = new ComplexPricingService(
         monthlyContractRepository, prepaidBalanceRepository,
-        prepaidUseCase, agreementRepository, pricingCalculator, auditPort);
+        prepaidUseCase, agreementRepository, pricingCalculator, auditPort, rateWindowResolver);
   }
 
   // -----------------------------------------------------------------------

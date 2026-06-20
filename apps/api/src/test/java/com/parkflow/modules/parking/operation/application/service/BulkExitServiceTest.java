@@ -35,7 +35,8 @@ class BulkExitServiceTest {
         null, null, null, null, 120, "2h 0m",
         BigDecimal.valueOf(4000), null,
         com.parkflow.modules.parking.operation.domain.SessionStatus.CLOSED,
-        false, 0, null, null, null, null, false, null, null, null, null, null, false, null);
+        false, 0, null, null, null, null, false, null, null, null, null, null, false, null,
+        null, null, null, null);
   }
 
   // =========================================================================
@@ -112,7 +113,7 @@ class BulkExitServiceTest {
     }
 
     @Test
-    void throwsWhenAnyVehicleFails() {
+    void handlesAnyVehicleFailuresGracefully() {
       when(registerExitUseCase.execute(any()))
           .thenThrow(new RuntimeException("Lock wait timeout"))
           .thenReturn(new OperationResultResponse("s2", sampleReceipt("T-2", "XYZ789"),
@@ -120,9 +121,12 @@ class BulkExitServiceTest {
 
       BulkExitRequest req = new BulkExitRequest(List.of("T-1", "T-2"), operatorId, PaymentMethod.CASH, null, null, null);
 
-      assertThatThrownBy(() -> service.process(req))
-          .isInstanceOf(RuntimeException.class)
-          .hasMessageContaining("Bulk exit partially failed");
+      BulkExitResponse result = service.process(req);
+
+      assertThat(result.successfulCount()).isEqualTo(1);
+      assertThat(result.failedCount()).isEqualTo(1);
+      assertThat(result.errors()).hasSize(1);
+      assertThat(result.errors().get(0)).contains("Lock wait timeout");
     }
   }
 }

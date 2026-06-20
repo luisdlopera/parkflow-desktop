@@ -1,7 +1,9 @@
 package com.parkflow.modules.parking.operation.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.parkflow.modules.auth.domain.AppUser;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -151,6 +153,58 @@ class SessionStateTransitionsTest {
   }
 
   @Test
+  void incrementReprintShouldIncreaseCount() {
+    ParkingSession session = createBasicSession();
+    AppUser operator = createOperator("Test Operator");
+    int newCount = session.incrementReprint(operator, "Copia solicitada");
+    assertThat(newCount).isEqualTo(1);
+    assertThat(session.getReprintCount()).isEqualTo(1);
+  }
+
+  @Test
+  void incrementReprintShouldTrackMultipleReprints() {
+    ParkingSession session = createBasicSession();
+    AppUser operator = createOperator("Test Operator");
+    session.incrementReprint(operator, "Primera copia");
+    session.incrementReprint(operator, "Segunda copia");
+    session.incrementReprint(operator, "Tercera copia");
+    assertThat(session.getReprintCount()).isEqualTo(3);
+  }
+
+  @Test
+  void incrementReprintShouldRejectCanceledSession() {
+    ParkingSession session = createBasicSession();
+    session.setStatus(SessionStatus.CANCELED);
+    AppUser operator = createOperator("Test Operator");
+    assertThatThrownBy(() -> session.incrementReprint(operator, "Razon"))
+        .isInstanceOf(com.parkflow.modules.common.exception.domain.BusinessValidationException.class)
+        .hasMessageContaining("No se puede reimprimir un ticket anulado");
+    assertThat(session.getReprintCount()).isZero();
+  }
+
+  @Test
+  void incrementReprintShouldRejectLostTicketSession() {
+    ParkingSession session = createBasicSession();
+    session.setStatus(SessionStatus.LOST_TICKET);
+    AppUser operator = createOperator("Test Operator");
+    assertThatThrownBy(() -> session.incrementReprint(operator, "Razon"))
+        .isInstanceOf(com.parkflow.modules.common.exception.domain.BusinessValidationException.class)
+        .hasMessageContaining("No se puede reimprimir un ticket marcado como perdido");
+    assertThat(session.getReprintCount()).isZero();
+  }
+
+  @Test
+  void incrementReprintShouldAllowReprintOnClosedSession() {
+    ParkingSession session = createBasicSession();
+    session.setExitAt(OffsetDateTime.now());
+    session.setStatus(SessionStatus.CLOSED);
+    AppUser operator = createOperator("Test Operator");
+    int newCount = session.incrementReprint(operator, "Copia post-salida");
+    assertThat(newCount).isEqualTo(1);
+    assertThat(session.getReprintCount()).isEqualTo(1);
+  }
+
+  @Test
   void sessionShouldTrackEntryMode() {
     ParkingSession session = createBasicSession();
     assertThat(session.getEntryMode()).isEqualTo(EntryMode.VISITOR);
@@ -238,5 +292,13 @@ class SessionStateTransitionsTest {
         .entryMode(EntryMode.VISITOR)
         .reprintCount(0)
         .build();
+  }
+
+  private AppUser createOperator(String name) {
+    AppUser operator = new AppUser();
+    operator.setId(UUID.randomUUID());
+    operator.setName(name);
+    operator.setActive(true);
+    return operator;
   }
 }

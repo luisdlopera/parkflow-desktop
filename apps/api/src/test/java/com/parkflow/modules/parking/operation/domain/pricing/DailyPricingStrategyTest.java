@@ -47,7 +47,7 @@ class DailyPricingStrategyTest {
   void max_session_value_caps_total() {
     Rate r = baseRate(BigDecimal.valueOf(20000));
     r.setMaxSessionValue(new BigDecimal("35000"));
-    var breakdown = strategy.calculate(r, 60 * 72, false); // 3 days = 60000, no cap implemented yet
-    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(60000));
+    var breakdown = strategy.calculate(r, 60 * 72, false); // 3 days = 60000, capped at 35000
+    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(35000));
   }
 }

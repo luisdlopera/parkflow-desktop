@@ -100,7 +100,7 @@ class PrintJobServiceTest {
 
     var req =
         new CreatePrintJobRequest(
-            sessionId, operatorId, PrintDocumentType.ENTRY, key, "abc", null, "T1");
+            sessionId, companyId, operatorId, PrintDocumentType.ENTRY, key, "abc", null, "T1");
 
     var res = printJobService.create(req);
 
@@ -118,7 +118,7 @@ class PrintJobServiceTest {
 
     var req =
         new CreatePrintJobRequest(
-            sessionId, operatorId, PrintDocumentType.ENTRY, key, "hash", null, null);
+            sessionId, companyId, operatorId, PrintDocumentType.ENTRY, key, "hash", null, null);
 
     assertThatThrownBy(() -> printJobService.create(req))
         .isInstanceOf(OperationException.class)
@@ -169,7 +169,7 @@ class PrintJobServiceTest {
     var snap = "{\"ticketId\":\"T-A-000001\"}";
     var req =
         new CreatePrintJobRequest(
-            sessionId, operatorId, PrintDocumentType.EXIT, key, "hash", snap, "TERM-01");
+            sessionId, companyId, operatorId, PrintDocumentType.EXIT, key, "hash", snap, "TERM-01");
 
     printJobService.create(req);
 

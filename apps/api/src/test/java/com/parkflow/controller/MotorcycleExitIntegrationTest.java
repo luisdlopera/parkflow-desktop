@@ -639,8 +639,8 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
     UUID cashierId = UUID.randomUUID();
     String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
     jdbcTemplate.update(
-        "INSERT INTO app_user (id, name, email, document, phone, site, terminal, role, password_hash, is_active, can_close_cash, can_reprint_tickets, can_void_tickets, require_password_change, company_id, created_at, updated_at) "
-        + "VALUES (?, 'Cashier', ?, ?, '3000000001', 'Test Site', 'TERM1', 'CAJERO', 'hash', true, false, false, false, false, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+        "INSERT INTO app_user (id, name, email, document, phone, site, terminal, role, password_hash, is_active, require_password_change, is_blocked, failed_login_attempts, company_id, can_void_tickets, can_reprint_tickets, can_close_cash, created_at, updated_at) "
+        + "VALUES (?, 'Cashier', ?, ?, '3000000001', 'Test Site', 'TERM1', 'CAJERO', 'hash', true, false, false, 0, ?, false, false, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
         cashierId, "cashier_" + uniqueSuffix + "@test.com", "DOC_" + uniqueSuffix, companyId);
 
     String token = getAuthToken();

@@ -19,7 +19,9 @@ import com.parkflow.modules.cash.repository.CashMovementRepository;
 import com.parkflow.modules.cash.repository.CashRegisterRepository;
 import com.parkflow.modules.cash.repository.CashSessionRepository;
 import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +51,8 @@ class CashSessionManagementServiceTest {
     @Mock private com.parkflow.modules.cash.service.CashSequentialSupportService cashSequentialSupportService;
     @Mock private com.parkflow.modules.cash.service.CashClosingOutboundNotifier cashClosingOutboundNotifier;
     @Mock private com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
+    @Mock private com.parkflow.modules.cash.repository.CashSessionDenominationRepository cashSessionDenominationRepository;
+    @Mock private ParkingSessionRepository parkingSessionRepository;
 
     @InjectMocks
     private CashSessionManagementService service;
@@ -84,15 +88,19 @@ class CashSessionManagementServiceTest {
     @Test
     void close_ThrowsWhenNotArqueado() {
         UUID sessionId = UUID.randomUUID();
+        CashRegister register = new CashRegister();
+        register.setSite("S1");
+        register.setTerminal("T1");
+
         CashSession session = new CashSession();
         session.setId(sessionId);
         session.setStatus(CashSessionStatus.OPEN);
         session.setOperator(operator);
         session.setCompanyId(companyId);
+        session.setCashRegister(register);
         // NO countedAt -> Not arqueado
 
-        when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
-
+        when(cashSessionRepository.findByIdWithPessimisticLock(sessionId)).thenReturn(Optional.of(session));
 
         CashCloseRequest req = new CashCloseRequest("Notes", null, null);
 
@@ -117,9 +125,12 @@ class CashSessionManagementServiceTest {
         session.setCountedAmount(new BigDecimal("150.00"));
         session.setCashRegister(register);
 
+        when(cashSessionRepository.findByIdWithPessimisticLock(sessionId)).thenReturn(Optional.of(session));
         when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
-        when(cashMovementRepository.findByCashSession_IdOrderByCreatedAtDesc(sessionId)).thenReturn(List.of());
+        when(cashMovementRepository.getSummaryBySessionId(sessionId)).thenReturn(List.of());
+        when(parkingSessionRepository.countByStatusAndCompanyIdAndEntryAtGreaterThanEqual(
+                eq(SessionStatus.ACTIVE), eq(companyId), any())).thenReturn(0L);
 
         CashSummaryResponse summary = new CashSummaryResponse(
             new BigDecimal("100.00"),

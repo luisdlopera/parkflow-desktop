@@ -85,8 +85,8 @@ class HourlyPricingStrategyTest {
   void max_daily_value_caps_total() {
     Rate r = baseRate(60, RoundingMode.UP, BigDecimal.valueOf(2000));
     r.setMaxDailyValue(new BigDecimal("5000"));
-    var breakdown = strategy.calculate(r, 60 * 5, false); // 5 units = 10000, no cap implemented yet
-    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(10000));
+    var breakdown = strategy.calculate(r, 60 * 5, false); // 5 units = 10000, capped at 5000
+    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(5000));
   }
 
   @Test

@@ -43,15 +43,15 @@ class PerMinutePricingStrategyTest {
   void min_session_value_enforced() {
     Rate r = baseRate(BigDecimal.valueOf(50));
     r.setMinSessionValue(BigDecimal.valueOf(1000));
-    var breakdown = strategy.calculate(r, 5, false); // 5*50=250, no min session value implemented yet
-    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(250));
+    var breakdown = strategy.calculate(r, 5, false); // 5*50=250, min session is 1000
+    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(1000));
   }
 
   @Test
   void max_daily_value_caps_total() {
     Rate r = baseRate(BigDecimal.valueOf(50));
     r.setMaxDailyValue(BigDecimal.valueOf(5000));
-    var breakdown = strategy.calculate(r, 60 * 24, false); // 1440*50=72000, no cap implemented yet
-    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(72000));
+    var breakdown = strategy.calculate(r, 60 * 24, false); // 1440*50=72000, capped at 5000
+    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(5000));
   }
 }

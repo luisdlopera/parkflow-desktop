@@ -151,8 +151,15 @@ class RegisterExitServiceTest {
   }
 
   private ExitRequest request(String ticket, String plate, PaymentMethod method) {
+    List<com.parkflow.modules.parking.operation.dto.PaymentBreakdownItem> breakdown = null;
+    if (method == PaymentMethod.MIXED) {
+      breakdown = List.of(
+          new com.parkflow.modules.parking.operation.dto.PaymentBreakdownItem(PaymentMethod.CASH, BigDecimal.valueOf(2000)),
+          new com.parkflow.modules.parking.operation.dto.PaymentBreakdownItem(PaymentMethod.CREDIT_CARD, BigDecimal.valueOf(2000))
+      );
+    }
     return new ExitRequest("idem-key", ticket, plate, operatorId, method, null, null,
-        "Salida de prueba", null, null, null, null, null, null, null, null);
+        "Salida de prueba", null, null, null, null, null, null, null, breakdown);
   }
 
   private void mockSessionLookup() {
@@ -561,6 +568,19 @@ class RegisterExitServiceTest {
           .thenReturn(Optional.empty());
 
       ExitRequest req = request("GHOST", null, PaymentMethod.CASH);
+      assertThatThrownBy(() -> service.precalculate(req))
+          .isInstanceOf(OperationException.class)
+          .hasMessageContaining("Sesión activa no encontrada");
+    }
+
+    @Test
+    void precalculateThrowsWhenSessionNotFoundByPlate() {
+      ExitRequest req = new ExitRequest("idem-key", null, "GHOST-PL", operatorId, PaymentMethod.CASH, null, null,
+          "Salida", null, null, null, null, null, null, null, null);
+      when(parkingSessionRepository.findByStatusAndVehicle_PlateAndCompanyId(
+          eq(SessionStatus.ACTIVE), eq("GHOST-PL"), eq(companyId)))
+          .thenReturn(Optional.empty());
+
       assertThatThrownBy(() -> service.precalculate(req))
           .isInstanceOf(OperationException.class)
           .hasMessageContaining("Sesión activa no encontrada");
