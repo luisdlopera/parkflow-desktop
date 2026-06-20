@@ -48,7 +48,7 @@ public class PrintJobService implements TicketPrintUseCase {
         request.idempotencyKey(), request.sessionId(), request.documentType());
     try {
       return printJobRepository
-          .findByIdempotencyKeyAndCompanyId(request.idempotencyKey(), TenantContext.getTenantId())
+          .findByIdempotencyKeyAndCompanyId(request.idempotencyKey(), request.companyId())
           .map(this::toResponse)
           .orElseGet(() -> createNew(request));
     } catch (OperationException ex) {
@@ -141,7 +141,7 @@ public class PrintJobService implements TicketPrintUseCase {
           printJobRepository.existsBySession_IdAndDocumentTypeAndCompanyIdAndStatusIn(
               request.sessionId(),
               PrintDocumentType.ENTRY,
-              TenantContext.getTenantId(),
+              request.companyId(),
               EnumSet.of(
                   PrintJobStatus.CREATED,
                   PrintJobStatus.QUEUED,
@@ -173,7 +173,7 @@ public class PrintJobService implements TicketPrintUseCase {
     job.setPayloadHash(request.payloadHash());
     job.setTicketSnapshotJson(request.ticketSnapshotJson());
     job.setTerminalId(request.terminalId());
-    job.setCompanyId(TenantContext.getTenantId());
+    job.setCompanyId(request.companyId());
     job.setCreatedAt(OffsetDateTime.now());
     job.setUpdatedAt(OffsetDateTime.now());
     job = printJobRepository.save(job);

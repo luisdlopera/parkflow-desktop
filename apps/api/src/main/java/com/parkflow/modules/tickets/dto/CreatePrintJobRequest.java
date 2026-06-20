@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record CreatePrintJobRequest(
     @NotNull UUID sessionId,
+    @NotNull UUID companyId,
     @NotNull UUID operatorUserId,
     @NotNull PrintDocumentType documentType,
     @NotBlank String idempotencyKey,
