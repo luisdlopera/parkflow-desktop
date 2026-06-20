@@ -724,6 +724,14 @@ pub fn init_schema_tables(conn: &Connection) -> Result<(), rusqlite::Error> {
     ensure_column(conn, "local_users", name, col_type)?;
   }
 
+  // ticket_columns migrations
+  let ticket_columns = [
+    ("reprint_count", "INTEGER NOT NULL DEFAULT 0"),
+  ];
+  for (name, col_type) in &ticket_columns {
+    ensure_column(conn, "local_tickets", name, col_type)?;
+  }
+
   seed_local_database(conn)?;
   Ok(())
 }
@@ -1454,7 +1462,13 @@ pub fn local_get_dashboard_summary(state: tauri::State<'_, crate::AppState>) -> 
     occupancy_percent,
     entries_since_midnight,
     exits_since_midnight,
-    reprints_since_midnight: 0,
+    reprints_since_midnight: conn
+      .query_row(
+        "SELECT COALESCE(SUM(reprint_count), 0) FROM local_tickets WHERE updated_at_unix_ms >= ?1",
+        params![today_start_ms()],
+        |r| r.get(0),
+      )
+      .unwrap_or(0),
     lost_ticket_since_midnight: 0,
     print_failed_since_midnight: 0,
     print_dead_letter_since_midnight: 0,
@@ -2014,12 +2028,40 @@ pub fn local_create_exit(
 }
 
 #[tauri::command]
-pub fn local_reprint_ticket(ticket_id: String, state: tauri::State<'_, crate::AppState>) -> Result<(), String> {
-  // Simple print command bypass or record
+pub fn local_reprint_ticket(ticket_id: String, operator_id: String, state: tauri::State<'_, crate::AppState>) -> Result<(), String> {
   let conn = open_local_connection(&state.db_path)?;
+
+  // Validate operator exists and has reprint permission
+  let can_reprint: bool = conn.query_row(
+    "SELECT can_reprint_tickets FROM local_users WHERE id = ?1 AND is_active = 1",
+    params![operator_id],
+    |row| row.get::<_, i64>(0).map(|v| v == 1),
+  ).map_err(|_| "Operador no encontrado o inactivo".to_string())?;
+
+  if !can_reprint {
+    return Err("El operador no tiene permiso para reimprimir tickets".to_string());
+  }
+
+  // Validate ticket exists and read current reprint count
+  let current_reprint_count: i64 = conn.query_row(
+    "SELECT COALESCE(reprint_count, 0) FROM local_tickets WHERE id = ?1",
+    params![ticket_id],
+    |row| row.get(0),
+  ).map_err(|_| "Ticket no encontrado".to_string())?;
+
+  if current_reprint_count >= 3 {
+    return Err("Limite de reimpresion alcanzado para este ticket".to_string());
+  }
+
+  // Increment reprint count
+  conn.execute(
+    "UPDATE local_tickets SET reprint_count = reprint_count + 1, updated_at_unix_ms = ?1 WHERE id = ?2",
+    params![chrono::Utc::now().timestamp_millis(), ticket_id],
+  ).map_err(|e| format!("Error al actualizar reprint_count: {}", e))?;
+
   let now = chrono::Utc::now().timestamp_millis();
   let sync_enabled = get_sync_enabled();
-  let _ = enqueue_sync_event(&conn, "TICKET", &ticket_id, "REPRINT", &format!("{{\"reprintedAt\":{}}}", now), sync_enabled);
+  let _ = enqueue_sync_event(&conn, "TICKET", &ticket_id, "REPRINT", &format!("{{\"reprintedAt\":{},\"reprintCount\":{}}}", now, current_reprint_count + 1), sync_enabled);
   Ok(())
 }
 
