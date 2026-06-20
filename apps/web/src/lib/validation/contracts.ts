@@ -157,7 +157,7 @@ export const authLoginRequestSchema = z.object({
 });
 
 export const authRefreshRequestSchema = z.object({
-  refreshToken: z.string().min(1),
+  refreshToken: z.string().min(1).optional(),
   deviceId: z.string().min(1)
 });
 

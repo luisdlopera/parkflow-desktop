@@ -1,6 +1,8 @@
 import { authHeaders } from "@/features/auth/services/auth-domain.service";
 import { authBase, apiBase } from "@/lib/api/config";
 import { API_CONFIG } from "@/lib/api/config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 const AUTH_BASE = authBase();
 const API_KEY = API_CONFIG.apiKey;
@@ -20,13 +22,13 @@ export interface SetupPayload {
 }
 
 export async function checkSetupRequired(): Promise<SetupRequiredResponse> {
-  const res = await fetch(`${AUTH_BASE}/setup-required`);
+  const res = await fetchWithCredentials(`${AUTH_BASE}/setup-required`);
   if (!res.ok) throw new Error("No se pudo verificar el estado de configuración");
   return res.json();
 }
 
 export async function postInitialSetup(payload: SetupPayload): Promise<unknown> {
-  const res = await fetch(`${AUTH_BASE}/setup`, {
+  const res = await fetchWithCredentials(`${AUTH_BASE}/setup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -36,7 +38,7 @@ export async function postInitialSetup(payload: SetupPayload): Promise<unknown> 
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {
-  const res = await fetch(`${AUTH_BASE}/password-reset/request`, {
+  const res = await fetchWithCredentials(`${AUTH_BASE}/password-reset/request`, {
     method: "POST",
     headers: apiKeyHeader,
     body: JSON.stringify({ email, deviceId: "web" }),
@@ -45,7 +47,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
 }
 
 export async function confirmPasswordReset(token: string, newPassword: string): Promise<void> {
-  const res = await fetch(`${AUTH_BASE}/password-reset/confirm`, {
+  const res = await fetchWithCredentials(`${AUTH_BASE}/password-reset/confirm`, {
     method: "POST",
     headers: apiKeyHeader,
     body: JSON.stringify({ token, newPassword, deviceId: "web" }),
@@ -58,7 +60,7 @@ export async function confirmPasswordReset(token: string, newPassword: string): 
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   const headers = await authHeaders();
-  const res = await fetch(`${apiBase()}/auth/change-password`, {
+  const res = await fetchWithCredentials(`${apiBase()}/auth/change-password`, {
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json" },
     body: JSON.stringify({ currentPassword, newPassword }),

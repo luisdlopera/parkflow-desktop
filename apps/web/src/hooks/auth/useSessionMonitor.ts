@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { refreshIfNeeded } from "@/features/auth/api/auth.api";
 import { loadSession, clearSession } from "@/features/auth/services/auth-storage.service";
+import { useAuthStore } from "@/lib/stores/auth.store";
 interface SessionMonitorState {
   isExpired: boolean;
   timeRemaining: number | null;
@@ -26,6 +27,12 @@ export function useSessionMonitor() {
 
   const checkSession = useCallback(async () => {
     try {
+      const { isLoading } = useAuthStore.getState();
+      if (isLoading) {
+        setState(prev => ({ ...prev, isChecking: true }));
+        return;
+      }
+
       const session = await loadSession();
 
       if (!session) {
