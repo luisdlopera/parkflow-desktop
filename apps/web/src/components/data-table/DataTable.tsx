@@ -1,15 +1,16 @@
 'use client';
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo, useState, useEffect } from 'react';
 import { flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Skeleton, Spinner } from '@heroui/react';
-import { ArrowDown, ArrowUp, ArrowUpDown, Database } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { DataTableProps } from './types';
 import { useDataTable } from './hooks/useDataTable';
 import { DataTableToolbar } from './DataTableToolbar';
 import { DataTablePagination } from './DataTablePagination';
 import { DataTableBulkActions } from './DataTableBulkActions';
+import { DataTableEmptyState } from './DataTableEmptyState';
 
 export function DataTable<TData, TValue>({
   columns,
@@ -36,6 +37,17 @@ export function DataTable<TData, TValue>({
   } = useDataTable(tableName, columns, fetchData);
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if mobile on mount and on resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640); // Tailwind sm breakpoint
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const { rows } = table.getRowModel();
 
@@ -43,7 +55,7 @@ export function DataTable<TData, TValue>({
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 48, // Estimación de altura de fila (48px)
+    estimateSize: () => 48,
     overscan: 10,
   });
 
@@ -73,7 +85,7 @@ export function DataTable<TData, TValue>({
 
       <div
         ref={tableContainerRef}
-        className={`relative w-full border border-divider rounded-lg bg-content1 overflow-auto ${
+        className={`relative w-full border border-default-200 rounded-xl bg-content1 overflow-auto transition-all ${
           enableVirtualization ? 'max-h-[600px]' : ''
         }`}
       >
@@ -82,6 +94,13 @@ export function DataTable<TData, TValue>({
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
+                  // On mobile, hide low-priority columns
+                  const columnDef = header.column.columnDef as any;
+                  const priority = columnDef.priority || 'high';
+                  if (isMobile && priority === 'low') {
+                    return null;
+                  }
+
                   const isSorted = header.column.getIsSorted();
                   const canSort = header.column.getCanSort();
                   return (
@@ -90,6 +109,14 @@ export function DataTable<TData, TValue>({
                       colSpan={header.colSpan}
                       className="px-4 py-3 font-medium whitespace-nowrap group select-none"
                       style={{ width: header.getSize() }}
+                      role="columnheader"
+                      aria-sort={
+                        isSorted === 'asc'
+                          ? 'ascending'
+                          : isSorted === 'desc'
+                          ? 'descending'
+                          : 'none'
+                      }
                     >
                       {header.isPlaceholder ? null : (
                         <div
@@ -97,18 +124,19 @@ export function DataTable<TData, TValue>({
                             canSort ? 'cursor-pointer hover:text-default-900' : ''
                           }`}
                           onClick={header.column.getToggleSortingHandler()}
+                          title={canSort ? 'Click to sort' : undefined}
                         >
                           {flexRender(
                             header.column.columnDef.header,
                             header.getContext()
                           )}
                           {canSort && (
-                            <span className="text-default-300">
+                            <span className="text-default-300 flex-shrink-0">
                               {{
-                                asc: <ArrowUp size={14} className="text-primary" />,
-                                desc: <ArrowDown size={14} className="text-primary" />,
+                                asc: <ArrowUp size={14} className="text-primary" aria-label="Sorted ascending" />,
+                                desc: <ArrowDown size={14} className="text-primary" aria-label="Sorted descending" />,
                               }[isSorted as string] ?? (
-                                <ArrowUpDown size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <ArrowUpDown size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Sortable" />
                               )}
                             </span>
                           )}
@@ -147,10 +175,14 @@ export function DataTable<TData, TValue>({
                   colSpan={table.getVisibleFlatColumns().length}
                   className="px-4 py-12 text-center text-default-500"
                 >
-                  <div className="flex flex-col items-center justify-center gap-3">
-                    <Database size={48} className="text-default-200" />
-                    {emptyStateContent || <p>No se encontraron resultados.</p>}
-                  </div>
+                  {emptyStateContent ? (
+                    <>{emptyStateContent}</>
+                  ) : (
+                    <DataTableEmptyState
+                      hasFilters={!!globalFilter || filters.length > 0}
+                      filterCount={filters.length}
+                    />
+                  )}
                 </td>
               </tr>
             ) : enableVirtualization ? (
@@ -171,18 +203,25 @@ export function DataTable<TData, TValue>({
                     }}
                     onClick={() => handleRowClick(row.original)}
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="px-4 py-3 flex items-center"
-                        style={{ width: cell.column.getSize() }}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    ))}
+                    {row.getVisibleCells().map((cell) => {
+                      const columnDef = cell.column.columnDef as any;
+                      const priority = columnDef.priority || 'high';
+                      if (isMobile && priority === 'low') {
+                        return null;
+                      }
+                      return (
+                        <td
+                          key={cell.id}
+                          className="px-4 py-3 flex items-center"
+                          style={{ width: cell.column.getSize() }}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })
@@ -196,18 +235,25 @@ export function DataTable<TData, TValue>({
                   } ${onRowClick ? 'cursor-pointer' : ''}`}
                   onClick={() => handleRowClick(row.original)}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-4 py-3"
-                      style={{ width: cell.column.getSize() }}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const columnDef = cell.column.columnDef as any;
+                    const priority = columnDef.priority || 'high';
+                    if (isMobile && priority === 'low') {
+                      return null;
+                    }
+                    return (
+                      <td
+                        key={cell.id}
+                        className="px-4 py-3"
+                        style={{ width: cell.column.getSize() }}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))
             )}

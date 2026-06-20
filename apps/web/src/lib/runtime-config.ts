@@ -8,8 +8,11 @@ export type RuntimeConfig = {
   vehicleTypes?: string[];
   paymentMethods?: string[];
   sites?: Array<{ code: string; name: string }>;
-  modules?: Record<string, boolean>;
-  features?: Record<string, boolean>;
+  modules?: Partial<Record<"cash", boolean>> & Record<string, boolean>; // Allows any but explicitly tracks cash
+  features?: Partial<Record<
+    "agreements" | "prepaid" | "memberships" | "frequentCustomers" | "electronicBilling" | "specialRates" | "reservations" | "lockerControl" | "helmetControl" | "accessoryControl" | "operation24Hours" | "motorcycleParking" | "bicycleParking",
+    boolean
+  >> & Record<string, boolean>; // Partial type safety for known features
   wizard?: Record<string, Record<string, unknown>>;
   operationConfiguration?: Record<string, unknown>;
   businessModel?: string;
@@ -78,8 +81,4 @@ export async function fetchRuntimeConfig(): Promise<RuntimeConfig | null> {
   }
 }
 
-export function shouldShowModule(config: RuntimeConfig | null, key: string, defaultValue = false): boolean {
-  if (!config?.modules) return defaultValue;
-  const value = config.modules[key];
-  return typeof value === "boolean" ? value : defaultValue;
-}
+

@@ -9,6 +9,9 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 @Getter
 @Setter
@@ -19,6 +22,8 @@ import lombok.*;
 @Table(name = "parking_session", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"company_id", "ticket_number"})
 })
+@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenantId", type = UUID.class))
+@Filter(name = "tenantFilter", condition = "company_id = :tenantId")
 public class ParkingSession extends org.springframework.data.domain.AbstractAggregateRoot<ParkingSession> {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)

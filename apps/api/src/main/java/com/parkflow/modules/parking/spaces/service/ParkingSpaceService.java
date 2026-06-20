@@ -53,7 +53,7 @@ public class ParkingSpaceService {
   public ParkingSpace assignSpecificSpace(UUID companyId, UUID parkingSpaceId, ParkingSession session) {
     ParkingSpace space =
         parkingSpaceRepository
-            .findByIdAndCompanyId(parkingSpaceId, companyId)
+            .findByIdAndCompanyIdForUpdate(parkingSpaceId, companyId)
             .orElseThrow(
                 () ->
                     new OperationException(

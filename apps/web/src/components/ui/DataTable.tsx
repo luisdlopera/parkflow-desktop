@@ -262,7 +262,7 @@ function DataTableInner<T extends object>({
     <Table.Row key={skKey}>
       {displayColumns.map((col) => (
         <Table.Cell key={String(col.key)} className="py-4">
-          <div className="h-4 w-full rounded bg-slate-100 animate-pulse" />
+          <div className="h-4 w-full rounded bg-slate-100 dark:bg-slate-700 animate-pulse" />
         </Table.Cell>
       ))}
     </Table.Row>
@@ -278,7 +278,7 @@ function DataTableInner<T extends object>({
         {hasSearch && (
           <Input
             isClearable
-            className="w-full sm:max-w-[44%]"
+            className="w-full sm:max-w-md"
             placeholder={searchPlaceholder}
             aria-label="Buscar en la tabla"
             startContent={<Search className="text-default-300 size-4" />}
@@ -360,7 +360,8 @@ function DataTableInner<T extends object>({
               col.key !== "_actions" &&
               col.key !== "_selection"
             }
-            defaultWidth={col.width ? String(col.width) : col.resizable ? "1fr" : undefined as any}
+            // @ts-expect-error HeroUI typing for ColumnSize
+            defaultWidth={col.width ? String(col.width) : col.resizable ? "1fr" : undefined}
             minWidth={col.minWidth}
             className={cn(
               "text-[11px] font-bold uppercase tracking-[0.15em]",
@@ -412,7 +413,7 @@ function DataTableInner<T extends object>({
           {skeletonRow("sk-3")}
         </Table.Body>
       ) : shouldVirtualize ? (
-        <div ref={scrollRef} className="overflow-auto" style={{ maxHeight: '600px' }}>
+        <div ref={scrollRef} className="overflow-auto" style={{ maxHeight: '600px', minHeight: '300px' }}>
           <table className="w-full" style={{ tableLayout: 'fixed' }}>
             <thead className="sticky top-0 z-20">
               <tr>
@@ -491,10 +492,10 @@ function DataTableInner<T extends object>({
         <Table.Body
           renderEmptyState={() => (
             <EmptyState className="flex h-full w-full flex-col items-center justify-center gap-4 text-center py-16">
-              <div className="mb-2 rounded-full border border-slate-100 bg-slate-50 p-4">
-                <Inbox className="size-8 text-slate-300" />
+              <div className="mb-2 rounded-full border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
+                <Inbox className="size-8 text-slate-300 dark:text-slate-600" />
               </div>
-              <span className="text-base font-medium text-slate-500">
+              <span className="text-base font-medium text-slate-500 dark:text-slate-400">
                 {emptyMessage}
               </span>
             </EmptyState>

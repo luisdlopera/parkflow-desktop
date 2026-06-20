@@ -19,6 +19,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     let mappedClassName = className || "";
     if (size === "sm") mappedClassName += " scale-90";
     if (size === "lg") mappedClassName += " scale-110";
+    mappedClassName += " focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900";
 
     const handleChange = (checked: boolean) => {
       if (onValueChange) onValueChange(checked);

@@ -1,5 +1,14 @@
 import { ColumnDef as TanStackColumnDef, SortingState } from "@tanstack/react-table";
 
+/**
+ * Extended ColumnDef with additional metadata
+ * Usage: Spread this into your TanStackColumnDef
+ * Example: { id: 'name', header: 'Name', cell: row => row.getValue('name'), priority: 'high' }
+ */
+export interface ColumnMeta {
+  priority?: 'high' | 'medium' | 'low';
+}
+
 // 1. Pagination and Fetching
 export interface PaginationState {
   pageIndex: number; // 0-indexed para TanStack, 1-indexed para UI

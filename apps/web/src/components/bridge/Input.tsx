@@ -29,17 +29,31 @@ export interface InputProps extends Omit<HeroInputProps, "size" | "color" | "var
   onClear?: () => void;
   isDisabled?: boolean;
   disabled?: boolean;
+  "aria-label"?: string;
+  "aria-describedby"?: string;
+  "aria-required"?: boolean;
 }
 
 /** Default styling: white bg + subtle border for clear contrast against any container */
-const INPUT_BASE_CLASS = "bg-[#f4f4f5] text-slate-900 border-none dark:bg-zinc-800/60 dark:text-white rounded-xl transition-colors";
-const INPUT_BORDERED_CLASS = "bg-transparent text-slate-900 border-2 border-default-200 rounded-xl transition-colors dark:text-white";
+const INPUT_BASE_CLASS = "bg-[#f4f4f5] text-slate-900 border-none dark:bg-zinc-800/60 dark:text-white rounded-xl transition-colors focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900 text-base";
+const INPUT_BORDERED_CLASS = "bg-transparent text-slate-900 border-2 border-default-200 rounded-xl transition-colors dark:text-white focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900 text-base";
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, description, errorMessage, isInvalid, isRequired, className, classNames, startContent, endContent, isClearable, onClear, size, color, variant, radius, isDisabled, disabled, value, defaultValue, name, onChange, onBlur, "aria-label": ariaLabel, ...props }, ref) => {
+  ({ label, description, errorMessage, isInvalid, isRequired, className, classNames, startContent, endContent, isClearable, onClear, size, color, variant, radius, isDisabled, disabled, value, defaultValue, name, onChange, onBlur, "aria-label": ariaLabel, "aria-describedby": ariaDescribedby, "aria-required": ariaRequired, ...props }, ref) => {
     const uniqueId = React.useId();
     const inputId = props.id || uniqueId;
+    const errorId = `${inputId}-error`;
+    const descriptionId = `${inputId}-description`;
     const inputClass = variant === "bordered" ? INPUT_BORDERED_CLASS : INPUT_BASE_CLASS;
+
+    // Combine aria-describedby for error and description
+    const combinedAriaDescribedby = [
+      ariaDescribedby,
+      isInvalid && errorMessage ? errorId : null,
+      description && !isInvalid ? descriptionId : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     const handleValueChange = React.useCallback((val: string) => {
       if (onChange) {
@@ -49,7 +63,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           preventDefault: () => {},
           stopPropagation: () => {},
         } as unknown as React.ChangeEvent<HTMLInputElement>;
-        
+
         (onChange as unknown as (e: React.ChangeEvent<HTMLInputElement>) => void)(syntheticEvent);
         if (props.onValueChange) {
           props.onValueChange(val);
@@ -58,9 +72,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     }, [onChange, name]);
 
     return (
-      <TextField 
-        isInvalid={isInvalid} 
-        isRequired={isRequired} 
+      <TextField
+        isInvalid={isInvalid}
+        isRequired={isRequired}
         className={className}
         isDisabled={isDisabled || disabled}
         value={value as string}
@@ -70,23 +84,38 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         onBlur={onBlur}
         aria-label={ariaLabel}
       >
-        {label && <Label htmlFor={inputId}>{label}</Label>}
-        
+        {label && <Label htmlFor={inputId} className="font-medium text-foreground">{label}</Label>}
+
         {startContent || endContent || isClearable ? (
           <InputGroup className={inputClass}>
             {startContent && <InputGroup.Prefix>{startContent}</InputGroup.Prefix>}
-            <InputGroup.Input ref={ref} id={inputId} {...props} />
+            <InputGroup.Input
+              ref={ref}
+              id={inputId}
+              aria-invalid={isInvalid}
+              aria-required={ariaRequired ?? isRequired}
+              aria-describedby={combinedAriaDescribedby || undefined}
+              {...props}
+            />
             {isClearable && value && onClear && (
-               <CloseButton aria-label="Clear" onPress={onClear} />
+               <CloseButton aria-label="Limpiar" onPress={onClear} />
             )}
             {endContent && <InputGroup.Suffix>{endContent}</InputGroup.Suffix>}
           </InputGroup>
         ) : (
-          <HeroInput ref={ref} id={inputId} className={inputClass} {...props} />
+          <HeroInput
+            ref={ref}
+            id={inputId}
+            aria-invalid={isInvalid}
+            aria-required={ariaRequired ?? isRequired}
+            aria-describedby={combinedAriaDescribedby || undefined}
+            className={inputClass}
+            {...props}
+          />
         )}
-        
-        {description && !isInvalid && <Description>{description}</Description>}
-        {errorMessage && isInvalid && <FieldError>{errorMessage}</FieldError>}
+
+        {description && !isInvalid && <Description id={descriptionId}>{description}</Description>}
+        {errorMessage && isInvalid && <FieldError id={errorId}>{errorMessage}</FieldError>}
       </TextField>
     );
   }

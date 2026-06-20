@@ -40,14 +40,14 @@ export const CarEntryFormUI = memo(function CarEntryFormUI({
       {/* Placa — Input nativo gigante */}
       <div className="relative group">
         <div className="absolute -inset-0.5 bg-gradient-to-r from-primary-500 to-primary-500 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
-        <div className="relative bg-white rounded-2xl p-1">
+        <div className="relative bg-white dark:bg-slate-900 rounded-2xl p-1">
           <Controller
             name="plate"
             control={form.control}
             render={({ field, fieldState }) => (
               <div className="flex flex-col">
                 <label className="flex items-center justify-between w-full text-base font-semibold px-3 pt-2 pb-1">
-                  <span className="text-slate-600">Placa del vehículo</span>
+                  <span className="text-slate-600 dark:text-slate-300">Placa del vehículo</span>
                   {platePrefix && (
                     <span className="text-xs font-bold text-primary-700 bg-primary-100 px-2.5 py-0.5 rounded-md">
                       {platePrefix}
@@ -73,7 +73,7 @@ export const CarEntryFormUI = memo(function CarEntryFormUI({
                       onSubmit();
                     }
                   }}
-                  className={`w-full text-5xl sm:text-6xl font-black uppercase tracking-[0.2em] text-center h-[200px] text-slate-800 placeholder:text-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all rounded-xl border-0 outline-none focus:outline-none focus:ring-0 ${
+                  className={`w-full text-5xl sm:text-6xl font-black uppercase tracking-[0.2em] text-center h-[200px] text-slate-800 dark:text-slate-100 placeholder:text-slate-200 dark:placeholder:text-slate-600 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 transition-all rounded-xl border-0 outline-none focus:outline-none focus:ring-0 ${
                     fieldState.error ? "border-2 border-danger" : ""
                   }`}
                   autoComplete="off"
@@ -81,7 +81,7 @@ export const CarEntryFormUI = memo(function CarEntryFormUI({
                 {fieldState.error ? (
                   <p className="text-xs text-danger px-3 pt-1 pb-2">{fieldState.error.message}</p>
                 ) : (
-                  <p className="text-xs text-slate-400 px-3 pt-1 pb-2 text-center">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 px-3 pt-1 pb-2 text-center">
                     Formato esperado: 3 letras + 3 números · Ej: ABC123
                   </p>
                 )}

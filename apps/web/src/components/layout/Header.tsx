@@ -28,8 +28,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
         </button>
 
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400 hidden sm:block">Parkflow Desktop</p>
-          <h2 className="text-lg font-bold text-slate-900">Operación Diaria</h2>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 hidden sm:block">Parkflow Desktop</p>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Operación Diaria</h2>
         </div>
       </div>
 
@@ -42,7 +42,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         </div>
 
         {/* Divider */}
-        <div className="hidden sm:block w-px h-8 bg-slate-200 mx-1" />
+        <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-slate-700 mx-1" />
 
         {/* User Menu with Avatar */}
         <UserMenu />

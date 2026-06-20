@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
+import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
 import { CONFIG_NAVIGATION } from "../../constants/navigation";
 import { motion } from "framer-motion";
@@ -28,7 +28,7 @@ export default function ConfigSidebar() {
         .map((group) => ({
           ...group,
           items: group.items.filter((item) => {
-            if (item.flag === "cash") return shouldShowModule(runtimeConfig, "cash", true);
+            if (item.flag === "cash") return flags.cash;
             if (item.flag === "lockers") return runtimeConfig?.operationConfiguration?.helmetHandling === "LOCKERS" || flags.lockers;
             if (item.flag === "agreements") return flags.agreements;
             if (item.flag === "prepaidPlans") return flags.prepaidPlans;
@@ -79,17 +79,17 @@ export default function ConfigSidebar() {
                 <Link
                   key={item.key}
                   href={item.href}
-                  className={`group relative flex flex-col gap-3 rounded-2xl border p-5 transition-all hover:-translate-y-1 hover:shadow-md ${
+                  className={`group relative flex flex-col gap-3 rounded-2xl border p-5 transition-all hover:border-primary-300 hover:bg-primary-50/30 ${
                     isActive
-                      ? "border-primary-200 bg-primary-50/50 shadow-sm"
-                      : "border-slate-200 bg-white hover:border-primary-300"
+                      ? "border-primary-300 bg-primary-50/50"
+                      : "border-slate-200 bg-white"
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div
                       className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl transition-colors ${
                         isActive
-                          ? "bg-primary-500 text-white shadow-sm"
+                          ? "bg-primary-500 text-white"
                           : "bg-slate-100 text-slate-500 group-hover:bg-primary-100 group-hover:text-primary-600"
                       }`}
                     >

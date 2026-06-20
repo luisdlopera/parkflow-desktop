@@ -338,8 +338,32 @@ body {
 
 /* Focus visible para navegación por teclado */
 :focus-visible {
-  outline: 2px solid var(--color-ember);
+  outline: 3px solid var(--color-brand-500);
   outline-offset: 2px;
+}
+
+/* Reusable focus ring classes for form elements */
+@layer utilities {
+  .focus-ring {
+    @apply focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900;
+  }
+
+  .focus-ring-sm {
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-brand-500 dark:focus:ring-offset-zinc-900;
+  }
+
+  /* Screen reader only text — WCAG 2.1 AAA compliance */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
 }
 
 input:focus,

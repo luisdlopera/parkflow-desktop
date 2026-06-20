@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useParkingShortcuts } from "@/hooks/ui/useKeyboardShortcuts";
 import { useState, useEffect } from "react";
-import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
+import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { CONFIG_NAVIGATION } from "@/features/configuration/constants/navigation";
@@ -79,7 +79,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
   }, []);
 
   const visibleItems = navItems.filter((item) => {
-    if (item.href === "/caja") return shouldShowModule(runtimeConfig, "cash", true);
+    if (item.href === "/caja") return flags.cash;
     return true;
   });
 
@@ -111,7 +111,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
       hidden md:flex sticky top-0 z-20 h-screen border-r border-slate-200/70 bg-[var(--color-sidebar)] dark:bg-black/60 dark:border-gray-800/70 backdrop-blur
       flex-col transition-all duration-300 ease-in-out
       ${collapsed ? "w-[72px]" : "w-[260px]"}
-    `}>
+    `} style={{ paddingLeft: 'env(safe-area-inset-left)' }}>
       <div className={`flex-shrink-0 ${sidePad}`}>
         <div className={`
           flex items-center gap-3 transition-all duration-300
@@ -226,7 +226,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
 
                   <nav className="space-y-1">
                     {activeCategory.items.filter((item) => {
-                      if (item.flag === "cash") return shouldShowModule(runtimeConfig, "cash", true);
+                      if (item.flag === "cash") return flags.cash;
                       if (item.flag === "lockers") return runtimeConfig?.operationConfiguration?.helmetHandling === "LOCKERS" || flags.lockers;
                       if (item.flag === "agreements") return flags.agreements;
                       if (item.flag === "prepaidPlans") return flags.prepaidPlans;

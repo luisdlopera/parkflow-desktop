@@ -45,15 +45,15 @@ export default function TicketPrintWarning({
           </Modal.Header>
 
           <Modal.Body>
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Ticket <strong>{ticketNumber}</strong> &middot; Placa <strong>{plate}</strong>
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               La sesión del vehículo está activa. Puedes descargar el ticket{allowTicketReprint ? " o reimprimirlo más tarde" : ""}.
             </p>
 
             {previewLines.length > 0 && (
-              <pre className="mt-3 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 text-[10px] leading-tight text-slate-700"
+              <pre className="mt-3 max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 text-[10px] leading-tight text-slate-700 dark:text-slate-300"
                    style={{ fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>
                 {previewLines.join("\n")}
               </pre>

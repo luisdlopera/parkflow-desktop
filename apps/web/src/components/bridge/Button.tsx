@@ -33,11 +33,21 @@ export interface ButtonProps {
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant, color, isLoading, isDisabled, disabled, startContent, endContent, children, fullWidth, className, onPress, onClick, ...props }, ref) => {
+  ({ variant, color, isLoading, isDisabled, disabled, startContent, endContent, children, fullWidth, className, size, onPress, onClick, isIconOnly, "aria-label": ariaLabel, ...props }, ref) => {
     // Separate variant and color mapping
     let mappedVariant: any = "solid";
     let mappedColor: any = color || "primary";
     let colorClasses = "";
+
+    // Improved padding for different sizes (better mobile UX, min 44px height)
+    let sizeClasses = "";
+    if (size === "lg") {
+      sizeClasses = "py-3 px-6 min-h-12";
+    } else if (size === "md") {
+      sizeClasses = "py-2.5 px-5 min-h-11";
+    } else if (size === "sm") {
+      sizeClasses = "py-2 px-4 min-h-11";
+    }
 
     // Map variant (styling/presentation)
     if (variant === "ghost" || variant === "light" || variant === "flat") {
@@ -81,9 +91,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         variant={mappedVariant}
         isPending={isLoading}
         isDisabled={isDisabled || disabled}
-        className={`${colorClasses} ${fullWidth ? "w-full" : ""} ${className || ""}`.trim()}
+        size={size}
+        isIconOnly={isIconOnly}
+        className={`${colorClasses} ${sizeClasses} ${fullWidth ? "w-full" : ""} ${className || ""}`.trim()}
         onPress={onPress}
         onClick={onClick}
+        aria-label={ariaLabel}
+        aria-disabled={isDisabled || disabled}
         {...props as any}
       >
         {startContent}

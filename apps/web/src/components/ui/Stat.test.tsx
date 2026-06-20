@@ -31,5 +31,7 @@ describe("Stat", () => {
     const div = container.firstChild as HTMLElement;
     expect(div.className).toContain("border-slate-200");
     expect(div.className).toContain("bg-white");
+    expect(div.className).toContain("dark:border-slate-700");
+    expect(div.className).toContain("dark:bg-slate-900");
   });
 });

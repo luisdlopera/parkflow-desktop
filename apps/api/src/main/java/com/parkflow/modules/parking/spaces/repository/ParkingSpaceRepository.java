@@ -18,6 +18,10 @@ public interface ParkingSpaceRepository extends JpaRepository<ParkingSpace, UUID
 
   Optional<ParkingSpace> findByIdAndCompanyId(UUID id, UUID companyId);
 
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT p FROM ParkingSpace p WHERE p.id = :id AND p.companyId = :companyId")
+  Optional<ParkingSpace> findByIdAndCompanyIdForUpdate(@Param("id") UUID id, @Param("companyId") UUID companyId);
+
   @Query(
       value =
           """

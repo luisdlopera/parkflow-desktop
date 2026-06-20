@@ -35,15 +35,24 @@ export const ModalBase = ({
       isOpen={isModalOpen}
       onOpenChange={handleOpenChange}
       isDismissable={isDismissable ?? true}
+      aria-hidden={!isModalOpen}
     >
       <HeroModal.Container
         size={size}
         placement={placement}
         scroll={scrollBehavior === "inside" ? "inside" : "outside"}
       >
-        <HeroModal.Dialog className={className} {...props}>
+        <HeroModal.Dialog
+          role="dialog"
+          aria-modal="true"
+          className={className}
+          {...props}
+        >
           {!hideCloseButton && (
-            <HeroModal.CloseTrigger className="absolute right-4 top-4 text-default-500 hover:text-default-700" />
+            <HeroModal.CloseTrigger
+              className="absolute right-4 top-4 text-default-500 hover:text-default-700"
+              aria-label="Cerrar diálogo"
+            />
           )}
           {children}
         </HeroModal.Dialog>

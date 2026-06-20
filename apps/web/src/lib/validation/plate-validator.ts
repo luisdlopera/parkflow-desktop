@@ -15,7 +15,7 @@ export const plateRules: PlateValidationRule[] = [
   { countryCode: "CO", vehicleType: "ELECTRIC", pattern: /^[A-Z]{3}[0-9]{3}$/, example: "ABC123", errorMessage: "Para eléctrico en Colombia se esperan 3 letras y 3 números", enabled: true },
   { countryCode: "CO", vehicleType: "MOTORCYCLE", pattern: /^[A-Z]{3}[0-9]{2}[A-Z]{1}$/, example: "ABC12A", errorMessage: "Para moto en Colombia se esperan 3 letras, 2 números y 1 letra", enabled: true },
   { countryCode: "CO", vehicleType: "BICYCLE", pattern: /^[A-Z0-9]{3,12}$/, example: "BICI001", errorMessage: "Para bicicleta use un identificador de 3 a 12 letras o números", enabled: true },
-  { countryCode: "CO", vehicleType: "OTHER", pattern: /^[A-Z]{3}[0-9]{3}$/, example: "ABC123", errorMessage: "Para vehículo general en Colombia se esperan 3 letras y 3 números", enabled: true }
+  { countryCode: "CO", vehicleType: "OTHER", pattern: /^[A-Z0-9]{2,10}$/, example: "CD1234", errorMessage: "Para vehículo general se esperan entre 2 y 10 caracteres alfanuméricos", enabled: true }
 ];
 
 export function normalizePlate(plate: string): string {

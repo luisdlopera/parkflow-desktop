@@ -18,16 +18,7 @@ export function useRuntimeConfig() {
     isLoading,
     error,
     mutate,
-    hasModule: (key: string, defaultValue = true) => {
-      if (!data?.modules) return defaultValue;
-      const value = data.modules[key];
-      return typeof value === "boolean" ? value : defaultValue;
-    },
-    hasFeature: (key: string, defaultValue = true) => {
-      if (!data?.features) return defaultValue;
-      const value = data.features[key];
-      return typeof value === "boolean" ? value : defaultValue;
-    },
+
     hasPaymentMethod: (method: string) => {
       if (!data?.paymentMethods) return true; // default optimistic
       return data.paymentMethods.includes(method);

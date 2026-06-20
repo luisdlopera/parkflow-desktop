@@ -5,10 +5,11 @@ export type AutocompleteProps<T extends object = object> = HeroAutocompleteProps
 
 export const AutocompleteBase = React.forwardRef(
   <T extends object = object>({ className, classNames, ...props }: AutocompleteProps<T>, ref: React.Ref<HTMLInputElement>) => {
+    const autocompleteClassName = `${className || ""} ${classNames?.base || ""} focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900`;
     return (
       <HeroAutocomplete
         ref={ref}
-        className={`${className || ""} ${classNames?.base || ""}`}
+        className={autocompleteClassName}
         {...props as any}
       />
     );

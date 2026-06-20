@@ -44,14 +44,16 @@ export function MixedEntryFormUI({
   return (
     <div className="space-y-4">
       {/* Placa */}
-      <PlateInput
-        control={form.control}
-        onSubmit={() => onSubmit()}
-        plateInputRef={plateInputRef}
-        noPlate={noPlate}
-        platePrefix={platePrefix}
-        vehicleType={selectedTypeCode}
-      />
+      {!noPlate && (
+        <PlateInput
+          control={form.control}
+          onSubmit={() => onSubmit()}
+          plateInputRef={plateInputRef}
+          noPlate={noPlate}
+          platePrefix={platePrefix}
+          vehicleType={selectedTypeCode}
+        />
+      )}
 
       {noPlate && (
         <Controller

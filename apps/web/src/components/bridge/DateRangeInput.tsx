@@ -46,9 +46,9 @@ export default function DateRangeInput({
   };
 
   return (
-    <DateRangePicker 
-      className={`w-full sm:w-80 ${className}`} 
-      value={value as any} 
+    <DateRangePicker
+      className={`w-full sm:w-80 ${className} focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900`}
+      value={value as any}
       onChange={handleChange}
     >
       <Label>{fromLabel} - {toLabel}</Label>

@@ -4,6 +4,7 @@ export * from './DataTablePagination';
 export * from './DataTableToolbar';
 export * from './DataTableFilters';
 export * from './DataTableBulkActions';
+export * from './DataTableEmptyState';
 export * from './DataTableExport';
 export * from './hooks/useDataTable';
 export * from './hooks/useDataFilters';

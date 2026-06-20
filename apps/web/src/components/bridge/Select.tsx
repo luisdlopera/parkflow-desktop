@@ -14,11 +14,27 @@ export interface SelectProps extends Omit<HeroSelectProps<any>, "value" | "onCha
   className?: string;
   classNames?: any;
   isInvalid?: boolean;
+  isRequired?: boolean;
+  "aria-label"?: string;
+  "aria-describedby"?: string;
 }
 
 export const SelectBase = React.forwardRef<any, SelectProps>(
-  ({ value, selectedKeys, defaultSelectedKeys, selectedKey, defaultSelectedKey, onChange, onSelectionChange, size, label, description, errorMessage, isInvalid, placeholder, className, classNames, children, ...props }, ref) => {
-    
+  ({ value, selectedKeys, defaultSelectedKeys, selectedKey, defaultSelectedKey, onChange, onSelectionChange, size, label, description, errorMessage, isInvalid, isRequired, placeholder, className, classNames, children, "aria-label": ariaLabel, "aria-describedby": ariaDescribedby, ...props }, ref) => {
+    const uniqueId = React.useId();
+    const selectId = (props as any).id || uniqueId;
+    const errorId = `${selectId}-error`;
+    const descriptionId = `${selectId}-description`;
+
+    // Combine aria-describedby for error and description
+    const combinedAriaDescribedby = [
+      ariaDescribedby,
+      isInvalid && errorMessage ? errorId : null,
+      description && !isInvalid ? descriptionId : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
     // Determine the selected key based on v2 array props
     let resolvedSelectedKey = selectedKey;
     if (Array.isArray(selectedKey)) {
@@ -62,16 +78,20 @@ export const SelectBase = React.forwardRef<any, SelectProps>(
         onChange={handleSelectionChange as any}
         classNames={{
           ...classNames,
-          trigger: `!bg-[#f4f4f5] data-[hover=true]:!bg-[#e4e4e7] border-none dark:!bg-zinc-800/60 dark:data-[hover=true]:!bg-zinc-700/60 rounded-xl transition-colors ${classNames?.trigger || ""}`,
+          trigger: `!bg-[#f4f4f5] data-[hover=true]:!bg-[#e4e4e7] border-none dark:!bg-zinc-800/60 dark:data-[hover=true]:!bg-zinc-700/60 rounded-xl transition-colors focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900 ${classNames?.trigger || ""}`,
         }}
         className={className}
         isInvalid={isInvalid}
+        aria-label={ariaLabel}
+        aria-invalid={isInvalid}
+        aria-required={isRequired}
+        aria-describedby={combinedAriaDescribedby || undefined}
         {...props as any}
       >
         {label && <Label>{label}</Label>}
         {children}
-        {description && !isInvalid && <Description>{description}</Description>}
-        {errorMessage && isInvalid && <FieldError>{errorMessage}</FieldError>}
+        {description && !isInvalid && <Description id={descriptionId}>{description}</Description>}
+        {errorMessage && isInvalid && <FieldError id={errorId}>{errorMessage}</FieldError>}
       </HeroSelect>
     );
   }

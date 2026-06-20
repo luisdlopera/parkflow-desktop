@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public record EntryRequest(
     @NotBlank @Size(max = 200) String idempotencyKey,
-    @Size(max = 20) @Pattern(regexp = "^[A-Za-z0-9\\-\\s]*$", message = "Plate must be alphanumeric") String plate,
+    @Size(max = 20) @Pattern(regexp = "^[\\p{L}\\p{N}\\-\\s\\.]*$", message = "Plate must be alphanumeric or valid international format") String plate,
     @NotNull String type,
     @Size(min = 2, max = 2) @Pattern(regexp = "^[A-Za-z]{2}$", message = "Country code must be ISO alpha-2") String countryCode,
     EntryMode entryMode,

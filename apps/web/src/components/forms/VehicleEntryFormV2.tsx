@@ -179,13 +179,21 @@ export default function VehicleEntryFormV2({
     form.setValue("vehicleCondition", "Sin novedades al ingreso", { shouldValidate: true, shouldDirty: false });
   }, [settings.skipConditionCheck, form]);
 
-  // Auto-focus plate on mount
+  // Persistent Auto-focus plate
   useEffect(() => {
-    const timer = setTimeout(() => {
-      plateInputRef.current?.focus();
-      plateInputRef.current?.select();
-    }, 100);
-    return () => clearTimeout(timer);
+    const focusFn = () => {
+      if (document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+          plateInputRef.current?.focus();
+      }
+    };
+    const timer = setTimeout(focusFn, 100);
+    window.addEventListener("focus", focusFn);
+    window.addEventListener("click", focusFn);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("focus", focusFn);
+      window.removeEventListener("click", focusFn);
+    };
   }, []);
 
   const formValues = useWatch({ control: form.control });
@@ -271,6 +279,14 @@ export default function VehicleEntryFormV2({
           form.setValue("type", selected, { shouldValidate: true });
         }
       }
+      if (event.key === "F1" && visibleQuickTypes[0]) {
+          event.preventDefault();
+          form.setValue("type", visibleQuickTypes[0].code, { shouldValidate: true });
+      }
+      if (event.key === "F2" && visibleQuickTypes[1]) {
+          event.preventDefault();
+          form.setValue("type", visibleQuickTypes[1].code, { shouldValidate: true });
+      }
     },
     [handleChildSubmit, visibleQuickTypes, form],
   );
@@ -342,6 +358,8 @@ export default function VehicleEntryFormV2({
         </div>
         {isSingleType && occupancy && (
           <p
+            role="status"
+            aria-live="polite"
             className={`text-sm font-medium px-3 py-1.5 rounded-full ${
               occupancy.availableSpaces <= 0
                 ? "bg-rose-100 text-rose-700"
@@ -417,6 +435,8 @@ export default function VehicleEntryFormV2({
         {/* Error */}
         {error && (
           <div
+            role="alert"
+            aria-live="assertive"
             data-testid="error-message"
             className="flex items-center gap-2 text-sm text-rose-700 bg-rose-50 rounded-xl px-4 py-3"
           >

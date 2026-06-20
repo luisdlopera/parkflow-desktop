@@ -121,7 +121,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
         .entryMode(entryMode)
         .monthlySession(isMonthly)
         .noPlate(noPlateEntry)
-        .noPlateReason(noPlateEntry ? request.noPlateReason().trim() : null)
+        .noPlateReason(noPlateEntry ? sanitize(request.noPlateReason()) : null)
         .vehicle(vehicle)
         .rate(rate)
         .entryOperator(operator)
@@ -130,7 +130,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
         .lane(request.lane())
         .booth(request.booth())
         .terminal(request.terminal())
-        .entryNotes(request.observations())
+        .entryNotes(sanitize(request.observations()))
         .hasHelmet(request.custodiedItems() != null && !request.custodiedItems().isEmpty())
         .entryImageUrl(blankToNull(request.entryImageUrl()))
         .companyId(companyId)
@@ -296,7 +296,11 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   }
 
   private boolean isBlank(String s) { return s == null || s.isBlank(); }
-  private String blankToNull(String s) { return isBlank(s) ? null : s.trim(); }
+  private String sanitize(String s) { 
+    if (isBlank(s)) return null;
+    return s.trim().replaceAll("<[^>]*>", "");
+  }
+  private String blankToNull(String s) { return sanitize(s); }
   private boolean isEmpty(List<String> l) { return l == null || l.isEmpty(); }
   private List<String> normalizeList(List<String> l) {
     if (l == null) return Collections.emptyList();

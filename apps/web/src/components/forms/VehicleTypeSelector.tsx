@@ -37,7 +37,7 @@ export default function VehicleTypeSelector({
   if (vehicleTypes.length === 1) return null;
 
   if (loadingTypes) {
-    return <div className="h-10 w-full bg-slate-100 animate-pulse rounded-lg" />;
+    return <div className="h-10 w-full bg-slate-100 dark:bg-slate-700 animate-pulse rounded-lg" />;
   }
 
     if (isExpert) {
@@ -57,7 +57,7 @@ export default function VehicleTypeSelector({
               className={`relative rounded-xl p-2 sm:p-3 text-center transition-all ${
                 isSelected
                   ? "text-white border border-default-200 scale-105"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                  : "bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300"
               }`}
               style={isSelected && config.color ? { backgroundColor: config.color } : undefined}
             >
@@ -65,7 +65,7 @@ export default function VehicleTypeSelector({
                 <VehicleTypeIcon code={t.code} className="mx-auto w-6 h-6" />
               </div>
               <div className="text-xs font-medium">{config.label}</div>
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 border border-default-200">
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 dark:text-slate-500 border border-default-200 dark:border-slate-600">
                 {index + 1}
               </div>
             </button>

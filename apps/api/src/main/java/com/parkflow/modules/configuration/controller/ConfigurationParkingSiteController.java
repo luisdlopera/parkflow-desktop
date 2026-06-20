@@ -42,6 +42,7 @@ public class ConfigurationParkingSiteController {
 
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
+  @com.parkflow.modules.auth.security.RequireModule(com.parkflow.modules.licensing.enums.ModuleType.MULTI_LOCATION)
   public ResponseEntity<ParkingSiteResponse> create(
       @Valid @RequestBody ParkingSiteRequest req) {
     UUID companyId = com.parkflow.modules.auth.security.TenantContext.getTenantId();

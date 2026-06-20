@@ -15,6 +15,9 @@ export function FormErrorSummary({ message, className, testId }: FormErrorSummar
     <AnimatePresence>
       {message && (
         <motion.div
+          role="alert"
+          aria-live="polite"
+          aria-atomic="true"
           data-testid={testId}
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useParkingShortcuts } from "@/hooks/ui/useKeyboardShortcuts";
 import { useEffect, useState } from "react";
-import { fetchRuntimeConfig, shouldShowModule, type RuntimeConfig } from "@/lib/runtime-config";
+import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 import { useAuthStore } from "@/lib/stores/auth.store";
+import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
 
 const navItems = [
   { label: "Dashboard", href: "/", shortcut: "", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
@@ -30,12 +31,14 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
   const authUser = useAuthStore((s) => s.user);
   const isAuditor = authUser?.role === "AUDITOR";
 
+  const flags = useFeatureFlags();
+
   useEffect(() => {
     fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
   }, []);
 
   const visibleItems = navItems.filter((item) => {
-    if (item.href === "/caja") return shouldShowModule(runtimeConfig, "cash", true);
+    if (item.href === "/caja") return flags.cash;
     return true;
   });
 
@@ -63,14 +66,14 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
       {/* Drawer */}
       <aside
         className={`
-          fixed top-0 left-0 z-50 h-screen w-[280px]
+          fixed top-0 left-0 z-50 h-screen w-[280px] max-w-[85vw]
           border-r border-slate-200/70 bg-[var(--color-sidebar)] dark:bg-gray-900/95 dark:border-gray-700/70 backdrop-blur-xl
           transform transition-transform duration-300 ease-in-out
           md:hidden
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        <div className="flex h-full flex-col px-4 py-6">
+        <div className="flex h-full flex-col px-4 py-6 pt-safe-area-inset-top" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top))' }}>
           {/* Header with close button */}
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-3">
@@ -95,7 +98,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
 
           {/* Status indicator */}
           <div className="mt-6 px-2">
-            <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-100 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Sistema operativo
             </div>
@@ -114,7 +117,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                     flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
                     ${active
                       ? "bg-brand text-white border border-default-200"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-gray-800 dark:hover:text-white"}
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"}
                   `}
                 >
                   <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,9 +127,9 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                   {item.shortcut && (
                     <kbd className={`
                       ml-auto inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded
-                     ${active 
-                         ? "bg-white/20 text-white" 
-                         : "bg-slate-200 text-slate-500 dark:bg-gray-700 dark:text-gray-200"}
+                     ${active
+                         ? "bg-white/20 text-white"
+                         : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"}
                     `}>
                       {item.shortcut}
                     </kbd>

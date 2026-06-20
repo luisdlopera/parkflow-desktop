@@ -48,7 +48,7 @@ export function useDataTable<TData, TValue>(
     if (savedOrder) setColumnOrder(JSON.parse(savedOrder));
   }, [tableName]);
 
-  const handleColumnVisibilityChange = useCallback((updater: any) => {
+  const handleColumnVisibilityChange = useCallback((updater: unknown) => {
     setColumnVisibility((old) => {
       const newVal = typeof updater === 'function' ? updater(old) : updater;
       localStorage.setItem(`parkflow_table_${tableName}_visibility`, JSON.stringify(newVal));
@@ -56,7 +56,7 @@ export function useDataTable<TData, TValue>(
     });
   }, [tableName]);
 
-  const handleColumnOrderChange = useCallback((updater: any) => {
+  const handleColumnOrderChange = useCallback((updater: unknown) => {
     setColumnOrder((old) => {
       const newVal = typeof updater === 'function' ? updater(old) : updater;
       localStorage.setItem(`parkflow_table_${tableName}_order`, JSON.stringify(newVal));

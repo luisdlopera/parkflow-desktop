@@ -17,6 +17,7 @@ export interface FeatureFlags {
   operation24Hours: boolean;
   motorcycles: boolean;
   bicycles: boolean;
+  cash: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -33,6 +34,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   operation24Hours: false,
   motorcycles: false,
   bicycles: false,
+  cash: true,
 };
 
 export function useFeatureFlags(): FeatureFlags {
@@ -44,6 +46,7 @@ export function useFeatureFlags(): FeatureFlags {
     const vehicleTypes = runtimeConfig.vehicleTypes || [];
     const features = runtimeConfig.features || {};
     const opConfig = runtimeConfig.operationConfiguration || {};
+    const modules = runtimeConfig.modules || {};
 
     return {
       // Optional business features: only show if explicitly enabled in settings.
@@ -63,6 +66,7 @@ export function useFeatureFlags(): FeatureFlags {
       operation24Hours: features.operation24Hours === true,
       motorcycles: vehicleTypes.includes("MOTORCYCLE") || features.motorcycleParking === true,
       bicycles: vehicleTypes.includes("BICYCLE") || features.bicycleParking === true,
+      cash: typeof modules.cash === "boolean" ? modules.cash : true,
     };
   }, [runtimeConfig]);
 }

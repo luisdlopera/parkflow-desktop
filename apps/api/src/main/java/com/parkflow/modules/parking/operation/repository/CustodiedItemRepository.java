@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface CustodiedItemRepository extends JpaRepository<CustodiedItem, UUID> {
+  @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"locker", "receivedBy", "returnedBy"})
   List<CustodiedItem> findBySessionOrderByCreatedAtAsc(ParkingSession session);
   List<CustodiedItem> findBySessionAndStatusOrderByCreatedAtAsc(ParkingSession session, CustodiedItemStatus status);
   List<CustodiedItem> findBySessionAndItemTypeOrderByCreatedAtAsc(ParkingSession session, String itemType);

@@ -235,7 +235,8 @@ export function useVehicleEntry({
               : "No se pudo imprimir";
         }
 
-        const plateLabel = payload?.receipt?.plate?.startsWith("NP-")
+        const isNoPlate = payload?.receipt?.plate?.startsWith("NP-") || payload?.receipt?.plate?.startsWith("SIN-");
+        const plateLabel = isNoPlate
           ? "SIN PLACA"
           : payload?.receipt?.plate;
 
@@ -265,6 +266,7 @@ export function useVehicleEntry({
           const queued = await queueOfflineOperation("ENTRY_RECORDED", {
             plate: form.getValues("plate"),
             type: form.getValues("type"),
+            rateId: form.getValues("rateId") || null,
             occurredAtIso: new Date().toISOString(),
             origin: "OFFLINE_PENDING_SYNC",
           });
