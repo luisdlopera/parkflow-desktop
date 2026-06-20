@@ -10,7 +10,7 @@ describe('ThemeProvider', () => {
   })
 
   test('applies dark class when saved as dark', () => {
-    useThemeStore.setState({ theme: 'dark', isDark: false })
+    useUIStore.setState({ theme: 'dark', isDark: false })
     render(
       <ThemeProvider>
         <div data-testid="child">ok</div>

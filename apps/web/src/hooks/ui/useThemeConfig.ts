@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useTheme, DEFAULT_PRIMARY_COLOR, type BrandColors } from "@/lib/theme/ThemeProvider";
+import { sanitizePrimaryColor } from "@/lib/theme/theme.types";
 import { useDialog } from "@/components/ui/DialogProvider";
 import {
   fetchThemeConfig,
@@ -44,7 +45,7 @@ export function useThemeConfig(
       .then((cfg) => {
         setSavedConfig(cfg);
         const colors: ThemeDraft = {
-          primaryColor: cfg.primaryColor,
+          primaryColor: sanitizePrimaryColor(cfg.primaryColor),
           secondaryColor: cfg.secondaryColor,
           successColor: cfg.successColor,
           warningColor: cfg.warningColor,
@@ -52,23 +53,21 @@ export function useThemeConfig(
           themeMode: cfg.themeMode as ThemeMode,
         };
         setDraft(colors);
-        applyBrandColors(colors);
-        setTheme(cfg.themeMode as "light" | "dark" | "auto");
       })
       .catch(() => { /* use defaults */ })
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
+  useEffect(() => {
+    applyBrandColors(draft);
+    setTheme(draft.themeMode);
+  }, [draft, applyBrandColors, setTheme]);
+
   const updateDraft = useCallback((key: keyof ThemeDraft, value: string) => {
-    setDraft((prev) => {
-      const next = { ...prev, [key]: value };
-      applyBrandColors({ primaryColor: next.primaryColor, secondaryColor: next.secondaryColor, successColor: next.successColor, warningColor: next.warningColor, dangerColor: next.dangerColor });
-      if (key === "themeMode") setTheme(value as "light" | "dark" | "auto");
-      return next;
-    });
+    setDraft((prev) => ({ ...prev, [key]: value }));
     setDirty(true);
-  }, [applyBrandColors, setTheme]);
+  }, []);
 
   const handleSave = async () => {
     if (!companyId) return;
@@ -92,8 +91,6 @@ export function useThemeConfig(
     if (!ok) return;
     setDraft({ ...DEFAULTS });
     setDirty(true);
-    applyBrandColors(DEFAULTS);
-    setTheme(DEFAULTS.themeMode);
   };
 
   const handleCancel = async () => {
@@ -102,7 +99,7 @@ export function useThemeConfig(
     if (!ok) return;
     if (savedConfig) {
       const restored: ThemeDraft = {
-        primaryColor: savedConfig.primaryColor,
+        primaryColor: sanitizePrimaryColor(savedConfig.primaryColor),
         secondaryColor: savedConfig.secondaryColor,
         successColor: savedConfig.successColor,
         warningColor: savedConfig.warningColor,

@@ -164,9 +164,9 @@ export function useTheme() {
     const g = parseInt(p.slice(3, 5), 16);
     const b = parseInt(p.slice(5, 7), 16);
 
-    // In dark mode, keep the near-black base — don't replace with brand light tint
+    // In dark mode keep the near-black base; in light mode keep the neutral #FAFAF8 background
+    // and only tint the ambient glows with the brand color
     if (!isDark) {
-      root.style.setProperty("--color-ash", primaryScale["50"]);
       root.style.setProperty("--color-bg-glow-1", primaryScale["100"]);
       root.style.setProperty("--color-bg-glow-2", primaryScale["200"]);
     }

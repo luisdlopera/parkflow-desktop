@@ -9,11 +9,15 @@ import {
   EmptyState,
   Checkbox as HeroCheckbox,
   cn,
+  useFilter,
+  SearchField,
+  Label,
   type SortDescriptor,
   type Selection,
+  type Key,
 } from "@heroui/react";
 import { Input } from "@/components/bridge/Input";
-import { Select } from "@/components/bridge/Select";
+import { Autocomplete } from "@/components/bridge/Autocomplete";
 import { ChevronUp, Inbox, Search } from "lucide-react";
 
 export type DataTableColumn<T> = {
@@ -144,6 +148,7 @@ function DataTableInner<T extends object>({
   onSortChange: controlledOnSortChange,
   serverSide = false,
 }: DataTableProps<T>) {
+  const { contains } = useFilter({ sensitivity: "base" });
   const source = useMemo(() => data ?? rows ?? [], [data, rows]);
   const [internalSortDescriptor, setInternalSortDescriptor] = useState<SortDescriptor>();
   
@@ -286,36 +291,44 @@ function DataTableInner<T extends object>({
             filters.map((filter) => {
               if (filter.type === "select" && filter.options) {
                 return (
-                  <Select
+                  <Autocomplete
                     key={filter.key}
                     className="w-full sm:w-48"
                     placeholder={filter.label}
-                    aria-label={filter.label}
-                    size="sm"
-                    onChange={(keys: any) => {
-                      const value = Array.isArray(keys)
-                        ? keys.join(",")
-                        : Array.from(keys as Set<any>).join(",");
-                      onFilterChange({ [filter.key]: value });
+                    selectionMode="single"
+                    onChange={(key: Key | null) => {
+                      onFilterChange({ [filter.key]: (key as string) || "" });
                     }}
                   >
-                    <Select.Trigger aria-label="Seleccionar opción">
-                      <Select.Value aria-label="Seleccionar opción" />
-                    </Select.Trigger>
-                    <Select.Popover aria-label="Seleccionar opción">
-                      <ListBox>
-                        {filter.options.map((opt) => (
-                          <ListBox.Item
-                            key={opt.value}
-                            id={opt.value}
-                            textValue={opt.label}
-                          >
-                            {opt.label}
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
+                    <Label>{filter.label}</Label>
+                    <Autocomplete.Trigger>
+                      <Autocomplete.Value />
+                      <Autocomplete.ClearButton />
+                      <Autocomplete.Indicator />
+                    </Autocomplete.Trigger>
+                    <Autocomplete.Popover>
+                      <Autocomplete.Filter filter={contains}>
+                        <SearchField autoFocus name="search" variant="secondary" aria-label={`Buscar ${filter.label}`}>
+                          <SearchField.Group>
+                            <SearchField.SearchIcon />
+                            <SearchField.Input placeholder={`Buscar ${filter.label}...`} />
+                            <SearchField.ClearButton />
+                          </SearchField.Group>
+                        </SearchField>
+                        <ListBox>
+                          {filter.options.map((opt) => (
+                            <ListBox.Item
+                              key={opt.value}
+                              id={opt.value}
+                              textValue={opt.label}
+                            >
+                              {opt.label}
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Autocomplete.Filter>
+                    </Autocomplete.Popover>
+                  </Autocomplete>
                 );
               }
               return null;

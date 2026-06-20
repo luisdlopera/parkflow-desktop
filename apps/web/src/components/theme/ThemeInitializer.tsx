@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { currentUser } from "@/features/auth/services/auth-domain.service";
 import { fetchThemeConfig } from "@/lib/settings-api";
 import { useTheme } from "@/lib/theme/ThemeProvider";
+import { sanitizePrimaryColor } from "@/lib/theme/theme.types";
 
 export function ThemeInitializer() {
   const { applyBrandColors, setTheme } = useTheme();
@@ -20,7 +21,7 @@ export function ThemeInitializer() {
 
         const cfg = await fetchThemeConfig(user.companyId);
         applyBrandColors({
-          primaryColor: cfg.primaryColor,
+          primaryColor: sanitizePrimaryColor(cfg.primaryColor),
           secondaryColor: cfg.secondaryColor,
           successColor: cfg.successColor,
           warningColor: cfg.warningColor,

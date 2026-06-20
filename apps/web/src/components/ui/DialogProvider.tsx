@@ -20,33 +20,31 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     <>
       {children}
 
-      <AlertDialog>
-        <AlertDialog.Backdrop
-          className="z-[200]"
-          isOpen={dialog.isOpen && dialog.type === "confirm"}
-          onOpenChange={(open) => !open && close()}
-        >
-          <AlertDialog.Container>
-            <AlertDialog.Dialog className="sm:max-w-[400px]">
-              <AlertDialog.Header>
-                <AlertDialog.Icon status={dialog.status ?? "danger"} />
-                <AlertDialog.Heading>{dialog.title || "Confirmación"}</AlertDialog.Heading>
-              </AlertDialog.Header>
-              <AlertDialog.Body>
-                <p className="text-sm">{dialog.message}</p>
-              </AlertDialog.Body>
-              <AlertDialog.Footer>
-                <Button color="danger" variant="ghost" onPress={close}>
-                  {dialog.cancelLabel || "Cancelar"}
-                </Button>
-                <Button color="primary" onPress={confirmAction}>
-                  {dialog.confirmLabel || "Aceptar"}
-                </Button>
-              </AlertDialog.Footer>
-            </AlertDialog.Dialog>
-          </AlertDialog.Container>
-        </AlertDialog.Backdrop>
-      </AlertDialog>
+      <AlertDialog.Backdrop
+        className="z-[200]"
+        isOpen={dialog.isOpen && dialog.type === "confirm"}
+        onOpenChange={(open) => !open && close()}
+      >
+        <AlertDialog.Container>
+          <AlertDialog.Dialog className="sm:max-w-[400px]">
+            <AlertDialog.Header>
+              <AlertDialog.Icon status={dialog.status ?? "danger"} />
+              <AlertDialog.Heading>{dialog.title || "Confirmación"}</AlertDialog.Heading>
+            </AlertDialog.Header>
+            <AlertDialog.Body>
+              <p className="text-sm">{dialog.message}</p>
+            </AlertDialog.Body>
+            <AlertDialog.Footer>
+              <Button color="danger" variant="ghost" onPress={close}>
+                {dialog.cancelLabel || "Cancelar"}
+              </Button>
+              <Button color="primary" onPress={confirmAction}>
+                {dialog.confirmLabel || "Aceptar"}
+              </Button>
+            </AlertDialog.Footer>
+          </AlertDialog.Dialog>
+        </AlertDialog.Container>
+      </AlertDialog.Backdrop>
 
       <Modal.Backdrop
         className="z-[200]"
