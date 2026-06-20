@@ -20,17 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.parkflow.modules.parking.locker.dto.BatchLockerRequest;
-import com.parkflow.modules.parking.locker.service.LockerService;
-import com.parkflow.modules.parking.operation.domain.Rate;
-import com.parkflow.modules.parking.operation.domain.RateType;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
-import com.parkflow.modules.parking.operation.repository.RateRepository;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
-import com.parkflow.modules.configuration.domain.RoundingMode;
-import com.parkflow.modules.settings.application.service.SettingsVehicleTypeService;
-import java.math.BigDecimal;
-
 @Service
 @RequiredArgsConstructor
 public class OnboardingService implements OnboardingUseCase {
@@ -46,11 +35,8 @@ public class OnboardingService implements OnboardingUseCase {
   private final OnboardingSettingsMapper settingsMapper;
   private final com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort parkingSessionPort;
   private final com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
-  private final AppUserRepository appUserRepository;
-  private final LockerService lockerService;
-  private final ParkingSpaceService parkingSpaceService;
-  private final RateRepository rateRepository;
-  private final SettingsVehicleTypeService settingsVehicleTypeService;
+  private final com.parkflow.modules.parking.operation.repository.AppUserRepository appUserRepository;
+  private final OnboardingMaterializationService materializationService;
 
   @Transactional(readOnly = true)
   public OnboardingStatusResponse status(UUID companyId) {
@@ -74,7 +60,6 @@ public class OnboardingService implements OnboardingUseCase {
     List<com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto> filtered = new java.util.ArrayList<>();
     for (var question : globalConfig) {
       int step = question.stepNumber();
-      // Si está restringida por plan, verificar que el plan lo permita
       if (question.planRestricted()) {
         boolean allowed = switch (step) {
           case 8, 9 -> Boolean.TRUE.equals(planOptions.get("allowAgreementsAndMonthly"));
@@ -86,7 +71,6 @@ public class OnboardingService implements OnboardingUseCase {
       }
       filtered.add(question);
     }
-    // Ordenar: obligatorias primero, luego opcionales, manteniendo orden por stepNumber
     return filtered.stream()
         .sorted(java.util.Comparator
             .comparing((com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto q) -> !q.required())
@@ -105,13 +89,11 @@ public class OnboardingService implements OnboardingUseCase {
     Map<String, Object> merged = new LinkedHashMap<>(progress.getProgressData());
     merged.put("step_" + step, sanitized);
     progress.setProgressData(merged);
-    
     if (targetStep != null) {
       progress.setCurrentStep(targetStep);
     } else {
       progress.setCurrentStep(Math.max(progress.getCurrentStep(), Math.min(step + 1, 12)));
     }
-    
     progress.setUpdatedAt(OffsetDateTime.now());
     onboardingProgressPort.save(progress);
     return status(companyId);
@@ -122,9 +104,6 @@ public class OnboardingService implements OnboardingUseCase {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
 
-    // "Omitir" preserva lo que el usuario alcanzó a configurar (métodos de pago,
-    // custodia de cascos, tipos de vehículo, etc.) y solo completa con valores
-    // estándar lo que falte. Si no hay progreso, aplica configuración por defecto.
     Map<String, Object> progressData = progress.getProgressData();
     boolean hasProgress = progressData != null && !progressData.isEmpty();
 
@@ -134,30 +113,23 @@ public class OnboardingService implements OnboardingUseCase {
 
     Map<String, Object> step1 = settingsMapper.stepMap(
         progressData != null ? progressData : new LinkedHashMap<>(), 1);
-    String opStr = String.valueOf(step1.getOrDefault("operationalProfile",
-        step1.getOrDefault("businessModel", "MIXED")));
-    try {
-      company.setOperationalProfile(OperationalProfile.valueOf(opStr));
-    } catch (Exception e) {
-      company.setOperationalProfile(OperationalProfile.MIXED);
-    }
+    applyOperationalProfile(company, step1);
     companyRepository.save(company);
-
     companySettingsService.upsertSettings(company, settings);
 
-    // Crear tipos de vehículo en el catálogo global + vínculo con la empresa
     @SuppressWarnings("unchecked")
-    List<String> vehicleTypeCodes = (List<String>) settings.getOrDefault(
-        "vehicleTypes", List.of("MOTORCYCLE", "CAR"));
-    materializeVehicleTypes(companyId, vehicleTypeCodes);
+    List<String> vehicleTypeCodes = (List<String>) settings.getOrDefault("vehicleTypes", List.of("MOTORCYCLE", "CAR"));
+    materializationService.materializeVehicleTypes(companyId, vehicleTypeCodes);
+
+    @SuppressWarnings("unchecked")
+    List<String> paymentMethodCodes = (List<String>) settings.getOrDefault("paymentMethods", List.of("CASH"));
+    materializationService.materializePaymentMethods(companyId, paymentMethodCodes);
 
     if (hasProgress) {
-      // Preservar lockers y tarifas configuradas por el usuario.
-      createLockersIfConfigured(companyId, step1);
-      createRatesFromOnboarding(company, progressData);
+      materializationService.createLockersIfConfigured(companyId, step1);
+      materializationService.createRatesFromOnboarding(company, progressData);
     } else {
-      // Crear tarifas default para que el ingreso de vehículos no falle.
-      createDefaultRates(company);
+      materializationService.createDefaultRates(company);
     }
 
     progress.setSkipped(true);
@@ -176,45 +148,33 @@ public class OnboardingService implements OnboardingUseCase {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
 
-    // Idempotencia: si ya está completado, retornar estado actual sin cambios
     if (Boolean.TRUE.equals(company.getOnboardingCompleted())) {
       return status(companyId);
     }
 
-    // Validar consistencia de capacidad antes de completar (por si el paso 2 no se re-guardó).
     Map<String, Object> step2 = settingsMapper.stepMap(progress.getProgressData(), 2);
     validateCapacityConsistency(step2);
 
     Map<String, Object> finalSettings = settingsMapper.buildSettingsFromProgress(company, progress.getProgressData());
-    
     Map<String, Object> step1 = settingsMapper.stepMap(progress.getProgressData(), 1);
-    String opStr = String.valueOf(step1.getOrDefault("operationalProfile", step1.getOrDefault("businessModel", "MIXED")));
-    try {
-      company.setOperationalProfile(OperationalProfile.valueOf(opStr));
-    } catch (Exception e) {
-      company.setOperationalProfile(OperationalProfile.MIXED);
-    }
-    
+    applyOperationalProfile(company, step1);
+
     companySettingsService.upsertSettings(company, finalSettings);
 
-    // Crear tipos de vehículo en el catálogo global + vínculo con la empresa
     @SuppressWarnings("unchecked")
     List<String> vehicleTypeCodes = (List<String>) finalSettings.getOrDefault("vehicleTypes", List.of("MOTORCYCLE", "CAR"));
-    materializeVehicleTypes(companyId, vehicleTypeCodes);
+    materializationService.materializeVehicleTypes(companyId, vehicleTypeCodes);
 
-    // Crear lockers automáticamente si el usuario configuró custodia por lockers.
-    createLockersIfConfigured(companyId, step1);
+    @SuppressWarnings("unchecked")
+    List<String> paymentMethodCodes = (List<String>) finalSettings.getOrDefault("paymentMethods", List.of("CASH"));
+    materializationService.materializePaymentMethods(companyId, paymentMethodCodes);
 
-    // Materializar las celdas de parqueo configuradas en el paso 2.
-    // Si no se crean aquí, el ingreso queda bloqueado porque no hay espacios disponibles.
+    materializationService.createLockersIfConfigured(companyId, step1);
+
     int totalCapacity = settingsMapper.extractNumber(step2.get("totalCapacity"), 0);
-    if (totalCapacity > 0) {
-      parkingSpaceService.resizeCapacity(companyId, totalCapacity);
-    }
+    materializationService.resizeCapacity(companyId, totalCapacity);
 
-    // Crear tarifas operativas en la tabla rate desde la configuración del paso 3.
-    // Necesarias para que el ingreso de vehículos no falle con "No se encontró tarifa aplicable".
-    createRatesFromOnboarding(company, progress.getProgressData());
+    materializationService.createRatesFromOnboarding(company, progress.getProgressData());
 
     progress.setCompleted(true);
     progress.setCurrentStep(12);
@@ -225,109 +185,7 @@ public class OnboardingService implements OnboardingUseCase {
     return status(companyId);
   }
 
-  private void materializeVehicleTypes(UUID companyId, List<String> codes) {
-    for (String code : codes) {
-      settingsVehicleTypeService.addTypeToCompany(companyId, code);
-    }
-  }
-
-  private void createRatesFromOnboarding(Company company, Map<String, Object> progressData) {
-    Map<String, Object> step1 = settingsMapper.stepMap(progressData, 1);
-    Map<String, Object> step3 = settingsMapper.stepMap(progressData, 3);
-
-    List<String> vehicleTypes = settingsMapper.asStringList(step1.get("vehicleTypes"), List.of("MOTORCYCLE", "CAR"));
-    int baseValue = settingsMapper.extractNumber(step3.get("baseValue"), 2000);
-    int graceMinutes = settingsMapper.extractNumber(step3.get("graceMinutes"), 5);
-
-    Map<String, Object> ratesByType = new LinkedHashMap<>();
-    Object rawByType = step3.get("ratesByType");
-    if (rawByType instanceof Map<?, ?> map) {
-      map.forEach((k, v) -> ratesByType.put(String.valueOf(k), v));
-    }
-
-    // Desactivar tarifas existentes de la empresa antes de crear las nuevas
-    List<Rate> existing = rateRepository.findByCompanyId(company.getId());
-    for (Rate r : existing) {
-      r.setActive(false);
-      r.setUpdatedAt(OffsetDateTime.now());
-      rateRepository.save(r);
-    }
-
-    // Crear una tarifa HOURLY por tipo de vehículo
-    for (String vehicleType : vehicleTypes) {
-      int amount = settingsMapper.extractNumber(ratesByType.get(vehicleType), baseValue);
-      Rate rate = new Rate();
-      rate.setCompanyId(company.getId());
-      rate.setName("Tarifa " + vehicleType);
-      rate.setVehicleType(vehicleType);
-      rate.setRateType(RateType.HOURLY);
-      rate.setAmount(BigDecimal.valueOf(amount));
-      rate.setGraceMinutes(graceMinutes);
-      rate.setFractionMinutes(60);
-      rate.setSite(null);
-      rate.setBaseValue(BigDecimal.ZERO);
-      rate.setBaseMinutes(0);
-      rate.setAdditionalValue(BigDecimal.ZERO);
-      rate.setAdditionalMinutes(0);
-      rate.setRoundingMode(RoundingMode.NEAREST);
-      rate.setLostTicketSurcharge(BigDecimal.ZERO);
-      rate.setActive(true);
-      rate.setCreatedAt(OffsetDateTime.now());
-      rate.setUpdatedAt(OffsetDateTime.now());
-      rateRepository.save(rate);
-    }
-  }
-
-  private void createDefaultRates(Company company) {
-    // Desactivar tarifas existentes
-    List<Rate> existing = rateRepository.findByCompanyId(company.getId());
-    for (Rate r : existing) {
-      r.setActive(false);
-      r.setUpdatedAt(OffsetDateTime.now());
-      rateRepository.save(r);
-    }
-
-    // Crear tarifas default para MOTO y CARRO
-    for (String vehicleType : List.of("MOTORCYCLE", "CAR")) {
-      int amount = "MOTORCYCLE".equals(vehicleType) ? 1000 : 2000;
-      Rate rate = new Rate();
-      rate.setCompanyId(company.getId());
-      rate.setName("Tarifa " + vehicleType);
-      rate.setVehicleType(vehicleType);
-      rate.setRateType(RateType.HOURLY);
-      rate.setAmount(BigDecimal.valueOf(amount));
-      rate.setGraceMinutes(5);
-      rate.setFractionMinutes(60);
-      rate.setSite(null);
-      rate.setBaseValue(BigDecimal.ZERO);
-      rate.setBaseMinutes(0);
-      rate.setAdditionalValue(BigDecimal.ZERO);
-      rate.setAdditionalMinutes(0);
-      rate.setRoundingMode(RoundingMode.NEAREST);
-      rate.setLostTicketSurcharge(BigDecimal.ZERO);
-      rate.setActive(true);
-      rate.setCreatedAt(OffsetDateTime.now());
-      rate.setUpdatedAt(OffsetDateTime.now());
-      rateRepository.save(rate);
-    }
-  }
-
-  private void createLockersIfConfigured(UUID companyId, Map<String, Object> step1) {
-    if (step1 == null) {
-      return;
-    }
-    String handling = String.valueOf(step1.getOrDefault("helmetHandling", ""));
-    if (!"LOCKERS".equals(handling)) {
-      return;
-    }
-    int count = settingsMapper.extractNumber(step1.get("helmetTokenCount"), 0);
-    if (count <= 0 || count > 9999) {
-      return;
-    }
-    BatchLockerRequest batchRequest = new BatchLockerRequest("L-", 1, count);
-    lockerService.createBatch(companyId, batchRequest);
-  }
-
+  @Override
   @Transactional(readOnly = true)
   public boolean isFeatureEnabled(UUID companyId, String featureKey) {
     Company company = getCompany(companyId);
@@ -335,6 +193,7 @@ public class OnboardingService implements OnboardingUseCase {
     return featureAccessService.isFeatureEnabled(settings, featureKey);
   }
 
+  @Override
   @Transactional(readOnly = true)
   public Map<String, Object> getCompanySettings(UUID companyId) {
     Company company = getCompany(companyId);
@@ -345,14 +204,13 @@ public class OnboardingService implements OnboardingUseCase {
     @SuppressWarnings("unchecked")
     Map<String, Object> persistedOpConfig = (Map<String, Object>) settings.getOrDefault("operationConfiguration", new LinkedHashMap<>());
     Map<String, Object> derivedOpConfig = operationalConfigurationService.getOperationConfiguration(companyId);
-    
     Map<String, Object> mergedOpConfig = new LinkedHashMap<>(derivedOpConfig);
     mergedOpConfig.putAll(persistedOpConfig);
-    
     mutable.put("operationConfiguration", mergedOpConfig);
     return mutable;
   }
 
+  @Override
   @Transactional(readOnly = true)
   public CompanyCapabilitiesResponse getCapabilities(UUID companyId) {
     Company company = getCompany(companyId);
@@ -371,25 +229,95 @@ public class OnboardingService implements OnboardingUseCase {
         Boolean.TRUE.equals(company.getOnboardingCompleted()),
         Boolean.TRUE.equals(plan.get("allowMultiLocation")),
         Boolean.TRUE.equals(plan.get("allowAdvancedPermissions")),
-        cashEnabled,
-        shiftsEnabled,
-        clientsEnabled,
-        agreementsEnabled,
-        vehicleTypes.size(),
-        paymentMethods.size(),
-        siteCount,
-        vehicleTypes,
-        paymentMethods);
+        cashEnabled, shiftsEnabled, clientsEnabled, agreementsEnabled,
+        vehicleTypes.size(), paymentMethods.size(), siteCount,
+        vehicleTypes, paymentMethods);
+  }
+
+  @Override
+  @Transactional
+  public OnboardingStatusResponse resetOnboarding(UUID companyId, String reason) {
+    UUID currentCompanyId = com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId();
+    com.parkflow.modules.auth.domain.UserRole role = com.parkflow.modules.auth.security.SecurityUtils.requireUserRole();
+    if (!currentCompanyId.equals(companyId) && role != com.parkflow.modules.auth.domain.UserRole.SUPER_ADMIN) {
+      throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a la empresa solicitada");
+    }
+    if (role != com.parkflow.modules.auth.domain.UserRole.SUPER_ADMIN && role != com.parkflow.modules.auth.domain.UserRole.ADMIN) {
+      throw new OperationException(HttpStatus.FORBIDDEN, "Solo administradores pueden reiniciar el onboarding");
+    }
+    Company company = getCompany(companyId);
+    long activeSessions = parkingSessionPort.countActive(companyId);
+    StringBuilder auditContext = new StringBuilder();
+    if (activeSessions > 0) {
+      auditContext.append("Reinicio con ").append(activeSessions).append(" vehículos activos. ");
+    }
+    OnboardingProgress progress = findOrCreateProgress(company);
+    Map<String, Object> currentSettings = companySettingsService.getSettingsOrDefault(company);
+    int nextVersion = companySettingsSnapshotPort.countByCompanyId(companyId) + 1;
+    com.parkflow.modules.onboarding.domain.CompanySettingsSnapshot snapshot = new com.parkflow.modules.onboarding.domain.CompanySettingsSnapshot();
+    snapshot.setCompany(company);
+    snapshot.setVersion(nextVersion);
+    snapshot.setSettingsJson(new LinkedHashMap<>(currentSettings));
+    snapshot.setProgressData(new LinkedHashMap<>(progress.getProgressData()));
+    snapshot.setReason(reason != null && !reason.isBlank() ? reason : "RESTART_ONBOARDING");
+    snapshot.setCreatedAt(OffsetDateTime.now());
+    com.parkflow.modules.auth.domain.AppUser appUser = null;
+    String creatorEmail = "SYSTEM";
+    org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+    if (auth != null) {
+      if (auth.getPrincipal() instanceof com.parkflow.modules.auth.domain.AppUser user) {
+        appUser = user;
+        creatorEmail = user.getEmail();
+      } else if (auth.getPrincipal() instanceof com.parkflow.modules.auth.security.AuthPrincipal principal) {
+        creatorEmail = principal.email();
+      }
+    }
+    snapshot.setCreatedBy(creatorEmail);
+    companySettingsSnapshotPort.save(snapshot);
+    company.setOnboardingCompleted(false);
+    companyRepository.save(company);
+    List<com.parkflow.modules.auth.domain.AppUser> companyUsers = appUserRepository.findByCompanyId(companyId);
+    if (!companyUsers.isEmpty()) {
+      final String creator = creatorEmail;
+      List<com.parkflow.modules.auth.domain.AppUser> usersToInvalidate = companyUsers.stream()
+          .filter(u -> !u.getEmail().equalsIgnoreCase(creator))
+          .toList();
+      if (!usersToInvalidate.isEmpty()) {
+        authSessionPort.deleteByUserIn(usersToInvalidate);
+        org.slf4j.LoggerFactory.getLogger(getClass()).info(
+            "Invalidated {} sessions for company {} during onboarding reset by {}",
+            usersToInvalidate.size(), companyId, creatorEmail);
+      }
+    }
+    progress.setCompleted(false);
+    progress.setCurrentStep(1);
+    progress.setUpdatedAt(OffsetDateTime.now());
+    onboardingProgressPort.save(progress);
+    auditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.REINICIAR_ONBOARDING,
+        companyId, appUser,
+        "onboardingCompleted=true, currentStep=" + progress.getCurrentStep(),
+        "onboardingCompleted=false, currentStep=1",
+        "Reinicio de onboarding multi-tenant. Snapshot v" + nextVersion + " guardado. " + auditContext);
+    return status(companyId);
+  }
+
+  private void applyOperationalProfile(Company company, Map<String, Object> step1) {
+    String opStr = String.valueOf(step1.getOrDefault("operationalProfile",
+        step1.getOrDefault("businessModel", "MIXED")));
+    try {
+      company.setOperationalProfile(OperationalProfile.valueOf(opStr));
+    } catch (Exception e) {
+      company.setOperationalProfile(OperationalProfile.MIXED);
+    }
   }
 
   private Company getCompany(UUID companyId) {
     UUID currentCompanyId = com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId();
     com.parkflow.modules.auth.domain.UserRole role = com.parkflow.modules.auth.security.SecurityUtils.requireUserRole();
-    
     if (!currentCompanyId.equals(companyId) && role != com.parkflow.modules.auth.domain.UserRole.SUPER_ADMIN) {
       throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a la empresa solicitada");
     }
-
     return companyRepository.findById(companyId)
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Empresa no encontrada"));
   }
@@ -405,31 +333,21 @@ public class OnboardingService implements OnboardingUseCase {
   }
 
   private void validateStepData(int step, Map<String, Object> data) {
-    if (data == null) {
-      return;
-    }
+    if (data == null) return;
     if (step == 1) {
       List<String> vehicleTypes = settingsMapper.asStringList(data.get("vehicleTypes"), List.of());
-      if (!vehicleTypes.contains("MOTORCYCLE")) {
-        return;
-      }
+      if (!vehicleTypes.contains("MOTORCYCLE")) return;
       String handling = String.valueOf(data.getOrDefault("helmetHandling", ""));
       if (!"LOCKERS".equals(handling) && !"MANUAL".equals(handling) && !"NONE".equals(handling)) {
         throw new OperationException(HttpStatus.BAD_REQUEST, "Debes seleccionar una opción de custodia de cascos.");
       }
       if ("LOCKERS".equals(handling)) {
         int count = settingsMapper.extractNumber(data.get("helmetTokenCount"), 0);
-        if (count <= 0) {
-          throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de lockers debe ser mayor a 0.");
-        }
-        if (count > 9999) {
-          throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de lockers no puede superar 9999.");
-        }
+        if (count <= 0) throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de lockers debe ser mayor a 0.");
+        if (count > 9999) throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de lockers no puede superar 9999.");
       }
     }
-    if (step == 2) {
-      validateCapacityConsistency(data);
-    }
+    if (step == 2) validateCapacityConsistency(data);
   }
 
   private void validateCapacityConsistency(Map<String, Object> data) {
@@ -438,9 +356,7 @@ public class OnboardingService implements OnboardingUseCase {
       throw new OperationException(HttpStatus.BAD_REQUEST, "La capacidad total debe ser mayor a 0.");
     }
     boolean controlSlots = Boolean.TRUE.equals(data.get("controlSlots"));
-    if (!controlSlots) {
-      return;
-    }
+    if (!controlSlots) return;
     Map<String, Object> byType = new LinkedHashMap<>();
     Object rawByType = data.get("capacityByType");
     if (rawByType instanceof Map<?, ?> map) {
@@ -454,93 +370,5 @@ public class OnboardingService implements OnboardingUseCase {
           "La suma de las capacidades configuradas por tipo (" + sumByType
               + ") supera la capacidad total permitida (" + totalCapacity + ").");
     }
-  }
-
-
-
-  @Override
-  @Transactional
-  public OnboardingStatusResponse resetOnboarding(UUID companyId, String reason) {
-    UUID currentCompanyId = com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId();
-    com.parkflow.modules.auth.domain.UserRole role = com.parkflow.modules.auth.security.SecurityUtils.requireUserRole();
-    
-    if (!currentCompanyId.equals(companyId) && role != com.parkflow.modules.auth.domain.UserRole.SUPER_ADMIN) {
-      throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a la empresa solicitada");
-    }
-    if (role != com.parkflow.modules.auth.domain.UserRole.SUPER_ADMIN && role != com.parkflow.modules.auth.domain.UserRole.ADMIN) {
-      throw new OperationException(HttpStatus.FORBIDDEN, "Solo administradores pueden reiniciar el onboarding");
-    }
-
-    Company company = getCompany(companyId);
-
-    // Verificación informativa (no bloqueante): se permite reiniciar el onboarding
-    // incluso con vehículos activos o cajas abiertas, ya que solo afecta configuración
-    // futura y no compromete operaciones en curso. Se registra en auditoría para trazabilidad.
-    long activeSessions = parkingSessionPort.countActive(companyId);
-    StringBuilder auditContext = new StringBuilder();
-    if (activeSessions > 0) {
-      auditContext.append("Reinicio con ").append(activeSessions).append(" vehículos activos. ");
-    }
-
-    OnboardingProgress progress = findOrCreateProgress(company);
-    Map<String, Object> currentSettings = companySettingsService.getSettingsOrDefault(company);
-
-    int nextVersion = companySettingsSnapshotPort.countByCompanyId(companyId) + 1;
-
-    com.parkflow.modules.onboarding.domain.CompanySettingsSnapshot snapshot = new com.parkflow.modules.onboarding.domain.CompanySettingsSnapshot();
-    snapshot.setCompany(company);
-    snapshot.setVersion(nextVersion);
-    snapshot.setSettingsJson(new LinkedHashMap<>(currentSettings));
-    snapshot.setProgressData(new LinkedHashMap<>(progress.getProgressData()));
-    snapshot.setReason(reason != null && !reason.isBlank() ? reason : "RESTART_ONBOARDING");
-    snapshot.setCreatedAt(OffsetDateTime.now());
-    
-    com.parkflow.modules.auth.domain.AppUser appUser = null;
-    String creatorEmail = "SYSTEM";
-    org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-    if (auth != null) {
-      if (auth.getPrincipal() instanceof com.parkflow.modules.auth.domain.AppUser user) {
-        appUser = user;
-        creatorEmail = user.getEmail();
-      } else if (auth.getPrincipal() instanceof com.parkflow.modules.auth.security.AuthPrincipal principal) {
-        creatorEmail = principal.email();
-      }
-    }
-    final String creator = creatorEmail;
-    snapshot.setCreatedBy(creator);
-    companySettingsSnapshotPort.save(snapshot);
-
-    company.setOnboardingCompleted(false);
-    companyRepository.save(company);
-
-    // Invalidar todas las sesiones activas de la empresa para forzar re-login con nuevo estado
-    List<com.parkflow.modules.auth.domain.AppUser> companyUsers = appUserRepository.findByCompanyId(companyId);
-    if (!companyUsers.isEmpty()) {
-      // No cerrar sesión al usuario que realiza la acción
-      List<com.parkflow.modules.auth.domain.AppUser> usersToInvalidate = companyUsers.stream()
-          .filter(u -> !u.getEmail().equalsIgnoreCase(creator))
-          .toList();
-      if (!usersToInvalidate.isEmpty()) {
-        authSessionPort.deleteByUserIn(usersToInvalidate);
-        org.slf4j.LoggerFactory.getLogger(getClass()).info("Invalidated {} sessions for company {} ({}) during onboarding reset by {}",
-            usersToInvalidate.size(), company.getName(), companyId, creator);
-      }
-    }
-
-    progress.setCompleted(false);
-    progress.setCurrentStep(1);
-    progress.setUpdatedAt(OffsetDateTime.now());
-    onboardingProgressPort.save(progress);
-
-    auditService.record(
-        com.parkflow.modules.audit.domain.AuditAction.REINICIAR_ONBOARDING,
-        companyId,
-        appUser,
-        "onboardingCompleted=true, currentStep=" + progress.getCurrentStep(),
-        "onboardingCompleted=false, currentStep=1",
-        "Reinicio de onboarding multi-tenant. Snapshot v" + nextVersion + " guardado. " + auditContext.toString()
-    );
-
-    return status(companyId);
   }
 }

@@ -15,6 +15,7 @@ import type {
   GenerateLicenseRequest,
   GenerateLicenseResponse,
 } from "./types";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 import {
   sendHeartbeat,
   listCompanies,
@@ -307,7 +308,7 @@ export function getPlanFeatures(plan: string): string[] {
 
 // ==================== ADMIN HOOKS ====================
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetchWithCredentials(url).then((res) => res.json());
 
 /**
  * Hook para listar todas las empresas (Super Admin)

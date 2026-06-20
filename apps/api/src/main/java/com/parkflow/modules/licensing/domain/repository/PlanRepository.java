@@ -27,4 +27,7 @@ public interface PlanRepository extends JpaRepository<Plan, UUID> {
 
   @Query("SELECT p FROM Plan p WHERE p.deletedAt IS NULL AND p.id <> :id ORDER BY p.createdAt ASC")
   List<Plan> findAllOthersExcluding(@Param("id") UUID id);
+
+  @Query("SELECT p FROM Plan p WHERE p.isActive = :active ORDER BY p.createdAt DESC")
+  List<Plan> findAllByIsActive(@Param("active") boolean active);
 }

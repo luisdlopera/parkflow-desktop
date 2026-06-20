@@ -1,13 +1,24 @@
 package com.parkflow.modules.onboarding.application.service;
 
+import com.parkflow.config.CacheConfig;
+import com.parkflow.modules.licensing.domain.CompanyModule;
+import com.parkflow.modules.licensing.domain.repository.CompanyModulePort;
+import com.parkflow.modules.licensing.enums.ModuleType;
 import com.parkflow.modules.licensing.enums.PlanType;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class FeatureAccessService {
 
+  private final CompanyModulePort companyModulePort;
+
+  @Cacheable(cacheNames = CacheConfig.PLAN_FEATURES, key = "#plan.name()")
   public Map<String, Object> getAvailableOptionsByPlan(PlanType plan) {
     boolean multiLocation = plan == PlanType.PRO || plan == PlanType.ENTERPRISE;
     boolean advancedPermissions = plan == PlanType.PRO || plan == PlanType.ENTERPRISE;
@@ -27,6 +38,23 @@ public class FeatureAccessService {
         "allowPremiumPayments", premiumPayments,
         "allowAgreementsAndMonthly", agreementAndMonthly,
         "allowAdvancedAudit", advancedAudit);
+  }
+
+  @Cacheable(cacheNames = CacheConfig.COMPANY_SETTINGS, key = "'modules:' + #companyId")
+  public Map<ModuleType, Boolean> getEnabledModulesForCompany(UUID companyId) {
+    List<CompanyModule> modules = companyModulePort.findByCompanyIdAndEnabled(companyId, true);
+    return modules.stream()
+        .filter(CompanyModule::isActive)
+        .collect(java.util.stream.Collectors.toMap(
+            CompanyModule::getModuleType,
+            m -> true,
+            (a, b) -> a));
+  }
+
+  public boolean isModuleEnabled(UUID companyId, ModuleType moduleType) {
+    return companyModulePort.findByCompanyIdAndModuleType(companyId, moduleType)
+        .map(CompanyModule::isActive)
+        .orElse(false);
   }
 
   public boolean isFeatureEnabled(Map<String, Object> settings, String featureKey) {

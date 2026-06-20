@@ -14,9 +14,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import static com.parkflow.config.CacheConfig.PLANS_LIST;
 
 @Service
 @RequiredArgsConstructor
@@ -28,14 +32,13 @@ public class PlanService {
   private final PlanRepository planRepository;
   private final ObjectMapper objectMapper;
 
+  @Cacheable(value = PLANS_LIST, key = "#includeDeleted + ':' + #active")
   @Transactional(readOnly = true)
   public List<PlanResponse> listPlans(boolean includeDeleted, Boolean active) {
     List<Plan> plans;
     if (includeDeleted) {
       if (active != null) {
-        plans = planRepository.findAll().stream()
-            .filter(p -> p.isActive() == active)
-            .toList();
+        plans = planRepository.findAllByIsActive(active);
       } else {
         plans = planRepository.findAllByOrderByCreatedAtDesc();
       }
@@ -54,6 +57,7 @@ public class PlanService {
     return toResponse(findById(id));
   }
 
+  @CacheEvict(value = PLANS_LIST, allEntries = true)
   @Transactional
   public PlanResponse createPlan(PlanRequest request) {
     String code = generateCode(request.name());
@@ -75,6 +79,7 @@ public class PlanService {
     return toResponse(plan);
   }
 
+  @CacheEvict(value = PLANS_LIST, allEntries = true)
   @Transactional
   public PlanResponse updatePlan(UUID id, PlanRequest request) {
     Plan plan = findById(id);
@@ -90,6 +95,7 @@ public class PlanService {
     return toResponse(plan);
   }
 
+  @CacheEvict(value = PLANS_LIST, allEntries = true)
   @Transactional
   public void deletePlan(UUID id) {
     Plan plan = findById(id);
@@ -102,6 +108,7 @@ public class PlanService {
     planRepository.save(plan);
   }
 
+  @CacheEvict(value = PLANS_LIST, allEntries = true)
   @Transactional
   public PlanResponse togglePlan(UUID id) {
     Plan plan = findById(id);

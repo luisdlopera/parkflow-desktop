@@ -1,5 +1,7 @@
 import { authHeaders } from "@/features/auth/services/auth-domain.service";
 import { apiBase as getApiBase } from "./config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 const API_BASE = getApiBase();
 
 export interface PriorityCase {
@@ -37,14 +39,14 @@ export interface BlockStatistics {
 
 export async function fetchPriorityCases(): Promise<PriorityCase[]> {
   const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/licensing/support/cases/priority`, { headers });
+  const res = await fetchWithCredentials(`${API_BASE}/licensing/support/cases/priority`, { headers });
   if (!res.ok) return [];
   return res.json();
 }
 
 export async function fetchUnresolvedBlocks(): Promise<BlockEvent[]> {
   const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/licensing/support/blocks/unresolved`, { headers });
+  const res = await fetchWithCredentials(`${API_BASE}/licensing/support/blocks/unresolved`, { headers });
   if (!res.ok) return [];
   const blocks: (BlockEvent & { companyName?: string })[] = await res.json();
   return blocks.map((b) => ({ ...b, companyName: b.companyName || "Empresa desconocida" }));
@@ -52,14 +54,14 @@ export async function fetchUnresolvedBlocks(): Promise<BlockEvent[]> {
 
 export async function fetchBlockStatistics(days = 7): Promise<BlockStatistics | null> {
   const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/licensing/support/statistics?days=${days}`, { headers });
+  const res = await fetchWithCredentials(`${API_BASE}/licensing/support/statistics?days=${days}`, { headers });
   if (!res.ok) return null;
   return res.json();
 }
 
 export async function resolveBlock(id: string, notes: string): Promise<void> {
   const headers = await authHeaders();
-  await fetch(`${API_BASE}/licensing/support/blocks/${id}/resolve`, {
+  await fetchWithCredentials(`${API_BASE}/licensing/support/blocks/${id}/resolve`, {
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json" },
     body: JSON.stringify({ notes, correctiveAction: "MANUAL_RESOLUTION" }),
@@ -68,7 +70,7 @@ export async function resolveBlock(id: string, notes: string): Promise<void> {
 
 export async function markBlockFalsePositive(id: string, notes: string): Promise<void> {
   const headers = await authHeaders();
-  await fetch(`${API_BASE}/licensing/support/blocks/${id}/false-positive`, {
+  await fetchWithCredentials(`${API_BASE}/licensing/support/blocks/${id}/false-positive`, {
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json" },
     body: JSON.stringify({ notes }),

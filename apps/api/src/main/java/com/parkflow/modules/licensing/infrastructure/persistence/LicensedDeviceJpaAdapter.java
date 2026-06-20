@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,14 +59,23 @@ public class LicensedDeviceJpaAdapter implements LicensedDevicePort {
         jpaRepository.deleteAll();
     }
 
+    @Override
+    public Optional<OffsetDateTime> findLastHeartbeatAtByCompanyId(UUID companyId) {
+        return jpaRepository.findMaxLastHeartbeatAtByCompanyId(companyId);
+    }
+
     @Repository
     interface LicensedDeviceJpaRepository extends JpaRepository<LicensedDevice, UUID> {
         Optional<LicensedDevice> findByDeviceFingerprint(String deviceFingerprint);
 
         List<LicensedDevice> findByCompany_Id(UUID companyId);
-        
+
         long countByCompany_IdAndStatus(UUID companyId, LicenseStatus status);
-        
+
         Optional<LicensedDevice> findByCompany_IdAndDeviceFingerprint(UUID companyId, String deviceFingerprint);
+
+        @org.springframework.data.jpa.repository.Query(
+            "SELECT MAX(d.lastHeartbeatAt) FROM LicensedDevice d WHERE d.company.id = :companyId")
+        Optional<OffsetDateTime> findMaxLastHeartbeatAtByCompanyId(@org.springframework.data.repository.query.Param("companyId") UUID companyId);
     }
 }

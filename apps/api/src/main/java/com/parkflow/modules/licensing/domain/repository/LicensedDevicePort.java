@@ -21,4 +21,6 @@ public interface LicensedDevicePort {
     
     Optional<LicensedDevice> findByCompanyIdAndDeviceFingerprint(UUID companyId, String deviceFingerprint);
     void deleteAll();
+
+    Optional<java.time.OffsetDateTime> findLastHeartbeatAtByCompanyId(UUID companyId);
 }
