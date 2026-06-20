@@ -13,7 +13,7 @@ import {
   patchRateStatus,
   type RateRow
 } from "@/lib/settings-api";
-import type { RateType } from "@/modules/parking/types";
+import type { RateType } from "@/lib/types/parking.types";
 import type { DataTableColumn } from "@/components/ui/DataTable";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { RATE_CATEGORIES, RATE_CATEGORY_LABELS } from "@/features/configuration/constants";

@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/bridge/Checkbox";
 import { Input } from "@/components/bridge/Input";
 import { saveRate, type RateRow } from "@/lib/settings-api";
 import type { RateCategory } from "@/lib/settings-api";
-import type { RateType } from "@/modules/parking/types";
+import type { RateType } from "@/lib/types/parking.types";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import {
   RATE_TYPES, RATE_TYPE_LABELS, RATE_CATEGORIES, RATE_CATEGORY_LABELS,

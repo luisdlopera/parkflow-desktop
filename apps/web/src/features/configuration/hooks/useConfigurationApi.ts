@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
 import { apiBase } from '@/lib/api/config';
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 const API_BASE = apiBase();
 
@@ -25,7 +27,7 @@ export function useConfigurationApi() {
         }
 
         const url = new URL(`${API_BASE}${endpoint}`, window.location.origin);
-        const response = await fetch(url.toString(), options);
+        const response = await fetchWithCredentials(url.toString(), options);
 
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`);

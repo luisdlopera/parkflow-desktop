@@ -43,7 +43,7 @@ const STANDARD_VEHICLE_TYPES = [
   { code: "CAR", name: "Carro", icon: "🚗", color: "#2563EB", requiresPlate: true, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 2 },
   { code: "BICYCLE", name: "Bicicleta", icon: "🚲", color: "#16A34A", requiresPlate: false, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 3 },
   { code: "VAN", name: "Camioneta", icon: "🚐", color: "#7C3AED", requiresPlate: true, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 4 },
-  { code: "TRUCK", name: "Camión", icon: "🚛", color: "#EA580C", requiresPlate: true, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 5 },
+  { code: "TRUCK", name: "Camión", icon: "🚛", color: "#C96A4A", requiresPlate: true, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 5 },
   { code: "BUS", name: "Bus", icon: "🚌", color: "#CA8A04", requiresPlate: true, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 6 },
   { code: "ELECTRIC", name: "Eléctrico", icon: "⚡", color: "#0D9488", requiresPlate: true, hasOwnRate: true, quickAccess: true, requiresPhoto: false, displayOrder: 7 },
   { code: "OTHER", name: "Otro", icon: "🚙", color: "#64748B", requiresPlate: false, hasOwnRate: false, quickAccess: false, requiresPhoto: false, displayOrder: 8 },

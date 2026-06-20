@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/bridge/Card';
+import { Checkbox } from '@/components/bridge/Checkbox';
 import { useConfigurationApi } from '@/features/configuration/hooks/useConfigurationApi';
 
 interface ModulesTabProps {
@@ -141,18 +142,16 @@ export function ModulesTab({ companyId }: ModulesTabProps) {
                       <span className="text-xs text-slate-500">🔒</span>
                     </div>
                   ) : (
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       aria-label={`Habilitar ${module.label}`}
-                      checked={isEnabled}
-                      onChange={(e) =>
+                      isSelected={isEnabled}
+                      onValueChange={(isSelected) =>
                         handleModuleToggle(
                           module.key as keyof Omit<ModuleConfig, 'licensePlan'>,
-                          e.target.checked
+                          isSelected
                         )
                       }
-                      disabled={loading}
-                      className="rounded"
+                      isDisabled={loading}
                     />
                   )}
                 </div>

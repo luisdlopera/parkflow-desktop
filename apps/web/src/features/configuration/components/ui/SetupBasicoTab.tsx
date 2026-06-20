@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/bridge/Card';
 import { Button } from '@/components/bridge/Button';
 import { Input } from '@/components/bridge/Input';
+import { Select } from '@/components/bridge/Select';
+import { ListBox } from '@heroui/react';
+import { Checkbox } from '@/components/bridge/Checkbox';
 import { useConfigurationApi } from '@/features/configuration/hooks/useConfigurationApi';
 
 interface SetupBasicoTabProps {
@@ -195,16 +198,14 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
         <Card className="p-6 space-y-4">
           <h3 className="text-lg font-semibold">Configuración de Turnos</h3>
           <div className="space-y-2">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={shiftsEnabled}
-                onChange={(e) => setShiftsEnabled(e.target.checked)}
-                disabled={loading}
-                className="rounded"
-              />
-              <span className="text-sm font-medium">Habilitar control de turnos</span>
-            </label>
+            <Checkbox
+              isSelected={shiftsEnabled}
+              onValueChange={setShiftsEnabled}
+              isDisabled={loading}
+              size="sm"
+            >
+              Habilitar control de turnos
+            </Checkbox>
           </div>
 
           {shiftsEnabled && (
@@ -244,17 +245,29 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
           <h3 className="text-lg font-semibold">Región y Localización</h3>
           <div className="space-y-2">
             <label className="block text-sm font-medium">País</label>
-            <select
-              value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value)}
-              disabled={loading}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            <Select
+              aria-label="País"
+              value={[countryCode]}
+              onChange={(keys) => {
+                const val = Array.from(keys)[0] as string | undefined;
+                if (val) setCountryCode(val);
+              }}
+              isDisabled={loading}
+              className="w-full"
             >
-              <option value="CO">Colombia</option>
-              <option value="MX">México</option>
-              <option value="PE">Perú</option>
-              <option value="AR">Argentina</option>
-            </select>
+              <Select.Trigger aria-label="País">
+                <Select.Value aria-label="País" />
+                <Select.Indicator aria-label="País" />
+              </Select.Trigger>
+              <Select.Popover aria-label="País">
+                <ListBox>
+                  <ListBox.Item key="CO" textValue="Colombia">Colombia</ListBox.Item>
+                  <ListBox.Item key="MX" textValue="México">México</ListBox.Item>
+                  <ListBox.Item key="PE" textValue="Perú">Perú</ListBox.Item>
+                  <ListBox.Item key="AR" textValue="Argentina">Argentina</ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
           </div>
           <Button onClick={handleSaveRegion} disabled={loading}>
             Guardar Región
@@ -268,16 +281,28 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
           <h3 className="text-lg font-semibold">Manejo de Cascos</h3>
           <div className="space-y-2">
             <label className="block text-sm font-medium">Modo Actual</label>
-            <select
-              value={helmetMode}
-              onChange={(e) => setHelmetMode(e.target.value)}
-              disabled={loading}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            <Select
+              aria-label="Modo Actual"
+              value={[helmetMode]}
+              onChange={(keys) => {
+                const val = Array.from(keys)[0] as string | undefined;
+                if (val) setHelmetMode(val);
+              }}
+              isDisabled={loading}
+              className="w-full"
             >
-              <option value="NONE">No se requiere</option>
-              <option value="MANUAL">Manual</option>
-              <option value="LOCKERS">Casilleros</option>
-            </select>
+              <Select.Trigger aria-label="Modo Actual">
+                <Select.Value aria-label="Modo Actual" />
+                <Select.Indicator aria-label="Modo Actual" />
+              </Select.Trigger>
+              <Select.Popover aria-label="Modo Actual">
+                <ListBox>
+                  <ListBox.Item key="NONE" textValue="No se requiere">No se requiere</ListBox.Item>
+                  <ListBox.Item key="MANUAL" textValue="Manual">Manual</ListBox.Item>
+                  <ListBox.Item key="LOCKERS" textValue="Casilleros">Casilleros</ListBox.Item>
+                 </ListBox>
+              </Select.Popover>
+            </Select>
           </div>
 
           <Button onClick={handleSaveHelmet} disabled={loading}>

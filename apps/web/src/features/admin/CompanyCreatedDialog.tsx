@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Alert } from "@/components/bridge/Alert";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/bridge/Modal";
 import { Button } from "@/components/bridge/Button";
-import { Copy, Check, Eye, EyeOff, Building2, User, KeyRound } from "lucide-react";
+import { Copy, Check, Building2, User, KeyRound } from "lucide-react";
 import type { Company } from "@/lib/licensing/types";
 
 interface CompanyCreatedDialogProps {
@@ -122,17 +122,12 @@ export function CompanyCreatedDialog({
                 </code>
                 <div className="flex gap-1">
                   <Button
-                    isIconOnly
                     size="sm"
                     variant="ghost"
                     aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                     onPress={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
+                    <span className="text-xs font-semibold">{showPassword ? "Ocultar" : "Mostrar"}</span>
                   </Button>
                   <Button
                     isIconOnly
