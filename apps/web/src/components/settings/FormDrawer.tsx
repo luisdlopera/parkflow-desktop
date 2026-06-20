@@ -43,6 +43,7 @@ export function FormDrawer({
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h3>
           <button
             type="button"
+            aria-label="Close"
             onClick={onClose}
             className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
           >
