@@ -3,6 +3,8 @@ import { operationEntryRequestSchema, operationReprintRequestSchema } from "@/li
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 
 import { opsBase } from "@/lib/api/config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 const apiBase = () => opsBase();
 
 export type EntryRequestBody = Record<string, unknown>;
@@ -13,7 +15,7 @@ export async function createParkingEntry(body: EntryRequestBody): Promise<Respon
     body,
     "Corrige los campos del ingreso antes de enviar",
   );
-  return fetch(`${apiBase()}/entries`, {
+  return fetchWithCredentials(`${apiBase()}/entries`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(validated),
@@ -35,7 +37,7 @@ export async function reprintEntryTicket(
     },
     "Datos de reimpresion invalidos",
   );
-  return fetch(`${apiBase()}/tickets/reprint`, {
+  return fetchWithCredentials(`${apiBase()}/tickets/reprint`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(body),

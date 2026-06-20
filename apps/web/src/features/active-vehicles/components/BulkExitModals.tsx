@@ -1,5 +1,6 @@
 "use client";
-import { Modal } from "@heroui/react";
+import { Modal, ListBox } from "@heroui/react";
+import { Select } from "@/components/bridge/Select";
 import { Button } from "@/components/bridge/Button";
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import type { BulkExitCalculateResponseDto, BulkExitResponseDto } from "@/lib/api/bulk-exit-api";
@@ -87,18 +88,28 @@ export function BulkExitConfirmModal({
           </Modal.Body>
           <Modal.Footer className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <label htmlFor="paymentMethod" className="text-sm font-semibold text-slate-700">Método de pago:</label>
-              <select
-                id="paymentMethod"
-                value={selectedPaymentMethod}
-                onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                className="text-sm border border-slate-300 rounded-md px-2 py-1"
-                disabled={isProcessing}
+              <Select
+                label="Método de pago:"
+                value={[selectedPaymentMethod]}
+                onChange={(keys) => {
+                  const val = Array.from(keys)[0] as string | undefined;
+                  if (val) setSelectedPaymentMethod(val);
+                }}
+                className="w-48"
+                isDisabled={isProcessing}
               >
-                {availablePaymentMethods.map((m) => (
-                  <option key={m.code} value={m.code}>{m.label}</option>
-                ))}
-              </select>
+                <Select.Trigger aria-label="Método de pago">
+                  <Select.Value aria-label="Método de pago" />
+                  <Select.Indicator aria-label="Método de pago" />
+                </Select.Trigger>
+                <Select.Popover aria-label="Método de pago">
+                  <ListBox>
+                    {availablePaymentMethods.map((m) => (
+                      <ListBox.Item key={m.code} textValue={m.label}>{m.label}</ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
             </div>
             <div className="flex gap-2">
               <Button color="default" variant="ghost" onPress={onCancel}>Cancelar</Button>

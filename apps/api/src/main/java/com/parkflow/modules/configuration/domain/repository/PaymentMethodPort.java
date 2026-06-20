@@ -8,9 +8,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface PaymentMethodPort {
+  // Global catalogue (company_id = NULL) — used by materializePaymentMethods
   Optional<PaymentMethod> findByCode(String code);
   boolean existsByCode(String code);
-  Page<PaymentMethod> search(String q, Boolean active, Pageable pageable);
+
+  // Per-company operations
+  Optional<PaymentMethod> findByCodeAndCompany(String code, UUID companyId);
+  boolean existsByCodeAndCompany(String code, UUID companyId);
+  Page<PaymentMethod> search(String q, Boolean active, UUID companyId, Pageable pageable);
+
   PaymentMethod save(PaymentMethod paymentMethod);
   Optional<PaymentMethod> findById(UUID id);
 }

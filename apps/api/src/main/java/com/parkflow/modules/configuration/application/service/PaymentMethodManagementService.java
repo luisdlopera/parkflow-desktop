@@ -26,8 +26,8 @@ public class PaymentMethodManagementService implements PaymentMethodUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public SettingsPageResponse<PaymentMethodResponse> list(String q, Boolean active, Pageable pageable) {
-    Page<PaymentMethod> page = paymentMethodRepository.search(normalizeQuery(q), active, pageable);
+  public SettingsPageResponse<PaymentMethodResponse> list(String q, Boolean active, UUID companyId, Pageable pageable) {
+    Page<PaymentMethod> page = paymentMethodRepository.search(normalizeQuery(q), active, companyId, pageable);
     return SettingsPageResponse.of(page.map(this::toResponse));
   }
 
@@ -39,12 +39,13 @@ public class PaymentMethodManagementService implements PaymentMethodUseCase {
 
   @Override
   @Transactional
-  public PaymentMethodResponse create(PaymentMethodRequest req) {
+  public PaymentMethodResponse create(PaymentMethodRequest req, UUID companyId) {
     String code = req.code().trim().toUpperCase();
-    if (paymentMethodRepository.existsByCode(code)) {
+    if (paymentMethodRepository.existsByCodeAndCompany(code, companyId)) {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe un método de pago con este código");
     }
     PaymentMethod pm = new PaymentMethod();
+    pm.setCompanyId(companyId);
     pm.setCode(code);
     pm.setName(req.name().trim());
     pm.setRequiresReference(req.requiresReference());
@@ -62,10 +63,10 @@ public class PaymentMethodManagementService implements PaymentMethodUseCase {
 
   @Override
   @Transactional
-  public PaymentMethodResponse update(UUID id, PaymentMethodRequest req) {
+  public PaymentMethodResponse update(UUID id, PaymentMethodRequest req, UUID companyId) {
     PaymentMethod pm = findById(id);
     String code = req.code().trim().toUpperCase();
-    if (!pm.getCode().equalsIgnoreCase(code) && paymentMethodRepository.existsByCode(code)) {
+    if (!pm.getCode().equalsIgnoreCase(code) && paymentMethodRepository.existsByCodeAndCompany(code, companyId)) {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe un método de pago con este código");
     }
     pm.setCode(code);
@@ -83,7 +84,7 @@ public class PaymentMethodManagementService implements PaymentMethodUseCase {
 
   @Override
   @Transactional
-  public PaymentMethodResponse patchStatus(UUID id, boolean active) {
+  public PaymentMethodResponse patchStatus(UUID id, boolean active, UUID companyId) {
     PaymentMethod pm = findById(id);
     pm.setActive(active);
     return toResponse(paymentMethodRepository.save(pm));

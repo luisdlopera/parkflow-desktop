@@ -116,7 +116,6 @@ export function useVehicleExit() {
   const availablePaymentMethods = useMemo(() => {
     if (methodsLoading || !dbMethodsData) return [];
     return dbMethodsData.content
-      .filter((m) => hasPaymentMethod(m.code))
       .map((m) => {
         let tone = "bg-slate-700 hover:bg-slate-800 border border-default-200";
         if (m.code === "CASH") tone = "bg-emerald-500 hover:bg-emerald-600 border border-default-200";

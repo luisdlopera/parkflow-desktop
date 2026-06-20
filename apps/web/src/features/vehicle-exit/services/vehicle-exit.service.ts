@@ -9,6 +9,8 @@ import type { PaymentMethodCode } from "@/lib/payment-method-catalog";
 import type { SplitPaymentRow } from "../hooks/useSplitPayment";
 
 import { opsBase } from "@/lib/api/config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 const apiBase = () => opsBase();
 
 export async function lookupActiveSession(
@@ -20,7 +22,7 @@ export async function lookupActiveSession(
   if (ticketNumber) params.set("ticketNumber", ticketNumber);
   if (plate) params.set("plate", plate);
   if (agreementCode) params.set("agreementCode", agreementCode);
-  return fetch(`${apiBase()}/sessions/active?${params.toString()}`, {
+  return fetchWithCredentials(`${apiBase()}/sessions/active?${params.toString()}`, {
     headers: await buildApiHeaders(),
     cache: "no-store",
   });
@@ -28,7 +30,7 @@ export async function lookupActiveSession(
 
 export async function processExit(body: Record<string, unknown>): Promise<Response> {
   const validated = validatePayloadOrThrow(operationExitRequestSchema, body);
-  return fetch(`${apiBase()}/exits`, {
+  return fetchWithCredentials(`${apiBase()}/exits`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(validated),
@@ -47,7 +49,7 @@ export async function reprintExitTicket(
     operatorUserId,
     reason,
   });
-  return fetch(`${apiBase()}/tickets/reprint`, {
+  return fetchWithCredentials(`${apiBase()}/tickets/reprint`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(body),
@@ -68,7 +70,7 @@ export async function reportLostTicket(
     operatorUserId,
     reason,
   });
-  return fetch(`${apiBase()}/tickets/lost`, {
+  return fetchWithCredentials(`${apiBase()}/tickets/lost`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(body),

@@ -1,5 +1,5 @@
 import { apiFetch, cfgBase, buildApiHeaders, hdr } from "./_shared";
-import { vehicleTypeSchema } from "@/modules/settings/schemas";
+import { vehicleTypeSchema } from "@/lib/schemas/config.schemas";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 
 export type MasterVehicleTypeRow = {

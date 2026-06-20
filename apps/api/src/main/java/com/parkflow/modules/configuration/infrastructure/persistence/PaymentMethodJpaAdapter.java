@@ -22,17 +22,27 @@ public class PaymentMethodJpaAdapter implements PaymentMethodPort {
 
   @Override
   public Optional<PaymentMethod> findByCode(String code) {
-    return jpaRepository.findByCode(code);
+    return jpaRepository.findByCodeAndCompanyIdIsNull(code);
   }
 
   @Override
   public boolean existsByCode(String code) {
-    return jpaRepository.existsByCode(code);
+    return jpaRepository.existsByCodeAndCompanyIdIsNull(code);
   }
 
   @Override
-  public Page<PaymentMethod> search(String q, Boolean active, Pageable pageable) {
-    return jpaRepository.search(q, active, pageable);
+  public Optional<PaymentMethod> findByCodeAndCompany(String code, UUID companyId) {
+    return jpaRepository.findByCodeAndCompanyId(code, companyId);
+  }
+
+  @Override
+  public boolean existsByCodeAndCompany(String code, UUID companyId) {
+    return jpaRepository.existsByCodeAndCompanyId(code, companyId);
+  }
+
+  @Override
+  public Page<PaymentMethod> search(String q, Boolean active, UUID companyId, Pageable pageable) {
+    return jpaRepository.searchByCompany(q, active, companyId, pageable);
   }
 
   @Override
@@ -47,14 +57,19 @@ public class PaymentMethodJpaAdapter implements PaymentMethodPort {
 
   @Repository
   interface PaymentMethodJpaRepository extends JpaRepository<PaymentMethod, UUID> {
-    Optional<PaymentMethod> findByCode(String code);
+    Optional<PaymentMethod> findByCodeAndCompanyIdIsNull(String code);
 
-    boolean existsByCode(String code);
+    boolean existsByCodeAndCompanyIdIsNull(String code);
 
-    @Query("SELECT p FROM PaymentMethod p WHERE (:q IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(p.code) LIKE LOWER(CONCAT('%', :q, '%'))) AND (:active IS NULL OR p.isActive = :active)")
-    Page<PaymentMethod> search(
+    Optional<PaymentMethod> findByCodeAndCompanyId(String code, UUID companyId);
+
+    boolean existsByCodeAndCompanyId(String code, UUID companyId);
+
+    @Query("SELECT p FROM PaymentMethod p WHERE p.companyId = :companyId AND (:q IS NULL OR :q = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(p.code) LIKE LOWER(CONCAT('%', :q, '%'))) AND (:active IS NULL OR p.isActive = :active)")
+    Page<PaymentMethod> searchByCompany(
         @Param("q") String q,
         @Param("active") Boolean active,
+        @Param("companyId") UUID companyId,
         Pageable pageable);
   }
 }

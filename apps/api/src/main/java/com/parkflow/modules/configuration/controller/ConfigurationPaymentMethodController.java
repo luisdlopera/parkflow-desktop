@@ -1,5 +1,6 @@
 package com.parkflow.modules.configuration.controller;
 
+import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.configuration.application.port.in.PaymentMethodUseCase;
 import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
 import com.parkflow.modules.configuration.dto.PaymentMethodResponse;
@@ -26,7 +27,8 @@ public class ConfigurationPaymentMethodController {
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,
       Pageable pageable) {
-    return ResponseEntity.ok(paymentMethodUseCase.list(q, active, pageable));
+    UUID companyId = TenantContext.getTenantId();
+    return ResponseEntity.ok(paymentMethodUseCase.list(q, active, companyId, pageable));
   }
 
   @GetMapping("/{id}")
@@ -38,7 +40,8 @@ public class ConfigurationPaymentMethodController {
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<PaymentMethodResponse> create(@Valid @RequestBody PaymentMethodRequest req) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(paymentMethodUseCase.create(req));
+    UUID companyId = TenantContext.getTenantId();
+    return ResponseEntity.status(HttpStatus.CREATED).body(paymentMethodUseCase.create(req, companyId));
   }
 
   @PutMapping("/{id}")
@@ -46,7 +49,8 @@ public class ConfigurationPaymentMethodController {
   public ResponseEntity<PaymentMethodResponse> update(
       @PathVariable UUID id,
       @Valid @RequestBody PaymentMethodRequest req) {
-    return ResponseEntity.ok(paymentMethodUseCase.update(id, req));
+    UUID companyId = TenantContext.getTenantId();
+    return ResponseEntity.ok(paymentMethodUseCase.update(id, req, companyId));
   }
 
   @PatchMapping("/{id}/status")
@@ -54,6 +58,7 @@ public class ConfigurationPaymentMethodController {
   public ResponseEntity<PaymentMethodResponse> patchStatus(
       @PathVariable UUID id,
       @RequestParam boolean active) {
-    return ResponseEntity.ok(paymentMethodUseCase.patchStatus(id, active));
+    UUID companyId = TenantContext.getTenantId();
+    return ResponseEntity.ok(paymentMethodUseCase.patchStatus(id, active, companyId));
   }
 }

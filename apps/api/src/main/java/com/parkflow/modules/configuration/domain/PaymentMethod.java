@@ -9,7 +9,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "payment_methods")
+@Table(name = "payment_methods",
+    uniqueConstraints = @jakarta.persistence.UniqueConstraint(columnNames = {"code", "company_id"}))
 public class PaymentMethod {
 
   @Id
@@ -19,7 +20,7 @@ public class PaymentMethod {
   @Column(name = "company_id")
   private UUID companyId;
 
-  @Column(nullable = false, unique = true, length = 20)
+  @Column(nullable = false, length = 20)
   private String code;
 
   @Column(nullable = false, length = 100)
