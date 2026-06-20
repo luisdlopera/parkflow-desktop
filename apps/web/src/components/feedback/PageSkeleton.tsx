@@ -1,19 +1,22 @@
 "use client";
 
+import { AnimatedSkeletonLoader } from "@/components/animations/AnimatedSkeletonLoader";
+
 export function PageSkeleton() {
   return (
-    <div className="flex flex-col gap-6 p-6 animate-pulse">
-      <div className="h-8 w-48 rounded-lg bg-slate-200 dark:bg-slate-700" />
-      <div className="flex gap-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-24 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800" />
-        ))}
+    <div className="flex flex-col gap-6 p-6">
+      {/* Title skeleton */}
+      <AnimatedSkeletonLoader count={1} height="h-8" className="w-48" />
+
+      {/* Stats cards skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <AnimatedSkeletonLoader count={3} height="h-24" variant="card" />
       </div>
+
+      {/* Table skeleton */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="h-12 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700" />
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-14 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 last:border-0" />
-        ))}
+        <div className="h-12 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700 animate-shimmer" />
+        <AnimatedSkeletonLoader count={5} height="h-14" variant="table" />
       </div>
     </div>
   );

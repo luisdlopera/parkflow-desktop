@@ -19,8 +19,8 @@ public class Payment {
   @Column(name = "company_id", nullable = false)
   private UUID companyId;
 
-  @OneToOne(optional = false)
-  @JoinColumn(name = "session_id", unique = true)
+  @ManyToOne(optional = false)
+  @JoinColumn(name = "session_id")
   private ParkingSession session;
 
   @Enumerated(EnumType.STRING)

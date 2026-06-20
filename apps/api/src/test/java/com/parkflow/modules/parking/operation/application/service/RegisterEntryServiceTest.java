@@ -156,12 +156,55 @@ class RegisterEntryServiceTest {
     });
 
     EntryRequest req = new EntryRequest(key, "ABC", "CAR", "CO", null, false, null, null, null, null,
-        "", null, null, null, null, "obs", null, "cond", Collections.emptyList(), Collections.emptyList());
+        "", null, null, null, null, "<script>alert(1)</script>obs", null, "cond", Collections.emptyList(), Collections.emptyList());
 
     var res = service.execute(req);
 
     assertThat(res).isNotNull();
-    verify(parkingSessionRepository).save(any());
+    verify(parkingSessionRepository).save(org.mockito.ArgumentMatchers.argThat(s -> {
+       // Should be sanitized (no script tags)
+       return s.getEntryNotes() != null && s.getEntryNotes().contains("obs") && !s.getEntryNotes().contains("<script>");
+    }));
     verify(operationIdempotencyRepository).save(any());
+  }
+
+  @Test
+  void executeSupportsVirtualPlates() {
+    String key = "idem-virtual";
+    Mockito.lenient().when(operationIdempotencyRepository.findByIdempotencyKey(key)).thenReturn(Optional.empty());
+
+    var vehicleTypeConfig = new com.parkflow.modules.settings.domain.MasterVehicleType();
+    vehicleTypeConfig.setCode("BICYCLE"); vehicleTypeConfig.setActive(true); vehicleTypeConfig.setRequiresPlate(false);
+    Mockito.lenient().when(entryValidation.requireActiveVehicleType(anyString())).thenReturn(vehicleTypeConfig);
+    
+    // Virtual plates are assigned by the service and start with NP- or SIN-
+    Mockito.lenient().when(entryValidation.validateAndNormalizePlate(anyString(), anyString(), anyString()))
+        .thenReturn(new PlateValidationResult(true, "SIN-123", null));
+
+    Rate r = new Rate(); r.setName("R");
+    Mockito.lenient().when(entryValidation.resolveRate(any(), anyString(), any(), any(), any())).thenReturn(r);
+
+    Vehicle vehicle = new Vehicle(); vehicle.setType("BICYCLE");
+    Mockito.lenient().when(vehicleResolver.resolveAndSave(anyString(), anyString(), any())).thenReturn(vehicle);
+
+    com.parkflow.modules.auth.domain.AppUser sys = new com.parkflow.modules.auth.domain.AppUser();
+    sys.setName("system");
+    Mockito.lenient().when(appUserRepository.findGlobalByEmail("system@parkflow.local")).thenReturn(Optional.of(sys));
+
+    Mockito.lenient().when(parkingSessionRepository.save(any())).thenAnswer(inv -> {
+      ParkingSession s = inv.getArgument(0);
+      s.setId(UUID.randomUUID());
+      return s;
+    });
+
+    EntryRequest req = new EntryRequest(key, null, "BICYCLE", "CO", null, true, "no plate", null, null, null,
+        "", null, null, null, null, null, null, "cond", Collections.emptyList(), Collections.emptyList());
+
+    var res = service.execute(req);
+
+    assertThat(res).isNotNull();
+    verify(parkingSessionRepository).save(org.mockito.ArgumentMatchers.argThat(s -> {
+       return s.getPlate().startsWith("SIN-");
+    }));
   }
 }

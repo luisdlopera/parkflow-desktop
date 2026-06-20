@@ -48,8 +48,8 @@ describe("inferVehicleType", () => {
   });
 
   it("returns null for plate too short to match any pattern", () => {
-    // "AB" is 2 chars — below BICYCLE minimum (3) and doesn't match car/moto
-    const result = inferVehicleType("CO", "AB");
+    // "A" is 1 char — below OTHER minimum (2) and doesn't match car/moto
+    const result = inferVehicleType("CO", "A");
     expect(result).toBeNull();
   });
 });

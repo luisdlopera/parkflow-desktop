@@ -39,7 +39,7 @@ export default function KpiCard({
   };
 
   return (
-    <div className={`surface rounded-2xl p-4 sm:p-5 border transition-all hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 ${getStatusColor()} relative`}>
+    <div className={`surface rounded-2xl p-4 sm:p-5 border transition-all duration-300 ease-out hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 hover:-translate-y-1 ${getStatusColor()} relative`}>
       {status === "critical" && (
         <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-md bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-200 text-[10px] font-bold uppercase tracking-wide">
           <span className="text-sm">●</span> Crítico

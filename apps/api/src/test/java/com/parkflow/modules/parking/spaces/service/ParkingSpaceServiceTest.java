@@ -60,7 +60,7 @@ class ParkingSpaceServiceTest {
     space.setId(spaceId);
     space.setCompanyId(companyId);
     space.setStatus(ParkingSpaceStatus.ACTIVE);
-    when(parkingSpaceRepository.findByIdAndCompanyId(spaceId, companyId)).thenReturn(Optional.of(space));
+    when(parkingSpaceRepository.findByIdAndCompanyIdForUpdate(spaceId, companyId)).thenReturn(Optional.of(space));
     when(parkingSpaceAssignmentRepository.existsByParkingSpace_IdAndReleasedAtIsNull(spaceId)).thenReturn(true);
 
     assertThatThrownBy(() -> service.assignSpecificSpace(companyId, spaceId, mock(ParkingSession.class)))

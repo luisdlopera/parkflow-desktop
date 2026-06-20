@@ -103,18 +103,18 @@ export default function DashboardPageClient() {
       )}
 
       {/* Header Section */}
-      <section className="space-y-4" data-testid="summary-loaded">
+      <section className="space-y-6" data-testid="summary-loaded">
         <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2 flex-1">
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 font-semibold">Panel principal</p>
-            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100">Vision general del parqueadero</h1>
+          <div className="space-y-3 flex-1">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 font-bold">Panel principal</p>
+            <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 leading-tight">Vision general del parqueadero</h1>
             {summaryError ? (
-              <p className="text-sm text-amber-800 dark:text-amber-200">{summaryError}</p>
+              <p className="text-sm text-red-600 dark:text-red-400 font-medium">{summaryError}</p>
             ) : null}
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
             <Spinner size="sm" color="current" />
-            <span>{formatLastUpdated(lastUpdated)}</span>
+            <span className="font-medium">{formatLastUpdated(lastUpdated)}</span>
           </div>
         </div>
 
@@ -150,6 +150,7 @@ export default function DashboardPageClient() {
             color="default"
             onPress={() => void refreshAll()}
             isLoading={summaryLoading}
+            className="hover:scale-105 active:scale-95 transition-transform duration-200"
           >
             Actualizar ahora
           </Button>
@@ -182,12 +183,12 @@ export default function DashboardPageClient() {
             ].map(([label, value]) => {
               const isCritical = String(value) === "CRITICAL";
               const isWarning = String(value) === "WARNING";
-              const statusBg = isCritical ? "border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/20"
-                : isWarning ? "border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-950/20"
-                : "border-slate-200 dark:border-slate-700";
+              const statusBg = isCritical ? "border-2 border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/40"
+                : isWarning ? "border-2 border-amber-400 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40"
+                : "border border-slate-200 dark:border-slate-700";
 
               return (
-                <div key={label} className={`surface rounded-2xl p-5 border transition-all ${statusBg}`}>
+                <div key={label} className={`surface rounded-2xl p-5 border transition-all duration-300 hover:border-slate-300 dark:hover:border-slate-600 ${statusBg}`}>
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">{label}</p>
                   <p className={`text-xl font-bold ${tone(String(value))}`}>{value ?? "—"}</p>
                 </div>
@@ -196,29 +197,29 @@ export default function DashboardPageClient() {
           </div>
 
           {/* Operational details card */}
-          <div className="space-y-4 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-slate-50/30 dark:bg-slate-900/20">
+          <div className="space-y-4 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-slate-50/50 dark:bg-slate-900/30 transition-all duration-300">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Heartbeat</p>
-                <p className="text-slate-900 dark:text-slate-100">{operational?.lastHeartbeat ? new Date(operational.lastHeartbeat).toLocaleString("es-CO") : "Sin datos"}</p>
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Heartbeat</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{operational?.lastHeartbeat ? new Date(operational.lastHeartbeat).toLocaleString("es-CO") : "Sin datos"}</p>
               </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Último Sync</p>
-                <p className="text-slate-900 dark:text-slate-100">{operational?.lastSuccessfulSync ? new Date(operational.lastSuccessfulSync).toLocaleString("es-CO") : "Sin datos"}</p>
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Último Sync</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{operational?.lastSuccessfulSync ? new Date(operational.lastSuccessfulSync).toLocaleString("es-CO") : "Sin datos"}</p>
               </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Cajas Abiertas</p>
-                <p className="text-slate-900 dark:text-slate-100">{operational?.openCashRegisters ?? "—"}</p>
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Cajas Abiertas</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{operational?.openCashRegisters ?? "—"}</p>
               </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Fallos Detectados</p>
-                <p className="text-slate-900 dark:text-slate-100">{operational?.failedEvents ?? "—"}</p>
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Fallos Detectados</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{operational?.failedEvents ?? "—"}</p>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" color="default" onPress={() => { executeOperationalAction("retry-sync").catch(() => {}); }}>Reintentar Sync</Button>
-              <Button size="sm" variant="outline" color="default" onPress={() => { executeOperationalAction("test-printer").catch(() => {}); }}>Probar Impresora</Button>
+              <Button size="sm" variant="outline" color="default" onPress={() => { executeOperationalAction("retry-sync").catch(() => {}); }} className="hover:scale-105 active:scale-95 transition-transform duration-200">Reintentar Sync</Button>
+              <Button size="sm" variant="outline" color="default" onPress={() => { executeOperationalAction("test-printer").catch(() => {}); }} className="hover:scale-105 active:scale-95 transition-transform duration-200">Probar Impresora</Button>
             </div>
 
             {(operational?.recentErrors?.length ?? 0) > 0 && (
@@ -238,8 +239,11 @@ export default function DashboardPageClient() {
       {/* Active Sessions Section */}
       <section className="space-y-6">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Vehículos en Patio</h2>
-          <span className="text-xs text-slate-500 dark:text-slate-400">{activeSessions.length} activos</span>
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Vehículos en Patio</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{activeSessions.length} activos en este momento</p>
+          </div>
+          <span className="inline-flex items-center px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-950/30 border border-brand-200 dark:border-brand-800 text-sm font-semibold text-brand-700 dark:text-brand-300">{activeSessions.length}</span>
         </div>
         {sessionsError ? <p className="text-sm text-amber-800 dark:text-amber-200">{sessionsError}</p> : null}
         <DataTable
