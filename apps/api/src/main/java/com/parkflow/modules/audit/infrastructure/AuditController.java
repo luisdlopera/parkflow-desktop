@@ -21,9 +21,11 @@ import java.util.UUID;
 public class AuditController {
 
     private final AuditQueryService auditQueryService;
+    private final com.parkflow.modules.audit.application.service.AuditExportService auditExportService;
 
-    public AuditController(AuditQueryService auditQueryService) {
+    public AuditController(AuditQueryService auditQueryService, com.parkflow.modules.audit.application.service.AuditExportService auditExportService) {
         this.auditQueryService = auditQueryService;
+        this.auditExportService = auditExportService;
     }
 
     @GetMapping
@@ -52,5 +54,44 @@ public class AuditController {
     public ResponseEntity<Boolean> validateIntegrity(@PathVariable UUID id) {
         boolean isValid = auditQueryService.validateIntegrity(id);
         return ResponseEntity.ok(isValid);
+    }
+
+    @GetMapping("/export")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('AUDITOR')")
+    public ResponseEntity<byte[]> exportAuditEvents(
+            @RequestParam(required = false) String module,
+            @RequestParam(required = false) String action,
+            @RequestParam(required = false) UUID userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime endDate,
+            @RequestParam(defaultValue = "csv") String format) throws Exception {
+        
+        // Use an unpaged request or large page to export. Let's fetch top 10000.
+        Pageable exportPageable = org.springframework.data.domain.PageRequest.of(0, 10000, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "timestampUtc"));
+        Page<AuditEvent> eventsPage = auditQueryService.getAuditEvents(module, action, userId, startDate, endDate, exportPageable);
+        java.util.List<AuditEvent> events = eventsPage.getContent();
+
+        byte[] fileData;
+        String contentType;
+        String extension;
+
+        if ("excel".equalsIgnoreCase(format) || "xlsx".equalsIgnoreCase(format)) {
+            fileData = auditExportService.exportToExcel(events);
+            contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            extension = "xlsx";
+        } else if ("pdf".equalsIgnoreCase(format)) {
+            fileData = auditExportService.exportToPdf(events);
+            contentType = "application/pdf";
+            extension = "pdf";
+        } else {
+            fileData = auditExportService.exportToCsv(events);
+            contentType = "text/csv";
+            extension = "csv";
+        }
+
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"auditoria." + extension + "\"")
+                .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
+                .body(fileData);
     }
 }

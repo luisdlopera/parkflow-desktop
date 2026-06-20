@@ -35,6 +35,11 @@ public class AuditQueryService {
         
         Specification<AuditEvent> spec = Specification.where(null);
         
+        UUID tenantId = com.parkflow.modules.auth.security.TenantContext.getTenantId();
+        if (tenantId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("branchId"), tenantId));
+        }
+        
         if (module != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("module"), module));
         }
@@ -55,7 +60,9 @@ public class AuditQueryService {
     }
 
     public AuditEvent getAuditEventDetails(UUID id) {
+        UUID tenantId = com.parkflow.modules.auth.security.TenantContext.getTenantId();
         return repository.findById(id)
+                .filter(event -> tenantId == null || tenantId.equals(event.getBranchId()))
                 .orElseThrow(() -> new RuntimeException("Audit event not found"));
     }
 

@@ -73,9 +73,13 @@ public class AuditEventListener {
             StringBuilder dataToHash = new StringBuilder();
             dataToHash.append(event.getCorrelationId())
                       .append(event.getTimestampUtc())
+                      .append(event.getUserId() != null ? event.getUserId() : "")
                       .append(event.getModule())
                       .append(event.getAction())
+                      .append(event.getEntityId() != null ? event.getEntityId() : "")
                       .append(event.getStatus())
+                      .append(event.getOldData() != null ? event.getOldData() : "")
+                      .append(event.getNewData() != null ? event.getNewData() : "")
                       .append(event.getPreviousHash() != null ? event.getPreviousHash() : "");
 
             byte[] hashBytes = digest.digest(dataToHash.toString().getBytes(StandardCharsets.UTF_8));

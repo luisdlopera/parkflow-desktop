@@ -36,10 +36,25 @@ public class AuditAspect {
 
         Object result = null;
         String status = "EXITOSA";
-        Map<String, Object> oldData = new HashMap<>(); // Normally fetched before execution if possible
+        Map<String, Object> oldData = new HashMap<>(); // Store request arguments
         Map<String, Object> newData = new HashMap<>();
 
         try {
+            // Capture arguments
+            Object[] args = joinPoint.getArgs();
+            if (args != null && args.length > 0) {
+                for (int i = 0; i < args.length; i++) {
+                    if (args[i] != null && !args[i].getClass().getName().startsWith("jakarta.servlet") 
+                            && !args[i].getClass().getName().startsWith("org.springframework")) {
+                        try {
+                            oldData.put("arg" + i, objectMapper.convertValue(args[i], Map.class));
+                        } catch (Exception e) {
+                            oldData.put("arg" + i, args[i].toString());
+                        }
+                    }
+                }
+            }
+
             // Proceed with original method execution
             result = joinPoint.proceed();
             
@@ -55,6 +70,7 @@ public class AuditAspect {
             return result;
         } catch (Throwable ex) {
             status = "FALLIDA";
+            oldData.put("error", ex.getMessage());
             throw ex;
         } finally {
             long executionTime = System.currentTimeMillis() - startTime;
@@ -64,7 +80,13 @@ public class AuditAspect {
                 context = AuditContextHolder.AuditContext.builder()
                         .correlationId("SYSTEM")
                         .username("SYSTEM")
+                        .branchId(com.parkflow.modules.auth.security.TenantContext.getTenantId())
                         .build();
+            }
+
+            java.util.UUID branchId = context.getBranchId();
+            if (branchId == null) {
+                branchId = com.parkflow.modules.auth.security.TenantContext.getTenantId();
             }
 
             // Create Event
@@ -73,7 +95,7 @@ public class AuditAspect {
                     .userId(context.getUserId())
                     .username(context.getUsername())
                     .role(context.getRole())
-                    .branchId(context.getBranchId())
+                    .branchId(branchId)
                     .ipAddress(context.getIpAddress())
                     .userAgent(context.getUserAgent())
                     .device(context.getDevice())
