@@ -13,7 +13,7 @@ spring:
     # Use PARKFLOW_DB_PORT from environment (defaults to 6021 per convention)
     url: ${DATABASE_URL:jdbc:postgresql://localhost:${PARKFLOW_DB_PORT:6021}/parkflow_dev}
     username: ${POSTGRES_USER:parkflow}
-    password: ${POSTGRES_PASSWORD:parkflow}
+    password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate

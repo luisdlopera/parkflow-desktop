@@ -10,7 +10,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/parkflow}
     username: ${DB_USERNAME:parkflow}
-    password: ${DB_PASSWORD:parkflow}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
