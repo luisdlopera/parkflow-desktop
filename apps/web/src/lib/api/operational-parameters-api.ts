@@ -1,7 +1,7 @@
 import { apiFetch, cfgBase, buildApiHeaders, hdr } from "./_shared";
-import { operationalParameterSchema } from "@/modules/settings/schemas";
+import { operationalParameterSchema } from "@/lib/schemas/config.schemas";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
-import type { OperationalParameterRow } from "@/modules/settings/types";
+import type { OperationalParameterRow } from "@/lib/types/settings.types";
 
 export type { OperationalParameterRow };
 

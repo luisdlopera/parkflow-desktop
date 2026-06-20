@@ -1,7 +1,9 @@
 package com.parkflow.modules.onboarding.application.service;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
+import com.parkflow.modules.licensing.domain.repository.CompanyModulePort;
 import com.parkflow.modules.licensing.enums.PlanType;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +18,7 @@ class FeatureAccessServiceUnitTest {
 
   @BeforeEach
   void setUp() {
-    service = new FeatureAccessService();
+    service = new FeatureAccessService(mock(CompanyModulePort.class));
   }
 
   @Test

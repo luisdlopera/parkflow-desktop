@@ -11,6 +11,7 @@ import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
 import com.parkflow.modules.auth.domain.repository.AuthorizedDevicePort;
 import com.parkflow.modules.auth.dto.LoginRequest;
 import com.parkflow.modules.auth.dto.LoginResponse;
+import com.parkflow.modules.auth.dto.LoginResult;
 import com.parkflow.modules.auth.security.JwtTokenService;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.RolePermissions;
@@ -46,7 +47,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
 
   @Override
   @Transactional
-  public LoginResponse login(LoginRequest request) {
+  public LoginResult login(LoginRequest request) {
     String email = request.email().trim();
     String deviceId = request.deviceId();
 
@@ -83,7 +84,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
     user.setLastAccessAt(OffsetDateTime.now());
     appUserRepository.save(user);
 
-    AuthorizedDevice device = upsertDevice(request);
+    AuthorizedDevice device = upsertDevice(request, user);
     if (!device.isAuthorized()) {
       authAuditService.log(
           AuthAuditAction.LOGIN_FAILED,
@@ -127,14 +128,16 @@ public class LoginUseCaseImpl implements LoginUseCase {
 
     boolean onboardingCompleted = authCompanyPort.isOnboardingCompleted(user.getCompanyId());
 
-    return new LoginResponse(
+    return new LoginResult(
+        new LoginResponse(
+            responseAssembler.toUser(user, onboardingCompleted),
+            responseAssembler.toSession(session),
+            responseAssembler.toDevice(device),
+            responseAssembler.offlineLease(session, request.offlineRequestedHours(), defaultOfflineLeaseHours)
+        ),
         accessToken,
-        refreshToken,
-        "Bearer",
-        responseAssembler.toUser(user, onboardingCompleted),
-        responseAssembler.toSession(session),
-        responseAssembler.toDevice(device),
-        responseAssembler.offlineLease(session, request.offlineRequestedHours(), defaultOfflineLeaseHours));
+        refreshToken
+    );
   }
 
   private String maskEmail(String email) {
@@ -163,7 +166,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
         HttpStatus.UNAUTHORIZED, "AUTH_INVALID_CREDENTIALS", "Credenciales invalidas");
   }
 
-  private AuthorizedDevice upsertDevice(LoginRequest request) {
+  private AuthorizedDevice upsertDevice(LoginRequest request, AppUser user) {
     AuthorizedDevice device =
         authorizedDeviceRepository.findByDeviceId(request.deviceId()).orElseGet(AuthorizedDevice::new);
     device.setDeviceId(request.deviceId());
@@ -173,6 +176,9 @@ public class LoginUseCaseImpl implements LoginUseCase {
     device.setLastSeenAt(OffsetDateTime.now());
     if (device.getId() == null) {
       device.setAuthorized(true);
+    }
+    if (user.getCompanyId() != null) {
+      device.setCompanyId(user.getCompanyId());
     }
     return authorizedDeviceRepository.save(device);
   }

@@ -1,5 +1,7 @@
 import { buildApiHeaders } from "@/lib/api";
 import { opsBase, apiBase } from "@/lib/api/config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 export function getOperationsApiBase(): string {
   return opsBase();
@@ -62,7 +64,7 @@ export async function fetchActiveSessions(params?: GetActiveSessionsQuery): Prom
 
   const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
   
-  const res = await fetch(`${getOperationsApiBase().replace(/\/$/, "")}/sessions/active-list${queryString}`, {
+  const res = await fetchWithCredentials(`${getOperationsApiBase().replace(/\/$/, "")}/sessions/active-list${queryString}`, {
     headers: await buildApiHeaders()
   });
   if (!res.ok) {
@@ -73,7 +75,7 @@ export async function fetchActiveSessions(params?: GetActiveSessionsQuery): Prom
 }
 
 export async function fetchParkingSummary(): Promise<ParkingSummaryDto> {
-  const res = await fetch(`${getCoreApiBase().replace(/\/$/, "")}/parking-spaces/summary`, {
+  const res = await fetchWithCredentials(`${getCoreApiBase().replace(/\/$/, "")}/parking-spaces/summary`, {
     headers: await buildApiHeaders()
   });
   if (!res.ok) {
@@ -84,7 +86,7 @@ export async function fetchParkingSummary(): Promise<ParkingSummaryDto> {
 }
 
 export async function fetchParkingSpaces(): Promise<ParkingSpaceDto[]> {
-  const res = await fetch(`${getCoreApiBase().replace(/\/$/, "")}/parking-spaces`, {
+  const res = await fetchWithCredentials(`${getCoreApiBase().replace(/\/$/, "")}/parking-spaces`, {
     headers: await buildApiHeaders()
   });
   if (!res.ok) {

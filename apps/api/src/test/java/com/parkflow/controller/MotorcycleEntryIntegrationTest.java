@@ -77,7 +77,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isCreated())
@@ -106,13 +106,13 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """;
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(baseRequest.formatted("moto-dup-" + System.currentTimeMillis(), plate, motorcycleRateId, adminUserId)))
             .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(baseRequest.formatted("moto-dup-2" + System.currentTimeMillis(), plate, motorcycleRateId, adminUserId)))
             .andExpect(status().isConflict())
@@ -141,13 +141,13 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """;
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(baseRequest.formatted("moto-cap-" + System.currentTimeMillis(), "CAP12M", motorcycleRateId, adminUserId)))
             .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(baseRequest.formatted("moto-cap-2" + System.currentTimeMillis(), "CAP13M", motorcycleRateId, adminUserId)))
             .andExpect(status().isConflict())
@@ -177,7 +177,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isCreated())
@@ -201,7 +201,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isBadRequest())
@@ -225,7 +225,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isBadRequest())
@@ -249,7 +249,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isBadRequest())
@@ -273,7 +273,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isCreated())
@@ -301,7 +301,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isBadRequest());
@@ -323,7 +323,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isBadRequest());
@@ -346,7 +346,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isBadRequest());
@@ -368,7 +368,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isCreated())
@@ -393,7 +393,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isBadRequest());
@@ -416,7 +416,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isBadRequest());
@@ -439,7 +439,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isBadRequest());
@@ -466,7 +466,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), rateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isBadRequest())
@@ -494,7 +494,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isForbidden())
@@ -519,7 +519,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), plate, motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest))
             .andExpect(status().isCreated());

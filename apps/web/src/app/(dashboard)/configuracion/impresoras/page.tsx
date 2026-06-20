@@ -17,8 +17,8 @@ import {
   patchConfigurationPrinterStatus,
   fetchConfigurationSites,
 } from "@/lib/settings-api";
-import { printerSchema, type PrinterSchema } from "@/modules/settings/schemas";
-import type { ParkingSiteRow, PrinterRow } from "@/modules/settings/types";
+import { printerSchema, type PrinterSchema } from "@/lib/schemas/config.schemas";
+import type { ParkingSiteRow, PrinterRow } from "@/lib/types/settings.types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/ui/FormDrawer";

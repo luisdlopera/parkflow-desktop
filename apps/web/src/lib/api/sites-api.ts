@@ -1,7 +1,7 @@
 import { apiFetch, cfgBase, apiV1Base, buildApiHeaders, hdr, type SettingsPage } from "./_shared";
-import { parkingSiteSchema } from "@/modules/settings/schemas";
+import { parkingSiteSchema } from "@/lib/schemas/config.schemas";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
-import type { ParkingSiteRow } from "@/modules/settings/types";
+import type { ParkingSiteRow } from "@/lib/types/settings.types";
 
 export type { ParkingSiteRow };
 

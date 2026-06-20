@@ -19,8 +19,8 @@ import {
   fetchUsers,
   type UserAdminRow,
 } from "@/lib/settings-api";
-import { cashRegisterSchema, type CashRegisterSchema } from "@/modules/settings/schemas";
-import type { CashRegisterRow, ParkingSiteRow, PrinterRow } from "@/modules/settings/types";
+import { cashRegisterSchema, type CashRegisterSchema } from "@/lib/schemas/config.schemas";
+import type { CashRegisterRow, ParkingSiteRow, PrinterRow } from "@/lib/types/settings.types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { FormDrawer } from "@/components/ui/FormDrawer";
 import { StatusToggle } from "@/components/settings/StatusToggle";

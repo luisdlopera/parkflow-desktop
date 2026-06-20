@@ -9,12 +9,19 @@ import com.parkflow.modules.settings.dto.VehicleTypeRequest;
 import com.parkflow.modules.settings.dto.VehicleTypeResponse;
 import com.parkflow.modules.settings.domain.repository.CompanyVehicleTypePort;
 import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.parkflow.config.CacheConfig.VEHICLE_TYPES_ALL;
+import static com.parkflow.config.CacheConfig.VEHICLE_TYPES_COMPANY;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -31,6 +38,7 @@ public class SettingsVehicleTypeService implements VehicleTypeUseCase {
 
     // ───── Global methods (master_vehicle_type) ─────
 
+    @Cacheable(VEHICLE_TYPES_ALL)
     @Transactional(readOnly = true)
     public List<VehicleTypeResponse> listAll() {
         return repository.findAllByOrderByDisplayOrderAscNameAsc().stream()
@@ -38,6 +46,7 @@ public class SettingsVehicleTypeService implements VehicleTypeUseCase {
             .toList();
     }
 
+    @CacheEvict(value = VEHICLE_TYPES_ALL, allEntries = true)
     @Transactional
     public VehicleTypeResponse create(VehicleTypeRequest req) {
         Objects.requireNonNull(req, "req");
@@ -54,6 +63,7 @@ public class SettingsVehicleTypeService implements VehicleTypeUseCase {
         return toMasterResponse(type);
     }
 
+    @CacheEvict(value = VEHICLE_TYPES_ALL, allEntries = true)
     @Transactional
     public VehicleTypeResponse update(UUID id, VehicleTypeRequest req) {
         Objects.requireNonNull(id, "id");
@@ -76,6 +86,7 @@ public class SettingsVehicleTypeService implements VehicleTypeUseCase {
         return toMasterResponse(type);
     }
 
+    @CacheEvict(value = VEHICLE_TYPES_ALL, allEntries = true)
     @Transactional
     public void patchStatus(UUID id, boolean active) {
         Objects.requireNonNull(id, "id");
@@ -86,6 +97,7 @@ public class SettingsVehicleTypeService implements VehicleTypeUseCase {
         repository.save(type);
     }
 
+    @CacheEvict(value = VEHICLE_TYPES_ALL, allEntries = true)
     @Transactional
     public void delete(UUID id) {
         MasterVehicleType type = repository.findById(id)
@@ -97,14 +109,23 @@ public class SettingsVehicleTypeService implements VehicleTypeUseCase {
 
     // ───── Company-scoped methods (company_vehicle_type) ─────
 
+    @Cacheable(value = VEHICLE_TYPES_COMPANY, key = "#companyId")
     @Transactional(readOnly = true)
     public List<VehicleTypeResponse> listByCompany(UUID companyId) {
         Objects.requireNonNull(companyId, "companyId");
-        return companyVehicleTypePort.findByCompanyId(companyId).stream()
-            .map(this::toCompanyResponse)
+        List<CompanyVehicleType> companyTypes = companyVehicleTypePort.findByCompanyId(companyId);
+        if (companyTypes.isEmpty()) return List.of();
+        // Batch-load all master types to avoid N+1
+        List<UUID> masterIds = companyTypes.stream().map(CompanyVehicleType::getVehicleTypeId).toList();
+        Map<UUID, MasterVehicleType> masterMap = repository.findAllById(masterIds).stream()
+            .collect(java.util.stream.Collectors.toMap(MasterVehicleType::getId, m -> m));
+        return companyTypes.stream()
+            .map(cvType -> toCompanyResponseWithMaster(cvType, masterMap.get(cvType.getVehicleTypeId())))
+            .filter(r -> r != null)
             .toList();
     }
 
+    @CacheEvict(value = VEHICLE_TYPES_COMPANY, key = "#companyId")
     @Transactional
     public VehicleTypeResponse addTypeToCompany(UUID companyId, String code) {
         Objects.requireNonNull(companyId, "companyId");
@@ -229,10 +250,12 @@ public class SettingsVehicleTypeService implements VehicleTypeUseCase {
 
     private VehicleTypeResponse toCompanyResponse(CompanyVehicleType cvType) {
         MasterVehicleType master = repository.findById(cvType.getVehicleTypeId())
-            .orElse(null);
-        if (master == null) {
-            throw new OperationException(HttpStatus.INTERNAL_SERVER_ERROR, "Tipo maestro no encontrado para el vínculo");
-        }
+            .orElseThrow(() -> new OperationException(HttpStatus.INTERNAL_SERVER_ERROR, "Tipo maestro no encontrado para el vínculo"));
+        return toCompanyResponseWithMaster(cvType, master);
+    }
+
+    private VehicleTypeResponse toCompanyResponseWithMaster(CompanyVehicleType cvType, MasterVehicleType master) {
+        if (master == null) return null;
         return new VehicleTypeResponse(
             cvType.getId(),
             master.getCode(),

@@ -27,7 +27,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """.formatted(rateId, adminUserId);
 
         mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andExpect(status().isCreated())
@@ -48,7 +48,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """.formatted(rateId, adminUserId);
 
         mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andExpect(status().isBadRequest());
@@ -71,7 +71,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """.formatted(System.currentTimeMillis(), rateId, adminUserId);
 
         mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andExpect(status().isBadRequest())
@@ -97,7 +97,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """.formatted(System.currentTimeMillis(), rateId, adminUserId);
 
         var result = mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andExpect(status().isCreated())
@@ -131,7 +131,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """.formatted(System.currentTimeMillis(), rateId, adminUserId);
 
         var result = mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andExpect(status().isCreated())
@@ -166,13 +166,13 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """;
 
         mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(baseRequest.formatted("capacity-first-" + System.currentTimeMillis(), "CAP101", rateId, adminUserId)))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(baseRequest.formatted("capacity-second-" + System.currentTimeMillis(), "CAP102", rateId, adminUserId)))
                 .andExpect(status().isConflict())
@@ -184,7 +184,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
         String token = getAuthToken();
 
         mockMvc.perform(get("/api/v1/operations/sessions/active-list")
-                .header("Authorization", "Bearer " + token))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray());
     }
@@ -208,7 +208,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """.formatted(rateId, adminUserId);
 
         var entryResult = mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andReturn();
@@ -233,7 +233,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """, ticketNumber, adminUserId);
 
         mockMvc.perform(post("/api/v1/operations/exits")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(exitRequest))
                 .andExpect(status().isOk())
@@ -257,7 +257,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """.formatted(rateId, adminUserId);
 
         mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andExpect(status().isBadRequest())
@@ -286,7 +286,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
         String firstRequest = baseRequest.formatted(firstKey, plate, rateId, adminUserId);
 
         mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(firstRequest))
                 .andExpect(status().isCreated());
@@ -295,7 +295,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
         String secondRequest = baseRequest.formatted(secondKey, plate, rateId, adminUserId);
 
         mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(secondRequest))
                 .andExpect(status().isConflict())
@@ -318,7 +318,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """.formatted(System.currentTimeMillis(), rateId, adminUserId);
 
         mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andExpect(status().isBadRequest())
@@ -344,7 +344,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """.formatted(idempotencyKey, rateId, adminUserId);
 
         var firstResult = mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andExpect(status().isCreated())
@@ -356,7 +356,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             .path("sessionId").asText();
 
         var secondResult = mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andExpect(status().isCreated())
@@ -387,7 +387,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """.formatted(System.currentTimeMillis(), adminUserId);
 
         mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andExpect(status().isCreated())
@@ -415,7 +415,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
             """;
 
         mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
             .content(entryRequest.formatted(Thread.currentThread().threadId(), Thread.currentThread().threadId(), rateId, adminUserId)))
                 .andExpect(status().isCreated());

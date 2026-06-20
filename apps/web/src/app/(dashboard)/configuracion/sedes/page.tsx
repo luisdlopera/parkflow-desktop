@@ -17,8 +17,8 @@ import {
   patchConfigurationSiteStatus,
 } from "@/lib/settings-api";
 import { listCompanies } from "@/lib/licensing/api";
-import { parkingSiteSchema, type ParkingSiteSchema } from "@/modules/settings/schemas";
-import type { ParkingSiteRow } from "@/modules/settings/types";
+import { parkingSiteSchema, type ParkingSiteSchema } from "@/lib/schemas/config.schemas";
+import type { ParkingSiteRow } from "@/lib/types/settings.types";
 import type { Company } from "@/lib/licensing/types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";

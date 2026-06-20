@@ -9,7 +9,7 @@ import { useRef, useState, useCallback, useEffect, useMemo, type KeyboardEvent }
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
-import { vehicleEntrySchema, VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
+import { vehicleEntrySchema, VehicleEntryFormValues } from "@/lib/schemas/vehicle.schema";
 import { useOperationSounds } from "@/hooks/ui/useOperationSounds";
 import { toast } from "@heroui/react";
 import { useAutoSave } from "@/hooks/core/useAutoSave";

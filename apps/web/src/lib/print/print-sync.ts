@@ -10,6 +10,8 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 import { apiBase } from "@/lib/api/config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 function parkflowApiV1Root(): string {
   return apiBase();
@@ -60,7 +62,7 @@ export async function syncCreatePrintJobAfterPhysicalPrint(input: {
 
   try {
     const url = `${parkflowApiV1Root()}/print-jobs`;
-    const r = await fetch(url, {
+    const r = await fetchWithCredentials(url, {
       method: "POST",
       headers: await buildApiHeaders(),
       body: JSON.stringify(body)

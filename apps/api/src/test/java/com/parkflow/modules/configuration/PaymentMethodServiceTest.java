@@ -39,7 +39,8 @@ class PaymentMethodServiceTest {
   @Test
   void createNormalizesCodeAndName() {
     PaymentMethodRequest req = new PaymentMethodRequest(" cash ", "  Efectivo ", false, true, 1);
-    when(paymentMethodRepository.existsByCode("CASH")).thenReturn(false);
+    UUID companyId = UUID.randomUUID();
+    when(paymentMethodRepository.existsByCodeAndCompany("CASH", companyId)).thenReturn(false);
     when(paymentMethodRepository.save(any(PaymentMethod.class)))
         .thenAnswer(invocation -> {
           PaymentMethod entity = invocation.getArgument(0);
@@ -47,7 +48,7 @@ class PaymentMethodServiceTest {
           return entity;
         });
 
-    var response = service.create(req);
+    var response = service.create(req, companyId);
 
     assertThat(response.code()).isEqualTo("CASH");
     assertThat(response.name()).isEqualTo("Efectivo");
@@ -56,9 +57,10 @@ class PaymentMethodServiceTest {
 
   @Test
   void createFailsWhenCodeAlreadyExists() {
-    when(paymentMethodRepository.existsByCode("CASH")).thenReturn(true);
+    UUID companyId = UUID.randomUUID();
+    when(paymentMethodRepository.existsByCodeAndCompany("CASH", companyId)).thenReturn(true);
 
-    assertThatThrownBy(() -> service.create(new PaymentMethodRequest("CASH", "Efectivo", false, true, 1)))
+    assertThatThrownBy(() -> service.create(new PaymentMethodRequest("CASH", "Efectivo", false, true, 1), companyId))
         .isInstanceOf(OperationException.class)
         .satisfies(ex -> assertThat(((OperationException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT));
   }
@@ -69,14 +71,15 @@ class PaymentMethodServiceTest {
     entity.setId(UUID.randomUUID());
     entity.setCode("CASH");
     entity.setName("Efectivo");
-    when(paymentMethodRepository.search(any(), any(), any()))
+    when(paymentMethodRepository.search(any(), any(), any(), any()))
         .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 20), 1));
 
-    var page = service.list(" Efectivo ", true, PageRequest.of(0, 20));
+    UUID companyId = UUID.randomUUID();
+    var page = service.list(" Efectivo ", true, companyId, PageRequest.of(0, 20));
 
     assertThat(page.content()).hasSize(1);
     assertThat(page.content().get(0).code()).isEqualTo("CASH");
-    verify(paymentMethodRepository).search(eq("Efectivo"), eq(Boolean.TRUE), any());
+    verify(paymentMethodRepository).search(eq("Efectivo"), eq(Boolean.TRUE), eq(companyId), any());
   }
 
   @Test
@@ -84,10 +87,11 @@ class PaymentMethodServiceTest {
     PaymentMethod current = new PaymentMethod();
     current.setId(UUID.randomUUID());
     current.setCode("CASH");
+    UUID companyId = UUID.randomUUID();
     when(paymentMethodRepository.findById(current.getId())).thenReturn(Optional.of(current));
-    when(paymentMethodRepository.existsByCode("CARD")).thenReturn(true);
+    when(paymentMethodRepository.existsByCodeAndCompany("CARD", companyId)).thenReturn(true);
 
-    assertThatThrownBy(() -> service.update(current.getId(), new PaymentMethodRequest(" card ", "Tarjeta", true, true, 2)))
+    assertThatThrownBy(() -> service.update(current.getId(), new PaymentMethodRequest(" card ", "Tarjeta", true, true, 2), companyId))
         .isInstanceOf(OperationException.class)
         .satisfies(ex -> assertThat(((OperationException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT));
   }
@@ -98,10 +102,11 @@ class PaymentMethodServiceTest {
     current.setId(UUID.randomUUID());
     current.setCode("CASH");
     current.setActive(true);
+    UUID companyId = UUID.randomUUID();
     when(paymentMethodRepository.findById(current.getId())).thenReturn(Optional.of(current));
     when(paymentMethodRepository.save(any(PaymentMethod.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-    var response = service.patchStatus(current.getId(), false);
+    var response = service.patchStatus(current.getId(), false, companyId);
 
     assertThat(response.isActive()).isFalse();
   }

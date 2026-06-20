@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, Clock3, Loader2, Search, Ticket, Car, User, Building2, CreditCard, Bell, Wand2, Sparkles, ArrowRight } from "lucide-react";
 import { cn } from "@heroui/theme";
 import { useSearch } from "../hooks/useSearch";
-import { SearchResult, SearchType } from "../search.types";
+import { SearchResult, SearchType } from "../types/search.types";
 import { useOsShortcut } from "@/hooks/core/useOsShortcut";
 
 const RECENT_KEY = "parkflow.search.recent";
@@ -285,18 +285,18 @@ export function QuickSearch() {
                 </div>
               ) : flatResults.length > 0 ? (
                 <div className="space-y-4 p-2">
-                  {Object.entries(groups ?? {}).map(([type, items]) => (
+                  {Object.entries(groups ?? {}).map(([type, items]: [string, unknown]) => (
                     <section key={type} className="space-y-2">
                       <div className="flex items-center justify-between px-3">
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-neutral-500">
                           <TypeIcon type={type as SearchType} />
                           {TYPE_META[type as SearchType]?.label ?? type}
                         </div>
-                        <span className="text-xs text-slate-400">{items.length} resultados</span>
+                        <span className="text-xs text-slate-400">{(items as any)?.length ?? 0} resultados</span>
                       </div>
                       <Card className="overflow-hidden border border-slate-200/70 dark:border-neutral-800/70">
                         <Card.Content className="p-0">
-                          {items.map((item) => {
+                          {(items as any)?.map((item: any) => {
                             const isSelected = flatResults[selectedIndex]?.id === item.id;
                             return <SearchResultRow key={item.id} result={item} selected={isSelected} onSelect={handleSelect} />;
                           })}

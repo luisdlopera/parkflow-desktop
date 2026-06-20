@@ -1,5 +1,7 @@
 import { buildApiHeaders } from "@/lib/api";
 import { opsBase } from "@/lib/api/config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 export type BulkExitRequestDto = {
   locators: string[];
@@ -39,7 +41,7 @@ export type BulkExitResponseDto = {
 };
 
 export async function precalculateBulkExit(request: BulkExitRequestDto): Promise<BulkExitCalculateResponseDto> {
-  const res = await fetch(`${opsBase().replace(/\/$/, "")}/bulk-exits/calculate`, {
+  const res = await fetchWithCredentials(`${opsBase().replace(/\/$/, "")}/bulk-exits/calculate`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(request)
@@ -52,7 +54,7 @@ export async function precalculateBulkExit(request: BulkExitRequestDto): Promise
 }
 
 export async function processBulkExit(request: BulkExitRequestDto): Promise<BulkExitResponseDto> {
-  const res = await fetch(`${opsBase().replace(/\/$/, "")}/bulk-exits`, {
+  const res = await fetchWithCredentials(`${opsBase().replace(/\/$/, "")}/bulk-exits`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(request)

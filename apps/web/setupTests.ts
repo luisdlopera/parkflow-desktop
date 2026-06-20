@@ -34,3 +34,35 @@ afterEach(() => server.resetHandlers())
 
 afterAll(() => server.close())
 import 'fake-indexeddb/auto';
+
+import React from 'react';
+vi.mock('@/components/bridge/Dropdown', () => ({
+  Dropdown: ({ children }: any) => React.createElement('div', { 'data-testid': 'mock-dropdown' }, children),
+  DropdownTrigger: ({ children }: any) => React.createElement('div', { 'data-testid': 'mock-dropdown-trigger' }, children),
+  DropdownMenu: ({ children }: any) => React.createElement('div', { 'data-testid': 'mock-dropdown-menu' }, children),
+  DropdownItem: ({ children }: any) => React.createElement('div', { 'data-testid': 'mock-dropdown-item' }, children),
+  DropdownSection: ({ children }: any) => React.createElement('div', { 'data-testid': 'mock-dropdown-section' }, children),
+}));
+
+vi.mock('@/components/bridge/Select', () => ({
+  Select: Object.assign(({ children }: any) => React.createElement('div', { 'data-testid': 'mock-select' }, children), {
+    Trigger: ({ children }: any) => React.createElement('div', null, children),
+    Value: ({ children }: any) => React.createElement('div', null, children),
+    Popover: ({ children }: any) => React.createElement('div', null, children),
+  })
+}));
+
+vi.mock('@heroui/react', async (importOriginal) => {
+  const actual: any = await importOriginal();
+  return {
+    ...actual,
+    ListBox: Object.assign(({ children }: any) => React.createElement('div', null, children), {
+      Item: ({ children }: any) => React.createElement('div', null, children)
+    })
+  };
+});
+
+vi.mock('@/components/bridge/Tabs', () => ({
+  Tabs: ({ children }: any) => React.createElement('div', { 'data-testid': 'mock-tabs' }, children),
+  Tab: ({ children }: any) => React.createElement('div', { 'data-testid': 'mock-tab' }, children),
+}));

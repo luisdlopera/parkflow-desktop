@@ -1,6 +1,8 @@
 import { authHeaders } from "@/features/auth/services/auth-domain.service";
 import { normalizeApiError } from "@/lib/errors/normalize-api-error";
 import { apiBase } from "@/lib/api/config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 const API_BASE = apiBase();
 
@@ -16,7 +18,7 @@ export type OnboardingQuestionConfig = {
 
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const headers = await authHeaders();
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await fetchWithCredentials(`${API_BASE}${endpoint}`, {
     ...options,
     headers: {
       ...headers,

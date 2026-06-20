@@ -2,6 +2,8 @@ import type { LocalAgentPrintBody, PrintDocumentType, PrintResult, TicketDocumen
 import { ticketDocumentToJson } from "./ticket-build";
 import type { OperationPayload } from "./ticket-build";
 import { directPrintAgentApiKey, printAgentPath } from "./print-agent-proxy-config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 function isTauriRuntime(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -88,7 +90,7 @@ export class LocalAgentPrintClient implements PrintClient {
       if (k) {
         headers["X-API-Key"] = k;
       }
-      const res = await fetch(path, { method: "GET", signal: ctrl.signal, headers, cache: "no-store" });
+      const res = await fetchWithCredentials(path, { method: "GET", signal: ctrl.signal, headers, cache: "no-store" });
       clearTimeout(t);
       if (!res.ok) {
         return false;
@@ -123,7 +125,7 @@ export class LocalAgentPrintClient implements PrintClient {
     if (k) {
       headers["X-API-Key"] = k;
     }
-    const res = await fetch(path, {
+    const res = await fetchWithCredentials(path, {
       method: "POST",
       headers,
       body: JSON.stringify(body),

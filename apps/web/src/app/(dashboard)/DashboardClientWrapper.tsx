@@ -19,10 +19,10 @@ export default function DashboardClientWrapper({ children }: { children: ReactNo
 
   return (
     <>
-      <div className="min-h-screen flex">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar collapsed={isCollapsed} onToggle={handleToggle} />
         <MobileSidebar isOpen={isOpen} onClose={close} />
-        <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
           <Header onMenuClick={open} />
           <main className="flex-1 p-4 sm:p-6 lg:px-8 lg:py-6 overflow-y-auto">
             <div className="surface rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">

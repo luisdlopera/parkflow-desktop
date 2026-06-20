@@ -2,7 +2,7 @@
 
 import React, { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { UseFormReturn, Controller, useFieldArray, useWatch } from "react-hook-form";
-import { VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
+import { VehicleEntryFormValues } from "@/lib/schemas/vehicle.schema";
 import { Input } from "@/components/bridge/Input";
 import { Button } from "@/components/bridge/Button";
 import { Tooltip } from "@/components/bridge/Tooltip";

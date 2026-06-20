@@ -1,5 +1,7 @@
 import { buildApiHeaders } from "@/lib/api";
 import { apiBase } from "@/lib/api/config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 const API_BASE = apiBase();
 
@@ -26,7 +28,7 @@ export type OperatorRow = { operatorId: string; operatorName: string; transactio
 export type PaymentMethodRow = { paymentMethod: string; displayName: string; transactionCount: number; totalAmount: number; percentage: number };
 
 async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { headers: await buildApiHeaders() });
+  const res = await fetchWithCredentials(`${API_BASE}${path}`, { headers: await buildApiHeaders() });
   if (!res.ok) throw new Error((await res.json()).error ?? `Error ${res.status}`);
   return res.json() as Promise<T>;
 }

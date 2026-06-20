@@ -1,17 +1,20 @@
 import React from "react";
-import { Tabs as HeroTabs, Tab as HeroTab, TabProps as HeroTabProps, TabsProps as HeroTabsProps } from "@heroui/react";
+import { Tabs as HeroTabs, TabsProps as HeroTabsProps } from "@heroui/react";
 
-export interface TabProps extends Omit<HeroTabProps, "title" | "children"> {
-  key?: any;
+export interface TabProps {
+  id?: string;
+  key?: string;
   title?: React.ReactNode;
   children?: React.ReactNode;
+  href?: string;
 }
 
-export const Tab = HeroTab as React.FC<TabProps>;
+export const Tab: React.FC<TabProps> = () => null;
 
-export interface TabsProps extends Omit<HeroTabsProps, "onSelectionChange"> {
+export interface TabsProps extends Omit<HeroTabsProps, "onSelectionChange" | "children"> {
   onSelectionChange?: (key: any) => void;
   onChange?: (key: any) => void;
+  children?: React.ReactNode;
 }
 
 export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
@@ -23,6 +26,13 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
       if (onChange) onChange(key);
     };
 
+    const tabs: any[] = [];
+    React.Children.forEach(children, (child) => {
+      if (React.isValidElement(child) && child.type === Tab) {
+        tabs.push(child.props);
+      }
+    });
+
     return (
       <HeroTabs 
         ref={ref}
@@ -30,7 +40,23 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
         className={className}
         {...props as any}
       >
-        {children}
+        <HeroTabs.ListContainer>
+          <HeroTabs.List aria-label="Tabs">
+            {tabs.map((t, i) => (
+              <HeroTabs.Tab key={t.key || t.id || i} id={t.key || t.id || String(i)}>
+                {t.title}
+                <HeroTabs.Indicator />
+              </HeroTabs.Tab>
+            ))}
+          </HeroTabs.List>
+        </HeroTabs.ListContainer>
+        {tabs.map((t, i) => (
+          t.children ? (
+            <HeroTabs.Panel key={t.key || t.id || i} id={t.key || t.id || String(i)}>
+              {t.children}
+            </HeroTabs.Panel>
+          ) : null
+        ))}
       </HeroTabs>
     );
   }

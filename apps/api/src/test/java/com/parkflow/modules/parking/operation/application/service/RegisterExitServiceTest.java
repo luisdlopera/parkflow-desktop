@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import io.micrometer.core.instrument.Counter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,12 +44,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import com.parkflow.modules.configuration.domain.OperationalParameter;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class RegisterExitServiceTest {
 
   @Mock private ParkingSessionRepository parkingSessionRepository;
@@ -67,6 +71,7 @@ class RegisterExitServiceTest {
   @Mock private ParkingCashIntegrationUseCase parkingCashIntegrationUseCase;
   @Mock private ParkingParametersUseCase parkingParametersUseCase;
   @Mock private ParkingPricingUseCase parkingPricingUseCase;
+  @Mock private io.micrometer.core.instrument.MeterRegistry meterRegistry;
 
   private RegisterExitService service;
   private final UUID companyId = UUID.randomUUID();
@@ -119,6 +124,9 @@ class RegisterExitServiceTest {
         .hasHelmet(false)
         .build();
 
+    Counter mockCounter = mock(Counter.class);
+    lenient().when(meterRegistry.counter(anyString(), any(String[].class))).thenReturn(mockCounter);
+
     List<SimpleGrantedAuthority> setupAuths = List.of(new SimpleGrantedAuthority("ROLE_ADMIN"));
     AuthPrincipal principal = new AuthPrincipal(
         UUID.randomUUID(), companyId, "op@test.com", "ADMIN", setupAuths);
@@ -138,7 +146,8 @@ class RegisterExitServiceTest {
         lockerPort,
         parkingCashIntegrationUseCase,
         parkingParametersUseCase,
-        parkingPricingUseCase);
+        parkingPricingUseCase,
+        meterRegistry);
   }
 
   private ExitRequest request(String ticket, String plate, PaymentMethod method) {

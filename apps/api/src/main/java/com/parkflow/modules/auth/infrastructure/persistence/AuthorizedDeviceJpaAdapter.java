@@ -28,6 +28,11 @@ public class AuthorizedDeviceJpaAdapter implements AuthorizedDevicePort {
   }
 
   @Override
+  public List<AuthorizedDevice> findAllByCompanyId(UUID companyId) {
+    return jpaRepository.findAllByCompanyId(companyId);
+  }
+
+  @Override
   public AuthorizedDevice save(AuthorizedDevice device) {
     return jpaRepository.save(device);
   }
@@ -40,5 +45,6 @@ public class AuthorizedDeviceJpaAdapter implements AuthorizedDevicePort {
   @Repository
   interface AuthorizedDeviceJpaRepository extends JpaRepository<AuthorizedDevice, UUID> {
     Optional<AuthorizedDevice> findByDeviceId(String deviceId);
+    List<AuthorizedDevice> findAllByCompanyId(UUID companyId);
   }
 }

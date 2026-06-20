@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <!--
+    JSON structured logging is active in all profiles EXCEPT local/dev where human-readable
+    console output is more useful. Controlled by the PARKFLOW_LOG_FORMAT env var:
+      json   → Logstash JSON encoder (ELK, DataDog, CloudWatch)
+      text   → Pattern-based human-readable (default for local)
+  -->
+
+  <springProfile name="dev,local">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder>
+        <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId}] [tenant:%X{tenantId}] [user:%X{userId}] %logger{36} - %msg%n</pattern>
+      </encoder>
+    </appender>
+    <root level="INFO">
+      <appender-ref ref="CONSOLE"/>
+    </root>
+  </springProfile>
+
+  <springProfile name="!dev &amp; !local">
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        <includeMdcKeyName>correlationId</includeMdcKeyName>
+        <includeMdcKeyName>tenantId</includeMdcKeyName>
+        <includeMdcKeyName>userId</includeMdcKeyName>
+        <customFields>{"app":"parkflow-api"}</customFields>
+        <fieldNames>
+          <timestamp>@timestamp</timestamp>
+          <version>[ignore]</version>
+        </fieldNames>
+      </encoder>
+    </appender>
+    <root level="INFO">
+      <appender-ref ref="JSON_CONSOLE"/>
+    </root>
+  </springProfile>
+</configuration>

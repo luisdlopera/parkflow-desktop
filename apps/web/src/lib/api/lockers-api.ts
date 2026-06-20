@@ -1,5 +1,7 @@
 import { buildApiHeaders } from "@/lib/api";
 import { apiBase } from "@/lib/api/config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 const API_BASE = apiBase();
 
@@ -13,7 +15,7 @@ export type LockerDto = {
 };
 
 export async function fetchLockers(): Promise<LockerDto[]> {
-  const res = await fetch(`${API_BASE}/lockers`, {
+  const res = await fetchWithCredentials(`${API_BASE}/lockers`, {
     headers: await buildApiHeaders(),
     cache: "no-store",
   });
@@ -25,7 +27,7 @@ export async function fetchLockers(): Promise<LockerDto[]> {
 }
 
 export async function fetchAvailableLockers(): Promise<LockerDto[]> {
-  const res = await fetch(`${API_BASE}/lockers/available`, {
+  const res = await fetchWithCredentials(`${API_BASE}/lockers/available`, {
     headers: await buildApiHeaders(),
     cache: "no-store",
   });
@@ -37,7 +39,7 @@ export async function fetchAvailableLockers(): Promise<LockerDto[]> {
 }
 
 export async function createLocker(code: string, label?: string): Promise<LockerDto> {
-  const res = await fetch(`${API_BASE}/lockers`, {
+  const res = await fetchWithCredentials(`${API_BASE}/lockers`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify({ code, label }),
@@ -54,7 +56,7 @@ export async function createBatchLockers(
   start: number,
   end: number,
 ): Promise<LockerDto[]> {
-  const res = await fetch(`${API_BASE}/lockers/batch`, {
+  const res = await fetchWithCredentials(`${API_BASE}/lockers/batch`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify({ prefix, start, end }),
@@ -70,7 +72,7 @@ export async function patchLocker(
   id: string,
   data: { code?: string; label?: string; isActive?: boolean; status?: string },
 ): Promise<LockerDto> {
-  const res = await fetch(`${API_BASE}/lockers/${id}`, {
+  const res = await fetchWithCredentials(`${API_BASE}/lockers/${id}`, {
     method: "PATCH",
     headers: await buildApiHeaders(),
     body: JSON.stringify(data),
@@ -83,7 +85,7 @@ export async function patchLocker(
 }
 
 export async function deleteLocker(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/lockers/${id}`, {
+  const res = await fetchWithCredentials(`${API_BASE}/lockers/${id}`, {
     method: "DELETE",
     headers: await buildApiHeaders(),
   });

@@ -9,7 +9,6 @@ import com.parkflow.modules.tickets.domain.PrintJobStatus;
 import com.parkflow.modules.tickets.domain.repository.PrintJobPort;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import java.time.OffsetDateTime;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
@@ -39,11 +38,7 @@ public class OperationalHealthService {
             .size();
 
     OffsetDateTime lastHeartbeat =
-        licensedDeviceRepository.findAll().stream()
-            .map(d -> d.getLastHeartbeatAt())
-            .filter(v -> v != null)
-            .max(Comparator.naturalOrder())
-            .orElse(null);
+        licensedDeviceRepository.findLastHeartbeatAtByCompanyId(companyId).orElse(null);
 
     OffsetDateTime lastSync =
         syncEventRepository.findTopByCompanyIdAndSyncedAtIsNotNullOrderBySyncedAtDesc(companyId)

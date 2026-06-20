@@ -24,6 +24,10 @@ const Step3Rates = memo(function Step3Rates() {
   const enableRateByType = Boolean(stepData.enableRateByType);
   const hasWeekendRate = Boolean(stepData.hasWeekendRate);
 
+  const isBasicSelected = billingModel === "HOURLY" && !hasFractions && !hasNightRate && !hasFullDayRate;
+  const isCommercialSelected = billingModel === "HOURLY" && hasFractions && hasCourtesy;
+  const is24HSelected = billingModel === "MIXED" && hasNightRate && hasFullDayRate;
+
   const applyPreset = (preset: "BASIC" | "COMMERCIAL" | "24H") => {
     switch (preset) {
       case "BASIC":
@@ -81,23 +85,26 @@ const Step3Rates = memo(function Step3Rates() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Card className="cursor-pointer hover:border-primary border border-transparent transition-all" role="button" tabIndex={0} onClick={() => applyPreset("BASIC")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("BASIC"); } }}>
-            <Card.Content className="p-3 text-center flex flex-col items-center gap-2">
-              <Zap className="w-5 h-5 text-warning" />
+          <Card className={`cursor-pointer transition-all border ${isBasicSelected ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-transparent hover:border-primary'}`} role="button" tabIndex={0} onClick={() => applyPreset("BASIC")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("BASIC"); } }}>
+            <Card.Content className="p-3 text-center flex flex-col items-center gap-2 relative">
+              {isBasicSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-primary" />}
+              <Zap className={`w-5 h-5 ${isBasicSelected ? 'text-primary' : 'text-warning'}`} />
               <p className="text-sm font-semibold">Básico</p>
               <p className="text-xs text-default-500">Solo cobro por hora. Simple y directo.</p>
             </Card.Content>
           </Card>
-          <Card className="cursor-pointer hover:border-primary border border-transparent transition-all" role="button" tabIndex={0} onClick={() => applyPreset("COMMERCIAL")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("COMMERCIAL"); } }}>
-            <Card.Content className="p-3 text-center flex flex-col items-center gap-2">
-              <RefreshCcw className="w-5 h-5 text-success" />
+          <Card className={`cursor-pointer transition-all border ${isCommercialSelected ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-transparent hover:border-primary'}`} role="button" tabIndex={0} onClick={() => applyPreset("COMMERCIAL")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("COMMERCIAL"); } }}>
+            <Card.Content className="p-3 text-center flex flex-col items-center gap-2 relative">
+              {isCommercialSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-primary" />}
+              <RefreshCcw className={`w-5 h-5 ${isCommercialSelected ? 'text-primary' : 'text-success'}`} />
               <p className="text-sm font-semibold">Comercial</p>
               <p className="text-xs text-default-500">Cobro por hora, con fracciones y tiempo de cortesía.</p>
             </Card.Content>
           </Card>
-          <Card className="cursor-pointer hover:border-primary border border-transparent transition-all" role="button" tabIndex={0} onClick={() => applyPreset("24H")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("24H"); } }}>
-            <Card.Content className="p-3 text-center flex flex-col items-center gap-2">
-              <Moon className="w-5 h-5 text-primary" />
+          <Card className={`cursor-pointer transition-all border ${is24HSelected ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-transparent hover:border-primary'}`} role="button" tabIndex={0} onClick={() => applyPreset("24H")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("24H"); } }}>
+            <Card.Content className="p-3 text-center flex flex-col items-center gap-2 relative">
+              {is24HSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-primary" />}
+              <Moon className={`w-5 h-5 ${is24HSelected ? 'text-primary' : 'text-primary'}`} />
               <p className="text-sm font-semibold">24 Horas</p>
               <p className="text-xs text-default-500">Incluye tarifa nocturna y cobro por día completo.</p>
             </Card.Content>

@@ -1,4 +1,4 @@
-import { vehicleEntrySchema } from "@/modules/parking/vehicle.schema";
+import { vehicleEntrySchema } from "@/lib/schemas/vehicle.schema";
 
 describe("vehicleEntrySchema - Motorcycle Validation", () => {
   it("accepts a valid motorcycle entry with plate ABC12D", () => {

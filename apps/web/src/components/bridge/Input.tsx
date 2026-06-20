@@ -22,7 +22,7 @@ export interface InputProps extends Omit<HeroInputProps, "size" | "color" | "var
   variant?: "flat" | "bordered" | "faded" | "underlined" | "primary" | "secondary" | (string & {});
   radius?: (string & {});
   classNames?: any;
-  className?: any;
+  className?: string;
   startContent?: React.ReactNode;
   endContent?: React.ReactNode;
   isClearable?: boolean;

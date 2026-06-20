@@ -21,6 +21,8 @@ import {
 import { authHeaders } from "@/features/auth/services/auth-domain.service";
 import { apiBase } from "@/lib/api/config";
 import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 interface AuditLogEntry {
   id: string;
@@ -81,7 +83,7 @@ export default function AuditPage() {
       if (dateRange.start) params.set("from", dateRange.start);
       if (dateRange.end) params.set("to", dateRange.end);
 
-      const res = await fetch(`${API_BASE}/licensing/audit?${params}`, { headers });
+      const res = await fetchWithCredentials(`${API_BASE}/licensing/audit?${params}`, { headers });
       if (res.ok) {
         const data = await res.json();
         setLogs(data.content || []);

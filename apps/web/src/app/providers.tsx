@@ -10,6 +10,7 @@ import { loadSession, clearSession } from "@/features/auth/services/auth-storage
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 
 import { DialogProvider } from "@/components/ui/DialogProvider";
+import { AuthProvider } from "@/providers/AuthProvider";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -19,16 +20,6 @@ export function Providers({ children }: ProvidersProps) {
   const router = useRouter();
 
   useEffect(() => {
-    loadSession().then((session) => {
-      if (!session) return;
-      useAuthStore.getState().setUser({
-        id: session.user.id,
-        name: session.user.name,
-        email: session.user.email,
-        role: session.user.role,
-      });
-      useAuthStore.getState().setPermissions(session.user.permissions as string[]);
-    });
     const onLogout = () => useAuthStore.getState().logout();
     window.addEventListener("parkflow-logout", onLogout);
     return () => window.removeEventListener("parkflow-logout", onLogout);
@@ -49,7 +40,9 @@ export function Providers({ children }: ProvidersProps) {
       <HeroUIProvider navigate={router.push}>
         <Toast.Provider placement="top end" />
         <DialogProvider>
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </DialogProvider>
       </HeroUIProvider>
     </SWRConfig>

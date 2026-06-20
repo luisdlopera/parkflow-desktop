@@ -6,10 +6,12 @@ import com.parkflow.modules.auth.dto.DeviceInfoResponse;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.domain.AuthorizedDevice;
 import com.parkflow.modules.auth.domain.repository.AuthorizedDevicePort;
+import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.common.exception.OperationException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -27,7 +29,11 @@ public class DeviceManagementService implements DeviceManagementUseCase {
   @Override
   @Transactional(readOnly = true)
   public List<DeviceInfoResponse> listDevices() {
-    return authorizedDeviceRepository.findAll().stream().map(this::toDevice).toList();
+    UUID companyId = TenantContext.getTenantId();
+    List<AuthorizedDevice> devices = (companyId != null)
+        ? authorizedDeviceRepository.findAllByCompanyId(companyId)
+        : authorizedDeviceRepository.findAll();
+    return devices.stream().map(this::toDevice).toList();
   }
 
   @Override

@@ -8,6 +8,7 @@ import com.parkflow.modules.auth.domain.AuthorizedDevice;
 import com.parkflow.modules.auth.domain.repository.AuthCompanyPort;
 import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
 import com.parkflow.modules.auth.dto.LoginResponse;
+import com.parkflow.modules.auth.dto.LoginResult;
 import com.parkflow.modules.auth.dto.RefreshRequest;
 import com.parkflow.modules.auth.security.JwtTokenService;
 import com.parkflow.modules.auth.security.PasswordHashService;
@@ -41,8 +42,28 @@ public class TokenRefreshUseCaseImpl implements TokenRefreshUseCase {
 
   @Override
   @Transactional
-  public LoginResponse refresh(RefreshRequest request) {
-    Claims claims = jwtTokenService.parse(request.refreshToken());
+  public LoginResult refreshFromCookie(String rawRefreshToken) {
+    Claims claims;
+    try {
+      claims = jwtTokenService.parse(rawRefreshToken);
+    } catch (Exception ex) {
+      throw new OperationException(HttpStatus.UNAUTHORIZED, "AUTH_UNAUTHORIZED", "Tu sesion expiro. Inicia sesion nuevamente.");
+    }
+    if (!"refresh".equals(claims.get("typ", String.class))) {
+      throw new OperationException(HttpStatus.UNAUTHORIZED, "AUTH_UNAUTHORIZED", "Tu sesion expiro. Inicia sesion nuevamente.");
+    }
+    String refreshJti = claims.get("jti", String.class);
+    AuthSession session = authSessionRepository
+        .findByRefreshJtiAndActiveTrue(refreshJti)
+        .orElseThrow(() -> new OperationException(HttpStatus.UNAUTHORIZED, "AUTH_UNAUTHORIZED", "Tu sesion expiro. Inicia sesion nuevamente."));
+    String deviceId = session.getDevice().getDeviceId();
+    return refresh(new RefreshRequest(deviceId), rawRefreshToken);
+  }
+
+  @Override
+  @Transactional
+  public LoginResult refresh(RefreshRequest request, String rawRefreshToken) {
+    Claims claims = jwtTokenService.parse(rawRefreshToken);
     if (!"refresh".equals(claims.get("typ", String.class))) {
       throw new OperationException(
           HttpStatus.UNAUTHORIZED,
@@ -68,7 +89,7 @@ public class TokenRefreshUseCaseImpl implements TokenRefreshUseCase {
           "Tu sesion expiro. Inicia sesion nuevamente.");
     }
 
-    String incomingHash = passwordHashService.sha256(request.refreshToken());
+    String incomingHash = passwordHashService.sha256(rawRefreshToken);
     if (!incomingHash.equals(current.getRefreshTokenHash())) {
       current.setActive(false);
       current.setRevokedAt(OffsetDateTime.now());
@@ -117,13 +138,15 @@ public class TokenRefreshUseCaseImpl implements TokenRefreshUseCase {
 
     boolean onboardingCompleted = authCompanyPort.isOnboardingCompleted(user.getCompanyId());
 
-    return new LoginResponse(
+    return new LoginResult(
+        new LoginResponse(
+            responseAssembler.toUser(user, onboardingCompleted),
+            responseAssembler.toSession(rotated),
+            responseAssembler.toDevice(device),
+            responseAssembler.offlineLease(rotated, null, defaultOfflineLeaseHours)
+        ),
         accessToken,
-        refreshToken,
-        "Bearer",
-        responseAssembler.toUser(user, onboardingCompleted),
-        responseAssembler.toSession(rotated),
-        responseAssembler.toDevice(device),
-        responseAssembler.offlineLease(rotated, null, defaultOfflineLeaseHours));
+        refreshToken
+    );
   }
 }

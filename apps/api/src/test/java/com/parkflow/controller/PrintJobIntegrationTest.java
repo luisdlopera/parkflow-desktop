@@ -30,7 +30,7 @@ class PrintJobIntegrationTest extends BaseIntegrationTest {
             """.formatted(rateId, adminUserId);
 
         var entryResult = mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andReturn();
@@ -51,7 +51,7 @@ class PrintJobIntegrationTest extends BaseIntegrationTest {
             """.formatted(sessionId, adminUserId);
 
         mockMvc.perform(post("/api/v1/print-jobs")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jobRequest))
                 .andExpect(status().isCreated())
@@ -78,7 +78,7 @@ class PrintJobIntegrationTest extends BaseIntegrationTest {
             """.formatted(rateId, adminUserId);
 
         var entryResult = mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(entryRequest))
                 .andReturn();
@@ -99,7 +99,7 @@ class PrintJobIntegrationTest extends BaseIntegrationTest {
             """.formatted(sessionId, adminUserId);
 
         var jobResult = mockMvc.perform(post("/api/v1/print-jobs")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jobRequest))
                 .andReturn();
@@ -109,7 +109,7 @@ class PrintJobIntegrationTest extends BaseIntegrationTest {
             String jobId = jobJson.path("id").asText();
 
         mockMvc.perform(get("/api/v1/print-jobs/" + jobId)
-                .header("Authorization", "Bearer " + token))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").exists());
     }

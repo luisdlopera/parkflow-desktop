@@ -2,6 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import LicensesPage from "../licenses/page";
 
+vi.mock("@/components/bridge/Dropdown", () => ({
+  Dropdown: ({ children }: any) => <div data-testid="mock-dropdown">{children}</div>,
+  DropdownTrigger: ({ children }: any) => <div data-testid="mock-dropdown-trigger">{children}</div>,
+  DropdownMenu: ({ children }: any) => <div data-testid="mock-dropdown-menu">{children}</div>,
+  DropdownItem: ({ children }: any) => <div data-testid="mock-dropdown-item">{children}</div>,
+  DropdownSection: ({ children }: any) => <div data-testid="mock-dropdown-section">{children}</div>,
+}));
+
 const mockHooks = vi.hoisted(() => {
   const mockUseCompanies = vi.fn();
 

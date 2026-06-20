@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Controller } from "react-hook-form";
-import { ListBox, SearchField, useFilter, Tabs, type Key } from "@heroui/react";
+import { ListBox, SearchField, useFilter, Tabs, Label, type Key } from "@heroui/react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/bridge/Modal";
 import { Autocomplete } from "@/components/bridge/Autocomplete";
 import { Button } from "@/components/bridge/Button";
@@ -69,6 +69,7 @@ export default function CajaClient() {
   const { confirm } = useDialog();
   const { contains } = useFilter({ sensitivity: "base" });
   const p = useCajaPage();
+  console.log("CajaClient rendered! terminal:", p.terminal, "loading:", p.loading);
 
   const movementColumns = useMemo<DataTableColumn<CashMovementDto>[]>(
     () => [
@@ -90,8 +91,54 @@ export default function CajaClient() {
           ) : null,
       },
     ],
-    [p.perms.canVoid, p.setVoidTarget],
+    [p],
   );
+
+  const filterConfig = useMemo(() => [
+    {
+      key: "filterType",
+      label: "Filtrar por tipo",
+      type: "select" as const,
+      options: [
+        { label: "Todos los tipos", value: "" },
+        { label: "Cobro parqueo", value: "PARKING_PAYMENT" },
+        { label: "Ingreso manual", value: "MANUAL_INCOME" },
+        { label: "Egreso manual", value: "MANUAL_EXPENSE" },
+        { label: "Retiro / Transferencia a Tesorería", value: "WITHDRAWAL" },
+        { label: "Devolucion al cliente", value: "CUSTOMER_REFUND" },
+        { label: "Descuento", value: "DISCOUNT" },
+        { label: "Ajuste", value: "ADJUSTMENT" },
+        { label: "Cobro ticket perdido", value: "LOST_TICKET_PAYMENT" },
+        { label: "Reimpresion cobrada", value: "REPRINT_FEE" },
+        { label: "Contrapartida anulacion", value: "VOID_OFFSET" },
+      ],
+    },
+    {
+      key: "filterMethod",
+      label: "Filtrar por medio",
+      type: "select" as const,
+      options: [
+        { label: "Todos los medios", value: "" },
+        { label: "Efectivo", value: "CASH" },
+        { label: "Tarjeta débito", value: "DEBIT_CARD" },
+        { label: "Tarjeta crédito", value: "CREDIT_CARD" },
+        { label: "Tarjeta legacy", value: "CARD" },
+        { label: "QR", value: "QR" },
+        { label: "Nequi", value: "NEQUI" },
+        { label: "Daviplata", value: "DAVIPLATA" },
+        { label: "Transferencia", value: "TRANSFER" },
+        { label: "Convenio", value: "AGREEMENT" },
+        { label: "Crédito interno", value: "INTERNAL_CREDIT" },
+        { label: "Otro", value: "OTHER" },
+        { label: "Mixto", value: "MIXED" },
+      ],
+    },
+  ], []);
+
+  const handleFilterChange = (values: Record<string, string>) => {
+    if (values.filterType !== undefined) p.setFilterType(values.filterType);
+    if (values.filterMethod !== undefined) p.setFilterMethod(values.filterMethod);
+  };
 
   // stepsState replaced by StepProgress component
 
@@ -127,13 +174,13 @@ export default function CajaClient() {
           <div className="flex flex-col gap-2">
             {p.registerRows.length > 0 && (
               <Autocomplete
-                label="Terminal / caja"
                 placeholder="Seleccionar terminal"
                 selectionMode="single"
                 value={p.registerRows.some((r) => r.terminal === p.terminal) ? p.terminal : null}
                 onChange={(key: Key | null) => p.setTerminal(key as string)}
                 isDisabled={p.closed}
               >
+                <Label>Terminal / caja</Label>
                 <Autocomplete.Trigger>
                   <Autocomplete.Value /><Autocomplete.ClearButton /><Autocomplete.Indicator />
                 </Autocomplete.Trigger>
@@ -195,17 +242,17 @@ export default function CajaClient() {
           <div className="surface rounded-2xl p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-slate-900">Abrir caja</h2>
             <p className="mt-2 text-sm text-slate-600">Requiere permiso de apertura y terminal configurado.</p>
-            <label className="mt-4 block text-sm">
-              <span className="text-slate-600">Monto inicial</span>
-              <input
+            <div className="mt-4">
+              <Input
+                label="Monto inicial"
                 data-testid="initial-amount"
                 aria-label="Monto inicial"
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                className="mt-1 w-full"
                 value={p.openAmount}
-                onChange={(e) => p.setOpenAmount(e.target.value)}
-                disabled={p.busy || !!p.session}
+                onValueChange={(val) => p.setOpenAmount(val)}
+                isDisabled={p.busy || !!p.session}
               />
-            </label>
+            </div>
             <div className="mt-4">
               <Button className="w-full font-bold" color="primary" size="lg"
                 isDisabled={p.busy || !!p.session || !p.perms.canOpen}
@@ -239,62 +286,12 @@ export default function CajaClient() {
             <Tabs.Panel id="movimientos" className="pt-4">
               <div className="surface rounded-2xl p-4 sm:p-6 mt-4">
                 <h2 className="text-lg font-semibold text-slate-900">Movimientos</h2>
-                <div className="mt-4 flex flex-wrap gap-4 mb-6">
-                  <Autocomplete label="Filtrar por tipo" className="max-w-[200px]" placeholder="Todos los tipos"
-                    selectionMode="single" value={p.filterType || null}
-                    onChange={(key: Key | null) => p.setFilterType(key as string)}>
-                    <Autocomplete.Trigger><Autocomplete.Value /><Autocomplete.ClearButton /><Autocomplete.Indicator /></Autocomplete.Trigger>
-                    <Autocomplete.Popover>
-                      <Autocomplete.Filter filter={contains}>
-                        <SearchField autoFocus name="search" variant="secondary" aria-label="Buscar tipo">
-                          <SearchField.Group><SearchField.SearchIcon /><SearchField.Input placeholder="Buscar tipo..." /><SearchField.ClearButton /></SearchField.Group>
-                        </SearchField>
-                        <ListBox>
-                          <ListBox.Item key="" id="" textValue="Todos los tipos">Todos los tipos</ListBox.Item>
-                          <ListBox.Item key="PARKING_PAYMENT" id="PARKING_PAYMENT" textValue="Cobro parqueo">Cobro parqueo</ListBox.Item>
-                          <ListBox.Item key="MANUAL_INCOME" id="MANUAL_INCOME" textValue="Ingreso manual">Ingreso manual</ListBox.Item>
-                          <ListBox.Item key="MANUAL_EXPENSE" id="MANUAL_EXPENSE" textValue="Egreso manual">Egreso manual</ListBox.Item>
-                          <ListBox.Item key="WITHDRAWAL" id="WITHDRAWAL" textValue="Retiro">Retiro / Transferencia a Tesorería</ListBox.Item>
-                          <ListBox.Item key="CUSTOMER_REFUND" id="CUSTOMER_REFUND" textValue="Devolucion">Devolucion al cliente</ListBox.Item>
-                          <ListBox.Item key="DISCOUNT" id="DISCOUNT" textValue="Descuento">Descuento</ListBox.Item>
-                          <ListBox.Item key="ADJUSTMENT" id="ADJUSTMENT" textValue="Ajuste">Ajuste</ListBox.Item>
-                          <ListBox.Item key="LOST_TICKET_PAYMENT" id="LOST_TICKET_PAYMENT" textValue="Ticket perdido">Cobro ticket perdido</ListBox.Item>
-                          <ListBox.Item key="REPRINT_FEE" id="REPRINT_FEE" textValue="Reimpresion">Reimpresion cobrada</ListBox.Item>
-                          <ListBox.Item key="VOID_OFFSET" id="VOID_OFFSET" textValue="Contrapartida">Contrapartida anulacion</ListBox.Item>
-                        </ListBox>
-                      </Autocomplete.Filter>
-                    </Autocomplete.Popover>
-                  </Autocomplete>
-                  <Autocomplete label="Filtrar por medio" className="max-w-[200px]" placeholder="Todos los medios"
-                    selectionMode="single" value={p.filterMethod || null}
-                    onChange={(key: Key | null) => p.setFilterMethod(key as string)}>
-                    <Autocomplete.Trigger><Autocomplete.Value /><Autocomplete.ClearButton /><Autocomplete.Indicator /></Autocomplete.Trigger>
-                    <Autocomplete.Popover>
-                      <Autocomplete.Filter filter={contains}>
-                        <SearchField autoFocus name="search" variant="secondary" aria-label="Buscar medio">
-                          <SearchField.Group><SearchField.SearchIcon /><SearchField.Input placeholder="Buscar medio..." /><SearchField.ClearButton /></SearchField.Group>
-                        </SearchField>
-                        <ListBox>
-                          <ListBox.Item key="" id="" textValue="Todos">Todos los medios</ListBox.Item>
-                          <ListBox.Item key="CASH" id="CASH" textValue="Efectivo">Efectivo</ListBox.Item>
-                          <ListBox.Item key="DEBIT_CARD" id="DEBIT_CARD" textValue="Tarjeta débito">Tarjeta débito</ListBox.Item>
-                          <ListBox.Item key="CREDIT_CARD" id="CREDIT_CARD" textValue="Tarjeta crédito">Tarjeta crédito</ListBox.Item>
-                          <ListBox.Item key="CARD" id="CARD" textValue="Tarjeta legacy">Tarjeta legacy</ListBox.Item>
-                          <ListBox.Item key="QR" id="QR" textValue="QR">QR</ListBox.Item>
-                          <ListBox.Item key="NEQUI" id="NEQUI" textValue="Nequi">Nequi</ListBox.Item>
-                          <ListBox.Item key="DAVIPLATA" id="DAVIPLATA" textValue="Daviplata">Daviplata</ListBox.Item>
-                          <ListBox.Item key="TRANSFER" id="TRANSFER" textValue="Transferencia">Transferencia</ListBox.Item>
-                          <ListBox.Item key="AGREEMENT" id="AGREEMENT" textValue="Convenio">Convenio</ListBox.Item>
-                          <ListBox.Item key="INTERNAL_CREDIT" id="INTERNAL_CREDIT" textValue="Crédito interno">Crédito interno</ListBox.Item>
-                          <ListBox.Item key="OTHER" id="OTHER" textValue="Otro">Otro</ListBox.Item>
-                          <ListBox.Item key="MIXED" id="MIXED" textValue="Mixto">Mixto</ListBox.Item>
-                        </ListBox>
-                      </Autocomplete.Filter>
-                    </Autocomplete.Popover>
-                  </Autocomplete>
-                </div>
-
-                <DataTable<CashMovementDto> columns={movementColumns} rows={p.movements} />
+                <DataTable<CashMovementDto> 
+                  columns={movementColumns} 
+                  rows={p.movements} 
+                  filters={filterConfig}
+                  onFilterChange={handleFilterChange}
+                />
                 {p.movements.length === 0 && p.isOpen ? (
                   <p className="mt-3 text-xs text-slate-500 text-center">
                     No hay movimientos registrados en esta sesión.

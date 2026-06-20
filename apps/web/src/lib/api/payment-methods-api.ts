@@ -1,7 +1,7 @@
 import { apiFetch, cfgBase, buildApiHeaders, hdr, type SettingsPage } from "./_shared";
-import { paymentMethodSchema } from "@/modules/settings/schemas";
+import { paymentMethodSchema } from "@/lib/schemas/config.schemas";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
-import type { PaymentMethodRow } from "@/modules/settings/types";
+import type { PaymentMethodRow } from "@/lib/types/settings.types";
 
 export type { PaymentMethodRow };
 

@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { Controller } from "react-hook-form";
+import { TextField, Input as HeroInput } from "@heroui/react";
 import { getPlatePlaceholder, getPlateFormatHint } from "@/lib/validation/plate-validator";
 
 const DEFAULT_VEHICLE_TYPE = "CAR";
@@ -18,7 +19,7 @@ export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, 
           name="plate"
           control={control as any}
           render={({ field, fieldState }) => (
-            <div className="flex flex-col">
+            <TextField isInvalid={!!fieldState.error} className="flex flex-col">
               <label className="flex items-center justify-between w-full text-base font-semibold px-3 pt-2 pb-1">
                 <span className="text-slate-600">Placa del vehículo</span>
                 {platePrefix && (
@@ -27,7 +28,7 @@ export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, 
                   </span>
                 )}
               </label>
-              <input
+              <HeroInput
                 {...field}
                 ref={(e: HTMLInputElement | null) => {
                   field.ref(e);
@@ -39,8 +40,8 @@ export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, 
                 disabled={noPlate}
                 autoFocus
                 value={field.value || ""}
-                onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                onKeyDown={(e) => {
+                onChange={(e: any) => field.onChange(e.target.value.toUpperCase())}
+                onKeyDown={(e: any) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
                     onSubmit?.();
@@ -58,7 +59,7 @@ export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, 
                   Formato esperado: {formatHint} · Ej: {placeholder}
                 </p>
               )}
-            </div>
+            </TextField>
           )}
         />
       </div>

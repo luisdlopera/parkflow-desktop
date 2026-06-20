@@ -1,5 +1,7 @@
 import { buildApiHeaders } from "@/lib/api";
 import { opsBase } from "@/lib/api/config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 export type ChargeMode = "NORMAL" | "FREE" | "CUSTOM";
 
@@ -57,7 +59,7 @@ async function parseError(res: Response): Promise<string> {
 export async function previewMassExit(
   request: MassExitFilterRequestDto,
 ): Promise<MassExitPreviewResponseDto> {
-  const res = await fetch(`${opsBase()}/mass-exit/calculate`, {
+  const res = await fetchWithCredentials(`${opsBase()}/mass-exit/calculate`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(request),
@@ -69,7 +71,7 @@ export async function previewMassExit(
 export async function processMassExit(
   request: MassExitFilterRequestDto,
 ): Promise<MassExitResponseDto> {
-  const res = await fetch(`${opsBase()}/mass-exit`, {
+  const res = await fetchWithCredentials(`${opsBase()}/mass-exit`, {
     method: "POST",
     headers: await buildApiHeaders(),
     body: JSON.stringify(request),

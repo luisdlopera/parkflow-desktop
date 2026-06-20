@@ -35,9 +35,8 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     void login_ShouldReturnToken_WhenValidCredentials() throws Exception {
         mockMvc.perform(loginRequest("admin@example.com", "admin123", DEVICE_ID))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(cookie().exists("parkflow_access"))
+                .andExpect(cookie().exists("parkflow_refresh"))
                 .andExpect(jsonPath("$.user.email").value("admin@example.com"))
                 .andExpect(jsonPath("$.user.role").value("ADMIN"))
                 .andExpect(jsonPath("$.user.permissions", hasItem("tickets:emitir")))
@@ -75,10 +74,10 @@ class AuthIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void me_ShouldReturnCurrentUser_WhenAccessTokenIsValid() throws Exception {
-        JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
+        String accessToken = loginAndGetAccessToken("admin@example.com", "admin123", DEVICE_ID);
 
         mockMvc.perform(get("/api/v1/auth/me")
-                .header(HttpHeaders.AUTHORIZATION, bearer(login.path("accessToken").asText())))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(adminUserId.toString()))
                 .andExpect(jsonPath("$.email").value("admin@example.com"))
@@ -87,17 +86,16 @@ class AuthIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void profile_ShouldReturnAndUpdateCurrentUserProfile() throws Exception {
-        JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
-        String accessToken = login.path("accessToken").asText();
+        String accessToken = loginAndGetAccessToken("admin@example.com", "admin123", DEVICE_ID);
 
         mockMvc.perform(get("/api/v1/auth/profile")
-                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("admin@example.com"))
                 .andExpect(jsonPath("$.role").value("ADMIN"));
 
         mockMvc.perform(patch("/api/v1/auth/profile")
-                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -115,75 +113,86 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.phone").value("3001234567"));
 
         mockMvc.perform(get("/api/v1/auth/profile")
-                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Admin Actualizado"));
     }
 
     @Test
     void refresh_ShouldRotateRefreshToken_AndRejectReusedToken() throws Exception {
-        JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
-        String originalRefreshToken = login.path("refreshToken").asText();
-        String sessionId = login.path("session").path("sessionId").asText();
+        var loginResult = mockMvc.perform(loginRequest("admin@example.com", "admin123", DEVICE_ID))
+                .andExpect(status().isOk()).andReturn();
+        String originalRefreshToken = loginResult.getResponse().getCookie("parkflow_refresh").getValue();
+        JsonNode json = objectMapper.readTree(loginResult.getResponse().getContentAsString());
+        String sessionId = json.path("session").path("sessionId").asText();
 
-        JsonNode rotated = refresh(originalRefreshToken, DEVICE_ID);
+        var refreshResult = mockMvc.perform(post("/api/v1/auth/refresh")
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_refresh", originalRefreshToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(refreshJson(DEVICE_ID)))
+                .andExpect(status().isOk())
+                .andReturn();
+        String rotatedAccessToken = refreshResult.getResponse().getCookie("parkflow_access").getValue();
+        String rotatedRefreshToken = refreshResult.getResponse().getCookie("parkflow_refresh").getValue();
 
         mockMvc.perform(get("/api/v1/auth/me")
-                .header(HttpHeaders.AUTHORIZATION, bearer(rotated.path("accessToken").asText())))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", rotatedAccessToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("admin@example.com"));
 
         mockMvc.perform(post("/api/v1/auth/refresh")
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_refresh", originalRefreshToken))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(refreshJson(originalRefreshToken, DEVICE_ID)))
+                .content(refreshJson(DEVICE_ID)))
                 .andExpect(status().isUnauthorized());
 
         expectSessionInactive(sessionId);
-        org.junit.jupiter.api.Assertions.assertNotEquals(
-                originalRefreshToken,
-                rotated.path("refreshToken").asText());
+        org.junit.jupiter.api.Assertions.assertNotEquals(originalRefreshToken, rotatedRefreshToken);
     }
 
     @Test
     void refresh_ShouldRejectMismatchedDevice() throws Exception {
-        JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
+        var loginResult = mockMvc.perform(loginRequest("admin@example.com", "admin123", DEVICE_ID))
+                .andExpect(status().isOk()).andReturn();
+        String originalRefreshToken = loginResult.getResponse().getCookie("parkflow_refresh").getValue();
 
         mockMvc.perform(post("/api/v1/auth/refresh")
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_refresh", originalRefreshToken))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(refreshJson(login.path("refreshToken").asText(), "other-device")))
+                .content(refreshJson("other-device")))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void logout_ShouldDeactivateSession_AndRejectAccessTokenAfterLogout() throws Exception {
-        JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
-        String accessToken = login.path("accessToken").asText();
-        String sessionId = login.path("session").path("sessionId").asText();
+        var loginResult = mockMvc.perform(loginRequest("admin@example.com", "admin123", DEVICE_ID))
+                .andExpect(status().isOk()).andReturn();
+        String accessToken = loginResult.getResponse().getCookie("parkflow_access").getValue();
+        JsonNode json = objectMapper.readTree(loginResult.getResponse().getContentAsString());
+        String sessionId = json.path("session").path("sessionId").asText();
 
         mockMvc.perform(post("/api/v1/auth/logout")
-                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
-                      "sessionId": "%s",
-                      "refreshToken": "%s"
+                      "sessionId": "%s"
                     }
-                    """.formatted(sessionId, login.path("refreshToken").asText())))
+                    """.formatted(sessionId)))
                 .andExpect(status().isNoContent());
 
         expectSessionInactive(sessionId);
         mockMvc.perform(get("/api/v1/auth/me")
-                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken)))
                 .andExpect(status().is4xxClientError());
     }
 
     @Test
     void changePassword_ShouldValidateCurrentPasswordStrengthAndRevokeSessions() throws Exception {
-        JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
-        String accessToken = login.path("accessToken").asText();
+        String accessToken = loginAndGetAccessToken("admin@example.com", "admin123", DEVICE_ID);
 
         mockMvc.perform(post("/api/v1/auth/change-password")
-                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -194,7 +203,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/v1/auth/change-password")
-                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -205,7 +214,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isBadRequest());
 
         mockMvc.perform(post("/api/v1/auth/change-password")
-                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -220,22 +229,21 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(loginRequest("admin@example.com", "Newpass.123", "new-password-device"))
                 .andExpect(status().isOk());
         mockMvc.perform(get("/api/v1/auth/me")
-                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken)))
                 .andExpect(status().is4xxClientError());
     }
 
     @Test
     void devices_ShouldRevokeAndAuthorizeDevice_WhenUserHasPermissions() throws Exception {
-        JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
-        String accessToken = login.path("accessToken").asText();
+        String accessToken = loginAndGetAccessToken("admin@example.com", "admin123", DEVICE_ID);
 
         mockMvc.perform(get("/api/v1/auth/devices")
-                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].deviceId").value(DEVICE_ID));
 
         mockMvc.perform(post("/api/v1/auth/devices/revoke")
-                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(deviceDecisionJson(DEVICE_ID, "lost terminal")))
                 .andExpect(status().isOk())
@@ -246,7 +254,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/api/v1/auth/devices/authorize")
-                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(deviceDecisionJson(DEVICE_ID, "found terminal")))
                 .andExpect(status().isOk())
@@ -262,20 +270,20 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         var cashier = appUserRepository.findById(adminUserId).orElseThrow();
         cashier.setRole(com.parkflow.modules.auth.domain.UserRole.CAJERO);
         appUserRepository.save(cashier);
-        JsonNode login = login("admin@example.com", "admin123", DEVICE_ID);
+        String accessToken = loginAndGetAccessToken("admin@example.com", "admin123", DEVICE_ID);
 
         mockMvc.perform(get("/api/v1/auth/devices")
-                .header(HttpHeaders.AUTHORIZATION, bearer(login.path("accessToken").asText())))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken)))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/api/v1/auth/devices/revoke")
-                .header(HttpHeaders.AUTHORIZATION, bearer(login.path("accessToken").asText()))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(deviceDecisionJson(DEVICE_ID, "not allowed")))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(get("/api/v1/auth/me")
-                .header(HttpHeaders.AUTHORIZATION, bearer(login.path("accessToken").asText())))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", accessToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.permissions", not(hasItem("devices:autorizar"))))
                 .andExpect(jsonPath("$.permissions", not(hasItem("devices:revocar"))));
@@ -297,29 +305,19 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                     """.formatted(email, password, deviceId));
     }
 
-    private JsonNode login(String email, String password, String deviceId) throws Exception {
+    private String loginAndGetAccessToken(String email, String password, String deviceId) throws Exception {
         var result = mockMvc.perform(loginRequest(email, password, deviceId))
                 .andExpect(status().isOk())
                 .andReturn();
-        return objectMapper.readTree(result.getResponse().getContentAsString());
+        return result.getResponse().getCookie("parkflow_access").getValue();
     }
 
-    private JsonNode refresh(String refreshToken, String deviceId) throws Exception {
-        var result = mockMvc.perform(post("/api/v1/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(refreshJson(refreshToken, deviceId)))
-                .andExpect(status().isOk())
-                .andReturn();
-        return objectMapper.readTree(result.getResponse().getContentAsString());
-    }
-
-    private String refreshJson(String refreshToken, String deviceId) {
+    private String refreshJson(String deviceId) {
         return """
             {
-              "refreshToken": "%s",
               "deviceId": "%s"
             }
-            """.formatted(refreshToken, deviceId);
+            """.formatted(deviceId);
     }
 
     private String deviceDecisionJson(String deviceId, String reason) {
@@ -329,10 +327,6 @@ class AuthIntegrationTest extends BaseIntegrationTest {
               "reason": "%s"
             }
             """.formatted(deviceId, reason);
-    }
-
-    private String bearer(String accessToken) {
-        return "Bearer " + accessToken;
     }
 
     private void expectSessionInactive(String sessionId) {

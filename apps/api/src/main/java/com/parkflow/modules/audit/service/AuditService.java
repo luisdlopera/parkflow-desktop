@@ -15,6 +15,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.parkflow.modules.audit.application.port.out.AuditPort;
+import com.parkflow.modules.auth.security.TenantContext;
 import java.time.OffsetDateTime;
 
 @Service
@@ -63,15 +64,18 @@ public class AuditService implements AuditPort {
         log.setNewPayload(newPayload);
         log.setMetadata(metadata);
 
-        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AuditService.class);
-        logger.info("AUDIT_DIAGNOSTICO: Guardando auditoria. Action={}, User={}, ParamCompanyId={}, LogCompanyId={}", 
-                action, 
-                user != null ? user.getId() : "null", 
-                companyId, 
-                log.getCompanyId());
-
+        // Last-resort fallback: pull tenantId from ThreadLocal if still missing
         if (log.getCompanyId() == null) {
-            logger.error("AUDIT_DIAGNOSTICO: ERROR! Intentando guardar auditoría (global_audit_log) sin company_id. Action={}", action);
+            java.util.UUID tenantId = TenantContext.getTenantId();
+            if (tenantId != null) {
+                log.setCompanyId(tenantId);
+            }
+        }
+
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AuditService.class);
+        if (log.getCompanyId() == null) {
+            logger.error("AUDIT_MISSING_TENANT: audit record saved without company_id. Action={} — investigate caller stack",
+                action);
         }
 
         auditLogRepository.save(log);

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { ListBox } from "@heroui/react";
 import { Chip } from "@/components/bridge/Chip";
 import { Avatar } from "@/components/bridge/Avatar";
 import { Switch } from "@/components/bridge/Switch";
@@ -66,10 +67,25 @@ function UserForm({ initialData, onSave }: { initialData?: AdminUser | null, onS
         <Input label="Email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} type="email" required />
       </div>
       <div className="grid grid-cols-2 gap-4">
-        {/* Simplified Select for code reduction */}
-        <select value={formRole} onChange={(e) => setFormRole(e.target.value as any)} className="w-full p-2 border rounded">
-          {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-        </select>
+        <Select
+          label="Rol"
+          value={[formRole]}
+          onChange={(keys) => {
+            const val = Array.from(keys)[0] as AdminUser["role"] | undefined;
+            if (val) setFormRole(val);
+          }}
+          className="w-full"
+        >
+          <Select.Trigger aria-label="Rol">
+            <Select.Value aria-label="Rol" />
+            <Select.Indicator aria-label="Rol" />
+          </Select.Trigger>
+          <Select.Popover aria-label="Rol">
+            <ListBox>
+              {ROLES.map(r => <ListBox.Item key={r.value} textValue={r.label}>{r.label}</ListBox.Item>)}
+            </ListBox>
+          </Select.Popover>
+        </Select>
         <div className="flex items-center gap-2 pt-2">
           <Switch isSelected={formActive} onChange={setFormActive} aria-label="Alternar opción" />
           <span>Activo</span>

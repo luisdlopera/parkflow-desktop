@@ -7,8 +7,8 @@ import { Card } from "@/components/bridge/Card";
 import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
 import { ArrowRight, Car, Search, Ticket, User, Building2, Loader2 } from "lucide-react";
-import { useSearch } from "@/modules/search/hooks/useSearch";
-import type { SearchResult, SearchType } from "@/modules/search/search.types";
+import { useSearch } from "@/features/search/hooks/useSearch";
+import type { SearchResult, SearchType } from "@/features/search/types/search.types";
 
 const RECENT_KEY = "parkflow.search.recent";
 

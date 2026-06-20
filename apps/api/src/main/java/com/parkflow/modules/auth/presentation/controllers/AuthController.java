@@ -54,9 +54,9 @@ public class AuthController {
   @PostMapping("/login")
   @ResponseStatus(HttpStatus.OK)
   public LoginResponse login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
-    LoginResponse result = loginUseCase.login(request);
+    LoginResult result = loginUseCase.login(request);
     setAuthCookies(response, result.accessToken(), result.refreshToken());
-    return result;
+    return result.response();
   }
 
   private void setAuthCookies(HttpServletResponse response, String accessToken, String refreshToken) {
@@ -69,10 +69,47 @@ public class AuthController {
   }
 
   @PostMapping("/refresh")
-  public LoginResponse refresh(@Valid @RequestBody RefreshRequest request, HttpServletResponse response) {
-    LoginResponse result = tokenRefreshUseCase.refresh(request);
+  public LoginResponse refresh(@Valid @RequestBody RefreshRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
+    String refreshToken = null;
+    if (httpRequest.getCookies() != null) {
+      for (jakarta.servlet.http.Cookie cookie : httpRequest.getCookies()) {
+        if ("parkflow_refresh".equals(cookie.getName())) {
+          refreshToken = cookie.getValue();
+          break;
+        }
+      }
+    }
+    if (refreshToken == null || refreshToken.isBlank()) {
+      throw new com.parkflow.modules.common.exception.OperationException(
+          org.springframework.http.HttpStatus.UNAUTHORIZED,
+          "AUTH_UNAUTHORIZED",
+          "Tu sesion expiro. Inicia sesion nuevamente.");
+    }
+    LoginResult result = tokenRefreshUseCase.refresh(request, refreshToken);
     setAuthCookies(response, result.accessToken(), result.refreshToken());
-    return result;
+    return result.response();
+  }
+
+  @PostMapping("/restore-session")
+  public LoginResponse restoreSession(HttpServletRequest request, HttpServletResponse response) {
+    String refreshToken = null;
+    if (request.getCookies() != null) {
+      for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+        if ("parkflow_refresh".equals(cookie.getName())) {
+          refreshToken = cookie.getValue();
+          break;
+        }
+      }
+    }
+    if (refreshToken == null || refreshToken.isBlank()) {
+      throw new com.parkflow.modules.common.exception.OperationException(
+          org.springframework.http.HttpStatus.UNAUTHORIZED,
+          "AUTH_UNAUTHORIZED",
+          "Tu sesion expiro. Inicia sesion nuevamente.");
+    }
+    LoginResult result = tokenRefreshUseCase.refreshFromCookie(refreshToken);
+    setAuthCookies(response, result.accessToken(), result.refreshToken());
+    return result.response();
   }
 
   @PostMapping("/logout")

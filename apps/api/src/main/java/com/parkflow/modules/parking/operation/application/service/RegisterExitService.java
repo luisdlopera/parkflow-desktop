@@ -29,6 +29,8 @@ import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.repository.*;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.tickets.domain.PrintDocumentType;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -63,6 +65,7 @@ public class RegisterExitService implements RegisterExitUseCase {
   private final ParkingCashIntegrationUseCase parkingCashIntegrationUseCase;
   private final ParkingParametersUseCase parkingParametersUseCase;
   private final ParkingPricingUseCase parkingPricingUseCase;
+  private final MeterRegistry meterRegistry;
 
   @Override
   @Transactional
@@ -138,6 +141,8 @@ public class RegisterExitService implements RegisterExitUseCase {
     safeRecordIdempotency(request.idempotencyKey(), IdempotentOperationType.EXIT, session);
 
     DurationCalculator.DurationBreakdown duration = DurationCalculator.calculate(session.getEntryAt(), exitAt, 0);
+
+    meterRegistry.counter("parkflow.operations", "operation", "exit").increment();
 
     return new OperationResultResponse(
         session.getId().toString(),

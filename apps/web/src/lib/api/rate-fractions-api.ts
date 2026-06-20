@@ -1,7 +1,7 @@
 import { apiFetch, cfgBase, buildApiHeaders, hdr } from "./_shared";
-import { rateFractionSchema } from "@/modules/settings/schemas";
+import { rateFractionSchema } from "@/lib/schemas/config.schemas";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
-import type { RateFractionRow } from "@/modules/settings/types";
+import type { RateFractionRow } from "@/lib/types/settings.types";
 
 export type { RateFractionRow };
 

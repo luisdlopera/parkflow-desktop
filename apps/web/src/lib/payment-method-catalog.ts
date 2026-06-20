@@ -31,7 +31,7 @@ export const PAYMENT_METHOD_CATALOG: PaymentMethodEntry[] = [
   { code: "TRANSFER",       label: "Transferencia",   hint: "Banco / referencia",  tone: "bg-cyan-600 hover:bg-cyan-700 border border-default-200",       requiresReference: true,  availableInOnboarding: true  },
   { code: "AGREEMENT",      label: "Convenio",        hint: "Empresa aliada",      tone: "bg-amber-500 hover:bg-amber-600 border border-default-200",     requiresReference: false, availableInOnboarding: true  },
   { code: "INTERNAL_CREDIT",label: "Crédito interno", hint: "Cartera interna",     tone: "bg-violet-500 hover:bg-violet-600 border border-default-200",   requiresReference: false, availableInOnboarding: false },
-  { code: "OTHER",          label: "Otro",            hint: "Caso especial",       tone: "bg-zinc-500 hover:bg-zinc-600 border border-default-200",       requiresReference: false, availableInOnboarding: false },
+  { code: "OTHER",          label: "Otro",            hint: "Caso especial",       tone: "bg-slate-600 hover:bg-slate-700 border border-default-200",     requiresReference: false, availableInOnboarding: false },
   { code: "MIXED",          label: "Mixto",           hint: "Pago dividido",       tone: "bg-teal-600 hover:bg-teal-700 border border-default-200",       requiresReference: false, availableInOnboarding: true  },
 ];
 

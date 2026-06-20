@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.UUID;
 import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -45,13 +44,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   protected void doFilterInternal(
       @NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
       throws ServletException, IOException {
-    String auth = request.getHeader(HttpHeaders.AUTHORIZATION);
-    if (auth == null || !auth.startsWith("Bearer ")) {
+    String token = null;
+    if (request.getCookies() != null) {
+      for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+        if ("parkflow_access".equals(cookie.getName())) {
+          token = cookie.getValue();
+          break;
+        }
+      }
+    }
+    if (token == null || token.isBlank()) {
       filterChain.doFilter(request, response);
       return;
     }
-
-    String token = auth.substring("Bearer ".length());
     Claims claims;
     try {
       claims = jwtTokenService.parse(token);
@@ -139,11 +144,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     request.setAttribute("currentUserId", userId.toString());
 
     TenantContext.setTenantId(companyId);
+    org.slf4j.MDC.put("tenantId", companyId.toString());
+    org.slf4j.MDC.put("userId", userId.toString());
 
     try {
       filterChain.doFilter(request, response);
     } finally {
       TenantContext.clear();
+      org.slf4j.MDC.remove("tenantId");
+      org.slf4j.MDC.remove("userId");
     }
   }
 

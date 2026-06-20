@@ -11,8 +11,9 @@ import { loadSession, saveSession } from "@/features/auth/services/auth-storage.
 import { currentUser } from "@/features/auth/services/auth-domain.service";
 import { checkSetupRequired, postInitialSetup } from "@/lib/api/auth-api";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
+import { useAuthStore } from "@/lib/stores/auth.store";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
-import { Eye, EyeOff, Lock, Mail, User, Building, Landmark, Zap } from "lucide-react";
+import { Lock, Mail, User, Building, Landmark, Zap } from "lucide-react";
 
 const fallbackDeviceId = process.env.NEXT_PUBLIC_DEVICE_ID ?? "desktop-default";
 const deviceName = process.env.NEXT_PUBLIC_DEVICE_NAME ?? "Caja principal";
@@ -147,6 +148,7 @@ export default function LoginPage() {
           nit: companyNit.trim(),
         }) as any;
         await saveSession(session);
+        useAuthStore.getState().setUser(session.user);
         if (!session.user?.onboardingCompleted) {
           router.replace("/onboarding");
         } else {
@@ -162,6 +164,8 @@ export default function LoginPage() {
           fingerprint,
           offlineRequestedHours: 48
         });
+        // Actualizar el store global para que AuthGate no redirija al login
+        useAuthStore.getState().setUser(session.user as any);
         if (!session.user.onboardingCompleted) {
           router.replace("/onboarding");
         } else {
@@ -249,10 +253,10 @@ export default function LoginPage() {
                     type="button"
                     aria-label="Mostrar contraseña"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors focus:outline-none"
+                    className="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors focus:outline-none"
                     tabIndex={-1}
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? "Ocultar" : "Mostrar"}
                   </button>
                 }
               />
@@ -286,10 +290,10 @@ export default function LoginPage() {
                   type="button"
                   aria-label="Mostrar contraseña"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors focus:outline-none"
+                  className="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors focus:outline-none"
                   tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? "Ocultar" : "Mostrar"}
                 </button>
               }
             />

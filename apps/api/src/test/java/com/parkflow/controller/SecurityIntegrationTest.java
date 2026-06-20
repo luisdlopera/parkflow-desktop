@@ -25,7 +25,7 @@ class SecurityIntegrationTest extends BaseIntegrationTest {
         String xssInput = "<script>alert('xss')</script>";
 
         mockMvc.perform(post("/api/v1/operations/entries")
-                .header("Authorization", "Bearer " + getAuthToken())
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", getAuthToken()))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"idempotencyKey\":\"sec-entry-001\",\"plate\":\"ABC123\",\"type\":\"CAR\",\"rateId\":\"" + rateId + "\",\"operatorUserId\":\"" + adminUserId + "\",\"site\":\"Test Site\",\"terminal\":\"TERM1\",\"observations\":\"" + xssInput + "\",\"vehicleCondition\":\"Sin novedades\"}"))
                 .andExpect(status().isCreated())

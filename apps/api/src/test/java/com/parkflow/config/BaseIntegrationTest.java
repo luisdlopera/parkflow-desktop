@@ -242,11 +242,11 @@ public abstract class BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(loginRequest))
                 .andReturn();
-        JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
-        String accessToken = response.path("accessToken").asText(null);
-        if (accessToken == null || accessToken.isBlank()) {
-            throw new IllegalStateException("Login response did not include accessToken");
+        String cookieHeader = result.getResponse().getHeader("Set-Cookie");
+        if (cookieHeader == null || !cookieHeader.contains("parkflow_access=")) {
+            throw new IllegalStateException("Login response did not include parkflow_access cookie");
         }
+        String accessToken = cookieHeader.split("parkflow_access=")[1].split(";")[0];
         return accessToken;
     }
 }

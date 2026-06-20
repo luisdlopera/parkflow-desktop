@@ -6,7 +6,7 @@ import {
   settingsUserStatusSchema,
 } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
-import type { UserRole } from "@/modules/settings/types";
+import type { UserRole } from "@/lib/types/settings.types";
 
 export type UserAdminRow = {
   id: string;

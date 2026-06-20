@@ -1,7 +1,9 @@
 import { authHeaders } from "@/features/auth/services/auth-domain.service";
 import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import { authBase } from "@/lib/api/config";
-import type { UserRole } from "@/modules/settings/types";
+import type { UserRole } from "@/lib/types/settings.types";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 function authBaseUrl(): string {
   if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
@@ -12,7 +14,7 @@ function authBaseUrl(): string {
 
 async function authFetch<T>(path: string, options?: RequestInit): Promise<T> {
   try {
-    const res = await fetch(`${authBaseUrl()}${path}`, {
+    const res = await fetchWithCredentials(`${authBaseUrl()}${path}`, {
       ...options,
       headers: {
         ...(await authHeaders()),
@@ -69,7 +71,7 @@ export async function updateProfile(payload: UpdateProfilePayload): Promise<User
 }
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
-  const res = await fetch(`${authBaseUrl()}/change-password`, {
+  const res = await fetchWithCredentials(`${authBaseUrl()}/change-password`, {
     method: "POST",
     headers: await authHeaders(),
     body: JSON.stringify({ currentPassword, newPassword }),

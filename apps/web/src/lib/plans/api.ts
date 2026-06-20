@@ -2,6 +2,8 @@ import { authHeaders } from "@/features/auth/services/auth-domain.service";
 import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import { apiBase as getApiBase } from "@/lib/api/config";
 import type { Plan, CreatePlanRequest } from "./types";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 const API_BASE = getApiBase();
 
@@ -9,7 +11,7 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
   const headers = await authHeaders();
 
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const response = await fetchWithCredentials(`${API_BASE}${endpoint}`, {
       ...options,
       headers: {
         ...headers,

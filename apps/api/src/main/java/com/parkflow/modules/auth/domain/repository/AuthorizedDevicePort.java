@@ -8,6 +8,7 @@ import java.util.UUID;
 public interface AuthorizedDevicePort {
   Optional<AuthorizedDevice> findByDeviceId(String deviceId);
   List<AuthorizedDevice> findAll();
+  List<AuthorizedDevice> findAllByCompanyId(UUID companyId);
   AuthorizedDevice save(AuthorizedDevice device);
   Optional<AuthorizedDevice> findById(UUID id);
 }

@@ -60,8 +60,14 @@ public class AppUser {
   @Column(nullable = false)
   private OffsetDateTime updatedAt = OffsetDateTime.now();
 
+  private OffsetDateTime deletedAt;
+
   @PreUpdate
   public void preUpdate() {
     this.updatedAt = OffsetDateTime.now();
+  }
+
+  public boolean isDeleted() {
+    return deletedAt != null;
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { Modal, ListBox } from "@heroui/react";
+import { Checkbox } from "@/components/bridge/Checkbox";
 import { Select } from "@/components/bridge/Select";
 import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
@@ -267,12 +268,11 @@ export default function SalidaCobroClient() {
                         <p className="font-bold text-red-900 text-lg uppercase">¡ATENCIÓN! Elementos custodiados</p>
                         {p.pendingCustodiedItems.map((item) => (
                           <div key={item.id} className="mt-2 flex items-start gap-2">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               aria-label={`Confirmar devolución de ${item.itemType === "HELMET" ? "Casco" : item.itemType}${item.identifier ? ` #${item.identifier}` : ""}`}
-                              checked={p.returnConfirmedIds.includes(item.id)}
-                              onChange={(e) => p.toggleReturnItem(item.id, e.target.checked)}
-                              className="mt-1 rounded border-red-300"
+                              isSelected={p.returnConfirmedIds.includes(item.id)}
+                              onValueChange={(checked) => p.toggleReturnItem(item.id, checked)}
+                              className="mt-1"
                             />
                             <div>
                               <p className="font-bold text-red-900">
@@ -470,11 +470,11 @@ export default function SalidaCobroClient() {
           <div className="mt-6 pt-4 border-t border-slate-200 space-y-3">
             {p.allowTicketReprint && (
               <>
-                <input
+                <Input
                   value={p.reprintReason}
                   aria-label="Motivo de reimpresión"
-                  onChange={(e) => p.setReprintReason(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  onValueChange={p.setReprintReason}
+                  className="w-full"
                   placeholder="Motivo reimpresion"
                 />
                 <Button
@@ -489,11 +489,11 @@ export default function SalidaCobroClient() {
               </>
             )}
 
-            <input
+            <Input
               value={p.lostReason}
               aria-label="Motivo de ticket perdido"
-              onChange={(e) => p.setLostReason(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              onValueChange={p.setLostReason}
+              className="w-full"
               placeholder="Motivo ticket perdido"
             />
             <Button

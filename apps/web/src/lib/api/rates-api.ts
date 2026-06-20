@@ -4,7 +4,7 @@ import {
   settingsRateUpsertSchema,
 } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
-import type { RateType } from "@/modules/parking/types";
+import type { RateType } from "@/lib/types/parking.types";
 
 export type RoundingMode = "UP" | "DOWN" | "NEAREST";
 export type RateCategory = "STANDARD" | "MONTHLY" | "AGREEMENT" | "PREPAID";

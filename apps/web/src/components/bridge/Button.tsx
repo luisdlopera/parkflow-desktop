@@ -59,15 +59,18 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       colorClasses = "bg-yellow-600 text-white hover:bg-yellow-700";
     } else if (color === "secondary" || variant === "secondary") {
       mappedColor = "secondary";
-      colorClasses = "bg-gray-600 text-white hover:bg-gray-700";
+      colorClasses = "bg-slate-600 text-white hover:bg-slate-700";
     } else if (color === "success" || variant === "success") {
       mappedColor = "success";
       colorClasses = "bg-green-600 text-white hover:bg-green-700";
     } else if (color === "default" || variant === "default") {
       mappedColor = "default";
-      colorClasses = "bg-gray-300 text-gray-900 hover:bg-gray-400";
+      colorClasses = "bg-slate-200 text-slate-900 hover:bg-slate-300";
+    } else if (variant === "tertiary") {
+      mappedColor = "default";
+      colorClasses = ""; // let className prop control all styling
     } else {
-      // Default to primary orange
+      // Default to primary brand color
       mappedColor = "primary";
       colorClasses = "bg-brand-500 text-white hover:bg-brand-600";
     }

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { UserMenu } from "@/components/auth/UserMenu";
 
-import { QuickSearch } from "@/modules/search/components/QuickSearch";
+import { QuickSearch } from "@/features/search/components/QuickSearch";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -12,7 +12,7 @@ interface HeaderProps {
 
 export default function Header({ onMenuClick }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-overlay/80 px-4 lg:px-8 py-4 backdrop-blur">
+    <header className="flex shrink-0 items-center justify-between border-b border-border bg-[var(--color-sidebar)] px-4 lg:px-8 py-4">
       {/* Left side: Hamburger + Title */}
       <div className="flex items-center gap-3">
         {/* Mobile menu button */}

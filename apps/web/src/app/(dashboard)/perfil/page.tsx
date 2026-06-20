@@ -10,7 +10,7 @@ import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/e
 import { useAsyncAction } from "@/lib/errors/use-async-action";
 import { clearSession } from "@/features/auth/services/auth-storage.service";
 import { patchSessionUser } from "@/features/auth/services/auth-domain.service";
-import type { UserRole } from "@/modules/settings/types";
+import type { UserRole } from "@/lib/types/settings.types";
 import { PageBackButton } from "@/components/layout/PageBackButton";
 
 const ROLE_LABELS: Record<UserRole, string> = {

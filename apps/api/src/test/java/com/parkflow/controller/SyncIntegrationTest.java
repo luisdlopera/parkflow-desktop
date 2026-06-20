@@ -13,7 +13,7 @@ class SyncIntegrationTest extends BaseIntegrationTest {
         String token = getAuthToken();
 
         mockMvc.perform(post("/api/v1/sync/push")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"idempotencyKey\":\"sync-test-001\",\"eventType\":\"TEST_EVENT\",\"aggregateId\":\"AGG-1\",\"payloadJson\":\"{}\",\"userId\":\"" + adminUserId + "\",\"deviceId\":\"test-device\",\"sessionId\":\"test-session\",\"origin\":\"ONLINE\"}"))
                 .andExpect(status().isOk())

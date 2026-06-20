@@ -13,8 +13,8 @@ import {
   updateConfigurationRateFraction,
   deleteConfigurationRateFraction,
 } from "@/lib/settings-api";
-import { rateFractionSchema, type RateFractionSchema } from "@/modules/settings/schemas";
-import type { RateFractionRow } from "@/modules/settings/types";
+import { rateFractionSchema, type RateFractionSchema } from "@/lib/schemas/config.schemas";
+import type { RateFractionRow } from "@/lib/types/settings.types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { FormDrawer } from "@/components/ui/FormDrawer";
 import { useDialog } from "@/components/ui/DialogProvider";

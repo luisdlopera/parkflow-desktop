@@ -12,7 +12,7 @@ class ReportsIntegrationTest extends BaseIntegrationTest {
         String token = getAuthToken();
 
         mockMvc.perform(get("/api/v1/operations/supervisor/summary")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .param("timeZone", "America/Bogota"))
                 .andExpect(status().isOk())
             .andExpect(jsonPath("$.entriesSinceMidnight").exists());

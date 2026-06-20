@@ -65,7 +65,7 @@ class ConfigurationPaymentMethodControllerWebMvcTest {
         new PaymentMethodResponse(
             UUID.randomUUID(), "CASH", "Efectivo", false, true, 1, OffsetDateTime.now(), OffsetDateTime.now());
 
-    Mockito.when(paymentMethodUseCase.create(Mockito.any())).thenReturn(response);
+    Mockito.when(paymentMethodUseCase.create(Mockito.any(), Mockito.any())).thenReturn(response);
 
     PaymentMethodRequest request = new PaymentMethodRequest("CASH", "Efectivo", false, true, 1);
 
@@ -90,7 +90,7 @@ class ConfigurationPaymentMethodControllerWebMvcTest {
     SettingsPageResponse<PaymentMethodResponse> page =
         SettingsPageResponse.of(new PageImpl<>(List.of(response), PageRequest.of(0, 20), 1));
 
-    Mockito.when(paymentMethodUseCase.list(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(page);
+    Mockito.when(paymentMethodUseCase.list(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(page);
 
     mockMvc
         .perform(get("/api/v1/configuration/payment-methods"))

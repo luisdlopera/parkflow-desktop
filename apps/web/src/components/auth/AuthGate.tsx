@@ -1,66 +1,47 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { loadSession, clearSession } from "@/features/auth/services/auth-storage.service";
+import { useAuthStore } from "@/lib/stores/auth.store";
 import { currentUser } from "@/features/auth/services/auth-domain.service";
-import { useSessionMonitor } from "@/hooks/auth/useSessionMonitor";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [ready, setReady] = useState(false);
-  const { isExpired } = useSessionMonitor();
-  const ranRef = useRef(false);
+  const { isLoading, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
-    if (ranRef.current) return;
-    ranRef.current = true;
+    if (isLoading) return;
+
+    if (!isAuthenticated) {
+      router.replace(`/login?next=${encodeURIComponent(pathname ?? "/")}`);
+      return;
+    }
 
     void (async () => {
-      const session = await loadSession();
       const user = await currentUser();
-      if (!session || !user) {
-        router.replace(`/login?next=${encodeURIComponent(pathname ?? "/")}`);
-        return;
-      }
+      if (!user) return;
 
       const isChangePasswordPage = pathname?.startsWith("/change-password");
       const isOnboardingPage = pathname?.startsWith("/onboarding");
 
       if (user.requirePasswordChange && !isChangePasswordPage && user.role !== "SUPER_ADMIN") {
         router.replace("/change-password");
-        return;
-      }
-
-      if (!user.requirePasswordChange && isChangePasswordPage) {
+      } else if (!user.requirePasswordChange && isChangePasswordPage) {
         router.replace("/");
-        return;
-      }
-
-      if (!user.onboardingCompleted && !isOnboardingPage) {
+      } else if (!user.onboardingCompleted && !isOnboardingPage) {
         router.replace("/onboarding");
-        return;
-      }
-
-      if (user.onboardingCompleted && isOnboardingPage) {
+      } else if (user.onboardingCompleted && isOnboardingPage) {
         router.replace("/");
-        return;
       }
-
-      setReady(true);
     })();
-  }, [pathname, router]);
+  }, [isLoading, isAuthenticated, pathname, router]);
 
-  useEffect(() => {
-    if (isExpired && ready) {
-      clearSession().then(() => router.push("/login?reason=expired"));
-    }
-  }, [isExpired, ready]);
-
-  if (!ready) {
+  if (isLoading) {
     return <div className="p-6 text-sm text-slate-600">Validando sesion...</div>;
   }
+
+  if (!isAuthenticated) return null;
 
   return <>{children}</>;
 }

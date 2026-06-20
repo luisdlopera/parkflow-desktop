@@ -1,7 +1,7 @@
 "use client";
 
 import { ConfigPageHeader } from "@/features/configuration/components/ui/ConfigPageHeader";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -10,8 +10,8 @@ import {
   updateConfigurationPaymentMethod,
   patchConfigurationPaymentMethodStatus,
 } from "@/lib/settings-api";
-import { paymentMethodSchema, type PaymentMethodSchema } from "@/modules/settings/schemas";
-import type { PaymentMethodRow } from "@/modules/settings/types";
+import { paymentMethodSchema, type PaymentMethodSchema } from "@/lib/schemas/config.schemas";
+import type { PaymentMethodRow } from "@/lib/types/settings.types";
 import { Button } from "@/components/bridge/Button";
 import { Checkbox } from "@/components/bridge/Checkbox";
 import { Input } from "@/components/bridge/Input";
@@ -19,6 +19,8 @@ import { DataTableSection, type ColumnDef } from "@/components/settings/DataTabl
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/ui/FormDrawer";
 import { useConfigCrud } from "@/hooks/core/useConfigCrud";
+import { PAYMENT_METHOD_CATALOG } from "@/lib/payment-method-catalog";
+import { toast } from "@heroui/react";
 
 const COLS: ColumnDef<PaymentMethodRow>[] = [
   { key: "code", label: "Código" },
@@ -43,6 +45,8 @@ const COLS: ColumnDef<PaymentMethodRow>[] = [
 const DEFAULTS: PaymentMethodSchema = { code: "", name: "", requiresReference: false, isActive: true, displayOrder: 0 };
 
 export default function MetodosPagoPage() {
+  const [activating, setActivating] = useState<string | null>(null);
+
   const crud = useConfigCrud<PaymentMethodRow>({
     loadFn: (q?: unknown) => fetchConfigurationPaymentMethods({ q: q as string, page: 0, size: 50 }),
     createFn: (data) => createConfigurationPaymentMethod(data),
@@ -56,6 +60,32 @@ export default function MetodosPagoPage() {
   });
 
   useEffect(() => { void crud.load(); }, []);
+
+  const enabledCodes = new Set(crud.rows.map((r) => r.code));
+  const catalogueToAdd = PAYMENT_METHOD_CATALOG.filter(
+    (m) => m.availableInOnboarding && !enabledCodes.has(m.code)
+  );
+
+  const handleActivateFromCatalogue = async (code: string) => {
+    const entry = PAYMENT_METHOD_CATALOG.find((m) => m.code === code);
+    if (!entry) return;
+    setActivating(code);
+    try {
+      await createConfigurationPaymentMethod({
+        code: entry.code,
+        name: entry.label,
+        requiresReference: entry.requiresReference,
+        isActive: true,
+        displayOrder: PAYMENT_METHOD_CATALOG.indexOf(entry) + 1,
+      });
+      toast.success(`${entry.label} activado`);
+      void crud.load();
+    } catch {
+      toast.danger(`No se pudo activar ${entry.label}`);
+    } finally {
+      setActivating(null);
+    }
+  };
 
   const handleOpenCreate = () => {
     reset(DEFAULTS);
@@ -92,6 +122,25 @@ export default function MetodosPagoPage() {
           </div>
         )}
       />
+      {catalogueToAdd.length > 0 && (
+        <div className="rounded-xl border border-default-200 bg-white p-5">
+          <p className="mb-3 text-sm font-semibold text-slate-700">Agregar desde catálogo estándar</p>
+          <div className="flex flex-wrap gap-2">
+            {catalogueToAdd.map((m) => (
+              <button
+                key={m.code}
+                onClick={() => handleActivateFromCatalogue(m.code)}
+                disabled={activating === m.code}
+                className="flex items-center gap-1.5 rounded-lg border border-default-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+              >
+                <span className="text-xs text-slate-400">+</span>
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <FormDrawer
         open={crud.drawerOpen}
         title={crud.editing ? "Editar Método" : "Nuevo Método"}

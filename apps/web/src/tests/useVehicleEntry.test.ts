@@ -3,8 +3,8 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useVehicleEntry } from "@/features/vehicle-entry/hooks/useVehicleEntry";
-import { vehicleEntrySchema } from "@/modules/parking/vehicle.schema";
-import type { VehicleEntryFormValues } from "@/modules/parking/vehicle.schema";
+import { vehicleEntrySchema } from "@/lib/schemas/vehicle.schema";
+import type { VehicleEntryFormValues } from "@/lib/schemas/vehicle.schema";
 import type { OperatorSettings } from "@/features/vehicle-entry/hooks/useOperatorSettings";
 
 // --- mocks ---

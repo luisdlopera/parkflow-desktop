@@ -1,30 +1,50 @@
 package com.parkflow.config;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.RejectedExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 @EnableAsync
+@EnableScheduling
 public class AsyncConfig {
 
+  private static final Logger log = LoggerFactory.getLogger(AsyncConfig.class);
+
   /**
-   * Bounded executor for async audit and print-job tasks.
+   * Bounded executor for async audit tasks.
    *
-   * <p>CallerRunsPolicy as rejection handler: if the queue is full the calling thread runs the
-   * task synchronously, ensuring no audit events are silently dropped under load.
+   * <p>Uses AbortPolicy (not CallerRunsPolicy) so queue saturation raises a metric alert instead
+   * of blocking the HTTP request thread and causing cascading timeouts. Monitor
+   * parkflow.executor.rejected{executor=audit} to detect sustained backpressure.
    */
   @Bean(name = "auditExecutor")
-  public Executor auditExecutor() {
+  public Executor auditExecutor(MeterRegistry meterRegistry) {
+    Counter rejected = Counter.builder("parkflow.executor.rejected")
+        .tag("executor", "audit")
+        .description("Audit tasks rejected due to full queue")
+        .register(meterRegistry);
+
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(4);
     executor.setMaxPoolSize(16);
     executor.setQueueCapacity(500);
     executor.setThreadNamePrefix("audit-");
-    executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+    executor.setRejectedExecutionHandler((runnable, pool) -> {
+      rejected.increment();
+      log.error("AUDIT_EXECUTOR_FULL: audit task rejected (queue={}, active={}). " +
+          "Alert: parkflow.executor.rejected[executor=audit] > 0",
+          pool.getQueue().size(), pool.getActiveCount());
+      throw new RejectedExecutionException("Audit executor queue full — task dropped");
+    });
     executor.initialize();
     return executor;
   }
@@ -33,13 +53,24 @@ public class AsyncConfig {
    * Bounded executor for print-job side-effects triggered by session events.
    */
   @Bean(name = "printExecutor")
-  public Executor printExecutor() {
+  public Executor printExecutor(MeterRegistry meterRegistry) {
+    Counter rejected = Counter.builder("parkflow.executor.rejected")
+        .tag("executor", "print")
+        .description("Print tasks rejected due to full queue")
+        .register(meterRegistry);
+
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(2);
     executor.setMaxPoolSize(8);
     executor.setQueueCapacity(200);
     executor.setThreadNamePrefix("print-");
-    executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+    executor.setRejectedExecutionHandler((runnable, pool) -> {
+      rejected.increment();
+      log.error("PRINT_EXECUTOR_FULL: print task rejected (queue={}, active={}). " +
+          "Alert: parkflow.executor.rejected[executor=print] > 0",
+          pool.getQueue().size(), pool.getActiveCount());
+      throw new RejectedExecutionException("Print executor queue full — task dropped");
+    });
     executor.initialize();
     return executor;
   }

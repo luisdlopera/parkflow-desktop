@@ -46,7 +46,7 @@ export async function safeFetch<T = unknown>(input: RequestInfo | URL, init?: Re
 
     // @ts-ignore
     if (!response) {
-      response = await fetch(input, init);
+      response = await fetch(input, { credentials: 'include', ...init });
     }
 
     const requestUrl = typeof input === "string" || input instanceof URL ? String(input) : input.url;

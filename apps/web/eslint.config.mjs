@@ -1,8 +1,22 @@
 import coreWebVitals from "eslint-config-next/core-web-vitals";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
+import tsParser from "@typescript-eslint/parser";
+
 export default [
   { ignores: [".next/**", "node_modules/**"] },
   ...coreWebVitals,
   {
+    plugins: {
+      "@typescript-eslint": tsPlugin,
+    },
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaFeatures: { jsx: true },
+        ecmaVersion: "latest",
+        sourceType: "module",
+      },
+    },
     rules: {
       "import/no-anonymous-default-export": "off",
       "react/no-unescaped-entities": "off",

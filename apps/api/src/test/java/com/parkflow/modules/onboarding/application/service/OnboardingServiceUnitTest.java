@@ -1,7 +1,9 @@
 package com.parkflow.modules.onboarding.application.service;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
+import com.parkflow.modules.licensing.domain.repository.CompanyModulePort;
 import com.parkflow.modules.licensing.enums.PlanType;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +13,8 @@ import org.junit.jupiter.api.Test;
 @DisplayName("OnboardingService Unit Tests")
 class OnboardingServiceUnitTest {
 
-  private FeatureAccessService featureAccessService = new FeatureAccessService();
+  private FeatureAccessService featureAccessService =
+      new FeatureAccessService(mock(CompanyModulePort.class));
 
   @Test
   @DisplayName("Should provide SYNC plan options")

@@ -74,7 +74,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), rateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(carEntry))
         .andExpect(status().isCreated())
@@ -94,7 +94,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(motorcycleEntry))
         .andExpect(status().isCreated())
@@ -119,7 +119,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), rateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(carEntry))
         .andExpect(status().isCreated());
@@ -138,13 +138,13 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(motoEntry))
         .andExpect(status().isCreated());
 
     mockMvc.perform(get("/api/v1/operations/sessions/active-list")
-            .header("Authorization", "Bearer " + token))
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data").isArray())
         .andExpect(jsonPath("$.data.length()").isNumber());
@@ -169,7 +169,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), rateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entry))
         .andExpect(status().isCreated())
@@ -195,7 +195,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
         """.formatted(System.currentTimeMillis(), motorcycleRateId, adminUserId);
 
     mockMvc.perform(post("/api/v1/operations/entries")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .contentType(MediaType.APPLICATION_JSON)
             .content(entry))
         .andExpect(status().isCreated())
@@ -234,7 +234,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
           """.formatted(idemKey, v[1], v[2], rate, adminUserIdStr);
 
       mockMvc.perform(post("/api/v1/operations/entries")
-              .header("Authorization", "Bearer " + token)
+              .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
               .contentType(MediaType.APPLICATION_JSON)
               .content(body))
           .andExpect(status().isCreated())
@@ -242,7 +242,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
     }
 
     mockMvc.perform(get("/api/v1/operations/sessions/active-list")
-            .header("Authorization", "Bearer " + token))
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data").isArray());
   }

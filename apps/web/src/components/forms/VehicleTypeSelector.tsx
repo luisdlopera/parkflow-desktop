@@ -5,6 +5,25 @@ import { Select } from "@/components/bridge/Select";
 import { Controller } from "react-hook-form";
 import { VehicleTypeIcon } from "@/components/vehicles/VehicleTypeIcon";
 
+import { Control, UseFormSetValue, UseFormTrigger } from "react-hook-form";
+
+export interface VehicleTypeData {
+  code: string;
+  name?: string;
+  color?: string;
+}
+
+export interface VehicleTypeSelectorProps {
+  vehicleTypes: VehicleTypeData[];
+  loadingTypes?: boolean;
+  isExpert?: boolean;
+  visibleQuickTypes: VehicleTypeData[];
+  selectedTypeCode?: string;
+  control: Control<any>;
+  setValue: UseFormSetValue<any>;
+  trigger: UseFormTrigger<any>;
+}
+
 export default function VehicleTypeSelector({
   vehicleTypes,
   loadingTypes,
@@ -14,7 +33,7 @@ export default function VehicleTypeSelector({
   control,
   setValue,
   trigger,
-}: any) {
+}: VehicleTypeSelectorProps) {
   if (vehicleTypes.length === 1) return null;
 
   if (loadingTypes) {
@@ -24,7 +43,7 @@ export default function VehicleTypeSelector({
     if (isExpert) {
       return (
       <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2">
-        {visibleQuickTypes.map((t: any, index: number) => {
+        {visibleQuickTypes.map((t: VehicleTypeData, index: number) => {
           const config = { label: t.name || t.code, color: t.color || "" };
           const isSelected = selectedTypeCode === t.code;
           return (
@@ -59,9 +78,9 @@ export default function VehicleTypeSelector({
   return (
                 <Controller
       name="type"
-      control={control as any}
+      control={control}
       render={({ field }) => {
-        const validKeys = vehicleTypes.map((t: any) => t.code);
+        const validKeys = vehicleTypes.map((t: VehicleTypeData) => t.code);
         const selectedKey = validKeys.includes(field.value) ? field.value : undefined;
         return (
           <Select
@@ -71,7 +90,7 @@ export default function VehicleTypeSelector({
             value={selectedKey ? [selectedKey] : []}
             isDisabled={vehicleTypes.length === 0 || loadingTypes}
             onChange={(keys) => {
-              const selected = Array.from(keys as Set<any>)[0] as string;
+              const selected = Array.from(keys as Iterable<string | number>)[0] as string;
               field.onChange(selected);
               void trigger("plate");
             }}
@@ -82,7 +101,7 @@ export default function VehicleTypeSelector({
             </Select.Trigger>
             <Select.Popover aria-label="Seleccionar opción">
               <ListBox>
-                {vehicleTypes.map((t: any) => {
+                {vehicleTypes.map((t: VehicleTypeData) => {
                   const config = { label: t.name || t.code, color: t.color || "" };
                   return (
                     <ListBox.Item key={t.code} id={t.code} textValue={config.label}>

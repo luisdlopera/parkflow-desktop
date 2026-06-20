@@ -1,6 +1,8 @@
 import { resolveCurrentCompanyId } from "@/lib/current-company";
 import { authHeaders } from "@/features/auth/services/auth-domain.service";
 import { apiBase } from "@/lib/api/config";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+
 
 export type RuntimeConfig = {
   vehicleTypes?: string[];
@@ -57,7 +59,7 @@ export async function fetchRuntimeConfig(): Promise<RuntimeConfig | null> {
   if (!companyId) return null;
   const headers = await authHeaders();
   try {
-    const res = await fetch(`${apiBase()}/onboarding/companies/${companyId}/settings`, {
+    const res = await fetchWithCredentials(`${apiBase()}/onboarding/companies/${companyId}/settings`, {
       headers: {
         ...headers,
         "X-Parkflow-Auth-Toast-Silent": "1"

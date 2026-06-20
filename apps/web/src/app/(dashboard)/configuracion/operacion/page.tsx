@@ -16,8 +16,8 @@ import {
   fetchConfigurationOperationalParameters,
   putConfigurationOperationalParameters,
 } from "@/lib/settings-api";
-import { operationalParameterSchema, type OperationalParameterSchema } from "@/modules/settings/schemas";
-import type { ParkingSiteRow } from "@/modules/settings/types";
+import { operationalParameterSchema, type OperationalParameterSchema } from "@/lib/schemas/config.schemas";
+import type { ParkingSiteRow } from "@/lib/types/settings.types";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
 

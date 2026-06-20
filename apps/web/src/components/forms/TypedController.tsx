@@ -21,7 +21,7 @@ export function TypedController<T extends FieldValues>({
   name: Path<T>;
   control: Control<T>;
   render: (props: { field: ControllerRenderProps<T, Path<T>>; fieldState: ControllerFieldState; formState: UseFormStateReturn<T> }) => React.ReactElement;
-  rules?: any;
+  rules?: import('react-hook-form').UseControllerProps<T, Path<T>>['rules'];
 }) {
   return (
     <Controller

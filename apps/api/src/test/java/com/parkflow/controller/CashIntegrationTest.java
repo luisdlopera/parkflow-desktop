@@ -23,7 +23,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
             """;
 
         mockMvc.perform(post("/api/v1/cash/open")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(openRequest.formatted(adminUserId)))
                 .andExpect(status().isCreated())
@@ -47,13 +47,13 @@ class CashIntegrationTest extends BaseIntegrationTest {
             """;
 
         mockMvc.perform(post("/api/v1/cash/open")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(openRequest.formatted(adminUserId)));
 
         // Now get current
         mockMvc.perform(get("/api/v1/cash/current")
-            .header("Authorization", "Bearer " + token)
+            .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .param("site", "Test Site")
             .param("terminal", "TERM1"))
                 .andExpect(status().isOk())
@@ -76,7 +76,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
             """;
 
         var openResult = mockMvc.perform(post("/api/v1/cash/open")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(openRequest.formatted(adminUserId)))
                 .andReturn();
@@ -101,7 +101,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
             """;
 
         mockMvc.perform(post("/api/v1/cash/sessions/" + sessionId + "/movements")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(movementRequest))
                 .andExpect(status().isCreated())
@@ -123,7 +123,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
             """;
 
         var openResult = mockMvc.perform(post("/api/v1/cash/open")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(openRequest.formatted(adminUserId)))
                 .andReturn();
@@ -142,14 +142,14 @@ class CashIntegrationTest extends BaseIntegrationTest {
                 """.formatted(1000 * i, i, i);
 
             mockMvc.perform(post("/api/v1/cash/sessions/" + sessionId + "/movements")
-                    .header("Authorization", "Bearer " + token)
+                    .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(movementRequest))
                     .andExpect(status().isCreated());
         }
 
         mockMvc.perform(get("/api/v1/cash/sessions/" + sessionId + "/movements")
-                .header("Authorization", "Bearer " + token))
+                .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(5))
                 .andExpect(jsonPath("$[0].createdById").exists())

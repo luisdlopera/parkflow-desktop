@@ -1,24 +1,15 @@
 import React from "react";
 import { Autocomplete as HeroAutocomplete, AutocompleteProps as HeroAutocompleteProps } from "@heroui/react";
 
-export interface AutocompleteProps<T extends object = any> {
-  className?: string;
-  classNames?: any;
-  [key: string]: any;
-}
+export type AutocompleteProps<T extends object = object> = HeroAutocompleteProps<T> & { classNames?: any };
 
-export const AutocompleteBase = React.forwardRef<any, AutocompleteProps>(
-  ({ className, classNames, ...props }, ref) => {
-    const AutocompleteComponent = HeroAutocomplete as any;
+export const AutocompleteBase = React.forwardRef(
+  <T extends object = object>({ className, classNames, ...props }: AutocompleteProps<T>, ref: React.Ref<HTMLInputElement>) => {
     return (
-      <AutocompleteComponent
+      <HeroAutocomplete
         ref={ref}
-        classNames={{
-          ...classNames,
-          base: `${className || ""} ${classNames?.base || ""}`,
-          trigger: `border-none rounded-xl transition-colors ${classNames?.trigger || ""}`,
-        }}
-        {...props}
+        className={`${className || ""} ${classNames?.base || ""}`}
+        {...props as any}
       />
     );
   }
@@ -27,10 +18,10 @@ export const AutocompleteBase = React.forwardRef<any, AutocompleteProps>(
 AutocompleteBase.displayName = "Autocomplete";
 
 export const Autocomplete = Object.assign(AutocompleteBase, {
-  Trigger: (HeroAutocomplete as any).Trigger || (() => null),
-  Popover: (HeroAutocomplete as any).Popover || (() => null),
-  Value: (HeroAutocomplete as any).Value || (() => null),
-  Indicator: (HeroAutocomplete as any).Indicator || (() => null),
-  ClearButton: (HeroAutocomplete as any).ClearButton || (() => null),
-  Filter: (HeroAutocomplete as any).Filter || (() => null),
+  Trigger: (HeroAutocomplete as unknown as Record<string, React.FC<React.PropsWithChildren>>).Trigger || (() => null),
+  Popover: (HeroAutocomplete as unknown as Record<string, React.FC<React.PropsWithChildren>>).Popover || (() => null),
+  Value: (HeroAutocomplete as unknown as Record<string, React.FC<React.PropsWithChildren>>).Value || (() => null),
+  Indicator: (HeroAutocomplete as unknown as Record<string, React.FC<React.PropsWithChildren>>).Indicator || (() => null),
+  ClearButton: (HeroAutocomplete as unknown as Record<string, React.FC<React.PropsWithChildren>>).ClearButton || (() => null),
+  Filter: (HeroAutocomplete as unknown as Record<string, React.FC<React.PropsWithChildren<any>>>).Filter || (() => null),
 });
