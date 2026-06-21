@@ -178,6 +178,7 @@ export function MotorcycleEntryFormUI({
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
+              aria-pressed={!helmetDelivered}
               onClick={handleClearHelmets}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 !helmetDelivered
@@ -204,6 +205,7 @@ export function MotorcycleEntryFormUI({
 
             <button
               type="button"
+              aria-pressed={helmetDelivered}
               onClick={handleAddHelmets}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 helmetDelivered
@@ -249,6 +251,7 @@ export function MotorcycleEntryFormUI({
                         <button
                           key={num}
                           type="button"
+                          aria-pressed={fields.length === num}
                           onClick={() => handleHelmetCount(num)}
                           className={`px-4 py-1.5 rounded-lg border text-sm font-bold transition-colors ${
                             fields.length === num

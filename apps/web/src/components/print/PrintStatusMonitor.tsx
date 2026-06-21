@@ -277,6 +277,8 @@ export function PrintStatusMonitor() {
       <button
         ref={buttonRef}
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+        aria-haspopup="true"
         className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
       >
         <span className={`w-2.5 h-2.5 rounded-full ${getStatusColor()} ${status.isOnline ? "animate-pulse" : ""}`} />
