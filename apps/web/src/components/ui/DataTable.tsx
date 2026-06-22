@@ -157,9 +157,12 @@ function DataTableInner<T extends object>({
 
   const sortedSource = useMemo(() => {
     if (serverSide || !sortDescriptor?.column || !sortDescriptor?.direction) return source;
+
+    // ⚡ Bolt: Extract O(N) column lookup outside the O(N log N) sort callback to prevent redundant operations
+    const col = columns.find((c) => String(c.key) === sortDescriptor.column);
+    const key = sortDescriptor.column as keyof T;
+
     return [...source].sort((a, b) => {
-      const col = columns.find((c) => String(c.key) === sortDescriptor.column);
-      const key = sortDescriptor.column as keyof T;
       let cmp = 0;
 
       const aVal = a[key];

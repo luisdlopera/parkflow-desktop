@@ -1,0 +1,3 @@
+## 2026-06-21 - [DataTable Re-render Optimization]
+**Learning:** Found a performance bottleneck in the `DataTable` component. The `sortedSource` variable was re-calculated on every render because `col = columns.find(...)` was inside the `sort` callback, which runs for every comparison $O(N \log N)$ times. Moving it outside the sort callback significantly improved rendering speed for large tables.
+**Action:** Always extract invariant lookups (like finding the current sort column definition from a config array) outside of `sort()`, `map()`, or `filter()` loops to avoid redundant $O(N)$ operations during an $O(N \log N)$ algorithm.
