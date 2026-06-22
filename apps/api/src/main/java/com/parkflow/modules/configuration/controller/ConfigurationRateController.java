@@ -65,7 +65,7 @@ public class ConfigurationRateController {
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<RateResponse> patchStatus(
       @PathVariable UUID id,
-      @RequestBody RateStatusRequest req) {
+      @Valid @RequestBody RateStatusRequest req) {
     return ResponseEntity.ok(patchRateStatusUseCase.patchStatus(id, req));
   }
 }

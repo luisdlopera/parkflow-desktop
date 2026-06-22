@@ -20,21 +20,43 @@ apps/
 
 ## Active Implementation Plan
 
-**Current Work**: [Onboarding-to-Configuration Editability](/.claude/plans/necesito-que-me-hagas-moonlit-kite.md)
+**Current Work**: [Production Consolidation](/.claude/plans/act-a-como-un-staff-floating-starfish.md)
 
-**Scope**: Make all onboarding-created settings fully editable via configuracion UI
+**Scope**: Production-ready consolidation — eliminate debt, consolidate schemas, ensure integrity (5-8 weeks, 4 phases)
 
 **Phases**:
-1. ✅ Phase 1: Backend - Add 5 new API endpoints (COMPLETE - 6/6/2026)
-2. ✅ Phase 2: Frontend - Hybrid navigation model (COMPLETE - 6/6/2026)
-3. ✅ Phase 3: Validation - Data integrity (COMPLETE - Design & Strategy)
-4. ✅ Phase 4: Testing - Verification plan created (In Progress - Manual Testing)
+1. 🔄 Phase 1: Blockers Críticos (IN PROGRESS - V012/V014, V018, @Valid, API decision)
+2. ⏳ Phase 2: Integridad Referencial (RLS, PaymentMethod, V015 defensiva)
+3. ⏳ Phase 3: Deuda Técnica Arquitectónica (Rate consolidation, DTOs, auth)
+4. ⏳ Phase 4: Limpieza & Producción (V020, audit, tests, baseline)
 
 **Compilation Status**:
 - ✅ Backend: Build SUCCESSFUL (0 errors)
 - ✅ Frontend: Build SUCCESSFUL (0 errors)
-- ⚠️ Tests: 21 integration tests (8 need review for response body validation)
-- 🟢 Servers: Both running (Web: 6001/6002, API: 6011)
+- 🔴 Migrations: V012/V014 conflict RESOLVED; V018 created
+- 🟡 Validations: @Valid added to 3 controllers
+
+---
+
+### API Endpoint Consolidation Decision
+
+**Decision**: **CANONICAL: `/api/v1/configuration/*`** (deprecated `/api/v1/settings/*` over 2 sprints)
+
+**Rationale**:
+- `configuration/*` is more specific and aligns with domain language
+- `settings/*` is deprecated legacy pattern from early sprints
+- Both currently share DTOs; will consolidate in Phase 3
+- Auth: migrate all to AUTHORITY-based (granular) vs ROLE-based (simple)
+
+**Deprecation Timeline**:
+- Sprint 4 (now): Both endpoints work; `X-Deprecated: true` header on `/settings/*`
+- Sprint 5: Client warnings logged; gradual migration to `/configuration/*`
+- Sprint 6: `/settings/*` endpoints removed; clients must use `/configuration/*`
+
+**Affected Resources**:
+- `rates`: `/api/v1/settings/rates` → `/api/v1/configuration/rates`
+- `users`: `/api/v1/settings/users` → `/api/v1/configuration/users`
+- `vehicle-types`: `/api/v1/settings/vehicle-types` → `/api/v1/configuration/vehicle-types`
 
 ---
 

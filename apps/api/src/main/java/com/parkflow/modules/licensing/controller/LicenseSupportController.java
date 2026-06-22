@@ -5,6 +5,7 @@ import com.parkflow.modules.licensing.dto.*;
 import com.parkflow.modules.licensing.domain.LicenseBlockEvent;
 import com.parkflow.modules.licensing.application.service.LicenseAuditService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -151,13 +152,13 @@ public class LicenseSupportController {
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   public ResponseEntity<Void> markAsFalsePositive(
       @PathVariable UUID blockEventId,
-      @RequestBody String notes,
+      @Valid @RequestBody FalsePositiveRequest request,
       @RequestAttribute("currentUserEmail") String resolvedBy) {
 
     log.warn("[SUPPORT] Marcando evento {} como falso positivo por {}. Notas: {}",
-        blockEventId, resolvedBy, notes);
+        blockEventId, resolvedBy, request.getNotes());
 
-    auditService.markAsFalsePositive(blockEventId, resolvedBy, notes);
+    auditService.markAsFalsePositive(blockEventId, resolvedBy, request.getNotes());
     return ResponseEntity.ok().build();
   }
 
@@ -203,8 +204,16 @@ public class LicenseSupportController {
 
   @lombok.Data
   public static class ResolveBlockRequest {
+    @NotBlank(message = "Notes cannot be blank")
     private String notes;
+    @NotBlank(message = "Corrective action cannot be blank")
     private String correctiveAction;
+  }
+
+  @lombok.Data
+  public static class FalsePositiveRequest {
+    @NotBlank(message = "Notes cannot be blank")
+    private String notes;
   }
 
   @lombok.Data

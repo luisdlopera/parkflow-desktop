@@ -51,7 +51,7 @@ public class ConfigurationUserController {
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   public ResponseEntity<UserAdminResponse> patchStatus(
       @PathVariable UUID id,
-      @RequestBody UserStatusRequest req) {
+      @Valid @RequestBody UserStatusRequest req) {
     return ResponseEntity.ok(userManagementUseCase.patchStatus(id, req));
   }
 }
