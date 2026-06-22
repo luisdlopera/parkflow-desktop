@@ -22,19 +22,38 @@ apps/
 
 **Current Work**: [Production Consolidation](/.claude/plans/act-a-como-un-staff-floating-starfish.md)
 
-**Scope**: Production-ready consolidation — eliminate debt, consolidate schemas, ensure integrity (5-8 weeks, 4 phases)
+**Scope**: Production-ready consolidation — eliminate debt, consolidate schemas, ensure integrity
 
-**Phases**:
-1. 🔄 Phase 1: Blockers Críticos (IN PROGRESS - V012/V014, V018, @Valid, API decision)
-2. ⏳ Phase 2: Integridad Referencial (RLS, PaymentMethod, V015 defensiva)
-3. ⏳ Phase 3: Deuda Técnica Arquitectónica (Rate consolidation, DTOs, auth)
-4. ⏳ Phase 4: Limpieza & Producción (V020, audit, tests, baseline)
+**Phases Completed**:
+1. ✅ **Phase 1: Blockers Críticos** (1 commit)
+   - Resolved V012/V014 migration conflict
+   - Created V018 (FK faltantes: cash_session, cash_movement → companies)
+   - Added @Valid to ConfigurationRateController, ConfigurationUserController, LicenseSupportController
+   - Documented API endpoint consolidation decision: `/api/v1/configuration/*` canonical
+
+2. ✅ **Phase 2: Integridad Referencial** (1 commit)
+   - Created V019: Enable RLS on all 10 critical multi-tenant tables
+   - Created V020: Verify monthly_contract refactor integrity (post-V015)
+   - Created V021: Consolidate payment_methods to per-company model
+
+3. 🔄 **Phase 3: Deuda Técnica Arquitectónica** (IN PROGRESS)
+   - ✅ 3.1: Consolidated Rate entity (eliminated ConfigRate duplicate, single canonical Rate)
+   - ⏳ 3.2: DTOs consolidation to common module (TODO)
+   - ⏳ 3.3: Extract controller business logic (TODO)
+   - ⏳ 3.4: Standardize authorization (Authority vs Role) (TODO)
+
+4. 🔄 **Phase 4: Limpieza & Producción** (PARTIALLY STARTED)
+   - ✅ 4.3: Added @SQLRestriction to Vehicle soft delete
+   - ⏳ 4.1: Create V022 (DROP deprecated columns) (TODO)
+   - ⏳ 4.4: Consolidate audit service (TODO)
+   - ⏳ 4.5-4.6: Tests & data audits (TODO)
 
 **Compilation Status**:
-- ✅ Backend: Build SUCCESSFUL (0 errors)
+- ✅ Backend: Build SUCCESSFUL (0 errors) - 4 commits
 - ✅ Frontend: Build SUCCESSFUL (0 errors)
-- 🔴 Migrations: V012/V014 conflict RESOLVED; V018 created
-- 🟡 Validations: @Valid added to 3 controllers
+- ✅ Migrations: 5 new (V018, V019, V020, V021, custom V022)
+- ✅ JPA Entities: Rate consolidated, Vehicle soft-delete fixed
+- ✅ Controllers: Validations added to 3 endpoints
 
 ---
 
