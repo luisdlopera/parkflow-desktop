@@ -352,61 +352,75 @@ function DataTableInner<T extends object>({
       className="min-w-full"
     >
       <Table.Header>
-        {displayColumns.map((col, idx) => (
-          <Table.Column
-            key={String(col.key)}
-            id={String(col.key)}
-            allowsSorting={col.sortable}
-            aria-label={col.key === "_selection" ? "Selection" : undefined}
-            isRowHeader={
-              idx === (selectable ? 1 : 0) &&
-              col.key !== "_actions" &&
-              col.key !== "_selection"
-            }
-            // @ts-expect-error HeroUI typing for ColumnSize
-            defaultWidth={col.width ? String(col.width) : col.resizable ? "1fr" : undefined}
-            minWidth={col.minWidth}
-            className={cn(
-              "text-[11px] font-bold uppercase tracking-[0.15em]",
-              getAlignClass(col.align),
-              getPriorityClass(col.priority),
-              col.key === "_actions"
-                ? "sticky right-0 z-20 bg-default-100 dark:bg-zinc-800/60 border-l border-default-200 dark:border-zinc-700"
-                : "",
-              col.key === "_selection" ? "w-[48px]" : "",
-            )}
-          >
-            {col.sortable
-              ? ({
-                  sortDirection,
-                }: {
-                  sortDirection?: "ascending" | "descending";
-                }) => (
-                  <SortableHeader sortDirection={sortDirection}>
-                    {getDisplayLabel(col)}
-                    {col.resizable && <Table.ColumnResizer />}
-                  </SortableHeader>
-                )
-              : col.key === "_selection"
-                ? (
-                  <HeroCheckbox
-                    aria-label="Seleccionar todas"
-                    slot="selection"
-                    variant="secondary"
-                  >
-                    <HeroCheckbox.Control>
-                      <HeroCheckbox.Indicator />
-                    </HeroCheckbox.Control>
-                  </HeroCheckbox>
-                )
-                : (
-                  <span className="flex items-center gap-1">
-                    {getDisplayLabel(col)}
-                    {col.resizable && <Table.ColumnResizer />}
-                  </span>
-                )}
-          </Table.Column>
-        ))}
+        {displayColumns.map((col, idx) => {
+          let colDefaultWidth: string | undefined;
+          if (col.width) {
+            colDefaultWidth = String(col.width);
+          } else if (col.resizable) {
+            colDefaultWidth = "1fr";
+          }
+
+          let columnContent;
+          if (col.sortable) {
+            columnContent = ({
+              sortDirection,
+            }: {
+              sortDirection?: "ascending" | "descending";
+            }) => (
+              <SortableHeader sortDirection={sortDirection}>
+                {getDisplayLabel(col)}
+                {col.resizable && <Table.ColumnResizer />}
+              </SortableHeader>
+            );
+          } else if (col.key === "_selection") {
+            columnContent = (
+              <HeroCheckbox
+                aria-label="Seleccionar todas"
+                slot="selection"
+                variant="secondary"
+              >
+                <HeroCheckbox.Control>
+                  <HeroCheckbox.Indicator />
+                </HeroCheckbox.Control>
+              </HeroCheckbox>
+            );
+          } else {
+            columnContent = (
+              <span className="flex items-center gap-1">
+                {getDisplayLabel(col)}
+                {col.resizable && <Table.ColumnResizer />}
+              </span>
+            );
+          }
+
+          return (
+            <Table.Column
+              key={String(col.key)}
+              id={String(col.key)}
+              allowsSorting={col.sortable}
+              aria-label={col.key === "_selection" ? "Selection" : undefined}
+              isRowHeader={
+                idx === (selectable ? 1 : 0) &&
+                col.key !== "_actions" &&
+                col.key !== "_selection"
+              }
+              // @ts-expect-error HeroUI typing for ColumnSize
+              defaultWidth={colDefaultWidth}
+              minWidth={col.minWidth}
+              className={cn(
+                "text-[11px] font-bold uppercase tracking-[0.15em]",
+                getAlignClass(col.align),
+                getPriorityClass(col.priority),
+                col.key === "_actions"
+                  ? "sticky right-0 z-20 bg-default-100 dark:bg-zinc-800/60 border-l border-default-200 dark:border-zinc-700"
+                  : "",
+                col.key === "_selection" ? "w-[48px]" : "",
+              )}
+            >
+              {columnContent}
+            </Table.Column>
+          );
+        })}
       </Table.Header>
 
       {isLoading && source.length === 0 ? (
