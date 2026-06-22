@@ -5,7 +5,7 @@ import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.settings.application.mapper.RateMapper;
 import com.parkflow.modules.settings.application.port.in.GetRateUseCase;
-import com.parkflow.modules.settings.dto.RateResponse;
+import com.parkflow.modules.common.dto.RateResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

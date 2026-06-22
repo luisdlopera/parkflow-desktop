@@ -9,7 +9,7 @@ import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

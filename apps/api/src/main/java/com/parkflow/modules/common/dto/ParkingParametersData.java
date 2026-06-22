@@ -1,4 +1,4 @@
-package com.parkflow.modules.settings.dto;
+package com.parkflow.modules.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;

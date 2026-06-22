@@ -4,7 +4,7 @@ import com.parkflow.modules.customers.domain.Client;
 import com.parkflow.modules.customers.dto.ClientRequest;
 import com.parkflow.modules.customers.dto.ClientResponse;
 import com.parkflow.modules.customers.repository.ClientRepository;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

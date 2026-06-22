@@ -1,6 +1,6 @@
 package com.parkflow.modules.settings.application.service;
 
-import com.parkflow.modules.settings.dto.ParkingParametersData;
+import com.parkflow.modules.common.dto.ParkingParametersData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;

@@ -8,7 +8,7 @@ import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;

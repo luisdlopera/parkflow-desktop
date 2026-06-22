@@ -1,7 +1,7 @@
 package com.parkflow.modules.settings.controller;
 
-import com.parkflow.modules.settings.dto.VehicleTypeRequest;
-import com.parkflow.modules.settings.dto.VehicleTypeResponse;
+import com.parkflow.modules.common.dto.VehicleTypeRequest;
+import com.parkflow.modules.common.dto.VehicleTypeResponse;
 import com.parkflow.modules.settings.application.port.in.VehicleTypeUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

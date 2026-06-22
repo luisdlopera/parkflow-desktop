@@ -11,7 +11,7 @@ import com.parkflow.modules.configuration.repository.PrepaidBalanceRepository;
 import com.parkflow.modules.configuration.repository.PrepaidPackageRepository;
 import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;

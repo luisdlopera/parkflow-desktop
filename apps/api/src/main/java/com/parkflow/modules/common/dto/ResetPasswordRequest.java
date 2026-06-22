@@ -1,4 +1,4 @@
-package com.parkflow.modules.settings.dto;
+package com.parkflow.modules.common.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

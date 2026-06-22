@@ -8,7 +8,7 @@ import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.settings.application.port.in.UserManagementUseCase;
-import com.parkflow.modules.settings.dto.*;
+import com.parkflow.modules.common.dto.*;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;

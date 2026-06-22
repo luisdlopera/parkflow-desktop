@@ -14,7 +14,7 @@ import com.parkflow.modules.parking.operation.domain.Vehicle;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.parking.operation.repository.VehicleRepository;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

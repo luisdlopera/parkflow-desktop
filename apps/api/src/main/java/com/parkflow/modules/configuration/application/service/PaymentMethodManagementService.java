@@ -6,7 +6,7 @@ import com.parkflow.modules.configuration.dto.PaymentMethodResponse;
 import com.parkflow.modules.configuration.domain.PaymentMethod;
 import com.parkflow.modules.configuration.domain.repository.PaymentMethodPort;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;

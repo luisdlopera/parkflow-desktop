@@ -1,4 +1,4 @@
-package com.parkflow.modules.settings.dto;
+package com.parkflow.modules.common.dto;
 
 import java.util.UUID;
 

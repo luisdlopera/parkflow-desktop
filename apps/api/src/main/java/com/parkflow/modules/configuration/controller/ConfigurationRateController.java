@@ -1,9 +1,9 @@
 package com.parkflow.modules.configuration.controller;
 
-import com.parkflow.modules.settings.dto.RateResponse;
-import com.parkflow.modules.settings.dto.RateStatusRequest;
-import com.parkflow.modules.settings.dto.RateUpsertRequest;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.RateResponse;
+import com.parkflow.modules.common.dto.RateStatusRequest;
+import com.parkflow.modules.common.dto.RateUpsertRequest;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import com.parkflow.modules.settings.application.port.in.ListRatesUseCase;
 import com.parkflow.modules.settings.application.port.in.GetRateUseCase;
 import com.parkflow.modules.settings.application.port.in.CreateRateUseCase;

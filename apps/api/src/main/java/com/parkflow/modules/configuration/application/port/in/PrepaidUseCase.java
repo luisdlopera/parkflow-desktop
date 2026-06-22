@@ -4,7 +4,7 @@ import com.parkflow.modules.configuration.dto.PrepaidBalancePurchaseRequest;
 import com.parkflow.modules.configuration.dto.PrepaidBalanceResponse;
 import com.parkflow.modules.configuration.dto.PrepaidPackageRequest;
 import com.parkflow.modules.configuration.dto.PrepaidPackageResponse;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;

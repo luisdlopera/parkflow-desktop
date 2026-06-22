@@ -3,8 +3,8 @@ package com.parkflow.modules.settings.application.mapper;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateCategory;
 import com.parkflow.modules.configuration.domain.RoundingMode;
-import com.parkflow.modules.settings.dto.RateResponse;
-import com.parkflow.modules.settings.dto.RateUpsertRequest;
+import com.parkflow.modules.common.dto.RateResponse;
+import com.parkflow.modules.common.dto.RateUpsertRequest;
 import java.time.OffsetDateTime;
 import org.springframework.stereotype.Component;
 

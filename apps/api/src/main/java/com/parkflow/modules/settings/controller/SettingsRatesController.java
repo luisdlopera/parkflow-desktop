@@ -1,6 +1,6 @@
 package com.parkflow.modules.settings.controller;
 
-import com.parkflow.modules.settings.dto.*;
+import com.parkflow.modules.common.dto.*;
 import com.parkflow.modules.settings.application.port.in.RateManagementUseCase;
 import jakarta.validation.Valid;
 import java.util.UUID;

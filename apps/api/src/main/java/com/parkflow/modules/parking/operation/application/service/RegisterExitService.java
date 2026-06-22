@@ -145,7 +145,7 @@ public class RegisterExitService implements RegisterExitUseCase {
 
     boolean printExitTicket = true;
     try {
-        com.parkflow.modules.settings.dto.ParkingParametersData params = parkingParametersUseCase.get(session.getSite());
+        com.parkflow.modules.common.dto.ParkingParametersData params = parkingParametersUseCase.get(session.getSite());
         if (params.getPrintExitTicket() != null) {
             printExitTicket = params.getPrintExitTicket();
         }

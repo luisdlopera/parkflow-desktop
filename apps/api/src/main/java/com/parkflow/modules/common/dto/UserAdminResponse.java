@@ -1,4 +1,4 @@
-package com.parkflow.modules.settings.dto;
+package com.parkflow.modules.common.dto;
 
 import com.parkflow.modules.auth.domain.UserRole;
 import java.time.OffsetDateTime;

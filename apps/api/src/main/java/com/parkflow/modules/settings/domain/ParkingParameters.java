@@ -1,6 +1,6 @@
 package com.parkflow.modules.settings.domain;
 
-import com.parkflow.modules.settings.dto.ParkingParametersData;
+import com.parkflow.modules.common.dto.ParkingParametersData;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

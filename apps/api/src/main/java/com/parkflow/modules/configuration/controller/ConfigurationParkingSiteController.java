@@ -3,7 +3,7 @@ package com.parkflow.modules.configuration.controller;
 import com.parkflow.modules.configuration.application.port.in.ParkingSiteUseCase;
 import com.parkflow.modules.configuration.dto.ParkingSiteRequest;
 import com.parkflow.modules.configuration.dto.ParkingSiteResponse;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

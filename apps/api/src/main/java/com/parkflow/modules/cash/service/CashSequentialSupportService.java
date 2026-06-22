@@ -2,7 +2,7 @@ package com.parkflow.modules.cash.service;
 
 import com.parkflow.modules.cash.domain.CashFeSequenceCounter;
 import com.parkflow.modules.cash.repository.CashFeSequenceCounterRepository;
-import com.parkflow.modules.settings.dto.ParkingParametersData;
+import com.parkflow.modules.common.dto.ParkingParametersData;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Pattern;

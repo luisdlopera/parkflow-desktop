@@ -1,7 +1,7 @@
 package com.parkflow.modules.settings.application.port.in;
 
-import com.parkflow.modules.settings.dto.ParametersValidateResponse;
-import com.parkflow.modules.settings.dto.ParkingParametersData;
+import com.parkflow.modules.common.dto.ParametersValidateResponse;
+import com.parkflow.modules.common.dto.ParkingParametersData;
 
 public interface ParkingParametersUseCase {
     ParkingParametersData get(String siteCode);

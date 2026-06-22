@@ -1,9 +1,9 @@
 package com.parkflow.modules.settings.application.port.in;
 
-import com.parkflow.modules.settings.dto.RateResponse;
-import com.parkflow.modules.settings.dto.RateStatusRequest;
-import com.parkflow.modules.settings.dto.RateUpsertRequest;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.RateResponse;
+import com.parkflow.modules.common.dto.RateStatusRequest;
+import com.parkflow.modules.common.dto.RateUpsertRequest;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 

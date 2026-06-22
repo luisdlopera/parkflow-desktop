@@ -3,7 +3,7 @@ package com.parkflow.modules.configuration.controller;
 import com.parkflow.modules.configuration.application.port.in.CashRegisterUseCase;
 import com.parkflow.modules.configuration.dto.CashRegisterRequest;
 import com.parkflow.modules.configuration.dto.CashRegisterResponse;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

@@ -5,7 +5,7 @@ import com.parkflow.modules.configuration.dto.PrepaidBalanceResponse;
 import com.parkflow.modules.configuration.dto.PrepaidPackageRequest;
 import com.parkflow.modules.configuration.dto.PrepaidPackageResponse;
 import com.parkflow.modules.configuration.service.PrepaidService;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;

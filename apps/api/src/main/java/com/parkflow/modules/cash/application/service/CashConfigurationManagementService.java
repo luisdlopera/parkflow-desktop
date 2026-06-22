@@ -18,7 +18,7 @@ import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.settings.dto.ParkingParametersData;
+import com.parkflow.modules.common.dto.ParkingParametersData;
 import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

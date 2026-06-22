@@ -4,7 +4,7 @@ import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.configuration.application.port.in.PaymentMethodUseCase;
 import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
 import com.parkflow.modules.configuration.dto.PaymentMethodResponse;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

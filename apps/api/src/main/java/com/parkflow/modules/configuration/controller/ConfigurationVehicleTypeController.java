@@ -2,8 +2,8 @@ package com.parkflow.modules.configuration.controller;
 
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.settings.dto.VehicleTypeRequest;
-import com.parkflow.modules.settings.dto.VehicleTypeResponse;
+import com.parkflow.modules.common.dto.VehicleTypeRequest;
+import com.parkflow.modules.common.dto.VehicleTypeResponse;
 import com.parkflow.modules.settings.application.service.SettingsVehicleTypeService;
 import jakarta.validation.Valid;
 import java.util.List;
