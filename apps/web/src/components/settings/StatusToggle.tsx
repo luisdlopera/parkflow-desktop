@@ -32,13 +32,14 @@ export function StatusToggle({ active, onChange, disabled, confirmMessage }: Sta
   return (
     <button
       type="button"
+      role="switch"
       onClick={handleClick}
       disabled={disabled || pending}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
         active ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"
       } ${disabled || pending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
       aria-label={active ? "Desactivado" : "Activado"}
-      aria-pressed={active}
+      aria-checked={active}
     >
       <span
         className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-200 transition-transform ${
