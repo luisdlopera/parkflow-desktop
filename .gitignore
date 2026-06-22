@@ -47,6 +47,7 @@ logs/
 .opencode/
 .claude/
 .jules/
+.Jules/
 *.iml
 *.ipr
 *.iws
