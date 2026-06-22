@@ -1,6 +1,7 @@
 package com.parkflow.modules.parking.operation.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.Getter;
@@ -15,6 +16,7 @@ import lombok.Setter;
         @UniqueConstraint(columnNames = {"company_id", "plate"}, name = "uq_vehicle_company_plate")
     }
 )
+@SQLRestriction("deleted_at IS NULL")
 public class Vehicle {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
