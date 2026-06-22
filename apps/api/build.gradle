@@ -111,15 +111,15 @@ jacocoTestCoverageVerification {
   violationRules {
     rule {
       limit {
-        minimum = 0.40
+        minimum = 0.55
         counter = 'LINE'
       }
       limit {
-        minimum = 0.20
+        minimum = 0.35
         counter = 'BRANCH'
       }
       limit {
-        minimum = 0.40
+        minimum = 0.70
         counter = 'CLASS'
       }
     }
