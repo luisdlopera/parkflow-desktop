@@ -1,0 +1,15 @@
+#!/bin/bash
+# Detecta archivos trackeados que deberían estar ignorados según .gitignore
+
+TRACKED_IGNORED=$(git ls-files --cached | git check-ignore --stdin 2>/dev/null)
+
+if [ -n "$TRACKED_IGNORED" ]; then
+  echo ""
+  echo "❌ ERROR: Los siguientes archivos están en el commit pero deberían estar en .gitignore:"
+  echo ""
+  echo "$TRACKED_IGNORED" | sed 's/^/   /'
+  echo ""
+  echo "Solución: git rm -r --cached <archivo> y vuelve a hacer commit."
+  echo ""
+  exit 1
+fi
