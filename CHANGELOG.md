@@ -8,6 +8,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Governance & Licensing:**
+  - `LICENSE`: Apache 2.0 license for commercial SaaS use.
+  - `CONTRIBUTING.md`: Comprehensive development guide with conventions, workflows, and merge checklist.
+  - `CODE_OF_CONDUCT.md`: Contributor Covenant v2.0 for community standards.
+  - `SECURITY.md`: Enhanced with PGP encryption details, vulnerability disclosure timeline, and compliance references.
+- **CI/CD Enhancements:**
+  - `pr-checks.yml`: Automated PR title linting, body validation, TODO detection, and summary comments.
+  - `main.yml`: Main branch pipeline with full validation, SonarCloud quality gate, and build artifacts.
+  - `ci.yml`: Fixed duplicate `sonarcloud` job names, added JaCoCo coverage uploads, improved cache settings.
+- **Issue Templates:**
+  - `bug_report.md`: Structured bug reporting with environment, correlation ID, and severity fields.
+  - `feature_request.md`: Feature proposal with impact analysis and acceptance criteria.
+  - `config.yml`: Issue template chooser with security and documentation links.
+- **PR Quality Automation:**
+  - `labeler.yml`: Auto-labels PRs based on changed file paths (api, web, desktop, infra, etc.).
+  - Enhanced `pull_request_template.md` with security checklist, changelog entry, and related issues fields.
+- **Backend Tests:**
+  - `GlobalSearchUseCaseTest`: Unit tests for multi-provider search, filtering, sorting, and edge cases.
+  - `SearchControllerTest`: Integration tests for search API endpoint with auth scenarios.
+  - `SyncServiceTest`: Unit tests for push (create/idempotent/offline), pull, reconcile, and validation.
+  - `ReportQueryServiceTest`: Unit tests for daily ops, occupancy, vehicle types, income/expense, operator, and payment method reports.
+- **Frontend Tests:**
+  - `useConfigCrud.test.ts`: Full coverage of CRUD hook (load, save, delete, toggle, error states).
+  - `useAsyncAction.test.ts`: Full coverage of async action hook (success, error, loading, toasts).
+  - `payment-methods-api.test.ts`: API service tests for fetch, create, update, delete, and status toggle.
+- **Coverage Thresholds:**
+  - Backend (JaCoCo): Raised to 60% LINE, 40% BRANCH, 60% CLASS (from 40/20/40).
+  - Frontend (Vitest): Raised to 60% statements, 50% branches, 55% functions, 60% lines (from 50/40/45/50).
+
+### Changed
+- `README.md`: Added CI/CD badge links, enhanced documentation section with governance links, updated contributing section.
+- `.github/pull_request_template.md`: Added security checklist section, changelog entry field, and related issues link.
+- `apps/api/build.gradle`: Raised JaCoCo coverage thresholds and added excluded class rule.
+- `apps/web/vitest.config.ts`: Raised coverage thresholds for production readiness.
+
+### Added
 - **API Traceability:**
   - `CorrelationIdFilter`: Accepts `X-Correlation-Id` header or generates UUID, adds to MDC for logging, returns in response header.
   - `ErrorResponse`: Standardized error format with timestamp, status, code, message, path, correlationId, and optional details.

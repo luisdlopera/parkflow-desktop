@@ -107,16 +107,29 @@ jacocoTestCoverageVerification {
   violationRules {
     rule {
       limit {
-        minimum = 0.40
+        minimum = 0.60
         counter = 'LINE'
       }
       limit {
-        minimum = 0.20
+        minimum = 0.40
         counter = 'BRANCH'
       }
       limit {
-        minimum = 0.40
+        minimum = 0.60
         counter = 'CLASS'
+      }
+    }
+    rule {
+      enabled = false
+      element = 'CLASS'
+      excludes = [
+        'com.parkflow.modules.**.dto.*',
+        'com.parkflow.modules.**.config.*',
+        'com.parkflow.ParkFlowApplication'
+      ]
+      limit {
+        minimum = 0.80
+        counter = 'LINE'
       }
     }
   }

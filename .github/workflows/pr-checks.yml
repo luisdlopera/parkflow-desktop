@@ -1,0 +1,155 @@
+name: PR Quality Checks
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  pr-lint:
+    name: PR Title Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            refactor
+            perf
+            test
+            docs
+            chore
+            style
+            ci
+            security
+            revert
+          requireScope: false
+          subjectPattern: ^[A-Z].+$
+          subjectPatternError: |
+            The subject "{subject}" must start with an uppercase letter.
+          wip: false
+          validateSingleCommit: false
+
+  pr-size:
+    name: PR Size Label
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+          sync-labels: true
+
+  pr-body:
+    name: PR Body Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+            const required = [
+              { field: 'Summary', pattern: /## Summary/i },
+              { field: 'Type of Change', pattern: /## Type of Change/i },
+              { field: 'Technical Checklist', pattern: /## Technical Checklist/i },
+              { field: 'Test Plan', pattern: /## Test Plan/i },
+            ];
+            const missing = required.filter(r => !r.pattern.test(body));
+            if (missing.length > 0) {
+              core.setFailed(
+                `PR template incomplete. Missing sections: ${missing.map(m => m.field).join(', ')}`
+              );
+            }
+
+  todo-check:
+    name: TODO/FIXME Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for TODOs in changed files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const todoFiles = [];
+            for (const file of files) {
+              if (file.status === 'removed') continue;
+              const { data: contents } = await github.rest.repos.getContent({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: file.filename,
+                ref: pr.head.sha,
+              });
+              const content = Buffer.from(contents.content, 'base64').toString();
+              if (/TODO|FIXME|HACK|XXX|console\.log/.test(content)) {
+                todoFiles.push(file.filename);
+              }
+            }
+            if (todoFiles.length > 0) {
+              core.setFailed(
+                `Found TODOs/FIXMEs/console.log in: ${todoFiles.join(', ')}`
+              );
+            }
+
+  pr-summary:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    needs: [pr-lint, pr-body, todo-check]
+    if: always() && github.event_name == 'pull_request_target'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const checks = {
+              'PR Title': '${{ needs.pr-lint.result }}',
+              'PR Body': '${{ needs.pr-body.result }}',
+              'TODOs Check': '${{ needs.todo-check.result }}',
+            };
+            const status = (s) => s === 'success' ? '✅ Pass' : s === 'skipped' ? '⏭️ Skipped' : '❌ Fail';
+            const summary = Object.entries(checks)
+              .map(([k, v]) => `| ${k} | ${status(v)} |`)
+              .join('\n');
+            const comment = `### PR Quality Checks\n\n| Check | Status |\n|-------|--------|\n${summary}`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body?.includes('PR Quality Checks')
+            );
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+            }

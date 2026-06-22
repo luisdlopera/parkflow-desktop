@@ -1,6 +1,6 @@
 package com.parkflow.modules.configuration.domain.repository;
 
-import com.parkflow.modules.configuration.domain.Rate;
+import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.configuration.domain.RateCategory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ParkFlow Security Policy
+    url: https://github.com/luisdlopera/parkflow-desktop/blob/main/SECURITY.md
+    about: Report security vulnerabilities here.
+  - name: ParkFlow Documentation
+    url: https://github.com/luisdlopera/parkflow-desktop/tree/main/docs
+    about: Check existing documentation before creating an issue.

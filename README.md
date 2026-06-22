@@ -4,12 +4,15 @@
   <p>A comprehensive, desktop-first parking management platform built for scalability, offline resilience, and enterprise needs.</p>
 
   <!-- Badges -->
-  [![Node.js Version](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)](#)
-  [![Java Version](https://img.shields.io/badge/Java-21-007396?logo=java&logoColor=white)](#)
+  [![CI](https://github.com/luisdlopera/parkflow-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/luisdlopera/parkflow-desktop/actions/workflows/ci.yml)
+  [![Security](https://github.com/luisdlopera/parkflow-desktop/actions/workflows/security.yml/badge.svg)](https://github.com/luisdlopera/parkflow-desktop/actions/workflows/security.yml)
+  [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)](#)
+  [![Java](https://img.shields.io/badge/Java-21-007396?logo=java&logoColor=white)](#)
   [![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131?logo=tauri&logoColor=white)](#)
   [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](#)
   [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.0-6DB33F?logo=spring-boot&logoColor=white)](#)
-  [![Code Quality](https://img.shields.io/badge/Code_Quality-SonarQube-4E9BCD?logo=sonarqube&logoColor=white)](#)
+  [![Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue?logo=apache)](/LICENSE)
+  [![SonarCloud](https://img.shields.io/badge/SonarCloud-Quality_Gate-4E9BCD?logo=sonarcloud)](#)
 </div>
 
 ---
@@ -155,6 +158,11 @@ Upon the first launch in `local` or `sync` mode, the database is seeded automati
 
 ## Documentation & Resources
 
+- **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Code of Conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- **Security Policy**: [SECURITY.md](SECURITY.md)
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
+- **License**: [LICENSE](LICENSE) (Apache 2.0)
 - **Architecture & Auth**: [Hybrid Auth v1](docs/architecture/auth-hybrid-v1.md)
 - **Port Management**: [Port Architecture Guide](docs/architecture/ports.md)
 - **API Documentation (Swagger)**: `http://localhost:6011/swagger-ui/index.html`
@@ -179,9 +187,12 @@ pnpm security:deps:fix
 
 ## Contributing
 
-1. Follow the SOLID principles and clean architecture guidelines.
-2. Run the `pnpm validate` script before creating a Pull Request to ensure all builds and tests pass.
-3. Review the `CHANGELOG.md` to format your commit messages appropriately.
+Please read our [Contributing Guide](CONTRIBUTING.md) for details on:
+- Development setup and requirements
+- Code conventions and architecture
+- Git workflow and commit conventions
+- Pull request process and merge checklist
+- How to report bugs and request features
 
 ---
 

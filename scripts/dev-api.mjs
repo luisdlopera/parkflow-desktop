@@ -167,12 +167,19 @@ async function main() {
 
     // Set environment variables for Spring Boot
     // Priority: calculated values > root .env > process.env
+    const currentProfiles = process.env.SPRING_PROFILES_ACTIVE || rootEnv.SPRING_PROFILES_ACTIVE || '';
+    // dev must be first to bypass SecurityPropertiesValidator; local comes last to override dev's H2 with PostgreSQL
+    const profiles = currentProfiles
+      ? `dev,${currentProfiles}`
+      : 'dev,local';
+
     const env = {
       ...process.env,
       ...rootEnv,
       JAVA_HOME: javaHome,
       PORT: port.toString(),
       PARKFLOW_API_PORT: port.toString(),
+      SPRING_PROFILES_ACTIVE: profiles,
       // Ensure path includes Java bin
       Path: `${join(javaHome, 'bin')};${process.env.Path || process.env.PATH}`,
     };

@@ -1,0 +1,43 @@
+# PR Labeler configuration
+# Auto-labels PRs based on changed file paths
+
+api:
+  - apps/api/**/*
+
+web:
+  - apps/web/**/*
+
+desktop:
+  - apps/desktop/**/*
+
+print-agent:
+  - apps/print-agent/**/*
+
+types:
+  - packages/types/**/*
+
+print-core:
+  - packages/print-core/**/*
+
+infrastructure:
+  - infra/**/*
+
+documentation:
+  - docs/**/*
+  - "**/*.md"
+
+ci/cd:
+  - .github/**/*
+
+terraform:
+  - infra/terraform/**/*
+
+security:
+  - security/**/*
+
+dependencies:
+  - pnpm-lock.yaml
+  - apps/*/package.json
+  - packages/*/package.json
+  - apps/*/Cargo.lock
+  - apps/*/gradle.lockfile

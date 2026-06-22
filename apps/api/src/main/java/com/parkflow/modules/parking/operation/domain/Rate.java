@@ -15,7 +15,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Entity(name = "ParkingRate")
+@Entity
 @Table(name = "rate")
 public class Rate {
   @Id

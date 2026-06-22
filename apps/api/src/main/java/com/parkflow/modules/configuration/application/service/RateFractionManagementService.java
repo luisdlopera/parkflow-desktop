@@ -5,7 +5,7 @@ import com.parkflow.modules.configuration.dto.RateFractionRequest;
 import com.parkflow.modules.configuration.dto.RateFractionResponse;
 import com.parkflow.modules.configuration.domain.RateFraction;
 import com.parkflow.modules.configuration.domain.repository.RateFractionPort;
-import com.parkflow.modules.configuration.domain.Rate;
+import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.configuration.domain.repository.RatePort;
 import java.time.OffsetDateTime;
