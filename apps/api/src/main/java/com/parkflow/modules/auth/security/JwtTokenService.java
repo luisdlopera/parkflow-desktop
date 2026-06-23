@@ -71,7 +71,8 @@ public class JwtTokenService {
         log.warn("app.security.jwt-secret provided is shorter than 256 bits or not valid base64. Deriving a 256-bit key via SHA-256 because active profile is development/test.");
         try {
           MessageDigest md = MessageDigest.getInstance("SHA-256");
-          byte[] derived = md.digest(jwtSecret.getBytes(StandardCharsets.UTF_8));
+          String secretToHash = jwtSecret != null ? jwtSecret : "default_dev_secret_replace_me";
+          byte[] derived = md.digest(secretToHash.getBytes(StandardCharsets.UTF_8));
           this.key = Keys.hmacShaKeyFor(derived);
         } catch (Exception ex) {
           throw new IllegalStateException("Unable to derive JWT key for development profile", ex);
