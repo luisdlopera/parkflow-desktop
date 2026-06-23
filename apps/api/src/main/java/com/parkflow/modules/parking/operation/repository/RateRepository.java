@@ -15,7 +15,7 @@ import org.springframework.data.repository.query.Param;
 public interface RateRepository extends JpaRepository<Rate, UUID> {
 
   @Query(
-      "SELECT r FROM ParkingRate r WHERE (:site IS NULL OR r.site = :site OR r.site IS NULL) AND (:q IS NULL OR :q = '' OR LOWER(r.name) LIKE LOWER(CONCAT('%', :q, '%'))) "
+      "SELECT r FROM Rate r WHERE (:site IS NULL OR r.site = :site OR r.site IS NULL) AND (:q IS NULL OR :q = '' OR LOWER(r.name) LIKE LOWER(CONCAT('%', :q, '%'))) "
           + "AND (:active IS NULL OR r.isActive = :active) AND (:category IS NULL OR CAST(r.category AS string) = :category)")
   Page<Rate> search(
       @Param("site") String site,
@@ -29,7 +29,7 @@ public interface RateRepository extends JpaRepository<Rate, UUID> {
   }
 
   @Query(
-      "SELECT r FROM ParkingRate r WHERE r.companyId = :cid AND r.site = :site AND r.isActive = true AND r.id <> :excludeId "
+      "SELECT r FROM Rate r WHERE r.companyId = :cid AND r.site = :site AND r.isActive = true AND r.id <> :excludeId "
           + "AND (r.vehicleType IS NULL OR :vehicleType IS NULL OR r.vehicleType = :vehicleType)")
   java.util.List<Rate> findActiveForConflictCheck(
       @Param("site") String site,

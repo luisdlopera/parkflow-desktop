@@ -170,7 +170,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
         BigDecimal cOther = request.countOther().setScale(2, RoundingMode.HALF_UP);
         BigDecimal counted = cCash.add(cCard).add(cTr).add(cOther);
 
-        CashSummaryResponse sum = getSummary(sessionId);
+        CashSummaryResponse sum = getInternalSummary(session);
         BigDecimal diff = counted.subtract(sum.expectedLedgerTotal());
 
         session.setCountCash(cCash);
@@ -259,7 +259,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
                     " vehículo(s) activo(s) dentro. Registre las salidas antes de cerrar.");
         }
 
-        CashSummaryResponse sum = getSummary(sessionId);
+        CashSummaryResponse sum = getInternalSummary(session);
         BigDecimal counted = session.getCountedAmount() != null ? session.getCountedAmount() : ZERO;
         BigDecimal diff = counted.subtract(sum.expectedLedgerTotal());
         session.setDifferenceAmount(diff);
@@ -390,13 +390,17 @@ public class CashSessionManagementService implements CashSessionUseCase {
         return cashSessionRepository.findByCompanyIdOrderByOpenedAtDesc(tenantId, pageable).map(this::toSessionResponse);
     }
 
+    private CashSummaryResponse getInternalSummary(CashSession session) {
+        List<com.parkflow.modules.cash.repository.CashMovementSummaryProjection> projections = 
+            cashMovementRepository.getSummaryBySessionId(session.getId());
+        return cashLedgerSummaryCalculator.summarize(session, projections);
+    }
+
     @Override
     @Transactional(readOnly = true)
     public CashSummaryResponse getSummary(UUID sessionId) {
         CashSession session = requireSession(sessionId);
-        List<com.parkflow.modules.cash.repository.CashMovementSummaryProjection> projections = 
-            cashMovementRepository.getSummaryBySessionId(sessionId);
-        CashSummaryResponse response = cashLedgerSummaryCalculator.summarize(session, projections);
+        CashSummaryResponse response = getInternalSummary(session);
         
         UserRole role = SecurityUtils.requireUserRole();
         if (session.getCountedAt() == null && role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN) {

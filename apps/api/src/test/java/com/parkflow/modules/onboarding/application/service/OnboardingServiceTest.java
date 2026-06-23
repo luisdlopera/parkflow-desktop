@@ -238,7 +238,7 @@ class OnboardingServiceTest {
       when(settingsMapper.buildSettingsFromProgress(eq(company), anyMap())).thenReturn(Map.of("vehicleTypes", List.of("CAR")));
       when(settingsMapper.stepMap(anyMap(), eq(1))).thenReturn(Map.of("operationalProfile", "MIXED"));
       
-//       OnboardingStatusResponse response = onboardingService.skipAndApplyDefaults(companyId);
+      onboardingService.skipAndApplyDefaults(companyId);
       
       assertTrue(progress.isSkipped());
       assertTrue(progress.isCompleted());
@@ -261,7 +261,7 @@ class OnboardingServiceTest {
       when(settingsMapper.defaultConfiguration(company)).thenReturn(Map.of("vehicleTypes", List.of("CAR")));
       when(settingsMapper.stepMap(anyMap(), eq(1))).thenReturn(Map.of());
       
-//       OnboardingStatusResponse response = onboardingService.skipAndApplyDefaults(companyId);
+      onboardingService.skipAndApplyDefaults(companyId);
       
       assertTrue(progress.isSkipped());
       assertTrue(progress.isCompleted());

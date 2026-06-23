@@ -5,7 +5,6 @@ import com.parkflow.modules.audit.domain.Auditable;
 import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.auth.domain.AuthPermission;
 import com.parkflow.modules.auth.security.RolePermissions;
 import com.parkflow.modules.auth.security.SecurityUtils;

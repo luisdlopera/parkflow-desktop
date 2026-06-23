@@ -4,7 +4,6 @@ import com.parkflow.modules.configuration.domain.repository.MonthlyContractPort;
 import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.configuration.application.port.in.OperationalValidationUseCase;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.domain.EntryMode;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.repository.BlacklistedPlateRepository;

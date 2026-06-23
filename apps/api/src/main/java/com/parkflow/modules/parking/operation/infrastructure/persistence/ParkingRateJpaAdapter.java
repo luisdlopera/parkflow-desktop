@@ -64,7 +64,7 @@ public class ParkingRateJpaAdapter implements RatePort {
 
   @Repository
   interface ParkingRateJpaRepository extends JpaRepository<Rate, UUID> {
-    @Query("SELECT r FROM ParkingRate r WHERE r.companyId = :cid AND (:site IS NULL OR r.site = :site OR r.site IS NULL) "
+    @Query("SELECT r FROM Rate r WHERE r.companyId = :cid AND (:site IS NULL OR r.site = :site OR r.site IS NULL) "
            + "AND (:q IS NULL OR :q = '' OR LOWER(r.name) LIKE LOWER(CONCAT('%', :q, '%'))) "
            + "AND (:active IS NULL OR r.isActive = :active) "
            + "AND (:category IS NULL OR r.category = :category)")
@@ -76,7 +76,7 @@ public class ParkingRateJpaAdapter implements RatePort {
         @Param("cid") UUID companyId,
         Pageable pageable);
 
-    @Query("SELECT r FROM ParkingRate r WHERE r.companyId = :cid AND r.site = :site AND r.isActive = true AND r.id <> :excludeId "
+    @Query("SELECT r FROM Rate r WHERE r.companyId = :cid AND r.site = :site AND r.isActive = true AND r.id <> :excludeId "
            + "AND (r.vehicleType IS NULL OR :vehicleType IS NULL OR r.vehicleType = :vehicleType)")
     List<Rate> findActiveForConflictCheck(
         @Param("site") String site,

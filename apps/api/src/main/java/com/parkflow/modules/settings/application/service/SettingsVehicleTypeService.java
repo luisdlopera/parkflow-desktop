@@ -11,7 +11,6 @@ import com.parkflow.modules.settings.domain.repository.CompanyVehicleTypePort;
 import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

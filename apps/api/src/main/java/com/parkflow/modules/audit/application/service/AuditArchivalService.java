@@ -19,7 +19,7 @@ import java.time.OffsetDateTime;
 @Slf4j
 public class AuditArchivalService {
 
-    private final AuditEventRepository auditEventRepository;
+//     private final AuditEventRepository auditEventRepository;
 
     /**
      * Tarea programada que se ejecuta el día 1 de cada mes a las 2:00 AM.

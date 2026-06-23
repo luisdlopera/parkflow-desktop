@@ -4,14 +4,12 @@ import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.cash.application.service.CashLedgerSummaryCalculator;
 import com.parkflow.modules.cash.domain.CashMovementType;
 import com.parkflow.modules.cash.domain.CashSession;
-import com.parkflow.modules.cash.domain.CashSessionStatus;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
 import com.parkflow.modules.cash.repository.CashMovementRepository;
 import com.parkflow.modules.cash.repository.CashMovementSummaryProjection;
 import com.parkflow.modules.cash.repository.CashSessionRepository;
 import com.parkflow.modules.cash.repository.MovementTypeSummaryProjection;
 import com.parkflow.modules.parking.operation.domain.PaymentMethod;
-import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.spaces.domain.ParkingSpaceStatus;
 import com.parkflow.modules.parking.spaces.repository.ParkingSpaceRepository;
@@ -25,9 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +34,7 @@ public class ReportQueryService {
 
   private static final ZoneId TZ_COLOMBIA = ZoneId.of("America/Bogota");
   private static final BigDecimal ZERO = BigDecimal.ZERO;
-  private static final int SCALE = 2;
+//   private static final int SCALE = 2;
 
   private final ParkingSessionRepository parkingSessionRepo;
   private final CashMovementRepository cashMovementRepo;

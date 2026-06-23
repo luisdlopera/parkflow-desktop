@@ -1,7 +1,6 @@
 package com.parkflow.modules.parking.operation.controller;
 
 import com.parkflow.modules.common.debug.AgentDebugNdjson;
-import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.SessionEvent;
 import com.parkflow.modules.parking.operation.domain.repository.SessionEventPort;
 import com.parkflow.modules.parking.operation.dto.*;
@@ -15,7 +14,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;

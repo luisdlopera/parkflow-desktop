@@ -1,7 +1,5 @@
 package com.parkflow.modules.cash.application.service;
 
-import com.parkflow.modules.cash.domain.CashMovement;
-import com.parkflow.modules.cash.domain.CashMovementStatus;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
 import java.math.BigDecimal;
