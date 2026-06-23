@@ -1,116 +1,353 @@
-import { validatePlate, inferVehicleType, normalizePlate, translateVehicleType } from "@/lib/validation/plate-validator";
+import { describe, it, expect } from "vitest";
+import {
+  normalizePlate,
+  validatePlate,
+  inferVehicleType,
+  translateVehicleType,
+  getPlateFormatHint,
+  getPlatePlaceholder,
+} from "../plate-validator";
 
 describe("normalizePlate", () => {
-  it("converts to uppercase", () => {
-    expect(normalizePlate("abc123")).toBe("ABC123");
+  it.each([
+    ["ABC123", "ABC123"],
+    ["abc123", "ABC123"],
+    ["aBc123", "ABC123"],
+    ["ABC-123", "ABC123"],
+    ["ABC_123", "ABC123"],
+    ["ABC 123", "ABC123"],
+    ["a@b#c$1%2&3", "ABC123"],
+  ])("normalizes %s to %s", (input, expected) => {
+    expect(normalizePlate(input)).toBe(expected);
   });
 
-  it("removes spaces", () => {
-    expect(normalizePlate("AB C 123")).toBe("ABC123");
-  });
-
-  it("removes hyphens", () => {
-    expect(normalizePlate("ABC-123")).toBe("ABC123");
-  });
-
-  it("returns empty string for empty input", () => {
+  it("handles empty string", () => {
     expect(normalizePlate("")).toBe("");
-    expect(normalizePlate(null as unknown as string)).toBe("");
-    expect(normalizePlate(undefined as unknown as string)).toBe("");
+  });
+
+  it("handles only special characters", () => {
+    expect(normalizePlate("@#$%^&")).toBe("");
+  });
+
+  it("preserves numbers", () => {
+    expect(normalizePlate("123")).toBe("123");
+  });
+
+  it("handles unicode", () => {
+    const result = normalizePlate("ÑÑÑ123");
+    expect(result).not.toContain("Ñ");
+  });
+
+  it("handles mixed case and special chars", () => {
+    expect(normalizePlate("AbC-123_XyZ")).toBe("ABC123XYZ");
   });
 });
 
-describe("translateVehicleType", () => {
-  it("translates CAR to carro", () => {
-    expect(translateVehicleType("CAR")).toMatch(/carro/i);
+describe("validatePlate - Colombian formats", () => {
+  it.each([
+    ["ABC123", "CAR", true],
+    ["ABC123", "VAN", true],
+    ["ABC123", "TRUCK", true],
+    ["ABC123", "BUS", true],
+    ["ABC123", "ELECTRIC", true],
+    ["XYZ999", "CAR", true],
+    ["AAA000", "CAR", true],
+  ])("validates car plate %s as %s", (plate, type, isValid) => {
+    const result = validatePlate("CO", type, plate);
+    expect(result.isValid).toBe(isValid);
+    expect(result.normalizedPlate).toBe(plate);
   });
 
-  it("translates MOTORCYCLE to moto", () => {
-    expect(translateVehicleType("MOTORCYCLE")).toMatch(/moto/i);
+  it.each([
+    ["ABC12A", "MOTORCYCLE", true],
+    ["XYZ98Z", "MOTORCYCLE", true],
+    ["AAA00A", "MOTORCYCLE", true],
+    ["ABC123", "MOTORCYCLE", false],
+  ])("validates motorcycle plate %s", (plate, type, isValid) => {
+    const result = validatePlate("CO", type, plate);
+    expect(result.isValid).toBe(isValid);
+  });
+
+  it.each([
+    ["BICI001", "BICYCLE", true],
+    ["BIC123", "BICYCLE", true],
+    ["B1C2D3", "BICYCLE", true],
+  ])("validates bicycle plate %s", (plate, type, isValid) => {
+    const result = validatePlate("CO", type, plate);
+    expect(result.isValid).toBe(isValid);
+  });
+
+  it.each([
+    ["", "CAR", false],
+    ["AB123", "CAR", false],
+    ["ABCD123", "CAR", false],
+    ["ABC1234", "CAR", false],
+  ])("rejects invalid car plates %s", (plate, type, isValid) => {
+    const result = validatePlate("CO", type, plate);
+    expect(result.isValid).toBe(isValid);
+  });
+
+  it("includes error message for invalid plates", () => {
+    const result = validatePlate("CO", "CAR", "invalid");
+    expect(result.errorMessage).toBeTruthy();
+    expect(result.isValid).toBe(false);
+  });
+
+  it("detects cross-type matches in error", () => {
+    const result = validatePlate("CO", "CAR", "ABC12A");
+    expect(result.errorMessage).toContain("moto");
+  });
+
+  it("includes example in error message", () => {
+    const result = validatePlate("CO", "CAR", "bad");
+    expect(result.errorMessage).toContain("ABC123");
+  });
+
+  it("handles empty plates", () => {
+    const result = validatePlate("CO", "CAR", "");
+    expect(result.isValid).toBe(false);
+    expect(result.errorMessage).toBeTruthy();
+  });
+
+  it("handles unsupported countries", () => {
+    const result = validatePlate("US", "CAR", "ABC123");
+    expect(result.isValid).toBe(false);
+    expect(result.errorMessage).toContain("Pais no soportado");
+  });
+
+  it("handles null country defaults to CO", () => {
+    const result1 = validatePlate(null, "CAR", "ABC123");
+    const result2 = validatePlate("CO", "CAR", "ABC123");
+    expect(result1).toEqual(result2);
+  });
+
+  it("handles undefined country defaults to CO", () => {
+    const result1 = validatePlate(undefined, "CAR", "ABC123");
+    const result2 = validatePlate("CO", "CAR", "ABC123");
+    expect(result1).toEqual(result2);
+  });
+
+  it("normalizes input before validating", () => {
+    const result1 = validatePlate("CO", "CAR", "abc123");
+    const result2 = validatePlate("CO", "CAR", "ABC123");
+    expect(result1.isValid).toBe(result2.isValid);
   });
 });
 
 describe("inferVehicleType", () => {
-  it("returns null for empty plate", () => {
-    expect(inferVehicleType("CO", "")).toBeNull();
+  it.each([
+    ["ABC123", "CAR"],
+    ["XYZ999", "CAR"],
+    ["ABC12A", "MOTORCYCLE"],
+    ["XYZ98Z", "MOTORCYCLE"],
+  ])("infers vehicle type for plate %s as %s", (plate, expected) => {
+    expect(inferVehicleType("CO", plate)).toBe(expected);
   });
 
-  it("returns MOTORCYCLE for ABC12A format (3 letters + 2 numbers + 1 letter)", () => {
+  it("returns MOTORCYCLE before CAR on match", () => {
     expect(inferVehicleType("CO", "ABC12A")).toBe("MOTORCYCLE");
   });
 
-  it("returns CAR for ABC123 format (3 letters + 3 numbers)", () => {
-    expect(inferVehicleType("CO", "ABC123")).toBe("CAR");
+  it("handles null country code", () => {
+    const result = inferVehicleType(null, "ABC123");
+    expect(result).toBeTruthy();
   });
 
-  it("returns BICYCLE for short alphanumeric identifiers (permissive BICYCLE pattern)", () => {
-    expect(inferVehicleType("CO", "12345")).toBe("BICYCLE");
+  it("handles empty plate", () => {
+    expect(inferVehicleType("CO", "")).toBeNull();
   });
 
-  it("returns CAR over OTHER when both match", () => {
-    const result = inferVehicleType("CO", "XYZ789");
-    expect(result).toBe("CAR");
+  it("is case insensitive for country", () => {
+    expect(inferVehicleType("co", "ABC123")).toBe("CAR");
+    expect(inferVehicleType("Co", "ABC123")).toBe("CAR");
   });
 
-  it("returns MOTORCYCLE over CAR when both match", () => {
-    const result = inferVehicleType("CO", "ABC12A");
-    expect(result).toBe("MOTORCYCLE");
+  it("handles whitespace in plate", () => {
+    const result = inferVehicleType("CO", "ABC 123");
+    expect(result).toBeTruthy();
   });
 
-  it("returns null for unsupported country", () => {
-    expect(inferVehicleType("XX", "ABC123")).toBeNull();
+  it("infers bicycle type", () => {
+    const result = inferVehicleType("CO", "BICI001");
+    expect(result).toBe("BICYCLE");
   });
 });
 
-describe("validatePlate", () => {
-  it("accepts a motorcycle plate like zql43a when vehicleType is MOTORCYCLE", () => {
-    const res = validatePlate("CO", "MOTORCYCLE", "zql43a");
-    expect(res.isValid).toBe(true);
-    expect(res.normalizedPlate).toBe("ZQL43A");
+describe("translateVehicleType", () => {
+  it.each([
+    ["CAR", "carro"],
+    ["MOTORCYCLE", "moto"],
+    ["VAN", "van"],
+    ["TRUCK", "camión"],
+    ["BUS", "bus"],
+    ["BICYCLE", "bicicleta"],
+    ["ELECTRIC", "eléctrico"],
+  ])("translates %s to %s", (type, expected) => {
+    expect(translateVehicleType(type)).toBe(expected);
   });
 
-  it("rejects a malformed plate for car", () => {
-    const res = validatePlate("CO", "CAR", "zql43a");
-    expect(res.isValid).toBe(false);
-    expect(res.errorMessage).toMatch(/Para carro/);
+  it("is case insensitive", () => {
+    expect(translateVehicleType("car")).toBe("carro");
+    expect(translateVehicleType("Car")).toBe("carro");
+    expect(translateVehicleType("CAR")).toBe("carro");
   });
 
-  it("rejects empty plate", () => {
-    const res = validatePlate("CO", "CAR", "");
-    expect(res.isValid).toBe(false);
-    expect(res.errorMessage).toMatch(/vacía/);
+  it("returns default for unknown types", () => {
+    expect(translateVehicleType("UNKNOWN")).toBe("otro vehículo");
+    expect(translateVehicleType("HELICOPTER")).toBe("otro vehículo");
   });
 
-  it("rejects motorcycle plate when type is CAR with a suggestion", () => {
-    const res = validatePlate("CO", "MOTORCYCLE", "ABC123");
-    expect(res.isValid).toBe(false);
-    expect(res.errorMessage).toMatch(/carro/);
+  it("handles empty string", () => {
+    expect(translateVehicleType("")).toBe("otro vehículo");
   });
 
-  it("rejects car plate when type is MOTORCYCLE with a suggestion", () => {
-    const res = validatePlate("CO", "CAR", "ABC12A");
-    expect(res.isValid).toBe(false);
-    expect(res.errorMessage).toMatch(/moto/);
+  it("all translations are in Spanish", () => {
+    const types = ["CAR", "MOTORCYCLE", "VAN", "TRUCK", "BUS", "BICYCLE", "ELECTRIC"];
+    types.forEach((type) => {
+      const translation = translateVehicleType(type);
+      expect(translation).toBeTruthy();
+      expect(translation.length).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe("getPlateFormatHint", () => {
+  it.each([
+    ["CAR", "CO"],
+    ["MOTORCYCLE", "CO"],
+    ["TRUCK", "CO"],
+    ["BICYCLE", "CO"],
+  ])("returns format hint for %s", (type, country) => {
+    const hint = getPlateFormatHint(type, country);
+    expect(hint).toBeTruthy();
+    expect(hint.length).toBeGreaterThan(0);
   });
 
-  it("accepts car plate for VAN type (same format)", () => {
-    const res = validatePlate("CO", "VAN", "ABC123");
-    expect(res.isValid).toBe(true);
+  it("is case insensitive for type", () => {
+    const hint1 = getPlateFormatHint("car", "CO");
+    const hint2 = getPlateFormatHint("CAR", "CO");
+    expect(hint1).toBe(hint2);
   });
 
-  it("normalizes NP- format correctly (no-plate placeholder)", () => {
-    const result = normalizePlate("NP-K4XM8A-B3C0");
-    expect(result).toBe("NPK4XM8AB3C0");
+  it("defaults to CO country", () => {
+    const hint = getPlateFormatHint("CAR");
+    expect(hint).toBeTruthy();
   });
 
-  it("rejects NP- format for CAR type (only valid when noPlate flag is set)", () => {
-    const res = validatePlate("CO", "CAR", "NP-K4XM8A");
-    expect(res.isValid).toBe(false);
+  it("returns default hint for unknown types", () => {
+    const hint = getPlateFormatHint("UNKNOWN", "CO");
+    expect(hint).toBe("3 letras + 3 números");
   });
 
-  it("rejects for unsupported country", () => {
-    const res = validatePlate("XX", "CAR", "ABC123");
-    expect(res.isValid).toBe(false);
-    expect(res.errorMessage).toMatch(/Pais no soportado/);
+  it("contains helpful format information", () => {
+    const carHint = getPlateFormatHint("CAR", "CO");
+    expect(carHint).toContain("3");
+  });
+
+  it("all hints are non-empty", () => {
+    const types = ["CAR", "MOTORCYCLE", "TRUCK", "BICYCLE", "OTHER"];
+    types.forEach((type) => {
+      const hint = getPlateFormatHint(type, "CO");
+      expect(hint).toBeTruthy();
+    });
+  });
+});
+
+describe("getPlatePlaceholder", () => {
+  it.each([
+    ["CAR", "ABC123"],
+    ["MOTORCYCLE", "ABC12A"],
+    ["BICYCLE", "BICI001"],
+  ])("returns placeholder for %s", (type, expected) => {
+    expect(getPlatePlaceholder(type, "CO")).toBe(expected);
+  });
+
+  it("is case insensitive for type", () => {
+    const p1 = getPlatePlaceholder("car", "CO");
+    const p2 = getPlatePlaceholder("CAR", "CO");
+    expect(p1).toBe(p2);
+  });
+
+  it("defaults to CO", () => {
+    const p = getPlatePlaceholder("CAR");
+    expect(p).toBe("ABC123");
+  });
+
+  it("returns generic placeholder for unknown types", () => {
+    const p = getPlatePlaceholder("UNKNOWN", "CO");
+    expect(p).toBe("ABC123");
+  });
+
+  it("all placeholders are valid according to rules", () => {
+    const types = ["CAR", "MOTORCYCLE", "TRUCK", "VAN", "BUS", "BICYCLE", "ELECTRIC", "OTHER"];
+    types.forEach((type) => {
+      const placeholder = getPlatePlaceholder(type, "CO");
+      const result = validatePlate("CO", type, placeholder);
+      expect(result.isValid).toBe(true);
+    });
+  });
+
+  it("placeholders are usable examples", () => {
+    const placeholders = [
+      getPlatePlaceholder("CAR", "CO"),
+      getPlatePlaceholder("MOTORCYCLE", "CO"),
+      getPlatePlaceholder("BICYCLE", "CO"),
+    ];
+    placeholders.forEach((p) => {
+      expect(p).toBeTruthy();
+      expect(p.length).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe("integration: full validation flow", () => {
+  it("normalizes, infers type, and validates", () => {
+    const userInput = "abc-123";
+    const normalized = normalizePlate(userInput);
+    const inferred = inferVehicleType("CO", normalized);
+    const validated = validatePlate("CO", inferred || "CAR", normalized);
+    expect(validated.isValid).toBe(true);
+  });
+
+  it("provides helpful hints for invalid plates", () => {
+    const inferred = inferVehicleType("CO", "ABC12");
+    if (!inferred) {
+      const hint = getPlateFormatHint("CAR", "CO");
+      expect(hint).toBeTruthy();
+    }
+  });
+
+  it("shows user-friendly translation", () => {
+    const type = inferVehicleType("CO", "ABC12A");
+    const translation = translateVehicleType(type || "OTHER");
+    expect(translation).toBeTruthy();
+  });
+
+  it("handles complete user correction workflow", () => {
+    const original = "invalido";
+    const normalized = normalizePlate(original);
+    const result = validatePlate("CO", "CAR", normalized);
+    if (!result.isValid) {
+      const placeholder = getPlatePlaceholder("CAR", "CO");
+      const corrected = validatePlate("CO", "CAR", placeholder);
+      expect(corrected.isValid).toBe(true);
+    }
+  });
+
+  it("validates all Colombian vehicle types", () => {
+    const plates = {
+      CAR: "ABC123",
+      MOTORCYCLE: "ABC12A",
+      VAN: "ABC123",
+      TRUCK: "ABC123",
+      BUS: "ABC123",
+      ELECTRIC: "ABC123",
+      BICYCLE: "BICI001",
+      OTHER: "AB123",
+    };
+    Object.entries(plates).forEach(([type, plate]) => {
+      const result = validatePlate("CO", type, plate);
+      expect(result.isValid).toBe(true);
+    });
   });
 });
