@@ -34,8 +34,10 @@ function breakdownFromAmount(amount: number): Record<number, number> {
   if (amount <= 0) return {};
   let remaining = amount;
   const result: Record<number, number> = {};
-  const sorted = [...DENOMINATIONS].sort((a, b) => b.value - a.value);
-  for (const denom of sorted) {
+
+  // ⚡ Bolt: Removed O(N log N) sort inside the calculation loop.
+  // DENOMINATIONS is already sorted in descending order statically.
+  for (const denom of DENOMINATIONS) {
     if (remaining >= denom.value) {
       const count = Math.floor(remaining / denom.value);
       result[denom.value] = count;
