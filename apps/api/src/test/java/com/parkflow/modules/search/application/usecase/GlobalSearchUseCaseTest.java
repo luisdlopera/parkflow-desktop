@@ -11,11 +11,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
@@ -43,7 +41,7 @@ class GlobalSearchUseCaseTest {
         when(ticketProvider.search(eq(QUERY), eq(COMPANY_ID)))
             .thenReturn(List.of(searchResult("ticket-1", SearchType.TICKET, 1.0)));
         when(customerProvider.search(eq(QUERY), eq(COMPANY_ID)))
-            .thenReturn(List.of(searchResult("cust-1", SearchType.CUSTOMER, 0.8)));
+            .thenReturn(List.of(searchResult("cust-1", SearchType.CLIENT, 0.8)));
 
         SearchResponse response = useCase.execute(QUERY, COMPANY_ID, null);
 
@@ -61,7 +59,7 @@ class GlobalSearchUseCaseTest {
         SearchResponse response = useCase.execute(QUERY, COMPANY_ID, "tickets");
 
         assertThat(response.getResults()).containsKey("TICKET");
-        assertThat(response.getResults()).doesNotContainKey("CUSTOMER");
+        assertThat(response.getResults()).doesNotContainKey("CLIENT");
     }
 
     @Test
@@ -104,12 +102,12 @@ class GlobalSearchUseCaseTest {
                 searchResult("t2", SearchType.TICKET, 0.9)
             ));
         when(customerProvider.search(eq(QUERY), eq(COMPANY_ID)))
-            .thenReturn(List.of(searchResult("c1", SearchType.CUSTOMER, 0.8)));
+            .thenReturn(List.of(searchResult("c1", SearchType.CLIENT, 0.8)));
 
         SearchResponse response = useCase.execute(QUERY, COMPANY_ID, null);
 
         assertThat(response.getResults().get("TICKET")).hasSize(2);
-        assertThat(response.getResults().get("CUSTOMER")).hasSize(1);
+        assertThat(response.getResults().get("CLIENT")).hasSize(1);
     }
 
     @Test

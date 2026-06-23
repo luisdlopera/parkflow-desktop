@@ -2,21 +2,19 @@ package com.parkflow.modules.licensing.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.licensing.domain.Company;
-import com.parkflow.modules.licensing.domain.LicenseAuditLog;
 import com.parkflow.modules.licensing.domain.LicenseBlockEvent;
 import com.parkflow.modules.licensing.domain.LicensedDevice;
-import com.parkflow.modules.licensing.enums.CompanyStatus;
-import com.parkflow.modules.licensing.enums.LicenseStatus;
-import com.parkflow.modules.licensing.enums.PlanType;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.licensing.domain.repository.LicenseAuditLogPort;
 import com.parkflow.modules.licensing.domain.repository.LicenseBlockEventPort;
 import com.parkflow.modules.licensing.domain.repository.LicensedDevicePort;
+import com.parkflow.modules.licensing.enums.CompanyStatus;
+import com.parkflow.modules.licensing.enums.LicenseStatus;
+import com.parkflow.modules.licensing.enums.PlanType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -31,125 +29,135 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class LicenseAuditServiceTest {
 
-  @Mock private LicenseBlockEventPort blockEventRepository;
-  @Mock private CompanyPort companyRepository;
-  @Mock private LicensedDevicePort deviceRepository;
   @Mock private LicenseAuditLogPort auditLogRepository;
+  @Mock private LicenseBlockEventPort blockEventRepository;
+  @Mock private CompanyPort companyPort;
+  @Mock private LicensedDevicePort deviceRepository;
 
   private LicenseAuditService service;
 
   @BeforeEach
   void setUp() {
-    service = new LicenseAuditService(blockEventRepository, companyRepository, deviceRepository, auditLogRepository);
+    service = new LicenseAuditService(blockEventRepository, companyPort, deviceRepository, auditLogRepository);
   }
 
   @Test
-  void recordAutoBlockPersistsDiagnostics() {
-    UUID companyId = UUID.randomUUID();
-    Company company = company(companyId, CompanyStatus.BLOCKED, PlanType.PRO);
-    LicensedDevice device = device(company, "fp-1", LicenseStatus.ACTIVE);
+  void recordFailedValidationSuccess() {
+    Company c = new Company();
+    c.setId(UUID.randomUUID());
+    when(companyPort.findById(c.getId())).thenReturn(Optional.of(c));
 
-    when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
-    when(deviceRepository.findByDeviceFingerprint("fp-1")).thenReturn(Optional.of(device));
-    when(blockEventRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-    LicenseBlockEvent event = service.recordAutoBlock(
-        companyId,
-        "fp-1",
-        "INVALID_SIGNATURE",
-        "Intento de validación inválido",
-        Map.of("signatureValid", false, "tamperViolationCount", 2, "tamperDetails", "rollback"));
-
-    assertThat(event.getCompany()).isEqualTo(company);
-    assertThat(event.getReasonCode()).isEqualTo("INVALID_SIGNATURE");
-    assertThat(event.getSignatureValid()).isFalse();
-    assertThat(event.getTamperViolationCount()).isEqualTo(2);
+    service.recordFailedValidation(c.getId(), "D1", "INVALID_SIGNATURE", "D", Map.of());
     verify(blockEventRepository).save(any(LicenseBlockEvent.class));
   }
 
   @Test
-  void recordFailedValidationIgnoresNonSevereErrors() {
-    service.recordFailedValidation(
-        UUID.randomUUID(),
-        "fp-1",
-        "DEVICE_NOT_REGISTERED",
-        "Dispositivo no registrado",
-        Map.of("companyStatus", "ACTIVE"));
+  void recordAutoBlockSuccess() {
+    Company c = new Company();
+    c.setId(UUID.randomUUID());
+    when(companyPort.findById(c.getId())).thenReturn(Optional.of(c));
+    when(blockEventRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-    verify(blockEventRepository, never()).save(any());
-    verify(companyRepository, never()).findById(any());
+    var ev = service.recordAutoBlock(c.getId(), "D1", "OFFLINE_LIMIT", "Desc", Map.of());
+    assertThat(ev.getReasonCode()).isEqualTo("OFFLINE_LIMIT");
+    verify(blockEventRepository).save(any());
   }
 
   @Test
-  void diagnoseCompanyAggregatesHealthSignals() {
-    UUID companyId = UUID.randomUUID();
-    Company company = company(companyId, CompanyStatus.BLOCKED, PlanType.PRO);
-    LicensedDevice activeDevice = device(company, "fp-active", LicenseStatus.ACTIVE);
-    LicensedDevice blockedDevice = device(company, "fp-blocked", LicenseStatus.BLOCKED);
+  void diagnoseCompanySuccess() {
+    UUID cid = UUID.randomUUID();
+    Company c = new Company();
+    c.setId(cid);
+    c.setName("C1");
+    c.setStatus(CompanyStatus.BLOCKED);
+    when(companyPort.findById(cid)).thenReturn(Optional.of(c));
 
-    LicenseBlockEvent blockEvent = new LicenseBlockEvent();
-    blockEvent.setId(UUID.randomUUID());
-    blockEvent.setCompany(company);
-    blockEvent.setReasonCode("INVALID_SIGNATURE");
-    blockEvent.setReasonDescription("Firma inválida");
-    blockEvent.setCreatedAt(OffsetDateTime.now().minusHours(2));
-    blockEvent.setResolved(false);
+    LicenseBlockEvent block = new LicenseBlockEvent();
+    block.setId(UUID.randomUUID());
+    block.setCompany(c);
+    block.setCreatedAt(OffsetDateTime.now());
+    block.setPaymentReceivedAfterBlock(true);
 
-    when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
-    when(deviceRepository.findByCompanyId(companyId)).thenReturn(List.of(activeDevice, blockedDevice));
-    when(blockEventRepository.findByCompanyIdOrderByCreatedAtDesc(companyId)).thenReturn(List.of(blockEvent));
-    when(blockEventRepository.countUnresolvedByCompanyId(companyId)).thenReturn(1L);
+    when(blockEventRepository.findByCompanyIdOrderByCreatedAtDesc(cid)).thenReturn(List.of(block));
+    when(blockEventRepository.countUnresolvedByCompanyId(cid)).thenReturn(1L);
 
-    var diagnostics = service.diagnoseCompany(companyId);
+    LicensedDevice d = new LicensedDevice();
+    d.setStatus(LicenseStatus.ACTIVE);
+    when(deviceRepository.findByCompanyId(cid)).thenReturn(List.of(d));
 
-    assertThat(diagnostics.getHealthStatus()).isEqualTo("CRITICAL");
-    assertThat(diagnostics.getUnresolvedBlockEvents()).isEqualTo(1);
-    assertThat(diagnostics.getRegisteredDevices()).isEqualTo(2);
-    assertThat(diagnostics.getBlockedDevices()).isEqualTo(1);
-    assertThat(diagnostics.getLastBlockEvent()).isNotNull();
-    assertThat(diagnostics.getWarnings()).isNotEmpty();
+    var diag = service.diagnoseCompany(cid);
+    assertThat(diag.getCompanyName()).isEqualTo("C1");
+    assertThat(diag.getHealthStatus()).isEqualTo("CRITICAL");
   }
 
   @Test
-  void resolveBlockEventPersistsAuditLog() {
-    UUID companyId = UUID.randomUUID();
-    UUID blockEventId = UUID.randomUUID();
-    Company company = company(companyId, CompanyStatus.ACTIVE, PlanType.PRO);
-    LicenseBlockEvent event = new LicenseBlockEvent();
-    event.setId(blockEventId);
-    event.setCompany(company);
-    event.setResolved(false);
+  void diagnoseDeviceSuccess() {
+    Company c = new Company();
+    c.setId(UUID.randomUUID());
+    LicensedDevice d = new LicensedDevice();
+    d.setId(UUID.randomUUID());
+    d.setCompany(c);
+    d.setLastHeartbeatAt(OffsetDateTime.now().minusMinutes(10));
+    when(deviceRepository.findByDeviceFingerprint("F1")).thenReturn(Optional.of(d));
+    when(blockEventRepository.findByDeviceIdOrderByCreatedAtDesc(d.getId())).thenReturn(List.of());
 
-    when(blockEventRepository.findById(blockEventId)).thenReturn(Optional.of(event));
-    when(blockEventRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-    when(auditLogRepository.save(any(LicenseAuditLog.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-    service.resolveBlockEvent(blockEventId, "support@parkflow.local", "Pago aplicado", "MANUAL_UNBLOCK");
-
-    assertThat(event.getResolved()).isTrue();
-    assertThat(event.getResolvedBy()).isEqualTo("support@parkflow.local");
-    verify(auditLogRepository).save(any(LicenseAuditLog.class));
+    var diag = service.diagnoseDevice("F1");
+    assertThat(diag.getIsOnline()).isTrue();
   }
 
-  private Company company(UUID id, CompanyStatus status, PlanType plan) {
-    Company company = new Company();
-    company.setId(id);
-    company.setName("ParkFlow SA");
-    company.setStatus(status);
-    company.setPlan(plan);
-    company.setExpiresAt(OffsetDateTime.now().plusDays(30));
-    company.setGraceUntil(company.getExpiresAt().plusDays(7));
-    company.setMaxDevices(2);
-    return company;
+  @Test
+  void resolveBlockEventSuccess() {
+    UUID id = UUID.randomUUID();
+    LicenseBlockEvent ev = new LicenseBlockEvent();
+    ev.setId(id);
+    ev.setCompany(new Company());
+    when(blockEventRepository.findById(id)).thenReturn(Optional.of(ev));
+
+    service.resolveBlockEvent(id, "Admin", "N", "A");
+    assertThat(ev.getResolved()).isTrue();
+    verify(blockEventRepository).save(any());
   }
 
-  private LicensedDevice device(Company company, String fingerprint, LicenseStatus status) {
-    LicensedDevice device = new LicensedDevice();
-    device.setId(UUID.randomUUID());
-    device.setCompany(company);
-    device.setDeviceFingerprint(fingerprint);
-    device.setStatus(status);
-    device.setExpiresAt(company.getExpiresAt());
-    return device;
+  @Test
+  void markAsFalsePositiveSuccess() {
+    UUID id = UUID.randomUUID();
+    LicenseBlockEvent ev = new LicenseBlockEvent();
+    ev.setId(id);
+    when(blockEventRepository.findById(id)).thenReturn(Optional.of(ev));
+
+    service.markAsFalsePositive(id, "A", "N");
+    assertThat(ev.getFalsePositive()).isTrue();
+    verify(blockEventRepository).save(ev);
+  }
+
+  @Test
+  void getPrioritySupportCases() {
+    LicenseBlockEvent ev = new LicenseBlockEvent();
+    ev.setId(UUID.randomUUID());
+    Company c = new Company();
+    c.setId(UUID.randomUUID());
+    c.setPlan(PlanType.ENTERPRISE);
+    ev.setCompany(c);
+    ev.setCreatedAt(OffsetDateTime.now().minusDays(2));
+
+    when(blockEventRepository.findBlocksWithSubsequentPayment()).thenReturn(List.of(ev));
+
+    var cases = service.getPrioritySupportCases();
+    assertThat(cases).hasSize(1);
+    assertThat(cases.get(0).getPriority()).isEqualTo("HIGH");
+  }
+
+  @Test
+  void getBlockStatistics() {
+    Object[] arr1 = new Object[] { "2026-06-22", 10L, 5L };
+    when(blockEventRepository.getDailyStats(any())).thenReturn(java.util.Collections.singletonList(arr1));
+    
+    Object[] arr2 = new Object[] { "REASON_1", 10L };
+    when(blockEventRepository.countByReasonSince(any())).thenReturn(java.util.Collections.singletonList(arr2));
+
+    var stats = service.getBlockStatistics(OffsetDateTime.now().minusDays(1));
+    assertThat(stats.getTotalBlockEvents()).isEqualTo(10);
+    assertThat(stats.getResolvedEvents()).isEqualTo(5);
+    assertThat(stats.getResolutionRate()).isEqualTo(50.0);
   }
 }

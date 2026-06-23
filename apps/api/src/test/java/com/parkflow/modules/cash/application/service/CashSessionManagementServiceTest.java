@@ -126,7 +126,6 @@ class CashSessionManagementServiceTest {
         session.setCashRegister(register);
 
         when(cashSessionRepository.findByIdWithPessimisticLock(sessionId)).thenReturn(Optional.of(session));
-        when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
         when(cashMovementRepository.getSummaryBySessionId(sessionId)).thenReturn(List.of());
         when(parkingSessionRepository.countByStatusAndCompanyIdAndEntryAtGreaterThanEqual(

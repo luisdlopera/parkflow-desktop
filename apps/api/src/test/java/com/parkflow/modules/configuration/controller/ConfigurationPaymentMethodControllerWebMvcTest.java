@@ -18,7 +18,7 @@ import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
 import com.parkflow.modules.configuration.dto.PaymentMethodResponse;
 import com.parkflow.modules.configuration.application.port.in.PaymentMethodUseCase;
-import com.parkflow.modules.settings.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;

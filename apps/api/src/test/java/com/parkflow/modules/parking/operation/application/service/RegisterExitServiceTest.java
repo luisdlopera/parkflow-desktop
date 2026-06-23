@@ -28,7 +28,7 @@ import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
 import com.parkflow.modules.settings.application.port.in.ParkingParametersUseCase;
-import com.parkflow.modules.settings.dto.ParkingParametersData;
+import com.parkflow.modules.common.dto.ParkingParametersData;
 import com.parkflow.modules.common.exception.OperationException;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

@@ -2,7 +2,7 @@ package com.parkflow.modules.settings;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.parkflow.modules.settings.dto.ParkingParametersData;
+import com.parkflow.modules.common.dto.ParkingParametersData;
 import com.parkflow.modules.settings.application.service.ParkingParametersValidator;
 import java.math.BigDecimal;
 import java.util.List;

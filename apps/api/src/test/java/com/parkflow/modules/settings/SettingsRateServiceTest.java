@@ -18,7 +18,7 @@ import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.repository.RateRepository;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.settings.dto.RateUpsertRequest;
+import com.parkflow.modules.common.dto.RateUpsertRequest;
 import com.parkflow.modules.settings.application.service.SettingsAuditService;
 import com.parkflow.modules.settings.application.service.SettingsRateService;
 import com.parkflow.modules.settings.application.service.RateValidationService;

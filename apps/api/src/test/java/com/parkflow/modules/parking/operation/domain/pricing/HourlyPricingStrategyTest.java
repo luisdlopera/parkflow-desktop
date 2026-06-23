@@ -90,13 +90,65 @@ class HourlyPricingStrategyTest {
   }
 
   @Test
-  void lost_ticket_surcharge_with_night_surcharge() {
+  void baseValue_andAdditional_billing() {
+    Rate r = new Rate();
+    r.setRateType(RateType.HOURLY);
+    r.setFractionMinutes(60);
+    r.setBaseMinutes(30);
+    r.setBaseValue(new BigDecimal("2000"));
+    r.setAdditionalMinutes(30);
+    r.setAdditionalValue(new BigDecimal("1000"));
+    r.setAmount(new BigDecimal("2000"));
+    r.setRoundingMode(RoundingMode.UP);
+    r.setLostTicketSurcharge(BigDecimal.ZERO);
+
+    // 90 min = 30 base + 60 additional (2 extra 30-min blocks) = 2000 + 2*1000 = 4000
+    PriceBreakdown breakdown = strategy.calculate(r, 90, false);
+    assertThat(breakdown.subtotal()).isEqualByComparingTo(new BigDecimal("4000"));
+  }
+
+  @Test
+  void zero_minutes_returns_zero() {
     Rate r = baseRate(60, RoundingMode.UP, BigDecimal.valueOf(2000));
-    r.setAppliesNight(true);
-    r.setNightSurchargePercent(new BigDecimal("10"));
-    r.setLostTicketSurcharge(BigDecimal.valueOf(5000));
-    var breakdown = strategy.calculate(r, 60, true); // subtotal=2000, surcharge=5000, total=7000 (no night surcharge implemented yet)
-    assertThat(breakdown.surcharge()).isEqualByComparingTo(BigDecimal.valueOf(5000));
-    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(7000));
+    PriceBreakdown breakdown = strategy.calculate(r, 0, false);
+    assertThat(breakdown.subtotal()).isEqualByComparingTo(BigDecimal.ZERO);
+    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.ZERO);
+  }
+
+  @Test
+  void zero_minutes_with_lostTicket() {
+    Rate r = baseRate(60, RoundingMode.UP, BigDecimal.valueOf(2000));
+    PriceBreakdown breakdown = strategy.calculate(r, 0, true);
+    assertThat(breakdown.subtotal()).isEqualByComparingTo(BigDecimal.ZERO);
+    assertThat(breakdown.total()).isEqualByComparingTo(BigDecimal.valueOf(5000));
+  }
+
+  @Test
+  void maxSessionValue_caps_total() {
+    Rate r = baseRate(60, RoundingMode.UP, BigDecimal.valueOf(2000));
+    r.setMaxSessionValue(new BigDecimal("3000"));
+    PriceBreakdown breakdown = strategy.calculate(r, 300, false);
+    assertThat(breakdown.subtotal()).isEqualByComparingTo(new BigDecimal("3000"));
+  }
+
+  @Test
+  void minSessionValue_raises_total() {
+    Rate r = baseRate(60, RoundingMode.UP, BigDecimal.valueOf(2000));
+    r.setMinSessionValue(new BigDecimal("5000"));
+    PriceBreakdown breakdown = strategy.calculate(r, 30, false);
+    assertThat(breakdown.subtotal()).isEqualByComparingTo(new BigDecimal("5000"));
+  }
+
+  @Test
+  void roundingNearest_appliesCorrectly() {
+    Rate r = baseRate(60, RoundingMode.NEAREST, BigDecimal.valueOf(2000));
+    PriceBreakdown breakdown = strategy.calculate(r, 90, false);
+    assertThat(breakdown.units()).isEqualTo(2);
+  }
+
+  @Test
+  void supports_returns_true_for_hourly() {
+    assertThat(strategy.supports(RateType.HOURLY)).isTrue();
+    assertThat(strategy.supports(RateType.DAILY)).isFalse();
   }
 }

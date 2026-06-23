@@ -311,5 +311,70 @@ class ProcessLostTicketServiceTest {
           i.getOperationType() == IdempotentOperationType.LOST_TICKET));
     }
   }
-}
 
+  @Test
+  void execute_WithPlateOnly_Success() {
+    LostTicketRequest req = new LostTicketRequest("idem1", null, "CAR1", operatorId, null, "Lost", null, null);
+    
+    ParkingSession s = org.mockito.Mockito.mock(ParkingSession.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
+    when(s.getId()).thenReturn(UUID.randomUUID());
+    when(s.getStatus()).thenReturn(SessionStatus.ACTIVE);
+
+    when(parkingSessionPort.findActiveByPlateForUpdate(SessionStatus.ACTIVE, "CAR1", companyId)).thenReturn(Optional.of(s));
+
+    AppUser op = new AppUser();
+    op.setId(operatorId);
+    op.setRole(UserRole.ADMIN);
+    op.setActive(true);
+    when(appUserPort.findById(operatorId)).thenReturn(Optional.of(op));
+
+    when(parkingSessionPort.save(any())).thenAnswer(i -> i.getArgument(0));
+    when(complexPricingPort.calculate(any(), any(), any(), eq(true), eq(false))).thenReturn(new com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown(0, java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 0, java.math.BigDecimal.ZERO));
+    when(complexPricingPort.applyCourtesy(any(), any(), eq(true))).thenAnswer(i -> i.getArgument(1));
+
+    var res = service.execute(req);
+    assertThat(res.message()).isEqualTo("Ticket perdido procesado");
+  }
+
+  @Test
+  void execute_ThrowsIfNoTicketOrPlate() {
+    LostTicketRequest req = new LostTicketRequest("idem1", null, null, null, null, "Lost", null, null);
+    assertThatThrownBy(() -> service.execute(req))
+        .isInstanceOf(OperationException.class)
+        .hasMessageContaining("ticketNumber o plate es obligatorio");
+  }
+
+  @Test
+  void execute_IdempotentReplayConflict() {
+    LostTicketRequest req = new LostTicketRequest("idem1", "TK1", "CAR1", operatorId, null, "Lost", null, null);
+    
+    OperationIdempotency row = new OperationIdempotency();
+    row.setOperationType(IdempotentOperationType.EXIT); // Not LOST_TICKET!
+    when(operationIdempotencyPort.findByIdempotencyKey("idem1")).thenReturn(Optional.of(row));
+
+    assertThatThrownBy(() -> service.execute(req))
+        .isInstanceOf(OperationException.class)
+        .hasMessageContaining("Clave de idempotencia ya usada");
+  }
+
+  @Test
+  void execute_ThrowsIfTicketNotFound() {
+    LostTicketRequest req = new LostTicketRequest("idem1", "TK1", "CAR1", operatorId, null, "Lost", null, null);
+    when(parkingSessionPort.findActiveByTicketForUpdate(SessionStatus.ACTIVE, "TK1", companyId)).thenReturn(Optional.empty());
+    
+    assertThatThrownBy(() -> service.execute(req))
+        .isInstanceOf(OperationException.class)
+        .hasMessageContaining("Sesion activa no encontrada");
+  }
+
+  @Test
+  void execute_ThrowsIfPlateNotFound() {
+    LostTicketRequest req = new LostTicketRequest("idem1", null, "CAR1", operatorId, null, "Lost", null, null);
+    when(parkingSessionPort.findActiveByPlateForUpdate(SessionStatus.ACTIVE, "CAR1", companyId)).thenReturn(Optional.empty());
+    
+    assertThatThrownBy(() -> service.execute(req))
+        .isInstanceOf(OperationException.class)
+        .hasMessageContaining("Sesion activa no encontrada");
+  }
+
+}

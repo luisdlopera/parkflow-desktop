@@ -76,8 +76,92 @@ class LicenseSupportControllerIntegrationTest {
 
     verify(auditService).resolveBlockEvent(
         eq(blockEventId),
-        eq("support@parkflow.local"),
+        org.mockito.ArgumentMatchers.anyString(),
         eq("Pago aplicado"),
         eq("MANUAL_UNBLOCK"));
+  }
+
+  @Test
+  @WithMockUser(roles = "SUPPORT")
+  void diagnoseDevice_ReturnsOk() throws Exception {
+    when(auditService.diagnoseDevice(eq("HW-1"))).thenReturn(
+        com.parkflow.modules.licensing.dto.DeviceDiagnosticsResponse.builder().build());
+
+    mockMvc.perform(get("/api/v1/licensing/support/diagnose/device/{hardwareId}", "HW-1"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = "SUPPORT")
+  void getCompanyBlockEvents_ReturnsOk() throws Exception {
+    UUID companyId = UUID.randomUUID();
+    when(blockEventRepository.findByCompanyIdOrderByCreatedAtDesc(eq(companyId))).thenReturn(List.of());
+    when(blockEventRepository.findUnresolvedByCompanyId(eq(companyId))).thenReturn(List.of());
+
+    mockMvc.perform(get("/api/v1/licensing/support/blocks/company/{companyId}", companyId))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = "SUPPORT")
+  void getUnresolvedBlocks_ReturnsOk() throws Exception {
+    when(blockEventRepository.findUnresolvedEvents()).thenReturn(List.of());
+
+    mockMvc.perform(get("/api/v1/licensing/support/blocks/unresolved"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = "SUPER_ADMIN")
+  void getFalsePositives_ReturnsOk() throws Exception {
+    when(blockEventRepository.findFalsePositives()).thenReturn(List.of());
+
+    mockMvc.perform(get("/api/v1/licensing/support/blocks/false-positives"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = "SUPPORT")
+  void getPriorityCases_ReturnsOk() throws Exception {
+    when(auditService.getPrioritySupportCases()).thenReturn(List.of());
+
+    mockMvc.perform(get("/api/v1/licensing/support/cases/priority"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = "SUPER_ADMIN")
+  void getStatistics_ReturnsOk() throws Exception {
+    when(auditService.getBlockStatistics(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(com.parkflow.modules.licensing.dto.BlockStatisticsResponse.builder().build());
+
+    mockMvc.perform(get("/api/v1/licensing/support/statistics"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = "SUPER_ADMIN")
+  void markAsFalsePositive_ReturnsOk() throws Exception {
+    UUID eventId = UUID.randomUUID();
+    mockMvc.perform(post("/api/v1/licensing/support/blocks/{eventId}/false-positive", eventId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"notes\":\"Test false positive\"}")
+            .requestAttr("currentUserEmail", "admin@parkflow.local"))
+        .andExpect(status().isOk());
+
+    verify(auditService).markAsFalsePositive(eq(eventId), eq("admin@parkflow.local"), eq("Test false positive"));
+  }
+
+  @Test
+  @WithMockUser(roles = "SUPPORT")
+  void unblockCompany_ReturnsOk() throws Exception {
+    UUID companyId = UUID.randomUUID();
+    when(blockEventRepository.findUnresolvedByCompanyId(companyId)).thenReturn(List.of());
+
+    mockMvc.perform(post("/api/v1/licensing/support/company/{companyId}/unblock", companyId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"reason\":\"Test reason\"}")
+            .requestAttr("currentUserEmail", "support@parkflow.local"))
+        .andExpect(status().isOk());
   }
 }

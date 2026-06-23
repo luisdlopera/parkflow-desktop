@@ -1,7 +1,6 @@
 package com.parkflow.modules.search.infrastructure.controller;
 
 import com.parkflow.config.BaseIntegrationTest;
-import com.parkflow.modules.search.application.dto.SearchResponse;
 import com.parkflow.modules.search.domain.model.SearchResult;
 import com.parkflow.modules.search.domain.model.SearchType;
 import com.parkflow.modules.search.domain.port.SearchProvider;
@@ -11,7 +10,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -21,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class SearchControllerTest extends BaseIntegrationTest {
 
-    @MockBean
+    @MockBean(name = "parkingSearchProvider")
     private SearchProvider searchProvider;
 
     @Test
