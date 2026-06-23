@@ -48,6 +48,7 @@ vi.mock('@/components/bridge/Select', () => ({
   Select: Object.assign(({ children }: any) => React.createElement('div', { 'data-testid': 'mock-select' }, children), {
     Trigger: ({ children }: any) => React.createElement('div', null, children),
     Value: ({ children }: any) => React.createElement('div', null, children),
+    Indicator: ({ children }: any) => React.createElement('div', null, children),
     Popover: ({ children }: any) => React.createElement('div', null, children),
   })
 }));
@@ -65,4 +66,12 @@ vi.mock('@heroui/react', async (importOriginal) => {
 vi.mock('@/components/bridge/Tabs', () => ({
   Tabs: ({ children }: any) => React.createElement('div', { 'data-testid': 'mock-tabs' }, children),
   Tab: ({ children }: any) => React.createElement('div', { 'data-testid': 'mock-tab' }, children),
+}));
+
+vi.mock('@/components/bridge/Modal', () => ({
+  Modal: ({ state, children }: any) => state?.isOpen ? React.createElement('div', { 'data-testid': 'mock-modal' }, children) : null,
+  ModalContent: ({ children }: any) => React.createElement('div', null, children),
+  ModalHeader: ({ children }: any) => React.createElement('div', null, children),
+  ModalBody: ({ children }: any) => React.createElement('div', null, children),
+  ModalFooter: ({ children }: any) => React.createElement('div', null, children),
 }));
