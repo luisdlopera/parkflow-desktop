@@ -1,5 +1,37 @@
-import { describe, it, expect } from "vitest";
-import { deepMergeSafe } from "./config-merge";
+import { describe, it, expect, beforeEach } from "vitest";
+import {
+  deepMergeSafe,
+  backupOnboardingConfig,
+  restoreOnboardingConfig,
+  ONBOARDING_PROTECTED_KEYS
+} from "./config-merge";
+
+// Mock localStorage
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    }
+  };
+})();
+
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+  writable: true
+});
+
+describe("config-merge", () => {
+  beforeEach(() => {
+    localStorageMock.clear();
+  });
 
 describe("deepMergeSafe", () => {
   it("merges simple flat objects", () => {
@@ -284,5 +316,195 @@ describe("deepMergeSafe", () => {
     expect(result.features.newUI).toBe(true);
     expect(result.features.betaAPI).toBe(false);
     expect(result.features.darkMode).toBe(false);
+  });
+  });
+
+  describe("backupOnboardingConfig()", () => {
+    it("stores current onboarding config to backup key", () => {
+      const config = JSON.stringify({ step: 1, data: "test" });
+      localStorageMock.setItem("parkflow-onboarding-store", config);
+
+      backupOnboardingConfig();
+
+      const backup = localStorageMock.getItem("parkflow-onboarding-backup");
+      expect(backup).toEqual(config);
+    });
+
+    it("does nothing if onboarding store does not exist", () => {
+      backupOnboardingConfig();
+
+      const backup = localStorageMock.getItem("parkflow-onboarding-backup");
+      expect(backup).toBeNull();
+    });
+
+    it("overwrites previous backup", () => {
+      localStorageMock.setItem("parkflow-onboarding-backup", "old backup");
+      localStorageMock.setItem("parkflow-onboarding-store", "new data");
+
+      backupOnboardingConfig();
+
+      expect(localStorageMock.getItem("parkflow-onboarding-backup")).toBe("new data");
+    });
+
+    it("handles undefined window gracefully", () => {
+      const originalWindow = global.window;
+      // @ts-ignore
+      delete global.window;
+
+      expect(() => backupOnboardingConfig()).not.toThrow();
+
+      global.window = originalWindow;
+    });
+  });
+
+  describe("restoreOnboardingConfig()", () => {
+    it("restores config from backup if no current config exists", () => {
+      const backupData = JSON.stringify({ restored: true });
+      localStorageMock.setItem("parkflow-onboarding-backup", backupData);
+
+      restoreOnboardingConfig();
+
+      expect(localStorageMock.getItem("parkflow-onboarding-store")).toEqual(backupData);
+      expect(localStorageMock.getItem("parkflow-onboarding-backup")).toBeNull();
+    });
+
+    it("merges backup and current config, protecting keys", () => {
+      const current = JSON.stringify({
+        businessModel: { type: "A" },
+        operationalProfile: { mode: "manual" },
+        otherData: "new"
+      });
+      const backup = JSON.stringify({
+        businessModel: { type: "B" },
+        operationalProfile: { mode: "auto" },
+        otherData: "old",
+        newFieldFromBackup: "backup-value"
+      });
+
+      localStorageMock.setItem("parkflow-onboarding-store", current);
+      localStorageMock.setItem("parkflow-onboarding-backup", backup);
+
+      restoreOnboardingConfig();
+
+      const merged = JSON.parse(
+        localStorageMock.getItem("parkflow-onboarding-store")!
+      );
+
+      // Protected keys should keep current values
+      expect(merged.businessModel).toEqual({ type: "A" });
+      expect(merged.operationalProfile).toEqual({ mode: "manual" });
+      // Existing non-protected keys are overwritten by backup (merge overwrites from source)
+      expect(merged.otherData).toBe("old");
+      // New fields from backup are added
+      expect(merged.newFieldFromBackup).toBe("backup-value");
+    });
+
+    it("removes backup key after restore", () => {
+      localStorageMock.setItem("parkflow-onboarding-backup", "data");
+      localStorageMock.setItem("parkflow-onboarding-store", "current");
+
+      restoreOnboardingConfig();
+
+      expect(localStorageMock.getItem("parkflow-onboarding-backup")).toBeNull();
+    });
+
+    it("does nothing if no backup exists", () => {
+      const current = JSON.stringify({ data: "test" });
+      localStorageMock.setItem("parkflow-onboarding-store", current);
+
+      restoreOnboardingConfig();
+
+      expect(localStorageMock.getItem("parkflow-onboarding-store")).toEqual(current);
+    });
+
+    it("handles malformed JSON in current config by restoring from backup", () => {
+      localStorageMock.setItem("parkflow-onboarding-store", "invalid json {");
+      const backupData = JSON.stringify({ restored: true });
+      localStorageMock.setItem("parkflow-onboarding-backup", backupData);
+
+      restoreOnboardingConfig();
+
+      expect(localStorageMock.getItem("parkflow-onboarding-store")).toEqual(backupData);
+    });
+
+    it("handles malformed JSON in backup gracefully", () => {
+      localStorageMock.setItem("parkflow-onboarding-backup", "invalid {");
+
+      // Should not throw
+      expect(() => restoreOnboardingConfig()).not.toThrow();
+    });
+
+    it("protects all specified keys during merge", () => {
+      const current = JSON.stringify({
+        businessModel: { new: "value1" },
+        operationalProfile: { new: "value2" },
+        vehicleTypes: { new: "value3" },
+        paymentMethods: { new: "value4" },
+        other: "current"
+      });
+      const backup = JSON.stringify({
+        businessModel: { old: "value1" },
+        operationalProfile: { old: "value2" },
+        vehicleTypes: { old: "value3" },
+        paymentMethods: { old: "value4" },
+        other: "backup"
+      });
+
+      localStorageMock.setItem("parkflow-onboarding-store", current);
+      localStorageMock.setItem("parkflow-onboarding-backup", backup);
+
+      restoreOnboardingConfig();
+
+      const merged = JSON.parse(
+        localStorageMock.getItem("parkflow-onboarding-store")!
+      );
+
+      // All protected keys should keep their current values
+      expect(merged.businessModel).toEqual({ new: "value1" });
+      expect(merged.operationalProfile).toEqual({ new: "value2" });
+      expect(merged.vehicleTypes).toEqual({ new: "value3" });
+      expect(merged.paymentMethods).toEqual({ new: "value4" });
+    });
+
+    it("handles undefined window gracefully", () => {
+      const originalWindow = global.window;
+      // @ts-ignore
+      delete global.window;
+
+      expect(() => restoreOnboardingConfig()).not.toThrow();
+
+      global.window = originalWindow;
+    });
+  });
+
+  describe("ONBOARDING_PROTECTED_KEYS", () => {
+    it("contains expected keys", () => {
+      expect(ONBOARDING_PROTECTED_KEYS).toContain("businessModel");
+      expect(ONBOARDING_PROTECTED_KEYS).toContain("operationalProfile");
+      expect(ONBOARDING_PROTECTED_KEYS).toContain("vehicleTypes");
+      expect(ONBOARDING_PROTECTED_KEYS).toContain("paymentMethods");
+    });
+
+    it("has exactly 4 protected keys", () => {
+      expect(ONBOARDING_PROTECTED_KEYS).toHaveLength(4);
+    });
+
+    it("all protected keys are strings", () => {
+      ONBOARDING_PROTECTED_KEYS.forEach(key => {
+        expect(typeof key).toBe("string");
+      });
+    });
+
+    it("protected keys are not empty", () => {
+      ONBOARDING_PROTECTED_KEYS.forEach(key => {
+        expect(key.length).toBeGreaterThan(0);
+      });
+    });
+
+    it("protected keys match camelCase pattern", () => {
+      ONBOARDING_PROTECTED_KEYS.forEach(key => {
+        expect(key).toMatch(/^[a-z][a-zA-Z]*$/);
+      });
+    });
   });
 });

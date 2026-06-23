@@ -1,0 +1,173 @@
+$ vitest run --coverage
+Loaded  vitest@4.1.6  and  @vitest/coverage-v8@4.1.5 .
+Running mixed versions is not supported and may lead into bugs
+Update your dependencies and make sure the versions match.
+
+ RUN  v4.1.6 /Users/luisdlopera/Documents/projects/cv/parkflow-desktop/apps/web
+      Coverage enabled with v8
+
+Warning: A vi.mock("@/components/ui/DialogProvider") call in "/Users/luisdlopera/Documents/projects/cv/parkflow-desktop/apps/web/src/components/settings/StatusToggle.test.tsx" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.
+See: https://vitest.dev/guide/mocking/modules#how-it-works
+ ❯ src/components/bridge/__tests__/Modal.test.tsx (3 tests | 3 failed) 29ms
+     × renders when open and hides when closed 21ms
+     × closes when the backdrop is clicked 3ms
+     × renders header, body and footer 2ms
+ ❯ src/components/auth/__tests__/SessionExpiredModal.test.tsx (5 tests | 4 failed) 58ms
+     × shows when isOpen is true 8ms
+     × shows login button that redirects to login 2ms
+     × shows countdown timer 2ms
+     × auto-redirects after countdown reaches 0 3ms
+ ❯ src/app/(admin)/admin/companies/new/__tests__/page.test.tsx (4 tests | 1 failed) 197ms
+     × creates company and shows credential dialog before redirecting 101ms
+stderr | src/app/(admin)/admin/companies/new/__tests__/page.test.tsx > NewCompanyPage > creates company and shows credential dialog before redirecting
+An error occurred in the <div> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+
+Not implemented: Window's scrollTo() method
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/auth/__tests__/SessionExpiredModal.test.tsx > SessionExpiredModal > shows when isOpen is true
+ FAIL  src/components/auth/__tests__/SessionExpiredModal.test.tsx > SessionExpiredModal > shows login button that redirects to login
+ FAIL  src/components/auth/__tests__/SessionExpiredModal.test.tsx > SessionExpiredModal > shows countdown timer
+ FAIL  src/components/auth/__tests__/SessionExpiredModal.test.tsx > SessionExpiredModal > auto-redirects after countdown reaches 0
+Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+
+Check the render method of `SessionExpiredModal`.
+ ❯ createFiberFromTypeAndProps ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:5021:28
+ ❯ createFiberFromElement ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:5035:14
+ ❯ reconcileChildFibersImpl ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:6920:31
+ ❯ ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:7098:33
+ ❯ reconcileChildren ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:9701:13
+ ❯ beginWork ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:12049:13
+ ❯ runWithFiberInDEV ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:874:13
+ ❯ performUnitOfWork ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:17641:22
+ ❯ workLoopSync ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:17469:41
+ ❯ renderRootSync ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:17450:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  src/components/bridge/__tests__/Modal.test.tsx > Modal > renders when open and hides when closed
+TestingLibraryElementError: Unable to find an element with the text: Modal body. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mdata-overlay-container[39m=[32m"true"[39m
+    [36m/>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ Object.getElementError ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/components/bridge/__tests__/Modal.test.tsx:19:19
+     17|     );
+     18|
+     19|     expect(screen.getByText("Modal body")).toBeInTheDocument();
+       |                   ^
+     20|
+     21|     rerender(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  src/components/bridge/__tests__/Modal.test.tsx > Modal > closes when the backdrop is clicked
+Error: [2mexpect([22m[31mreceived[39m[2m).toBeInTheDocument()[22m
+
+[31mreceived[39m value must be an HTMLElement or an SVGElement.
+Received has type:  Null
+Received has value: [31mnull[39m
+ ❯ src/components/bridge/__tests__/Modal.test.tsx:45:22
+     43|
+     44|     const backdrop = document.querySelector('[data-slot="modal-backdro…
+     45|     expect(backdrop).toBeInTheDocument();
+       |                      ^
+     46|     await userEvent.click(backdrop!);
+     47|     expect(onOpenChange).toHaveBeenCalledWith(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  src/components/bridge/__tests__/Modal.test.tsx > Modal > renders header, body and footer
+TestingLibraryElementError: Unable to find an element with the text: Header. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mdata-overlay-container[39m=[32m"true"[39m
+    [36m/>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ Object.getElementError ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/components/bridge/__tests__/Modal.test.tsx:61:19
+     59|     );
+     60|
+     61|     expect(screen.getByText("Header")).toBeInTheDocument();
+       |                   ^
+     62|     expect(screen.getByText("Body")).toBeInTheDocument();
+     63|     expect(screen.getByText("Footer")).toBeInTheDocument();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  src/app/(admin)/admin/companies/new/__tests__/page.test.tsx > NewCompanyPage > creates company and shows credential dialog before redirecting
+TestingLibraryElementError: Unable to find an element with the text: Empresa Creada Exitosamente. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div />[39m
+[36m</body>[39m
+ ❯ Object.getElementError ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/app/(admin)/admin/companies/new/__tests__/page.test.tsx:74:19
+     72|     expect(mockCreateCompany).toHaveBeenCalledWith(expect.objectContai…
+     73|
+     74|     expect(screen.getByText("Empresa Creada Exitosamente")).toBeInTheD…
+       |                   ^
+     75|
+     76|     await user.click(screen.getByRole("button", { name: "Mostrar contr…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+
+Check the render method of `CompanyCreatedDialog`.
+ ❯ createFiberFromTypeAndProps ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:5021:28
+ ❯ createFiberFromElement ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:5035:14
+ ❯ reconcileChildFibersImpl ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:6920:31
+ ❯ ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:7098:33
+ ❯ reconcileChildren ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:9701:13
+ ❯ beginWork ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:12049:13
+ ❯ runWithFiberInDEV ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:874:13
+ ❯ performUnitOfWork ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:17641:22
+ ❯ workLoopSync ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:17469:41
+ ❯ renderRootSync ../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/cjs/react-dom-client.development.js:17450:11
+
+This error originated in "src/app/(admin)/admin/companies/new/__tests__/page.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "creates company and shows credential dialog before redirecting". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  3 failed | 222 passed (225)
+      Tests  8 failed | 3435 passed | 2 skipped (3445)
+     Errors  1 error
+   Start at  00:10:47
+   Duration  26.68s (transform 4.82s, setup 54.61s, import 71.95s, tests 39.22s, environment 146.67s)
+
+[ELIFECYCLE] Command failed with exit code 1.

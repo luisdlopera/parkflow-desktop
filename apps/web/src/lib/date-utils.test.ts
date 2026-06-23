@@ -142,6 +142,132 @@ describe("isValidDateRange", () => {
   });
 });
 
+describe("formatISODate edge cases", () => {
+  it("formats leap year date", () => {
+    const result = formatISODate("2024-02-29T00:00:00Z");
+    expect(result).toMatch(/\d{2}\/\d{2}\/2024/);
+  });
+
+  it("formats non-leap year date", () => {
+    const result = formatISODate("2023-02-28T00:00:00Z");
+    expect(result).toMatch(/\d{2}\/\d{2}\/2023/);
+  });
+
+  it("formats year 2000 date", () => {
+    const result = formatISODate("2000-06-15T12:00:00Z");
+    expect(result).toMatch(/\d{2}\/\d{2}\/2000/);
+  });
+
+  it("formats far future date", () => {
+    const result = formatISODate("2100-12-31T23:59:59Z");
+    expect(result).toMatch(/\d{2}\/\d{2}\/2100/);
+  });
+
+  it("formats double-digit month and day", () => {
+    const result = formatISODate("2024-10-15T00:00:00Z");
+    expect(result).toMatch(/\d{2}\/\d{2}\/2024/);
+  });
+
+  it.each([
+    "2024/01/15",
+    "01-15-2024",
+    "15-01-2024",
+    "2024.01.15",
+    "15.01.2024",
+    null,
+    undefined,
+    123,
+    NaN,
+  ])("handles non-ISO format gracefully: %p", (input) => {
+    const result = formatISODate(input as any);
+    expect(typeof result).toBe("string");
+  });
+
+  it("handles timezone variations", () => {
+    const utc = formatISODate("2024-06-15T12:00:00Z");
+    const plus = formatISODate("2024-06-15T12:00:00+05:00");
+    const minus = formatISODate("2024-06-15T12:00:00-07:00");
+
+    expect(typeof utc).toBe("string");
+    expect(typeof plus).toBe("string");
+    expect(typeof minus).toBe("string");
+  });
+});
+
+describe("parseFormattedDate edge cases", () => {
+  it("parses valid DD/MM/YYYY format dates", () => {
+    const result1 = parseFormattedDate("28/02/2023");
+    const result2 = parseFormattedDate("01/01/2000");
+    const result3 = parseFormattedDate("31/12/2099");
+    const result4 = parseFormattedDate("05/05/2020");
+
+    expect(result1).toMatch(/\d{4}-\d{2}-\d{2}/);
+    expect(result2).toMatch(/\d{4}-\d{2}-\d{2}/);
+    expect(result3).toMatch(/\d{4}-\d{2}-\d{2}/);
+    expect(result4).toMatch(/\d{4}-\d{2}-\d{2}/);
+  });
+
+  it("handles ISO date format gracefully", () => {
+    const result = parseFormattedDate("2024-01-15");
+    expect(typeof result).toBe("string");
+  });
+
+  it("handles alternate separator formats gracefully", () => {
+    const result1 = parseFormattedDate("01-15-2024");
+    const result2 = parseFormattedDate("15.01.2024");
+    expect(typeof result1).toBe("string");
+    expect(typeof result2).toBe("string");
+  });
+
+  it("handles whitespace in formatted date", () => {
+    const result1 = parseFormattedDate(" 15/01/2024");
+    const result2 = parseFormattedDate("15/01/2024 ");
+    expect(typeof result1).toBe("string");
+    expect(typeof result2).toBe("string");
+  });
+});
+
+describe("isValidDateRange edge cases", () => {
+  it.each([
+    ["2024-01-01", "2024-01-01", true], // same exact date
+    ["2024-06-15T12:00:00Z", "2024-06-15T13:00:00Z", true], // same day, different times
+    ["1970-01-01", "2099-12-31", true], // maximum range
+    ["1970-01-01", "1970-01-01", true], // epoch to epoch
+    ["2024-12-31", "2025-01-01", true], // year boundary
+    ["2024-02-28", "2024-03-01", true], // month boundary
+  ])("handles boundary conditions: %p to %p -> %p", (from, to, expected) => {
+    expect(isValidDateRange(from, to)).toBe(expected);
+  });
+
+  it.each([
+    ["2024-13-01", "2024-01-01"], // invalid month
+    ["2024-01-32", "2024-01-01"], // invalid day
+    ["2024-02-30", "2024-01-01"], // invalid date
+    ["not-a-date", "2024-01-01"],
+    ["2024-01-01", "also-invalid"],
+  ])("handles invalid date inputs: %p, %p", (from, to) => {
+    expect(isValidDateRange(from, to)).toBe(false);
+  });
+
+  it("handles ISO format with different time components", () => {
+    const base = "2024-06-15";
+    const withTime1 = "2024-06-15T00:00:00Z";
+    const withTime2 = "2024-06-15T23:59:59Z";
+
+    expect(isValidDateRange(base, withTime1)).toBe(true);
+    expect(isValidDateRange(withTime1, withTime2)).toBe(true);
+  });
+
+  it.each([
+    { from: "2024-12-31", to: "2024-01-01" },
+    { from: "2024-06-15", to: "2024-06-14" },
+    { from: "2025-01-01", to: "2024-12-31" },
+    { from: "2024-02-01", to: "2024-01-31" },
+  ])("strictly enforces from <= to: from=%p, to=%p", ({ from, to }) => {
+    expect(isValidDateRange(from, to)).toBe(false);
+  });
+});
+
 describe("Date utilities integration", () => {
   it("formats and parses valid dates", () => {
     const iso = "2024-06-15T10:30:00Z";
@@ -163,5 +289,37 @@ describe("Date utilities integration", () => {
   it("handles various date formats correctly", () => {
     expect(isValidDateRange("2024-01-01", "2024-12-31")).toBe(true);
     expect(isValidDateRange("2024-12-31", "2024-01-01")).toBe(false);
+  });
+
+  it("round-trips date format/parse cycles", () => {
+    const testDates = [
+      "2024-01-15T00:00:00Z",
+      "2024-06-30T15:45:30Z",
+      "2024-12-25T08:20:00Z",
+    ];
+
+    testDates.forEach((isoDate) => {
+      const formatted = formatISODate(isoDate);
+      const parsed = parseFormattedDate(formatted);
+      expect(parsed).toMatch(/\d{4}-\d{2}-\d{2}/);
+    });
+  });
+
+  it("validates week-long date ranges", () => {
+    const start = "2024-06-10";
+    const end = "2024-06-17";
+    expect(isValidDateRange(start, end)).toBe(true);
+  });
+
+  it("validates month-long date ranges", () => {
+    const start = "2024-06-01";
+    const end = "2024-06-30";
+    expect(isValidDateRange(start, end)).toBe(true);
+  });
+
+  it("validates year-long date ranges", () => {
+    const start = "2024-01-01";
+    const end = "2024-12-31";
+    expect(isValidDateRange(start, end)).toBe(true);
   });
 });

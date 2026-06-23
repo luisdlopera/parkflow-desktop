@@ -92,6 +92,12 @@ dependencies {
 
 tasks.test {
   useJUnitPlatform()
+  maxHeapSize = '2g'
+  jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxMetaspaceSize=512m'
+  // Recycle the test JVM periodically to avoid Spring context cache exhaustion
+  // and metaspace/heap buildup across many @SpringBootTest contexts.
+  forkEvery = 40
+  finalizedBy jacocoTestReport
 }
 
 jacocoTestReport {
@@ -148,3 +154,4 @@ flyway {
 dependencyLocking {
   lockAllConfigurations()
 }
+tasks.withType(Test) { reports.junitXml.required = false }
