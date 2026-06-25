@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
-import com.parkflow.modules.cash.repository.CashSessionRepository;
+import com.parkflow.modules.cash.infrastructure.persistence.CashSessionRepository;
 import com.parkflow.modules.common.dto.ParkingParametersData;
 import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import java.net.URI;

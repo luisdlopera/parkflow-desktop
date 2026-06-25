@@ -2,7 +2,7 @@ package com.parkflow.modules.audit.infrastructure;
 
 import com.parkflow.modules.audit.domain.AuditDomainEvent;
 import com.parkflow.modules.audit.domain.AuditEvent;
-import com.parkflow.modules.audit.repository.AuditEventRepository;
+import com.parkflow.modules.audit.infrastructure.persistence.AuditEventRepository;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;

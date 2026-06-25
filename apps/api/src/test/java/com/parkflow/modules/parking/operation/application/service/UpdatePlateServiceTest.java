@@ -15,7 +15,7 @@ import com.parkflow.modules.parking.operation.domain.SessionEventType;
 import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.dto.UpdatePlateRequest;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
-import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.ParkingSessionRepository;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;

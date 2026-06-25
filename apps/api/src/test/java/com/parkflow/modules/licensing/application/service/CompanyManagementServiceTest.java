@@ -14,7 +14,7 @@ import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.LicenseAuditLog;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.licensing.domain.repository.LicenseAuditLogPort;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
 import com.parkflow.modules.licensing.enums.CompanyStatus;

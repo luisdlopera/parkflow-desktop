@@ -19,7 +19,7 @@ import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;
 import com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto;
 import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

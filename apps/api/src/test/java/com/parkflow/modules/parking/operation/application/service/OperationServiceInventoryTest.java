@@ -60,7 +60,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.ParkingSessionRepository;
 import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 
 @ExtendWith(MockitoExtension.class)

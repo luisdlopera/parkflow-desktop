@@ -17,7 +17,7 @@ import com.parkflow.modules.auth.dto.PasswordResetConfirmRequest;
 import com.parkflow.modules.auth.dto.PasswordResetRequest;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;

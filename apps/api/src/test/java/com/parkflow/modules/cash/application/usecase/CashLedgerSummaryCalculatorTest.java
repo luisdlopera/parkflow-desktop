@@ -6,7 +6,7 @@ import com.parkflow.modules.cash.domain.CashMovementStatus;
 import com.parkflow.modules.cash.domain.CashMovementType;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
-import com.parkflow.modules.cash.repository.CashMovementSummaryProjection;
+import com.parkflow.modules.cash.infrastructure.persistence.CashMovementSummaryProjection;
 import com.parkflow.modules.parking.operation.domain.PaymentMethod;
 import java.math.BigDecimal;
 import java.util.List;

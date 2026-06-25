@@ -8,7 +8,7 @@ import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.domain.CashSessionStatus;
 import com.parkflow.modules.cash.dto.CashCloseRequest;
 import com.parkflow.modules.cash.dto.CashCountRequest;
-import com.parkflow.modules.cash.repository.CashSessionRepository;
+import com.parkflow.modules.cash.infrastructure.persistence.CashSessionRepository;
 import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import com.parkflow.modules.common.dto.ParkingParametersData;
 import lombok.RequiredArgsConstructor;

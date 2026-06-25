@@ -1,5 +1,5 @@
 package com.parkflow.config;
-import com.parkflow.modules.parking.spaces.repository.ParkingSpaceRepository;
+import com.parkflow.modules.parking.spaces.infrastructure.persistence.ParkingSpaceRepository;
 
 import com.parkflow.modules.cash.domain.CashRegister;
 import com.parkflow.modules.cash.domain.repository.CashRegisterPort;

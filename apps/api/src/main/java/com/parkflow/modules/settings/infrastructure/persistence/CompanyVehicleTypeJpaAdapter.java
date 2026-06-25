@@ -2,7 +2,7 @@ package com.parkflow.modules.settings.infrastructure.persistence;
 
 import com.parkflow.modules.settings.domain.CompanyVehicleType;
 import com.parkflow.modules.settings.domain.repository.CompanyVehicleTypePort;
-import com.parkflow.modules.settings.repository.CompanyVehicleTypeJpaRepository;
+import com.parkflow.modules.settings.infrastructure.persistence.CompanyVehicleTypeJpaRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

@@ -1,7 +1,7 @@
 package com.parkflow.modules.customers.application.service;
 
 import com.parkflow.modules.configuration.domain.ContractStatus;
-import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
+import com.parkflow.modules.configuration.infrastructure.persistence.MonthlyContractRepository;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

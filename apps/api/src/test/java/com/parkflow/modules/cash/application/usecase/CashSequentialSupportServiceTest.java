@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.cash.domain.CashFeSequenceCounter;
-import com.parkflow.modules.cash.repository.CashFeSequenceCounterRepository;
+import com.parkflow.modules.cash.infrastructure.persistence.CashFeSequenceCounterRepository;
 import com.parkflow.modules.common.dto.ParkingParametersData;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;

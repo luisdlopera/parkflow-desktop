@@ -6,7 +6,7 @@ import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import com.parkflow.modules.settings.application.port.in.UserManagementUseCase;
 import com.parkflow.modules.common.dto.*;
 import java.time.OffsetDateTime;

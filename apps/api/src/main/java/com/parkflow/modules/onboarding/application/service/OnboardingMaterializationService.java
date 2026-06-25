@@ -3,13 +3,11 @@ package com.parkflow.modules.onboarding.application.service;
 import com.parkflow.modules.configuration.domain.PaymentMethod;
 import com.parkflow.modules.configuration.domain.RoundingMode;
 import com.parkflow.modules.configuration.domain.repository.PaymentMethodPort;
+import com.parkflow.modules.onboarding.application.port.out.OnboardingMaterializationPort;
 import com.parkflow.modules.parking.locker.dto.BatchLockerRequest;
-import com.parkflow.modules.parking.locker.application.service.LockerService;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateType;
-import com.parkflow.modules.parking.operation.repository.RateRepository;
-import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
-import com.parkflow.modules.settings.application.service.SettingsVehicleTypeService;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.RateRepository;
 import com.parkflow.modules.licensing.domain.Company;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -27,18 +25,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OnboardingMaterializationService {
 
-  private final SettingsVehicleTypeService settingsVehicleTypeService;
+  private final OnboardingMaterializationPort materializationPort;
   private final PaymentMethodPort paymentMethodPort;
   private final RateRepository rateRepository;
-  private final LockerService lockerService;
-  private final ParkingSpaceService parkingSpaceService;
   private final OnboardingSettingsMapper settingsMapper;
 
   @Transactional
   public void materializeVehicleTypes(UUID companyId, List<String> codes) {
-    for (String code : codes) {
-      settingsVehicleTypeService.addTypeToCompany(companyId, code);
-    }
+    materializationPort.addVehicleTypesToCompany(companyId, codes);
   }
 
   @Transactional
@@ -94,12 +88,12 @@ public class OnboardingMaterializationService {
     if (!"LOCKERS".equals(handling)) return;
     int count = settingsMapper.extractNumber(step1.get("helmetTokenCount"), 0);
     if (count <= 0 || count > 9999) return;
-    lockerService.createBatch(companyId, new BatchLockerRequest("L-", 1, count));
+    materializationPort.createLockersForCompany(companyId, new BatchLockerRequest("L-", 1, count));
   }
 
   public void resizeCapacity(UUID companyId, int totalCapacity) {
     if (totalCapacity > 0) {
-      parkingSpaceService.resizeCapacity(companyId, totalCapacity);
+      materializationPort.resizeCapacityForCompany(companyId, totalCapacity);
     }
   }
 

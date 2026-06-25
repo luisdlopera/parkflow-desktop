@@ -6,9 +6,9 @@ import com.parkflow.modules.configuration.application.port.in.OperationalValidat
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.SessionStatus;
-import com.parkflow.modules.parking.operation.repository.BlacklistedPlateRepository;
-import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
-import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.BlacklistedPlateRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.ParkingSessionRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.RateRepository;
 import com.parkflow.modules.parking.operation.validation.PlateValidationResult;
 import com.parkflow.modules.parking.operation.validation.PlateValidator;
 import com.parkflow.modules.settings.domain.MasterVehicleType;

@@ -1,17 +1,17 @@
 package com.parkflow.modules.configuration.application.service;
 
 import com.parkflow.modules.cash.domain.CashRegister;
-import com.parkflow.modules.cash.repository.CashRegisterRepository;
+import com.parkflow.modules.cash.infrastructure.persistence.CashRegisterRepository;
 import com.parkflow.modules.configuration.application.port.in.CashRegisterUseCase;
 import com.parkflow.modules.configuration.dto.CashRegisterRequest;
 import com.parkflow.modules.configuration.dto.CashRegisterResponse;
 import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.domain.Printer;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
+import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
 import com.parkflow.modules.configuration.domain.repository.PrinterPort;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import com.parkflow.modules.common.dto.SettingsPageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

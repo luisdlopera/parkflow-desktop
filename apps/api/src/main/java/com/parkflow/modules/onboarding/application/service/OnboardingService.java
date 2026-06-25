@@ -3,12 +3,12 @@ package com.parkflow.modules.onboarding.application.service;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.onboarding.application.port.in.OnboardingUseCase;
+import com.parkflow.modules.onboarding.application.port.out.OperationalConfigurationPort;
 import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;
 import com.parkflow.modules.onboarding.domain.OnboardingProgress;
 import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.configuration.application.service.OperationalConfigurationService;
 import com.parkflow.modules.licensing.enums.OperationalProfile;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -30,12 +30,12 @@ public class OnboardingService implements OnboardingUseCase {
   private final FeatureAccessService featureAccessService;
   private final com.parkflow.modules.onboarding.domain.repository.CompanySettingsSnapshotPort companySettingsSnapshotPort;
   private final com.parkflow.modules.audit.application.port.out.AuditPort auditService;
-  private final OperationalConfigurationService operationalConfigurationService;
+  private final OperationalConfigurationPort operationalConfigurationPort;
   private final OnboardingQuestionConfigService onboardingQuestionConfigService;
   private final OnboardingSettingsMapper settingsMapper;
   private final com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort parkingSessionPort;
   private final com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
-  private final com.parkflow.modules.parking.operation.repository.AppUserRepository appUserRepository;
+  private final com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository appUserRepository;
   private final OnboardingMaterializationService materializationService;
 
   @Transactional(readOnly = true)
@@ -203,7 +203,7 @@ public class OnboardingService implements OnboardingUseCase {
     mutable.put("operationalProfile", company.getOperationalProfile().name());
     @SuppressWarnings("unchecked")
     Map<String, Object> persistedOpConfig = (Map<String, Object>) settings.getOrDefault("operationConfiguration", new LinkedHashMap<>());
-    Map<String, Object> derivedOpConfig = operationalConfigurationService.getOperationConfiguration(companyId);
+    Map<String, Object> derivedOpConfig = operationalConfigurationPort.getOperationConfiguration(companyId);
     Map<String, Object> mergedOpConfig = new LinkedHashMap<>(derivedOpConfig);
     mergedOpConfig.putAll(persistedOpConfig);
     mutable.put("operationConfiguration", mergedOpConfig);

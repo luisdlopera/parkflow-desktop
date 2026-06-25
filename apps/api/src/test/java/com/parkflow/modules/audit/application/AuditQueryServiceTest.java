@@ -1,7 +1,7 @@
 package com.parkflow.modules.audit.application;
 
 import com.parkflow.modules.audit.domain.AuditEvent;
-import com.parkflow.modules.audit.repository.AuditEventRepository;
+import com.parkflow.modules.audit.infrastructure.persistence.AuditEventRepository;
 import com.parkflow.modules.auth.security.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

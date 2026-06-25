@@ -9,7 +9,7 @@ import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
 import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
-import com.parkflow.modules.parking.locker.repository.LockerRepository;
+import com.parkflow.modules.parking.locker.infrastructure.persistence.LockerRepository;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.domain.repository.*;
 import com.parkflow.modules.settings.domain.MasterVehicleType;

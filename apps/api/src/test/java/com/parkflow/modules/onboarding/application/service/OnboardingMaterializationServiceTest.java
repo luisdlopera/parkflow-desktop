@@ -12,7 +12,7 @@ import com.parkflow.modules.configuration.domain.repository.PaymentMethodPort;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.parking.locker.application.service.LockerService;
 import com.parkflow.modules.parking.operation.domain.Rate;
-import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.RateRepository;
 import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import com.parkflow.modules.settings.application.service.SettingsVehicleTypeService;
 import java.util.List;

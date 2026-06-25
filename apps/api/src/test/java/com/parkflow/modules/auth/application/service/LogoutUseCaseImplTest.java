@@ -18,7 +18,7 @@ import com.parkflow.modules.auth.domain.repository.AuthorizedDevicePort;
 import com.parkflow.modules.auth.dto.LogoutRequest;
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

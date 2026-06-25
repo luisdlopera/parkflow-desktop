@@ -2,7 +2,7 @@ package com.parkflow.modules.audit.application.service;
 
 import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.audit.domain.AuditLog;
-import com.parkflow.modules.audit.repository.AuditLogRepository;
+import com.parkflow.modules.audit.infrastructure.persistence.AuditLogRepository;
 import com.parkflow.modules.auth.domain.AppUser;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;

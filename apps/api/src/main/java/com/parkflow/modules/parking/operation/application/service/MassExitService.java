@@ -17,7 +17,7 @@ import com.parkflow.modules.parking.operation.dto.MassExitItemResult.MassExitIte
 import com.parkflow.modules.parking.operation.dto.MassExitPreviewResponse;
 import com.parkflow.modules.parking.operation.dto.MassExitResponse;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
-import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.ParkingSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

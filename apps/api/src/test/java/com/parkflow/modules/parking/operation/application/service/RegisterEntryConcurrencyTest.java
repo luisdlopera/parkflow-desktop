@@ -10,7 +10,7 @@ import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.domain.repository.*;
 import com.parkflow.modules.parking.operation.dto.EntryRequest;
-import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.validation.PlateValidationResult;
 import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import com.parkflow.modules.settings.domain.MasterVehicleType;

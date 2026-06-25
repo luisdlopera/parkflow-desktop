@@ -2,7 +2,7 @@ package com.parkflow.modules.settings.application.service;
 
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.Rate;
-import com.parkflow.modules.settings.repository.MasterVehicleTypeRepository;
+import com.parkflow.modules.settings.infrastructure.persistence.MasterVehicleTypeRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 

@@ -4,7 +4,7 @@ import com.parkflow.modules.configuration.application.port.in.ParkingSiteUseCase
 import com.parkflow.modules.configuration.dto.ParkingSiteRequest;
 import com.parkflow.modules.configuration.dto.ParkingSiteResponse;
 import com.parkflow.modules.configuration.domain.ParkingSite;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
+import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.common.exception.OperationException;

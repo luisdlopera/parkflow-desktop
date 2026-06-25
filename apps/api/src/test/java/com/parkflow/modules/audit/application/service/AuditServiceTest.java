@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.audit.domain.AuditLog;
-import com.parkflow.modules.audit.repository.AuditLogRepository;
+import com.parkflow.modules.audit.infrastructure.persistence.AuditLogRepository;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.security.TenantContext;
 import jakarta.servlet.http.HttpServletRequest;

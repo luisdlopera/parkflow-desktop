@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.operation.application.service;
 
 import com.parkflow.modules.parking.operation.domain.Vehicle;
-import com.parkflow.modules.parking.operation.repository.VehicleRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.VehicleRepository;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

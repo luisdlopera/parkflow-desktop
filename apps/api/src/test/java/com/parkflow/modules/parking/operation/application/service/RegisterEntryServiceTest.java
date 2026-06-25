@@ -13,7 +13,7 @@ import com.parkflow.modules.parking.operation.domain.repository.OperationIdempot
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.parking.operation.dto.EntryRequest;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
-import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.validation.PlateValidationResult;
 import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import java.util.Collection;

@@ -12,7 +12,7 @@ import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.licensing.enums.PlanType;
 import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
-import com.parkflow.modules.parking.locker.repository.LockerRepository;
+import com.parkflow.modules.parking.locker.infrastructure.persistence.LockerRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;

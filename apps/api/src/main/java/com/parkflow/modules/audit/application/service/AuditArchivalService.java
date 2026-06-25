@@ -1,6 +1,6 @@
 package com.parkflow.modules.audit.application.service;
 
-import com.parkflow.modules.audit.repository.AuditEventRepository;
+import com.parkflow.modules.audit.infrastructure.persistence.AuditEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

@@ -7,7 +7,7 @@ import com.parkflow.modules.auth.application.port.in.ProfileManagementUseCase;
 import com.parkflow.modules.auth.application.port.in.TokenRefreshUseCase;
 import com.parkflow.modules.auth.application.port.in.DeviceManagementUseCase;
 import com.parkflow.modules.auth.application.port.in.PasswordResetUseCase;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;

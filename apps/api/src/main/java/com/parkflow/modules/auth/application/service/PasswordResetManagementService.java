@@ -9,7 +9,7 @@ import com.parkflow.modules.auth.domain.repository.PasswordResetTokenPort;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.util.Base64;

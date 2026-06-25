@@ -1,7 +1,7 @@
 package com.parkflow.modules.audit.application;
 
 import com.parkflow.modules.audit.domain.AuditEvent;
-import com.parkflow.modules.audit.repository.AuditEventRepository;
+import com.parkflow.modules.audit.infrastructure.persistence.AuditEventRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;

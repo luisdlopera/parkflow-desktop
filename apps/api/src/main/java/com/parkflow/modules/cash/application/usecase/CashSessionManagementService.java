@@ -3,19 +3,19 @@ package com.parkflow.modules.cash.application.usecase;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.application.service.AuthAuditService;
 import com.parkflow.modules.cash.application.port.in.CashSessionManagementUseCase;
+import com.parkflow.modules.cash.application.port.out.CashDependencyPort;
 import com.parkflow.modules.cash.domain.*;
 import com.parkflow.modules.cash.dto.*;
-import com.parkflow.modules.cash.repository.*;
+import com.parkflow.modules.cash.infrastructure.persistence.*;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.SessionStatus;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
-import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.ParkingSessionRepository;
 import com.parkflow.modules.common.dto.ParkingParametersData;
-import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -42,7 +42,7 @@ public class CashSessionManagementService implements CashSessionManagementUseCas
     private final AppUserRepository appUserRepository;
     private final CashDomainAuditService cashDomainAuditService;
     private final AuthAuditService authAuditService;
-    private final ParkingParametersService parkingParametersService;
+    private final CashDependencyPort cashDependencyPort;
     private final CashSequentialSupportService cashSequentialSupportService;
     private final CashClosingOutboundNotifier cashClosingOutboundNotifier;
     private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
@@ -293,7 +293,7 @@ public class CashSessionManagementService implements CashSessionManagementUseCas
             UserRole role = SecurityUtils.requireUserRole();
             if (role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN) {
                 throw new OperationException(
-                    HttpStatus.FORBIDDEN, 
+                    HttpStatus.FORBIDDEN,
                     "Descuadre (" + diffAbsolute + ") supera tolerancia máxima (" + policy.maxDiscrepancyTolerance() + "). Requiere autorización de Supervisor.");
             }
         }
@@ -315,7 +315,7 @@ public class CashSessionManagementService implements CashSessionManagementUseCas
             session.setCloseIdempotencyKey(request.closeIdempotencyKey().trim());
         }
         String groupingSite = groupingSiteForParams(session);
-        ParkingParametersData siteParamsClosing = parkingParametersService.get(groupingSite);
+        ParkingParametersData siteParamsClosing = cashDependencyPort.getParkingParameters(groupingSite);
         String supportDoc =
             cashSequentialSupportService.allocateIfEnabled(
                 siteParamsClosing, groupingSite, session.getCashRegister().getTerminal());

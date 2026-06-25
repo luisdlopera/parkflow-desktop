@@ -28,7 +28,7 @@ import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
 import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
-import com.parkflow.modules.parking.operation.repository.*;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.*;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import com.parkflow.modules.billing.infrastructure.events.PaymentCompletedEvent;

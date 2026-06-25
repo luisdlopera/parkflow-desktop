@@ -7,7 +7,7 @@ import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.parkflow.modules.cash.repository.CashMovementSummaryProjection;
+import com.parkflow.modules.cash.infrastructure.persistence.CashMovementSummaryProjection;
 import org.springframework.stereotype.Component;
 
 @Component

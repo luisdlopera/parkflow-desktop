@@ -13,7 +13,7 @@ import com.parkflow.modules.auth.dto.UpdateProfileRequest;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;

@@ -9,7 +9,7 @@ import com.parkflow.modules.parking.locker.dto.BatchLockerRequest;
 import com.parkflow.modules.parking.locker.dto.LockerResponse;
 import com.parkflow.modules.parking.locker.dto.PatchLockerRequest;
 import com.parkflow.modules.parking.operation.domain.CustodiedItemStatus;
-import com.parkflow.modules.parking.operation.repository.CustodiedItemRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.CustodiedItemRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;

@@ -12,7 +12,7 @@ import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.domain.Printer;
 import com.parkflow.modules.configuration.domain.Printer.PrinterConnection;
 import com.parkflow.modules.configuration.domain.Printer.PrinterType;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
+import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
 import com.parkflow.modules.configuration.domain.repository.PrinterPort;
 import com.parkflow.modules.configuration.application.service.PrinterManagementService;
 import com.parkflow.modules.common.exception.OperationException;

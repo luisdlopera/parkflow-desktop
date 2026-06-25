@@ -17,7 +17,7 @@ import com.parkflow.modules.parking.operation.domain.repository.OperationIdempot
 import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
-import com.parkflow.modules.parking.operation.repository.*;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.*;
 import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import com.parkflow.modules.settings.domain.ParkingParameters;
 import com.parkflow.modules.settings.domain.repository.ParkingParametersPort;

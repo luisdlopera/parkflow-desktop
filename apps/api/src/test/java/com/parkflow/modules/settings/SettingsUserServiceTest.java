@@ -19,7 +19,7 @@ import com.parkflow.modules.common.dto.UserCreateRequest;
 import com.parkflow.modules.common.dto.UserPatchRequest;
 import com.parkflow.modules.common.dto.UserStatusRequest;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.repository.AppUserRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import com.parkflow.modules.settings.application.service.SettingsAuditService;
 import com.parkflow.modules.settings.application.service.SettingsUserService;
 import java.util.Optional;
