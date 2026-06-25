@@ -1,0 +1,19 @@
+{
+  "name": "@parkflow/config",
+  "version": "1.0.0",
+  "description": "Shared configuration for ParkFlow monorepo",
+  "private": true,
+  "exports": {
+    "./eslint": "./eslint.config.mjs",
+    "./prettier": "./prettier.config.mjs",
+    "./tsconfig": "./tsconfig.base.json",
+    "./vitest": "./vitest.config.base.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "eslint": "latest",
+    "prettier": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  }
+}
