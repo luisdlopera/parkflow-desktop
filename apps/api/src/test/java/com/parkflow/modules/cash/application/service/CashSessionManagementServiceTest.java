@@ -12,6 +12,7 @@ import com.parkflow.modules.cash.domain.CashRegister;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.domain.CashSessionStatus;
 import com.parkflow.modules.cash.dto.CashCloseRequest;
+import com.parkflow.modules.cash.dto.CashCountRequest;
 import com.parkflow.modules.cash.dto.CashSessionResponse;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
 import com.parkflow.modules.cash.repository.CashClosingReportRepository;
@@ -192,6 +193,55 @@ class CashSessionManagementServiceTest {
         assertThatThrownBy(() -> service.open(request))
                 .isInstanceOf(OperationException.class)
                 .hasMessageContaining("Contexto de compañía requerido");
+    }
+
+    @Test
+    void submitCount_throws_when_diff_without_notes() {
+        UUID sessionId = UUID.randomUUID();
+        CashSession session = new CashSession();
+        session.setId(sessionId);
+        session.setStatus(CashSessionStatus.OPEN);
+        session.setOperator(operator);
+        session.setCompanyId(companyId);
+        CashRegister register = new CashRegister();
+        session.setCashRegister(register);
+
+        when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(operator));
+
+        CashSummaryResponse summary = new CashSummaryResponse(
+            new BigDecimal("100"), new BigDecimal("150"), new BigDecimal("100"),
+            new BigDecimal("-50"), Map.of(), Map.of(), 0);
+        when(cashLedgerSummaryCalculator.summarize(any(), any())).thenReturn(summary);
+
+        CashCountRequest req = new CashCountRequest(
+            new BigDecimal("100"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, List.of());
+
+        assertThatThrownBy(() -> service.submitCount(sessionId, req))
+                .isInstanceOf(OperationException.class);
+    }
+
+    @Test
+    void close_throws_when_active_vehicles() {
+        UUID sessionId = UUID.randomUUID();
+        CashSession session = new CashSession();
+        session.setId(sessionId);
+        session.setStatus(CashSessionStatus.OPEN);
+        session.setCountedAt(java.time.OffsetDateTime.now());
+        session.setCompanyId(companyId);
+        session.setOperator(operator);
+        CashRegister register = new CashRegister();
+        session.setCashRegister(register);
+
+        when(cashSessionRepository.findByIdWithPessimisticLock(sessionId)).thenReturn(Optional.of(session));
+        when(parkingSessionRepository.countByStatusAndCompanyIdAndEntryAtGreaterThanEqual(
+                eq(SessionStatus.ACTIVE), eq(companyId), any())).thenReturn(3L);
+
+        CashCloseRequest req = new CashCloseRequest("Notes", null, null);
+
+        assertThatThrownBy(() -> service.close(sessionId, req))
+                .isInstanceOf(OperationException.class)
+                .hasMessageContaining("vehículo");
     }
 
 }

@@ -232,4 +232,74 @@ class CashModuleIntegrationTest {
         BigDecimal expected = new BigDecimal("100.00").add(ledger);
         assertThat(expected).isEqualByComparingTo(new BigDecimal("125.00"));
     }
+
+    @Test
+    void integration_full_session_lifecycle() {
+        // Create register
+        CashRegister register = new CashRegister();
+        register.setTerminal("T2");
+        register.setLabel("Terminal 2");
+        register.setUpdatedAt(OffsetDateTime.now());
+        CashRegister savedRegister = cashRegisterRepository.save(register);
+
+        // Create operator
+        com.parkflow.modules.auth.domain.AppUser operator = new com.parkflow.modules.auth.domain.AppUser();
+        operator.setName("Integration Op");
+        operator.setEmail("int-" + UUID.randomUUID() + "@example.com");
+        operator.setPasswordHash("hash");
+        operator.setRole(com.parkflow.modules.auth.domain.UserRole.CAJERO);
+        operator.setActive(true);
+        com.parkflow.modules.auth.domain.AppUser savedOperator = appUserRepository.save(operator);
+
+        // Create session
+        CashSession session = new CashSession();
+        session.setCashRegister(savedRegister);
+        session.setOperator(savedOperator);
+        session.setStatus(CashSessionStatus.OPEN);
+        session.setOpeningAmount(new BigDecimal("100.00"));
+        session.setOpenedAt(OffsetDateTime.now());
+        session.setCompanyId(UUID.randomUUID());
+        CashSession savedSession = cashSessionRepository.save(session);
+
+        assertThat(savedSession).isNotNull();
+        assertThat(savedSession.getStatus()).isEqualTo(CashSessionStatus.OPEN);
+        assertThat(savedSession.getOpeningAmount()).isEqualByComparingTo(new BigDecimal("100.00"));
+
+        // Add movement
+        CashMovement movement = new CashMovement();
+        movement.setCashSession(savedSession);
+        movement.setMovementType(CashMovementType.MANUAL_INCOME);
+        movement.setPaymentMethod(PaymentMethod.CASH);
+        movement.setAmount(new BigDecimal("50.00"));
+        movement.setStatus(CashMovementStatus.POSTED);
+        movement.setCreatedBy(savedOperator);
+        movement.setCompanyId(session.getCompanyId());
+        movement.setCreatedAt(OffsetDateTime.now());
+        CashMovement savedMovement = cashMovementRepository.save(movement);
+
+        assertThat(savedMovement).isNotNull();
+        assertThat(savedMovement.getAmount()).isEqualByComparingTo(new BigDecimal("50.00"));
+
+        // Verify ledger
+        List<CashMovement> movements = cashMovementRepository.findByCashSession_IdOrderByCreatedAtDesc(savedSession.getId());
+        assertThat(movements).hasSize(1);
+        assertThat(movements.get(0).getAmount()).isEqualByComparingTo(new BigDecimal("50.00"));
+    }
+
+    @Test
+    void integration_soft_delete_respects_active_flag() {
+        // Create register
+        CashRegister register = new CashRegister();
+        register.setTerminal("T3");
+        register.setLabel("Terminal 3");
+        register.setActive(false);
+        register.setUpdatedAt(OffsetDateTime.now());
+        CashRegister savedInactive = cashRegisterRepository.save(register);
+
+        // Query active registers only (via @SQLRestriction)
+        CashRegister found = cashRegisterRepository.findBySiteAndTerminal(null, "T3").orElse(null);
+
+        // Should NOT find inactive register
+        assertThat(found).isNull();
+    }
 }
