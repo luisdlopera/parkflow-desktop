@@ -20,7 +20,7 @@ import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
+import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;

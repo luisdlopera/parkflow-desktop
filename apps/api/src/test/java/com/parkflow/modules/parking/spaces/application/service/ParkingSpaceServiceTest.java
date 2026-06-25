@@ -1,4 +1,4 @@
-package com.parkflow.modules.parking.spaces.service;
+package com.parkflow.modules.parking.spaces.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

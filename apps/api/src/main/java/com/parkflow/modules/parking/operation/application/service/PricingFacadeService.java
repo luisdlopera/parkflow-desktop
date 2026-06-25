@@ -33,11 +33,7 @@ public class PricingFacadeService {
   @Deprecated(since = "2.1", forRemoval = false)
   private final ParkingPricingUseCaseImpl pricingUseCase;
 
-  @Deprecated(since = "2.1", forRemoval = false)
-  private final RateApplicability rateApplicability;
 
-  @Deprecated(since = "2.1", forRemoval = false)
-  private final DurationCalculator durationCalculator;
 
   // ===========================================================================
   // Price Calculation

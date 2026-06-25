@@ -8,7 +8,7 @@ import static org.mockito.Mockito.*;
 
 import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
-import com.parkflow.modules.configuration.service.OperationalConfigurationService;
+import com.parkflow.modules.configuration.application.service.OperationalConfigurationService;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.licensing.enums.PlanType;

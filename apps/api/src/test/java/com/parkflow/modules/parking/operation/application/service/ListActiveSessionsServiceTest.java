@@ -15,7 +15,7 @@ import com.parkflow.modules.parking.operation.dto.PaginatedResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.spaces.domain.ParkingSpace;
 import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
+import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;

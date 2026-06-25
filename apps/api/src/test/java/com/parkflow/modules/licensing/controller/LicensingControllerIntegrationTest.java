@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.audit.application.service.AuditService;
 import com.parkflow.modules.licensing.domain.repository.CompanyModulePort;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.licensing.domain.repository.LicenseAuditLogPort;

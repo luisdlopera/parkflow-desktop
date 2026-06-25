@@ -61,7 +61,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
+import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -115,7 +115,7 @@ class OperationServiceInventoryTest {
         appUserRepository, parkingSessionRepository, vehicleConditionReportRepository,
         operationIdempotencyRepository, custodiedItemRepository, lockerPort,
         operationPrintService, parkingSpaceService, companyRepository, eventPublisher,
-        new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+        new io.micrometer.core.instrument.simple.SimpleMeterRegistry(), org.mockito.Mockito.mock(com.parkflow.modules.settings.domain.repository.ParkingParametersPort.class), org.mockito.Mockito.mock(com.parkflow.modules.support.domain.provider.MessagingProvider.class));
 
     processLostTicketService = new ProcessLostTicketService(
         parkingSessionPort, appUserPort, paymentRepository, parkingSitePort,

@@ -26,7 +26,7 @@ import com.parkflow.modules.parking.operation.dto.ExitRequest;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
+import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import com.parkflow.modules.settings.application.port.in.ParkingParametersUseCase;
 import com.parkflow.modules.common.dto.ParkingParametersData;
 import com.parkflow.modules.common.exception.OperationException;
@@ -147,7 +147,8 @@ class RegisterExitServiceTest {
         parkingCashIntegrationUseCase,
         parkingParametersUseCase,
         parkingPricingUseCase,
-        meterRegistry);
+        meterRegistry,
+        org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class));
   }
 
   private ExitRequest request(String ticket, String plate, PaymentMethod method) {

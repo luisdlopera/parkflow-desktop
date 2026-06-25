@@ -52,7 +52,7 @@ class CashSessionCoverageTest {
   @Mock private com.parkflow.modules.auth.application.service.AuthAuditService authAuditService;
   @Mock private CashLedgerSummaryCalculator cashLedgerSummaryCalculator;
   @Mock private com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
-  @Mock private com.parkflow.modules.cash.service.CashDomainAuditService cashDomainAuditService;
+  @Mock private com.parkflow.modules.cash.application.service.CashDomainAuditService cashDomainAuditService;
 
   @InjectMocks private CashSessionManagementService service;
 

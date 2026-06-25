@@ -21,7 +21,7 @@ import com.parkflow.modules.parking.operation.dto.EntryRequest;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.validation.PlateValidationResult;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
+import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collections;
@@ -79,7 +79,7 @@ class RegisterEntryServiceMotorcycleTest {
         appUserRepository, parkingSessionRepository, vehicleConditionReportRepository,
         operationIdempotencyRepository, custodiedItemRepository, lockerPort,
         operationPrintService, parkingSpaceService, companyRepository, eventPublisher,
-        new SimpleMeterRegistry());
+        new SimpleMeterRegistry(), org.mockito.Mockito.mock(com.parkflow.modules.settings.domain.repository.ParkingParametersPort.class), org.mockito.Mockito.mock(com.parkflow.modules.support.domain.provider.MessagingProvider.class));
 
     com.parkflow.modules.licensing.domain.Company company = new com.parkflow.modules.licensing.domain.Company();
     company.setId(companyId);
@@ -216,7 +216,7 @@ class RegisterEntryServiceMotorcycleTest {
         "moto-helmet-dup", "ABC12D", "MOTORCYCLE", "CO", null, false, null,
         null, operatorId, null, "MAIN", null, null, null, null, "Moto con casco duplicado", null, "Sin novedades",
         List.of(), List.of(),
-        List.of(new CustodiedItemRequest("LOCKER-01", null, null)));
+        List.of(new CustodiedItemRequest("LOCKER-01", null, null)), null);
 
     Throwable thrown = catchThrowable(() -> service.execute(req));
 
@@ -239,7 +239,7 @@ class RegisterEntryServiceMotorcycleTest {
         "moto-helmet-ok", "ABC12D", "MOTORCYCLE", "CO", null, false, null,
         null, operatorId, null, "MAIN", null, null, null, null, "Moto con casco", null, "Sin novedades",
         List.of(), List.of(),
-        List.of(new CustodiedItemRequest("LOCKER-01", "Negro", null)));
+        List.of(new CustodiedItemRequest("LOCKER-01", "Negro", null)), null);
 
     var res = service.execute(req);
 
@@ -367,7 +367,7 @@ class RegisterEntryServiceMotorcycleTest {
         List.of(), List.of(),
         List.of(
             new CustodiedItemRequest("LOCKER-01", "Negro", null),
-            new CustodiedItemRequest("LOCKER-02", "Blanco", null)));
+            new CustodiedItemRequest("LOCKER-02", "Blanco", null)), null);
 
     var res = service.execute(req);
 

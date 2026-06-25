@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { queueOfflineOperation } from '../lib/offline-outbox';
+import { queueOfflineOperation } from '../../offline-outbox';
 import { isOfflineLeaseValid } from "@/lib/services/auth-domain.service";
 import { loadSession } from "@/lib/services/auth-storage.service";
 

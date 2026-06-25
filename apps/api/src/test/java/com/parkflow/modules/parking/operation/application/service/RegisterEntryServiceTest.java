@@ -15,7 +15,7 @@ import com.parkflow.modules.parking.operation.dto.EntryRequest;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
 import com.parkflow.modules.parking.operation.validation.PlateValidationResult;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
+import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -64,7 +64,7 @@ class RegisterEntryServiceTest {
         appUserRepository, parkingSessionRepository, vehicleConditionReportRepository,
         operationIdempotencyRepository, custodiedItemRepository, lockerPort,
         operationPrintService, parkingSpaceService, companyRepository, eventPublisher,
-        new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+        new io.micrometer.core.instrument.simple.SimpleMeterRegistry(), org.mockito.Mockito.mock(com.parkflow.modules.settings.domain.repository.ParkingParametersPort.class), org.mockito.Mockito.mock(com.parkflow.modules.support.domain.provider.MessagingProvider.class));
 
     com.parkflow.modules.licensing.domain.Company company = new com.parkflow.modules.licensing.domain.Company();
     company.setId(companyId);

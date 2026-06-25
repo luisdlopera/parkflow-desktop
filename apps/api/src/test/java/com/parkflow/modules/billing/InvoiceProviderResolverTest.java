@@ -93,6 +93,7 @@ class InvoiceProviderResolverTest {
       @Override public void cancelInvoice(String id, String r, InvoiceProviderConfig c) {}
       @Override public ExternalInvoiceResult createCreditNote(InvoiceNote n, InvoiceProviderConfig c) { return ExternalInvoiceResult.of("cn-1","CN-1",null); }
       @Override public ExternalInvoiceResult createDebitNote(InvoiceNote n, InvoiceProviderConfig c) { return ExternalInvoiceResult.of("dn-1","DN-1",null); }
+      @Override public byte[] getInvoicePdf(String id, InvoiceProviderConfig c) { return new byte[0]; }
       @Override public boolean supportsCountry(CountryCode cc) { return true; }
       @Override public Set<String> supportedCurrencies() { return Set.of("COP","USD"); }
     };

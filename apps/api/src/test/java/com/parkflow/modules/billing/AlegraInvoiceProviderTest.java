@@ -11,6 +11,7 @@ import com.parkflow.modules.billing.infrastructure.providers.alegra.AlegraClient
 import com.parkflow.modules.billing.infrastructure.providers.alegra.AlegraInvoiceProvider;
 import com.parkflow.modules.billing.infrastructure.providers.alegra.AlegraMapper;
 import com.parkflow.modules.billing.infrastructure.providers.alegra.dto.AlegraInvoiceResponseDto;
+import com.parkflow.modules.customers.domain.port.ClientPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +32,7 @@ class AlegraInvoiceProviderTest {
   @BeforeEach
   void setUp() {
     alegraClient = mock(AlegraClient.class);
-    provider = new AlegraInvoiceProvider(alegraClient, new AlegraMapper());
+    provider = new AlegraInvoiceProvider(alegraClient, new AlegraMapper(), mock(ClientPort.class));
   }
 
   @Test

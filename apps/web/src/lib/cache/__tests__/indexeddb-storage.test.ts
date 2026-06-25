@@ -13,14 +13,14 @@ const markJobDone = vi.fn()
 const markJobRetryOrDead = vi.fn()
 const listQueueStats = vi.fn()
 
-vi.mock('../lib/cash/cash-outbox-idb', () => ({
+vi.mock('../../cash/cash-outbox-idb', () => ({
   enqueueCashMovementOffline,
   listCashOutboxPending,
   markCashOutboxError,
   removeCashOutboxRow
 }))
 
-vi.mock('../lib/print/print-queue-idb', () => ({
+vi.mock('../../print/print-queue-idb', () => ({
   enqueueLocalPrint,
   getJobById,
   markJobDone,
@@ -35,7 +35,7 @@ afterEach(() => {
 
 describe('indexeddb storage backend', () => {
   it('delegates outbox and print operations', async () => {
-    const { IndexedDBStorage } = await import('../lib/storage/indexeddb-storage')
+    const { IndexedDBStorage } = await import('../../storage/indexeddb-storage')
     const storage = new IndexedDBStorage()
 
     await expect(
@@ -82,7 +82,7 @@ describe('indexeddb storage backend', () => {
 
   it('tracks connectivity state in memory', async () => {
     vi.stubGlobal('navigator', { onLine: false })
-    const { IndexedDBStorage } = await import('../lib/storage/indexeddb-storage')
+    const { IndexedDBStorage } = await import('../../storage/indexeddb-storage')
     const storage = new IndexedDBStorage()
 
     await storage.updateConnectivityState(false, 'offline')

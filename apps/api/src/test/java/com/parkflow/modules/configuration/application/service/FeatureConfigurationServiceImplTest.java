@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.audit.domain.AuditAction;
-import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.audit.application.service.AuditService;
 import com.parkflow.modules.common.exception.domain.EntityNotFoundException;
 import com.parkflow.modules.configuration.dto.FeatureConfigurationRequest;
 import com.parkflow.modules.licensing.domain.Company;

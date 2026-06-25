@@ -46,10 +46,10 @@ class CashSessionManagementServiceTest {
     @Mock private AppUserRepository appUserRepository;
     @Mock private CashLedgerSummaryCalculator cashLedgerSummaryCalculator;
     @Mock private com.parkflow.modules.auth.application.service.AuthAuditService authAuditService;
-    @Mock private com.parkflow.modules.cash.service.CashDomainAuditService cashDomainAuditService;
+    @Mock private com.parkflow.modules.cash.application.service.CashDomainAuditService cashDomainAuditService;
     @Mock private com.parkflow.modules.settings.application.service.ParkingParametersService parkingParametersService;
-    @Mock private com.parkflow.modules.cash.service.CashSequentialSupportService cashSequentialSupportService;
-    @Mock private com.parkflow.modules.cash.service.CashClosingOutboundNotifier cashClosingOutboundNotifier;
+    @Mock private com.parkflow.modules.cash.application.service.CashSequentialSupportService cashSequentialSupportService;
+    @Mock private com.parkflow.modules.cash.application.service.CashClosingOutboundNotifier cashClosingOutboundNotifier;
     @Mock private com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
     @Mock private com.parkflow.modules.cash.repository.CashSessionDenominationRepository cashSessionDenominationRepository;
     @Mock private ParkingSessionRepository parkingSessionRepository;

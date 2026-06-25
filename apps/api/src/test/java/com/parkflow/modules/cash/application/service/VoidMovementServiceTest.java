@@ -15,7 +15,7 @@ import com.parkflow.modules.cash.dto.CashMovementResponse;
 import com.parkflow.modules.cash.dto.VoidMovementRequest;
 import com.parkflow.modules.cash.repository.CashMovementRepository;
 import com.parkflow.modules.cash.repository.CashSessionRepository;
-import com.parkflow.modules.cash.service.CashDomainAuditService;
+import com.parkflow.modules.cash.application.service.CashDomainAuditService;
 import com.parkflow.modules.parking.operation.domain.PaymentMethod;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
 import java.math.BigDecimal;

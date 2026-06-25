@@ -101,7 +101,7 @@ public abstract class BaseIntegrationTest {
     protected ParkingSpaceRepository parkingSpaceRepository;
 
     @MockBean
-    protected com.parkflow.modules.audit.service.AuditService auditService;
+    protected com.parkflow.modules.audit.application.service.AuditService auditService;
 
     @BeforeEach
     void cleanDatabase() {

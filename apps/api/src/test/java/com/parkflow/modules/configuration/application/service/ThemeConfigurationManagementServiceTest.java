@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.audit.application.service.AuditService;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.configuration.domain.ThemeConfiguration;

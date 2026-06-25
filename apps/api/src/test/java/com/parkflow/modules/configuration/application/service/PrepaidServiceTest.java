@@ -1,4 +1,4 @@
-package com.parkflow.modules.configuration.service;
+package com.parkflow.modules.configuration.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

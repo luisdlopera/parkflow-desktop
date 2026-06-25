@@ -1,4 +1,4 @@
-package com.parkflow.modules.audit.service;
+package com.parkflow.modules.audit.application.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
