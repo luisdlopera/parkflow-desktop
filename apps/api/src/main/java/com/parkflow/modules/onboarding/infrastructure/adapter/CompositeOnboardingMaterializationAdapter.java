@@ -8,6 +8,7 @@ import com.parkflow.modules.settings.application.service.CompanyVehicleTypeManag
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
  * Delegates to respective service layers for vehicle types, lockers, and parking spaces.
  */
 @Component
+@Primary
 @RequiredArgsConstructor
 public class CompositeOnboardingMaterializationAdapter implements OnboardingMaterializationPort {
 
