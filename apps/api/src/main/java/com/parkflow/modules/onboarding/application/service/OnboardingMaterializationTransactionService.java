@@ -1,7 +1,6 @@
 package com.parkflow.modules.onboarding.application.service;
 
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.licensing.domain.Company;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;

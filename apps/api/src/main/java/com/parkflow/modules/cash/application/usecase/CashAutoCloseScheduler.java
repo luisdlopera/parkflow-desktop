@@ -1,4 +1,5 @@
 package com.parkflow.modules.cash.application.usecase;
+import com.parkflow.modules.cash.application.port.in.CashSessionManagementUseCase;
 
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
@@ -29,7 +30,7 @@ import java.util.List;
 public class CashAutoCloseScheduler {
 
     private final CashSessionRepository cashSessionRepository;
-    private final CashSessionManagementService cashSessionManagementService;
+    private final CashSessionManagementUseCase cashSessionManagementService;
     private final ParkingParametersService parkingParametersService;
 
     @Scheduled(cron = "0 0 * * * *") // Runs at the top of every hour

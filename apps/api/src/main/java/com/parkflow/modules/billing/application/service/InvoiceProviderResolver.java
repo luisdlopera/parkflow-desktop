@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
  * Adding a new provider requires only implementing InvoiceProviderPort
  * and annotating it with @Component — this resolver picks it up automatically.
  */
+@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Slf4j
 @Service
 public class InvoiceProviderResolver {

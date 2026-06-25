@@ -3,7 +3,6 @@ package com.parkflow.modules.billing.application.service;
 import com.parkflow.modules.billing.application.port.InvoiceProviderPort;
 import com.parkflow.modules.billing.domain.Invoice;
 import com.parkflow.modules.billing.domain.InvoiceItem;
-import com.parkflow.modules.billing.domain.InvoiceNote;
 import com.parkflow.modules.billing.domain.InvoiceProviderConfig;
 import com.parkflow.modules.billing.domain.InvoiceSyncLog;
 import com.parkflow.modules.billing.domain.enums.InvoiceSourceType;
@@ -36,6 +35,7 @@ import java.util.UUID;
  * Core billing service. This class NEVER references a specific provider (Alegra, Siigo, etc.)
  * All provider interactions are delegated via InvoiceProviderPort through InvoiceProviderResolver.
  */
+@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Slf4j
 @Service
 @RequiredArgsConstructor

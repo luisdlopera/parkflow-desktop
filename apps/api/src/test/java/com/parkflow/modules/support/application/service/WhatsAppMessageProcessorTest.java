@@ -3,7 +3,6 @@ package com.parkflow.modules.support.application.service;
 import com.parkflow.modules.support.application.dto.CreateTicketRequest;
 import com.parkflow.modules.support.domain.Conversation;
 import com.parkflow.modules.support.domain.Ticket;
-import com.parkflow.modules.support.domain.enums.Channel;
 import com.parkflow.modules.support.domain.enums.TicketStatus;
 import com.parkflow.modules.support.domain.provider.MessagingProvider;
 import com.parkflow.modules.support.domain.repository.ConversationRepository;

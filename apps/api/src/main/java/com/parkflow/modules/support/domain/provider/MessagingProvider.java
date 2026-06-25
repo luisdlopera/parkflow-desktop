@@ -1,6 +1,5 @@
 package com.parkflow.modules.support.domain.provider;
 
-import java.util.List;
 import java.util.Map;
 
 public interface MessagingProvider {

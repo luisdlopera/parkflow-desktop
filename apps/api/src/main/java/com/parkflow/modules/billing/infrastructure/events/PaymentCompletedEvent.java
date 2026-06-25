@@ -10,6 +10,7 @@ import java.util.UUID;
  * Published when a parking session payment is completed.
  * Triggers async invoice generation if enabled for the company.
  */
+@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Getter
 public class PaymentCompletedEvent extends ApplicationEvent {
 

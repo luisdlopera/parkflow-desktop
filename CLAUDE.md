@@ -152,14 +152,39 @@ modules/<module-name>/
 
 **Prohibited Patterns**:
 - ❌ NO `presentation/` layer (use `infrastructure/controller/`)
-- ❌ NO `service/` directory at module root (consolidate into `application/usecase/` or `application/service/`)
+- ❌ NO `service/` directory at module root (consolidate into `application/usecase/`)
+- ❌ NO `*FacadeService` classes (use individual Use Cases instead)
 - ❌ NO `repository/` at module root (use `infrastructure/persistence/`)
 - ❌ NO `util/` or `helper/` (these belong in specific layers or `/common/`)
-- ❌ NO `<module>/service/` files that bypass hexagonal layers
+- ❌ NO `<module>/usecase/` files that bypass hexagonal layers
+- ❌ NO multi-method facades aggregating multiple business flows
 
-### ✅ Service Decomposition — SIZE LIMITS
+### ✅ Service Decomposition — SIZE LIMITS & FACADE PROHIBITION
+
+**MANDATORY: NO Facades in application layer.** Use focused Use Cases instead.
 
 **Single Service MUST have ≤5 public methods** (else split into multiple services by use case):
+
+❌ **Facade Anti-Pattern (STRICTLY PROHIBITED)**:
+```java
+// ❌ WRONG: Facade aggregates multiple business flows
+@Service
+public class CashSessionFacadeService {
+    public CashSessionResponse openSession(...) { }
+    public CashSessionResponse closeSession(...) { }
+    public CashSessionResponse submitCount(...) { }
+    public CashSessionResponse getSession(...) { }
+    public Page<CashSessionResponse> listSessions(...) { }
+    public CashSummaryResponse getSummary(...) { }
+    public List<CashAuditEntry> getAuditTrail(...) { }  // 7 methods - GOD SERVICE!
+}
+```
+
+**Why**: Facades violate hexagonal architecture by:
+- Mixing multiple input ports into one class
+- Hiding clear entry points to the system
+- Making unit testing harder (can't test use cases in isolation)
+- Violating Single Responsibility Principle
 
 ❌ **God Service Anti-Pattern**:
 ```java
@@ -176,15 +201,41 @@ public class ConfigurationService {
 }
 ```
 
-✅ **Correct Pattern: Split by Use Case**:
+✅ **Correct Pattern: Individual Use Cases (Hexagonal Architecture)**:
 ```java
-// ✅ GOOD: Focused services by business capability
+// ✅ GOOD: Each use case = 1 clear entry point (input port)
+
+// Port definition
+public interface OpenCashSessionUseCase {
+    CashSessionResponse open(OpenCashRequest request);
+}
+
+public interface CloseCashSessionUseCase {
+    CashSessionResponse close(UUID sessionId, CashCloseRequest request);
+}
+
+public interface QueryCashSessionUseCase {
+    CashSessionResponse getSession(UUID sessionId);
+    CashSessionResponse getCurrent(String site, String terminal);
+    Page<CashSessionResponse> listSessions(Pageable pageable);
+}
+
+// Service implementations (1 use case per service)
 @Service
-public class RateManagementService {
-    public Rate createRate(CreateRateRequest req) { ... }
-    public Rate updateRate(String id, UpdateRateRequest req) { ... }
-    public void deleteRate(String id) { ... }
-    public Rate getRate(String id) { ... }
+public class OpenCashSessionService implements OpenCashSessionUseCase {
+    public CashSessionResponse open(OpenCashRequest request) { ... }
+}
+
+@Service
+public class CloseCashSessionService implements CloseCashSessionUseCase {
+    public CashSessionResponse close(UUID sessionId, CashCloseRequest request) { ... }
+}
+
+@Service
+public class CashSessionQueryService implements QueryCashSessionUseCase {
+    public CashSessionResponse getSession(UUID sessionId) { ... }
+    public CashSessionResponse getCurrent(String site, String terminal) { ... }
+    public Page<CashSessionResponse> listSessions(Pageable pageable) { ... }
 }
 
 @Service

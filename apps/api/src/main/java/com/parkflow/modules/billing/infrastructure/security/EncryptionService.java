@@ -16,6 +16,7 @@ import java.util.Base64;
  * Uses AES-256 in ECB mode (simple; consider GCM for production with auth tags).
  * Key is loaded from application.yml: billing.encryption.key
  */
+@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Slf4j
 @Service
 public class EncryptionService {

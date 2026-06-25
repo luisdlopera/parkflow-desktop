@@ -19,6 +19,7 @@ plugins {
 
 group = 'com.parkflow'
 version = '0.1.0'
+tasks.withType(JavaCompile) { options.compilerArgs << "-Xlint:all,-processing" }
 
 description = 'Backend API for Parkflow (Spring Boot 3, Java 21)'
 

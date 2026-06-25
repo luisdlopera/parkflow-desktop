@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Getter
 @Setter
 @NoArgsConstructor

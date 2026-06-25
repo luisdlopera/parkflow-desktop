@@ -38,6 +38,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @ExtendWith(MockitoExtension.class)
 class MonthlyContractServiceTest {
 

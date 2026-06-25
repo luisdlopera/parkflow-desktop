@@ -168,12 +168,12 @@ public interface CashMovementRepository extends JpaRepository<CashMovement, UUID
   List<CashMovement> findByCashSessionIdFetchAllOrderByCreatedAtDesc(@Param("sessionId") UUID sessionId);
 
   @Query("""
-      SELECT m.paymentMethod as paymentMethod, 
-             m.movementType as movementType, 
-             SUM(m.amount) as totalAmount, 
-             COUNT(m) as count 
-      FROM CashMovement m 
-      WHERE m.cashSession.id = :sessionId 
+      SELECT m.paymentMethod as paymentMethod,
+             m.movementType as movementType,
+             SUM(m.amount) as totalAmount,
+             COUNT(m) as count
+      FROM CashMovement m
+      WHERE m.cashSession.id = :sessionId
       AND m.status = 'POSTED'
       GROUP BY m.paymentMethod, m.movementType
       """)

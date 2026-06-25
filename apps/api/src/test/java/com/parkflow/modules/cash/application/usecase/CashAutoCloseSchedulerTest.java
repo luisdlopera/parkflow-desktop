@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.cash.application.usecase.CashSessionManagementService;
+import com.parkflow.modules.cash.application.port.in.CashSessionManagementUseCase;
 import com.parkflow.modules.cash.domain.CashRegister;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.domain.CashSessionStatus;
@@ -31,7 +31,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 class CashAutoCloseSchedulerTest {
 
   @Mock private CashSessionRepository cashSessionRepository;
-  @Mock private CashSessionManagementService cashSessionManagementService;
+  @Mock private CashSessionManagementUseCase cashSessionManagementService;
   @Mock private ParkingParametersService parkingParametersService;
 
   @InjectMocks private CashAutoCloseScheduler scheduler;

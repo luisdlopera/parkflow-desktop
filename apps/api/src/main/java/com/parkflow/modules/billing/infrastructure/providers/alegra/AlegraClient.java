@@ -17,6 +17,7 @@ import java.util.Map;
  * Auth: Basic (email:token) encoded in Base64.
  * Base URL: https://app.alegra.com/api/r1/
  */
+@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Slf4j
 @Component
 public class AlegraClient {

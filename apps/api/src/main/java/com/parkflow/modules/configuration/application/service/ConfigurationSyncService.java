@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
  * FASE IV: Synchronize progress ↔ settings
  * Resolves Hallazgo #10: Progress data stays in sync with settings
  */
+@SuppressWarnings({"deprecation", "unchecked", "removal"})
 @Slf4j
 @Service
 @RequiredArgsConstructor
