@@ -19,6 +19,8 @@
 
 ## Table of Contents
 
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
 - [Architecture](#architecture)
 - [Key Features](#key-features)
 - [Getting Started](#getting-started)
@@ -27,6 +29,53 @@
 - [Documentation & Resources](#documentation--resources)
 - [Security Practices](#security-practices)
 - [Contributing](#contributing)
+
+---
+
+## Quick Start
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start all services (backend + frontend + database)
+pnpm dev
+
+# Validate entire codebase
+pnpm validate
+
+# Run tests
+pnpm test
+```
+
+**Full setup guide**: [docs/development/SETUP.md](docs/development/SETUP.md)
+
+---
+
+## Project Structure
+
+```
+parkflow-desktop/
+├── apps/              # 4 main applications
+│   ├── api/           # Spring Boot 3 backend
+│   ├── web/           # Next.js admin panel
+│   ├── desktop/       # Tauri offline terminal
+│   └── print-agent/   # Print service
+├── packages/          # Shared code
+│   ├── config/        # Shared tooling configs
+│   ├── types/         # Shared TypeScript types
+│   └── print-core/    # Print library
+├── docs/              # Documentation
+├── infra/             # Docker, Terraform
+├── qa/                # Test suites
+├── scripts/           # Automation
+├── .config/           # Tool configurations
+└── .claude/           # Claude Code settings
+```
+
+**Detailed structure guide**: [.root-structure.md](.root-structure.md)
+
+---
 
 ---
 
