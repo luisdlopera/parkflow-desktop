@@ -21,6 +21,9 @@ public class Client {
   @Column(length = 40)
   private String document;
 
+  @Column(name = "document_type", length = 30)
+  private String documentType;
+
   @Column(nullable = false, length = 120)
   private String name;
 

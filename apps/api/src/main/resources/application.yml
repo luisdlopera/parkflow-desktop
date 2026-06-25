@@ -85,3 +85,16 @@ parkflow:
     default-max-devices: ${PARKFLOW_LICENSE_DEFAULT_MAX_DEVICES:1}
     default-max-locations: ${PARKFLOW_LICENSE_DEFAULT_MAX_LOCATIONS:1}
     default-max-users: ${PARKFLOW_LICENSE_DEFAULT_MAX_USERS:5}
+  billing:
+    # Encryption key for provider credentials (AES-256)
+    # MUST be a Base64-encoded 32-byte key in production
+    # Dev default: auto-generated each startup (insecure)
+    encryption:
+      key: ${PARKFLOW_BILLING_ENCRYPTION_KEY:}
+    # Provider-specific configurations (optional, mainly for troubleshooting)
+    providers:
+      alegra:
+        enabled: ${PARKFLOW_BILLING_ALEGRA_ENABLED:true}
+        base-url: ${PARKFLOW_BILLING_ALEGRA_URL:https://app.alegra.com/api/r1}
+        timeout-seconds: ${PARKFLOW_BILLING_ALEGRA_TIMEOUT:30}
+        max-retries: ${PARKFLOW_BILLING_ALEGRA_MAX_RETRIES:3}

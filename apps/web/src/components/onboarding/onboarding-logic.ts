@@ -50,6 +50,7 @@ export const COUNTRY_OPTIONS = [
 export const PRINTER_OPTIONS = [
   { code: "THERMAL", label: "Impresora térmica", description: "Tiquetes pequeños y rápidos" },
   { code: "DESKJET", label: "Impresora de escritorio", description: "Tiquetes normales" },
+  { code: "WHATSAPP", label: "Ticket por WhatsApp", description: "Envía el tiquete al WhatsApp del cliente" },
   { code: "NONE", label: "Sin impresora", description: "Solo pantalla o digital" },
 ];
 
