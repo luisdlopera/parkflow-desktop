@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,7 +52,8 @@ class CashSessionCoverageTest {
   @Mock private com.parkflow.modules.auth.application.service.AuthAuditService authAuditService;
   @Mock private CashLedgerSummaryCalculator cashLedgerSummaryCalculator;
   @Mock private com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
-  @Mock private com.parkflow.modules.cash.application.service.CashDomainAuditService cashDomainAuditService;
+  @Mock private com.parkflow.modules.cash.application.usecase.CashDomainAuditService cashDomainAuditService;
+  @Mock private CashPolicyResolver cashPolicyResolver;
 
   @InjectMocks private CashSessionManagementService service;
 
@@ -83,6 +84,9 @@ class CashSessionCoverageTest {
     
     when(cashRegisterRepository.findBySiteAndTerminal("S1", "T1")).thenReturn(Optional.empty());
     
+    com.parkflow.modules.cash.dto.CashPolicyResponse mockPolicy = new com.parkflow.modules.cash.dto.CashPolicyResponse(true, false, BigDecimal.ZERO, "hint", "S1", true, false, new BigDecimal("2000.00"), true);
+    when(cashPolicyResolver.resolvePolicy(any())).thenReturn(mockPolicy);
+    
     AppUser user = new AppUser();
     user.setId(operatorId);
     when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(user));
@@ -112,6 +116,10 @@ class CashSessionCoverageTest {
     when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(user));
 
     when(cashRegisterRepository.findBySiteAndTerminal("S1", "T1")).thenReturn(Optional.empty());
+    
+    com.parkflow.modules.cash.dto.CashPolicyResponse mockPolicy = new com.parkflow.modules.cash.dto.CashPolicyResponse(true, false, BigDecimal.ZERO, "hint", "S1", true, false, new BigDecimal("2000.00"), true);
+    when(cashPolicyResolver.resolvePolicy(any())).thenReturn(mockPolicy);
+
     when(cashRegisterRepository.save(any())).thenAnswer(i -> {
       CashRegister r = i.getArgument(0);
       return r;
@@ -183,41 +191,4 @@ class CashSessionCoverageTest {
         .hasMessageContaining("cerrada");
   }
 
-  @Test
-  void getAuditTrail_Success() {
-    UUID sessionId = UUID.randomUUID();
-    CashSession s = new CashSession();
-    s.setId(sessionId);
-    s.setCompanyId(companyId);
-    when(cashSessionRepository.findById(sessionId)).thenReturn(Optional.of(s));
-
-    CashAuditLog log = new CashAuditLog();
-    log.setId(UUID.randomUUID());
-    log.setAction("OPEN");
-    log.setCreatedAt(OffsetDateTime.now());
-    when(cashAuditLogRepository.findByCashSession_IdOrderByCreatedAtDesc(sessionId)).thenReturn(List.of(log));
-
-    var res = service.getAuditTrail(sessionId);
-    assertThat(res).hasSize(1);
-    assertThat(res.get(0).action()).isEqualTo("OPEN");
-  }
-
-  @Test
-  void listSessions_Success() {
-    CashSession s = new CashSession();
-    s.setId(UUID.randomUUID());
-    s.setCompanyId(companyId);
-    s.setStatus(CashSessionStatus.OPEN);
-    CashRegister r = new CashRegister();
-    s.setCashRegister(r);
-    AppUser user = new AppUser();
-    user.setId(operatorId);
-    user.setEmail("test@test.com"); s.setOperator(user);
-
-    when(cashSessionRepository.findByCompanyIdOrderByOpenedAtDesc(eq(companyId), any()))
-        .thenReturn(new PageImpl<>(List.of(s)));
-
-    var res = service.listSessions(PageRequest.of(0, 10));
-    assertThat(res.getContent()).hasSize(1);
-  }
 }

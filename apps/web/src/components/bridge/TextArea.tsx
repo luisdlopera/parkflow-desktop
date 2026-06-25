@@ -33,9 +33,11 @@ const TEXTAREA_BASE_CLASS = "bg-[#f4f4f5] border-none dark:bg-zinc-800/60 rounde
 const TEXTAREA_BORDERED_CLASS = "bg-transparent border-2 border-default-200 rounded-xl transition-colors focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900";
 
 export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
-  ({ label, description, errorMessage, isInvalid, isRequired, className, classNames, minRows, maxRows, size, color, variant, radius, value, defaultValue, name, onChange, onBlur, "aria-label": ariaLabel, "aria-describedby": ariaDescribedby, "aria-required": ariaRequired, ...props }, ref) => {
+  ({ label, description, errorMessage, isInvalid, isRequired, className, classNames, minRows, maxRows, size, color, variant, radius, value, defaultValue, name, onChange, onBlur, onValueChange, "aria-label": ariaLabel, "aria-describedby": ariaDescribedby, "aria-required": ariaRequired, ...rest }, ref) => {
     const uniqueId = React.useId();
-    const textareaId = (props as any).id || uniqueId;
+    // Remove any potentially invalid props before spreading
+    const { onValueChange: _omit, ...props } = rest as any;
+    const textareaId = props.id || uniqueId;
     const errorId = `${textareaId}-error`;
     const descriptionId = `${textareaId}-description`;
     const textareaClass = variant === "bordered" ? TEXTAREA_BORDERED_CLASS : TEXTAREA_BASE_CLASS;
@@ -58,11 +60,9 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
           stopPropagation: () => {},
         } as unknown as React.ChangeEvent<HTMLTextAreaElement>;
         (onChange as unknown as (e: React.ChangeEvent<HTMLTextAreaElement>) => void)(syntheticEvent);
-        if (props.onValueChange) {
-          props.onValueChange(val);
-        }
       }
-    }, [onChange, name]);
+      onValueChange?.(val);
+    }, [onChange, onValueChange, name]);
 
     return (
       <TextField

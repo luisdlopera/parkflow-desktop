@@ -39,8 +39,10 @@ const INPUT_BASE_CLASS = "bg-[#f4f4f5] text-slate-900 border-none dark:bg-zinc-8
 const INPUT_BORDERED_CLASS = "bg-transparent text-slate-900 border-2 border-default-200 rounded-xl transition-colors dark:text-white focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900 text-base";
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, description, errorMessage, isInvalid, isRequired, className, classNames, startContent, endContent, isClearable, onClear, size, color, variant, radius, isDisabled, disabled, value, defaultValue, name, onChange, onBlur, "aria-label": ariaLabel, "aria-describedby": ariaDescribedby, "aria-required": ariaRequired, ...props }, ref) => {
+  ({ label, description, errorMessage, isInvalid, isRequired, className, classNames, startContent, endContent, isClearable, onClear, size, color, variant, radius, isDisabled, disabled, value, defaultValue, name, onChange, onBlur, onValueChange, "aria-label": ariaLabel, "aria-describedby": ariaDescribedby, "aria-required": ariaRequired, ...rest }, ref) => {
     const uniqueId = React.useId();
+    // Remove any potentially invalid props before spreading
+    const { onValueChange: _omit, ...props } = rest as any;
     const inputId = props.id || uniqueId;
     const errorId = `${inputId}-error`;
     const descriptionId = `${inputId}-description`;
@@ -65,11 +67,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         } as unknown as React.ChangeEvent<HTMLInputElement>;
 
         (onChange as unknown as (e: React.ChangeEvent<HTMLInputElement>) => void)(syntheticEvent);
-        if (props.onValueChange) {
-          props.onValueChange(val);
-        }
       }
-    }, [onChange, name]);
+      onValueChange?.(val);
+    }, [onChange, onValueChange, name]);
 
     return (
       <TextField

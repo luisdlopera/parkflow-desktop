@@ -251,6 +251,40 @@ export default function ParametersSection({
                   }))
                 }
               />
+              <Select
+                label="Múltiples cajas abiertas"
+                value={[data.cashAllowMultipleOpenSessions === undefined ? "" : String(data.cashAllowMultipleOpenSessions)]}
+                onChange={(keys) => {
+                  const v = Array.from(keys)[0] as string;
+                  setData((d) => ({ ...(d ?? {}) as ParkingParametersPayload, cashAllowMultipleOpenSessions: v === "" ? null : v === "true" }));
+                }}
+              >
+                <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+                <Select.Popover aria-label="Seleccionar opción">
+                  <ListBox>
+                    <ListBox.Item key="" textValue="Heredar servidor">Heredar servidor</ListBox.Item>
+                    <ListBox.Item key="true" textValue="Permitir">Permitir</ListBox.Item>
+                    <ListBox.Item key="false" textValue="No permitir">No permitir</ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+              <Select
+                label="Más de una caja por usuario"
+                value={[data.cashAllowMultipleSessionsPerUser === undefined ? "" : String(data.cashAllowMultipleSessionsPerUser)]}
+                onChange={(keys) => {
+                  const v = Array.from(keys)[0] as string;
+                  setData((d) => ({ ...(d ?? {}) as ParkingParametersPayload, cashAllowMultipleSessionsPerUser: v === "" ? null : v === "true" }));
+                }}
+              >
+                <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
+                <Select.Popover aria-label="Seleccionar opción">
+                  <ListBox>
+                    <ListBox.Item key="" textValue="Heredar servidor">Heredar servidor</ListBox.Item>
+                    <ListBox.Item key="true" textValue="Permitir">Permitir</ListBox.Item>
+                    <ListBox.Item key="false" textValue="No permitir">No permitir</ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
+              </Select>
               <Field
                 label="Límite ajuste manual (COP)"
                 value={data.cashMaxManualAdjustment != null && !Number.isNaN(data.cashMaxManualAdjustment) ? String(data.cashMaxManualAdjustment) : ""}

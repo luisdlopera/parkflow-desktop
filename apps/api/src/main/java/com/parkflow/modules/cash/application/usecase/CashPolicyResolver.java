@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import com.parkflow.config.CashModuleProperties;
 import com.parkflow.modules.common.dto.ParkingParametersData;
@@ -24,7 +24,11 @@ public class CashPolicyResolver {
         offlineCloseAllowed(siteLabel),
         offlineMaxManualMovement(siteLabel),
         operationsHint(),
-        site);
+        site,
+        allowMultipleOpenSessions(siteLabel),
+        allowMultipleSessionsPerUser(siteLabel),
+        maxDiscrepancyTolerance(siteLabel),
+        allowManualMovements(siteLabel));
   }
 
   public boolean requireOpenForPayment(String siteLabel) {
@@ -53,6 +57,30 @@ public class CashPolicyResolver {
 
   public String operationsHint() {
     return props.getOperationsHint();
+  }
+
+  public boolean allowMultipleOpenSessions(String siteLabel) {
+    return resolveData(siteLabel)
+        .map(ParkingParametersData::getCashAllowMultipleOpenSessions)
+        .orElse(props.isAllowMultipleOpenSessions());
+  }
+
+  public boolean allowMultipleSessionsPerUser(String siteLabel) {
+    return resolveData(siteLabel)
+        .map(ParkingParametersData::getCashAllowMultipleSessionsPerUser)
+        .orElse(props.isAllowMultipleSessionsPerUser());
+  }
+
+  public BigDecimal maxDiscrepancyTolerance(String siteLabel) {
+    return resolveData(siteLabel)
+        .map(ParkingParametersData::getCashMaxDiscrepancyTolerance)
+        .orElse(props.getMaxDiscrepancyTolerance());
+  }
+
+  public boolean allowManualMovements(String siteLabel) {
+    return resolveData(siteLabel)
+        .map(ParkingParametersData::getCashAllowManualMovements)
+        .orElse(props.isAllowManualMovements());
   }
 
   private Optional<ParkingParametersData> resolveData(String siteLabel) {

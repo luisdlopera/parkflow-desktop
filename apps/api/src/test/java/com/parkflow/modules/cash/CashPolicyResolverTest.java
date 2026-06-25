@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.config.CashModuleProperties;
-import com.parkflow.modules.cash.application.service.CashPolicyResolver;
+import com.parkflow.modules.cash.application.usecase.CashPolicyResolver;
 import com.parkflow.modules.common.dto.ParkingParametersData;
 import com.parkflow.modules.settings.domain.ParkingParameters;
 import com.parkflow.modules.settings.domain.repository.ParkingParametersPort;

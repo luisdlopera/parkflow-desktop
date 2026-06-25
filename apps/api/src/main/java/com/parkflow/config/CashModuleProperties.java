@@ -21,4 +21,16 @@ public class CashModuleProperties {
   /** Mensaje de ayuda para operadores (expuesto en /cash/policy). */
   private String operationsHint =
       "Abra caja en el mismo terminal que el cobro; use parametros por sede para flexibilizar politicas.";
+
+  /** Permite múltiples sesiones abiertas en la misma sede/parqueadero. */
+  private boolean allowMultipleOpenSessions = true;
+
+  /** Permite que un usuario tenga múltiples sesiones abiertas a la vez. */
+  private boolean allowMultipleSessionsPerUser = false;
+
+  /** Tolerancia máxima para diferencias de descuadre. */
+  private BigDecimal maxDiscrepancyTolerance = new BigDecimal("2000.00");
+
+  /** Habilita movimientos manuales (ingresos/retiros). */
+  private boolean allowManualMovements = true;
 }

@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import com.parkflow.modules.audit.domain.Auditable;
 
@@ -10,10 +10,11 @@ import com.parkflow.modules.cash.application.port.in.RegisterCashMovementUseCase
 import com.parkflow.modules.cash.domain.*;
 import com.parkflow.modules.cash.dto.CashMovementRequest;
 import com.parkflow.modules.cash.dto.CashMovementResponse;
+import com.parkflow.modules.cash.dto.CashPolicyResponse;
 import com.parkflow.modules.cash.repository.CashMovementRepository;
 import com.parkflow.modules.cash.repository.CashSessionRepository;
-import com.parkflow.modules.cash.application.service.CashDomainAuditService;
-import com.parkflow.modules.cash.application.service.CashPolicyResolver;
+import com.parkflow.modules.cash.application.usecase.CashDomainAuditService;
+import com.parkflow.modules.cash.application.usecase.CashPolicyResolver;
 import com.parkflow.modules.cash.support.CashHttpContext;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.auth.security.TenantContext;
@@ -90,6 +91,14 @@ public class RegisterMovementService implements RegisterCashMovementUseCase {
             HttpStatus.FORBIDDEN, "Monto elevado (" + request.type() + "): requiere perfil administrador");
       }
     }
+
+    String siteCodeForPolicy = session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : null;
+    CashPolicyResponse policy = cashPolicyResolver.resolvePolicy(siteCodeForPolicy);
+
+    if (!policy.allowManualMovements() && offlineCappedMovement(request.type())) {
+      throw new OperationException(HttpStatus.FORBIDDEN, "Los movimientos manuales están deshabilitados por política de la sede");
+    }
+
 
     if (CashHttpContext.offlineClientFlag()) {
       String siteCode = session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : null;

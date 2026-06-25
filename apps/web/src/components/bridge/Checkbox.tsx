@@ -14,7 +14,9 @@ export interface CheckboxProps extends Omit<HeroCheckboxProps, "onChange" | "chi
 }
 
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ isSelected, defaultSelected, onChange, onValueChange, color, size, name, onBlur, children, className, ...props }, ref) => {
+  ({ isSelected, defaultSelected, onChange, onValueChange, color, size, name, onBlur, children, className, ...rest }, ref) => {
+    // Remove any potentially invalid props before spreading
+    const { onValueChange: _omit, ...props } = rest as any;
     // HeroUI v3 Checkbox does not support color or size props directly, we map or ignore them
     let mappedClassName = className || "";
     if (size === "sm") mappedClassName += " scale-90";
@@ -24,7 +26,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     const handleChange = (checked: boolean) => {
       if (onValueChange) onValueChange(checked);
       if (onChange) {
-        onChange(checked as any); 
+        onChange(checked as any);
       }
     };
 

@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -20,8 +20,8 @@ import com.parkflow.modules.cash.dto.CashSummaryResponse;
 import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
 import com.parkflow.modules.cash.repository.CashRegisterRepository;
 import com.parkflow.modules.cash.repository.CashSessionRepository;
-import com.parkflow.modules.cash.application.service.CashDomainAuditService;
-import com.parkflow.modules.cash.application.service.CashPolicyResolver;
+import com.parkflow.modules.cash.application.usecase.CashDomainAuditService;
+import com.parkflow.modules.cash.application.usecase.CashPolicyResolver;
 import com.parkflow.modules.common.dto.ParkingParametersData;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
@@ -63,14 +63,14 @@ class CashConfigurationManagementServiceTest {
 
   @Test
   void getPolicy_delegatesToResolver() {
-    CashPolicyResponse expected = new CashPolicyResponse(true, true, new BigDecimal("100"), "hint", "default");
+    CashPolicyResponse expected = new CashPolicyResponse(true, true, new BigDecimal("100"), "hint", "default", true, false, new BigDecimal("2000.00"), true);
     when(cashPolicyResolver.resolvePolicy("SUR")).thenReturn(expected);
     assertThat(service.getPolicy(" SUR ")).isEqualTo(expected);
   }
 
   @Test
   void getPolicy_nullSiteResolvesNull() {
-    CashPolicyResponse expected = new CashPolicyResponse(false, false, null, null, null);
+    CashPolicyResponse expected = new CashPolicyResponse(false, false, null, null, null, true, false, new BigDecimal("2000.00"), true);
     when(cashPolicyResolver.resolvePolicy(null)).thenReturn(expected);
     assertThat(service.getPolicy("  ")).isEqualTo(expected);
   }

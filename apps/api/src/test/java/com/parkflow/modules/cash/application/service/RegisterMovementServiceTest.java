@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -15,8 +15,8 @@ import com.parkflow.modules.cash.dto.CashMovementRequest;
 import com.parkflow.modules.cash.dto.CashMovementResponse;
 import com.parkflow.modules.cash.repository.CashMovementRepository;
 import com.parkflow.modules.cash.repository.CashSessionRepository;
-import com.parkflow.modules.cash.application.service.CashDomainAuditService;
-import com.parkflow.modules.cash.application.service.CashPolicyResolver;
+import com.parkflow.modules.cash.application.usecase.CashDomainAuditService;
+import com.parkflow.modules.cash.application.usecase.CashPolicyResolver;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.PaymentMethod;
 import com.parkflow.modules.parking.operation.repository.AppUserRepository;
@@ -77,6 +77,9 @@ class RegisterMovementServiceTest {
         operator.setCompanyId(companyId);
 
         CashRegister register = new CashRegister();
+        com.parkflow.modules.configuration.domain.ParkingSite siteRef = new com.parkflow.modules.configuration.domain.ParkingSite();
+        siteRef.setCode("S1");
+        register.setSiteRef(siteRef);
         register.setId(UUID.randomUUID());
 
         session = new CashSession();
@@ -85,6 +88,9 @@ class RegisterMovementServiceTest {
         session.setOperator(operator);
         session.setCompanyId(companyId);
         session.setCashRegister(register);
+
+        com.parkflow.modules.cash.dto.CashPolicyResponse mockPolicy = new com.parkflow.modules.cash.dto.CashPolicyResponse(true, false, BigDecimal.ZERO, "hint", "S1", true, false, new BigDecimal("2000.00"), true);
+        lenient().when(cashPolicyResolver.resolvePolicy(any())).thenReturn(mockPolicy);
     }
 
     @AfterEach
@@ -102,6 +108,9 @@ class RegisterMovementServiceTest {
 
         CashSession sessionOtherCompany = new CashSession();
         CashRegister register = new CashRegister();
+        com.parkflow.modules.configuration.domain.ParkingSite siteRef = new com.parkflow.modules.configuration.domain.ParkingSite();
+        siteRef.setCode("S1");
+        register.setSiteRef(siteRef);
         sessionOtherCompany.setId(sessionId);
         sessionOtherCompany.setStatus(CashSessionStatus.OPEN);
         sessionOtherCompany.setOperator(operatorOtherCompany);

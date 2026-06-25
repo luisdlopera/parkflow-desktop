@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,6 +31,10 @@ class CashSessionResponseMapperTest {
   void baseMeta_ShouldReturnCorrectMap() {
     // Arrange
     CashRegister register = new CashRegister();
+    com.parkflow.modules.configuration.domain.ParkingSite siteRef = new com.parkflow.modules.configuration.domain.ParkingSite();
+    siteRef.setCode("SiteA");
+    register.setSiteRef(siteRef);
+    register.setTerminal("Terminal1");
 
     CashSession session = new CashSession();
     UUID sessionId = UUID.randomUUID();
@@ -102,8 +106,15 @@ class CashSessionResponseMapperTest {
   void toSessionResponse_ShouldMapAllFieldsAndDenominations() {
     // Arrange
     CashRegister register = new CashRegister();
+    com.parkflow.modules.configuration.domain.ParkingSite siteRef = new com.parkflow.modules.configuration.domain.ParkingSite();
+    siteRef.setCode("SiteA");
+    register.setSiteRef(siteRef);
+    register.setTerminal("Terminal1");
     register.setId(UUID.randomUUID());
     register.setLabel("Main Terminal");
+    com.parkflow.modules.configuration.domain.ParkingSite siteRef2 = new com.parkflow.modules.configuration.domain.ParkingSite();
+    siteRef2.setCode("MainSite");
+    register.setSiteRef(siteRef2);
 
     AppUser operator = new AppUser();
     operator.setId(UUID.randomUUID());
@@ -161,6 +172,10 @@ class CashSessionResponseMapperTest {
   void toSessionResponse_WithNulls_ShouldMapSafely() {
     // Arrange
     CashRegister register = new CashRegister();
+    com.parkflow.modules.configuration.domain.ParkingSite siteRef = new com.parkflow.modules.configuration.domain.ParkingSite();
+    siteRef.setCode("SiteA");
+    register.setSiteRef(siteRef);
+    register.setTerminal("Terminal1");
     AppUser operator = new AppUser();
     operator.setName("Op");
 

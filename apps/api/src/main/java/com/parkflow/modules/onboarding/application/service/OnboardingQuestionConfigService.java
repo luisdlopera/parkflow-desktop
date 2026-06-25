@@ -1,11 +1,13 @@
 package com.parkflow.modules.onboarding.application.service;
 
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.onboarding.domain.OnboardingQuestionConfig;
 import com.parkflow.modules.onboarding.domain.repository.OnboardingQuestionConfigPort;
 import com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +60,16 @@ public class OnboardingQuestionConfigService {
           e.setStepNumber(dto.stepNumber());
           return e;
         });
+
+    // Validación: No se puede desactivar una pregunta requerida
+    if (entity.isRequired() && !dto.enabled()) {
+      throw new OperationException(
+          HttpStatus.CONFLICT,
+          "REQUIRED_QUESTION_CANNOT_DISABLE",
+          "Cannot disable required question at step " + dto.stepNumber()
+      );
+    }
+
     entity.setTitle(dto.title());
     entity.setDescription(dto.description());
     entity.setEnabled(dto.enabled());
@@ -68,6 +80,22 @@ public class OnboardingQuestionConfigService {
 
   @Transactional
   public void delete(UUID id) {
+    OnboardingQuestionConfig entity = repository.findById(id)
+        .orElseThrow(() -> new OperationException(
+            HttpStatus.NOT_FOUND,
+            "QUESTION_NOT_FOUND",
+            "Onboarding question not found: " + id
+        ));
+
+    // Validación: No se puede eliminar una pregunta requerida
+    if (entity.isRequired()) {
+      throw new OperationException(
+          HttpStatus.CONFLICT,
+          "REQUIRED_QUESTION_CANNOT_DELETE",
+          "Cannot delete required question at step " + entity.getStepNumber()
+      );
+    }
+
     repository.deleteById(id);
   }
 

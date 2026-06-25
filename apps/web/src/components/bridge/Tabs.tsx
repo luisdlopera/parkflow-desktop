@@ -18,8 +18,10 @@ export interface TabsProps extends Omit<HeroTabsProps, "onSelectionChange" | "ch
 }
 
 export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
-  ({ onSelectionChange, onChange, children, className, ...props }, ref) => {
-    
+  ({ onSelectionChange, onChange, children, className, ...rest }, ref) => {
+    // Remove any potentially invalid props before spreading
+    const { onSelectionChange: _omit, onChange: _omit2, ...props } = rest as any;
+
     // Support both onChange and onSelectionChange
     const handleChange = (key: any) => {
       if (onSelectionChange) onSelectionChange(key);
@@ -34,9 +36,9 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
     });
 
     return (
-      <HeroTabs 
+      <HeroTabs
         ref={ref}
-        onSelectionChange={handleChange} 
+        onSelectionChange={handleChange}
         className={className}
         {...props as any}
       >

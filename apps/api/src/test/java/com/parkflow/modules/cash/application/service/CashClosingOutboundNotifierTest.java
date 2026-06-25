@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -128,6 +128,7 @@ class CashClosingOutboundNotifierTest {
     when(parkingParametersService.get("SiteA")).thenReturn(params);
 
     CashRegister register = new CashRegister();
+    register.setTerminal("T1");
 
     AppUser operator = new AppUser();
     operator.setId(UUID.randomUUID());

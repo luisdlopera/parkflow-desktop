@@ -59,6 +59,18 @@ public class ParkingParametersData {
   /** Límite de tiempo máximo en horas antes de que el auto-cierre actúe sobre la caja. */
   private Integer cashMaxSessionHours;
 
+  /** Permite múltiples sesiones abiertas en la misma sede. */
+  private Boolean cashAllowMultipleOpenSessions;
+
+  /** Permite que un usuario tenga múltiples sesiones abiertas a la vez. */
+  private Boolean cashAllowMultipleSessionsPerUser;
+
+  /** Tolerancia máxima para diferencias de descuadre. */
+  private BigDecimal cashMaxDiscrepancyTolerance;
+
+  /** Habilita movimientos manuales (ingresos/retiros). */
+  private Boolean cashAllowManualMovements;
+
   /** URL para webhook de salida al cerrar caja (PSC). */
   private String cashFeOutboundWebhookUrl;
 

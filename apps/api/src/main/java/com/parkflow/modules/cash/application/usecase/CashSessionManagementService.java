@@ -1,13 +1,11 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.application.service.AuthAuditService;
-import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
+import com.parkflow.modules.cash.application.port.in.CashSessionManagementUseCase;
 import com.parkflow.modules.cash.domain.*;
 import com.parkflow.modules.cash.dto.*;
 import com.parkflow.modules.cash.repository.*;
-import com.parkflow.modules.cash.application.service.*;
-import com.parkflow.modules.cash.support.CashHttpContext;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.auth.domain.AppUser;
@@ -20,31 +18,20 @@ import com.parkflow.modules.common.dto.ParkingParametersData;
 import com.parkflow.modules.settings.application.service.ParkingParametersService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import com.parkflow.modules.cash.repository.CashSessionDenominationRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
-/**
- * Cash Session Management Service (Internal).
- *
- * <p><strong>Note:</strong> Direct use of this service is deprecated. Please use
- * {@link CashSessionFacadeService} instead for all session operations.
- * This service is an implementation detail of the facade pattern.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CashSessionManagementService implements CashSessionUseCase {
+public class CashSessionManagementService implements CashSessionManagementUseCase {
 
     private static final BigDecimal ZERO = new BigDecimal("0.00");
 
@@ -52,7 +39,6 @@ public class CashSessionManagementService implements CashSessionUseCase {
     private final CashSessionRepository cashSessionRepository;
     private final CashMovementRepository cashMovementRepository;
     private final CashClosingReportRepository cashClosingReportRepository;
-    private final CashAuditLogRepository cashAuditLogRepository;
     private final AppUserRepository appUserRepository;
     private final CashDomainAuditService cashDomainAuditService;
     private final AuthAuditService authAuditService;
@@ -60,9 +46,10 @@ public class CashSessionManagementService implements CashSessionUseCase {
     private final CashSequentialSupportService cashSequentialSupportService;
     private final CashClosingOutboundNotifier cashClosingOutboundNotifier;
     private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
-    private final CashLedgerSummaryCalculator cashLedgerSummaryCalculator;
+    private final com.parkflow.modules.cash.application.usecase.CashLedgerSummaryCalculator cashLedgerSummaryCalculator;
     private final CashSessionDenominationRepository cashSessionDenominationRepository;
     private final ParkingSessionRepository parkingSessionRepository;
+    private final CashPolicyResolver cashPolicyResolver;
 
     @Override
     @Transactional
@@ -118,6 +105,22 @@ public class CashSessionManagementService implements CashSessionUseCase {
                 .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
         if (!operator.isActive()) {
             throw new OperationException(HttpStatus.FORBIDDEN, "Operador inactivo");
+        }
+
+        CashPolicyResponse policy = cashPolicyResolver.resolvePolicy(site);
+
+        if (!policy.allowMultipleSessionsPerUser()) {
+            boolean hasOpen = cashSessionRepository.existsByOperatorAndStatus(operator, CashSessionStatus.OPEN);
+            if (hasOpen) {
+                throw new OperationException(HttpStatus.CONFLICT, "El operador ya tiene una caja abierta y la política no permite múltiples");
+            }
+        }
+
+        if (!policy.allowMultipleOpenSessions()) {
+            long openCount = cashSessionRepository.countByCashRegister_SiteRef_CodeAndStatus(site, CashSessionStatus.OPEN);
+            if (openCount > 0) {
+                throw new OperationException(HttpStatus.CONFLICT, "La sede ya tiene una caja abierta y la política no permite múltiples");
+            }
         }
 
         UUID resolvedCompanyId = TenantContext.getTenantId();
@@ -236,6 +239,12 @@ public class CashSessionManagementService implements CashSessionUseCase {
         return toSessionResponse(session);
     }
 
+    private CashSummaryResponse getInternalSummary(CashSession session) {
+        List<CashMovementSummaryProjection> projections =
+            cashMovementRepository.getSummaryBySessionId(session.getId());
+        return cashLedgerSummaryCalculator.summarize(session, projections);
+    }
+
     @Override
     @Transactional
     public CashSessionResponse close(UUID sessionId, CashCloseRequest request) {
@@ -276,6 +285,17 @@ public class CashSessionManagementService implements CashSessionUseCase {
         if (diff.compareTo(ZERO) != 0 && !StringUtils.hasText(request.closingNotes())) {
             throw new OperationException(
                 HttpStatus.BAD_REQUEST, "Hay diferencia; observacion de cierre obligatoria");
+        }
+
+        CashPolicyResponse policy = cashPolicyResolver.resolvePolicy(siteCode);
+        BigDecimal diffAbsolute = diff.abs();
+        if (diffAbsolute.compareTo(policy.maxDiscrepancyTolerance()) > 0) {
+            UserRole role = SecurityUtils.requireUserRole();
+            if (role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN) {
+                throw new OperationException(
+                    HttpStatus.FORBIDDEN, 
+                    "Descuadre (" + diffAbsolute + ") supera tolerancia máxima (" + policy.maxDiscrepancyTolerance() + "). Requiere autorización de Supervisor.");
+            }
         }
 
         AppUser closer =
@@ -341,110 +361,6 @@ public class CashSessionManagementService implements CashSessionUseCase {
         cashClosingOutboundNotifier.scheduleAfterCashClose(session.getId(), groupingSite);
 
         return toSessionResponse(session);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public CashSessionResponse getSession(UUID sessionId) {
-        return toSessionResponse(requireSession(sessionId));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public CashSessionResponse getCurrent(String siteParam, String terminalParam) {
-        String site = normalizeSite(siteParam != null ? siteParam : "default");
-        String terminal =
-            StringUtils.hasText(terminalParam)
-                ? terminalParam.trim()
-                : CashHttpContext.currentTerminal()
-                    .orElseThrow(
-                        () ->
-                            new OperationException(
-                                HttpStatus.BAD_REQUEST,
-                                "Indique terminal o envie header X-Parkflow-Terminal"));
-        // Try 1: lookup by site+terminal JOIN (standard path)
-        Optional<CashSession> bySiteTerminal =
-            cashSessionRepository.findOpenForSiteTerminal(site, terminal, CashSessionStatus.OPEN);
-        if (bySiteTerminal.isPresent()) {
-            CashSession s = bySiteTerminal.get();
-            if (TenantContext.getTenantId() != null && !s.getCompanyId().equals(TenantContext.getTenantId())) {
-                 throw new OperationException(HttpStatus.NOT_FOUND, "No hay caja abierta");
-            }
-            return toSessionResponse(s);
-        }
-        // Try 2: fallback via register ID (catches duplicate-register edge cases)
-        Optional<CashRegister> register = cashRegisterRepository.findBySiteAndTerminal(site, terminal);
-        if (register.isPresent()) {
-            Optional<CashSession> byRegister =
-                cashSessionRepository.findByRegisterAndStatus(register.get().getId(), CashSessionStatus.OPEN);
-            if (byRegister.isPresent()) {
-                CashSession s = byRegister.get();
-                if (TenantContext.getTenantId() != null && !s.getCompanyId().equals(TenantContext.getTenantId())) {
-                     throw new OperationException(HttpStatus.NOT_FOUND, "No hay caja abierta");
-                }
-                return toSessionResponse(s);
-            }
-        }
-        throw new OperationException(HttpStatus.NOT_FOUND, "No hay caja abierta");
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<CashSessionResponse> listSessions(Pageable pageable) {
-        UUID tenantId = TenantContext.getTenantId();
-        if (tenantId == null) {
-            throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía requerido");
-        }
-        return cashSessionRepository.findByCompanyIdOrderByOpenedAtDesc(tenantId, pageable).map(this::toSessionResponse);
-    }
-
-    private CashSummaryResponse getInternalSummary(CashSession session) {
-        List<com.parkflow.modules.cash.repository.CashMovementSummaryProjection> projections = 
-            cashMovementRepository.getSummaryBySessionId(session.getId());
-        return cashLedgerSummaryCalculator.summarize(session, projections);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public CashSummaryResponse getSummary(UUID sessionId) {
-        CashSession session = requireSession(sessionId);
-        CashSummaryResponse response = getInternalSummary(session);
-        
-        UserRole role = SecurityUtils.requireUserRole();
-        if (session.getCountedAt() == null && role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN) {
-            return new CashSummaryResponse(
-                response.openingAmount(),
-                null, // expectedLedgerTotal oculto para cierre ciego
-                response.countedTotal(),
-                null, // difference oculto
-                response.totalsByPaymentMethod(),
-                response.totalsByMovementType(),
-                response.movementCount()
-            );
-        }
-        return response;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CashAuditEntryResponse> getAuditTrail(UUID sessionId) {
-        requireSession(sessionId);
-        return cashAuditLogRepository.findByCashSession_IdOrderByCreatedAtDesc(sessionId).stream()
-            .map(
-                a ->
-                    new CashAuditEntryResponse(
-                        a.getId(),
-                        a.getAction(),
-                        a.getActorUser() != null ? a.getActorUser().getId() : null,
-                        a.getActorUser() != null ? a.getActorUser().getName() : null,
-                        a.getTerminalId(),
-                        a.getClientIp(),
-                        a.getOldValue(),
-                        a.getNewValue(),
-                        a.getReason(),
-                        a.getMetadata(),
-                        a.getCreatedAt()))
-            .collect(Collectors.toList());
     }
 
     // Helper methods ported from CashService

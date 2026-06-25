@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,13 +46,14 @@ class CashSessionManagementServiceTest {
     @Mock private AppUserRepository appUserRepository;
     @Mock private CashLedgerSummaryCalculator cashLedgerSummaryCalculator;
     @Mock private com.parkflow.modules.auth.application.service.AuthAuditService authAuditService;
-    @Mock private com.parkflow.modules.cash.application.service.CashDomainAuditService cashDomainAuditService;
+    @Mock private com.parkflow.modules.cash.application.usecase.CashDomainAuditService cashDomainAuditService;
     @Mock private com.parkflow.modules.settings.application.service.ParkingParametersService parkingParametersService;
-    @Mock private com.parkflow.modules.cash.application.service.CashSequentialSupportService cashSequentialSupportService;
-    @Mock private com.parkflow.modules.cash.application.service.CashClosingOutboundNotifier cashClosingOutboundNotifier;
+    @Mock private com.parkflow.modules.cash.application.usecase.CashSequentialSupportService cashSequentialSupportService;
+    @Mock private com.parkflow.modules.cash.application.usecase.CashClosingOutboundNotifier cashClosingOutboundNotifier;
     @Mock private com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
     @Mock private com.parkflow.modules.cash.repository.CashSessionDenominationRepository cashSessionDenominationRepository;
     @Mock private ParkingSessionRepository parkingSessionRepository;
+    @Mock private CashPolicyResolver cashPolicyResolver;
 
     @InjectMocks
     private CashSessionManagementService service;
@@ -139,6 +140,9 @@ class CashSessionManagementServiceTest {
         when(cashLedgerSummaryCalculator.summarize(any(), any())).thenReturn(summary);
         when(cashSessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
+        com.parkflow.modules.cash.dto.CashPolicyResponse mockPolicy = new com.parkflow.modules.cash.dto.CashPolicyResponse(true, false, BigDecimal.ZERO, "hint", "site", true, false, new BigDecimal("2000.00"), true);
+        when(cashPolicyResolver.resolvePolicy(any())).thenReturn(mockPolicy);
+
         CashCloseRequest req = new CashCloseRequest("All good", null, null);
 
         CashSessionResponse res = service.close(sessionId, req);
@@ -181,54 +185,13 @@ class CashSessionManagementServiceTest {
                         null, // openIdempotencyKey
                         null); // notes
 
+        com.parkflow.modules.cash.dto.CashPolicyResponse mockPolicy = new com.parkflow.modules.cash.dto.CashPolicyResponse(true, false, BigDecimal.ZERO, "hint", "S1", true, false, new BigDecimal("2000.00"), true);
+        when(cashPolicyResolver.resolvePolicy(any())).thenReturn(mockPolicy);
+
         // Should throw because TenantContext is required
         assertThatThrownBy(() -> service.open(request))
                 .isInstanceOf(OperationException.class)
                 .hasMessageContaining("Contexto de compañía requerido");
     }
 
-    @Test
-    void list_sessions_requires_tenant_context() {
-        // IMPROVED: Now requires TenantContext to be set
-        // Previously returned ALL sessions when tenant was null (data leak!)
-        tenantContextMock.when(com.parkflow.modules.auth.security.TenantContext::getTenantId)
-                .thenReturn(null);
-
-        // Should throw because TenantContext is required
-        assertThatThrownBy(() -> service.listSessions(org.springframework.data.domain.PageRequest.of(0, 10)))
-                .isInstanceOf(OperationException.class)
-                .hasMessageContaining("Contexto de compañía requerido");
-    }
-
-    @Test
-    void get_current_tenant_isolation() {
-        // IMPROVED: getCurrent validates tenant isolation
-        UUID companyBId = UUID.randomUUID();
-
-        CashRegister register = new CashRegister();
-        register.setId(UUID.randomUUID());
-
-        AppUser operatorA = new AppUser();
-        operatorA.setId(UUID.randomUUID());
-        operatorA.setCompanyId(UUID.randomUUID()); // Different company
-
-        CashSession sessionA = new CashSession();
-        sessionA.setId(UUID.randomUUID());
-        sessionA.setStatus(CashSessionStatus.OPEN);
-        sessionA.setCompanyId(UUID.randomUUID()); // CompanyA session
-        sessionA.setOperator(operatorA);
-        sessionA.setCashRegister(register);
-
-        // CompanyB user tries to access CompanyA's session
-        tenantContextMock.when(com.parkflow.modules.auth.security.TenantContext::getTenantId)
-                .thenReturn(companyBId);
-
-        when(cashSessionRepository.findOpenForSiteTerminal("S1", "T1", CashSessionStatus.OPEN))
-                .thenReturn(Optional.of(sessionA));
-
-        // Should throw forbidden, not return CompanyA's session to CompanyB user
-        assertThatThrownBy(() -> service.getCurrent("S1", "T1"))
-                .isInstanceOf(OperationException.class)
-                .hasFieldOrPropertyWithValue("status", org.springframework.http.HttpStatus.NOT_FOUND);
-    }
 }

@@ -7,4 +7,8 @@ public record CashPolicyResponse(
     boolean offlineCloseAllowed,
     BigDecimal offlineMaxManualMovement,
     String operationsHint,
-    String resolvedForSite) {}
+    String resolvedForSite,
+    boolean allowMultipleOpenSessions,
+    boolean allowMultipleSessionsPerUser,
+    BigDecimal maxDiscrepancyTolerance,
+    boolean allowManualMovements) {}

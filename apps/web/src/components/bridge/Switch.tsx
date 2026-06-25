@@ -10,7 +10,9 @@ export interface SwitchProps extends Omit<HeroSwitchProps, "onChange" | "childre
 }
 
 export const Switch = React.forwardRef<HTMLLabelElement, SwitchProps>(
-  ({ isSelected, onChange, color, size, children, className, ...props }, ref) => {
+  ({ isSelected, onChange, onValueChange, color, size, children, className, ...rest }, ref) => {
+    // Remove any potentially invalid props before spreading
+    const { onValueChange: _omit, ...props } = rest as any;
     const switchClassName = `${className || ""} focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900`;
     return (
       <HeroSwitch
@@ -18,7 +20,7 @@ export const Switch = React.forwardRef<HTMLLabelElement, SwitchProps>(
         isSelected={isSelected}
         onChange={(isSelected: boolean) => {
           if (onChange) onChange(isSelected);
-          if (props.onValueChange) props.onValueChange(isSelected);
+          onValueChange?.(isSelected);
         }}
         size={size}
         className={switchClassName}

@@ -53,4 +53,9 @@ public interface CashSessionRepository extends JpaRepository<CashSession, UUID> 
   @EntityGraph(attributePaths = {"cashRegister", "operator"})
   Page<CashSession> findByCompanyIdAndOpenedAtBetweenOrderByOpenedAtDesc(
       UUID companyId, OffsetDateTime from, OffsetDateTime to, Pageable pageable);
+
+  boolean existsByOperatorAndStatus(com.parkflow.modules.auth.domain.AppUser operator, CashSessionStatus status);
+
+  long countByCashRegister_SiteRef_CodeAndStatus(String siteCode, CashSessionStatus status);
 }
+

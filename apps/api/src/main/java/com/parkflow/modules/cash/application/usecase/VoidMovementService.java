@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import com.parkflow.modules.audit.domain.Auditable;
 
@@ -12,7 +12,7 @@ import com.parkflow.modules.cash.dto.CashMovementResponse;
 import com.parkflow.modules.cash.dto.VoidMovementRequest;
 import com.parkflow.modules.cash.repository.CashMovementRepository;
 import com.parkflow.modules.cash.repository.CashSessionRepository;
-import com.parkflow.modules.cash.application.service.CashDomainAuditService;
+import com.parkflow.modules.cash.application.usecase.CashDomainAuditService;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.common.exception.OperationException;

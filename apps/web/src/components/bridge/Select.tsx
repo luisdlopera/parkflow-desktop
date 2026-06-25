@@ -20,9 +20,11 @@ export interface SelectProps extends Omit<HeroSelectProps<any>, "value" | "onCha
 }
 
 export const SelectBase = React.forwardRef<any, SelectProps>(
-  ({ value, selectedKeys, defaultSelectedKeys, selectedKey, defaultSelectedKey, onChange, onSelectionChange, size, label, description, errorMessage, isInvalid, isRequired, placeholder, className, classNames, children, "aria-label": ariaLabel, "aria-describedby": ariaDescribedby, ...props }, ref) => {
+  ({ value, selectedKeys, defaultSelectedKeys, selectedKey, defaultSelectedKey, onChange, onSelectionChange, size, label, description, errorMessage, isInvalid, isRequired, placeholder, className, classNames, children, "aria-label": ariaLabel, "aria-describedby": ariaDescribedby, ...rest }, ref) => {
+    // Remove any potentially invalid props before spreading
+    const { onSelectionChange: _omit, onChange: _omit2, ...props } = rest as any;
     const uniqueId = React.useId();
-    const selectId = (props as any).id || uniqueId;
+    const selectId = props.id || uniqueId;
     const errorId = `${selectId}-error`;
     const descriptionId = `${selectId}-description`;
 
@@ -60,7 +62,7 @@ export const SelectBase = React.forwardRef<any, SelectProps>(
         // HeroUI v3 Select normaliza onChange a Key | Key[] | null
         // Para compatibilidad con código existente que usa Array.from(keys)[0],
         // convertimos a Set como en HeroUI v2
-        const isMultiple = (props as any).selectionMode === "multiple";
+        const isMultiple = props.selectionMode === "multiple";
         if (isMultiple) {
           onChange(Array.isArray(keys) ? new Set(keys) : new Set(keys ? [keys] : []));
         } else {

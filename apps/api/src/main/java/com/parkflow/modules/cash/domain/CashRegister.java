@@ -8,11 +8,13 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.SQLRestriction;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "cash_register")
+@SQLRestriction("active = true")
 public class CashRegister {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)

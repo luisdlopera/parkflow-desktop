@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import com.parkflow.modules.cash.dto.CashMovementRequest;
 import com.parkflow.modules.cash.dto.CashMovementResponse;
@@ -38,7 +38,7 @@ public class CashMovementFacadeService {
   private final CashPolicyResolver policyResolver;
   private final ParkingCashIntegrationService parkingIntegrationService;
   private final MovementQueryService movementQueryService;
-  private final CashSessionManagementService sessionManagementService;
+  private final CashSessionAuditService sessionAuditService;
 
   // ===========================================================================
   // Movement Registration
@@ -127,7 +127,7 @@ public class CashMovementFacadeService {
   @Transactional(readOnly = true)
   public CashSummaryResponse getSessionSummary(UUID sessionId) {
     log.debug("Getting summary for session: {}", sessionId);
-    return sessionManagementService.getSummary(sessionId);
+    return sessionAuditService.getSummary(sessionId);
   }
 
   // ===========================================================================

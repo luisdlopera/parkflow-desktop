@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.cash.application.service.CashSessionManagementService;
+import com.parkflow.modules.cash.application.usecase.CashSessionManagementService;
 import com.parkflow.modules.cash.domain.CashRegister;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.domain.CashSessionStatus;
@@ -127,6 +127,9 @@ class CashAutoCloseSchedulerTest {
 
   private CashSession mockSession(String site, OffsetDateTime openedAt) {
     CashRegister register = new CashRegister();
+    com.parkflow.modules.configuration.domain.ParkingSite siteRef = new com.parkflow.modules.configuration.domain.ParkingSite();
+    siteRef.setCode(site);
+    register.setSiteRef(siteRef);
 
     AppUser operator = new AppUser();
     operator.setId(UUID.randomUUID());

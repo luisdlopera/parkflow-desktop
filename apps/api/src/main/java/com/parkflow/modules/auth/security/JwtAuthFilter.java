@@ -73,7 +73,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     try {
       claims = jwtTokenService.parse(token);
     } catch (Exception ex) {
-      writeUnauthorized(response, request.getRequestURI());
+      // Token is invalid/expired. For public endpoints, Spring Security will permit access.
+      // For protected endpoints, SecurityConfig's .authenticated() will reject with 401.
+      // Don't reject here - let Spring Security decide based on endpoint configuration.
+      filterChain.doFilter(request, response);
       return;
     }
 

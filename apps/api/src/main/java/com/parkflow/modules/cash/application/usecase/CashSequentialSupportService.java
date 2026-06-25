@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import com.parkflow.modules.cash.domain.CashFeSequenceCounter;
 import com.parkflow.modules.cash.repository.CashFeSequenceCounterRepository;

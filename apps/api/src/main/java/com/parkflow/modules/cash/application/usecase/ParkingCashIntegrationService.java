@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.cash.application.port.in.ParkingCashIntegrationUseCase;
@@ -6,8 +6,8 @@ import com.parkflow.modules.cash.domain.*;
 import com.parkflow.modules.cash.repository.CashMovementRepository;
 import com.parkflow.modules.cash.repository.CashRegisterRepository;
 import com.parkflow.modules.cash.repository.CashSessionRepository;
-import com.parkflow.modules.cash.application.service.CashDomainAuditService;
-import com.parkflow.modules.cash.application.service.CashPolicyResolver;
+import com.parkflow.modules.cash.application.usecase.CashDomainAuditService;
+import com.parkflow.modules.cash.application.usecase.CashPolicyResolver;
 import com.parkflow.modules.cash.support.CashHttpContext;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.common.exception.OperationException;

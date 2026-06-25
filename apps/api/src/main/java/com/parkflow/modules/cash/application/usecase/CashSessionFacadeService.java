@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import com.parkflow.modules.cash.dto.CashCloseRequest;
 import com.parkflow.modules.cash.dto.CashPolicyResponse;
@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CashSessionFacadeService {
 
   private final CashSessionManagementService sessionManagementService;
+  private final CashSessionQueryService sessionQueryService;
   private final CashConfigurationManagementService configurationService;
 
   // ===========================================================================
@@ -102,7 +103,7 @@ public class CashSessionFacadeService {
   @Transactional(readOnly = true)
   public CashSessionResponse getSession(UUID sessionId) {
     log.debug("Getting session: {}", sessionId);
-    return sessionManagementService.getSession(sessionId);
+    return sessionQueryService.getSession(sessionId);
   }
 
   // ===========================================================================

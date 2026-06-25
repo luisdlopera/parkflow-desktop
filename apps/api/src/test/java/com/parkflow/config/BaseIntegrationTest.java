@@ -200,6 +200,7 @@ public abstract class BaseIntegrationTest {
         register.setCode("REG1");
         register.setLabel("Register 1");
         register.setName("Register 1");
+        register.setTerminal("T1");
         register.setSiteRef(site);
         register.setActive(true);
         register = cashRegisterRepository.save(register);

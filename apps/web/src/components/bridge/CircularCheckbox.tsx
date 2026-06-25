@@ -38,7 +38,7 @@ export function CircularCheckbox({
         isDisabled={disabled}
         className={className}
         classNames={{ wrapper: "rounded-full" }}
-        onValueChange={(selected: boolean) => {
+        onChange={(selected: boolean) => {
           onChange?.(selected, { shiftKey: shiftHeld });
         }}
         aria-label={ariaLabel || "Select row"}

@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.application.service;
+package com.parkflow.modules.cash.application.usecase;
 
 import com.parkflow.modules.cash.dto.CashAuditEntryResponse;
 import com.parkflow.modules.cash.dto.CashClosingPrintResponse;
@@ -40,7 +40,7 @@ public class CashQueryFacadeService {
   private final MovementQueryService movementQueryService;
   private final CashConfigurationManagementService configurationService;
   private final CashClosingOutboundNotifier closingNotifier;
-  private final CashSessionManagementService sessionManagementService;
+  private final CashSessionAuditService sessionAuditService;
 
   // ===========================================================================
   // Sequence Validation
@@ -111,7 +111,7 @@ public class CashQueryFacadeService {
    */
   public List<CashAuditEntryResponse> auditSession(UUID sessionId) {
     log.debug("Getting audit trail for session: {}", sessionId);
-    return sessionManagementService.getAuditTrail(sessionId);
+    return sessionAuditService.getAuditTrail(sessionId);
   }
 
   // ===========================================================================

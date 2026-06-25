@@ -37,6 +37,8 @@ export type ParkingParametersPayload = {
   cashOfflineMaxManualMovement: number | null;
   cashMaxManualAdjustment: number | null;
   cashMaxSessionHours: number | null;
+  cashAllowMultipleOpenSessions: boolean | null;
+  cashAllowMultipleSessionsPerUser: boolean | null;
   cashFeOutboundWebhookUrl: string | null;
   businessLegalName?: string;
   taxIdCheckDigit?: string;

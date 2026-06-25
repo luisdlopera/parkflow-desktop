@@ -38,7 +38,7 @@ class CashModuleIntegrationTest {
         // VERIFY FIX #4: BigDecimal rounding consistency
         // Tests that 100 movements of 0.10 = 10.00 exactly
         CashRegister register = new CashRegister();
-        register.setLabel("T1");
+        register.setTerminal("T1"); register.setLabel("T1");
         register.setUpdatedAt(OffsetDateTime.now());
         CashRegister savedRegister = cashRegisterRepository.save(register);
 
@@ -94,7 +94,7 @@ class CashModuleIntegrationTest {
     void verify_void_creates_offset_movement() {
         // VERIFY FIX #3: Void movement creates offset
         CashRegister register = new CashRegister();
-        register.setLabel("T2");
+        register.setTerminal("T2"); register.setLabel("T2");
         register.setUpdatedAt(OffsetDateTime.now());
         CashRegister savedRegister = cashRegisterRepository.save(register);
 
@@ -166,7 +166,7 @@ class CashModuleIntegrationTest {
     void verify_ledger_calculation_with_mixed_types() {
         // Verify ledger correctly handles different movement types
         CashRegister register = new CashRegister();
-        register.setLabel("T3");
+        register.setTerminal("T3"); register.setLabel("T3");
         register.setUpdatedAt(OffsetDateTime.now());
         CashRegister savedRegister = cashRegisterRepository.save(register);
 
