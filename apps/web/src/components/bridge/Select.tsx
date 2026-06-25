@@ -1,30 +1,32 @@
 import React from "react";
 import { Select as HeroSelect, SelectProps as HeroSelectProps, Label, Description, FieldError } from "@heroui/react";
 
-export interface SelectProps extends Omit<HeroSelectProps<any>, "value" | "onChange" | "size" | "label" | "description" | "className" | "classNames"> {
-  value?: any[] | any; // To support v2 array passing
-  selectedKeys?: any[] | any;
-  defaultSelectedKeys?: any[] | any;
-  onChange?: (val: any) => void;
+type SelectValue = string | number | boolean | null | undefined;
+
+export interface SelectProps extends Omit<HeroSelectProps<SelectValue>, "value" | "onChange" | "size" | "label" | "description" | "className" | "classNames"> {
+  value?: SelectValue[] | SelectValue; // To support v2 array passing
+  selectedKeys?: SelectValue[] | SelectValue;
+  defaultSelectedKeys?: SelectValue[] | SelectValue;
+  onChange?: (val: unknown) => void;
   size?: "sm" | "md" | "lg" | (string & {});
   label?: React.ReactNode;
   description?: React.ReactNode;
   errorMessage?: React.ReactNode;
   placeholder?: string;
   className?: string;
-  classNames?: any;
+  classNames?: Partial<Record<string, string>>;
   isInvalid?: boolean;
   isRequired?: boolean;
   "aria-label"?: string;
   "aria-describedby"?: string;
 }
 
-export const SelectBase = React.forwardRef<any, SelectProps>(
+export const SelectBase = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ value, selectedKeys, defaultSelectedKeys, selectedKey, defaultSelectedKey, onChange, onSelectionChange, size, label, description, errorMessage, isInvalid, isRequired, placeholder, className, classNames, children, "aria-label": ariaLabel, "aria-describedby": ariaDescribedby, ...rest }, ref) => {
-    // Remove any potentially invalid props before spreading
-    const { onSelectionChange: _omit, onChange: _omit2, ...props } = rest as any;
+    // Remove potentially invalid props before spreading
+    const { onSelectionChange: _omit, onChange: _omit2, ...props } = rest as Omit<typeof rest, 'onSelectionChange' | 'onChange'>;
     const uniqueId = React.useId();
-    const selectId = props.id || uniqueId;
+    const selectId = (props.id as string) || uniqueId;
     const errorId = `${selectId}-error`;
     const descriptionId = `${selectId}-description`;
 
@@ -38,7 +40,7 @@ export const SelectBase = React.forwardRef<any, SelectProps>(
       .join(" ");
 
     // Determine the selected key based on v2 array props
-    let resolvedSelectedKey = selectedKey;
+    let resolvedSelectedKey: SelectValue | null = selectedKey || null;
     if (Array.isArray(selectedKey)) {
         resolvedSelectedKey = selectedKey[0] || null;
     } else if (value && Array.isArray(value)) {
@@ -49,15 +51,15 @@ export const SelectBase = React.forwardRef<any, SelectProps>(
       resolvedSelectedKey = value;
     }
 
-    let resolvedDefaultSelectedKey = defaultSelectedKey;
+    let resolvedDefaultSelectedKey: SelectValue | null = defaultSelectedKey || null;
     if (Array.isArray(defaultSelectedKey)) {
         resolvedDefaultSelectedKey = defaultSelectedKey[0] || null;
     } else if (defaultSelectedKeys && Array.isArray(defaultSelectedKeys)) {
       resolvedDefaultSelectedKey = defaultSelectedKeys[0] || null;
     }
 
-    const handleSelectionChange = (keys: any) => {
-      if (onSelectionChange) onSelectionChange(keys);
+    const handleSelectionChange = (keys: Set<SelectValue> | SelectValue[] | SelectValue) => {
+      if (onSelectionChange) onSelectionChange(keys as Set<SelectValue>);
       if (onChange) {
         // HeroUI v3 Select normaliza onChange a Key | Key[] | null
         // Para compatibilidad con código existente que usa Array.from(keys)[0],
@@ -73,11 +75,11 @@ export const SelectBase = React.forwardRef<any, SelectProps>(
 
     return (
       <HeroSelect
-        ref={ref as any}
+        ref={ref}
         placeholder={placeholder}
-        value={resolvedSelectedKey as any}
-        defaultValue={resolvedDefaultSelectedKey as any}
-        onChange={handleSelectionChange as any}
+        value={resolvedSelectedKey}
+        defaultValue={resolvedDefaultSelectedKey}
+        onChange={handleSelectionChange}
         classNames={{
           ...classNames,
           trigger: `!bg-[#f4f4f5] data-[hover=true]:!bg-[#e4e4e7] border-none dark:!bg-zinc-800/60 dark:data-[hover=true]:!bg-zinc-700/60 rounded-xl transition-colors focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900 ${classNames?.trigger || ""}`,
@@ -88,7 +90,7 @@ export const SelectBase = React.forwardRef<any, SelectProps>(
         aria-invalid={isInvalid}
         aria-required={isRequired}
         aria-describedby={combinedAriaDescribedby || undefined}
-        {...props as any}
+        {...(props as any)}
       >
         {label && <Label>{label}</Label>}
         {children}
@@ -101,9 +103,16 @@ export const SelectBase = React.forwardRef<any, SelectProps>(
 
 SelectBase.displayName = "Select";
 
+type SelectComponent = React.ForwardRefExoticComponent<SelectProps & React.RefAttributes<HTMLSelectElement>> & {
+  Trigger: React.ComponentType<any>;
+  Popover: React.ComponentType<any>;
+  Value: React.ComponentType<any>;
+  Indicator: React.ComponentType<any>;
+};
+
 export const Select = Object.assign(SelectBase, {
   Trigger: (HeroSelect as any).Trigger || (() => null),
   Popover: (HeroSelect as any).Popover || (() => null),
   Value: (HeroSelect as any).Value || (() => null),
   Indicator: (HeroSelect as any).Indicator || (() => null),
-});
+}) as SelectComponent;
