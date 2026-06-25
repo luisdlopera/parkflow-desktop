@@ -86,8 +86,6 @@ public class ProfileManagementUseCaseImpl implements ProfileManagementUseCase {
     user.setEmail(email);
     user.setDocument(doc);
     user.setPhone(trimToNull(request.phone()));
-    user.setSite(trimToNull(request.site()));
-    user.setTerminal(trimToNull(request.terminal()));
     user.setUpdatedAt(OffsetDateTime.now());
 
     try {
@@ -163,8 +161,8 @@ public class ProfileManagementUseCaseImpl implements ProfileManagementUseCase {
         user.getDocument(),
         user.getPhone(),
         user.getRole(),
-        user.getSite(),
-        user.getTerminal(),
+        null,
+        null,
         user.isActive(),
         user.isRequirePasswordChange(),
         user.getLastAccessAt(),

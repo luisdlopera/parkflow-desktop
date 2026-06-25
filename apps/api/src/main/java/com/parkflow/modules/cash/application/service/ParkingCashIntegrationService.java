@@ -48,7 +48,7 @@ public class ParkingCashIntegrationService implements ParkingCashIntegrationUseC
           .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "La sesion de caja no esta abierta"));
       return;
     }
-    String site = normalizeSite(parkingSession.getSite());
+    String site = normalizeSite(null);  // Site field removed
     String terminal = resolveTerminal(parkingSession);
     CashRegister reg = cashRegisterRepository.findBySiteAndTerminal(site, terminal)
         .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "Debe abrir caja en este terminal antes de cobrar"));
@@ -106,7 +106,7 @@ public class ParkingCashIntegrationService implements ParkingCashIntegrationUseC
           .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "No hay caja abierta"));
       terminal = cashSession.getCashRegister().getTerminal();
     } else {
-      String site = normalizeSite(parkingSession.getSite());
+      String site = normalizeSite(null);  // Site field removed
       terminal = resolveTerminal(parkingSession);
       CashRegister reg = cashRegisterRepository.findBySiteAndTerminal(site, terminal)
           .orElseThrow(() -> new OperationException(HttpStatus.CONFLICT, "Caja no configurada"));
@@ -154,15 +154,14 @@ public class ParkingCashIntegrationService implements ParkingCashIntegrationUseC
   }
 
   private static String resolveTerminal(ParkingSession parkingSession) {
-    if (StringUtils.hasText(parkingSession.getTerminal())) {
-      return parkingSession.getTerminal().trim();
-    }
+    // Terminal field removed
     return CashHttpContext.currentTerminal().orElseThrow(() ->
         new OperationException(HttpStatus.BAD_REQUEST,
-            "Defina terminal en la sesion de parqueo o envie header X-Parkflow-Terminal"));
+            "Defina terminal via header X-Parkflow-Terminal"));
   }
 
   private static String policySiteLabel(ParkingSession parkingSession) {
-    return StringUtils.hasText(parkingSession.getSite()) ? parkingSession.getSite().trim() : null;
+    // Site field removed - using DEFAULT
+    return "DEFAULT";
   }
 }

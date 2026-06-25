@@ -36,8 +36,6 @@ class ParkingSessionJpaAdapterTest extends BaseIntegrationTest {
         
         activeSession = ParkingSession.builder()
             .companyId(companyId)
-            .site("SITE1")
-            .terminal("TERM1")
             .ticketNumber("TCK-1234")
             .vehicle(vehicle)
             .entryMode(com.parkflow.modules.parking.operation.domain.EntryMode.VISITOR)
@@ -55,9 +53,6 @@ class ParkingSessionJpaAdapterTest extends BaseIntegrationTest {
     void testCountMethods() {
         long countStatus = parkingSessionPort.countByStatusAndCompanyId(SessionStatus.ACTIVE, companyId);
         assertTrue(countStatus >= 1);
-
-        long countStatusSite = parkingSessionPort.countByStatusAndSiteAndCompanyId(SessionStatus.ACTIVE, "SITE1", companyId);
-        assertTrue(countStatusSite >= 1);
 
         long countRate = parkingSessionPort.countByRate_IdAndCompanyId(rateId, companyId);
         assertTrue(countRate >= 1);

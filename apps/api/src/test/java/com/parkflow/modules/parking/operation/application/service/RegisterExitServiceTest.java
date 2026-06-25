@@ -118,7 +118,6 @@ class RegisterExitServiceTest {
         .rate(rate)
         .entryAt(OffsetDateTime.now().minusHours(2))
         .status(SessionStatus.ACTIVE)
-        .site("Test Site")
         .syncStatus(SessionSyncStatus.SYNCED)
         .entryMode(EntryMode.VISITOR)
         .hasHelmet(false)

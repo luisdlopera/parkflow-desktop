@@ -72,8 +72,6 @@ class VoidMovementServiceTest {
 
         CashRegister register = new CashRegister();
         register.setId(UUID.randomUUID());
-        register.setSite("S1");
-        register.setTerminal("T1");
 
         session = new CashSession();
         session.setId(sessionId);

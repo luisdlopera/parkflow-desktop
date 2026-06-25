@@ -127,7 +127,6 @@ class CashAutoCloseSchedulerTest {
 
   private CashSession mockSession(String site, OffsetDateTime openedAt) {
     CashRegister register = new CashRegister();
-    register.setSite(site);
 
     AppUser operator = new AppUser();
     operator.setId(UUID.randomUUID());

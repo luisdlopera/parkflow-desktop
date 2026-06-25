@@ -141,7 +141,7 @@ public class CashClosingOutboundNotifier {
         "register",
         Map.of(
             "site",
-            s.getCashRegister().getSite(),
+            s.getCashRegister().getSiteRef() != null ? s.getCashRegister().getSiteRef().getCode() : "DEFAULT",
             "terminal",
             s.getCashRegister().getTerminal(),
             "parametersSiteKey",

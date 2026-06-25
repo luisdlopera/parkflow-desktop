@@ -89,8 +89,6 @@ class CashSessionManagementServiceTest {
     void close_ThrowsWhenNotArqueado() {
         UUID sessionId = UUID.randomUUID();
         CashRegister register = new CashRegister();
-        register.setSite("S1");
-        register.setTerminal("T1");
 
         CashSession session = new CashSession();
         session.setId(sessionId);
@@ -113,8 +111,6 @@ class CashSessionManagementServiceTest {
     void close_Success() {
         UUID sessionId = UUID.randomUUID();
         CashRegister register = new CashRegister();
-        register.setSite("S1");
-        register.setTerminal("T1");
 
         CashSession session = new CashSession();
         session.setId(sessionId);
@@ -211,8 +207,6 @@ class CashSessionManagementServiceTest {
 
         CashRegister register = new CashRegister();
         register.setId(UUID.randomUUID());
-        register.setSite("S1");
-        register.setTerminal("T1");
 
         AppUser operatorA = new AppUser();
         operatorA.setId(UUID.randomUUID());

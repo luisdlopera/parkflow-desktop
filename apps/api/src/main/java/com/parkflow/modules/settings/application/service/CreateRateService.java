@@ -44,9 +44,6 @@ public class CreateRateService implements CreateRateUseCase {
     if (req.siteId() != null) {
       rate.setSiteRef(parkingSiteRepository.findById(req.siteId())
           .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sede no encontrada")));
-      rate.setSite(rate.getSiteRef().getCode());
-    } else {
-      rate.setSite(req.site() == null || req.site().isBlank() ? "DEFAULT" : req.site().trim());
     }
 
     rateDomainService.validateRate(rate, null, companyId);

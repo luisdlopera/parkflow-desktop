@@ -10,7 +10,6 @@ import java.util.UUID;
 
 public interface ParkingSessionPort {
   long countByStatusAndCompanyId(SessionStatus status, UUID companyId);
-  long countByStatusAndSiteAndCompanyId(SessionStatus status, String site, UUID companyId);
   long countByRate_IdAndCompanyId(UUID rateId, UUID companyId);
   default long countByRate_Id(UUID rateId) {
     return countByRate_IdAndCompanyId(rateId, null);

@@ -30,7 +30,7 @@ public class IdempotencyManager {
             ReceiptResponse receipt = new ReceiptResponse(
                 session.getTicketNumber(), session.getPlate(),
                 session.getVehicle() != null ? session.getVehicle().getType() : null,
-                session.getSite(), session.getLane(), session.getBooth(), session.getTerminal(),
+                null, null, null, null,
                 session.getEntryOperator() != null ? session.getEntryOperator().getName() : null,
                 session.getExitOperator() != null ? session.getExitOperator().getName() : null,
                 session.getEntryAt(), session.getExitAt(), 0, "0h 0m",

@@ -55,7 +55,6 @@ class CashSequentialSupportServiceTest {
 
     CashFeSequenceCounter counter = new CashFeSequenceCounter();
     counter.setSiteCode("SiteA");
-    counter.setTerminal("");
     counter.setLastValue(42L); // next will be 43
 
     when(sequenceRepository.lockBySiteAndTerminal("SiteA", "")).thenReturn(Optional.of(counter));
@@ -79,7 +78,6 @@ class CashSequentialSupportServiceTest {
 
     CashFeSequenceCounter counter = new CashFeSequenceCounter();
     counter.setSiteCode("SiteA");
-    counter.setTerminal("Term1");
     counter.setLastValue(999L); // next will be 1000
 
     when(sequenceRepository.lockBySiteAndTerminal("SiteA", "Term1")).thenReturn(Optional.of(counter));
@@ -101,7 +99,6 @@ class CashSequentialSupportServiceTest {
 
     CashFeSequenceCounter savedCounter = new CashFeSequenceCounter();
     savedCounter.setSiteCode("SiteA");
-    savedCounter.setTerminal("");
     savedCounter.setLastValue(0L);
 
     when(sequenceRepository.saveAndFlush(any(CashFeSequenceCounter.class))).thenReturn(savedCounter);

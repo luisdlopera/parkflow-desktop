@@ -151,12 +151,13 @@ public class RegisterExitService implements RegisterExitUseCase {
 
     boolean printExitTicket = true;
     try {
-        com.parkflow.modules.common.dto.ParkingParametersData params = parkingParametersUseCase.get(session.getSite());
-        if (params.getPrintExitTicket() != null) {
+        // Site field removed - using default site code
+        com.parkflow.modules.common.dto.ParkingParametersData params = parkingParametersUseCase.get("DEFAULT");
+        if (params != null && params.getPrintExitTicket() != null) {
             printExitTicket = params.getPrintExitTicket();
         }
     } catch (Exception e) {
-        log.warn("Could not retrieve parking parameters for site {}, defaulting to printExitTicket=true", session.getSite());
+        log.warn("Could not retrieve parking parameters for default site, defaulting to printExitTicket=true");
     }
 
     if (printExitTicket) {
@@ -259,10 +260,9 @@ public class RegisterExitService implements RegisterExitUseCase {
   }
 
   private Optional<OperationalParameter> resolveOperationalParameter(ParkingSession session) {
-    String siteKey = session.getSite();
-    if (siteKey == null || siteKey.isBlank()) return Optional.empty();
-    return parkingSitePort.findByCodeAndCompanyId(siteKey.trim(), session.getCompanyId())
-        .or(() -> parkingSitePort.findByNameIgnoreCase(siteKey.trim(), session.getCompanyId()))
+    // Site field removed - using DEFAULT
+    return parkingSitePort.findByCodeAndCompanyId("DEFAULT", session.getCompanyId())
+        .or(() -> parkingSitePort.findByNameIgnoreCase("DEFAULT", session.getCompanyId()))
         .flatMap(site -> operationalParameterRepository.findBySite_Id(site.getId()));
   }
 
@@ -410,10 +410,10 @@ public class RegisterExitService implements RegisterExitUseCase {
         session.getTicketNumber(),
         session.getPlate(),
         session.getVehicle().getType(),
-        session.getSite(),
-        session.getLane(),
-        session.getBooth(),
-        session.getTerminal(),
+        null,
+        null,
+        null,
+        null,
         session.getEntryOperator() != null ? session.getEntryOperator().getName() : null,
         session.getExitOperator() != null ? session.getExitOperator().getName() : null,
         session.getEntryAt(),

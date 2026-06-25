@@ -81,7 +81,8 @@ public class RegisterMovementService implements RegisterCashMovementUseCase {
     }
     if (request.type() == CashMovementType.ADJUSTMENT || request.type() == CashMovementType.CUSTOMER_REFUND) {
       UserRole role = SecurityUtils.requireUserRole();
-      BigDecimal maxAdjust = cashPolicyResolver.maxManualAdjustment(session.getCashRegister().getSite());
+      String siteCode = session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : null;
+      BigDecimal maxAdjust = cashPolicyResolver.maxManualAdjustment(siteCode);
       if (request.amount().compareTo(maxAdjust) > 0
           && role != UserRole.ADMIN
           && role != UserRole.SUPER_ADMIN) {
@@ -91,7 +92,8 @@ public class RegisterMovementService implements RegisterCashMovementUseCase {
     }
 
     if (CashHttpContext.offlineClientFlag()) {
-      BigDecimal max = cashPolicyResolver.offlineMaxManualMovement(session.getCashRegister().getSite());
+      String siteCode = session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : null;
+      BigDecimal max = cashPolicyResolver.offlineMaxManualMovement(siteCode);
       if (offlineCappedMovement(request.type()) && request.amount().compareTo(max) > 0) {
         throw new OperationException(HttpStatus.FORBIDDEN,
             "Monto supera tope para movimientos manuales en modo offline (" + max + ")");

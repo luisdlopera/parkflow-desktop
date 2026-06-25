@@ -37,8 +37,6 @@ public class AppUser {
 
   private String document;
   private String phone;
-  private String site;
-  private String terminal;
 
   private OffsetDateTime lastAccessAt;
   private OffsetDateTime passwordChangedAt;

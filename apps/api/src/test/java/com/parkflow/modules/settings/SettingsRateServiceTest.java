@@ -82,7 +82,6 @@ class SettingsRateServiceTest {
     Rate saved = new Rate();
     saved.setId(UUID.randomUUID());
     saved.setName("Tarifa OK");
-    saved.setSite("DEFAULT");
     saved.setVehicleType("CAR");
     saved.setRateType(RateType.HOURLY);
     saved.setAmount(new java.math.BigDecimal("1000.00"));
@@ -231,7 +230,6 @@ class SettingsRateServiceTest {
     when(vehicleTypeRepository.findByCode("CAR")).thenReturn(java.util.Optional.of(carType));
     Rate existing = new Rate();
     existing.setId(UUID.randomUUID());
-    existing.setSite("DEFAULT");
     existing.setVehicleType("CAR");
     existing.setRateType(RateType.HOURLY);
     existing.setActive(true);

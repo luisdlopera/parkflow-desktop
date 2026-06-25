@@ -58,9 +58,11 @@ public class CashRegisterJpaAdapter implements CashRegisterPort {
 
     @Repository
     interface CashRegisterJpaRepository extends JpaRepository<CashRegister, UUID> {
-        Optional<CashRegister> findBySiteAndTerminal(String site, String terminal);
+        @Query("SELECT c FROM CashRegister c WHERE c.siteRef.code = :site AND c.terminal = :terminal")
+        Optional<CashRegister> findBySiteAndTerminal(@Param("site") String site, @Param("terminal") String terminal);
 
-        List<CashRegister> findBySiteOrderByTerminalAsc(String site);
+        @Query("SELECT c FROM CashRegister c WHERE c.siteRef.code = :site ORDER BY c.terminal ASC")
+        List<CashRegister> findBySiteOrderByTerminalAsc(@Param("site") String site);
 
         Page<CashRegister> findBySiteRef_Id(UUID siteId, Pageable pageable);
 
@@ -74,7 +76,7 @@ public class CashRegisterJpaAdapter implements CashRegisterPort {
               AND (:active IS NULL OR c.active = :active)
               AND (
                 :q IS NULL
-                OR LOWER(c.site) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(COALESCE(s.code, '')) LIKE LOWER(CONCAT('%', :q, '%'))
                 OR LOWER(COALESCE(c.code, '')) LIKE LOWER(CONCAT('%', :q, '%'))
                 OR LOWER(COALESCE(c.name, '')) LIKE LOWER(CONCAT('%', :q, '%'))
                 OR LOWER(COALESCE(c.terminal, '')) LIKE LOWER(CONCAT('%', :q, '%'))

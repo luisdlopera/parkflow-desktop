@@ -47,7 +47,8 @@ public class RateDomainService {
     if (!rate.isActive()) return;
 
     UUID ex = excludeId != null ? excludeId : UUID.randomUUID();
-    var others = ratePort.findActiveForConflictCheck(rate.getSite(), rate.getVehicleType(), ex, companyId);
+    String siteCode = rate.getSiteRef() != null ? rate.getSiteRef().getCode() : null;
+    var others = ratePort.findActiveForConflictCheck(siteCode, rate.getVehicleType(), ex, companyId);
     
     Win win = toWindow(rate);
     for (Rate other : others) {

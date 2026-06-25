@@ -188,7 +188,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
   }
 
   private Optional<OperationalParameter> resolveOperationalParameter(ParkingSession session) {
-    String siteKey = session.getSite();
+    String siteKey = null;  // Site removed
     if (siteKey == null || siteKey.isBlank()) return Optional.empty();
     UUID companyId = SecurityUtils.requireCompanyId();
     return parkingSiteRepository.findByCodeAndCompanyId(siteKey.trim(), companyId)
@@ -233,7 +233,7 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
     return new ReceiptResponse(
         session.getTicketNumber(), session.getPlate(),
         session.getVehicle().getType(),
-        session.getSite(), session.getLane(), session.getBooth(), session.getTerminal(),
+        null, null, null, null,
         session.getEntryOperator() != null ? session.getEntryOperator().getName() : null,
         session.getExitOperator() != null ? session.getExitOperator().getName() : null,
         session.getEntryAt(), session.getExitAt(), totalMinutes, duration,

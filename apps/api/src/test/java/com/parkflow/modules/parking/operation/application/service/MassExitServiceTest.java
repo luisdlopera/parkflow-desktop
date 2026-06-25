@@ -65,7 +65,6 @@ class MassExitServiceTest {
         .ticketNumber(ticket)
         .plate(plate)
         .vehicle(v)
-        .site("SITE1")
         .entryAt(OffsetDateTime.now().minusHours(1))
         .build();
   }
@@ -75,7 +74,7 @@ class MassExitServiceTest {
     @Test
     void previewsSuccessfully() {
       ParkingSession s1 = createSession("T-1", "ABC");
-      when(parkingSessionRepository.findAllActiveByFilters(any(), any(), any(), any(), any()))
+      when(parkingSessionRepository.findAllActiveByFilters(any(), any(), any(), any()))
           .thenReturn(List.of(s1));
       when(registerExitUseCase.precalculate(any(), anyBoolean()))
           .thenReturn(new OperationResultResponse(null, null, "ok", BigDecimal.valueOf(1000), BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.valueOf(1000)));
@@ -96,7 +95,7 @@ class MassExitServiceTest {
     @Test
     void previewsWithErrors() {
       ParkingSession s1 = createSession("T-1", "ABC");
-      when(parkingSessionRepository.findAllActiveByFilters(any(), any(), any(), any(), any()))
+      when(parkingSessionRepository.findAllActiveByFilters(any(), any(), any(), any()))
           .thenReturn(List.of(s1));
       when(registerExitUseCase.precalculate(any(), anyBoolean()))
           .thenThrow(new RuntimeException("calc error"));
@@ -125,7 +124,7 @@ class MassExitServiceTest {
       op.setId(operatorId);
 
       when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(op));
-      when(parkingSessionRepository.findAllActiveByFilters(any(), any(), any(), any(), any()))
+      when(parkingSessionRepository.findAllActiveByFilters(any(), any(), any(), any()))
           .thenReturn(List.of(s1));
 
       MassExitItemResult itemResult = new MassExitItemResult("T-1", "ABC", "CAR", "SITE1", OffsetDateTime.now(), MassExitItemStatus.SUCCESS, BigDecimal.valueOf(2000), null);
@@ -153,7 +152,7 @@ class MassExitServiceTest {
       op.setId(operatorId);
 
       when(appUserRepository.findById(operatorId)).thenReturn(Optional.of(op));
-      when(parkingSessionRepository.findAllActiveByFilters(any(), any(), any(), any(), any()))
+      when(parkingSessionRepository.findAllActiveByFilters(any(), any(), any(), any()))
           .thenReturn(List.of(s1, s2));
 
       MassExitItemResult itemResult = new MassExitItemResult("T-1", "ABC", "CAR", "SITE1", OffsetDateTime.now(), MassExitItemStatus.SUCCESS, BigDecimal.valueOf(2000), null);

@@ -33,7 +33,6 @@ class RateMapperTest {
     r.setRoundingMode(RoundingMode.NEAREST);
     r.setLostTicketSurcharge(BigDecimal.ZERO);
     r.setActive(true);
-    r.setSite("S1");
     ParkingSite site = new ParkingSite();
     site.setId(UUID.randomUUID());
     r.setSiteRef(site);

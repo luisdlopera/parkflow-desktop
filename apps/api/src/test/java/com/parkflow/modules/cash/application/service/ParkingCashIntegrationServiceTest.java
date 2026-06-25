@@ -59,8 +59,6 @@ class ParkingCashIntegrationServiceTest {
 
         CashRegister register = new CashRegister();
         register.setId(UUID.randomUUID());
-        register.setSite("S1");
-        register.setTerminal("T1");
 
         session = new CashSession();
         session.setId(sessionId);
@@ -80,8 +78,7 @@ class ParkingCashIntegrationServiceTest {
         com.parkflow.modules.parking.operation.domain.ParkingSession parkingSession =
                 mock(com.parkflow.modules.parking.operation.domain.ParkingSession.class);
         lenient().when(parkingSession.getId()).thenReturn(UUID.randomUUID());
-        lenient().when(parkingSession.getTerminal()).thenReturn("T1");
-        lenient().when(parkingSession.getSite()).thenReturn("S1");
+        // Site and Terminal fields removed from ParkingSession (V022__drop_deprecated_columns.sql)
 
         com.parkflow.modules.parking.operation.domain.Payment payment =
                 mock(com.parkflow.modules.parking.operation.domain.Payment.class);

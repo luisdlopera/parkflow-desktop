@@ -55,7 +55,6 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
     motorcycleRate.setGraceMinutes(0);
     motorcycleRate.setToleranceMinutes(0);
     motorcycleRate.setFractionMinutes(60);
-    motorcycleRate.setSite(site.getName());
     motorcycleRate.setSiteRef(site);
     motorcycleRate.setBaseValue(BigDecimal.ZERO);
     motorcycleRate.setBaseMinutes(0);
@@ -353,7 +352,6 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
     // Set allowExitWithoutPayment on site's operational parameters
     ParkingSite site = parkingSiteRepository.findById(siteId).orElseThrow();
     OperationalParameter param = new OperationalParameter();
-    param.setSite(site);
     param.setCompanyId(companyId);
     param.setAllowExitWithoutPayment(true);
     param.setRequirePhotoExit(false);
@@ -408,7 +406,6 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
 
     ParkingSite site = parkingSiteRepository.findById(siteId).orElseThrow();
     OperationalParameter param = new OperationalParameter();
-    param.setSite(site);
     param.setCompanyId(companyId);
     param.setRequirePhotoExit(true);
     operationalParameterPort.save(param);
@@ -467,7 +464,6 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
     // Set requirePhotoExit on site's operational parameters
     ParkingSite site = parkingSiteRepository.findById(siteId).orElseThrow();
     OperationalParameter param = new OperationalParameter();
-    param.setSite(site);
     param.setCompanyId(companyId);
     param.setRequirePhotoExit(true);
     operationalParameterPort.save(param);

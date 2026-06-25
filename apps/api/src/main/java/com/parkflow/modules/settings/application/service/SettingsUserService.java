@@ -75,8 +75,6 @@ public class SettingsUserService implements UserManagementUseCase {
     user.setEmail(email);
     user.setDocument(doc);
     user.setPhone(trimToNull(req.phone()));
-    user.setSite(trimToNull(req.site()));
-    user.setTerminal(trimToNull(req.terminal()));
     user.setRole(req.role());
     user.setRequirePasswordChange(req.requirePasswordChange());
     user.setPasswordHash(passwordHashService.encodePassword(req.initialPassword()));
@@ -148,12 +146,6 @@ public class SettingsUserService implements UserManagementUseCase {
     }
     if (req.phone() != null) {
       user.setPhone(trimToNull(req.phone()));
-    }
-    if (req.site() != null) {
-      user.setSite(trimToNull(req.site()));
-    }
-    if (req.terminal() != null) {
-      user.setTerminal(trimToNull(req.terminal()));
     }
     if (req.role() != null) {
       user.setRole(req.role());
@@ -265,8 +257,8 @@ public class SettingsUserService implements UserManagementUseCase {
         u.getDocument(),
         u.getPhone(),
         u.getRole(),
-        u.getSite(),
-        u.getTerminal(),
+        null,
+        null,
         u.isActive(),
         u.isBlocked(),
         u.isRequirePasswordChange(),
@@ -281,8 +273,6 @@ public class SettingsUserService implements UserManagementUseCase {
     m.put("email", u.getEmail());
     m.put("role", u.getRole().name());
     m.put("active", u.isActive());
-    m.put("site", u.getSite());
-    m.put("terminal", u.getTerminal());
     m.put("document", u.getDocument());
     return m;
   }

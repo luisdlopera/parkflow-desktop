@@ -80,7 +80,6 @@ class ReprintTicketServiceTest {
         .plate("ABC123")
         .vehicle(vehicle)
         .companyId(companyId)
-        .site("SITE-01")
         .status(SessionStatus.ACTIVE)
         .syncStatus(SessionSyncStatus.PENDING)
         .entryAt(OffsetDateTime.now().minusHours(2))

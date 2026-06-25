@@ -47,7 +47,7 @@ public class OperationPrintService {
                 idempotencyKey,
                 payloadHash,
                 null,
-                session.getTerminal()
+                null  // Terminal field removed
             );
             printJobService.create(printReq);
         } catch (Exception printError) {

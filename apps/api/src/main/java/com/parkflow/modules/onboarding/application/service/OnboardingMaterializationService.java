@@ -121,7 +121,7 @@ public class OnboardingMaterializationService {
     rate.setAmount(BigDecimal.valueOf(amount));
     rate.setGraceMinutes(graceMinutes);
     rate.setFractionMinutes(60);
-    rate.setSite(null);
+    // Site field removed - use siteRef instead
     rate.setBaseValue(BigDecimal.ZERO);
     rate.setBaseMinutes(0);
     rate.setAdditionalValue(BigDecimal.ZERO);

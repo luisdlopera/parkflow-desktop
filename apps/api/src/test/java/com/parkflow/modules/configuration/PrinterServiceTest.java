@@ -61,14 +61,12 @@ class PrinterServiceTest {
 
     Printer previousDefault = new Printer();
     previousDefault.setId(UUID.randomUUID());
-    previousDefault.setSite(site);
     previousDefault.setDefault(true);
     when(printerRepository.findBySite_IdAndIsDefaultTrue(siteId)).thenReturn(Optional.of(previousDefault));
 
     when(printerRepository.save(any(Printer.class))).thenAnswer(invocation -> {
       Printer p = invocation.getArgument(0);
       if (p.getId() == null) p.setId(UUID.randomUUID());
-      p.setSite(site);
       return p;
     });
 

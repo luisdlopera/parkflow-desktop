@@ -132,14 +132,6 @@ public class ParkingSession extends org.springframework.data.domain.AbstractAggr
   @Builder.Default
   private boolean monthlySession = false;
 
-  private String site;
-
-  private String lane;
-
-  private String booth;
-
-  private String terminal;
-
   @Column(name = "company_id", nullable = false)
   private UUID companyId;
 

@@ -63,10 +63,6 @@ class IdempotencyManagerTest {
         .id(UUID.randomUUID())
         .ticketNumber("T-1")
         .plate("ABC123")
-        .site("Main")
-        .lane("L1")
-        .booth("B1")
-        .terminal("T1")
         .entryAt(OffsetDateTime.now())
         .vehicle(vehicle)
         .build();

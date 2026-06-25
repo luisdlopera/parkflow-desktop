@@ -38,8 +38,6 @@ class CashModuleIntegrationTest {
         // VERIFY FIX #4: BigDecimal rounding consistency
         // Tests that 100 movements of 0.10 = 10.00 exactly
         CashRegister register = new CashRegister();
-        register.setSite("S1");
-        register.setTerminal("T1");
         register.setLabel("T1");
         register.setUpdatedAt(OffsetDateTime.now());
         CashRegister savedRegister = cashRegisterRepository.save(register);
@@ -72,7 +70,6 @@ class CashModuleIntegrationTest {
             m.setPaymentMethod(PaymentMethod.CASH);
             m.setAmount(new BigDecimal("0.10"));
             m.setStatus(CashMovementStatus.POSTED);
-            m.setTerminal("T1");
             m.setCreatedBy(savedOperator);
             m.setCreatedAt(OffsetDateTime.now());
             cashMovementRepository.save(m);
@@ -97,8 +94,6 @@ class CashModuleIntegrationTest {
     void verify_void_creates_offset_movement() {
         // VERIFY FIX #3: Void movement creates offset
         CashRegister register = new CashRegister();
-        register.setSite("S2");
-        register.setTerminal("T2");
         register.setLabel("T2");
         register.setUpdatedAt(OffsetDateTime.now());
         CashRegister savedRegister = cashRegisterRepository.save(register);
@@ -129,7 +124,6 @@ class CashModuleIntegrationTest {
         original.setPaymentMethod(PaymentMethod.CASH);
         original.setAmount(new BigDecimal("100.00"));
         original.setStatus(CashMovementStatus.POSTED);
-        original.setTerminal("T1");
         original.setCreatedBy(savedOperator);
         original.setCreatedAt(OffsetDateTime.now());
         CashMovement savedOriginal = cashMovementRepository.save(original);
@@ -148,7 +142,6 @@ class CashModuleIntegrationTest {
         offset.setPaymentMethod(PaymentMethod.CASH);
         offset.setAmount(new BigDecimal("-100.00")); // Negated
         offset.setStatus(CashMovementStatus.POSTED);
-        offset.setTerminal("T1");
         offset.setCreatedBy(savedOperator);
         offset.setCreatedAt(OffsetDateTime.now());
         cashMovementRepository.save(offset);
@@ -173,8 +166,6 @@ class CashModuleIntegrationTest {
     void verify_ledger_calculation_with_mixed_types() {
         // Verify ledger correctly handles different movement types
         CashRegister register = new CashRegister();
-        register.setSite("S3");
-        register.setTerminal("T3");
         register.setLabel("T3");
         register.setUpdatedAt(OffsetDateTime.now());
         CashRegister savedRegister = cashRegisterRepository.save(register);
@@ -206,7 +197,6 @@ class CashModuleIntegrationTest {
         income.setPaymentMethod(PaymentMethod.CASH);
         income.setAmount(new BigDecimal("50.00"));
         income.setStatus(CashMovementStatus.POSTED);
-        income.setTerminal("T1");
         income.setCreatedBy(savedOperator);
         income.setCreatedAt(OffsetDateTime.now());
         cashMovementRepository.save(income);
@@ -219,7 +209,6 @@ class CashModuleIntegrationTest {
         expense.setPaymentMethod(PaymentMethod.CASH);
         expense.setAmount(new BigDecimal("25.00"));
         expense.setStatus(CashMovementStatus.POSTED);
-        expense.setTerminal("T1");
         expense.setCreatedBy(savedOperator);
         expense.setCreatedAt(OffsetDateTime.now());
         cashMovementRepository.save(expense);

@@ -55,10 +55,6 @@ public class Rate {
   @Column(nullable = false)
   private int fractionMinutes = 60;
 
-  /** Código de sede (DEFAULT = cualquier sede). */
-  @Column(nullable = false)
-  private String site = "DEFAULT";
-
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "site_id")
   private ParkingSite siteRef;

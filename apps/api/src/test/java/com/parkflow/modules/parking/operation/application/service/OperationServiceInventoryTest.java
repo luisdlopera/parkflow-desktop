@@ -298,7 +298,6 @@ class OperationServiceInventoryTest {
     r.setRateType(RateType.HOURLY); r.setAmount(new BigDecimal("4000.00"));
     r.setVehicleType("CAR"); r.setRoundingMode(RoundingMode.UP);
     r.setLostTicketSurcharge(new BigDecimal("8000.00")); r.setActive(true);
-    r.setSite("DEFAULT"); r.setFractionMinutes(60); r.setGraceMinutes(0);
     return r;
   }
 }

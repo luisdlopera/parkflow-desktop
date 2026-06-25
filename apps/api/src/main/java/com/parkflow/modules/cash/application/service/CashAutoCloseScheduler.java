@@ -42,8 +42,7 @@ public class CashAutoCloseScheduler {
 
         for (CashSession session : openSessions) {
             try {
-                String site = session.getCashRegister().getSite();
-                if (site == null) site = "default";
+                String site = session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : "DEFAULT";
 
                 // Set Tenant context
                 TenantContext.setTenantId(session.getCompanyId());

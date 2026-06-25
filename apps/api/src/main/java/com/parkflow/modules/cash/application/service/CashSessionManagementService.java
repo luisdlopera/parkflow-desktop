@@ -85,7 +85,6 @@ public class CashSessionManagementService implements CashSessionUseCase {
                     .orElseGet(
                         () -> {
                             CashRegister r = new CashRegister();
-                            r.setSite(site);
                             r.setTerminal(terminal);
                             r.setLabel(
                                 StringUtils.hasText(request.registerLabel())
@@ -155,7 +154,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
             operator,
             null,
             "Opening amount: " + session.getOpeningAmount(),
-            "Register: " + register.getSite() + "/" + register.getTerminal());
+            "Register: " + (register.getSiteRef() != null ? register.getSiteRef().getCode() : "DEFAULT") + "/" + register.getTerminal());
 
         return toSessionResponse(session);
     }
@@ -164,7 +163,8 @@ public class CashSessionManagementService implements CashSessionUseCase {
     @Transactional
     public CashSessionResponse submitCount(UUID sessionId, CashCountRequest request) {
         CashSession session = requireOpenSession(sessionId);
-        validateOperator(session.getOperator().getId(), session.getCashRegister().getSite());
+        String siteCode = session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : null;
+        validateOperator(session.getOperator().getId(), siteCode);
         
         AppUser actor =
             appUserRepository
@@ -252,7 +252,8 @@ public class CashSessionManagementService implements CashSessionUseCase {
         }
 
         CashSession session = requireOpenSessionWithLock(sessionId);
-        validateOperator(session.getOperator().getId(), session.getCashRegister().getSite());
+        String siteCode = session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : null;
+        validateOperator(session.getOperator().getId(), siteCode);
         
         if (session.getCountedAt() == null) {
             throw new OperationException(HttpStatus.BAD_REQUEST, "Debe registrar arqueo antes de cerrar");
@@ -455,12 +456,8 @@ public class CashSessionManagementService implements CashSessionUseCase {
             if (role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN) {
                 throw new OperationException(HttpStatus.FORBIDDEN, "Solo puede operar caja como su usuario");
             }
-            if (role == UserRole.ADMIN && registerSite != null) {
-                AppUser actor = appUserRepository.findById(actorId).orElse(null);
-                if (actor != null && StringUtils.hasText(actor.getSite()) && !actor.getSite().equals(registerSite)) {
-                    throw new OperationException(HttpStatus.FORBIDDEN, "El administrador no tiene acceso a operar cajas de esta sede");
-                }
-            }
+            // Site-based access control removed - AppUser no longer has site field
+            // TODO: Implement role-based access control if needed
         }
     }
 
@@ -505,8 +502,8 @@ public class CashSessionManagementService implements CashSessionUseCase {
     }
 
     private String groupingSiteForParams(CashSession s) {
-        if (s.getCashRegister().getSite() != null) return s.getCashRegister().getSite();
-        return "default";
+        if (s.getCashRegister().getSiteRef() != null) return s.getCashRegister().getSiteRef().getCode();
+        return "DEFAULT";
     }
 
     private String mergeNotes(String current, String extra) {
@@ -518,7 +515,8 @@ public class CashSessionManagementService implements CashSessionUseCase {
     private Map<String, Object> baseMeta(CashSession s) {
         Map<String, Object> m = new HashMap<>();
         m.put("sessionId", s.getId().toString());
-        m.put("register", s.getCashRegister().getSite() + "/" + s.getCashRegister().getTerminal());
+        String siteCode = s.getCashRegister().getSiteRef() != null ? s.getCashRegister().getSiteRef().getCode() : "DEFAULT";
+        m.put("register", siteCode + "/" + s.getCashRegister().getTerminal());
         return m;
     }
 
@@ -533,7 +531,7 @@ public class CashSessionManagementService implements CashSessionUseCase {
                 .toList();
         return new CashSessionResponse(
             s.getId(),
-            new CashRegisterInfoResponse(r.getId(), r.getSite(), r.getTerminal(), r.getLabel()),
+            new CashRegisterInfoResponse(r.getId(), r.getSiteRef() != null ? r.getSiteRef().getCode() : null, r.getTerminal(), r.getLabel()),
             s.getOperator().getId(),
             s.getOperator().getName(),
             s.getStatus().name(),

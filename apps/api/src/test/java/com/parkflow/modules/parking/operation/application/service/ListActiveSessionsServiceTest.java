@@ -268,7 +268,6 @@ class ListActiveSessionsServiceTest {
         .plate(plate)
         .vehicle(vehicle)
         .companyId(companyId)
-        .site("TEST-SITE")
         .status(SessionStatus.ACTIVE)
         .entryAt(OffsetDateTime.now())
         .entryMode(EntryMode.VISITOR)

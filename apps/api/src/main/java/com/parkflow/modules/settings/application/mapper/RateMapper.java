@@ -25,7 +25,7 @@ public class RateMapper {
         r.getRoundingMode(),
         r.getLostTicketSurcharge(),
         r.isActive(),
-        r.getSite(),
+        r.getSiteRef() != null ? r.getSiteRef().getCode() : null,
         r.getSiteRef() != null ? r.getSiteRef().getId() : null,
         r.getBaseValue(),
         r.getBaseMinutes(),

@@ -62,7 +62,6 @@ class FindActiveSessionServiceTest {
         .vehicle(vehicle)
         .entryAt(OffsetDateTime.now().minusHours(1))
         .status(SessionStatus.ACTIVE)
-        .site("Site")
         .syncStatus(SessionSyncStatus.SYNCED)
         .entryMode(EntryMode.VISITOR)
         .hasHelmet(false)

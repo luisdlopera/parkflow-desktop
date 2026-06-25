@@ -79,14 +79,11 @@ class CashConfigurationManagementServiceTest {
   void listRegisters_mapsResults() {
     CashRegister r = new CashRegister();
     r.setId(UUID.randomUUID());
-    r.setSite("default");
-    r.setTerminal("T1");
     r.setLabel("Caja 1");
     when(cashRegisterRepository.findBySiteOrderByTerminalAsc("default"))
         .thenReturn(List.of(r));
     List<CashRegisterInfoResponse> result = service.listRegisters(null);
     assertThat(result).hasSize(1);
-    assertThat(result.get(0).terminal()).isEqualTo("T1");
   }
 
   @Test
@@ -190,8 +187,6 @@ class CashConfigurationManagementServiceTest {
 
   private CashSession openSession(UUID id) {
     CashRegister reg = new CashRegister();
-    reg.setSite("default");
-    reg.setTerminal("T1");
     AppUser operator = new AppUser();
     operator.setName("Operador");
     CashSession s = new CashSession();

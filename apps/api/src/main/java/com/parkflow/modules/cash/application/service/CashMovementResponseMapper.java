@@ -13,7 +13,8 @@ public class CashMovementResponseMapper {
   public Map<String, Object> baseMeta(CashSession session) {
     Map<String, Object> meta = new HashMap<>();
     meta.put("sessionId", session.getId().toString());
-    meta.put("register", session.getCashRegister().getSite() + "/" + session.getCashRegister().getTerminal());
+    String siteCode = session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : null;
+    meta.put("register", (siteCode != null ? siteCode : "DEFAULT") + "/" + session.getCashRegister().getTerminal());
     return meta;
   }
 

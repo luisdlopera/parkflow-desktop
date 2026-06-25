@@ -41,7 +41,6 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
     motorcycleRate.setGraceMinutes(0);
     motorcycleRate.setToleranceMinutes(0);
     motorcycleRate.setFractionMinutes(60);
-    motorcycleRate.setSite(site.getName());
     motorcycleRate.setSiteRef(site);
     motorcycleRate.setBaseValue(BigDecimal.ZERO);
     motorcycleRate.setBaseMinutes(0);

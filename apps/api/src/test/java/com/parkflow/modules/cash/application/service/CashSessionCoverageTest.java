@@ -89,7 +89,6 @@ class CashSessionCoverageTest {
 
     when(cashRegisterRepository.save(any())).thenAnswer(i -> {
       CashRegister r = i.getArgument(0);
-      r.setId(UUID.randomUUID()); r.setSite("S1"); r.setTerminal("T1");
       return r;
     });
 
@@ -115,7 +114,6 @@ class CashSessionCoverageTest {
     when(cashRegisterRepository.findBySiteAndTerminal("S1", "T1")).thenReturn(Optional.empty());
     when(cashRegisterRepository.save(any())).thenAnswer(i -> {
       CashRegister r = i.getArgument(0);
-      r.setId(UUID.randomUUID()); r.setSite("S1"); r.setTerminal("T1");
       return r;
     });
 
@@ -151,7 +149,6 @@ class CashSessionCoverageTest {
     s.setStatus(CashSessionStatus.OPEN);
     
     CashRegister r = new CashRegister();
-    r.setSite("S1");
     s.setCashRegister(r);
     
     AppUser user = new AppUser();
@@ -212,7 +209,6 @@ class CashSessionCoverageTest {
     s.setCompanyId(companyId);
     s.setStatus(CashSessionStatus.OPEN);
     CashRegister r = new CashRegister();
-    r.setSite("S1");
     s.setCashRegister(r);
     AppUser user = new AppUser();
     user.setId(operatorId);

@@ -21,9 +21,6 @@ public class CashRegister {
   @Version
   private Long version = 0L;
 
-  @Column(nullable = false, length = 80)
-  private String site;
-
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "site_id")
   private ParkingSite siteRef;

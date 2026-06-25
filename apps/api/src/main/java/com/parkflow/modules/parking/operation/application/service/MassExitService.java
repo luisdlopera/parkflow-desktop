@@ -74,7 +74,7 @@ public class MassExitService implements MassExitPreviewUseCase, MassExitProcessU
             session.getTicketNumber(),
             session.getPlate(),
             session.getVehicle() != null ? session.getVehicle().getType() : null,
-            session.getSite(),
+            null,
             session.getEntryAt(),
             MassExitItemStatus.SUCCESS,
             amount,
@@ -86,7 +86,7 @@ public class MassExitService implements MassExitPreviewUseCase, MassExitProcessU
             session.getTicketNumber(),
             session.getPlate(),
             session.getVehicle() != null ? session.getVehicle().getType() : null,
-            session.getSite(),
+            null,
             session.getEntryAt(),
             MassExitItemStatus.SKIPPED,
             BigDecimal.ZERO,
@@ -151,10 +151,9 @@ public class MassExitService implements MassExitPreviewUseCase, MassExitProcessU
 
   private List<ParkingSession> resolveCandidates(MassExitFilterRequest request, UUID companyId) {
     String vehicleType = blankToNull(request.vehicleTypeCode());
-    String site = blankToNull(request.siteCode());
 
     List<ParkingSession> filtered = parkingSessionRepository.findAllActiveByFilters(
-        companyId, vehicleType, site, request.entryFrom(), request.entryTo());
+        companyId, vehicleType, request.entryFrom(), request.entryTo());
 
     if (request.selectedLocators() != null && !request.selectedLocators().isEmpty()) {
       return filtered.stream()

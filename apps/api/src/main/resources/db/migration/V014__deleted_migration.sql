@@ -1,0 +1,4 @@
+-- This migration was deleted during consolidation (Jun 22, 2026)
+-- It attempted to delete columns that were referenced by V012
+-- See commit: 655c0c71 for consolidation details
+-- Flyway requires a placeholder to mark this as resolved

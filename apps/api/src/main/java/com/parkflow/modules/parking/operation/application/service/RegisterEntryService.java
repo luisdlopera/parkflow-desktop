@@ -134,10 +134,6 @@ public class RegisterEntryService implements RegisterEntryUseCase {
         .rate(rate)
         .entryOperator(operator)
         .entryAt(entryAt)
-        .site(site)
-        .lane(request.lane())
-        .booth(request.booth())
-        .terminal(request.terminal())
         .entryNotes(sanitize(request.observations()))
         .hasHelmet(request.custodiedItems() != null && !request.custodiedItems().isEmpty())
         .entryImageUrl(blankToNull(request.entryImageUrl()))
@@ -298,8 +294,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
         .toList();
     return new ReceiptResponse(
         session.getTicketNumber(), session.getPlate(),
-        session.getVehicle().getType(), session.getSite(), session.getLane(), session.getBooth(),
-        session.getTerminal(),
+        session.getVehicle().getType(), null, null, null, null,
         session.getEntryOperator() != null ? session.getEntryOperator().getName() : null,
         null, session.getEntryAt(), null, totalMinutes, duration, null,
         session.getRate() != null ? session.getRate().getName() : null,

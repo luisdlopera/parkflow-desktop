@@ -185,8 +185,9 @@ public class SettingsRateService implements com.parkflow.modules.settings.applic
     }
     UUID ex = excludeId != null ? excludeId : UUID.randomUUID();
     UUID companyId = SecurityUtils.requireCompanyId();
-    var others = rateRepository.findActiveForConflictCheck(rate.getSite(), rate.getVehicleType(), ex, companyId);
-    
+    String siteCode = rate.getSiteRef() != null ? rate.getSiteRef().getCode() : null;
+    var others = rateRepository.findActiveForConflictCheck(siteCode, rate.getVehicleType(), ex, companyId);
+
     rateValidationService.validateOverlap(rate, others);
   }
 
@@ -216,7 +217,6 @@ public class SettingsRateService implements com.parkflow.modules.settings.applic
               .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sede no encontrada"));
       target.setSiteRef(siteRef);
     }
-    target.setSite(resolveSite(req.site(), siteRef));
 
     // Estructura base + adicional
     target.setBaseValue(req.baseValue() != null ? req.baseValue() : BigDecimal.ZERO);
@@ -277,7 +277,7 @@ public class SettingsRateService implements com.parkflow.modules.settings.applic
         r.getRoundingMode(),
         r.getLostTicketSurcharge(),
         r.isActive(),
-        r.getSite(),
+        r.getSiteRef() != null ? r.getSiteRef().getCode() : null,
         r.getSiteRef() != null ? r.getSiteRef().getId() : null,
         r.getBaseValue(),
         r.getBaseMinutes(),
@@ -307,7 +307,7 @@ public class SettingsRateService implements com.parkflow.modules.settings.applic
     m.put("rateType", r.getRateType().name());
     m.put("amount", r.getAmount());
     m.put("active", r.isActive());
-    m.put("site", r.getSite());
+    m.put("site", r.getSiteRef() != null ? r.getSiteRef().getCode() : null);
     m.put("minSessionValue", r.getMinSessionValue());
     m.put("maxSessionValue", r.getMaxSessionValue());
     m.put("nightSurchargePercent", r.getNightSurchargePercent());

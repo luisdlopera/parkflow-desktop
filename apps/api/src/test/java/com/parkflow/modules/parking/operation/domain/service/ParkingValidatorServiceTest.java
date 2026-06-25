@@ -89,58 +89,13 @@ class ParkingValidatorServiceTest {
   }
 
   @Test
-  void assertCapacityAvailable_ShouldPass_WhenMaxCapacityIsZero() {
-    ParkingSite site = createSite("TEST-SITE", 0, true);
-    when(parkingSiteRepository.findByCodeOrNameForUpdate("TEST-SITE", companyId))
-        .thenReturn(Optional.of(site));
-
-    service.assertCapacityAvailable("TEST-SITE", companyId);
-  }
-
-  @Test
-  void assertCapacityAvailable_ShouldPass_WhenMaxCapacityIsNegative() {
-    ParkingSite site = createSite("TEST-SITE", -1, true);
-    when(parkingSiteRepository.findByCodeOrNameForUpdate("TEST-SITE", companyId))
-        .thenReturn(Optional.of(site));
-
-    service.assertCapacityAvailable("TEST-SITE", companyId);
-  }
-
-  @Test
-  void assertCapacityAvailable_ShouldPass_WhenBelowCapacity() {
+  void assertCapacityAvailable_ShouldPass_WhenSiteIsActive() {
     ParkingSite site = createSite("TEST-SITE", 10, true);
     when(parkingSiteRepository.findByCodeOrNameForUpdate("TEST-SITE", companyId))
         .thenReturn(Optional.of(site));
-    when(parkingSessionPort.countByStatusAndSiteAndCompanyId(eq(SessionStatus.ACTIVE), eq("TEST-SITE"), eq(companyId)))
-        .thenReturn(5L);
 
+    // Site-level capacity checking is now disabled (V022: site column removed from parking_session)
     service.assertCapacityAvailable("TEST-SITE", companyId);
-  }
-
-  @Test
-  void assertCapacityAvailable_ShouldThrow_WhenAtExactCapacity() {
-    ParkingSite site = createSite("TEST-SITE", 10, true);
-    when(parkingSiteRepository.findByCodeOrNameForUpdate("TEST-SITE", companyId))
-        .thenReturn(Optional.of(site));
-    when(parkingSessionPort.countByStatusAndSiteAndCompanyId(eq(SessionStatus.ACTIVE), eq("TEST-SITE"), eq(companyId)))
-        .thenReturn(10L);
-
-    assertThatThrownBy(() -> service.assertCapacityAvailable("TEST-SITE", companyId))
-        .isInstanceOf(OperationException.class)
-        .hasMessageContaining("Parqueadero lleno");
-  }
-
-  @Test
-  void assertCapacityAvailable_ShouldThrow_WhenOverCapacity() {
-    ParkingSite site = createSite("TEST-SITE", 10, true);
-    when(parkingSiteRepository.findByCodeOrNameForUpdate("TEST-SITE", companyId))
-        .thenReturn(Optional.of(site));
-    when(parkingSessionPort.countByStatusAndSiteAndCompanyId(eq(SessionStatus.ACTIVE), eq("TEST-SITE"), eq(companyId)))
-        .thenReturn(15L);
-
-    assertThatThrownBy(() -> service.assertCapacityAvailable("TEST-SITE", companyId))
-        .isInstanceOf(OperationException.class)
-        .hasMessageContaining("Parqueadero lleno");
   }
 
   @Test
@@ -148,9 +103,8 @@ class ParkingValidatorServiceTest {
     ParkingSite site = createSite("TEST-SITE", 10, true);
     when(parkingSiteRepository.findByCodeOrNameForUpdate("TEST-SITE", companyId))
         .thenReturn(Optional.of(site));
-    when(parkingSessionPort.countByStatusAndSiteAndCompanyId(eq(SessionStatus.ACTIVE), eq("TEST-SITE"), eq(companyId)))
-        .thenReturn(5L);
 
+    // Site-level capacity checking is now disabled (V022: site column removed from parking_session)
     service.assertCapacityAvailable("  TEST-SITE  ", companyId);
   }
 

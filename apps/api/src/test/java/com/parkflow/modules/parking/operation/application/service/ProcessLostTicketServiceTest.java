@@ -82,7 +82,6 @@ class ProcessLostTicketServiceTest {
         .vehicle(vehicle)
         .entryAt(OffsetDateTime.now().minusHours(3))
         .status(SessionStatus.ACTIVE)
-        .site("Test Site")
         .entryMode(EntryMode.VISITOR)
         .build();
 

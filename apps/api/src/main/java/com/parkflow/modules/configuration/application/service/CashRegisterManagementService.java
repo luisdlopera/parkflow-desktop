@@ -59,8 +59,7 @@ public class CashRegisterManagementService implements CashRegisterUseCase {
           .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sede no encontrada"));
       cr.setSiteRef(parkingSite);
     }
-    cr.setSite(resolveSite(site, parkingSite));
-    ensureUniqueCombination(cr.getSite(), terminal, null);
+    ensureUniqueCombination(parkingSite != null ? parkingSite.getCode() : site, terminal, null);
     cr.setCode(normalizeCode(req.code()));
     cr.setName(trimToNull(req.name()));
     cr.setTerminal(terminal);
@@ -97,8 +96,7 @@ public class CashRegisterManagementService implements CashRegisterUseCase {
     } else {
       cr.setSiteRef(null);
     }
-    cr.setSite(resolveSite(site, parkingSite));
-    ensureUniqueCombination(cr.getSite(), terminal, id);
+    ensureUniqueCombination(parkingSite != null ? parkingSite.getCode() : site, terminal, id);
     cr.setCode(normalizeCode(req.code()));
     cr.setName(trimToNull(req.name()));
     cr.setTerminal(terminal);
@@ -137,7 +135,7 @@ public class CashRegisterManagementService implements CashRegisterUseCase {
 
   private CashRegisterResponse toResponse(CashRegister cr) {
     return new CashRegisterResponse(
-        cr.getId(), cr.getSite(),
+        cr.getId(), cr.getSiteRef() != null ? cr.getSiteRef().getCode() : null,
         cr.getSiteRef() != null ? cr.getSiteRef().getId() : null,
         cr.getCode(), cr.getName(), cr.getTerminal(), cr.getLabel(),
         cr.getPrinter() != null ? cr.getPrinter().getId() : null,

@@ -102,13 +102,9 @@ class EntryValidationService {
           if (!parkingSite.isActive()) {
             throw new OperationException(HttpStatus.BAD_REQUEST, "La sede está inactiva");
           }
-          int maxCapacity = parkingSite.getMaxCapacity();
-          if (maxCapacity <= 0) return;
-          long activeSessions = parkingSessionRepository
-              .countByStatusAndSiteAndCompanyId(SessionStatus.ACTIVE, parkingSite.getName(), companyId);
-          if (activeSessions >= maxCapacity) {
-            throw new OperationException(HttpStatus.CONFLICT, "Parqueadero lleno para la sede");
-          }
+          // Note: Site-level capacity checking is temporarily disabled until
+          // ParkingSession is refactored to track site associations.
+          // See V022__drop_deprecated_columns.sql - the 'site' field was removed from parking_session.
         });
   }
 }

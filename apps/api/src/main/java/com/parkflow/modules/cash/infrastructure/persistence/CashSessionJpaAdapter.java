@@ -84,7 +84,7 @@ public class CashSessionJpaAdapter implements CashSessionPort {
 
         Optional<CashSession> findByCashRegister_IdAndStatus(UUID registerId, CashSessionStatus status);
 
-        @Query("SELECT s FROM CashSession s WHERE s.cashRegister.site = :site " +
+        @Query("SELECT s FROM CashSession s WHERE s.cashRegister.siteRef.code = :site " +
                "AND s.cashRegister.terminal = :terminal AND s.status = :status")
         Optional<CashSession> findOpenForSiteTerminal(
             @Param("site") String site, @Param("terminal") String terminal, @Param("status") CashSessionStatus status);

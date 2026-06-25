@@ -62,7 +62,7 @@ public class CashConfigurationManagementService implements CashConfigurationUseC
     public List<CashRegisterInfoResponse> listRegisters(String siteParam) {
         String site = normalizeSite(siteParam != null ? siteParam : "default");
         return cashRegisterRepository.findBySiteOrderByTerminalAsc(site).stream()
-            .map(r -> new CashRegisterInfoResponse(r.getId(), r.getSite(), r.getTerminal(), r.getLabel()))
+            .map(r -> new CashRegisterInfoResponse(r.getId(), r.getSiteRef() != null ? r.getSiteRef().getCode() : null, r.getTerminal(), r.getLabel()))
             .toList();
     }
 
@@ -91,7 +91,7 @@ public class CashConfigurationManagementService implements CashConfigurationUseC
         ticket.put("parkingName", param != null && StringUtils.hasText(param.getParkingName()) ? param.getParkingName() : "Parkflow");
         ticket.put("plate", "CAJA");
         ticket.put("vehicleType", "OTHER");
-        ticket.put("site", session.getCashRegister().getSite());
+        ticket.put("site", session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : null);
         ticket.put("lane", null);
         ticket.put("booth", null);
         ticket.put("terminal", session.getCashRegister().getTerminal());
@@ -118,14 +118,15 @@ public class CashConfigurationManagementService implements CashConfigurationUseC
     }
 
     private String groupingSiteForParams(CashSession s) {
-        if (s.getCashRegister().getSite() != null) return s.getCashRegister().getSite();
-        return "default";
+        if (s.getCashRegister().getSiteRef() != null) return s.getCashRegister().getSiteRef().getCode();
+        return "DEFAULT";
     }
 
     private Map<String, Object> baseMeta(CashSession s) {
         Map<String, Object> m = new HashMap<>();
         m.put("sessionId", s.getId().toString());
-        m.put("register", s.getCashRegister().getSite() + "/" + s.getCashRegister().getTerminal());
+        String siteCode = s.getCashRegister().getSiteRef() != null ? s.getCashRegister().getSiteRef().getCode() : "DEFAULT";
+        m.put("register", siteCode + "/" + s.getCashRegister().getTerminal());
         return m;
     }
 
@@ -142,7 +143,7 @@ public class CashConfigurationManagementService implements CashConfigurationUseC
                 : "Parkflow";
         lines.add(headline);
         lines.add("CIERRE DE CAJA — REPORTE Z (informativo)");
-        lines.add("Sede: " + session.getCashRegister().getSite());
+        lines.add("Sede: " + (session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : "DEFAULT"));
         lines.add("Terminal: " + session.getCashRegister().getTerminal());
         lines.add("Sesion: " + session.getId());
         if (StringUtils.hasText(session.getSupportDocumentNumber())) {

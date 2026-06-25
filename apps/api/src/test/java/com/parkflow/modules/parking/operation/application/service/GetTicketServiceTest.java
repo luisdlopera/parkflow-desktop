@@ -71,7 +71,6 @@ class GetTicketServiceTest {
         .rate(rate)
         .entryAt(OffsetDateTime.now().minusHours(1))
         .status(status)
-        .site("Site")
         .syncStatus(SessionSyncStatus.SYNCED)
         .entryMode(EntryMode.VISITOR)
         .hasHelmet(false)

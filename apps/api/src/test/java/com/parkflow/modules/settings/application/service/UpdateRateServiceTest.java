@@ -110,7 +110,7 @@ class UpdateRateServiceTest {
 
     service.update(rateId, req);
 
-    assertThat(updated.getSite()).isEqualTo("S1");
+    // Site field removed from Rate entity (V022__drop_deprecated_columns.sql)
     verify(rateDomainService).validateRate(updated, rateId, companyId);
     verify(settingsAuditService).log(eq(AuthAuditAction.SETTINGS_RATE_UPDATE), eq("OK"), any());
     verify(globalAuditService).record(any(), any(), any(), any());

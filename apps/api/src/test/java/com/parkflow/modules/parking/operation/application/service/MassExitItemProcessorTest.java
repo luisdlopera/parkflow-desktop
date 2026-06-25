@@ -38,7 +38,6 @@ class MassExitItemProcessorTest {
     ParkingSession session = ParkingSession.builder()
         .ticketNumber("T-1")
         .plate("ABC123")
-        .site("Site1")
         .entryAt(OffsetDateTime.now().minusHours(1))
         .vehicle(new Vehicle())
         .build();
@@ -66,7 +65,6 @@ class MassExitItemProcessorTest {
     ParkingSession session = ParkingSession.builder()
         .ticketNumber("T-2")
         .plate("XYZ789")
-        .site("Site1")
         .entryAt(OffsetDateTime.now().minusHours(1))
         .vehicle(new Vehicle())
         .build();
@@ -93,7 +91,6 @@ class MassExitItemProcessorTest {
     ParkingSession session = ParkingSession.builder()
         .ticketNumber("T-3")
         .plate("DEF456")
-        .site("Site1")
         .entryAt(OffsetDateTime.now().minusHours(1))
         .vehicle(new Vehicle())
         .build();

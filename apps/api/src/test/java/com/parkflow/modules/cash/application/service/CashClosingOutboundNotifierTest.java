@@ -128,8 +128,6 @@ class CashClosingOutboundNotifierTest {
     when(parkingParametersService.get("SiteA")).thenReturn(params);
 
     CashRegister register = new CashRegister();
-    register.setSite("SiteA");
-    register.setTerminal("Term1");
 
     AppUser operator = new AppUser();
     operator.setId(UUID.randomUUID());

@@ -64,7 +64,7 @@ public class ParkingRateJpaAdapter implements RatePort {
 
   @Repository
   interface ParkingRateJpaRepository extends JpaRepository<Rate, UUID> {
-    @Query("SELECT r FROM Rate r WHERE r.companyId = :cid AND (:site IS NULL OR r.site = :site OR r.site IS NULL) "
+    @Query("SELECT r FROM Rate r LEFT JOIN r.siteRef s WHERE r.companyId = :cid AND (:site IS NULL OR s.code = :site OR r.siteRef IS NULL) "
            + "AND (:q IS NULL OR :q = '' OR LOWER(r.name) LIKE LOWER(CONCAT('%', :q, '%'))) "
            + "AND (:active IS NULL OR r.isActive = :active) "
            + "AND (:category IS NULL OR r.category = :category)")
@@ -76,7 +76,7 @@ public class ParkingRateJpaAdapter implements RatePort {
         @Param("cid") UUID companyId,
         Pageable pageable);
 
-    @Query("SELECT r FROM Rate r WHERE r.companyId = :cid AND r.site = :site AND r.isActive = true AND r.id <> :excludeId "
+    @Query("SELECT r FROM Rate r LEFT JOIN r.siteRef s WHERE r.companyId = :cid AND (s.code = :site OR r.siteRef IS NULL) AND r.isActive = true AND r.id <> :excludeId "
            + "AND (r.vehicleType IS NULL OR :vehicleType IS NULL OR r.vehicleType = :vehicleType)")
     List<Rate> findActiveForConflictCheck(
         @Param("site") String site,
@@ -85,23 +85,24 @@ public class ParkingRateJpaAdapter implements RatePort {
         @Param("cid") UUID companyId);
 
     @Query(value = """
-        SELECT * FROM rate r
+        SELECT r.* FROM rate r
+        LEFT JOIN parking_site s ON r.site_id = s.id
         WHERE r.is_active = true
           AND r.company_id = :cid
-          AND (r.site = :site OR r.site IS NULL)
+          AND (s.code = :site OR r.site_id IS NULL)
           AND (r.vehicle_type = :vehicleType OR r.vehicle_type IS NULL)
-        ORDER BY 
-          CASE 
-            WHEN r.site = :site AND r.vehicle_type = :vehicleType THEN 1
-            WHEN r.site = :site AND r.vehicle_type IS NULL THEN 2
-            WHEN r.site IS NULL AND r.vehicle_type = :vehicleType THEN 3
+        ORDER BY
+          CASE
+            WHEN s.code = :site AND r.vehicle_type = :vehicleType THEN 1
+            WHEN s.code = :site AND r.vehicle_type IS NULL THEN 2
+            WHEN r.site_id IS NULL AND r.vehicle_type = :vehicleType THEN 3
             ELSE 4
           END,
           r.created_at ASC
         LIMIT 1
         """, nativeQuery = true)
     Optional<Rate> findFirstApplicableRate(
-        @Param("site") String site, 
+        @Param("site") String site,
         @Param("vehicleType") String vehicleType,
         @Param("cid") UUID companyId);
 

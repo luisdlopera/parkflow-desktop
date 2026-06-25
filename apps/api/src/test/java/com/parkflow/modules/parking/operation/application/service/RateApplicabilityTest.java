@@ -63,7 +63,6 @@ class RateApplicabilityTest {
     Rate r = new Rate();
     r.setActive(true);
     r.setName("T");
-    r.setSite("DEFAULT");
     r.setRateType(RateType.HOURLY);
     r.setVehicleType("CAR");
     r.setAmount(new BigDecimal("1000.00"));

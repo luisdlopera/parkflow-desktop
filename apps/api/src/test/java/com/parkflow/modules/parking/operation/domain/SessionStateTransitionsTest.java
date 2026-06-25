@@ -285,7 +285,6 @@ class SessionStateTransitionsTest {
         .plate("TEST123")
         .vehicle(vehicle)
         .companyId(companyId)
-        .site("TEST-SITE")
         .status(SessionStatus.ACTIVE)
         .syncStatus(SessionSyncStatus.PENDING)
         .entryAt(OffsetDateTime.now())

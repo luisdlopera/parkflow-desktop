@@ -18,7 +18,8 @@ public class CashSessionResponseMapper {
   public Map<String, Object> baseMeta(CashSession session) {
     Map<String, Object> meta = new HashMap<>();
     meta.put("sessionId", session.getId().toString());
-    meta.put("register", session.getCashRegister().getSite() + "/" + session.getCashRegister().getTerminal());
+    String siteCode = session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : "DEFAULT";
+    meta.put("register", siteCode + "/" + session.getCashRegister().getTerminal());
     return meta;
   }
 
@@ -45,7 +46,7 @@ public class CashSessionResponseMapper {
     return new CashSessionResponse(
         session.getId(),
         new CashRegisterInfoResponse(
-            register.getId(), register.getSite(), register.getTerminal(), register.getLabel()),
+            register.getId(), register.getSiteRef() != null ? register.getSiteRef().getCode() : null, register.getTerminal(), register.getLabel()),
         session.getOperator().getId(),
         session.getOperator().getName(),
         session.getStatus().name(),

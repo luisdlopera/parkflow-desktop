@@ -100,7 +100,6 @@ class SettingsRateServiceTest {
     rate.setRateType(RateType.HOURLY);
     rate.setCategory(RateCategory.STANDARD);
     rate.setAmount(BigDecimal.TEN);
-    rate.setSite("S1");
     rate.setActive(true);
     return rate;
   }

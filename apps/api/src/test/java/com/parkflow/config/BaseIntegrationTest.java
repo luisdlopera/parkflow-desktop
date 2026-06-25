@@ -163,7 +163,6 @@ public abstract class BaseIntegrationTest {
         rate.setGraceMinutes(0);
         rate.setToleranceMinutes(0);
         rate.setFractionMinutes(60);
-        rate.setSite("Test Site");
         rate.setSiteRef(site);
         rate.setBaseValue(BigDecimal.ZERO);
         rate.setBaseMinutes(0);
@@ -185,8 +184,6 @@ public abstract class BaseIntegrationTest {
         admin.setEmail("admin@example.com");
         admin.setDocument("DOC1");
         admin.setPhone("3000000000");
-        admin.setSite("Test Site");
-        admin.setTerminal("TERM1");
         admin.setRole(UserRole.ADMIN);
         admin.setPasswordHash(passwordHashService.encodePassword("admin123"));
         admin.setActive(true);
@@ -200,8 +197,6 @@ public abstract class BaseIntegrationTest {
 
         CashRegister register = new CashRegister();
         register.setId(FIXED_ID);
-        register.setSite("Test Site");
-        register.setTerminal("TERM1");
         register.setCode("REG1");
         register.setLabel("Register 1");
         register.setName("Register 1");

@@ -47,7 +47,6 @@ public class UpdateRateService implements UpdateRateUseCase {
     if (req.siteId() != null) {
       rate.setSiteRef(parkingSiteRepository.findById(req.siteId())
           .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sede no encontrada")));
-      rate.setSite(rate.getSiteRef().getCode());
     }
 
     rateDomainService.validateRate(rate, id, companyId);

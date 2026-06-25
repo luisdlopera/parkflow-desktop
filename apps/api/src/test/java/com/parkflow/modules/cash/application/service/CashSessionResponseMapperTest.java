@@ -31,8 +31,6 @@ class CashSessionResponseMapperTest {
   void baseMeta_ShouldReturnCorrectMap() {
     // Arrange
     CashRegister register = new CashRegister();
-    register.setSite("SiteA");
-    register.setTerminal("Terminal1");
 
     CashSession session = new CashSession();
     UUID sessionId = UUID.randomUUID();
@@ -105,8 +103,6 @@ class CashSessionResponseMapperTest {
     // Arrange
     CashRegister register = new CashRegister();
     register.setId(UUID.randomUUID());
-    register.setSite("MainSite");
-    register.setTerminal("Term1");
     register.setLabel("Main Terminal");
 
     AppUser operator = new AppUser();
