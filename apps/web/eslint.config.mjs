@@ -1,9 +1,10 @@
+import baseConfig from "@parkflow/config/eslint";
 import coreWebVitals from "eslint-config-next/core-web-vitals";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 
 export default [
-  { ignores: [".next/**", "node_modules/**"] },
+  ...baseConfig,
   ...coreWebVitals,
   {
     plugins: {
@@ -29,7 +30,7 @@ export default [
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "error",
       "@typescript-eslint/no-explicit-any": "warn",
-      
+
       // Accessibility rules specific to our HeroUI components
       "jsx-a11y/control-has-associated-label": [
         "warn",
