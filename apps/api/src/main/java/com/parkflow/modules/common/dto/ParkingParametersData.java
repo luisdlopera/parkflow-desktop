@@ -31,6 +31,7 @@ public class ParkingParametersData {
   private String ticketFormat;
   private Integer defaultPaperWidthMm;
   private String defaultPrinterName;
+  private String printerType;
   private Boolean offlineModeEnabled;
   private Integer syncIntervalSeconds;
   private Integer printTimeoutSeconds;

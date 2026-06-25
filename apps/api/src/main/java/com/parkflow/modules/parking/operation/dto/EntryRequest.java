@@ -31,7 +31,8 @@ public record EntryRequest(
     List<@Size(max = 100) String> conditionChecklist,
     List<@Size(max = 500) String> conditionPhotoUrls,
     // Custodied items (helmets) for motorcycle entries
-    List<CustodiedItemRequest> custodiedItems) {
+    List<CustodiedItemRequest> custodiedItems,
+    @Size(max = 20) String customerPhoneNumber) {
 
   public EntryRequest(
       String idempotencyKey,
@@ -75,7 +76,8 @@ public record EntryRequest(
         vehicleCondition,
         conditionChecklist,
         conditionPhotoUrls,
-        java.util.Collections.emptyList()
+        java.util.Collections.emptyList(),
+        null
     );
   }
 }
