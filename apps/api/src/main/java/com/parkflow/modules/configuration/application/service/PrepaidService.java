@@ -1,4 +1,4 @@
-package com.parkflow.modules.configuration.service;
+package com.parkflow.modules.configuration.application.service;
 
 import com.parkflow.modules.configuration.dto.PrepaidBalancePurchaseRequest;
 import com.parkflow.modules.configuration.dto.PrepaidBalanceResponse;
@@ -23,6 +23,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * @deprecated Use {@link BillingManagementFacadeService} for new code.
+ *             This service is maintained for backward compatibility.
+ */
+@Deprecated(since = "2.0", forRemoval = false)
 @Service
 @RequiredArgsConstructor
 public class PrepaidService implements PrepaidUseCase {

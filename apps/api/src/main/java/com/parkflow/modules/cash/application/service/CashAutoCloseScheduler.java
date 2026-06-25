@@ -1,9 +1,8 @@
-package com.parkflow.modules.cash.service;
+package com.parkflow.modules.cash.application.service;
 
 import com.parkflow.modules.auth.security.AuthPrincipal;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.auth.domain.UserRole;
-import com.parkflow.modules.cash.application.service.CashSessionManagementService;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.domain.CashSessionStatus;
 import com.parkflow.modules.cash.dto.CashCloseRequest;
@@ -37,26 +36,26 @@ public class CashAutoCloseScheduler {
     @Transactional
     public void autoCloseExpiredSessions() {
         log.info("Starting auto-close expired cash sessions job...");
-        
+
         List<CashSession> openSessions = cashSessionRepository.findByStatus(CashSessionStatus.OPEN);
         int closedCount = 0;
-        
+
         for (CashSession session : openSessions) {
             try {
                 String site = session.getCashRegister().getSite();
                 if (site == null) site = "default";
-                
+
                 // Set Tenant context
                 TenantContext.setTenantId(session.getCompanyId());
-                
+
                 ParkingParametersData params = parkingParametersService.get(site);
                 Integer maxHours = params != null ? params.getCashMaxSessionHours() : null;
-                
+
                 if (maxHours != null && maxHours > 0) {
                     OffsetDateTime threshold = OffsetDateTime.now().minusHours(maxHours);
                     if (session.getOpenedAt().isBefore(threshold)) {
                         log.info("Session {} has exceeded {} hours. Auto-closing...", session.getId(), maxHours);
-                        
+
                         // Impersonate the operator who opened the session to bypass security checks cleanly
                         AuthPrincipal principal = new AuthPrincipal(
                             session.getOperator().getId(),
@@ -67,7 +66,7 @@ public class CashAutoCloseScheduler {
                         );
                         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(principal, null, principal.authorities());
                         SecurityContextHolder.getContext().setAuthentication(auth);
-                        
+
                         // We must first count (archivar). The system expects a count before close.
                         // We will set 0 for all physical counts since it's an auto-close.
                         if (session.getCountedAt() == null) {
@@ -78,7 +77,7 @@ public class CashAutoCloseScheduler {
                             );
                             cashSessionManagementService.submitCount(session.getId(), countRequest);
                         }
-                        
+
                         CashCloseRequest closeRequest = new CashCloseRequest(
                             "Auto-Cierre por expiración de tiempo máximo de turno (" + maxHours + " horas).",
                             "SISTEMA",
@@ -95,7 +94,7 @@ public class CashAutoCloseScheduler {
                 TenantContext.clear();
             }
         }
-        
+
         log.info("Finished auto-close job. Sessions closed: {}", closedCount);
     }
 }

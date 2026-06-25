@@ -2,7 +2,7 @@ import { authBase } from "@/lib/api/config";
 import { authLoginRequestSchema, authRefreshRequestSchema } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type { LoginRequest, LoginResponse } from "@parkflow/types";
-import type { StoredSession } from "../types";
+import type { StoredSession } from "@/features/auth/types";
 import { loadSession, saveSession, clearSession } from "../services/auth-storage.service";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 

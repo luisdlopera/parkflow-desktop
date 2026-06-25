@@ -6,7 +6,7 @@ import {
 } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type { PaymentMethodCode } from "@/lib/payment-method-catalog";
-import type { SplitPaymentRow } from "../hooks/useSplitPayment";
+import type { SplitPaymentRow } from "@/features/vehicle-exit/hooks/useSplitPayment";
 
 import { opsBase } from "@/lib/api/config";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";

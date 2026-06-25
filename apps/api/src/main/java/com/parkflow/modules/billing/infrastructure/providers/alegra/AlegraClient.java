@@ -139,6 +139,24 @@ public class AlegraClient {
     }
   }
 
+  public Map createNote(String invoiceId, Map<String, Object> note, Map<String, String> credentials) {
+    HttpHeaders headers = buildHeaders(credentials);
+    HttpEntity<Map<String, Object>> entity = new HttpEntity<>(note, headers);
+
+    try {
+      ResponseEntity<Map> response = restTemplate.exchange(
+          BASE_URL + "/invoices/" + invoiceId + "/notes",
+          HttpMethod.POST,
+          entity,
+          Map.class
+      );
+      return response.getBody();
+    } catch (Exception e) {
+      log.error("[Alegra] createNote for invoice {} failed: {}", invoiceId, e.getMessage());
+      throw new AlegraApiException("Failed to create note for invoice " + invoiceId, e);
+    }
+  }
+
   private HttpHeaders buildHeaders(Map<String, String> credentials) {
     String email = credentials.getOrDefault("email", "");
     String token = credentials.getOrDefault("token", "");

@@ -306,6 +306,17 @@ app/(dashboard)/new-feature/
 └── layout.tsx                (Optional, only if route has children)
 ```
 
+**Issues Found (Must Fix for 100/100)**
+1.  **Missing `loading.tsx` in 10 routes**:
+    -   Routes: `(auth)/login/`, `change-password/`, `forgot-password/`, `reset-password/`, `onboarding/`, `(admin)/admin/audits/`, facturacion children
+    -   Impact: No skeleton/spinner states, feels slow to users
+    -   Fix: Add simple loading.tsx per route (~1 hour total)
+
+2.  **Missing `error.tsx` in 2 routes**:
+    -   Routes: `(dashboard)/support/`, `(dashboard)/support/inbox/`
+    -   Impact: Network errors crash page without fallback UI
+    -   Fix: Add error.tsx per route (~20 mins total)
+
 **loading.tsx template**:
 ```tsx
 import { Skeleton } from "@heroui/react";
@@ -355,6 +366,7 @@ export default function Error({
 - [ ] New route has `loading.tsx`
 - [ ] New route has `error.tsx`
 - [ ] Layouts/Parents also have error boundaries (no orphaned routes)
+- [ ] **No `shadow-*` or `drop-shadow-*` utilities used** (2 components: `DashboardPageClient.tsx:98`, `ScrollToTopButton.tsx:46`)
 
 ---
 

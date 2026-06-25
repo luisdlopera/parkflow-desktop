@@ -5,7 +5,7 @@ import com.parkflow.modules.parking.locker.dto.BatchLockerRequest;
 import com.parkflow.modules.parking.locker.dto.LockerRequest;
 import com.parkflow.modules.parking.locker.dto.LockerResponse;
 import com.parkflow.modules.parking.locker.dto.PatchLockerRequest;
-import com.parkflow.modules.parking.locker.service.LockerService;
+import com.parkflow.modules.parking.locker.application.service.LockerService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;

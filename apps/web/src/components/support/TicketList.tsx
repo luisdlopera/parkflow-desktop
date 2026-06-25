@@ -25,16 +25,18 @@ export function TicketList() {
       {tickets.length === 0 && <p className="text-default-500">No open tickets found.</p>}
       
       {tickets.map((ticket: any) => (
-        <Card key={ticket.id} isPressable className="w-full">
+        <Card key={ticket.id} className="w-full cursor-pointer hover:bg-default-100 transition-colors">
           <Card.Content className="flex flex-row items-center gap-4">
-            <Avatar name={ticket.customerName || "Customer"} />
+            <Avatar>
+              <Avatar.Fallback>{(ticket.customerName || "Customer").charAt(0).toUpperCase()}</Avatar.Fallback>
+            </Avatar>
             <div className="flex flex-col flex-1 items-start">
               <span className="font-bold text-small">{ticket.customerName || "Customer"}</span>
               <span className="text-default-500 text-tiny">{ticket.title}</span>
             </div>
             <div className="flex flex-col items-end gap-1">
               <span className="text-tiny text-default-400">{ticket.ticketNumber}</span>
-              <Chip size="sm" color={ticket.priority === "CRITICAL" ? "danger" : "primary"}>
+              <Chip size="sm" color={ticket.priority === "CRITICAL" ? "danger" : "default"}>
                 {ticket.status}
               </Chip>
             </div>

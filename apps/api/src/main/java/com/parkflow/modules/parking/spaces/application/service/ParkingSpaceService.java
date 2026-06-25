@@ -1,4 +1,4 @@
-package com.parkflow.modules.parking.spaces.service;
+package com.parkflow.modules.parking.spaces.application.service;
 
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
@@ -132,19 +132,19 @@ public class ParkingSpaceService {
 
     if (newCapacity > activeSpaces) {
       int toActivate = (int) (newCapacity - activeSpaces);
-      
+
       List<ParkingSpace> inactiveSpaces = allSpaces.stream()
           .filter(s -> s.getStatus() == ParkingSpaceStatus.INACTIVE)
           .sorted(Comparator.comparingInt(ParkingSpace::getSortOrder))
           .toList();
-          
+
       for (ParkingSpace space : inactiveSpaces) {
         if (toActivate == 0) break;
         space.setStatus(ParkingSpaceStatus.ACTIVE);
         parkingSpaceRepository.save(space);
         toActivate--;
       }
-      
+
       if (toActivate > 0) {
         int maxSortOrder = allSpaces.stream().mapToInt(ParkingSpace::getSortOrder).max().orElse(0);
         int next = maxSortOrder + 1;
@@ -172,7 +172,7 @@ public class ParkingSpaceService {
         if (parkingSpaceAssignmentRepository.existsByParkingSpace_IdAndReleasedAtIsNull(space.getId())) {
           continue;
         }
-        
+
         space.setStatus(ParkingSpaceStatus.INACTIVE);
         parkingSpaceRepository.save(space);
         toDisable--;

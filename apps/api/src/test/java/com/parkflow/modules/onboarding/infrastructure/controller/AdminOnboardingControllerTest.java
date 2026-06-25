@@ -1,4 +1,4 @@
-package com.parkflow.modules.onboarding.presentation.controllers;
+package com.parkflow.modules.onboarding.infrastructure.controller;
 
 import static org.junit.jupiter.api.Assertions.*;
 

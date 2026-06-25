@@ -86,6 +86,11 @@ public class AlegraInvoiceProvider implements InvoiceProviderPort {
   }
 
   @Override
+  public byte[] getInvoicePdf(String externalId, InvoiceProviderConfig config) {
+    return alegraClient.getInvoicePdf(externalId, config.getEncryptedCredentials());
+  }
+
+  @Override
   public void cancelInvoice(String externalId, String reason, InvoiceProviderConfig config) {
     alegraClient.voidInvoice(externalId, config.getEncryptedCredentials());
     log.info("[Alegra] Invoice voided: {}", externalId);
@@ -93,24 +98,42 @@ public class AlegraInvoiceProvider implements InvoiceProviderPort {
 
   @Override
   public ExternalInvoiceResult createCreditNote(InvoiceNote note, InvoiceProviderConfig config) {
-    // TODO: Implement credit note in Phase 1.5
-    // 1. Fetch original Invoice from note.invoiceId
-    // 2. Build credit note request (type: CREDIT, reason, amount)
-    // 3. POST to /invoices/{externalId}/credit-notes
-    // 4. Extract CUFE from response
-    log.info("[Alegra] Credit note creation - not yet implemented for invoice {}", note.getInvoiceId());
-    throw new UnsupportedOperationException("Credit notes via Alegra coming in Phase 1.5");
+    try {
+      Map<String, Object> request = new java.util.HashMap<>();
+      request.put("type", "CREDIT");
+      request.put("reason", note.getReason());
+      request.put("amount", note.getAmount());
+      var response = alegraClient.createNote(note.getInvoiceId().toString(), request, config.getEncryptedCredentials());
+      log.info("[Alegra] Credit note created: invoiceId={} noteId={}", note.getInvoiceId(), response.get("id"));
+      return ExternalInvoiceResult.of(
+          String.valueOf(response.get("id")),
+          String.valueOf(response.get("number")),
+          (String) response.get("cufe")
+      );
+    } catch (Exception e) {
+      log.error("[Alegra] Failed to create credit note for invoice {}: {}", note.getInvoiceId(), e.getMessage());
+      throw new RuntimeException("Credit note creation failed: " + e.getMessage(), e);
+    }
   }
 
   @Override
   public ExternalInvoiceResult createDebitNote(InvoiceNote note, InvoiceProviderConfig config) {
-    // TODO: Implement debit note in Phase 1.5
-    // 1. Fetch original Invoice from note.invoiceId
-    // 2. Build debit note request (type: DEBIT, reason, amount)
-    // 3. POST to /invoices/{externalId}/debit-notes
-    // 4. Extract CUFE from response
-    log.info("[Alegra] Debit note creation - not yet implemented for invoice {}", note.getInvoiceId());
-    throw new UnsupportedOperationException("Debit notes via Alegra coming in Phase 1.5");
+    try {
+      Map<String, Object> request = new java.util.HashMap<>();
+      request.put("type", "DEBIT");
+      request.put("reason", note.getReason());
+      request.put("amount", note.getAmount());
+      var response = alegraClient.createNote(note.getInvoiceId().toString(), request, config.getEncryptedCredentials());
+      log.info("[Alegra] Debit note created: invoiceId={} noteId={}", note.getInvoiceId(), response.get("id"));
+      return ExternalInvoiceResult.of(
+          String.valueOf(response.get("id")),
+          String.valueOf(response.get("number")),
+          (String) response.get("cufe")
+      );
+    } catch (Exception e) {
+      log.error("[Alegra] Failed to create debit note for invoice {}: {}", note.getInvoiceId(), e.getMessage());
+      throw new RuntimeException("Debit note creation failed: " + e.getMessage(), e);
+    }
   }
 
   @Override
@@ -124,18 +147,32 @@ public class AlegraInvoiceProvider implements InvoiceProviderPort {
   }
 
   private String resolveAlegraContactId(Invoice invoice, InvoiceProviderConfig config) {
-    // TODO: Implement full client sync:
-    // 1. Fetch Client entity by invoice.getClientId()
-    // 2. Convert to BillingCustomerDto
-    // 3. Call createCustomer(dto, config) to sync with Alegra
-    // 4. Cache the mapping (clientId → alegraContactId) in invoice_provider_mappings table
-    // 5. Return alegraContactId from step 3 or cache
-    //
-    // For now, return generic consumer contact for all invoices
     if (invoice.getClientId() == null) {
       return "consumer-final";
     }
-    // Phase 1.5: Will sync Client.document (NIT) and Client.name with Alegra
-    return "consumer-final";
+
+    var client = clientPort.findById(invoice.getClientId()).orElse(null);
+    if (client == null) {
+      log.warn("[Alegra] Client {} not found, using generic consumer", invoice.getClientId());
+      return "consumer-final";
+    }
+
+    try {
+      BillingCustomerDto customer = BillingCustomerDto.builder()
+          .document(client.getDocument())
+          .documentType(client.getDocumentType() != null ? client.getDocumentType() : "CC")
+          .name(client.getName())
+          .email(client.getEmail())
+          .phone(client.getPhone())
+          .countryCode(config.getCountryCode().name())
+          .build();
+
+      String alegraContactId = createCustomer(customer, config);
+      log.info("[Alegra] Client {} synced to Alegra contact {}", client.getId(), alegraContactId);
+      return alegraContactId;
+    } catch (Exception e) {
+      log.warn("[Alegra] Failed to sync client {} to Alegra, falling back to generic", client.getId(), e);
+      return "consumer-final";
+    }
   }
 }

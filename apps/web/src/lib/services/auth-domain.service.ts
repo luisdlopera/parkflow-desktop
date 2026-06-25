@@ -1,7 +1,7 @@
 import type { AuthUser, Permission } from "@parkflow/types";
 import { loadSession, saveSession } from "./auth-storage.service";
 import { refreshIfNeeded, authHeadersApiKey } from "../api/auth.api";
-import type { AuthHeaderOptions } from "../types";
+import type { AuthHeaderOptions } from "@/features/auth/types";
 import { safeStorage } from "@/lib/utils/storage";
 
 

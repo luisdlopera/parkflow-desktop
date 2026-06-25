@@ -8,7 +8,7 @@ import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;
 import com.parkflow.modules.onboarding.domain.OnboardingProgress;
 import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.configuration.service.OperationalConfigurationService;
+import com.parkflow.modules.configuration.application.service.OperationalConfigurationService;
 import com.parkflow.modules.licensing.enums.OperationalProfile;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;

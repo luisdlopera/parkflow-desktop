@@ -10,6 +10,7 @@ import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ public class FindActiveSessionService implements FindActiveSessionUseCase {
   private final ParkingSessionPort parkingSessionPort;
   private final ComplexPricingPort complexPricingPort;
   private final CustodiedItemPort custodiedItemRepository;
-  private final com.parkflow.modules.parking.spaces.service.ParkingSpaceService parkingSpaceService;
+  private final ParkingSpaceService parkingSpaceService;
 
   @Override
   @Transactional(readOnly = true)

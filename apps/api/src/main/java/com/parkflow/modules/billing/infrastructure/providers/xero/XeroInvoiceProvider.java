@@ -27,6 +27,7 @@ public class XeroInvoiceProvider implements InvoiceProviderPort {
   @Override public void updateCustomer(String id, BillingCustomerDto c, InvoiceProviderConfig cfg) { throw notImpl(); }
   @Override public ExternalInvoiceResult createInvoice(Invoice i, InvoiceProviderConfig cfg) { throw notImpl(); }
   @Override public ExternalInvoiceResult getInvoice(String id, InvoiceProviderConfig cfg) { throw notImpl(); }
+  @Override public byte[] getInvoicePdf(String id, InvoiceProviderConfig cfg) { throw notImpl(); }
   @Override public void cancelInvoice(String id, String r, InvoiceProviderConfig cfg) { throw notImpl(); }
   @Override public ExternalInvoiceResult createCreditNote(InvoiceNote n, InvoiceProviderConfig cfg) { throw notImpl(); }
   @Override public ExternalInvoiceResult createDebitNote(InvoiceNote n, InvoiceProviderConfig cfg) { throw notImpl(); }

@@ -1,4 +1,4 @@
-package com.parkflow.modules.configuration.service;
+package com.parkflow.modules.configuration.application.service;
 
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.licensing.enums.OperationalProfile;
@@ -32,7 +32,7 @@ public class OperationalConfigurationService implements OperationalValidationUse
         this.companyPort = companyPort;
         this.policyMap = policies.stream()
                 .collect(Collectors.toMap(OperationalProfilePolicy::getProfile, Function.identity()));
-        log.info("[OperationalConfigurationService] Initialized with {} operational profile policies: {}", 
+        log.info("[OperationalConfigurationService] Initialized with {} operational profile policies: {}",
                 policyMap.size(), policyMap.keySet());
     }
 
@@ -47,11 +47,11 @@ public class OperationalConfigurationService implements OperationalValidationUse
     public Map<String, Object> getOperationConfiguration(UUID companyId) {
         OperationalProfile profile = getOperationalProfile(companyId);
         log.debug("[OperationalProfileResolver] Resolving operational configuration for company {} with profile {}", companyId, profile);
-        
+
         OperationalProfilePolicy policy = getPolicyOrThrow(profile);
         Map<String, Object> config = policy.getDerivedConfiguration();
         log.debug("[EntryFlowConfiguration] Resolved operational flow settings: {}", config);
-        
+
         return config;
     }
 
@@ -59,10 +59,10 @@ public class OperationalConfigurationService implements OperationalValidationUse
     public void validateVehicleType(UUID companyId, String vehicleType) {
         OperationalProfile profile = getOperationalProfile(companyId);
         log.info("[VehicleTypePolicy] Validating vehicle type '{}' against profile '{}' for company {}", vehicleType, profile, companyId);
-        
+
         OperationalProfilePolicy policy = getPolicyOrThrow(profile);
         policy.validateEntry(vehicleType, null, null, null, null);
-        
+
         log.info("[VehicleTypePolicy] Validation SUCCESS for type '{}'", vehicleType);
     }
 
@@ -70,17 +70,17 @@ public class OperationalConfigurationService implements OperationalValidationUse
     public void validateAdvancedFields(UUID companyId, String lane, String terminal, String cashier) {
         OperationalProfile profile = getOperationalProfile(companyId);
         OperationalProfilePolicy policy = getPolicyOrThrow(profile);
-        
+
         log.info("[OperationalRules] Checking advanced fields for company {} and profile {}", companyId, profile);
-        
+
         if (!policy.hasCapability(OperationalCapability.LANE_SELECTION) && lane != null && !lane.isBlank()) {
             log.warn("[OperationalRules] Warning: Lane selection is disabled but lane '{}' was provided. Ignoring.", lane);
         }
-        
+
         if (!policy.hasCapability(OperationalCapability.TERMINAL_SELECTION) && terminal != null && !terminal.isBlank()) {
             log.warn("[OperationalRules] Warning: Terminal selection is disabled but terminal '{}' was provided. Ignoring.", terminal);
         }
-        
+
         log.info("[FeatureVisibility] All operational visibility checks passed");
     }
 

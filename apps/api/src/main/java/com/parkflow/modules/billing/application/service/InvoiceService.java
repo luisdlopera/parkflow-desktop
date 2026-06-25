@@ -303,6 +303,29 @@ public class InvoiceService {
         .build();
   }
 
+  public byte[] getInvoicePdf(UUID invoiceId, UUID companyId) {
+    Invoice invoice = invoicePort.findByIdAndCompanyId(invoiceId, companyId)
+        .orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
+
+    if (invoice.getExternalId() == null) {
+      throw new IllegalStateException("Invoice has no external ID — not sent to provider yet");
+    }
+
+    InvoiceProviderConfig config = providerResolver.resolveConfigFor(companyId);
+    InvoiceProviderPort provider = providerResolver.resolveFor(companyId);
+    InvoiceProviderConfig decryptedConfig = decryptConfig(config);
+
+    long start = System.currentTimeMillis();
+    try {
+      byte[] pdf = provider.getInvoicePdf(invoice.getExternalId(), decryptedConfig);
+      recordSync(invoice, "GET_PDF", null, null, 200, null, System.currentTimeMillis() - start);
+      return pdf;
+    } catch (Exception e) {
+      recordSync(invoice, "GET_PDF", null, null, 500, e.getMessage(), System.currentTimeMillis() - start);
+      throw new RuntimeException("Failed to download PDF for invoice " + invoiceId + ": " + e.getMessage(), e);
+    }
+  }
+
   public static class InvoiceNotFoundException extends RuntimeException {
     public InvoiceNotFoundException(UUID id) {
       super("Invoice not found: " + id);

@@ -80,12 +80,10 @@ public class InvoiceController {
   @Operation(summary = "Download invoice PDF from provider")
   public ResponseEntity<byte[]> downloadPdf(@PathVariable UUID id) {
     UUID companyId = TenantContext.getTenantId();
-    // TODO: Implement PDF download from provider
-    // 1. Get invoice by id
-    // 2. Get provider from invoice.getProviderType()
-    // 3. Call provider.getPdf(externalId)
-    // 4. Return as application/pdf
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-        .body(null);
+    byte[] pdfContent = invoiceService.getInvoicePdf(id, companyId);
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_PDF)
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"invoice-" + id + ".pdf\"")
+        .body(pdfContent);
   }
 }

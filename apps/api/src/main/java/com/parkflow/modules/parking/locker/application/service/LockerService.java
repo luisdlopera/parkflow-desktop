@@ -1,4 +1,4 @@
-package com.parkflow.modules.parking.locker.service;
+package com.parkflow.modules.parking.locker.application.service;
 
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.common.exception.OperationException;

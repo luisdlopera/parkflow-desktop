@@ -1,4 +1,4 @@
-package com.parkflow.modules.auth.presentation.controllers;
+package com.parkflow.modules.auth.infrastructure.controller;
 
 import com.parkflow.modules.auth.dto.*;
 import com.parkflow.modules.auth.application.port.in.LoginUseCase;

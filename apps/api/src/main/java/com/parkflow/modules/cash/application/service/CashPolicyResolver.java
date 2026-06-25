@@ -1,4 +1,4 @@
-package com.parkflow.modules.cash.service;
+package com.parkflow.modules.cash.application.service;
 
 import com.parkflow.config.CashModuleProperties;
 import com.parkflow.modules.common.dto.ParkingParametersData;

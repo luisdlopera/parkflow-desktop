@@ -1,4 +1,4 @@
-package com.parkflow.modules.configuration.service;
+package com.parkflow.modules.configuration.application.service;
 
 import com.parkflow.modules.configuration.dto.AgreementRequest;
 import com.parkflow.modules.configuration.dto.AgreementResponse;
@@ -20,6 +20,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * @deprecated Use {@link BillingManagementFacadeService} for new code.
+ *             This service is maintained for backward compatibility.
+ */
+@Deprecated(since = "2.0", forRemoval = false)
 @Service
 @RequiredArgsConstructor
 public class AgreementService implements AgreementUseCase {
@@ -80,14 +85,14 @@ public class AgreementService implements AgreementUseCase {
     Agreement a = findOrThrow(id);
     String before = "";
     try { before = objectMapper.writeValueAsString(toResponse(a)); } catch(Exception e) {}
-    
+
     if (repo.existsByCodeAndIdNotAndCompanyId(req.code(), id, a.getCompanyId())) {
       throw new OperationException(HttpStatus.CONFLICT,
           "Ya existe otro convenio con el código: " + req.code());
     }
     fromRequest(req, a);
     a = repo.save(a);
-    
+
     try {
         globalAuditService.record(
             com.parkflow.modules.audit.domain.AuditAction.EDITAR,
@@ -107,13 +112,13 @@ public class AgreementService implements AgreementUseCase {
     a.setActive(active);
     a.setUpdatedAt(OffsetDateTime.now());
     a = repo.save(a);
-    
+
     globalAuditService.record(
         com.parkflow.modules.audit.domain.AuditAction.ELIMINAR,
         "active=" + previous,
         "active=" + active,
         "Agreement status changed: " + id);
-        
+
     return toResponse(a);
   }
 

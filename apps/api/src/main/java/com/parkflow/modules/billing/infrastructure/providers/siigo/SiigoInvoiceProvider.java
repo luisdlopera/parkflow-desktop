@@ -52,6 +52,11 @@ public class SiigoInvoiceProvider implements InvoiceProviderPort {
   }
 
   @Override
+  public byte[] getInvoicePdf(String externalId, InvoiceProviderConfig config) {
+    throw notImplemented();
+  }
+
+  @Override
   public void cancelInvoice(String externalId, String reason, InvoiceProviderConfig config) {
     throw notImplemented();
   }

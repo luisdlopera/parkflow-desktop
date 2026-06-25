@@ -1,4 +1,4 @@
-import type { StoredSession } from "../types";
+import type { StoredSession } from "@/features/auth/types";
 
 const STORAGE_KEY = "parkflow.auth.session";
 

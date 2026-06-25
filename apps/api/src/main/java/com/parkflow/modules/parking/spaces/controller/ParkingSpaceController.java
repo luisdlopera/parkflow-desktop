@@ -5,7 +5,7 @@ import com.parkflow.modules.parking.spaces.dto.PatchParkingSpaceRequest;
 import com.parkflow.modules.parking.spaces.dto.ParkingSpaceDto;
 import com.parkflow.modules.parking.spaces.dto.ParkingSpaceOccupancySummaryResponse;
 import com.parkflow.modules.parking.spaces.dto.ResizeCapacityRequest;
-import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
+import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;

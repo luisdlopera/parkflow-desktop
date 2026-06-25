@@ -3,7 +3,7 @@ package com.parkflow.modules.configuration.application.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.audit.domain.AuditAction;
-import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.audit.application.service.AuditService;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.configuration.application.port.in.ThemeConfigurationUseCase;

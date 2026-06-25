@@ -1,4 +1,4 @@
-package com.parkflow.modules.configuration.service;
+package com.parkflow.modules.configuration.application.service;
 
 import com.parkflow.modules.configuration.dto.MonthlyContractRequest;
 import com.parkflow.modules.configuration.dto.MonthlyContractResponse;
@@ -25,6 +25,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * @deprecated Use {@link BillingManagementFacadeService} for new code.
+ *             This service is maintained for backward compatibility.
+ */
+@Deprecated(since = "2.0", forRemoval = false)
 @Service
 @RequiredArgsConstructor
 public class MonthlyContractService implements MonthlyContractUseCase {
@@ -115,7 +120,7 @@ public class MonthlyContractService implements MonthlyContractUseCase {
   private MonthlyContract fromRequest(MonthlyContractRequest req, MonthlyContract target) {
     Rate rate = rateRepository.findById(req.rateId())
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
-    
+
     Client client = null;
     if (req.clientId() != null) {
       client = clientRepository.findById(req.clientId())

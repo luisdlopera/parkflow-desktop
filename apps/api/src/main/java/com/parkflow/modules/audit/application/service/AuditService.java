@@ -1,4 +1,4 @@
-package com.parkflow.modules.audit.service;
+package com.parkflow.modules.audit.application.service;
 
 import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.audit.domain.AuditLog;
@@ -29,11 +29,11 @@ public class AuditService implements AuditPort {
         AuditLog log = new AuditLog();
         log.setAction(action);
         log.setCreatedAt(OffsetDateTime.now());
-        
+
         if (companyId != null) {
             log.setCompanyId(companyId);
         }
-        
+
         if (user != null) {
             log.setUser(user);
             log.setUsername(user.getEmail());

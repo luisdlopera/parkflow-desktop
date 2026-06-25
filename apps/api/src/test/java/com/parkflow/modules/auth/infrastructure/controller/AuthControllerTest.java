@@ -1,4 +1,4 @@
-package com.parkflow.modules.auth.presentation.controllers;
+package com.parkflow.modules.auth.infrastructure.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -63,7 +63,7 @@ class AuthControllerTest {
         LoginRequest req = new LoginRequest("admin@test.com", "password", "device", "deviceName", "platform", "fingerprint", null);
         LoginResponse res = new LoginResponse(null, null, null, null);
         LoginResult result = new LoginResult(res, "token", "refresh");
-        
+
         when(loginUseCase.login(any())).thenReturn(result);
 
         mockMvc.perform(post("/api/v1/auth/login")
@@ -78,7 +78,7 @@ class AuthControllerTest {
         RefreshRequest req = new RefreshRequest("device");
         LoginResponse res = new LoginResponse(null, null, null, null);
         LoginResult result = new LoginResult(res, "token2", "refresh2");
-        
+
         when(tokenRefreshUseCase.refresh(any(), eq("old_refresh"))).thenReturn(result);
 
         mockMvc.perform(post("/api/v1/auth/refresh")
@@ -102,7 +102,7 @@ class AuthControllerTest {
     void restoreSession() throws Exception {
         LoginResponse res = new LoginResponse(null, null, null, null);
         LoginResult result = new LoginResult(res, "token2", "refresh2");
-        
+
         when(tokenRefreshUseCase.refreshFromCookie(eq("old_refresh"))).thenReturn(result);
 
         mockMvc.perform(post("/api/v1/auth/restore-session")
@@ -116,7 +116,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/v1/auth/restore-session"))
                 .andExpect(status().isUnauthorized());
     }
-    
+
     @Test
     void logout() throws Exception {
         LogoutRequest req = new LogoutRequest("session", null);
@@ -148,7 +148,7 @@ class AuthControllerTest {
     void me() throws Exception {
         AuthUserResponse res = new AuthUserResponse(UUID.randomUUID(), UUID.randomUUID(), "Name", "test@test.com", "Role", List.of(), true, OffsetDateTime.now(), false, false);
         when(profileManagementUseCase.me()).thenReturn(res);
-        
+
         mockMvc.perform(get("/api/v1/auth/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("test@test.com"));
@@ -158,7 +158,7 @@ class AuthControllerTest {
     void profile() throws Exception {
         ProfileResponse res = new ProfileResponse(UUID.randomUUID(), "Name", "test@test.com", "DOC", "Phone", UserRole.ADMIN, "site", "term", true, false, OffsetDateTime.now(), OffsetDateTime.now(), OffsetDateTime.now(), OffsetDateTime.now());
         when(profileManagementUseCase.getProfile()).thenReturn(res);
-        
+
         mockMvc.perform(get("/api/v1/auth/profile"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("test@test.com"));
@@ -169,7 +169,7 @@ class AuthControllerTest {
         UpdateProfileRequest req = new UpdateProfileRequest("New Name", "test@test.com", "DOC", "Phone", "site", "term");
         ProfileResponse res = new ProfileResponse(UUID.randomUUID(), "New Name", "test@test.com", "DOC", "Phone", UserRole.ADMIN, "site", "term", true, false, OffsetDateTime.now(), OffsetDateTime.now(), OffsetDateTime.now(), OffsetDateTime.now());
         when(profileManagementUseCase.updateProfile(any())).thenReturn(res);
-        
+
         mockMvc.perform(patch("/api/v1/auth/profile")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))

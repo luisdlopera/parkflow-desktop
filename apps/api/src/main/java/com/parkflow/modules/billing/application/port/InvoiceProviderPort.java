@@ -31,6 +31,8 @@ public interface InvoiceProviderPort {
 
   ExternalInvoiceResult getInvoice(String externalId, InvoiceProviderConfig config);
 
+  byte[] getInvoicePdf(String externalId, InvoiceProviderConfig config);
+
   void cancelInvoice(String externalId, String reason, InvoiceProviderConfig config);
 
   ExternalInvoiceResult createCreditNote(InvoiceNote note, InvoiceProviderConfig config);

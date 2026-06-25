@@ -1,4 +1,4 @@
-package com.parkflow.modules.onboarding.presentation.controllers;
+package com.parkflow.modules.onboarding.infrastructure.controller;
 
 import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;

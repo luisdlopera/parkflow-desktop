@@ -2,7 +2,7 @@ package com.parkflow.modules.configuration.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.audit.domain.AuditAction;
-import com.parkflow.modules.audit.service.AuditService;
+import com.parkflow.modules.audit.application.service.AuditService;
 import com.parkflow.modules.common.exception.domain.EntityNotFoundException;
 import com.parkflow.modules.configuration.application.port.in.RegionConfigurationUseCase;
 import com.parkflow.modules.configuration.dto.RegionConfigurationRequest;
@@ -19,6 +19,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * @deprecated Use {@link CompanyConfigurationFacadeService} for new code.
+ *             This service is maintained for backward compatibility.
+ */
+@Deprecated(since = "2.0", forRemoval = false)
 @Slf4j
 @Service
 @RequiredArgsConstructor

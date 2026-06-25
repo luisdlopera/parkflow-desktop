@@ -5,6 +5,8 @@ import com.parkflow.modules.parking.operation.application.port.in.ListActiveSess
 import com.parkflow.modules.parking.operation.domain.*;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
+import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,8 +20,8 @@ import java.util.List;
 public class ListActiveSessionsService implements ListActiveSessionsUseCase {
 
   private final ParkingSessionPort parkingSessionPort;
-  private final com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort custodiedItemRepository;
-  private final com.parkflow.modules.parking.spaces.service.ParkingSpaceService parkingSpaceService;
+  private final CustodiedItemPort custodiedItemRepository;
+  private final ParkingSpaceService parkingSpaceService;
 
   @Override
   @Transactional(readOnly = true)
