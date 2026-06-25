@@ -38,6 +38,25 @@ management:
     tracing:
       endpoint: ${OTEL_ENDPOINT:http://localhost:4318/v1/traces}
 
+# OpenAPI / Springdoc Configuration
+springdoc:
+  api-docs:
+    path: /api/v1/docs/openapi.json
+    enabled: true
+  swagger-ui:
+    path: /api/v1/docs.html
+    enabled: ${PARKFLOW_SWAGGER_ENABLED:true}
+    operations-sorter: method
+    tags-sorter: alpha
+    use-root-path: true
+    doc-expansion: none
+    deep-linking: true
+    persist-authorization: true
+  show-actuator: false
+  swagger-ui-try-it-out-enabled: ${PARKFLOW_SWAGGER_TRY_IT_OUT:false}
+  cache:
+    disabled: true
+
 app:
   uploads:
     dir: ${PARKFLOW_UPLOADS_DIR:uploads}

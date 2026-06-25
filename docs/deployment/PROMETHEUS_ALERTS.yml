@@ -1,0 +1,256 @@
+# Prometheus Alert Rules for ParkFlow
+# Version: 1.0
+# Last Updated: 2026-06-25
+# Purpose: Define alerting thresholds based on performance baseline
+
+groups:
+  - name: parkflow-alerts
+    interval: 30s
+    rules:
+      # ========== CRITICAL ALERTS (Page On-Call) ==========
+
+      - alert: ParkFlowAPIHighErrorRate
+        expr: rate(http_requests_total{service="parkflow-api", status=~"5.."}[5m]) > 0.01
+        for: 2m
+        labels:
+          severity: critical
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow API error rate exceeds 1%"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 1%) on pod {{ $labels.pod }}"
+          runbook_url: "https://docs.parkflow.com/runbooks/api-errors"
+          dashboard_url: "https://grafana.parkflow.com/d/parkflow-api"
+
+      - alert: ParkFlowAPIHighLatencyP99
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{service="parkflow-api"}[5m])) > 1.0
+        for: 5m
+        labels:
+          severity: critical
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow API p99 latency exceeds 1 second"
+          description: "p99 latency is {{ $value | humanizeDuration }} (threshold: 1s)"
+          runbook_url: "https://docs.parkflow.com/runbooks/api-latency"
+
+      - alert: ParkFlowDatabaseConnectionPoolExhausted
+        expr: pg_stat_activity_count{datname="parkflow_prod"} >= 18
+        for: 2m
+        labels:
+          severity: critical
+          service: parkflow-database
+        annotations:
+          summary: "ParkFlow database connection pool near capacity"
+          description: "Active connections: {{ $value }}/20 (threshold: 18)"
+          runbook_url: "https://docs.parkflow.com/runbooks/db-connections"
+
+      - alert: ParkFlowPodCPUOverload
+        expr: rate(container_cpu_usage_seconds_total{pod=~"parkflow-api.*"}[5m]) > 0.90
+        for: 5m
+        labels:
+          severity: critical
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow API pod CPU usage exceeds 90%"
+          description: "Pod {{ $labels.pod }} CPU: {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.parkflow.com/runbooks/scaling"
+
+      - alert: ParkFlowPodMemoryOverload
+        expr: 100 * (container_memory_usage_bytes{pod=~"parkflow-api.*"} / container_spec_memory_limit_bytes{pod=~"parkflow-api.*"}) > 90
+        for: 5m
+        labels:
+          severity: critical
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow API pod memory usage exceeds 90%"
+          description: "Pod {{ $labels.pod }} memory: {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.parkflow.com/runbooks/scaling"
+
+      - alert: ParkFlowDatabaseDown
+        expr: pg_up{instance="parkflow-prod"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: parkflow-database
+        annotations:
+          summary: "ParkFlow database is down"
+          description: "PostgreSQL database at {{ $labels.instance }} is not responding"
+          runbook_url: "https://docs.parkflow.com/runbooks/db-recovery"
+
+      - alert: ParkFlowAPIHealthCheckFailing
+        expr: up{job="parkflow-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow API health check failing"
+          description: "API at {{ $labels.instance }} is not responding to health checks"
+          runbook_url: "https://docs.parkflow.com/runbooks/api-health"
+
+      # ========== WARNING ALERTS (Notify Team) ==========
+
+      - alert: ParkFlowAPIHighLatencyP95
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service="parkflow-api"}[5m])) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow API p95 latency exceeds 500ms"
+          description: "p95 latency is {{ $value | humanizeDuration }} (threshold: 500ms)"
+          runbook_url: "https://docs.parkflow.com/runbooks/api-latency"
+
+      - alert: ParkFlowSlowQueryDetected
+        expr: rate(slow_query_total{database="parkflow_prod"}[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          service: parkflow-database
+        annotations:
+          summary: "ParkFlow database slow queries detected"
+          description: "Slow query rate: {{ $value | humanize }}/sec (threshold: 0.1/sec)"
+          runbook_url: "https://docs.parkflow.com/runbooks/db-slow-queries"
+
+      - alert: ParkFlowCacheHitRateLow
+        expr: rate(cache_hits_total{service="parkflow-api"}[5m]) / (rate(cache_hits_total{service="parkflow-api"}[5m]) + rate(cache_misses_total{service="parkflow-api"}[5m])) < 0.75
+        for: 10m
+        labels:
+          severity: warning
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow cache hit rate below 75%"
+          description: "Cache hit rate: {{ $value | humanizePercentage }} (threshold: 75%)"
+          runbook_url: "https://docs.parkflow.com/runbooks/cache-optimization"
+
+      - alert: ParkFlowPodCPUHigh
+        expr: rate(container_cpu_usage_seconds_total{pod=~"parkflow-api.*"}[5m]) > 0.75
+        for: 10m
+        labels:
+          severity: warning
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow API pod CPU usage elevated"
+          description: "Pod {{ $labels.pod }} CPU: {{ $value | humanizePercentage }} (threshold: 75%)"
+
+      - alert: ParkFlowPodMemoryHigh
+        expr: 100 * (container_memory_usage_bytes{pod=~"parkflow-api.*"} / container_spec_memory_limit_bytes{pod=~"parkflow-api.*"}) > 75
+        for: 10m
+        labels:
+          severity: warning
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow API pod memory usage elevated"
+          description: "Pod {{ $labels.pod }} memory: {{ $value | humanizePercentage }} (threshold: 75%)"
+
+      - alert: ParkFlowDatabaseConnectionPoolUtilizationHigh
+        expr: pg_stat_activity_count{datname="parkflow_prod"} >= 15
+        for: 5m
+        labels:
+          severity: warning
+          service: parkflow-database
+        annotations:
+          summary: "ParkFlow database connection pool utilization high"
+          description: "Active connections: {{ $value }}/20 (threshold: 15)"
+
+      - alert: ParkFlowHighErrorRateLow
+        expr: rate(http_requests_total{service="parkflow-api", status=~"5.."}[5m]) > 0.005
+        for: 5m
+        labels:
+          severity: warning
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow API error rate elevated"
+          description: "Error rate: {{ $value | humanizePercentage }} (threshold: 0.5%)"
+
+      - alert: ParkFlowDiskSpaceLow
+        expr: node_filesystem_avail_bytes{device=~".*parkflow.*", fstype!="tmpfs"} / node_filesystem_size_bytes < 0.2
+        for: 10m
+        labels:
+          severity: warning
+          service: parkflow-infra
+        annotations:
+          summary: "ParkFlow disk space low"
+          description: "Available disk space: {{ $value | humanizePercentage }} (threshold: 20%)"
+
+      - alert: ParkFlowDatabaseReplicationLag
+        expr: pg_replication_lag_bytes{application_name="parkflow-replica"} > 1000000
+        for: 5m
+        labels:
+          severity: warning
+          service: parkflow-database
+        annotations:
+          summary: "ParkFlow database replication lag detected"
+          description: "Replication lag: {{ $value | humanize }} bytes (threshold: 1MB)"
+
+      # ========== INFORMATIONAL ALERTS ==========
+
+      - alert: ParkFlowPodRestartingFrequently
+        expr: rate(kube_pod_container_status_restarts_total{pod=~"parkflow-api.*"}[1h]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow API pod restarting frequently"
+          description: "Pod {{ $labels.pod }} restart rate: {{ $value | humanize }}/hour"
+
+      - alert: ParkFlowPodPending
+        expr: kube_pod_status_phase{pod=~"parkflow-api.*", phase="Pending"} == 1
+        for: 10m
+        labels:
+          severity: info
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow API pod pending"
+          description: "Pod {{ $labels.pod }} is pending (waiting for resources)"
+
+      - alert: ParkFlowAPIResponseTimeIncreasing
+        expr: rate(http_request_duration_seconds_sum{service="parkflow-api"}[5m]) / rate(http_request_duration_seconds_count{service="parkflow-api"}[5m]) > 0.3
+        for: 15m
+        labels:
+          severity: info
+          service: parkflow-api
+        annotations:
+          summary: "ParkFlow API response time increasing trend detected"
+          description: "Average response time: {{ $value | humanizeDuration }}"
+
+# ========== RECORDING RULES (Pre-calculated metrics) ==========
+
+  - name: parkflow-recording-rules
+    interval: 30s
+    rules:
+      # API Latency Percentiles
+      - record: parkflow:http_request_duration:p50
+        expr: histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{service="parkflow-api"}[5m]))
+
+      - record: parkflow:http_request_duration:p95
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service="parkflow-api"}[5m]))
+
+      - record: parkflow:http_request_duration:p99
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{service="parkflow-api"}[5m]))
+
+      # API Error Rate
+      - record: parkflow:http_requests:error_rate
+        expr: rate(http_requests_total{service="parkflow-api", status=~"5.."}[5m]) / rate(http_requests_total{service="parkflow-api"}[5m])
+
+      # API Throughput
+      - record: parkflow:http_requests:throughput
+        expr: rate(http_requests_total{service="parkflow-api"}[5m])
+
+      # Database Metrics
+      - record: parkflow:db:connection_pool_utilization
+        expr: pg_stat_activity_count{datname="parkflow_prod"} / 20
+
+      - record: parkflow:db:slow_query_rate
+        expr: rate(slow_query_total{database="parkflow_prod"}[5m])
+
+      # Pod Resource Metrics
+      - record: parkflow:pod:cpu_usage_percent
+        expr: 100 * rate(container_cpu_usage_seconds_total{pod=~"parkflow-api.*"}[5m])
+
+      - record: parkflow:pod:memory_usage_percent
+        expr: 100 * (container_memory_usage_bytes{pod=~"parkflow-api.*"} / container_spec_memory_limit_bytes{pod=~"parkflow-api.*"})
+
+      # Cache Performance
+      - record: parkflow:cache:hit_rate
+        expr: rate(cache_hits_total{service="parkflow-api"}[5m]) / (rate(cache_hits_total{service="parkflow-api"}[5m]) + rate(cache_misses_total{service="parkflow-api"}[5m]))
