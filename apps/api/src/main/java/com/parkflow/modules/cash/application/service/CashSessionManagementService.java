@@ -34,6 +34,13 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Cash Session Management Service (Internal).
+ *
+ * <p><strong>Note:</strong> Direct use of this service is deprecated. Please use
+ * {@link CashSessionFacadeService} instead for all session operations.
+ * This service is an implementation detail of the facade pattern.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

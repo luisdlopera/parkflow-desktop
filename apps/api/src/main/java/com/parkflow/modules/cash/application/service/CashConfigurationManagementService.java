@@ -30,6 +30,13 @@ import org.springframework.util.StringUtils;
 import java.time.OffsetDateTime;
 import java.util.*;
 
+/**
+ * Cash Configuration Management Service (Internal).
+ *
+ * <p><strong>Note:</strong> Direct use of this service is deprecated. Please use
+ * {@link CashSessionFacadeService} and {@link CashQueryFacadeService} instead
+ * for configuration and report operations. This service is an implementation detail of the facade pattern.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

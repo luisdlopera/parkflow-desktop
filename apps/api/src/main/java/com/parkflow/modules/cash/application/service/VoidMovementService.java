@@ -30,6 +30,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Void Movement Service (Internal).
+ *
+ * <p><strong>Note:</strong> Direct use of this service is deprecated. Please use
+ * {@link CashMovementFacadeService} instead for all movement void operations.
+ * This service is an implementation detail of the facade pattern.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

@@ -37,12 +37,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Register Movement Service (Internal).
+ *
+ * <p><strong>Note:</strong> Direct use of this service is deprecated. Please use
+ * {@link CashMovementFacadeService} instead for all movement registration operations.
+ * This service is an implementation detail of the facade pattern.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RegisterMovementService implements RegisterCashMovementUseCase {
-
-
 
   private final CashMovementRepository cashMovementRepository;
   private final CashSessionRepository cashSessionRepository;
