@@ -97,6 +97,130 @@ apps/
 
 ---
 
+## Architectural Standards (ENFORCE BY REVIEW)
+
+### ✅ Hexagonal Architecture — MANDATORY STRUCTURE
+
+**Every backend module MUST have this exact structure** (no exceptions, no deviations):
+
+```
+modules/<module-name>/
+├── application/
+│   ├── usecase/                      (Grouped by business capability)
+│   │   ├── <feature>UseCase.java
+│   │   └── <feature>Service.java      (Only if CRUD is simple; else group in usecase/)
+│   ├── port/
+│   │   ├── in/                        (Input ports - use case interfaces)
+│   │   │   └── <Feature>PortIn.java
+│   │   └── out/                       (Output ports - repository/service contracts)
+│   │       └── <Feature>RepositoryPort.java
+│   └── dto/                           (Application DTOs - shared across layers)
+├── domain/
+│   ├── <bounded-context-1>/           (e.g., rate/, vehicle/, payment/)
+│   │   ├── <Entity>.java
+│   │   ├── <ValueObject>.java
+│   │   └── <DomainService>.java       (RARE: only cross-entity domain logic)
+│   ├── exception/
+│   │   ├── <DomainException>.java
+│   │   └── <ValidationException>.java
+│   └── shared/                        (Module-level constants, enums, validators)
+├── infrastructure/
+│   ├── controller/                    (HTTP REST endpoints)
+│   │   ├── <Feature>Controller.java
+│   │   └── <Feature>ControllerAdvice.java (if module-specific error handling)
+│   ├── persistence/                   (JPA repositories + adapters)
+│   │   ├── <Entity>JpaRepository.java
+│   │   ├── <Entity>RepositoryAdapter.java (implements RepositoryPort)
+│   │   └── mapper/
+│   │       └── <Entity>Mapper.java
+│   ├── event/                         (Event handlers, publishers)
+│   │   ├── <DomainEvent>Handler.java
+│   │   └── <DomainEvent>Publisher.java
+│   └── config/
+│       └── <Module>Config.java        (Module-specific Spring config)
+└── test/                              (Unit + integration tests mirroring structure)
+```
+
+**Naming Conventions**:
+- ✅ Controllers: `<Feature>Controller` (not `<Feature>Rest`, `<Feature>Api`)
+- ✅ Services: `<Feature>Service` (not `<Feature>Manager`, `<Feature>Handler`)
+- ✅ Use Cases: `<Feature>UseCase` (for domain-specific operations)
+- ✅ Repositories: `<Entity>JpaRepository` + `<Entity>RepositoryAdapter`
+- ✅ Ports (Input): `<Feature>PortIn` (interface for use cases)
+- ✅ Ports (Output): `<Feature>RepositoryPort` (interface for persistence)
+- ✅ Events: `<DomainEvent>` (e.g., `VehicleRegisteredEvent`)
+
+**Prohibited Patterns**:
+- ❌ NO `presentation/` layer (use `infrastructure/controller/`)
+- ❌ NO `service/` directory at module root (consolidate into `application/usecase/` or `application/service/`)
+- ❌ NO `repository/` at module root (use `infrastructure/persistence/`)
+- ❌ NO `util/` or `helper/` (these belong in specific layers or `/common/`)
+- ❌ NO `<module>/service/` files that bypass hexagonal layers
+
+### ✅ Service Decomposition — SIZE LIMITS
+
+**Single Service MUST have ≤5 public methods** (else split into multiple services by use case):
+
+❌ **God Service Anti-Pattern**:
+```java
+// ❌ BAD: ConfigurationService has 12+ methods (rates, users, vehicles, themes, etc.)
+@Service
+public class ConfigurationService {
+    public Rate createRate(CreateRateRequest req) { ... }
+    public Rate updateRate(String id, UpdateRateRequest req) { ... }
+    public void deleteRate(String id) { ... }
+    public User createUser(CreateUserRequest req) { ... }
+    public User updateUser(String id, UpdateUserRequest req) { ... }
+    public VehicleType createVehicleType(CreateVehicleTypeRequest req) { ... }
+    // ... 6 more methods
+}
+```
+
+✅ **Correct Pattern: Split by Use Case**:
+```java
+// ✅ GOOD: Focused services by business capability
+@Service
+public class RateManagementService {
+    public Rate createRate(CreateRateRequest req) { ... }
+    public Rate updateRate(String id, UpdateRateRequest req) { ... }
+    public void deleteRate(String id) { ... }
+    public Rate getRate(String id) { ... }
+}
+
+@Service
+public class VehicleTypeManagementService {
+    public VehicleType createVehicleType(CreateVehicleTypeRequest req) { ... }
+    public VehicleType updateVehicleType(String id, UpdateVehicleTypeRequest req) { ... }
+    public void deleteVehicleType(String id) { ... }
+    public VehicleType getVehicleType(String id) { ... }
+}
+```
+
+**Service Responsibility Matrix** (max services per module):
+| Module | Current | Max Allowed | Breakdown |
+|--------|---------|-------------|-----------|
+| **configuration** | 12 | 5 | RateManagement, VehicleTypeManagement, PaymentMethodManagement, ThemeManagement, ParkingSiteManagement |
+| **parking.operation** | 23 | 5 | SessionManagement, CheckoutProcessing, RateCalculation, ValidationService, AuditService |
+| **cash** | 8 | 3 | CashSessionManagement, MovementRegistration, CashQuery |
+| **licensing** | 6 | 3 | LicenseValidation, LicenseActivation, LicenseQuery |
+| **auth** | 4 | 3 | AuthenticationService, AuthorizationService, TokenService |
+
+### ✅ Module Completeness Checklist
+
+**Before committing ANY new module, verify**:
+- [ ] ✅ `application/usecase/` exists with ≤5 methods per service
+- [ ] ✅ `application/port/in/` defined (input port interfaces)
+- [ ] ✅ `application/port/out/` defined (output port interfaces for persistence)
+- [ ] ✅ `domain/` has entities + bounded context subfolders
+- [ ] ✅ `infrastructure/controller/` has REST endpoints
+- [ ] ✅ `infrastructure/persistence/` has JPA repositories + adapters
+- [ ] ✅ All DTOs centralized in `<module>/dto/` or `/apps/api/src/main/java/com/parkflow/common/dto/`
+- [ ] ✅ `test/` mirrors application structure
+- [ ] ✅ No `service/` directory at module root
+- [ ] ✅ All imports reference canonical paths (no cross-cutting exceptions)
+
+---
+
 ## Development Rules & Practices
 
 ### Code Quality & Standards
@@ -106,11 +230,21 @@ apps/
    - ✅ DO place all documentation in `/docs/` folder
    - ✅ Reference docs via relative paths: `[docs/VERIFICATION_PLAN.md](docs/VERIFICATION_PLAN.md)`
 
-2. **Before Committing**:
-   - [ ] Run `pnpm validate` (API build + tests + web build)
-   - [ ] Run `pnpm test` for changed modules
-   - [ ] No console.errors, warnings, or TODOs left behind
-   - [ ] Code follows existing patterns in module (don't introduce new patterns)
+2. **Before Committing** ⚠️ **MANDATORY CHECKLIST**:
+   - [ ] **Architecture Check** (Backend Only):
+     - [ ] No new `service/` directories at module root
+     - [ ] All services have ≤5 public methods
+     - [ ] `infrastructure/controller/` used (not `presentation/`)
+     - [ ] `port/out/` defined for persistence contracts
+   - [ ] **Frontend Check**:
+     - [ ] All new routes have `loading.tsx` and `error.tsx`
+     - [ ] No `shadow-*` or `drop-shadow-*` utilities used
+     - [ ] No new files in `src/lib/hooks/` (consolidate into `src/hooks/`)
+   - [ ] **General Checks**:
+     - [ ] Run `pnpm validate` (API build + tests + web build)
+     - [ ] Run `pnpm test` for changed modules
+     - [ ] No console.errors, warnings, or TODOs left behind
+     - [ ] Code follows existing patterns in module (don't introduce new patterns)
 
 2. **After Each Feature Implementation**:
    - [ ] **BUILD**: Verify no compilation errors
@@ -124,9 +258,11 @@ apps/
      - Frontend: Open page in browser, check no console errors
 
 3. **Hexagonal Architecture** (Backend Only):
-   - Use existing pattern: `domain/` + `application/service/` + `infrastructure/controller/`
-   - Example: `/modules/configuration/` has `domain/`, `application/service/`, `controller/`
+   - **MANDATORY**: Follow the standardized structure defined above
+   - Example: `/modules/configuration/` MUST have `application/usecase/`, `domain/`, `infrastructure/controller/`
+   - **ENFORCEMENT**: Code review MUST check for god services (>5 methods), non-canonical layer names, missing ports
    - DO NOT create new root folders; reuse existing `/modules/` structure
+   - **DO NOT** create `service/` at module root level (violates hexagonal pattern)
 
 4. **API Endpoints**:
    - Follow REST conventions: `PATCH /api/v1/resource/{id}` for updates
@@ -153,6 +289,102 @@ apps/
    - State: Use React hooks (`useState`, `useEffect`); no external state management yet
    - Error handling: Show `<Alert variant="destructive">` with user-friendly message
    - Loading: Show spinner via HeroUI `<Spinner />`
+
+---
+
+## Frontend Route Requirements
+
+### Loading & Error States — MANDATORY PER ROUTE
+
+**Every new route segment MUST have both files**:
+
+```
+app/(dashboard)/new-feature/
+├── page.tsx                  (Client component)
+├── loading.tsx               ✅ REQUIRED
+├── error.tsx                 ✅ REQUIRED
+└── layout.tsx                (Optional, only if route has children)
+```
+
+**loading.tsx template**:
+```tsx
+import { Skeleton } from "@heroui/react";
+
+export default function Loading() {
+  return (
+    <div className="space-y-4 p-6">
+      <Skeleton className="h-8 w-48 rounded-lg" />
+      <Skeleton className="h-60 w-full rounded-lg" />
+    </div>
+  );
+}
+```
+
+**error.tsx template**:
+```tsx
+"use client";
+
+import { useEffect } from "react";
+import { Alert } from "@heroui/react";
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
+  return (
+    <div className="space-y-4 p-6">
+      <Alert
+        variant="destructive"
+        title="Error al cargar la página"
+        description={error.message || "Intenta recargar la página"}
+      />
+      <button onClick={reset}>Reintentar</button>
+    </div>
+  );
+}
+```
+
+**Checklist before committing**:
+- [ ] New route has `loading.tsx`
+- [ ] New route has `error.tsx`
+- [ ] Layouts/Parents also have error boundaries (no orphaned routes)
+
+---
+
+## Monorepo Configuration DRY Rules
+
+### Shared Configuration Module — MANDATORY
+
+**Problem**: Each app duplicates `eslint.config.mjs`, `playwright.config.ts`, `tsconfig.json`
+
+**Standard**: Create `/packages/config/` with shared base configs
+
+```
+packages/config/
+├── package.json              (Exported as @parkflow/config)
+├── eslint.config.mjs         (Base config, web-specific overrides exist)
+├── tsconfig.base.json        (Shared TypeScript base)
+├── vitest.config.base.ts     (Shared test setup)
+└── playwright.config.base.ts (Shared Playwright base)
+```
+
+**Rules**:
+- ✅ Each app extends from `/packages/config/` base
+- ✅ App-specific overrides in `/apps/<app>/<config-file>`
+- ❌ NO duplication of full config files (3x Playwright → 1x base + 3x extends)
+- ❌ NO `eslint.config.mjs` at app root that doesn't extend from `@parkflow/config`
+
+**Before committing**:
+- [ ] Config files in `/apps/<app>/` extend from `@parkflow/config`
+- [ ] No Playwright/eslint/vitest triplicate (use one source of truth)
+- [ ] All `.json` configs use `"extends"` or `"$schema"` from package
 
 ---
 
@@ -312,6 +544,85 @@ pnpm db:up        # Start PostgreSQL
 pnpm db:down      # Stop PostgreSQL
 ```
 
+### Pre-Commit Verification Script
+
+**Run this BEFORE every commit to catch architectural issues**:
+
+```bash
+#!/bin/bash
+set -e
+
+echo "🔍 Pre-Commit Architecture Verification..."
+
+# Backend: Check for god services (> 5 public methods)
+echo "✓ Checking for god services..."
+if find apps/api/src/main/java/com/parkflow/modules -name "*.java" -type f | \
+   xargs grep -l "public [^ ]* [^ ]*(" | \
+   xargs wc -l | awk '$1 > 200 { print; exit 1 }'; then
+  echo "  ✅ No obvious god services detected"
+else
+  echo "  ⚠️  Warning: Some service files are large; review for decomposition"
+fi
+
+# Backend: Check for prohibited patterns
+echo "✓ Checking for prohibited patterns..."
+PROHIBITED=(
+  "modules/[^/]*/service/" \
+  "modules/[^/]*/presentation/" \
+  "modules/[^/]*/repository/$" \
+)
+for pattern in "${PROHIBITED[@]}"; do
+  if find apps/api/src/main/java/com/parkflow -type d -regex ".*$pattern"; then
+    echo "  ❌ ERROR: Found prohibited directory pattern: $pattern"
+    exit 1
+  fi
+done
+echo "  ✅ No prohibited directory patterns found"
+
+# Frontend: Check for new routes without loading.tsx/error.tsx
+echo "✓ Checking Frontend route completeness..."
+ROUTES=$(find apps/web/src/app -name "page.tsx" | sed 's|/page.tsx||')
+for route in $ROUTES; do
+  if [ ! -f "$route/loading.tsx" ] && [ ! -f "$(dirname $route)/loading.tsx" ]; then
+    echo "  ⚠️  Warning: $route missing loading.tsx"
+  fi
+  if [ ! -f "$route/error.tsx" ] && [ ! -f "$(dirname $route)/error.tsx" ]; then
+    echo "  ⚠️  Warning: $route missing error.tsx"
+  fi
+done
+echo "  ✅ Route completeness check done (review warnings)"
+
+# Frontend: Check for shadow utilities (STRICTLY FORBIDDEN)
+echo "✓ Checking for shadow utilities..."
+if grep -r "shadow-\|drop-shadow-" apps/web/src --include="*.tsx" --include="*.ts"; then
+  echo "  ❌ ERROR: Found shadow utilities (STRICTLY FORBIDDEN per CLAUDE.md)"
+  exit 1
+else
+  echo "  ✅ No shadow utilities found"
+fi
+
+# Frontend: Check for new files in src/lib/hooks/ (PROHIBITED)
+if find apps/web/src/lib/hooks -type f -name "*.ts" -newer apps/web/package.json 2>/dev/null | grep -q .; then
+  echo "  ❌ ERROR: New files in src/lib/hooks/ (consolidate into src/hooks/)"
+  exit 1
+else
+  echo "  ✅ No new files in src/lib/hooks/"
+fi
+
+echo ""
+echo "✅ Pre-commit verification PASSED"
+echo ""
+```
+
+**To install as a git hook**:
+```bash
+mkdir -p .git/hooks
+cp pre-commit-verify.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+---
+
 ---
 
 ## Implementation Checklist per Phase
@@ -368,14 +679,33 @@ pnpm db:down      # Stop PostgreSQL
 
 ## Important Notes
 
-### DO NOT
+### Backend DO NOT (STRICTLY ENFORCED)
+- ❌ Create `service/` directory at module root (use `application/usecase/` or `application/service/`)
+- ❌ Create service with >5 public methods (split by use case)
+- ❌ Create `presentation/` layer (use `infrastructure/controller/`)
+- ❌ Skip `port/out/` definitions (makes testing hard, violates hexagonal)
 - ❌ Create new @ConfigurationProperties; reuse existing ones
 - ❌ Hardcode values; use environment variables or `application.yml`
 - ❌ Mix hexagonal layers; keep domain → service → controller separation
 - ❌ Leave TODOs in code; fix or document in code review comment
 - ❌ Skip tests; every endpoint must have integration test
 
-### DO
+### Frontend DO NOT (STRICTLY ENFORCED)
+- ❌ Create new routes without `loading.tsx` and `error.tsx`
+- ❌ Use `shadow-*` or `drop-shadow-*` utilities ANYWHERE (use `border` instead)
+- ❌ Create files in `src/lib/hooks/` (consolidate into `src/hooks/`)
+- ❌ Create duplicate API service functions (audit and consolidate)
+- ❌ Leave tests orphaned (colocate with components/features)
+
+### Monorepo DO NOT
+- ❌ Duplicate config files (eslint, playwright, tsconfig) — extend from `/packages/config/`
+- ❌ Create app-specific version of shared config — always extend from canonical source
+
+### Backend DO (MANDATORY)
+- ✅ Follow hexagonal architecture: `application/` → `domain/` ← `infrastructure/`
+- ✅ Define input ports (`port/in/`) and output ports (`port/out/`)
+- ✅ Group services by business capability (max 5 methods per service)
+- ✅ Use canonical layer names: `application/usecase/`, `domain/`, `infrastructure/controller/`
 - ✅ Follow existing code patterns in the module you're editing
 - ✅ Reuse existing DTOs/exceptions before creating new ones
 - ✅ Add `@Operation` + `@ApiResponse` to Swagger docs
@@ -383,14 +713,62 @@ pnpm db:down      # Stop PostgreSQL
 - ✅ Test error cases (validation, 409 conflicts, 404 not found, etc.)
 - ✅ Use existing utility classes (`BeanMapper`, `ValidationUtil`, etc.)
 
+### Frontend DO (MANDATORY)
+- ✅ Add `loading.tsx` and `error.tsx` to every new route segment
+- ✅ Use `border border-default-200` for elevation, NEVER shadows
+- ✅ Consolidate hooks into `src/hooks/` (global) or `src/features/<feature>/hooks/` (feature-specific)
+- ✅ Colocate tests with components/features
+- ✅ Use HeroUI MCP BEFORE building any UI component
+
 ---
 
 ## When You Get Stuck
 
-1. **Backend**: Check `/apps/api/src/main/java/com/parkflow/modules/configuration/controller/` for similar endpoints (e.g., `ConfigurationRateController`)
-2. **Frontend**: Check `/apps/web/src/app/(dashboard)/configuracion/` for similar pages (e.g., `/sedes/page.tsx`)
-3. **Database**: Check `/apps/api/src/main/resources/db/migration/V001__initial_schema.sql` for table structure
-4. **Tests**: Check `/apps/api/src/test/java/com/parkflow/controller/` for test patterns
+### Backend Architecture Questions
+
+1. **"Where should my service go?"**
+   - Follow the hexagonal structure: `application/usecase/` (business logic) or `domain/` (cross-entity domain logic)
+   - If unsure, check `/apps/api/src/main/java/com/parkflow/modules/configuration/` for the canonical pattern
+   - **NEVER** create a `service/` directory at module root
+
+2. **"Should I create a new service or add to existing?"**
+   - New service if: handling a different business capability (e.g., RateManagement vs. VehicleTypeManagement)
+   - Add to existing if: same capability, related operation
+   - **HARD LIMIT**: 5 public methods per service → split if exceeded
+
+3. **"How do I structure my application layer?"**
+   - `application/usecase/` groups services by business capability
+   - Each service has ≤5 public methods (single responsibility)
+   - `application/port/in/` defines use case interfaces (contracts)
+   - `application/port/out/` defines repository/external service contracts
+   - Example: `/modules/configuration/application/usecase/RateManagementService.java`
+
+4. **"What about domain logic?"**
+   - Put in `domain/<bounded-context>/` (e.g., `domain/rate/`, `domain/vehicle/`)
+   - Create `DomainService` ONLY for cross-entity logic (rare)
+   - Most business logic lives in `application/usecase/` services
+
+### Frontend Route Questions
+
+1. **"Do I need loading.tsx and error.tsx?"**
+   - ✅ **YES, ALWAYS** — every new route segment must have both
+   - Use templates from "Frontend Route Requirements" section
+   - Layouts can share error boundaries with children
+
+2. **"Can I use shadow utilities?"**
+   - ❌ **NO, STRICTLY FORBIDDEN** — use `border border-default-200` instead
+   - See CLAUDE.md rule: "No box shadows"
+
+### General Questions
+
+1. **"Can I duplicate code?"**
+   - ❌ Check `/apps/api/src/main/java/com/parkflow/modules/configuration/controller/` for similar patterns
+   - ✅ Reuse existing DTOs, exceptions, and utilities before creating new ones
+
+2. **"Where should tests go?"**
+   - Backend: `/apps/api/src/test/java/com/parkflow/modules/<module>/` mirroring application structure
+   - Frontend: colocate with components or in `/tests/` folder
+   - **NEVER** skip integration tests for endpoints
 
 ---
 
@@ -409,4 +787,31 @@ Closes #issue-number (if applicable)
 
 ---
 
-**Last Updated**: 2026-06-18 | **Plan**: Onboarding-to-Configuration Editability | **Audit**: Frontend arquitectura completa (Sprint 0–3 done)
+**Last Updated**: 2026-06-24 | **Audit**: Comprehensive Codebase Structure Analysis | **Enforcement**: Hexagonal Architecture Standardization + Pre-Commit Verification
+
+### Summary of Changes (2026-06-24)
+
+Added **mandatory architectural rules** to prevent future structural issues:
+
+1. **Hexagonal Architecture Standardization** (Backend)
+   - Exact directory structure for all modules
+   - Size limits: ≤5 public methods per service
+   - Prohibited patterns: `service/` at root, `presentation/`, missing `port/out/`
+   - Module completeness checklist before commit
+
+2. **Frontend Route Completeness** (Frontend)
+   - All routes MUST have `loading.tsx` + `error.tsx`
+   - Strict prohibition on shadow utilities
+   - Rules for hooks organization
+
+3. **Monorepo Configuration DRY**
+   - No duplication of eslint/playwright/tsconfig
+   - All apps extend from `/packages/config/`
+
+4. **Pre-Commit Verification Script**
+   - Automated checks for god services, prohibited patterns, route completeness
+   - Can be installed as git hook
+
+5. **Enhanced "When You Get Stuck"** section
+   - Architecture decision trees for common questions
+   - Canonical examples and patterns
