@@ -1,5 +1,6 @@
 package com.parkflow.modules.configuration.application.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.audit.domain.AuditAction;
 import com.parkflow.modules.audit.application.service.AuditService;
@@ -8,6 +9,7 @@ import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.configuration.application.port.in.ThemeConfigurationUseCase;
 import com.parkflow.modules.configuration.domain.ThemeConfiguration;
 import com.parkflow.modules.configuration.domain.repository.ThemeConfigurationPort;
+import com.parkflow.modules.configuration.dto.ThemeConfigurationRequest;
 import com.parkflow.modules.configuration.dto.ThemeConfigurationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,8 +28,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Theme Asset Management - handles logo and favicon uploads/removals.
- * Manages theme asset files (images) for company branding.
+ * Theme Configuration Service - unified handler for theme assets and color configuration.
+ * Manages theme asset files (images) and color settings for company branding.
  */
 @Service
 @RequiredArgsConstructor
@@ -121,8 +123,30 @@ public class ThemeAssetManagementService implements ThemeConfigurationUseCase {
 
   @Override
   @Transactional
-  public ThemeConfigurationResponse createOrUpdate(UUID companyId, com.parkflow.modules.configuration.dto.ThemeConfigurationRequest req) {
-    throw new UnsupportedOperationException("Use ThemeColorManagementService for color updates");
+  public ThemeConfigurationResponse createOrUpdate(UUID companyId, ThemeConfigurationRequest req) {
+    UUID resolvedCompanyId = resolveCompanyId(companyId);
+
+    ThemeConfiguration entity = themeConfigurationRepository.findByCompanyId(resolvedCompanyId)
+        .orElse(new ThemeConfiguration());
+
+    String previousJson = toJson(entity.getCompanyId() != null ? entity : null);
+
+    entity.setCompanyId(resolvedCompanyId);
+    entity.setPrimaryColor(req.primaryColor());
+    entity.setSecondaryColor(req.secondaryColor());
+    entity.setSuccessColor(req.successColor());
+    entity.setWarningColor(req.warningColor());
+    entity.setDangerColor(req.dangerColor());
+    entity.setThemeMode(req.themeMode());
+
+    if (entity.getCreatedAt() == null) {
+      entity.setCreatedAt(OffsetDateTime.now());
+    }
+    entity.setUpdatedAt(OffsetDateTime.now());
+
+    ThemeConfiguration saved = themeConfigurationRepository.save(entity);
+    auditService.record(AuditAction.CAMBIAR_CONFIGURACION, resolvedCompanyId, null, previousJson, toJson(saved), "theme_configuration");
+    return toResponse(saved);
   }
 
   // ─── helpers ───────────────────────────────────────────────────────────────
@@ -217,5 +241,14 @@ public class ThemeAssetManagementService implements ThemeConfigurationUseCase {
         "auto", null, null,
         null, null
     );
+  }
+
+  private String toJson(Object obj) {
+    if (obj == null) return null;
+    try {
+      return objectMapper.writeValueAsString(obj);
+    } catch (JsonProcessingException e) {
+      return obj.toString();
+    }
   }
 }
