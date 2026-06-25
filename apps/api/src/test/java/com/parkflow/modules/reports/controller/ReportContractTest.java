@@ -7,13 +7,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.config.BaseIntegrationTest;
 import com.parkflow.modules.auth.dto.LoginRequest;
-import com.parkflow.modules.common.dto.EntryRequest;
-import com.parkflow.modules.common.dto.ExitRequest;
+import com.parkflow.modules.parking.operation.dto.EntryRequest;
+import com.parkflow.modules.parking.operation.dto.ExitRequest;
 import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
 import com.parkflow.modules.licensing.domain.Company;
-import com.parkflow.modules.licensing.infrastructure.persistence.CompanyJpaRepository;
-import com.parkflow.modules.parking.operation.domain.AppUser;
+import com.parkflow.modules.licensing.domain.repository.CompanyPort;
+import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -44,7 +44,7 @@ class ReportContractTest extends BaseIntegrationTest {
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private AppUserRepository appUserRepository;
-  @Autowired private CompanyJpaRepository companyRepository;
+  @Autowired private CompanyPort companyRepository;
   @Autowired private ParkingSiteRepository parkingSiteRepository;
 
   private String bearerToken;
