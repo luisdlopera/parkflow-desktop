@@ -11,6 +11,9 @@
     "test:e2e": "pnpm exec playwright test --config playwright.config.ts",
     "test": "pnpm test:unit && pnpm test:integration"
   },
+  "dependencies": {
+    "@parkflow/types": "workspace:*"
+  },
   "devDependencies": {
     "@tauri-apps/cli": "^2.5.6"
   }
