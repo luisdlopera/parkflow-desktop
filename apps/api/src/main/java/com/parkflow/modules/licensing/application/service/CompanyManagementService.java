@@ -28,6 +28,11 @@ import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
 import com.parkflow.modules.common.exception.domain.BusinessValidationException;
 import com.parkflow.modules.common.exception.domain.EntityNotFoundException;
 
+/**
+ * @deprecated Use {@link CompanyLifecycleService}, {@link CompanyQueryService}, and {@link CompanyStatusService} instead.
+ * This class maintained for backward compatibility during migration to hexagonal architecture.
+ */
+@Deprecated(since = "2.1.0", forRemoval = false)
 @Slf4j
 @Service
 @RequiredArgsConstructor

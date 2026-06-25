@@ -20,6 +20,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * @deprecated Use {@link SpaceManagementService} and {@link SpaceQueryService} instead.
+ * This class maintained for backward compatibility during migration to hexagonal architecture.
+ */
+@Deprecated(since = "2.1.0", forRemoval = false)
 @Service
 @RequiredArgsConstructor
 public class ParkingSpaceService {

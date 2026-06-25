@@ -27,9 +27,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * @deprecated Use {@link DailyReportsQueryService} for daily operational reports
+ *             or {@link CashReportsQueryService} for cash-related reports.
+ *             This legacy service will be removed in a future release.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class ReportQueryService {
 
   private static final ZoneId TZ_COLOMBIA = ZoneId.of("America/Bogota");

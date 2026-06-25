@@ -1,6 +1,7 @@
 package com.parkflow.modules.licensing.application.service;
 
 import com.parkflow.modules.licensing.application.port.in.HeartbeatUseCase;
+import com.parkflow.modules.licensing.application.port.in.AuditRecorderUseCase;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.LicensedDevice;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
@@ -26,7 +27,7 @@ public class LicenseHeartbeatService implements HeartbeatUseCase {
 
     private final CompanyPort companyRepository;
     private final LicensedDevicePort deviceRepository;
-    private final LicenseAuditService auditService;
+    private final AuditRecorderUseCase auditRecorder;
     private final LicenseRemoteCommandPolicy remoteCommandPolicy;
     private final LicenseModuleProvisioner moduleProvisioner;
 
@@ -105,7 +106,7 @@ public class LicenseHeartbeatService implements HeartbeatUseCase {
                                company.getStatus() == CompanyStatus.BLOCKED ? "Empresa bloqueada administrativamente" :
                                "Período de gracia finalizado";
 
-            auditService.recordAutoBlock(
+            auditRecorder.recordAutoBlock(
                     company.getId(),
                     device.getDeviceFingerprint(),
                     reasonCode,

@@ -3,7 +3,8 @@ import com.parkflow.modules.licensing.domain.repository.*;
 
 import com.parkflow.modules.licensing.dto.*;
 import com.parkflow.modules.licensing.domain.LicenseBlockEvent;
-import com.parkflow.modules.licensing.application.service.LicenseAuditService;
+import com.parkflow.modules.licensing.application.port.in.AuditRecorderUseCase;
+import com.parkflow.modules.licensing.application.port.in.AuditQueryUseCase;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.time.OffsetDateTime;
@@ -26,7 +27,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class LicenseSupportController {
 
-  private final LicenseAuditService auditService;
+  private final AuditRecorderUseCase auditRecorder;
+  private final AuditQueryUseCase auditQuery;
   private final LicenseBlockEventPort blockEventRepository;
 
   // ==================== DIAGNÓSTICO ====================
@@ -40,7 +42,7 @@ public class LicenseSupportController {
       @PathVariable UUID companyId) {
 
     log.info("[SUPPORT] Diagnóstico solicitado para empresa: {}", companyId);
-    LicenseDiagnosticsResponse diagnosis = auditService.diagnoseCompany(companyId);
+    LicenseDiagnosticsResponse diagnosis = auditQuery.diagnoseCompany(companyId);
     return ResponseEntity.ok(diagnosis);
   }
 
@@ -53,7 +55,7 @@ public class LicenseSupportController {
       @PathVariable String deviceFingerprint) {
 
     log.info("[SUPPORT] Diagnóstico solicitado para dispositivo: {}", deviceFingerprint);
-    DeviceDiagnosticsResponse diagnosis = auditService.diagnoseDevice(deviceFingerprint);
+    DeviceDiagnosticsResponse diagnosis = auditQuery.diagnoseDevice(deviceFingerprint);
     return ResponseEntity.ok(diagnosis);
   }
 
@@ -105,7 +107,7 @@ public class LicenseSupportController {
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
   public ResponseEntity<List<SupportCaseResponse>> getPriorityCases() {
     log.info("[SUPPORT] Solicitando casos prioritarios");
-    return ResponseEntity.ok(auditService.getPrioritySupportCases());
+    return ResponseEntity.ok(auditQuery.getPrioritySupportCases());
   }
 
   /**
@@ -117,7 +119,7 @@ public class LicenseSupportController {
       @RequestParam(defaultValue = "7") int days) {
 
     OffsetDateTime since = OffsetDateTime.now().minus(days, ChronoUnit.DAYS);
-    return ResponseEntity.ok(auditService.getBlockStatistics(since));
+    return ResponseEntity.ok(auditQuery.getBlockStatistics(since));
   }
 
   // ==================== RESOLUCIÓN ====================
@@ -135,7 +137,7 @@ public class LicenseSupportController {
     log.info("[SUPPORT] Resolviendo evento de bloqueo {} por {}. Acción: {}",
         blockEventId, resolvedBy, request.getCorrectiveAction());
 
-    auditService.resolveBlockEvent(
+    auditRecorder.resolveBlockEvent(
         blockEventId,
         resolvedBy,
         request.getNotes(),
@@ -158,7 +160,7 @@ public class LicenseSupportController {
     log.warn("[SUPPORT] Marcando evento {} como falso positivo por {}. Notas: {}",
         blockEventId, resolvedBy, request.getNotes());
 
-    auditService.markAsFalsePositive(blockEventId, resolvedBy, request.getNotes());
+    auditRecorder.markAsFalsePositive(blockEventId, resolvedBy, request.getNotes());
     return ResponseEntity.ok().build();
   }
 
@@ -178,7 +180,7 @@ public class LicenseSupportController {
     // Resolver todos los eventos no resueltos
     List<LicenseBlockEvent> unresolved = blockEventRepository.findUnresolvedByCompanyId(companyId);
     for (LicenseBlockEvent event : unresolved) {
-      auditService.resolveBlockEvent(
+      auditRecorder.resolveBlockEvent(
           event.getId(),
           resolvedBy,
           "Desbloqueo manual de empresa: " + request.getReason(),

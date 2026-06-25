@@ -23,6 +23,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+/**
+ * @deprecated Use {@link UserManagementService} and {@link UserQueryService} instead.
+ *             This facade is maintained for backward compatibility.
+ */
+@Deprecated(since = "2.1", forRemoval = false)
 @Service
 @RequiredArgsConstructor
 @Slf4j

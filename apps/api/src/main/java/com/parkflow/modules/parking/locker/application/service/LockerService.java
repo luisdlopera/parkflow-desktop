@@ -18,6 +18,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * @deprecated Use {@link LockerManagementService} and {@link LockerQueryService} instead.
+ *             This facade is maintained for backward compatibility.
+ */
+@Deprecated(since = "2.1", forRemoval = false)
 @Service
 @RequiredArgsConstructor
 public class LockerService {

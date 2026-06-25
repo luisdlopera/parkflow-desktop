@@ -20,6 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * @deprecated Use {@link OnboardingMaterializationService} and {@link OnboardingRateInitializationService} instead.
+ *             This facade is maintained for backward compatibility.
+ */
+@Deprecated(since = "2.1", forRemoval = false)
 @Slf4j
 @Service
 @RequiredArgsConstructor

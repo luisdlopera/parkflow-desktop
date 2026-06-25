@@ -1,6 +1,7 @@
 package com.parkflow.modules.licensing.application.service;
 
 import com.parkflow.modules.licensing.application.port.in.ValidateLicenseUseCase;
+import com.parkflow.modules.licensing.application.port.in.AuditRecorderUseCase;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.LicensedDevice;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
@@ -27,7 +28,7 @@ public class LicenseValidationService implements ValidateLicenseUseCase {
     private final CompanyPort companyRepository;
     private final LicensedDevicePort deviceRepository;
     private final LicenseSignatureService signatureService;
-    private final LicenseAuditService auditService;
+    private final AuditRecorderUseCase auditRecorder;
     private final LicenseModuleProvisioner moduleProvisioner;
 
     @Override
@@ -48,7 +49,7 @@ public class LicenseValidationService implements ValidateLicenseUseCase {
                 .findByCompanyIdAndDeviceFingerprint(company.getId(), request.getDeviceFingerprint());
 
         if (deviceOpt.isEmpty()) {
-            auditService.recordFailedValidation(
+            auditRecorder.recordFailedValidation(
                     request.getCompanyId(),
                     request.getDeviceFingerprint(),
                     "DEVICE_NOT_REGISTERED",
@@ -80,7 +81,7 @@ public class LicenseValidationService implements ValidateLicenseUseCase {
                     "providedFingerprint", request.getDeviceFingerprint()
             );
 
-            auditService.recordAutoBlock(
+            auditRecorder.recordAutoBlock(
                     request.getCompanyId(),
                     request.getDeviceFingerprint(),
                     "INVALID_SIGNATURE",
@@ -107,7 +108,7 @@ public class LicenseValidationService implements ValidateLicenseUseCase {
                     "companyStatus", company.getStatus().name()
             );
 
-            auditService.recordAutoBlock(
+            auditRecorder.recordAutoBlock(
                     request.getCompanyId(),
                     request.getDeviceFingerprint(),
                     "COMPANY_BLOCKED",

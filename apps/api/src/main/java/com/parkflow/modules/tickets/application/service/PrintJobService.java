@@ -31,6 +31,11 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * @deprecated Use {@link PrintJobManagementService} and {@link PrintJobQueryService} instead.
+ *             This facade is maintained for backward compatibility.
+ */
+@Deprecated(since = "2.1", forRemoval = false)
 @Service
 @RequiredArgsConstructor
 public class PrintJobService implements TicketPrintUseCase {

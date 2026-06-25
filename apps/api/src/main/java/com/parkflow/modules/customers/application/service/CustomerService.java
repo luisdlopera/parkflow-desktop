@@ -13,6 +13,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * @deprecated Use {@link CustomerManagementService} and {@link CustomerQueryService} instead.
+ *             This facade is maintained for backward compatibility.
+ */
+@Deprecated(since = "2.1", forRemoval = false)
 @Service
 @RequiredArgsConstructor
 public class CustomerService {

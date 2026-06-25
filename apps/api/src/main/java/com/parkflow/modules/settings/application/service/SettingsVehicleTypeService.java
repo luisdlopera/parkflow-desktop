@@ -24,7 +24,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * @deprecated Use {@link MasterVehicleTypeManagementService} for master type operations
+ *             or {@link CompanyVehicleTypeManagementService} for company-scoped operations.
+ *             This legacy facade will be removed in a future release.
+ */
 @Service
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class SettingsVehicleTypeService implements VehicleTypeUseCase {
     private final MasterVehicleTypePort repository;
     private final CompanyVehicleTypePort companyVehicleTypePort;

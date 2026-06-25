@@ -2,7 +2,7 @@ package com.parkflow.modules.settings.infrastructure.adapter;
 
 import com.parkflow.modules.onboarding.application.port.out.OnboardingMaterializationPort;
 import com.parkflow.modules.parking.locker.dto.BatchLockerRequest;
-import com.parkflow.modules.settings.application.service.SettingsVehicleTypeService;
+import com.parkflow.modules.settings.application.service.CompanyVehicleTypeManagementService;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -10,18 +10,18 @@ import org.springframework.stereotype.Component;
 
 /**
  * Adapter that implements OnboardingMaterializationPort for vehicle type operations.
- * Delegates to SettingsVehicleTypeService for company-scoped vehicle type management.
+ * Delegates to CompanyVehicleTypeManagementService for company-scoped vehicle type management.
  */
 @Component
 @RequiredArgsConstructor
 public class OnboardingMaterializationVehicleTypeAdapter implements OnboardingMaterializationPort {
 
-  private final SettingsVehicleTypeService settingsVehicleTypeService;
+  private final CompanyVehicleTypeManagementService companyVehicleTypeManagementService;
 
   @Override
   public void addVehicleTypesToCompany(UUID companyId, List<String> vehicleTypeCodes) {
     for (String code : vehicleTypeCodes) {
-      settingsVehicleTypeService.addTypeToCompany(companyId, code);
+      companyVehicleTypeManagementService.addTypeToCompany(companyId, code);
     }
   }
 

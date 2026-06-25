@@ -14,12 +14,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Servicio de auditoría y diagnóstico de licencias.
- * Registra todos los eventos de bloqueo y proporciona herramientas de diagnóstico.
+ * @deprecated Use {@link AuditRecorderService} for recording audit events
+ *             or {@link AuditQueryService} for querying audit information.
+ *             This legacy service will be removed in a future release.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class LicenseAuditService {
 
   private final LicenseBlockEventPort blockEventRepository;

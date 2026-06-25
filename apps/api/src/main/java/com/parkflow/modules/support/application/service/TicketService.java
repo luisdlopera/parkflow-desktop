@@ -13,6 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * @deprecated Use {@link TicketManagementService} and {@link TicketQueryService} instead.
+ *             This facade is maintained for backward compatibility.
+ */
+@Deprecated(since = "2.1", forRemoval = false)
 @Slf4j
 @Service
 @RequiredArgsConstructor

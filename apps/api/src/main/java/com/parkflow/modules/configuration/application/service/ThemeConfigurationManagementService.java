@@ -27,6 +27,11 @@ import java.time.OffsetDateTime;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * @deprecated Use {@link ThemeColorManagementService} and {@link ThemeAssetManagementService} instead.
+ *             This facade is maintained for backward compatibility.
+ */
+@Deprecated(since = "2.1", forRemoval = false)
 @Service
 @RequiredArgsConstructor
 public class ThemeConfigurationManagementService implements ThemeConfigurationUseCase {

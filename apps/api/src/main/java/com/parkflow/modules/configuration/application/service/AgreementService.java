@@ -21,10 +21,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * @deprecated Use {@link BillingManagementFacadeService} for new code.
- *             This service is maintained for backward compatibility.
+ * @deprecated Use {@link AgreementManagementService} and {@link AgreementQueryService} instead.
+ *             This facade is maintained for backward compatibility.
  */
-@Deprecated(since = "2.0", forRemoval = false)
+@Deprecated(since = "2.1", forRemoval = false)
 @Service
 @RequiredArgsConstructor
 public class AgreementService implements AgreementUseCase {

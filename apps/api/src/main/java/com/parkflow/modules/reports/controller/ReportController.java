@@ -1,7 +1,8 @@
 package com.parkflow.modules.reports.controller;
 
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
-import com.parkflow.modules.reports.application.service.ReportQueryService;
+import com.parkflow.modules.reports.application.port.in.DailyReportsQueryUseCase;
+import com.parkflow.modules.reports.application.port.in.CashReportsQueryUseCase;
 import com.parkflow.modules.reports.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,7 +24,8 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Reports", description = "Operational reports for parking management")
 public class ReportController {
 
-  private final ReportQueryService reportQueryService;
+  private final DailyReportsQueryUseCase dailyReportsQuery;
+  private final CashReportsQueryUseCase cashReportsQuery;
 
   @GetMapping("/daily-operations")
   @Operation(summary = "Daily operations summary: entries, exits, revenue by payment method")
@@ -31,7 +33,7 @@ public class ReportController {
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
     validateDateRange(dateFrom, dateTo);
-    return reportQueryService.dailyOperations(dateFrom, dateTo);
+    return dailyReportsQuery.dailyOperations(dateFrom, dateTo);
   }
 
   @GetMapping("/cash-session-history")
@@ -42,20 +44,20 @@ public class ReportController {
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
     validateDateRange(dateFrom, dateTo);
-    return reportQueryService.cashSessionHistory(dateFrom, dateTo,
+    return cashReportsQuery.cashSessionHistory(dateFrom, dateTo,
         PageRequest.of(page, Math.min(size, 100), Sort.by("openedAt").descending()));
   }
 
   @GetMapping("/cash-session-summary")
   @Operation(summary = "Ledger summary for a specific cash session")
   public CashSummaryResponse cashSessionSummary(@RequestParam UUID sessionId) {
-    return reportQueryService.cashSessionSummary(sessionId);
+    return cashReportsQuery.cashSessionSummary(sessionId);
   }
 
   @GetMapping("/vehicle-type")
   @Operation(summary = "Real-time snapshot of active vehicles and today's revenue by type")
   public List<VehicleTypeRow> vehicleType() {
-    return reportQueryService.vehicleTypeSnapshot();
+    return dailyReportsQuery.vehicleTypeSnapshot();
   }
 
   @GetMapping("/paid-tickets")
@@ -66,7 +68,7 @@ public class ReportController {
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "50") int size) {
     validateDateRange(dateFrom, dateTo);
-    return reportQueryService.paidTickets(dateFrom, dateTo,
+    return cashReportsQuery.paidTickets(dateFrom, dateTo,
         PageRequest.of(page, Math.min(size, 200)));
   }
 
@@ -76,7 +78,7 @@ public class ReportController {
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
     validateDateRange(dateFrom, dateTo);
-    return reportQueryService.voidedTickets(dateFrom, dateTo);
+    return cashReportsQuery.voidedTickets(dateFrom, dateTo);
   }
 
   @GetMapping("/income-expense")
@@ -85,13 +87,13 @@ public class ReportController {
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
     validateDateRange(dateFrom, dateTo);
-    return reportQueryService.incomeExpense(dateFrom, dateTo);
+    return cashReportsQuery.incomeExpense(dateFrom, dateTo);
   }
 
   @GetMapping("/occupancy")
   @Operation(summary = "Real-time parking space occupancy")
   public OccupancyResponse occupancy() {
-    return reportQueryService.occupancy();
+    return dailyReportsQuery.occupancy();
   }
 
   @GetMapping("/by-operator")
@@ -100,7 +102,7 @@ public class ReportController {
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
     validateDateRange(dateFrom, dateTo);
-    return reportQueryService.byOperator(dateFrom, dateTo);
+    return dailyReportsQuery.byOperator(dateFrom, dateTo);
   }
 
   @GetMapping("/by-payment-method")
@@ -109,7 +111,7 @@ public class ReportController {
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
     validateDateRange(dateFrom, dateTo);
-    return reportQueryService.byPaymentMethod(dateFrom, dateTo);
+    return dailyReportsQuery.byPaymentMethod(dateFrom, dateTo);
   }
 
   private void validateDateRange(LocalDate from, LocalDate to) {

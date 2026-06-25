@@ -1,0 +1,275 @@
+package com.parkflow.modules.settings.application.service;
+
+import com.parkflow.modules.auth.domain.AuthAuditAction;
+import com.parkflow.modules.parking.operation.domain.Rate;
+import com.parkflow.modules.parking.operation.domain.RateCategory;
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.auth.security.SecurityUtils;
+import com.parkflow.modules.configuration.domain.ParkingSite;
+import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.ParkingSessionRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.RateRepository;
+import com.parkflow.modules.common.dto.RateResponse;
+import com.parkflow.modules.common.dto.RateStatusRequest;
+import com.parkflow.modules.common.dto.RateUpsertRequest;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Rate Management - handles creation, updates, status changes, and deletion of rates.
+ * Manages rate lifecycle and business rule enforcement.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class RateManagementService {
+  private final RateRepository rateRepository;
+  private final ParkingSessionRepository parkingSessionRepository;
+  private final SettingsAuditService settingsAuditService;
+  private final com.parkflow.modules.settings.infrastructure.persistence.MasterVehicleTypeRepository vehicleTypeRepository;
+  private final ParkingSiteRepository parkingSiteRepository;
+  private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
+  private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+  private final RateValidationService rateValidationService;
+
+  @Transactional
+  public RateResponse create(RateUpsertRequest req) {
+    Rate rate = fromRequest(req, new Rate());
+    applyBusinessRules(rate, null);
+    try {
+      rate = rateRepository.save(rate);
+    } catch (DataIntegrityViolationException ex) {
+      throw new OperationException(
+          HttpStatus.CONFLICT, "Ya existe una tarifa activa con el mismo nombre en esta sede");
+    }
+    settingsAuditService.log(
+        AuthAuditAction.SETTINGS_RATE_CREATE,
+        "OK",
+        Map.of("rateId", rate.getId().toString(), "name", rate.getName()));
+
+    try {
+        globalAuditService.record(
+            com.parkflow.modules.audit.domain.AuditAction.CAMBIAR_TARIFA,
+            null,
+            objectMapper.writeValueAsString(req),
+            "Rate created: " + rate.getId());
+    } catch (Exception e) {
+        // ignore
+    }
+    return toResponse(rate);
+  }
+
+  @Transactional
+  public RateResponse update(UUID id, RateUpsertRequest req) {
+    Rate rate =
+        rateRepository
+            .findById(id)
+            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
+    Map<String, Object> before = snapshot(rate);
+    Rate updated = fromRequest(req, rate);
+    applyBusinessRules(updated, id);
+    try {
+      updated = rateRepository.save(updated);
+    } catch (DataIntegrityViolationException ex) {
+      throw new OperationException(
+          HttpStatus.CONFLICT, "Ya existe una tarifa activa con el mismo nombre en esta sede");
+    }
+    settingsAuditService.log(
+        AuthAuditAction.SETTINGS_RATE_UPDATE,
+        "OK",
+        Map.of("rateId", id.toString(), "before", before, "after", snapshot(updated)));
+
+    try {
+        globalAuditService.record(
+            com.parkflow.modules.audit.domain.AuditAction.CAMBIAR_TARIFA,
+            objectMapper.writeValueAsString(before),
+            objectMapper.writeValueAsString(snapshot(updated)),
+            "Rate updated: " + id);
+    } catch (Exception e) {
+        // ignore
+    }
+    return toResponse(updated);
+  }
+
+  @Transactional
+  public RateResponse patchStatus(UUID id, RateStatusRequest req) {
+    Rate rate =
+        rateRepository
+            .findById(id)
+            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
+    boolean previous = rate.isActive();
+    rate.setActive(req.active());
+    rate.setUpdatedAt(OffsetDateTime.now());
+    applyBusinessRules(rate, id);
+    rate = rateRepository.save(rate);
+    settingsAuditService.log(
+        AuthAuditAction.SETTINGS_RATE_STATUS,
+        "OK",
+        Map.of("rateId", id.toString(), "previousActive", previous, "active", rate.isActive()));
+
+    globalAuditService.record(
+        com.parkflow.modules.audit.domain.AuditAction.CAMBIAR_TARIFA,
+        "active=" + previous,
+        "active=" + rate.isActive(),
+        "Rate status changed: " + id);
+    return toResponse(rate);
+  }
+
+  @Transactional
+  public RateResponse delete(UUID id) {
+    Rate rate =
+        rateRepository
+            .findById(id)
+            .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tarifa no encontrada"));
+    long refs = parkingSessionRepository.countByRate_IdAndCompanyId(id, SecurityUtils.requireCompanyId());
+    if (refs > 0) {
+      throw new OperationException(
+          HttpStatus.CONFLICT,
+          "No se puede eliminar: existen sesiones asociadas; inactivela en su lugar");
+    }
+    rate.setActive(false);
+    rate.setUpdatedAt(OffsetDateTime.now());
+    rateRepository.save(rate);
+    settingsAuditService.log(
+        AuthAuditAction.SETTINGS_RATE_DELETE,
+        "OK",
+        Map.of("rateId", id.toString(), "name", rate.getName(), "active", false));
+    return toResponse(rate);
+  }
+
+  // ─── business rules ────────────────────────────────────────────────────────
+
+  private void applyBusinessRules(Rate rate, UUID excludeId) {
+    rateValidationService.validateSchedule(rate);
+    rateValidationService.validateMinMax(rate);
+    rateValidationService.validateVehicleType(rate, vehicleTypeRepository);
+
+    if (!rate.isActive()) {
+      return;
+    }
+    UUID ex = excludeId != null ? excludeId : UUID.randomUUID();
+    UUID companyId = SecurityUtils.requireCompanyId();
+    String siteCode = rate.getSiteRef() != null ? rate.getSiteRef().getCode() : null;
+    var others = rateRepository.findActiveForConflictCheck(siteCode, rate.getVehicleType(), ex, companyId);
+
+    rateValidationService.validateOverlap(rate, others);
+  }
+
+  // ─── mapping helpers ───────────────────────────────────────────────────────
+
+  private Rate fromRequest(RateUpsertRequest req, Rate target) {
+    target.setName(req.name().trim());
+    target.setVehicleType(req.vehicleType());
+    target.setCategory(req.category() != null ? req.category() : RateCategory.STANDARD);
+    target.setRateType(req.rateType());
+    target.setAmount(req.amount());
+    target.setGraceMinutes(req.graceMinutes());
+    target.setToleranceMinutes(req.toleranceMinutes());
+    target.setFractionMinutes(req.fractionMinutes());
+    target.setRoundingMode(req.roundingMode());
+    target.setLostTicketSurcharge(req.lostTicketSurcharge());
+    target.setActive(req.active());
+
+    // Sede
+    ParkingSite siteRef = null;
+    if (req.siteId() != null) {
+      siteRef =
+          parkingSiteRepository
+              .findById(req.siteId())
+              .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sede no encontrada"));
+      target.setSiteRef(siteRef);
+    }
+
+    // Estructura base + adicional
+    target.setBaseValue(req.baseValue() != null ? req.baseValue() : BigDecimal.ZERO);
+    target.setBaseMinutes(req.baseMinutes());
+    target.setAdditionalValue(req.additionalValue() != null ? req.additionalValue() : BigDecimal.ZERO);
+    target.setAdditionalMinutes(req.additionalMinutes());
+
+    // Topes
+    target.setMinSessionValue(req.minSessionValue());
+    target.setMaxSessionValue(req.maxSessionValue());
+    target.setMaxDailyValue(req.maxDailyValue());
+
+    // Noche y festivos
+    target.setAppliesNight(req.appliesNight());
+    target.setNightSurchargePercent(
+        req.nightSurchargePercent() != null ? req.nightSurchargePercent() : BigDecimal.ZERO);
+    target.setAppliesHoliday(req.appliesHoliday());
+    target.setHolidaySurchargePercent(
+        req.holidaySurchargePercent() != null ? req.holidaySurchargePercent() : BigDecimal.ZERO);
+
+    // Días de la semana
+    target.setAppliesDaysBitmap(req.appliesDaysBitmap());
+
+    // Franja horaria y vigencia
+    target.setWindowStart(req.windowStart());
+    target.setWindowEnd(req.windowEnd());
+    target.setScheduledActiveFrom(req.scheduledActiveFrom());
+    target.setScheduledActiveTo(req.scheduledActiveTo());
+    target.setUpdatedAt(OffsetDateTime.now());
+    return target;
+  }
+
+  private RateResponse toResponse(Rate r) {
+    return new RateResponse(
+        r.getId(),
+        r.getName(),
+        r.getVehicleType(),
+        r.getCategory(),
+        r.getRateType(),
+        r.getAmount(),
+        r.getGraceMinutes(),
+        r.getToleranceMinutes(),
+        r.getFractionMinutes(),
+        r.getRoundingMode(),
+        r.getLostTicketSurcharge(),
+        r.isActive(),
+        r.getSiteRef() != null ? r.getSiteRef().getCode() : null,
+        r.getSiteRef() != null ? r.getSiteRef().getId() : null,
+        r.getBaseValue(),
+        r.getBaseMinutes(),
+        r.getAdditionalValue(),
+        r.getAdditionalMinutes(),
+        r.getMinSessionValue(),
+        r.getMaxSessionValue(),
+        r.getMaxDailyValue(),
+        r.isAppliesNight(),
+        r.getNightSurchargePercent(),
+        r.isAppliesHoliday(),
+        r.getHolidaySurchargePercent(),
+        r.getAppliesDaysBitmap(),
+        r.getWindowStart(),
+        r.getWindowEnd(),
+        r.getScheduledActiveFrom(),
+        r.getScheduledActiveTo(),
+        r.getCreatedAt(),
+        r.getUpdatedAt());
+  }
+
+  private Map<String, Object> snapshot(Rate r) {
+    Map<String, Object> m = new LinkedHashMap<>();
+    m.put("name", r.getName());
+    m.put("vehicleType", r.getVehicleType());
+    m.put("category", r.getCategory() != null ? r.getCategory().name() : RateCategory.STANDARD.name());
+    m.put("rateType", r.getRateType().name());
+    m.put("amount", r.getAmount());
+    m.put("active", r.isActive());
+    m.put("site", r.getSiteRef() != null ? r.getSiteRef().getCode() : null);
+    m.put("minSessionValue", r.getMinSessionValue());
+    m.put("maxSessionValue", r.getMaxSessionValue());
+    m.put("nightSurchargePercent", r.getNightSurchargePercent());
+    m.put("holidaySurchargePercent", r.getHolidaySurchargePercent());
+    m.put("appliesDaysBitmap", r.getAppliesDaysBitmap());
+    return m;
+  }
+}

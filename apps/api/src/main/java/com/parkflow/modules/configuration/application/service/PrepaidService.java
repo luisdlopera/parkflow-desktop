@@ -24,10 +24,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * @deprecated Use {@link BillingManagementFacadeService} for new code.
- *             This service is maintained for backward compatibility.
+ * @deprecated Use {@link PrepaidManagementService} and {@link PrepaidQueryService} instead.
+ *             Maintained for backward compatibility during hexagonal architecture migration.
  */
-@Deprecated(since = "2.0", forRemoval = false)
+@Deprecated(since = "2.1.0", forRemoval = false)
 @Service
 @RequiredArgsConstructor
 public class PrepaidService implements PrepaidUseCase {

@@ -32,9 +32,13 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
+ * @deprecated Use {@link InvoiceGenerationService} and {@link InvoiceQueryService} instead.
+ * This class maintained for backward compatibility during migration to hexagonal architecture.
+ *
  * Core billing service. This class NEVER references a specific provider (Alegra, Siigo, etc.)
  * All provider interactions are delegated via InvoiceProviderPort through InvoiceProviderResolver.
  */
+@Deprecated(since = "2.1.0", forRemoval = false)
 @SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Slf4j
 @Service

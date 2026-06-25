@@ -22,6 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static com.parkflow.config.CacheConfig.PLANS_LIST;
 
+/**
+ * @deprecated Use {@link PlanLifecycleService} and {@link PlanQueryService} instead.
+ * This class maintained for backward compatibility during migration to hexagonal architecture.
+ */
+@Deprecated(since = "2.1.0", forRemoval = false)
 @Service
 @RequiredArgsConstructor
 public class PlanService {
