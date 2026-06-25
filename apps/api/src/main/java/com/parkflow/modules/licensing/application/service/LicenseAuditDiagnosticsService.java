@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AuditQueryService implements AuditQueryUseCase {
+public class LicenseAuditDiagnosticsService implements AuditQueryUseCase {
 
   private final LicenseBlockEventPort blockEventRepository;
   private final CompanyPort companyRepository;
