@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/core/useAuth';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import * as authServiceModule from '@/services/auth.service';
 

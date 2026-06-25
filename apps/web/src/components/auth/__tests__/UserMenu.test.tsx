@@ -24,7 +24,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   currentUser: (...args: any[]) => mockCurrentUser(...args),
   canAccessSuperAdminPortal: (user: any) => user?.role === "SUPER_ADMIN",
 }));
@@ -33,7 +33,7 @@ vi.mock("@/features/auth/api/auth.api", () => ({
   logoutAllSessions: (...args: any[]) => mockLogoutAll(...args),
 }));
 
-vi.mock("@/features/auth/services/auth-storage.service", () => ({
+vi.mock("@/lib/services/auth-storage.service", () => ({
   clearSession: (...args: any[]) => mockClearSession(...args),
 }));
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { buildApiHeaders } from "@/lib/api";
-import { hasPermission } from "@/features/auth/services/auth-domain.service";
+import { hasPermission } from "@/lib/services/auth-domain.service";
 import type { CreatePrintJobRequest, PrintDocumentType, TicketDocument } from "@parkflow/types";
 import { createPrintJobRequestSchema } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
-import { currentUser } from "@/features/auth/services/auth-domain.service";
+import { currentUser } from "@/lib/services/auth-domain.service";
 export default function OnboardingGate() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [showWizard, setShowWizard] = useState(false);

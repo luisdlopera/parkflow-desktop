@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   authHeaders: () => Promise.resolve({ Authorization: "Bearer test-token" }),
 }));
 

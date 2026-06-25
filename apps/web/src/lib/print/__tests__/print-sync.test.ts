@@ -13,7 +13,7 @@ vi.mock("@/lib/api/fetch-with-credentials", () => ({
   fetchWithCredentials: mockFetch,
 }));
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   hasPermission: mockHasPermission,
 }));
 

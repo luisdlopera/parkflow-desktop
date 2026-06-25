@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { queueOfflineOperation } from "@/lib/offline-outbox";
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   isOfflineLeaseValid: vi.fn(),
 }));
 
-vi.mock("@/features/auth/services/auth-storage.service", () => ({
+vi.mock("@/lib/services/auth-storage.service", () => ({
   loadSession: vi.fn(),
 }));
 
@@ -21,8 +21,8 @@ describe("offline-outbox", () => {
   });
 
   it("returns false when session is null", async () => {
-    const { isOfflineLeaseValid } = await import("@/features/auth/services/auth-domain.service");
-    const { loadSession } = await import("@/features/auth/services/auth-storage.service");
+    const { isOfflineLeaseValid } = await import("@/lib/services/auth-domain.service");
+    const { loadSession } = await import("@/lib/services/auth-storage.service");
 
     vi.mocked(isOfflineLeaseValid).mockResolvedValue(true);
     vi.mocked(loadSession).mockResolvedValue(null);
@@ -32,8 +32,8 @@ describe("offline-outbox", () => {
   });
 
   it("throws when Tauri invoke fails", async () => {
-    const { isOfflineLeaseValid } = await import("@/features/auth/services/auth-domain.service");
-    const { loadSession } = await import("@/features/auth/services/auth-storage.service");
+    const { isOfflineLeaseValid } = await import("@/lib/services/auth-domain.service");
+    const { loadSession } = await import("@/lib/services/auth-storage.service");
 
     vi.mocked(isOfflineLeaseValid).mockResolvedValue(true);
     vi.mocked(loadSession).mockResolvedValue({
@@ -48,8 +48,8 @@ describe("offline-outbox", () => {
   });
 
   it("sets correct event type, origin, and payload for LOST_TICKET", async () => {
-    const { isOfflineLeaseValid } = await import("@/features/auth/services/auth-domain.service");
-    const { loadSession } = await import("@/features/auth/services/auth-storage.service");
+    const { isOfflineLeaseValid } = await import("@/lib/services/auth-domain.service");
+    const { loadSession } = await import("@/lib/services/auth-storage.service");
 
     vi.mocked(isOfflineLeaseValid).mockResolvedValue(true);
     vi.mocked(loadSession).mockResolvedValue({

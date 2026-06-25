@@ -61,7 +61,7 @@ export async function safeFetch<T = unknown>(input: RequestInfo | URL, init?: Re
       if (typeof window !== "undefined") {
         const key = `${response.status}:${requestMethod}:${requestPath}`;
         if (response.status === 401) {
-          import("@/features/auth/services/auth-storage.service").then(({ clearSession }) => {
+          import("@/lib/services/auth-storage.service").then(({ clearSession }) => {
             clearSession();
             const currentPath = window.location.pathname + window.location.search;
             const isOnboarding = currentPath.includes("/onboarding");

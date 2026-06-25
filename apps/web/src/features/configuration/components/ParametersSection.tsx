@@ -14,7 +14,7 @@ import {
   type ParkingParametersPayload
 } from "@/lib/settings-api";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
-import { useDialog } from "@/components/ui/DialogProvider";
+import { useDialog } from "@/providers/DialogProvider";
 import { LOST_TICKET_POLICIES } from "@/features/configuration/constants";
 
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {

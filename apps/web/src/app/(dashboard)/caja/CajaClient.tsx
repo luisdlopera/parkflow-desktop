@@ -12,7 +12,7 @@ import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 import { CashSummaryTotals } from "./CashSummaryTotals";
 import { CashAuditLog } from "./CashAuditLog";
 import Badge from "@/components/bridge/Badge";
-import { useDialog } from "@/components/ui/DialogProvider";
+import { useDialog } from "@/providers/DialogProvider";
 import { useCajaPage } from "@/features/cash-register/hooks/useCajaPage";
 import StepProgress from "@/features/cash-register/components/StepProgress";
 import SessionStatusCard from "@/features/cash-register/components/SessionStatusCard";

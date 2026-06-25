@@ -6,7 +6,7 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn().mockReturnValue({ push: vi.fn(), replace: vi.fn() }),
 }));
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   currentUser: vi.fn(),
 }));
 
@@ -19,7 +19,7 @@ vi.mock("@/components/onboarding/OnboardingWizard", () => ({
   ),
 }));
 
-import { currentUser } from "@/features/auth/services/auth-domain.service";
+import { currentUser } from "@/lib/services/auth-domain.service";
 import { useRouter } from "next/navigation";
 
 describe("OnboardingPage", () => {

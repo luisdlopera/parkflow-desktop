@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { usePermissions } from '@/hooks/auth/usePermissions';
-import * as authDomain from '@/features/auth/services/auth-domain.service';
+import * as authDomain from '@/lib/services/auth-domain.service';
 
-vi.mock('@/features/auth/services/auth-domain.service', () => ({
+vi.mock('@/lib/services/auth-domain.service', () => ({
   hasPermission: vi.fn(),
 }));
 

@@ -4,7 +4,7 @@ import { MotorcycleEntryFormUI } from "../MotorcycleEntryFormUI";
 import { useForm } from "react-hook-form";
 import React from "react";
 
-vi.mock("@/components/providers/FeatureFlagProvider", () => ({
+vi.mock("@/providers/FeatureFlagProvider", () => ({
   useFeatureFlags: vi.fn().mockReturnValue({ helmets: true, lockers: true })
 }));
 

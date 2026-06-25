@@ -46,7 +46,7 @@ function vehicleTypeView(type: { code: string; name: string; color?: string }) {
   return { label: type.name || type.code, color: type.color || "" };
 }
 
-import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
+import { useFeatureFlags } from "@/providers/FeatureFlagProvider";
 
 export default function VehicleEntryFormV2({
   initialPlate = "",

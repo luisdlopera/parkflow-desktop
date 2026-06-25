@@ -2,7 +2,7 @@
 import { useState, useCallback } from "react";
 import { newIdempotencyKey } from "@/lib/idempotency";
 import { downloadTicketAsHtml } from "@/lib/print/ticket-download";
-import { currentUser } from "@/features/auth/services/auth-domain.service";
+import { currentUser } from "@/lib/services/auth-domain.service";
 import { reprintEntryTicket } from "../services/vehicle-entry.service";
 
 export interface PrintWarning {

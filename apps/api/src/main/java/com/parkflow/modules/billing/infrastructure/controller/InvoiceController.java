@@ -13,7 +13,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -71,5 +73,19 @@ public class InvoiceController {
       @Valid @RequestBody CancelInvoiceRequest request) {
     UUID companyId = TenantContext.getTenantId();
     return ResponseEntity.ok(invoiceService.cancelInvoice(id, companyId, request.getReason()));
+  }
+
+  @GetMapping("/{id}/pdf")
+  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','AUDITOR')")
+  @Operation(summary = "Download invoice PDF from provider")
+  public ResponseEntity<byte[]> downloadPdf(@PathVariable UUID id) {
+    UUID companyId = TenantContext.getTenantId();
+    // TODO: Implement PDF download from provider
+    // 1. Get invoice by id
+    // 2. Get provider from invoice.getProviderType()
+    // 3. Call provider.getPdf(externalId)
+    // 4. Return as application/pdf
+    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+        .body(null);
   }
 }

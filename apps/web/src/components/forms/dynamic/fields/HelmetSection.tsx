@@ -9,7 +9,7 @@ import { Button } from "@/components/bridge/Button";
 import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 import { ListBox } from "@heroui/react";
 import { fetchAvailableLockers } from "@/lib/api/lockers-api";
-import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
+import { useFeatureFlags } from "@/providers/FeatureFlagProvider";
 
 interface HelmetSectionProps {
   control: Control<any>;

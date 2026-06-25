@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
-import { DialogProvider } from "@/components/ui/DialogProvider";
+import { DialogProvider } from "@/providers/DialogProvider";
 
 // Mock next/navigation so useRouter doesn't throw in jsdom
 vi.mock("next/navigation", () => ({
@@ -106,11 +106,11 @@ vi.mock("@/lib/onboarding-api", () => ({
   completeOnboarding: vi.fn(async () => ({}))
 }));
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   patchSessionUser: vi.fn(async () => ({}))
 }));
 
-vi.mock("@/features/auth/services/auth-storage.service", () => ({
+vi.mock("@/lib/services/auth-storage.service", () => ({
   clearSession: vi.fn()
 }));
 
@@ -339,7 +339,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
 
   it("calls patchSessionUser on skip with onboardingCompleted true", async () => {
     const user = userEvent.setup();
-    const { patchSessionUser } = await import("@/features/auth/services/auth-domain.service");
+    const { patchSessionUser } = await import("@/lib/services/auth-domain.service");
 
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
     await waitFor(() => expect(screen.getByText("Paso 1 de 12")).toBeInTheDocument());
@@ -571,7 +571,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
   it("handles skip error with 401 status", async () => {
     const user = userEvent.setup();
     const { skipOnboarding } = await import("@/lib/onboarding-api");
-    const { clearSession } = await import("@/features/auth/services/auth-storage.service");
+    const { clearSession } = await import("@/lib/services/auth-storage.service");
 
     vi.mocked(skipOnboarding).mockRejectedValueOnce(new Error("401"));
 

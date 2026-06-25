@@ -6,7 +6,7 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 const mockFetchWithCredentials = vi.fn();
 const mockSaveSession = vi.fn();
 
-vi.mock('@/features/auth/services/auth-storage.service', () => ({
+vi.mock('@/lib/services/auth-storage.service', () => ({
   saveSession: (...args: any[]) => mockSaveSession(...args),
 }));
 

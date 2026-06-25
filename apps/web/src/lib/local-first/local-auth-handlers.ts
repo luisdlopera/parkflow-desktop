@@ -52,7 +52,7 @@ export async function handleAuthRoutes(
     pathname.endsWith("/auth/me") ||
     pathname.endsWith("/auth/change-password")
   ) {
-    const { loadSession } = await import("@/features/auth/services/auth-storage.service");
+    const { loadSession } = await import("@/lib/services/auth-storage.service");
     const session = await loadSession();
     const userId = session?.user?.id;
     if (!userId) {

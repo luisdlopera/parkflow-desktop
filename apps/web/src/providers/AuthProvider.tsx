@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useAuthStore } from '@/lib/stores/auth.store';
-import { saveSession } from '@/features/auth/services/auth-storage.service';
+import { saveSession } from '@/lib/services/auth-storage.service';
 import { authBase } from '@/lib/api/config';
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 

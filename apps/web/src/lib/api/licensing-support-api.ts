@@ -1,4 +1,4 @@
-import { authHeaders } from "@/features/auth/services/auth-domain.service";
+import { authHeaders } from "@/lib/services/auth-domain.service";
 import { apiBase as getApiBase } from "./config";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 

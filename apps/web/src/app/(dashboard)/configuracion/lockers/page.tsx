@@ -5,7 +5,7 @@ import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
 import { Switch } from "@/components/bridge/Switch";
 import DataTable from "@/components/ui/DataTable";
-import { useDialog } from "@/components/ui/DialogProvider";
+import { useDialog } from "@/providers/DialogProvider";
 import { FrontendActionError } from "@/lib/errors/error-messages";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
 import {
@@ -19,7 +19,7 @@ import {
 import { Plus, Trash2, PackagePlus, Tags } from "lucide-react";
 import { Select } from "@/components/bridge/Select";
 import { ListBox } from "@heroui/react";
-import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
+import { useFeatureFlags } from "@/providers/FeatureFlagProvider";
 import Link from "next/link";
 import { ConfigPageHeader } from "@/features/configuration/components/ui/ConfigPageHeader";
 

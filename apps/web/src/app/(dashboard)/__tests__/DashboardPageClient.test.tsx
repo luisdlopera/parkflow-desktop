@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import DashboardPageClient from "../DashboardPageClient";
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   currentUser: vi.fn().mockResolvedValue({ id: "1", role: "SUPER_ADMIN" }),
   canAccessSuperAdminPortal: vi.fn().mockReturnValue(true),
 }));

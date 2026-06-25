@@ -55,7 +55,7 @@ beforeEach(async () => {
   replace.mockReset();
   window.localStorage.clear();
   window.history.pushState({}, "", "/login");
-  const { clearSession } = await import("@/features/auth/services/auth-storage.service");
+  const { clearSession } = await import("@/lib/services/auth-storage.service");
   await clearSession();
 });
 

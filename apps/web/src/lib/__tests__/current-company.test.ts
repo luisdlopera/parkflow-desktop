@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { resolveCurrentCompanyId } from "@/lib/current-company";
 
 // Mock the auth-storage module
-vi.mock("@/features/auth/services/auth-storage.service", () => ({
+vi.mock("@/lib/services/auth-storage.service", () => ({
   loadSession: vi.fn(),
 }));
 
-import { loadSession } from "@/features/auth/services/auth-storage.service";
+import { loadSession } from "@/lib/services/auth-storage.service";
 
 const mockLoadSession = loadSession as any;
 

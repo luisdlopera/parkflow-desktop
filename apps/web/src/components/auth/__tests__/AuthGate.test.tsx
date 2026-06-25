@@ -13,7 +13,7 @@ vi.mock("@/lib/stores/auth.store", () => ({
   useAuthStore: vi.fn(),
 }));
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   currentUser: (...args: any[]) => mockCurrentUser(...args),
 }));
 

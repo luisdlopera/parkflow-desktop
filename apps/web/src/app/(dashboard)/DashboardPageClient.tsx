@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { currentUser, canAccessSuperAdminPortal } from "@/features/auth/services/auth-domain.service";
+import { currentUser, canAccessSuperAdminPortal } from "@/lib/services/auth-domain.service";
 import { Spinner } from "@heroui/react";
 import { Card } from "@/components/bridge/Card";
 import { Button } from "@/components/bridge/Button";

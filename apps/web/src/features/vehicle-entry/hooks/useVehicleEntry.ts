@@ -15,7 +15,7 @@ import { normalizeApiError } from "@/lib/errors/normalize-api-error";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
 import { normalizePlate, inferVehicleType } from "@/lib/validation/plate-validator";
 import { toUserMessageFromClientValidation } from "@/lib/validation/request-guard";
-import { currentUser } from "@/features/auth/services/auth-domain.service";
+import { currentUser } from "@/lib/services/auth-domain.service";
 import type { VehicleEntryFormValues } from "@/lib/schemas/vehicle.schema";
 import type { VehicleType } from "@parkflow/types";
 import { createParkingEntry } from "@/features/vehicle-entry/services/vehicle-entry.service";

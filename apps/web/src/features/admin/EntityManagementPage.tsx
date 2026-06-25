@@ -5,7 +5,7 @@ import { useOverlayState } from "@heroui/react";
 import { Button } from "@/components/bridge/Button";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/bridge/Modal";
 import { Dropdown, DropdownMenu, DropdownItem } from "@/components/bridge/Dropdown";
-import { useDialog } from "@/components/ui/DialogProvider";
+import { useDialog } from "@/providers/DialogProvider";
 import { Button as HeroButton } from "@heroui/react";
 import { Plus, MoreVertical, Pencil, Trash2, LucideIcon } from "lucide-react";
 import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";

@@ -7,6 +7,7 @@ import { Button } from "@/components/bridge/Button";
 import PlateInput from "@/components/forms/PlateInput";
 import VehicleTypeSelector from "@/components/forms/VehicleTypeSelector";
 import type { VehicleType } from "@parkflow/types";
+import { WhatsAppPhoneInput } from "@/components/forms/WhatsAppPhoneInput";
 
 interface MixedEntryFormUIProps {
   form: any;
@@ -127,6 +128,7 @@ export function MixedEntryFormUI({
         )}
       </div>
 
+      <WhatsAppPhoneInput control={form.control} />
       {/* Botón principal */}
       <div className="pt-2">
         <Button

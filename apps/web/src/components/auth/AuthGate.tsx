@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Skeleton } from "@heroui/react";
 import { useAuthStore } from "@/lib/stores/auth.store";
-import { currentUser } from "@/features/auth/services/auth-domain.service";
+import { currentUser } from "@/lib/services/auth-domain.service";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();

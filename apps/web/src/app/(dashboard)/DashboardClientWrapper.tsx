@@ -11,7 +11,7 @@ import { useSidebar } from "@/hooks/ui/useSidebar";
 import { useUIFacade } from "@/features/admin/hooks/useUIFacade";
 import { PageTransition } from "@/components/animations";
 import { ScrollToTopButton } from "@/components/animations";
-import { useSessionTimeout } from "@/hooks/useSessionTimeout";
+import { useSessionTimeout } from "@/hooks/core/useSessionTimeout";
 
 function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(() =>

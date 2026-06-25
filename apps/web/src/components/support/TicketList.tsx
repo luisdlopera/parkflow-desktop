@@ -1,5 +1,6 @@
+"use client";
 import React from "react";
-import { Card, CardBody, Avatar, Chip, Spinner } from "@heroui/react";
+import { Card, Avatar, Chip, Spinner } from "@heroui/react";
 import useSWR from "swr";
 import axios from "axios";
 
@@ -25,7 +26,7 @@ export function TicketList() {
       
       {tickets.map((ticket: any) => (
         <Card key={ticket.id} isPressable className="w-full">
-          <CardBody className="flex flex-row items-center gap-4">
+          <Card.Content className="flex flex-row items-center gap-4">
             <Avatar name={ticket.customerName || "Customer"} />
             <div className="flex flex-col flex-1 items-start">
               <span className="font-bold text-small">{ticket.customerName || "Customer"}</span>
@@ -37,7 +38,7 @@ export function TicketList() {
                 {ticket.status}
               </Chip>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       ))}
     </div>

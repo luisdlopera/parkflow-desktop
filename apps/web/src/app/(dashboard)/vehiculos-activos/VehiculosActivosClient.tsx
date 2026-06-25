@@ -17,7 +17,7 @@ import { TicketPreviewModal } from "@/features/active-vehicles/components/Ticket
 import { BulkExitConfirmModal, BulkExitSuccessModal } from "@/features/active-vehicles/components/BulkExitModals";
 import { useColumnVisibility } from "@/features/active-vehicles/hooks/useColumnVisibility";
 import { VehiculosActivosFilters } from "@/features/active-vehicles/components/VehiculosActivosFilters";
-import { hasPermission } from "@/features/auth/services/auth-domain.service";
+import { hasPermission } from "@/lib/services/auth-domain.service";
 
 export default function VehiculosActivosClient({ fallbackData }: { fallbackData?: { sessions: any; summary: any } | undefined }) {
   const [params, setParams] = useState<GetActiveSessionsQuery>({ page: 1, limit: 25, search: "", sortBy: "entryAt", sortDir: "desc" });

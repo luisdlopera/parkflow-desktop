@@ -1,4 +1,4 @@
-import { loadSession } from "@/features/auth/services/auth-storage.service";
+import { loadSession } from "@/lib/services/auth-storage.service";
 
 export async function resolveCurrentCompanyId(): Promise<string | null> {
   const session = await loadSession();

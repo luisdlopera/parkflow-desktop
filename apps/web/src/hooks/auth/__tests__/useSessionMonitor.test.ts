@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useSessionMonitor } from '@/hooks/auth/useSessionMonitor';
 import { useAuthStore } from '@/lib/stores/auth.store';
-import * as authStorage from '@/features/auth/services/auth-storage.service';
+import * as authStorage from '@/lib/services/auth-storage.service';
 import * as authApi from '@/features/auth/api/auth.api';
 
 const mockPush = vi.fn();
@@ -11,7 +11,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-vi.mock('@/features/auth/services/auth-storage.service', () => ({
+vi.mock('@/lib/services/auth-storage.service', () => ({
   loadSession: vi.fn(),
   clearSession: vi.fn(),
 }));

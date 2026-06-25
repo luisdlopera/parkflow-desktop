@@ -17,7 +17,7 @@ import { useOsShortcut } from "@/hooks/core/useOsShortcut";
 import { useExitShortcuts } from "@/hooks/ui/useKeyboardShortcuts";
 import TicketPrintWarning from "@/components/tickets/TicketPrintWarning";
 import { useVehicleExit } from "@/features/vehicle-exit/hooks/useVehicleExit";
-import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
+import { useFeatureFlags } from "@/providers/FeatureFlagProvider";
 
 const ENTRY_MODE_LABEL: Record<string, string> = {
   VISITOR: "Visitante",

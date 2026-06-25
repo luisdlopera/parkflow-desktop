@@ -8,7 +8,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
 }));
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   currentUser: (...args: any[]) => mockCurrentUser(...args),
   canAccessSuperAdminPortal: (user: any) => user?.role === "SUPER_ADMIN",
 }));

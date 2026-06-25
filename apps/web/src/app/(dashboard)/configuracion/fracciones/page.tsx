@@ -17,7 +17,7 @@ import { rateFractionSchema, type RateFractionSchema } from "@/lib/schemas/confi
 import type { RateFractionRow } from "@/lib/types/settings.types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { FormDrawer } from "@/components/ui/FormDrawer";
-import { useDialog } from "@/components/ui/DialogProvider";
+import { useDialog } from "@/providers/DialogProvider";
 import { useConfigCrud } from "@/hooks/core/useConfigCrud";
 
 const COLS: ColumnDef<RateFractionRow>[] = [

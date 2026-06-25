@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { SearchResponse } from '../types/search.types';
 import { httpRequest } from '@/lib/http-client';
-import { authHeaders } from "@/features/auth/services/auth-domain.service";
+import { authHeaders } from "@/lib/services/auth-domain.service";
 import { apiBase } from '@/lib/api/config';
 
 function apiBaseUrl() {

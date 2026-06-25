@@ -1,5 +1,5 @@
 import { resolveCurrentCompanyId } from "@/lib/current-company";
-import { authHeaders } from "@/features/auth/services/auth-domain.service";
+import { authHeaders } from "@/lib/services/auth-domain.service";
 import { apiBase } from "@/lib/api/config";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 

@@ -17,7 +17,7 @@ vi.mock("@/lib/stores/auth.store", () => ({
   }),
 }));
 
-vi.mock("@/features/auth/services/auth-storage.service", () => ({
+vi.mock("@/lib/services/auth-storage.service", () => ({
   clearSession: vi.fn().mockResolvedValue(undefined),
 }));
 

@@ -8,7 +8,7 @@ import { Tabs, Tab } from "@/components/bridge/Tabs";
 import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
 import DataTable from "@/components/ui/DataTable";
-import { useDialog } from "@/components/ui/DialogProvider";
+import { useDialog } from "@/providers/DialogProvider";
 import {
   fetchParkingSpacesSummary,
   fetchParkingSpaces,

@@ -8,8 +8,8 @@ import { DropdownItem } from "@/components/bridge/Dropdown";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { logoutAllSessions } from "@/features/auth/api/auth.api";
-import { clearSession } from "@/features/auth/services/auth-storage.service";
-import { currentUser, canAccessSuperAdminPortal } from "@/features/auth/services/auth-domain.service";
+import { clearSession } from "@/lib/services/auth-storage.service";
+import { currentUser, canAccessSuperAdminPortal } from "@/lib/services/auth-domain.service";
 import type { AuthUser } from "@parkflow/types";
 import { Shield } from "lucide-react";
 

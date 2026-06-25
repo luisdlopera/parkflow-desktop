@@ -7,7 +7,7 @@ import { Button } from "@/components/bridge/Button";
 import DataTable from "@/components/ui/DataTable";
 import dynamic from "next/dynamic";
 import ReportDateFilter from "@/features/reports/components/ReportDateFilter";
-import { hasPermission } from "@/features/auth/services/auth-domain.service";
+import { hasPermission } from "@/lib/services/auth-domain.service";
 import { BarChart3, Lock, Car, Receipt, Ban, DollarSign, TrendingUp, User, CreditCard } from "lucide-react";
 import { useReports, fmt, fmtPct, dateLabel, shortDate, pmLabel, getOccupancyColor } from "@/features/reports/hooks/useReports";
 import type { ReportView } from "@/features/reports/hooks/useReports";

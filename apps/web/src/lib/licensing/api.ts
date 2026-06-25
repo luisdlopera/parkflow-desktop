@@ -1,4 +1,4 @@
-import { authHeaders } from "@/features/auth/services/auth-domain.service";
+import { authHeaders } from "@/lib/services/auth-domain.service";
 import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import {
   licensingCreateCompanyRequestSchema,

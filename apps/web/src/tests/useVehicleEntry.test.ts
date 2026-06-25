@@ -12,10 +12,10 @@ import type { OperatorSettings } from "@/features/vehicle-entry/hooks/useOperato
 vi.mock("@/features/auth/api/auth.api", () => ({
   currentUser: vi.fn().mockResolvedValue({ id: "user-001", role: "OPERATOR" }),
 }));
-vi.mock("@/features/auth/services/auth-storage.service", () => ({
+vi.mock("@/lib/services/auth-storage.service", () => ({
   currentUser: vi.fn().mockResolvedValue({ id: "user-001", role: "OPERATOR" }),
 }));
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   currentUser: vi.fn().mockResolvedValue({ id: "user-001", role: "OPERATOR" }),
 }));
 

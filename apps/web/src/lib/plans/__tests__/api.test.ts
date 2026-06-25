@@ -5,7 +5,7 @@ const mockFetch = vi.fn();
 const mockValidate = vi.fn();
 const mockNormalizeError = vi.fn();
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   authHeaders: mockAuthHeaders,
 }));
 

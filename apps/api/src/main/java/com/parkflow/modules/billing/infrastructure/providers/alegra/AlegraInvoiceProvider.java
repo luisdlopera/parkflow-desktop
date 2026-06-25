@@ -11,6 +11,7 @@ import com.parkflow.modules.billing.dto.ExternalInvoiceResult;
 import com.parkflow.modules.billing.dto.ProviderHealthResult;
 import com.parkflow.modules.billing.infrastructure.providers.alegra.dto.AlegraInvoiceDto;
 import com.parkflow.modules.billing.infrastructure.providers.alegra.dto.AlegraInvoiceResponseDto;
+import com.parkflow.modules.customers.domain.port.ClientPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,7 @@ public class AlegraInvoiceProvider implements InvoiceProviderPort {
 
   private final AlegraClient alegraClient;
   private final AlegraMapper alegraMapper;
+  private final ClientPort clientPort;
 
   @Override
   public InvoiceProviderType getType() {
@@ -91,13 +93,24 @@ public class AlegraInvoiceProvider implements InvoiceProviderPort {
 
   @Override
   public ExternalInvoiceResult createCreditNote(InvoiceNote note, InvoiceProviderConfig config) {
-    // Deferred Phase 1.5: credit notes require referencing an existing invoice in Alegra
-    throw new UnsupportedOperationException("Credit notes via Alegra coming in next sprint");
+    // TODO: Implement credit note in Phase 1.5
+    // 1. Fetch original Invoice from note.invoiceId
+    // 2. Build credit note request (type: CREDIT, reason, amount)
+    // 3. POST to /invoices/{externalId}/credit-notes
+    // 4. Extract CUFE from response
+    log.info("[Alegra] Credit note creation - not yet implemented for invoice {}", note.getInvoiceId());
+    throw new UnsupportedOperationException("Credit notes via Alegra coming in Phase 1.5");
   }
 
   @Override
   public ExternalInvoiceResult createDebitNote(InvoiceNote note, InvoiceProviderConfig config) {
-    throw new UnsupportedOperationException("Debit notes via Alegra coming in next sprint");
+    // TODO: Implement debit note in Phase 1.5
+    // 1. Fetch original Invoice from note.invoiceId
+    // 2. Build debit note request (type: DEBIT, reason, amount)
+    // 3. POST to /invoices/{externalId}/debit-notes
+    // 4. Extract CUFE from response
+    log.info("[Alegra] Debit note creation - not yet implemented for invoice {}", note.getInvoiceId());
+    throw new UnsupportedOperationException("Debit notes via Alegra coming in Phase 1.5");
   }
 
   @Override
@@ -111,12 +124,18 @@ public class AlegraInvoiceProvider implements InvoiceProviderPort {
   }
 
   private String resolveAlegraContactId(Invoice invoice, InvoiceProviderConfig config) {
-    // If we have a client, attempt to get or create the Alegra contact
-    // For now return a generic consumer contact ("consumidor final") if clientId is null
+    // TODO: Implement full client sync:
+    // 1. Fetch Client entity by invoice.getClientId()
+    // 2. Convert to BillingCustomerDto
+    // 3. Call createCustomer(dto, config) to sync with Alegra
+    // 4. Cache the mapping (clientId → alegraContactId) in invoice_provider_mappings table
+    // 5. Return alegraContactId from step 3 or cache
+    //
+    // For now, return generic consumer contact for all invoices
     if (invoice.getClientId() == null) {
       return "consumer-final";
     }
-    // Full client sync requires fetching Client entity — deferred to InvoiceService coordination
+    // Phase 1.5: Will sync Client.document (NIT) and Client.name with Alegra
     return "consumer-final";
   }
 }

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTheme, DEFAULT_PRIMARY_COLOR, type BrandColors } from "@/lib/theme/ThemeProvider";
 import { sanitizePrimaryColor } from "@/lib/theme/theme.types";
-import { useDialog } from "@/components/ui/DialogProvider";
+import { useDialog } from "@/providers/DialogProvider";
 import {
   fetchThemeConfig,
   saveThemeConfig,

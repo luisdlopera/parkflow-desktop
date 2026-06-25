@@ -1,13 +1,13 @@
 "use client";
 
 import { Button } from "@/components/bridge/Button";
-import { useDialog } from "@/components/ui/DialogProvider";
+import { useDialog } from "@/providers/DialogProvider";
 import { Check, Save, AlertTriangle } from "lucide-react";
 import { skipOnboarding, completeOnboarding } from "@/lib/onboarding-api";
-import { patchSessionUser } from "@/features/auth/services/auth-domain.service";
+import { patchSessionUser } from "@/lib/services/auth-domain.service";
 import { ApiError } from "@/lib/errors/api-error";
 import { useRouter } from "next/navigation";
-import { clearSession } from "@/features/auth/services/auth-storage.service";
+import { clearSession } from "@/lib/services/auth-storage.service";
 import { useState } from "react";
 import { Spinner } from "@heroui/react";
 import {

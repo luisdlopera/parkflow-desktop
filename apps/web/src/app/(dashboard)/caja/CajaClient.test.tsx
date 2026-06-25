@@ -105,7 +105,7 @@ vi.mock("@/lib/api", () => ({
   buildApiHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test" }),
 }));
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   currentUser: vi.fn().mockResolvedValue({ id: "u1", name: "User" }),
   hasPermission: vi.fn().mockResolvedValue(true),
 }));

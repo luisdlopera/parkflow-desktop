@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
-import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
+import { useFeatureFlags } from "@/providers/FeatureFlagProvider";
 import { CONFIG_NAVIGATION } from "../../constants/navigation";
 import { motion } from "framer-motion";
 

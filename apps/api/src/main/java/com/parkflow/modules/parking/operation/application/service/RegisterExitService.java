@@ -31,9 +31,11 @@ import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.repository.*;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.tickets.domain.PrintDocumentType;
+import com.parkflow.modules.billing.infrastructure.events.PaymentCompletedEvent;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,6 +70,7 @@ public class RegisterExitService implements RegisterExitUseCase {
   private final ParkingParametersUseCase parkingParametersUseCase;
   private final ParkingPricingUseCase parkingPricingUseCase;
   private final MeterRegistry meterRegistry;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Override
   @Transactional
@@ -115,6 +118,8 @@ public class RegisterExitService implements RegisterExitUseCase {
             parkingCashIntegrationUseCase.recordParkingPayment(
                 session, payment, operator, request.idempotencyKey() + "-" + item.method(), CashMovementType.PARKING_PAYMENT, request.cashSessionId());
         }
+        // Publish billing event for async invoice generation
+        publishPaymentCompletedEvent(session, companyId, price.total());
       } else {
         Payment payment = new Payment();
         payment.setSession(session);
@@ -125,6 +130,8 @@ public class RegisterExitService implements RegisterExitUseCase {
         paymentRepository.save(payment);
         parkingCashIntegrationUseCase.recordParkingPayment(
             session, payment, operator, request.idempotencyKey(), CashMovementType.PARKING_PAYMENT, request.cashSessionId());
+        // Publish billing event for async invoice generation
+        publishPaymentCompletedEvent(session, companyId, price.total());
       }
     }
 
@@ -426,6 +433,25 @@ public class RegisterExitService implements RegisterExitUseCase {
         session.getAgreementCode(),
         session.getAppliedPrepaidMinutes(),
         null, null, null, session.isHasHelmet(), items, null, null, null, null);
+  }
+
+  private void publishPaymentCompletedEvent(ParkingSession session, UUID companyId, BigDecimal total) {
+    try {
+      PaymentCompletedEvent event = new PaymentCompletedEvent(
+          this,
+          companyId,
+          session.getId(),
+          null,
+          total,
+          "COP",
+          true  // requestInvoice
+      );
+      eventPublisher.publishEvent(event);
+      log.debug("[Billing Event] PaymentCompletedEvent published for session {}", session.getTicketNumber());
+    } catch (Exception e) {
+      log.warn("[Billing Event] Failed to publish PaymentCompletedEvent: {}", e.getMessage());
+      // Don't fail the exit if billing event fails — parking operations are independent of billing
+    }
   }
 
   private boolean isBlank(String s) { return s == null || s.isBlank(); }

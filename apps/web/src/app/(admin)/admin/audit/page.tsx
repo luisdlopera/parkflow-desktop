@@ -18,7 +18,7 @@ import {
   Eye,
   Download,
 } from "lucide-react";
-import { authHeaders } from "@/features/auth/services/auth-domain.service";
+import { authHeaders } from "@/lib/services/auth-domain.service";
 import { apiBase } from "@/lib/api/config";
 import DataTable, { type DataTableColumn } from "@/components/ui/DataTable";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";

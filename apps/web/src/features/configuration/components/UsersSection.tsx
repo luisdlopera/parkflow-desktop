@@ -3,7 +3,7 @@ import { ListBox } from "@heroui/react";
 import { Select } from "@/components/bridge/Select";
 import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
-import { useDialog } from "@/components/ui/DialogProvider";
+import { useDialog } from "@/providers/DialogProvider";
 import DataTable from "@/components/ui/DataTable";
 import { useCallback, useEffect, useState } from "react";
 import {

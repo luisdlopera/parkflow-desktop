@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useDialog } from "@/components/ui/DialogProvider";
+import { useDialog } from "@/providers/DialogProvider";
 
 type StatusToggleProps = {
   active: boolean;

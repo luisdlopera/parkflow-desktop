@@ -5,7 +5,7 @@ import { cashRegisters, cashAudit, cashPrintClosing } from "@/lib/cash/cash-api"
 import { fetchConfigurationSites } from "@/lib/settings-api";
 import { listCashOutboxPending } from "@/lib/cash/cash-outbox-idb";
 import { flushCashMovementOutbox } from "@/lib/cash/cash-sync";
-import { currentUser, hasPermission } from "@/features/auth/services/auth-domain.service";
+import { currentUser, hasPermission } from "@/lib/services/auth-domain.service";
 import { printCashThermalReceipt, startLocalPrintQueueWorker } from "@/lib/print/print-service";
 import { buildCashCountTicket, buildCashMovementTicket } from "@/lib/cash/cash-print";
 
@@ -48,7 +48,7 @@ vi.mock("@/lib/cash/cash-sync", () => ({
   flushCashMovementOutbox: vi.fn(),
 }));
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   currentUser: vi.fn(),
   hasPermission: vi.fn(),
 }));

@@ -19,6 +19,9 @@ import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.repository.*;
 import com.parkflow.modules.parking.spaces.service.ParkingSpaceService;
+import com.parkflow.modules.settings.domain.ParkingParameters;
+import com.parkflow.modules.settings.domain.repository.ParkingParametersPort;
+import com.parkflow.modules.support.domain.provider.MessagingProvider;
 import com.parkflow.modules.tickets.domain.PrintDocumentType;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.OffsetDateTime;
@@ -60,6 +63,8 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private final CompanyPort companyRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final MeterRegistry meterRegistry;
+  private final ParkingParametersPort parkingParametersPort;
+  private final MessagingProvider messagingProvider;
 
   @Override
   @Transactional
@@ -161,9 +166,25 @@ public class RegisterEntryService implements RegisterEntryUseCase {
     }
 
     try {
-      operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.ENTRY, "entry");
+      Optional<ParkingParameters> paramsOpt = parkingParametersPort.findBySiteCode(site);
+      boolean isWhatsApp = false;
+      if (paramsOpt.isPresent() && paramsOpt.get().getData() != null) {
+          isWhatsApp = "WHATSAPP".equals(paramsOpt.get().getData().getPrinterType());
+      }
+      
+      if (isWhatsApp) {
+          if (request.customerPhoneNumber() != null && !request.customerPhoneNumber().isBlank()) {
+              String message = String.format("¡Hola! Tu vehículo con placa %s ha ingresado a %s a las %s. Tu número de ticket es: %s",
+                  normalizedPlate, company.getName(), entryAt.toString(), session.getTicketNumber());
+              messagingProvider.sendMessage(request.customerPhoneNumber(), message);
+          } else {
+              log.warn("WhatsApp configured but no phone number provided for session {}", session.getId());
+          }
+      } else {
+          operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.ENTRY, "entry");
+      }
     } catch (Exception e) {
-      log.warn("Print job failed for session {}", session.getId());
+      log.warn("Print/WhatsApp job failed for session {}", session.getId());
     }
 
     safeRecordIdempotency(idempotencyKey, IdempotentOperationType.ENTRY, session, companyId);

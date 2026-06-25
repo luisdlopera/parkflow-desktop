@@ -7,13 +7,13 @@ vi.mock('next/navigation', () => ({
   useRouter: vi.fn(),
 }));
 
-vi.mock('@/features/auth/services/auth-storage.service', () => ({
+vi.mock('@/lib/services/auth-storage.service', () => ({
   loadSession: vi.fn(async () => null),
   saveSession: vi.fn(),
   clearSession: vi.fn(),
 }));
 
-vi.mock('@/features/auth/services/auth-domain.service', () => ({
+vi.mock('@/lib/services/auth-domain.service', () => ({
   currentUser: vi.fn(async () => null),
 }));
 

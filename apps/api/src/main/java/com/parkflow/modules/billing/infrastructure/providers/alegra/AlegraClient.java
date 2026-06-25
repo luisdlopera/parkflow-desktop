@@ -120,6 +120,25 @@ public class AlegraClient {
     }
   }
 
+  public byte[] getInvoicePdf(String invoiceId, Map<String, String> credentials) {
+    HttpHeaders headers = buildHeaders(credentials);
+    headers.set("Accept", "application/pdf");
+    HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+    try {
+      ResponseEntity<byte[]> response = restTemplate.exchange(
+          BASE_URL + "/invoices/" + invoiceId + "/pdf",
+          HttpMethod.GET,
+          entity,
+          byte[].class
+      );
+      return response.getBody();
+    } catch (Exception e) {
+      log.error("[Alegra] getInvoicePdf {} failed: {}", invoiceId, e.getMessage());
+      throw new AlegraApiException("Failed to download PDF for invoice " + invoiceId, e);
+    }
+  }
+
   private HttpHeaders buildHeaders(Map<String, String> credentials) {
     String email = credentials.getOrDefault("email", "");
     String token = credentials.getOrDefault("token", "");

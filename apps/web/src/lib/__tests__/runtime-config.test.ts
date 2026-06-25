@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { RuntimeConfig, fetchRuntimeConfig } from "@/lib/runtime-config";
 import * as currentCompanyModule from "@/lib/current-company";
-import * as authDomainModule from "@/features/auth/services/auth-domain.service";
+import * as authDomainModule from "@/lib/services/auth-domain.service";
 import * as fetchModule from "@/lib/api/fetch-with-credentials";
 import * as configModule from "@/lib/api/config";
 
 vi.mock("@/lib/current-company");
-vi.mock("@/features/auth/services/auth-domain.service");
+vi.mock("@/lib/services/auth-domain.service");
 vi.mock("@/lib/api/fetch-with-credentials");
 vi.mock("@/lib/api/config");
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { canAccessSuperAdminPortal, currentUser } from "@/features/auth/services/auth-domain.service";
+import { canAccessSuperAdminPortal, currentUser } from "@/lib/services/auth-domain.service";
 export function SuperAdminGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [allowed, setAllowed] = useState<boolean | null>(null);

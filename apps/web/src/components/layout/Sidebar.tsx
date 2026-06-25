@@ -5,7 +5,7 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useParkingShortcuts } from "@/hooks/ui/useKeyboardShortcuts";
 import { useState, useEffect } from "react";
 import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
-import { useFeatureFlags } from "@/components/providers/FeatureFlagProvider";
+import { useFeatureFlags } from "@/providers/FeatureFlagProvider";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { CONFIG_NAVIGATION } from "@/features/configuration/constants/navigation";
 import { motion, AnimatePresence } from "framer-motion";

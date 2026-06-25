@@ -7,7 +7,7 @@ import {
   printReceiptIfTauri,
   buildTicketPreviewForOperation,
 } from "@/lib/tauri-print";
-import { currentUser } from "@/features/auth/services/auth-domain.service";
+import { currentUser } from "@/lib/services/auth-domain.service";
 import {
   newIdempotencyKey,
   getOrCreateIdempotencyKey,
@@ -28,7 +28,7 @@ vi.mock("@/lib/tauri-print", () => ({
   printReceiptIfTauri: vi.fn(() => Promise.resolve(null)),
 }));
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   currentUser: vi.fn(),
 }));
 

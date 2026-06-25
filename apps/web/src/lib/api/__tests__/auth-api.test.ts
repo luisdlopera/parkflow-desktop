@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   authHeaders: vi.fn(() => Promise.resolve({ Authorization: "Bearer token" }))
 }));
 
@@ -308,7 +308,7 @@ describe("auth-api", () => {
 
   describe("changePassword", () => {
     it("should change password successfully", async () => {
-      const { authHeaders } = await import("@/features/auth/services/auth-domain.service");
+      const { authHeaders } = await import("@/lib/services/auth-domain.service");
       vi.mocked(authHeaders).mockResolvedValue({
         Authorization: "Bearer token"
       } as any);

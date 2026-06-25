@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn().mockReturnValue({ push: vi.fn(), replace: vi.fn() }),
 }));
 
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   hasPermission: vi.fn().mockResolvedValue(true),
 }));
 
@@ -75,7 +75,7 @@ describe("NuevoIngresoPage", () => {
   });
 
   it("shows access denied when user lacks permission", async () => {
-    const { hasPermission } = await import("@/features/auth/services/auth-domain.service");
+    const { hasPermission } = await import("@/lib/services/auth-domain.service");
     vi.mocked(hasPermission).mockResolvedValue(false);
     render(<NuevoIngresoPage />);
     await waitFor(() => {

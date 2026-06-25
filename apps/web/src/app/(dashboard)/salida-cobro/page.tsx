@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ShieldAlert } from "lucide-react";
-import { hasPermission } from "@/features/auth/services/auth-domain.service";
+import { hasPermission } from "@/lib/services/auth-domain.service";
 import SalidaCobroClient from "./SalidaCobroClient";
 
 export default function SalidaCobroPage() {

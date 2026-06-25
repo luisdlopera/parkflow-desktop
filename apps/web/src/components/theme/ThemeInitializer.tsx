@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { currentUser } from "@/features/auth/services/auth-domain.service";
+import { currentUser } from "@/lib/services/auth-domain.service";
 import { fetchThemeConfig } from "@/lib/settings-api";
 import { useTheme } from "@/lib/theme/ThemeProvider";
 import { sanitizePrimaryColor } from "@/lib/theme/theme.types";

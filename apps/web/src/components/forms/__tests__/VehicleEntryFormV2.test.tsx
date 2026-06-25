@@ -32,7 +32,7 @@ vi.mock("@/components/forms/motorcycle/MotorcycleEntryFormUI", () => ({
   MotorcycleEntryFormUI: () => <div data-testid="motorcycle-form">Motorcycle Form</div>
 }));
 
-vi.mock("@/components/providers/FeatureFlagProvider", () => ({
+vi.mock("@/providers/FeatureFlagProvider", () => ({
   useFeatureFlags: vi.fn().mockReturnValue({ agreements: true, memberships: true, helmets: true, lockers: true })
 }));
 

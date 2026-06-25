@@ -15,7 +15,7 @@ import { cashCurrent, cashPolicy } from "@/lib/cash/cash-api";
 import { getOrCreateIdempotencyKey, clearIdempotencyKey } from "@/lib/idempotency";
 import { buildTicketPreviewForOperation, printReceiptIfTauri, type OperationPayload } from "@/lib/tauri-print";
 import { downloadTicketAsHtml } from "@/lib/print/ticket-download";
-import { currentUser } from "@/features/auth/services/auth-domain.service";
+import { currentUser } from "@/lib/services/auth-domain.service";
 import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 import { fetchConfigurationPaymentMethods } from "@/lib/settings-api";
 import { useTerminalCaja } from "@/features/cash-register/hooks/useTerminalCaja";

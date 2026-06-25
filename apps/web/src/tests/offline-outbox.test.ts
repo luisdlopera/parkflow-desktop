@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { queueOfflineOperation } from '../lib/offline-outbox';
-import { isOfflineLeaseValid } from "@/features/auth/services/auth-domain.service";
-import { loadSession } from "@/features/auth/services/auth-storage.service";
+import { isOfflineLeaseValid } from "@/lib/services/auth-domain.service";
+import { loadSession } from "@/lib/services/auth-storage.service";
 
 // Mock auth module
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   isOfflineLeaseValid: vi.fn()
 }));
-vi.mock("@/features/auth/services/auth-storage.service", () => ({
+vi.mock("@/lib/services/auth-storage.service", () => ({
   loadSession: vi.fn()
 }));
 

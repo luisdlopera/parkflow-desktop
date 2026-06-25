@@ -6,8 +6,8 @@ import { Separator } from "@heroui/react";
 import { Card } from "@/components/bridge/Card";
 import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
-import { loadSession, saveSession } from "@/features/auth/services/auth-storage.service";
-import { currentUser } from "@/features/auth/services/auth-domain.service";
+import { loadSession, saveSession } from "@/lib/services/auth-storage.service";
+import { currentUser } from "@/lib/services/auth-domain.service";
 import { changePassword } from "@/lib/api/auth-api";
 import type { AuthUser } from "@parkflow/types";
 

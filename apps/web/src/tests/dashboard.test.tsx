@@ -19,11 +19,11 @@ vi.mock("@/features/auth/api/auth.api", () => ({
   currentUser: vi.fn().mockResolvedValue({ id: "123", role: "ADMIN" }),
   canAccessSuperAdminPortal: vi.fn().mockReturnValue(true),
 }));
-vi.mock("@/features/auth/services/auth-storage.service", () => ({
+vi.mock("@/lib/services/auth-storage.service", () => ({
   currentUser: vi.fn().mockResolvedValue({ id: "123", role: "ADMIN" }),
   canAccessSuperAdminPortal: vi.fn().mockReturnValue(true),
 }));
-vi.mock("@/features/auth/services/auth-domain.service", () => ({
+vi.mock("@/lib/services/auth-domain.service", () => ({
   currentUser: vi.fn().mockResolvedValue({ id: "123", role: "ADMIN" }),
   canAccessSuperAdminPortal: vi.fn().mockReturnValue(true),
 }));

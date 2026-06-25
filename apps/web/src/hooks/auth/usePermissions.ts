@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { hasPermission } from "@/features/auth/services/auth-domain.service";
+import { hasPermission } from "@/lib/services/auth-domain.service";
 import type { Permission } from "@parkflow/types";
 
 export function usePermissions() {

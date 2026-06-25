@@ -2,11 +2,11 @@
 import { useState } from "react";
 import { Card } from "@/components/bridge/Card";
 import { Button } from "@/components/bridge/Button";
-import { useDialog } from "@/components/ui/DialogProvider";
+import { useDialog } from "@/providers/DialogProvider";
 import { resetOnboarding } from "@/lib/onboarding-api";
 import { refreshIfNeeded } from "@/features/auth/api/auth.api";
-import { loadSession, saveSession } from "@/features/auth/services/auth-storage.service";
-import { currentUser } from "@/features/auth/services/auth-domain.service";
+import { loadSession, saveSession } from "@/lib/services/auth-storage.service";
+import { currentUser } from "@/lib/services/auth-domain.service";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { backupOnboardingConfig, restoreOnboardingConfig } from "@/lib/config/config-merge";
 

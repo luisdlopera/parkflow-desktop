@@ -8,8 +8,8 @@ import { useRouter } from "next/navigation";
 import { changePassword, fetchProfile, updateProfile, type UserProfile } from "@/lib/profile-api";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
-import { clearSession } from "@/features/auth/services/auth-storage.service";
-import { patchSessionUser } from "@/features/auth/services/auth-domain.service";
+import { clearSession } from "@/lib/services/auth-storage.service";
+import { patchSessionUser } from "@/lib/services/auth-domain.service";
 import type { UserRole } from "@/lib/types/settings.types";
 import { PageBackButton } from "@/components/layout/PageBackButton";
 

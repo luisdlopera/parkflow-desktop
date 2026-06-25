@@ -6,10 +6,10 @@ import { Toast, toast } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { SWRConfig } from "swr";
-import { loadSession, clearSession } from "@/features/auth/services/auth-storage.service";
+import { loadSession, clearSession } from "@/lib/services/auth-storage.service";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 
-import { DialogProvider } from "@/components/ui/DialogProvider";
+import { DialogProvider } from "@/providers/DialogProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 
 interface ProvidersProps {

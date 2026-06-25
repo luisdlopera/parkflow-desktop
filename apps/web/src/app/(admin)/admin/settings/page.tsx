@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { Alert } from "@/components/bridge/Alert";
 import { Tabs, Tab } from "@/components/bridge/Tabs";
 import { Button } from "@/components/bridge/Button";
-import { useDialog } from "@/components/ui/DialogProvider";
+import { useDialog } from "@/providers/DialogProvider";
 import { Save, RefreshCw } from "lucide-react";
 import { DEFAULT_SETTINGS, type SystemSettings, type UpdateSetting } from "@/features/admin/types";
 import { GeneralSettingsTab } from "@/features/admin/GeneralSettingsTab";
