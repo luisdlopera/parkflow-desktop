@@ -1,3 +1,11 @@
+/**
+ * Authentication Setup API
+ *
+ * Provides initial setup (registration), password reset, and account management.
+ * This is distinct from session management (login/logout/refresh) which is in /features/auth/api/auth.api.ts.
+ *
+ * ⚠️ NOTE: For login/logout/session operations, use /features/auth/api/auth.api.ts instead.
+ */
 import { authHeaders } from "@/lib/services/auth-domain.service";
 import { authBase, apiBase } from "@/lib/api/config";
 import { API_CONFIG } from "@/lib/api/config";

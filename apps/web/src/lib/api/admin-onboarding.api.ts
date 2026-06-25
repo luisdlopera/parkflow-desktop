@@ -1,3 +1,12 @@
+/**
+ * Admin Onboarding Configuration API
+ *
+ * Manages onboarding question configuration for the admin panel.
+ *
+ * ⚠️ DEPRECATION: Import directly from this file, not via the barrel re-export `/lib/admin-onboarding-api.ts`.
+ *    For new code, prefer:
+ *    import { fetchOnboardingQuestions } from "@/lib/api/admin-onboarding.api"
+ */
 import { authHeaders } from "@/lib/services/auth-domain.service";
 import { normalizeApiError } from "@/lib/errors/normalize-api-error";
 import { apiBase } from "@/lib/api/config";

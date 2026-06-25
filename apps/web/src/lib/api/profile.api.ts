@@ -1,3 +1,12 @@
+/**
+ * User Profile API
+ *
+ * Manages user profile information and password changes.
+ *
+ * ⚠️ DEPRECATION: Import directly from this file, not via the barrel re-export `/lib/profile-api.ts`.
+ *    For new code, prefer:
+ *    import { fetchProfile } from "@/lib/api/profile.api"
+ */
 import { authHeaders } from "@/lib/services/auth-domain.service";
 import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import { authBase } from "@/lib/api/config";

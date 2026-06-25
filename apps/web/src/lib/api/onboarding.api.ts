@@ -1,3 +1,12 @@
+/**
+ * Onboarding Status & Progress API
+ *
+ * Manages company onboarding workflow and progress tracking.
+ *
+ * ⚠️ DEPRECATION: Import directly from this file, not via the barrel re-export `/lib/onboarding-api.ts`.
+ *    For new code, prefer:
+ *    import { fetchOnboardingStatus } from "@/lib/api/onboarding.api"
+ */
 import { authHeaders } from "@/lib/services/auth-domain.service";
 import { normalizeApiError } from "@/lib/errors/normalize-api-error";
 import { ApiError } from "@/lib/errors/api-error";
