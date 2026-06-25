@@ -95,7 +95,7 @@ export default function DashboardPageClient() {
       {/* Loading Overlay */}
       {summaryLoading && (
         <div className="fixed inset-0 flex items-center justify-center bg-slate-900/20 dark:bg-black/40 z-50 rounded-3xl">
-          <div className="flex flex-col items-center gap-3 bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-xl">
+          <div className="flex flex-col items-center gap-3 bg-white dark:bg-slate-900 rounded-2xl p-8 border border-default-200">
             <Spinner size="lg" color="current" />
             <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Actualizando datos...</p>
           </div>

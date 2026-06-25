@@ -43,7 +43,7 @@ export function ScrollToTopButton({ threshold = 100 }: ScrollToTopButtonProps) {
         >
           <Button
             isIconOnly
-            className="bg-brand hover:bg-brand-600 text-white rounded-full shadow-lg"
+            className="bg-brand hover:bg-brand-600 text-white rounded-full border border-brand-600"
             onClick={handleClick}
             aria-label="Scroll to top"
           >
