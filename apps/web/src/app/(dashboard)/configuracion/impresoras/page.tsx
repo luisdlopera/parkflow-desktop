@@ -111,7 +111,7 @@ export default function ImpresorasPage() {
               label="Sede para nueva impresora"
               placeholder="Selecciona una sede"
               value={siteId ? [siteId] : []}
-              onChange={(keys) => setSiteId(Array.from(keys)[0] as string)}
+              onChange={(keys: Set<string | number | boolean | null | undefined>) => setSiteId(Array.from(keys)[0] as string)}
               isDisabled={catalogLoading || sites.length <= 1}
             >
               <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>

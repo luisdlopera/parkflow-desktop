@@ -89,7 +89,7 @@ export default function VehicleTypeSelector({
             data-testid="vehicle-type"
             value={selectedKey ? [selectedKey] : []}
             isDisabled={vehicleTypes.length === 0 || loadingTypes}
-            onChange={(keys) => {
+            onChange={(keys: Set<string | number | boolean | null | undefined>) => {
               const selected = Array.from(keys as Iterable<string | number>)[0] as string;
               field.onChange(selected);
               void trigger("plate");

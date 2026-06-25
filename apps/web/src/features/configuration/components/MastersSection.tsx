@@ -238,7 +238,7 @@ export default function MastersSection({
               <Select
                 label="Tipo de vehículo"
                 value={selectedStdType ? [selectedStdType] : []}
-                onChange={(keys) => {
+                onChange={(keys: Set<string | number | boolean | null | undefined>) => {
                   const code = Array.from(keys)[0] as string;
                   setSelectedStdType(code);
                   const std = STANDARD_VEHICLE_TYPES.find((t) => t.code === code);

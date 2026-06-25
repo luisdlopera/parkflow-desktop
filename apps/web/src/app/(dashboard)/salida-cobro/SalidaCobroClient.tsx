@@ -443,7 +443,7 @@ export default function SalidaCobroClient() {
                   <Select
                     label="Medio"
                     value={[row.method]}
-                    onChange={(keys) => {
+                    onChange={(keys: Set<string | number | boolean | null | undefined>) => {
                       const next = Array.from(keys)[0] as typeof row.method | undefined;
                       if (next) p.updateSplitRow(row.id, { method: next });
                     }}

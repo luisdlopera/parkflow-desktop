@@ -91,7 +91,7 @@ export function BulkExitConfirmModal({
               <Select
                 label="Método de pago:"
                 value={[selectedPaymentMethod]}
-                onChange={(keys) => {
+                onChange={(keys: Set<string | number | boolean | null | undefined>) => {
                   const val = Array.from(keys)[0] as string | undefined;
                   if (val) setSelectedPaymentMethod(val);
                 }}

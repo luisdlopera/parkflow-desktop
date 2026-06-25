@@ -72,11 +72,11 @@ export function RateForm({
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <Input label="Nombre" size="sm" value={name} onChange={(e) => setName(e.target.value)} />
         <Input label="Sede" size="sm" value={site} onChange={(e) => setSite(e.target.value)} />
-        <Select label="Categoría" value={[category]} onChange={(keys) => setCategory(Array.from(keys)[0] as RateCategory)}>
+        <Select label="Categoría" value={[category]} onChange={(keys: Set<string | number | boolean | null | undefined>) => setCategory(Array.from(keys)[0] as RateCategory)}>
           <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
           <Select.Popover aria-label="Seleccionar opción"><ListBox>{RATE_CATEGORIES.map((c) => <ListBox.Item key={c} textValue={RATE_CATEGORY_LABELS[c]}>{RATE_CATEGORY_LABELS[c]}</ListBox.Item>)}</ListBox></Select.Popover>
         </Select>
-        <Select label="Tipo vehículo" description="Vacío = todos" value={[vehicleType]} onChange={(keys) => setVehicleType(Array.from(keys)[0] as string)}>
+        <Select label="Tipo vehículo" description="Vacío = todos" value={[vehicleType]} onChange={(keys: Set<string | number | boolean | null | undefined>) => setVehicleType(Array.from(keys)[0] as string)}>
           <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
           <Select.Popover aria-label="Seleccionar opción">
             <ListBox>
@@ -84,7 +84,7 @@ export function RateForm({
             </ListBox>
           </Select.Popover>
         </Select>
-        <Select label="Tipo tarifa" value={[rateType]} onChange={(keys) => setRateType(Array.from(keys)[0] as RateType)}>
+        <Select label="Tipo tarifa" value={[rateType]} onChange={(keys: Set<string | number | boolean | null | undefined>) => setRateType(Array.from(keys)[0] as RateType)}>
           <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
           <Select.Popover aria-label="Seleccionar opción"><ListBox>{RATE_TYPES.map((v: any) => <ListBox.Item key={v} textValue={RATE_TYPE_LABELS[v] ?? v}>{RATE_TYPE_LABELS[v] ?? v}</ListBox.Item>)}</ListBox></Select.Popover>
         </Select>
@@ -97,7 +97,7 @@ export function RateForm({
             <Input aria-label="Fracción" size="sm" type="number" min="1" placeholder="Fracción" value={fraction} onChange={(e) => setFraction(e.target.value)} />
           </div>
         </div>
-        <Select label="Redondeo" value={[rounding]} onChange={(keys) => setRounding(Array.from(keys)[0] as "UP" | "DOWN" | "NEAREST")}>
+        <Select label="Redondeo" value={[rounding]} onChange={(keys: Set<string | number | boolean | null | undefined>) => setRounding(Array.from(keys)[0] as "UP" | "DOWN" | "NEAREST")}>
           <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
           <Select.Popover aria-label="Seleccionar opción"><ListBox>{ROUNDING.map((v: any) => <ListBox.Item key={v} textValue={v}>{v}</ListBox.Item>)}</ListBox></Select.Popover>
         </Select>

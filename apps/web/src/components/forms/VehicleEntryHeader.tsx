@@ -39,7 +39,7 @@ export default function VehicleEntryHeader({
         <Select
           aria-label="Modo de operación"
           value={[settings.mode]}
-          onChange={(keys) => updateSettings({ mode: Array.from(keys)[0] as OperatorMode })}
+          onChange={(keys: Set<string | number | boolean | null | undefined>) => updateSettings({ mode: Array.from(keys)[0] as OperatorMode })}
           className="w-28 sm:w-32"
           classNames={{ trigger: "min-h-0 h-8" }}
         >

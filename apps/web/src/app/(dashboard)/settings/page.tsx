@@ -50,7 +50,7 @@ export default function SettingsPage() {
         label="Seleccionar idioma"
         
         value={[language]}
-        onChange={(keys) => setLanguage(Array.from(keys)[0] as string)}
+        onChange={(keys: Set<string | number | boolean | null | undefined>) => setLanguage(Array.from(keys)[0] as string)}
         data-testid="language-select"
       >
       <Select.Trigger aria-label="Seleccionar opción">

@@ -45,6 +45,12 @@ function UserForm({ initialData, onSave }: { initialData?: AdminUser | null, onS
     );
   };
 
+  // Expose save function to parent or let parent handle the actual submit button?
+  // The EntityManagementPage wraps the form but provides the Footer.
+  // We need to auto-save or render our own save button inside FormComponent, OR the FormComponent itself manages its state and calls onSave when submitted.
+  // Wait, EntityManagementPage right now doesn't pass a submit button from footer to form. Let's fix EntityManagementPage to accept a render prop or let the form have the submit button.
+  // To be safe, I'll put a save button inside the form.
+
   return (
     <form className="space-y-4" onSubmit={(e) => {
       e.preventDefault();
@@ -64,7 +70,7 @@ function UserForm({ initialData, onSave }: { initialData?: AdminUser | null, onS
         <Select
           label="Rol"
           value={[formRole]}
-          onChange={(keys: unknown) => {
+          onChange={(keys: Set<string | number | boolean | null | undefined>) => {
             if (keys instanceof Set) {
               const val = Array.from(keys)[0] as AdminUser["role"] | undefined;
               if (val) setFormRole(val);

@@ -31,7 +31,7 @@ export default function VehicleEntrySettings({
           <Select
             aria-label="Tipo de vehículo por defecto"
             value={vehicleTypes.some((t: any) => t.code === settings.defaultVehicleType) ? [settings.defaultVehicleType] : []}
-            onChange={(val) => {
+            onChange={(val: any) => {
               const selected = val as any;
               if (selected) updateSettings({ defaultVehicleType: selected });
             }}

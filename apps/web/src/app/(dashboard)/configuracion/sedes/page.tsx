@@ -113,7 +113,7 @@ export default function SedesPage() {
               label="Empresa"
               placeholder="Selecciona una empresa"
               value={companyId ? [companyId] : []}
-              onChange={(keys) => setCompanyId(Array.from(keys)[0] as string)}
+              onChange={(keys: Set<string | number | boolean | null | undefined>) => setCompanyId(Array.from(keys)[0] as string)}
               isDisabled={catalogLoading || companies.length <= 1}
             >
               <Select.Trigger aria-label="Seleccionar opción">

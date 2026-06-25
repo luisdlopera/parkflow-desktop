@@ -1,13 +1,13 @@
 import React from "react";
 import { Select as HeroSelect, SelectProps as HeroSelectProps, Label, Description, FieldError } from "@heroui/react";
 
-type SelectValue = string | number | boolean | null | undefined;
+type SelectValue = string | number | boolean;
 
-export interface SelectProps extends Omit<HeroSelectProps<SelectValue>, "value" | "onChange" | "size" | "label" | "description" | "className" | "classNames"> {
+export interface SelectProps extends Omit<HeroSelectProps<any>, "value" | "onChange" | "size" | "label" | "description" | "className" | "classNames"> {
   value?: SelectValue[] | SelectValue; // To support v2 array passing
   selectedKeys?: SelectValue[] | SelectValue;
   defaultSelectedKeys?: SelectValue[] | SelectValue;
-  onChange?: (val: unknown) => void;
+  onChange?: ((val: Set<SelectValue>) => void) | ((val: unknown) => void) | ((event: any) => void);
   size?: "sm" | "md" | "lg" | (string & {});
   label?: React.ReactNode;
   description?: React.ReactNode;
@@ -24,7 +24,7 @@ export interface SelectProps extends Omit<HeroSelectProps<SelectValue>, "value" 
 export const SelectBase = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ value, selectedKeys, defaultSelectedKeys, selectedKey, defaultSelectedKey, onChange, onSelectionChange, size, label, description, errorMessage, isInvalid, isRequired, placeholder, className, classNames, children, "aria-label": ariaLabel, "aria-describedby": ariaDescribedby, ...rest }, ref) => {
     // Remove potentially invalid props before spreading
-    const { onSelectionChange: _omit, onChange: _omit2, ...props } = rest as Omit<typeof rest, 'onSelectionChange' | 'onChange'>;
+    const { onChange: _omit2, ...props } = rest as any;
     const uniqueId = React.useId();
     const selectId = (props.id as string) || uniqueId;
     const errorId = `${selectId}-error`;
@@ -59,16 +59,16 @@ export const SelectBase = React.forwardRef<HTMLSelectElement, SelectProps>(
     }
 
     const handleSelectionChange = (keys: Set<SelectValue> | SelectValue[] | SelectValue) => {
-      if (onSelectionChange) onSelectionChange(keys as Set<SelectValue>);
+      if (onSelectionChange) onSelectionChange(keys as any);
       if (onChange) {
         // HeroUI v3 Select normaliza onChange a Key | Key[] | null
         // Para compatibilidad con código existente que usa Array.from(keys)[0],
         // convertimos a Set como en HeroUI v2
         const isMultiple = props.selectionMode === "multiple";
         if (isMultiple) {
-          onChange(Array.isArray(keys) ? new Set(keys) : new Set(keys ? [keys] : []));
+          (onChange as any)(Array.isArray(keys) ? new Set(keys) : new Set(keys ? [keys] : []));
         } else {
-          onChange(keys !== null && keys !== undefined ? new Set([keys]) : new Set());
+          (onChange as any)(keys !== null && keys !== undefined ? new Set([keys]) : new Set());
         }
       }
     };

@@ -231,7 +231,7 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
       <DataTable
         selectable
         selectedKeys={selectedKeys === "all" ? (new Set(filteredRows.map((r: ActiveSessionDto) => r.ticketNumber)) as any) : selectedKeys}
-        onRowSelectionChange={(keys) => setSelectedKeys(keys as Set<string>)}
+        onRowSelectionChange={(keys: Set<string | number | boolean | null | undefined>) => setSelectedKeys(keys as Set<string>)}
         serverSide
         searchable
         searchPlaceholder="Buscar por placa o ticket..."

@@ -119,7 +119,7 @@ export default function ParametersSection({
           <Select
             label="Politica ticket perdido"
             value={[data.lostTicketPolicy ?? "SURCHARGE_RATE"]}
-            onChange={(keys) => setField("lostTicketPolicy", Array.from(keys)[0] as string)}
+            onChange={(keys: Set<string | number | boolean | null | undefined>) => setField("lostTicketPolicy", Array.from(keys)[0] as string)}
           >
             <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
             <Select.Popover aria-label="Seleccionar opción">
@@ -216,7 +216,7 @@ export default function ParametersSection({
               <Select
                 label="Cobro exige caja abierta"
                 value={[data.cashRequireOpenForPayment === undefined ? "" : String(data.cashRequireOpenForPayment)]}
-                onChange={(keys) => {
+                onChange={(keys: Set<string | number | boolean | null | undefined>) => {
                   const v = Array.from(keys)[0] as string;
                   setData((d) => ({ ...(d ?? {}) as ParkingParametersPayload, cashRequireOpenForPayment: v === "" ? null : v === "true" }));
                 }}
@@ -233,7 +233,7 @@ export default function ParametersSection({
               <Select
                 label="Permitir cierre de caja offline"
                 value={[data.cashOfflineCloseAllowed === undefined ? "" : String(data.cashOfflineCloseAllowed)]}
-                onChange={(keys) => {
+                onChange={(keys: Set<string | number | boolean | null | undefined>) => {
                   const v = Array.from(keys)[0] as string;
                   setData((d) => ({ ...(d ?? {}) as ParkingParametersPayload, cashOfflineCloseAllowed: v === "" ? null : v === "true" }));
                 }}

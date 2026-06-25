@@ -150,7 +150,7 @@ export default function CajasPage() {
               label="Sede"
               placeholder="Sin sede vinculada"
               isDisabled={catalogLoading}
-              onChange={(keys) => {
+              onChange={(keys: Set<string | number | boolean | null | undefined>) => {
                 const id = Array.from(keys)[0] as string;
                 const selected = sites.find((s) => s.id === id);
                 setValue("siteId", id);

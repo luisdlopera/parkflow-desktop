@@ -48,7 +48,7 @@ function UserCreatePanel({
         <Select
           label="Rol"
           value={[role]}
-          onChange={(keys) => setRole(Array.from(keys)[0] as UserRole)}
+          onChange={(keys: Set<string | number | boolean | null | undefined>) => setRole(Array.from(keys)[0] as UserRole)}
         >
           <Select.Trigger aria-label="Seleccionar opción">
             <Select.Value aria-label="Seleccionar opción" />
@@ -136,7 +136,7 @@ function UserEditPanel({
         <Select
           label="Rol"
           value={[role]}
-          onChange={(keys) => setRole(Array.from(keys)[0] as UserRole)}
+          onChange={(keys: Set<string | number | boolean | null | undefined>) => setRole(Array.from(keys)[0] as UserRole)}
         >
           <Select.Trigger aria-label="Seleccionar opción">
             <Select.Value aria-label="Seleccionar opción" />
@@ -245,7 +245,7 @@ export default function UsersSection({
           label="Estado"
           className="max-w-[120px]"
           value={activeFilter === null ? [""] : [String(activeFilter)]}
-          onChange={(keys) => {
+          onChange={(keys: Set<string | number | boolean | null | undefined>) => {
             const v = Array.from(keys)[0] as string;
             setActiveFilter(v === "" ? null : v === "true");
           }}

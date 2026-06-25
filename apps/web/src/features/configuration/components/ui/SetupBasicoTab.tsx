@@ -273,7 +273,7 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
             <Select
               label="País"
               value={[countryCode]}
-              onChange={(keys) => {
+              onChange={(keys: Set<string | number | boolean | null | undefined>) => {
                 const val = Array.from(keys)[0] as string | undefined;
                 if (val) setCountryCode(val);
               }}
@@ -306,7 +306,7 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
             <Select
               label="Modo actual"
               value={[helmetMode]}
-              onChange={(keys) => {
+              onChange={(keys: Set<string | number | boolean | null | undefined>) => {
                 const val = Array.from(keys)[0] as string | undefined;
                 if (val) setHelmetMode(val);
               }}

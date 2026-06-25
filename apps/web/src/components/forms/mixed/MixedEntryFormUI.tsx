@@ -88,7 +88,7 @@ export function MixedEntryFormUI({
             <Select
               aria-label="Tipo de ingreso"
               value={[field.value]}
-              onChange={(keys) => field.onChange(Array.from(keys)[0] as string)}
+              onChange={(keys: Set<string | number | boolean | null | undefined>) => field.onChange(Array.from(keys)[0] as string)}
             >
               <Select.Trigger aria-label="Seleccionar opción">
                 <Select.Value aria-label="Seleccionar opción" />

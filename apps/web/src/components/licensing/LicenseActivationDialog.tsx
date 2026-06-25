@@ -151,7 +151,7 @@ export function LicenseActivationDialog({
               <Select
                 label="Empresa"
                 value={companyId ? [companyId] : []}
-                onChange={(keys) => setCompanyId(Array.from(keys)[0]?.toString() ?? "")}
+                onChange={(keys: Set<string | number | boolean | null | undefined>) => setCompanyId(Array.from(keys)[0]?.toString() ?? "")}
                 isDisabled={loadingCompanies}
                 placeholder="Selecciona una empresa"
               >

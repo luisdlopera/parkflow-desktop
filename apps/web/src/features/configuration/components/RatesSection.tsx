@@ -177,7 +177,7 @@ export default function RatesSection({
             label="Estado"
             className="max-w-[120px]"
             value={activeFilter === null ? [""] : [String(activeFilter)]}
-            onChange={(keys) => {
+            onChange={(keys: Set<string | number | boolean | null | undefined>) => {
               const v = Array.from(keys)[0] as string;
               setActiveFilter(v === "" ? null : v === "true");
             }}
@@ -195,7 +195,7 @@ export default function RatesSection({
             label="Categoría"
             className="max-w-[140px]"
             value={[categoryFilter]}
-            onChange={(keys) => setCategoryFilter(Array.from(keys)[0] as string)}
+            onChange={(keys: Set<string | number | boolean | null | undefined>) => setCategoryFilter(Array.from(keys)[0] as string)}
           >
             <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
             <Select.Popover aria-label="Seleccionar opción">

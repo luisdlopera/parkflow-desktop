@@ -229,7 +229,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
       <Select
         label="Plan *"
         value={[selectedPlan]}
-        onChange={(keys) => {
+        onChange={(keys: Set<string | number | boolean | null | undefined>) => {
           const plan = Array.from(keys)[0] as PlanType;
           setValue("plan", plan);
         }}
@@ -327,7 +327,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
         <Select
           label="Modo offline permitido"
           value={[offlineModeAllowed ? "true" : "false"]}
-          onChange={(keys) => {
+          onChange={(keys: Set<string | number | boolean | null | undefined>) => {
             const allowed = Array.from(keys)[0] === "true";
             setValue("offlineModeAllowed", allowed);
           }}

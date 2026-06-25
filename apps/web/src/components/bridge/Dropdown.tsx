@@ -34,11 +34,11 @@ export interface DropdownSectionProps extends React.ComponentPropsWithRef<typeof
   [key: string]: unknown;
 }
 
-export const DropdownItem = React.forwardRef<HTMLLIElement, DropdownItemProps>(
+export const DropdownItem = React.forwardRef<HTMLDivElement, DropdownItemProps>(
   ({ children, startContent, endContent, description, textValue, color, href, as, ...props }, ref) => {
     return (
       <HeroDropdown.Item
-        ref={ref}
+        ref={ref as any}
         textValue={textValue || (typeof children === 'string' ? children : undefined)}
         href={href}
         variant={color === "danger" ? "danger" : undefined}
