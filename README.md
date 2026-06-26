@@ -135,10 +135,19 @@ Ensure you have the following installed on your machine:
    ```bash
    pnpm ports:check
    ```
-2. **Start Infrastructure (PostgreSQL)**:
+
+2. **Start Infrastructure (PostgreSQL + Auto-Migrations)**:
    ```bash
    pnpm db:up
    ```
+   
+   **⚠️ NOTE — Database Migrations (2026-06-26)**:
+   - Schema is now defined in a single baseline: `apps/api/src/main/resources/db/migration/V001__initial_schema.sql`
+   - 38 incremental migrations (V001–V039) were consolidated into one clean file
+   - Flyway automatically applies migrations on API startup
+   - Database will have 85 tables (84 schema + flyway_schema_history)
+   - See [docs/DATABASE.md](docs/DATABASE.md) for migration workflow
+
 3. **Environment Variables**:
    Copy `.env.example` to `.env` and set the required keys:
    ```bash
@@ -233,6 +242,9 @@ Upon the first launch in `local` or `sync` mode, the database is seeded automati
 - **Performance Baseline**: [performance-baseline.md](docs/performance-baseline.md) — Load testing, metrics, targets
 
 ### Development & Quality
+- **Database Migrations**: [DATABASE.md](docs/DATABASE.md) — Schema baseline, incremental migrations, multi-tenant checklist
+- **Migration Guide**: [MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md) — How to add new tables/columns/indexes
+- **Operations**: [OPERATIONS.md](docs/OPERATIONS.md) — Backup, restore, disaster recovery
 - **Type Safety Guide**: [TYPE_SAFETY.md](docs/TYPE_SAFETY.md) — TypeScript `any` → proper types (327 remaining)
 - **API Contract Tests**: [39 tests covering critical paths](docs/api-contract-tests.md)
 - **Testing Strategy**: [TEST_ORGANIZATION.md](docs/TEST_ORGANIZATION.md)

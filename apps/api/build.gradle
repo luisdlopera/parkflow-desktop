@@ -79,6 +79,9 @@ dependencies {
   implementation 'com.bucket4j:bucket4j_jdk17-jcache:8.17.0'
   implementation 'javax.cache:cache-api:1.1.1'
 
+  // SECURITY: Distributed rate limiting + token blacklist (optional, requires Redis)
+  implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
   compileOnly 'org.projectlombok:lombok:1.18.34'
   annotationProcessor 'org.projectlombok:lombok:1.18.34'
   testCompileOnly 'org.projectlombok:lombok:1.18.34'
@@ -150,6 +153,31 @@ flyway {
   user = 'parkflow'
   password = 'parkflow'
   driver = 'org.postgresql.Driver'
+
+  // =====================================================================
+  // MIGRATION STRATEGY (Post-Squash: 2026-06-26)
+  // =====================================================================
+  // V001: Squashed baseline (immutable)
+  //   - Contains: 84 tables, 136 indexes, 17 RLS policies
+  //   - Consolidated from V001-V039 (37 files)
+  //   - File: src/main/resources/db/migration/V001__initial_schema.sql
+  //
+  // V040+: Incremental migrations (add new features here)
+  //   - Use for new tables, columns, indexes
+  //   - See docs/MIGRATION_GUIDE.md for templates and workflow
+  //
+  // DO NOT:
+  //   - Modify V001 after commit (immutable baseline)
+  //   - Delete Flyway migration files (breaks checksum history)
+  //   - Manually run SQL (Flyway must track all changes)
+  //
+  // See docs/DATABASE.md and docs/MIGRATION_GUIDE.md for details
+  // =====================================================================
+
+  baselineVersion = "1"
+  baselineDescription = "Initial schema consolidation (post-squash)"
+  baselineOnMigrate = true     // Create baseline on first run
+  repairOnMigrate = true       // Auto-fix checksums (dev only; disable in prod)
 }
 
 dependencyLocking {

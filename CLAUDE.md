@@ -97,6 +97,132 @@ apps/
 
 ---
 
+## Database Migration Strategy (POST-SQUASH)
+
+**Timeline**: Migrations consolidated 2026-06-26 (38 migrations → 1 baseline)
+
+### Current Migration State
+
+- **V001__initial_schema.sql** — Complete schema baseline (2,493 lines)
+  - 84 tables, 136 indexes, 17 RLS policies
+  - Squashed from V001-V039 (37 files deleted, history preserved)
+  - Immutable once committed
+  
+- **V040+** — Incremental migrations (add new features here)
+
+### Developer Workflow: Adding a Database Change
+
+**For a new table/column/index**, follow this pattern:
+
+```bash
+# 1. Create migration file (determine next version)
+cd apps/api/src/main/resources/db/migration
+V_NEXT=$(ls | grep '^V[0-9]' | sort -V | tail -1 | sed 's/V0*\([0-9]*\).*/\1/' | awk '{print $1+1}')
+
+cat > V${V_NEXT}__feature_name.sql << 'EOF'
+-- Add feature: description here
+-- Reason: why this change is needed
+-- Date: 2026-06-27
+
+-- For new table (multi-tenant example):
+CREATE TABLE feature (
+    id UUID DEFAULT gen_random_uuid() NOT NULL,
+    company_id UUID NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    
+    CONSTRAINT feature_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_feature_company FOREIGN KEY (company_id) 
+        REFERENCES companies(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_feature_company ON feature(company_id);
+
+-- For multi-tenant table: ALWAYS add RLS
+ALTER TABLE feature ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY rls_feature ON feature TO parkflow_app
+USING (company_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
+
+-- For existing table (add column example):
+-- ALTER TABLE some_table ADD COLUMN new_col VARCHAR(100);
+-- CREATE INDEX idx_some_table_new_col ON some_table(new_col);
+EOF
+
+# 2. Test on fresh database
+pnpm db:down && pnpm db:up  # Removes volumes
+cd apps/api && ./gradlew flywayMigrate
+
+# 3. Verify with API
+./gradlew bootRun
+# Should see: "Started ParkflowApiApplication in X.XXX seconds"
+# No Hibernate validation errors
+
+# 4. Commit
+git add src/main/resources/db/migration/V${V_NEXT}__feature_name.sql
+git commit -m "feat(db): add feature table with RLS"
+```
+
+### ⚠️ CRITICAL RULES
+
+**DO:**
+- ✅ Test every migration on a clean database (`pnpm db:down -v` removes volumes)
+- ✅ Add RLS policies to all multi-tenant tables (see Multi-Tenant Checklist below)
+- ✅ Add indexes on foreign keys and filter columns
+- ✅ Use IF NOT EXISTS for idempotent operations (create index, create extension)
+- ✅ Comment migrations explaining the "why"
+
+**DON'T:**
+- ❌ Modify V001 after it's committed (immutable baseline)
+- ❌ Delete or rename Flyway migration files (breaks checksum history)
+- ❌ Skip RLS on multi-tenant tables
+- ❌ Use raw SQL in Java code (migrations are the source of truth)
+- ❌ Run migrations manually via psql (Flyway must track them)
+
+### Multi-Tenant Checklist for New Tables
+
+When creating a new table, verify:
+- [ ] Column `company_id UUID NOT NULL` exists
+- [ ] Foreign key: `CONSTRAINT fk_<table>_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE`
+- [ ] Index: `CREATE INDEX idx_<table>_company ON <table>(company_id)`
+- [ ] RLS enabled: `ALTER TABLE <table> ENABLE ROW LEVEL SECURITY`
+- [ ] RLS policy: 
+  ```sql
+  CREATE POLICY rls_<table> ON <table> TO parkflow_app
+  USING (company_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+  ```
+
+### Disaster Recovery
+
+**If a migration fails:**
+```bash
+# 1. Revert the commit
+git revert <commit-hash>
+
+# 2. Fix the migration file locally
+vim src/main/resources/db/migration/V040__feature.sql
+
+# 3. Completely wipe database (volumes)
+pnpm db:down -v && pnpm db:up
+
+# 4. Test again
+cd apps/api && ./gradlew flywayMigrate
+
+# 5. Commit the fix
+git commit -m "fix(db): correct V040 syntax error"
+```
+
+**If someone modifies V001 (NEVER do this):**
+```bash
+# Revert to committed version
+git checkout apps/api/src/main/resources/db/migration/V001__initial_schema.sql
+
+# Repair Flyway checksum
+cd apps/api && ./gradlew flywayRepair
+```
+
+---
+
 ## Architectural Standards (ENFORCE BY REVIEW)
 
 ### ✅ Hexagonal Architecture — MANDATORY STRUCTURE
@@ -307,6 +433,20 @@ public class VehicleTypeManagementService {
    - [ ] **VERIFY**: Smoke test in dev environment
      - Backend: Check `/actuator/health` endpoint returns 200
      - Frontend: Open page in browser, check no console errors
+
+2.5. **Testing & Technical Debt — MANDATORY**:
+   - [ ] **Write tests WHILE implementing**: Not after. Every new method/component needs test coverage.
+   - [ ] **All tests MUST PASS before committing**: Zero failing tests allowed. `gradle test` must be 100% green.
+   - [ ] **No technical debt introduced**:
+     - ❌ DO NOT commit code with known issues, hacks, or `TODO` comments
+     - ❌ DO NOT add features that create god services or violate hexagonal architecture
+     - ❌ DO NOT duplicate code—consolidate or extract helpers
+     - ❌ DO NOT leave console.errors, warnings, or unhandled promise rejections
+   - [ ] **Cleanup BEFORE committing**:
+     - Remove all `console.log`, `debugger`, `TODO`, `FIXME` statements
+     - Fix all TypeScript/linter warnings
+     - Remove commented-out code
+   - [ ] **If you find debt in existing code, fix it NOW**—don't defer it. It compounds exponentially.
 
 3. **Hexagonal Architecture** (Backend Only):
    - **MANDATORY**: Follow the standardized structure defined above
@@ -548,6 +688,53 @@ Estas reglas provienen de una auditoría completa del frontend. Están en vigor 
 **Connect**: Use for external API documentation
 - Command: Fetch API specs or integration docs
 - When: Integrating with external services (not typical for ParkFlow backend)
+
+---
+
+## First-Time Setup Checklist
+
+**Run this ONCE before first development session:**
+
+```bash
+# 1. Create environment files from templates
+cd /Users/luisdlopera/Documents/projects/cv/parkflow-desktop
+cp .env.example .env 2>/dev/null || echo "✅ .env exists"
+cd apps/web && cp .env.example .env 2>/dev/null || echo "✅ web/.env exists"
+cd ../api && cp .env.example .env 2>/dev/null || echo "✅ api/.env exists"
+
+# 2. Verify .env has seed password (for database seeding)
+grep "PARKFLOW_SEED_ADMIN_PASSWORD=Qwert.12345" /Users/luisdlopera/Documents/projects/cv/parkflow-desktop/.env && echo "✅ Seed password set"
+
+# 3. Start fresh database
+cd /Users/luisdlopera/Documents/projects/cv/parkflow-desktop
+pnpm db:down 2>/dev/null || true
+pnpm db:up
+
+# 4. Start API (runs migrations + seed)
+cd apps/api && ./gradlew bootRun &
+sleep 20  # Wait for migrations
+
+# 5. Verify seed worked (test login)
+curl -s POST http://localhost:6011/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@parkflow.local",
+    "password": "Qwert.12345",
+    "deviceId": "dev-device-001",
+    "deviceName": "Development Workstation",
+    "platform": "desktop",
+    "fingerprint": "dev-fingerprint-001"
+  }' | grep -q '"sessionId"' && echo "✅ Login works" || echo "❌ Login failed"
+
+# 6. Start web dev server
+cd apps/web && pnpm dev
+# Opens http://localhost:6001
+```
+
+**Troubleshooting**:
+- If seed fails: `pnpm db:down` then `pnpm db:up` to reset
+- If login fails: Verify password in `.env` matches what backend is using
+- If web can't start: `rm -rf .next && pnpm dev`
 
 ---
 
