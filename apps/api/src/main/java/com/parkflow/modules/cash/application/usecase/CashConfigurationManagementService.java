@@ -11,7 +11,7 @@ import com.parkflow.modules.cash.dto.CashRegisterInfoResponse;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
 import com.parkflow.modules.cash.infrastructure.persistence.CashRegisterRepository;
 import com.parkflow.modules.cash.infrastructure.persistence.CashSessionRepository;
-import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
+import com.parkflow.modules.cash.application.port.in.CashSessionAuditUseCase;
 import com.parkflow.modules.cash.application.usecase.CashDomainAuditService;
 import com.parkflow.modules.cash.application.usecase.CashPolicyResolver;
 import com.parkflow.modules.auth.domain.AppUser;
@@ -47,7 +47,7 @@ public class CashConfigurationManagementService implements CashConfigurationUseC
     private final AppUserRepository appUserRepository;
     private final CashPolicyResolver cashPolicyResolver;
     private final ParkingParametersService parkingParametersService;
-    private final CashSessionUseCase cashSessionUseCase;
+    private final CashSessionAuditUseCase cashSessionAuditUseCase;
     private final AuthAuditService authAuditService;
     private final CashDomainAuditService cashDomainAuditService;
 
@@ -79,7 +79,7 @@ public class CashConfigurationManagementService implements CashConfigurationUseC
         AppUser actor = appUserRepository.findById(SecurityUtils.requireUserId())
             .orElseThrow(() -> new OperationException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
             
-        CashSummaryResponse sum = cashSessionUseCase.getSummary(sessionId);
+        CashSummaryResponse sum = cashSessionAuditUseCase.getSummary(sessionId);
         ParkingParametersData param = parkingParametersService.get(groupingSiteForParams(session));
         List<String> lines = buildClosingPreviewLines(session, sum, param);
         

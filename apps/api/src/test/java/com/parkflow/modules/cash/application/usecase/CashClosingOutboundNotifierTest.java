@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
+import com.parkflow.modules.cash.application.port.in.CashSessionAuditUseCase;
 import com.parkflow.modules.cash.domain.CashRegister;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
@@ -38,7 +38,7 @@ class CashClosingOutboundNotifierTest {
 
   @Mock private CashSessionRepository cashSessionRepository;
   @Mock private ParkingParametersService parkingParametersService;
-  @Mock private CashSessionUseCase cashSessionUseCase;
+  @Mock private CashSessionAuditUseCase cashSessionAuditUseCase;
 
   private ObjectMapper objectMapper = new ObjectMapper();
   private CashClosingOutboundNotifier notifier;
@@ -77,7 +77,7 @@ class CashClosingOutboundNotifierTest {
   @BeforeEach
   void setUp() {
     notifier = new CashClosingOutboundNotifier(
-        cashSessionRepository, parkingParametersService, cashSessionUseCase, objectMapper);
+        cashSessionRepository, parkingParametersService, cashSessionAuditUseCase, objectMapper);
     requestReceived = false;
     receivedAuthHeader = null;
   }
@@ -147,7 +147,7 @@ class CashClosingOutboundNotifierTest {
     CashSummaryResponse summary = new CashSummaryResponse(
         BigDecimal.TEN, BigDecimal.TEN, BigDecimal.TEN, BigDecimal.ZERO, Map.of("CASH", BigDecimal.TEN), Map.of("PAYMENT", BigDecimal.TEN), 5L
     );
-    when(cashSessionUseCase.getSummary(sessionId)).thenReturn(summary);
+    when(cashSessionAuditUseCase.getSummary(sessionId)).thenReturn(summary);
 
     // Act
     notifier.scheduleAfterCashClose(sessionId, "SiteA");

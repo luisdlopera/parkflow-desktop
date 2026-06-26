@@ -17,7 +17,7 @@ import com.parkflow.modules.cash.dto.CashClosingPrintResponse;
 import com.parkflow.modules.cash.dto.CashPolicyResponse;
 import com.parkflow.modules.cash.dto.CashRegisterInfoResponse;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
-import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
+import com.parkflow.modules.cash.application.port.in.CashSessionAuditUseCase;
 import com.parkflow.modules.cash.infrastructure.persistence.CashRegisterRepository;
 import com.parkflow.modules.cash.infrastructure.persistence.CashSessionRepository;
 import com.parkflow.modules.cash.application.usecase.CashDomainAuditService;
@@ -46,7 +46,7 @@ class CashConfigurationManagementServiceTest {
   @Mock private AppUserRepository appUserRepository;
   @Mock private CashPolicyResolver cashPolicyResolver;
   @Mock private ParkingParametersService parkingParametersService;
-  @Mock private CashSessionUseCase cashSessionUseCase;
+  @Mock private CashSessionAuditUseCase cashSessionAuditUseCase;
   @Mock private AuthAuditService authAuditService;
   @Mock private CashDomainAuditService cashDomainAuditService;
 
@@ -57,7 +57,7 @@ class CashConfigurationManagementServiceTest {
   void setUp() {
     service = new CashConfigurationManagementService(
         cashRegisterRepository, cashSessionRepository, appUserRepository,
-        cashPolicyResolver, parkingParametersService, cashSessionUseCase,
+        cashPolicyResolver, parkingParametersService, cashSessionAuditUseCase,
         authAuditService, cashDomainAuditService);
   }
 
@@ -131,7 +131,7 @@ class CashConfigurationManagementServiceTest {
           Map.of("CASH", new BigDecimal("100000"), "CARD", new BigDecimal("50000")),
           Map.of("PARKING_PAYMENT", new BigDecimal("150000")),
           5L);
-      when(cashSessionUseCase.getSummary(id)).thenReturn(summary);
+      when(cashSessionAuditUseCase.getSummary(id)).thenReturn(summary);
 
       ParkingParametersData param = new ParkingParametersData();
       param.setParkingName("Mi Parqueadero");
@@ -174,7 +174,7 @@ class CashConfigurationManagementServiceTest {
       CashSummaryResponse summary = new CashSummaryResponse(
           new BigDecimal("0"), new BigDecimal("0"), new BigDecimal("0"), BigDecimal.ZERO,
           Map.of(), Map.of(), 0L);
-      when(cashSessionUseCase.getSummary(id)).thenReturn(summary);
+      when(cashSessionAuditUseCase.getSummary(id)).thenReturn(summary);
       when(parkingParametersService.get(any())).thenReturn(null);
 
       CashClosingPrintResponse resp = service.printClosing(id);

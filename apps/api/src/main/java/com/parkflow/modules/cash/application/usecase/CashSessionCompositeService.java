@@ -16,22 +16,26 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Composite service that aggregates CashSession use cases for convenient access.
+ * @deprecated This is a facade service that bundles multiple use cases.
+ *             It was created to provide a single access point, but violates
+ *             the hexagonal architecture principle of focused use cases.
  *
- * <p>This service delegates to specialized use cases:
- * <ul>
- *   <li>{@link CashSessionManagementUseCase} for open/close/count operations
- *   <li>{@link CashSessionQueryUseCase} for read operations
- *   <li>{@link CashSessionAuditUseCase} for audit trail operations
- * </ul>
+ *             <p>Use the specific use case interfaces instead:
+ *             <ul>
+ *               <li>{@link CashSessionManagementUseCase} for open/close/count operations
+ *               <li>{@link CashSessionQueryUseCase} for read operations
+ *               <li>{@link CashSessionAuditUseCase} for audit trail operations
+ *             </ul>
  *
- * <p>This design allows clients to access all session operations through a single port
- * while maintaining the hexagonal architecture's separation of concerns.
+ *             <p>The {@link CashController} already injects these use cases directly,
+ *             so clients should follow the same pattern.
+ *             This service will be removed in a future release.
  */
 @Slf4j
 @Service
 @Primary
 @RequiredArgsConstructor
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class CashSessionCompositeService implements CashSessionUseCase {
 
     private final CashSessionManagementUseCase managementUseCase;

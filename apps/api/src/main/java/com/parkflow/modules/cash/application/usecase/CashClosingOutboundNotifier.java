@@ -1,7 +1,7 @@
 package com.parkflow.modules.cash.application.usecase;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.cash.application.port.in.CashSessionUseCase;
+import com.parkflow.modules.cash.application.port.in.CashSessionAuditUseCase;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
 import com.parkflow.modules.cash.infrastructure.persistence.CashSessionRepository;
@@ -16,7 +16,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.retry.annotation.Backoff;
@@ -33,17 +32,17 @@ public class CashClosingOutboundNotifier {
 
   private final CashSessionRepository cashSessionRepository;
   private final ParkingParametersService parkingParametersService;
-  private final CashSessionUseCase cashSessionUseCase;
+  private final CashSessionAuditUseCase cashSessionAuditUseCase;
   private final ObjectMapper objectMapper;
 
   public CashClosingOutboundNotifier(
       CashSessionRepository cashSessionRepository,
       ParkingParametersService parkingParametersService,
-      @Lazy CashSessionUseCase cashSessionUseCase,
+      CashSessionAuditUseCase cashSessionAuditUseCase,
       ObjectMapper objectMapper) {
     this.cashSessionRepository = cashSessionRepository;
     this.parkingParametersService = parkingParametersService;
-    this.cashSessionUseCase = cashSessionUseCase;
+    this.cashSessionAuditUseCase = cashSessionAuditUseCase;
     this.objectMapper = objectMapper;
   }
 
@@ -97,7 +96,7 @@ public class CashClosingOutboundNotifier {
         log.warn("webhook PSC: sesion {} no encontrada", cashSessionId);
         return;
       }
-      CashSummaryResponse summary = cashSessionUseCase.getSummary(sess.getId());
+      CashSummaryResponse summary = cashSessionAuditUseCase.getSummary(sess.getId());
       Map<String, Object> body = closingPayload(sess, summary, parkingParamSiteLabel);
       byte[] json = objectMapper.writeValueAsBytes(body);
 
