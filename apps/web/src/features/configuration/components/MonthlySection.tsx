@@ -101,7 +101,7 @@ export default function MonthlySection({
           { key: "startDate", label: "Desde" },
           { key: "endDate", label: "Hasta" },
           { key: "amount", label: "Valor" },
-          { key: "active", label: "Activa", render: (r: MonthlyContractRow) => (r.status === 'ACTIVE' || r.active ? "Sí" : "No") }
+          { key: "active", label: "Activa", render: (r: MonthlyContractRow) => (r.active ? "Sí" : "No") }
         ]}
         rows={rows}
       />

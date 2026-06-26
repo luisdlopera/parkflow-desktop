@@ -192,11 +192,11 @@ export default function LoginPage() {
       <a href="#login-form" className="sr-only">Ir al formulario</a>
       <form
         id="login-form"
-        onSubmit={activeForm.handleSubmit(
-          isSetupMode
-            ? onSetupSubmit
-            : onLoginSubmit
-        )}
+        onSubmit={(e) => {
+          void (isSetupMode
+            ? setupForm.handleSubmit(onSetupSubmit)(e)
+            : loginForm.handleSubmit(onLoginSubmit)(e));
+        }}
         className="surface w-full space-y-6 rounded-[2rem] p-6 sm:p-8 md:p-10 border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950"
         aria-label={isSetupMode ? "Formulario de configuración inicial" : "Formulario de inicio de sesión"}
       >

@@ -16,9 +16,9 @@ export function useConfigurationApi() {
       try {
         const options: RequestInit = {
           method,
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${sessionStorage.getItem('token')}`,
           },
         };
 

@@ -10,6 +10,7 @@ import { authHeaders } from "@/lib/services/auth-domain.service";
 import { authBase, apiBase } from "@/lib/api/config";
 import { API_CONFIG } from "@/lib/api/config";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+import type { StoredSession } from "@/features/auth/types";
 
 
 const AUTH_BASE = authBase();
@@ -35,14 +36,14 @@ export async function checkSetupRequired(): Promise<SetupRequiredResponse> {
   return res.json();
 }
 
-export async function postInitialSetup(payload: SetupPayload): Promise<unknown> {
+export async function postInitialSetup(payload: SetupPayload): Promise<StoredSession> {
   const res = await fetchWithCredentials(`${AUTH_BASE}/setup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error("No se pudo registrar la configuración inicial");
-  return res.json();
+  return res.json() as Promise<StoredSession>;
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {

@@ -30,7 +30,7 @@ export default function VehicleEntrySettings({
           <label className="text-sm text-slate-600 dark:text-slate-400">Tipo por defecto:</label>
           <Select
             aria-label="Tipo de vehículo por defecto"
-            value={vehicleTypes.some((t) => t.code === settings.defaultVehicleType) ? [settings.defaultVehicleType] : []}
+            value={vehicleTypes.some((t: any) => t.code === settings.defaultVehicleType) ? [settings.defaultVehicleType] : []}
             onChange={(val: Set<string | number | boolean>) => {
               const selected = Array.from(val)[0];
               if (selected) updateSettings({ defaultVehicleType: String(selected) });

@@ -7,8 +7,8 @@ import { DropdownMenu } from "@/components/bridge/Dropdown";
 import { DropdownItem } from "@/components/bridge/Dropdown";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { logoutAllSessions } from "@/features/auth/api/auth.api";
-import { clearSession } from "@/lib/services/auth-storage.service";
+import { logoutFromApi, logoutAllSessions } from "@/features/auth/api/auth.api";
+import { loadSession, clearSession } from "@/lib/services/auth-storage.service";
 import { currentUser, canAccessSuperAdminPortal } from "@/lib/services/auth-domain.service";
 import type { AuthUser } from "@parkflow/types";
 import { Shield } from "lucide-react";
@@ -28,6 +28,8 @@ export function UserMenu() {
   const handleLogout = async () => {
     setIsLoading(true);
     try {
+      const session = await loadSession();
+      if (session) await logoutFromApi(session);
       await clearSession();
       router.push("/login");
     } catch (error) {

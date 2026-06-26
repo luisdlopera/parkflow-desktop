@@ -100,9 +100,8 @@ export default function AdvancedEntryOptions<T extends FieldValues>({
             aria-label="Celda (opcional)"
             placeholder="Seleccionar celda..."
             selectedKey={value || null}
-            onSelectionChange={(keys: Set<string | number | boolean | null | undefined>) => {
-              const arr = Array.from(keys || []);
-              onChange(arr.length ? String(arr[0]) : "");
+            onSelectionChange={(key) => {
+              onChange(key != null ? String(key) : "");
             }}
             size="sm"
           >

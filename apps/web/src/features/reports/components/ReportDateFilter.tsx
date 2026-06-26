@@ -27,8 +27,8 @@ function SingleDatePicker({
   return (
     <DatePicker
       name={name}
-      value={value as DateValue | undefined}
-      onChange={onChange as ((v: DateValue | null) => void) & ((v: DateValue) => void)}
+      value={(value ?? null) as any}
+      onChange={onChange as any}
       className="w-40"
     >
       <Label className="text-xs font-medium text-slate-500 mb-1">{label}</Label>
