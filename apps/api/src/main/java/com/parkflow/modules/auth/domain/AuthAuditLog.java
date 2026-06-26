@@ -30,8 +30,11 @@ public class AuthAuditLog {
   @Column(nullable = false)
   private String outcome;
 
-  @Column(columnDefinition = "TEXT")
+  @Column(columnDefinition = "jsonb")
   private String metadataJson;
+
+  @Column(name = "company_id")
+  private UUID companyId;
 
   @Column(nullable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();
