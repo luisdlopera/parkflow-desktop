@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/bridge/Checkbox";
 import { Input } from "@/components/bridge/Input";
 import { login } from "@/features/auth/api/auth.api";
 import { loadSession, saveSession } from "@/lib/services/auth-storage.service";
+import { broadcastAuthEvent } from "@/hooks/auth/useAuthBroadcast";
 import { currentUser } from "@/lib/services/auth-domain.service";
 import { checkSetupRequired, postInitialSetup } from "@/lib/api/auth-api";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
@@ -148,7 +149,8 @@ export default function LoginPage() {
         offlineRequestedHours: 48
       });
 
-      // Update the store global so AuthGate doesn't redirect to login
+      // Notify other tabs that login succeeded
+      broadcastAuthEvent({ type: "auth:login" });
       useAuthStore.getState().setUser(session.user);
       if (!session.user.onboardingCompleted) {
         router.replace("/onboarding");

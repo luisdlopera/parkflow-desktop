@@ -18,7 +18,7 @@ import com.parkflow.modules.auth.security.JwtTokenService;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.RolePermissions;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
+import com.parkflow.modules.auth.infrastructure.persistence.AppUserRepository;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -47,6 +47,9 @@ public class LoginUseCaseImpl implements LoginUseCase {
   @Value("${app.security.offline-lease-hours:48}")
   private int defaultOfflineLeaseHours;
 
+  @Value("${app.security.lockout-minutes:30}")
+  private int lockoutMinutes;
+
   @Override
   @Transactional
   @Auditable(module = "SEGURIDAD", action = "LOGIN", entityClass = AuthSession.class)
@@ -65,11 +68,21 @@ public class LoginUseCaseImpl implements LoginUseCase {
     }
 
     if (user.isBlocked()) {
-      log.warn("AUTH: Login failed - account blocked - userId={}, email={}", user.getId(), maskEmail(email));
-      authAuditService.log(
-          AuthAuditAction.LOGIN_FAILED, user, null, "DENY_ACCOUNT_BLOCKED",
-          Map.of("email", email, "deviceId", deviceId));
-      throw new OperationException(HttpStatus.FORBIDDEN, "Cuenta bloqueada por múltiples intentos fallidos. Contacte al administrador.");
+      // Auto-unlock: if the lockout window has expired, unblock the user transparently
+      if (user.getBlockedUntil() != null && OffsetDateTime.now().isAfter(user.getBlockedUntil())) {
+        log.info("AUTH: Auto-unlock expired lockout - userId={}", user.getId());
+        user.setBlocked(false);
+        user.setFailedLoginAttempts(0);
+        user.setBlockedUntil(null);
+        appUserRepository.save(user);
+      } else {
+        log.warn("AUTH: Login failed - account blocked - userId={}, email={}, blockedUntil={}",
+            user.getId(), maskEmail(email), user.getBlockedUntil());
+        authAuditService.log(
+            AuthAuditAction.LOGIN_FAILED, user, null, "DENY_ACCOUNT_BLOCKED",
+            Map.of("email", email, "deviceId", deviceId));
+        throw new OperationException(HttpStatus.FORBIDDEN, "Cuenta bloqueada. Intente de nuevo en " + lockoutMinutes + " minutos o contacte al administrador.");
+      }
     }
 
     if (!user.isActive()) {
@@ -176,6 +189,8 @@ public class LoginUseCaseImpl implements LoginUseCase {
       user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
       if (user.getFailedLoginAttempts() >= 5) {
         user.setBlocked(true);
+        user.setBlockedUntil(OffsetDateTime.now().plusMinutes(lockoutMinutes));
+        log.warn("AUTH: Account locked - userId={}, unlocksAt={}", user.getId(), user.getBlockedUntil());
       }
       appUserRepository.save(user);
     }
@@ -196,7 +211,10 @@ public class LoginUseCaseImpl implements LoginUseCase {
     device.setDeviceId(request.deviceId());
     device.setDisplayName(request.deviceName());
     device.setPlatform(request.platform());
-    device.setFingerprint(request.fingerprint());
+    // [A3] Store SHA-256 hash of fingerprint — never the raw value
+    if (request.fingerprint() != null) {
+      device.setFingerprintHash(passwordHashService.sha256(request.fingerprint()));
+    }
     device.setLastSeenAt(OffsetDateTime.now());
     if (device.getId() == null) {
       device.setAuthorized(true);

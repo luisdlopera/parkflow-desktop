@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { logoutFromApi, logoutAllSessions } from "@/features/auth/api/auth.api";
 import { loadSession, clearSession } from "@/lib/services/auth-storage.service";
+import { broadcastAuthEvent } from "@/hooks/auth/useAuthBroadcast";
 import { currentUser, canAccessSuperAdminPortal } from "@/lib/services/auth-domain.service";
 import type { AuthUser } from "@parkflow/types";
 import { Shield } from "lucide-react";
@@ -31,6 +32,7 @@ export function UserMenu() {
       const session = await loadSession();
       if (session) await logoutFromApi(session);
       await clearSession();
+      broadcastAuthEvent({ type: "auth:logout" });
       router.push("/login");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);

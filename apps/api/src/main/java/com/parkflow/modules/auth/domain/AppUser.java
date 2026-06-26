@@ -44,6 +44,8 @@ public class AppUser {
   @Column(nullable = false)
   private boolean isBlocked = false;
 
+  private OffsetDateTime blockedUntil;
+
   @Column(nullable = false)
   private int failedLoginAttempts = 0;
 

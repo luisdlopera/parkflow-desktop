@@ -27,8 +27,8 @@ public class AuthorizedDevice {
   @Column(nullable = false)
   private String platform;
 
-  @Column(nullable = false)
-  private String fingerprint;
+  @Column(name = "fingerprint_hash", nullable = false)
+  private String fingerprintHash;
 
   @Column(nullable = false)
   private boolean authorized = true;

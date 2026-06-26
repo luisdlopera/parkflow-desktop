@@ -75,7 +75,7 @@ public class DeviceManagementService implements DeviceManagementUseCase {
         device.getDeviceId(),
         device.getDisplayName(),
         device.getPlatform(),
-        device.getFingerprint(),
+        null, // fingerprint hash is never returned to clients
         device.isAuthorized(),
         device.getRevokedAt(),
         device.getLastSeenAt());

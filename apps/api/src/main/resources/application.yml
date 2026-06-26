@@ -48,7 +48,7 @@ springdoc:
     enabled: ${PARKFLOW_SWAGGER_ENABLED:true}
     operations-sorter: method
     tags-sorter: alpha
-    use-root-path: true
+    use-root-path: false
     doc-expansion: none
     deep-linking: true
     persist-authorization: true
@@ -80,6 +80,7 @@ app:
     jwt-clock-skew-seconds: ${PARKFLOW_JWT_CLOCK_SKEW_SECONDS:30}
     swagger-public: ${PARKFLOW_SWAGGER_PUBLIC:false}
     offline-lease-hours: ${PARKFLOW_OFFLINE_LEASE_HOURS:48}
+    lockout-minutes: ${PARKFLOW_LOCKOUT_MINUTES:30}
     seed-admin-email: ${PARKFLOW_SEED_ADMIN_EMAIL:admin@parkflow.local}
     seed-admin-password: ${PARKFLOW_SEED_ADMIN_PASSWORD:REPLACE_WITH_ADMIN_PASSWORD}
 

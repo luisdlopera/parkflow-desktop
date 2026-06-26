@@ -12,6 +12,7 @@ import { useUIFacade } from "@/features/admin/hooks/useUIFacade";
 import { PageTransition } from "@/components/animations";
 import { ScrollToTopButton } from "@/components/animations";
 import { useSessionTimeout } from "@/hooks/core/useSessionTimeout";
+import { useAuthBroadcast } from "@/hooks/auth/useAuthBroadcast";
 
 function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(() =>
@@ -34,6 +35,7 @@ export default function DashboardClientWrapper({ children }: { children: ReactNo
   const { isOpen, isCollapsed, toggle, open, close } = useSidebar();
   const { setSidebarState } = useUIFacade();
   const { warningVisible, secondsLeft, extend, doLogout } = useSessionTimeout(15);
+  useAuthBroadcast();
   const isOnline = useOnlineStatus();
 
   const handleToggle = useCallback(() => {
