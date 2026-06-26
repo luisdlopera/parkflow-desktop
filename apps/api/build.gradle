@@ -177,7 +177,6 @@ flyway {
   baselineVersion = "1"
   baselineDescription = "Initial schema consolidation (post-squash)"
   baselineOnMigrate = true     // Create baseline on first run
-  repairOnMigrate = true       // Auto-fix checksums (dev only; disable in prod)
 }
 
 dependencyLocking {
