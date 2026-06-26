@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import RatesSection from "../RatesSection";
-import type { RateRow } from "@/lib/settings-api";
+import type { RateRow } from "@/lib/api/rates-api";
 
 const mockRates: RateRow[] = [
   {

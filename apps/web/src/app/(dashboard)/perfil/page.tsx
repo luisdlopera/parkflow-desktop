@@ -5,7 +5,7 @@ import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { changePassword, fetchProfile, updateProfile, type UserProfile } from "@/lib/profile-api";
+import { changePassword, fetchProfile, updateProfile, type UserProfile } from "@/lib/api/profile.api";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
 import { clearSession } from "@/lib/services/auth-storage.service";

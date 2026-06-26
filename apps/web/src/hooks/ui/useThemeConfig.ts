@@ -12,7 +12,7 @@ import {
   removeThemeFavicon,
   type ThemeConfig,
   type ThemeMode,
-} from "@/lib/settings-api";
+} from "@/lib/api/theme-api";
 
 const DEFAULTS: BrandColors & { themeMode: ThemeMode } = {
   primaryColor: DEFAULT_PRIMARY_COLOR,

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useOnboardingStore, type SaveState } from "../onboarding.store";
-import type { OnboardingStatus } from "@/lib/onboarding-api";
+import type { OnboardingStatus } from "@/lib/api/onboarding.api";
 
 const initialState = {
   stepData: {},

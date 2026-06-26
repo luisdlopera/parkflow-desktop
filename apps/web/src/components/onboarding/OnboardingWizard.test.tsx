@@ -69,7 +69,7 @@ vi.mock("@/components/onboarding/steps/Step12Audit", () => ({
   default: () => <div data-testid="step-12">Step 12</div>
 }));
 
-vi.mock("@/lib/onboarding-api", () => ({
+vi.mock("@/lib/api/onboarding.api", () => ({
   fetchOnboardingStatus: vi.fn(async () => ({
     companyId: "c1",
     plan: "LOCAL",
@@ -309,7 +309,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
 
   it("calls skipOnboarding when skip is confirmed", async () => {
     const user = userEvent.setup();
-    const { skipOnboarding } = await import("@/lib/onboarding-api");
+    const { skipOnboarding } = await import("@/lib/api/onboarding.api");
 
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
     await waitFor(() => expect(screen.getByText("Paso 1 de 12")).toBeInTheDocument());
@@ -324,7 +324,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
 
   it("navigates to home after skipping", async () => {
     const user = userEvent.setup();
-    const { skipOnboarding } = await import("@/lib/onboarding-api");
+    const { skipOnboarding } = await import("@/lib/api/onboarding.api");
 
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
     await waitFor(() => expect(screen.getByText("Paso 1 de 12")).toBeInTheDocument());
@@ -397,7 +397,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
   });
 
   it("finish button completes onboarding flow", async () => {
-    const { completeOnboarding } = await import("@/lib/onboarding-api");
+    const { completeOnboarding } = await import("@/lib/api/onboarding.api");
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
 
     // On last step, finish button would be shown and functional
@@ -490,7 +490,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
 
   it("passes companyId to skipOnboarding", async () => {
     const user = userEvent.setup();
-    const { skipOnboarding } = await import("@/lib/onboarding-api");
+    const { skipOnboarding } = await import("@/lib/api/onboarding.api");
 
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
     await waitFor(() => expect(screen.getByText("Paso 1 de 12")).toBeInTheDocument());
@@ -504,7 +504,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
   });
 
   it("uses company id in all API operations", async () => {
-    const { skipOnboarding } = await import("@/lib/onboarding-api");
+    const { skipOnboarding } = await import("@/lib/api/onboarding.api");
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
 
     await waitFor(() => expect(screen.getByText("Paso 1 de 12")).toBeInTheDocument());
@@ -570,7 +570,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
 
   it("handles skip error with 401 status", async () => {
     const user = userEvent.setup();
-    const { skipOnboarding } = await import("@/lib/onboarding-api");
+    const { skipOnboarding } = await import("@/lib/api/onboarding.api");
     const { clearSession } = await import("@/lib/services/auth-storage.service");
 
     vi.mocked(skipOnboarding).mockRejectedValueOnce(new Error("401"));
@@ -592,7 +592,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
   // ═════════════════════════════════════════════════════════════════════════════
 
   it("renders with different company IDs", async () => {
-    const { fetchOnboardingStatus } = await import("@/lib/onboarding-api");
+    const { fetchOnboardingStatus } = await import("@/lib/api/onboarding.api");
     vi.mocked(fetchOnboardingStatus).mockResolvedValueOnce(buildStatus({ companyId: "c2" }));
 
     renderWithDialog(<OnboardingWizard companyId="c2" onDone={() => undefined} />);
@@ -615,7 +615,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
   });
 
   it("displays different step component based on current step", async () => {
-    const { fetchOnboardingStatus } = await import("@/lib/onboarding-api");
+    const { fetchOnboardingStatus } = await import("@/lib/api/onboarding.api");
     vi.mocked(fetchOnboardingStatus).mockResolvedValueOnce(buildStatus({ currentStep: 3 }));
 
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
@@ -623,7 +623,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
   });
 
   it("shows correct button layout for middle steps (neither first nor last)", async () => {
-    const { fetchOnboardingStatus } = await import("@/lib/onboarding-api");
+    const { fetchOnboardingStatus } = await import("@/lib/api/onboarding.api");
     vi.mocked(fetchOnboardingStatus).mockResolvedValueOnce(buildStatus({ currentStep: 6 }));
 
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);

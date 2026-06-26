@@ -5,8 +5,9 @@ import { Select } from "@/components/bridge/Select";
 import { Button } from "@/components/bridge/Button";
 import { Checkbox } from "@/components/bridge/Checkbox";
 import { Input } from "@/components/bridge/Input";
-import { saveRate, type RateRow } from "@/lib/settings-api";
-import type { RateCategory } from "@/lib/settings-api";
+import { saveRate, type RateRow } from "@/lib/api/rates-api";
+import type { RateCategory } from "@/lib/api/rates-api";
+import { fetchMasterVehicleTypes } from "@/lib/api/vehicle-types-api";
 import type { RateType } from "@/lib/types/parking.types";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import {
@@ -29,7 +30,7 @@ export function RateForm({
 }) {
   const [vehicleTypes, setVehicleTypes] = useState<{ code: string; name: string }[]>([]);
   useEffect(() => {
-    import("@/lib/settings-api").then((api) => api.fetchMasterVehicleTypes().then(setVehicleTypes).catch(() => {}));
+    fetchMasterVehicleTypes().then(setVehicleTypes).catch(() => {});
   }, []);
 
   const isEdit = Boolean((initial as RateRow).id);

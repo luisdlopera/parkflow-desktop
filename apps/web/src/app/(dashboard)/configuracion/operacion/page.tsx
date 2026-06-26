@@ -12,12 +12,14 @@ import { Switch } from "@/components/bridge/Switch";
 import { Input } from "@/components/bridge/Input";
 import { TextArea } from "@/components/bridge/TextArea";
 import {
-  fetchConfigurationSites,
   fetchConfigurationOperationalParameters,
   putConfigurationOperationalParameters,
-} from "@/lib/settings-api";
+} from "@/lib/api/operational-parameters-api";
+import {
+  fetchConfigurationSites,
+  type ParkingSiteRow,
+} from "@/lib/api/sites-api";
 import { operationalParameterSchema, type OperationalParameterSchema } from "@/lib/schemas/config.schemas";
-import type { ParkingSiteRow } from "@/lib/types/settings.types";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
 

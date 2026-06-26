@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { SWRConfig } from 'swr';
 import { useOnboardingStatus } from '@/hooks/auth/useOnboardingStatus';
-import * as onboardingApi from '@/lib/onboarding-api';
+import * as onboardingApi from '@/lib/api/onboarding.api';
 
 vi.mock('@/lib/onboarding-api', () => ({
   fetchOnboardingStatus: vi.fn(),

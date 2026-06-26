@@ -11,7 +11,7 @@ import {
   batchSaveOnboardingQuestions,
   seedOnboardingQuestions,
   type OnboardingQuestionConfig,
-} from "@/lib/admin-onboarding-api";
+} from "@/lib/api/admin-onboarding.api";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { HelpCircle, Save, RefreshCw, AlertTriangle, CheckCircle } from "lucide-react";
 
@@ -59,7 +59,8 @@ export default function AdminOnboardingPage() {
       setHasChanges(false);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: unknown) {
-      setError((err as any).message || "Error al guardar cambios");
+      const error = err as { message?: string };
+      setError(error.message || "Error al guardar cambios");
     } finally {
       setSaving(false);
     }
@@ -72,7 +73,8 @@ export default function AdminOnboardingPage() {
       await seedOnboardingQuestions();
       await loadQuestions();
     } catch (err: unknown) {
-      setError((err as any).message || "Error al inicializar configuración");
+      const error = err as { message?: string };
+      setError(error.message || "Error al inicializar configuración");
     } finally {
       setLoading(false);
     }

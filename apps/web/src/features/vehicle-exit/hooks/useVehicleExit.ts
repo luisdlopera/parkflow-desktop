@@ -17,7 +17,7 @@ import { buildTicketPreviewForOperation, printReceiptIfTauri, type OperationPayl
 import { downloadTicketAsHtml } from "@/lib/print/ticket-download";
 import { currentUser } from "@/lib/services/auth-domain.service";
 import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
-import { fetchConfigurationPaymentMethods } from "@/lib/settings-api";
+import { fetchConfigurationPaymentMethods } from "@/lib/api/payment-methods-api";
 import { useTerminalCaja } from "@/features/cash-register/hooks/useTerminalCaja";
 import { useOperationSounds } from "@/hooks/ui/useOperationSounds";
 import { PAYMENT_METHOD_CATALOG, type PaymentMethodCode } from "@/lib/payment-method-catalog";

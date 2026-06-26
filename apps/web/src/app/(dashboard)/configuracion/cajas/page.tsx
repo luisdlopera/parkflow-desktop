@@ -14,13 +14,21 @@ import {
   createConfigurationCashRegister,
   updateConfigurationCashRegister,
   patchConfigurationCashRegisterStatus,
+  type CashRegisterRow,
+} from "@/lib/api/cash-registers-api";
+import {
   fetchConfigurationSites,
+  type ParkingSiteRow,
+} from "@/lib/api/sites-api";
+import {
   fetchConfigurationPrinters,
+  type PrinterRow,
+} from "@/lib/api/printers-api";
+import {
   fetchUsers,
   type UserAdminRow,
-} from "@/lib/settings-api";
+} from "@/lib/api/users-api";
 import { cashRegisterSchema, type CashRegisterSchema } from "@/lib/schemas/config.schemas";
-import type { CashRegisterRow, ParkingSiteRow, PrinterRow } from "@/lib/types/settings.types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { FormDrawer } from "@/components/ui/FormDrawer";
 import { StatusToggle } from "@/components/settings/StatusToggle";
@@ -156,7 +164,7 @@ export default function CajasPage() {
                 setValue("siteId", id);
                 setValue("site", selected?.code ?? "DEFAULT");
               }}
-              selectedKey={(watchSiteId ? watchSiteId : undefined) as any}
+              selectedKey={watchSiteId ? watchSiteId : undefined}
             >
               <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
               <Select.Popover aria-label="Seleccionar opción">

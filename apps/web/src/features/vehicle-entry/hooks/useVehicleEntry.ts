@@ -65,7 +65,8 @@ function isNetworkError(error: unknown): boolean {
 function extractValidationError(apiError: any, defaultMsg: string): string {
   if (apiError.code === "VALIDATION_ERROR" && apiError.details) {
     if (Array.isArray(apiError.details) && apiError.details.length > 0) {
-      return (apiError.details[0] as any).message || defaultMsg;
+      const detail = apiError.details[0] as { message?: string };
+      return detail.message || defaultMsg;
     }
     if (typeof apiError.details === "object") {
       const details = apiError.details as Record<string, unknown>;

@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import UsersSection from "../UsersSection";
-import type { UserAdminRow } from "@/lib/settings-api";
+import type { UserAdminRow } from "@/lib/api/users-api";
 
 const mockUsers: UserAdminRow[] = [
   {

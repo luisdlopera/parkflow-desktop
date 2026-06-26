@@ -1,7 +1,7 @@
 "use client";
 
 import { buildApiHeaders } from "@/lib/api";
-import { apiV1Base } from "@/lib/settings-api";
+import { apiV1Base } from "@/lib/api/_shared";
 import {
   cashCloseRequestSchema,
   cashCountRequestSchema,

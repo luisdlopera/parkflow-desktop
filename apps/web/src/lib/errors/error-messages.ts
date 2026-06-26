@@ -132,8 +132,8 @@ export const FallbackActionMessages: Record<FrontendActionError, string> = {
  */
 export function getUserFriendlyErrorMessage(error: unknown, fallbackAction: FrontendActionError = FrontendActionError.UNKNOWN): string {
   if (error instanceof Error) {
-    const apiError = error as any;
-    
+    const apiError = error as { code?: keyof typeof GLOBAL_ERROR_MESSAGES; status?: number };
+
     if (apiError.code && GLOBAL_ERROR_MESSAGES[apiError.code]) {
       return GLOBAL_ERROR_MESSAGES[apiError.code].description || GLOBAL_ERROR_MESSAGES[apiError.code].title || FallbackActionMessages[fallbackAction];
     }

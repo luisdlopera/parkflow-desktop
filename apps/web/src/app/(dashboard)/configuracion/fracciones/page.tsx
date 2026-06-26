@@ -12,7 +12,7 @@ import {
   createConfigurationRateFraction,
   updateConfigurationRateFraction,
   deleteConfigurationRateFraction,
-} from "@/lib/settings-api";
+} from "@/lib/api/rate-fractions-api";
 import { rateFractionSchema, type RateFractionSchema } from "@/lib/schemas/config.schemas";
 import type { RateFractionRow } from "@/lib/types/settings.types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";

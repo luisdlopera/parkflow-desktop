@@ -88,8 +88,8 @@ export function PlanForm({ onSubmit, isLoading, initialData }: PlanFormProps) {
     try {
       await onSubmit(data);
     } catch (err: unknown) {
-      const msg =
-        (err as any)?.message || "Error al guardar el plan. Intente nuevamente.";
+      const error = err as { message?: string };
+      const msg = error?.message || "Error al guardar el plan. Intente nuevamente.";
       setSubmitError(msg);
       toast.danger(msg);
     }

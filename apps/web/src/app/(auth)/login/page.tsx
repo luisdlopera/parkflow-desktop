@@ -149,7 +149,7 @@ export default function LoginPage() {
       });
 
       // Update the store global so AuthGate doesn't redirect to login
-      useAuthStore.getState().setUser(session.user as any);
+      useAuthStore.getState().setUser(session.user);
       if (!session.user.onboardingCompleted) {
         router.replace("/onboarding");
       } else {
@@ -170,7 +170,7 @@ export default function LoginPage() {
         name: data.adminName.trim(),
         companyName: data.companyName.trim(),
         nit: data.companyNit.trim(),
-      }) as any;
+      });
 
       await saveSession(session);
       useAuthStore.getState().setUser(session.user);
@@ -194,8 +194,8 @@ export default function LoginPage() {
         id="login-form"
         onSubmit={activeForm.handleSubmit(
           isSetupMode
-            ? (onSetupSubmit as any)
-            : (onLoginSubmit as any)
+            ? onSetupSubmit
+            : onLoginSubmit
         )}
         className="surface w-full space-y-6 rounded-[2rem] p-6 sm:p-8 md:p-10 border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950"
         aria-label={isSetupMode ? "Formulario de configuración inicial" : "Formulario de inicio de sesión"}

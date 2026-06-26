@@ -1,12 +1,21 @@
 "use client";
 import React from "react";
-import { Controller } from "react-hook-form";
+import { Controller, Control, FieldValues } from "react-hook-form";
 import { TextField, Input as HeroInput } from "@heroui/react";
 import { getPlatePlaceholder, getPlateFormatHint } from "@/lib/validation/plate-validator";
 
 const DEFAULT_VEHICLE_TYPE = "CAR";
 
-export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, platePrefix, vehicleType }: any) {
+interface PlateInputProps<T extends FieldValues = any> {
+  control: Control<T>;
+  onSubmit?: () => void;
+  plateInputRef: React.MutableRefObject<HTMLInputElement | null>;
+  noPlate?: boolean;
+  platePrefix?: string;
+  vehicleType?: string;
+}
+
+export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, platePrefix, vehicleType }: PlateInputProps) {
   const type = vehicleType || DEFAULT_VEHICLE_TYPE;
   const placeholder = getPlatePlaceholder(type);
   const formatHint = getPlateFormatHint(type);
@@ -17,7 +26,7 @@ export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, 
       <div className="relative bg-white dark:bg-slate-900 rounded-2xl p-1">
         <Controller
           name="plate"
-          control={control as any}
+          control={control}
           render={({ field, fieldState }) => (
             <TextField isInvalid={!!fieldState.error} className="flex flex-col">
               <label className="flex items-center justify-between w-full text-base font-semibold px-3 pt-2 pb-1">

@@ -64,7 +64,8 @@ export default function CompaniesPage() {
       toast.success("Eliminación exitosa");
     } catch (err: unknown) {
       console.error("Error al eliminar empresa", err);
-      const isUnauthorized = (err as any)?.status === 401 || (err as any)?.status === 403;
+      const error = err as { status?: number };
+      const isUnauthorized = error?.status === 401 || error?.status === 403;
       toast.danger(isUnauthorized ? "No tienes permisos suficientes (SUPER_ADMIN) o tu sesión expiró" : "No se pudo eliminar la empresa. Intenta nuevamente.");
     } finally {
       setIsDeactivating(false);
@@ -205,7 +206,7 @@ export default function CompaniesPage() {
               </AlertDialog.Body>
               <AlertDialog.Footer>
                 <HeroButton variant="tertiary" onPress={() => setCompanyToDelete(null)}>Cancelar</HeroButton>
-                <Button className="bg-danger text-white hover:bg-danger/90" onPress={confirmDelete as any} isLoading={isDeactivating}>Eliminar</Button>
+                <Button className="bg-danger text-white hover:bg-danger/90" onPress={() => confirmDelete()} isLoading={isDeactivating}>Eliminar</Button>
               </AlertDialog.Footer>
             </AlertDialog.Dialog>
           </AlertDialog.Container>

@@ -14,7 +14,7 @@ import {
   patchUserStatus,
   resetUserPassword,
   type UserAdminRow
-} from "@/lib/settings-api";
+} from "@/lib/api/users-api";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import type { UserRole } from "@/lib/types/settings.types";
 import { ROLES } from "@/features/configuration/constants";

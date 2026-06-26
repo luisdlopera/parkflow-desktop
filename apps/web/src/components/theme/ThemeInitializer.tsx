@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { currentUser } from "@/lib/services/auth-domain.service";
-import { fetchThemeConfig } from "@/lib/settings-api";
+import { fetchThemeConfig } from "@/lib/api/theme-api";
 import { useTheme } from "@/lib/theme/ThemeProvider";
 import { sanitizePrimaryColor } from "@/lib/theme/theme.types";
 

@@ -5,7 +5,12 @@ import { Input } from "@/components/bridge/Input";
 import { Modal } from "@/components/bridge/Modal";
 import DataTable from "@/components/ui/DataTable";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
-import type { MonthlyContractRow } from "@/lib/settings-api";
+import {
+  fetchMonthlyContracts,
+  saveMonthlyContract,
+  type MonthlyContractRow,
+} from "@/lib/api/monthly-contracts-api";
+import { fetchRates } from "@/lib/api/rates-api";
 
 export default function MonthlySection({
   canEdit,
@@ -44,7 +49,6 @@ export default function MonthlySection({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { fetchMonthlyContracts, fetchRates } = await import("@/lib/settings-api");
       const [res, ratesRes] = await Promise.all([
         fetchMonthlyContracts({ plate: plate || undefined, page, size: 15 }),
         fetchRates({ active: true, size: 50 })
@@ -65,7 +69,6 @@ export default function MonthlySection({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { saveMonthlyContract } = await import("@/lib/settings-api");
       await saveMonthlyContract(formData, undefined, auditReason);
       onNotify({ kind: "ok", text: "Mensualidad creada exitosamente con auto-creación de Cliente y Vehículo." });
       onClose();
@@ -98,9 +101,9 @@ export default function MonthlySection({
           { key: "startDate", label: "Desde" },
           { key: "endDate", label: "Hasta" },
           { key: "amount", label: "Valor" },
-          { key: "active", label: "Activa", render: (r: any) => (r.status === 'ACTIVE' || r.active ? "Sí" : "No") }
+          { key: "active", label: "Activa", render: (r: MonthlyContractRow) => (r.status === 'ACTIVE' || r.active ? "Sí" : "No") }
         ]}
-        rows={rows as any[]}
+        rows={rows}
       />
 
       <div className="flex items-center gap-4">

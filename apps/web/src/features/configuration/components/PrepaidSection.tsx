@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/bridge/Button";
 import DataTable from "@/components/ui/DataTable";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
-import type { PrepaidPackageRow } from "@/lib/settings-api";
+import { fetchPrepaidPackages, type PrepaidPackageRow } from "@/lib/api/prepaid-api";
 
 export default function PrepaidSection({
   canEdit,
@@ -20,7 +20,6 @@ export default function PrepaidSection({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { fetchPrepaidPackages } = await import("@/lib/settings-api");
       const res = await fetchPrepaidPackages({ size: 50 });
       setRows(res.content);
     } catch (e) {
@@ -44,9 +43,9 @@ export default function PrepaidSection({
           { key: "hoursIncluded", label: "Horas" },
           { key: "amount", label: "Precio" },
           { key: "expiresDays", label: "Validez (días)" },
-          { key: "active", label: "Activo", render: (r: any) => (r.active ? "Sí" : "No") }
+          { key: "active", label: "Activo", render: (r: PrepaidPackageRow) => (r.active ? "Sí" : "No") }
         ]}
-        rows={rows as any[]}
+        rows={rows}
       />
     </div>
   );

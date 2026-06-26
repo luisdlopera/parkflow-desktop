@@ -3,7 +3,7 @@
 import { Button } from "@/components/bridge/Button";
 import { useDialog } from "@/providers/DialogProvider";
 import { Check, Save, AlertTriangle } from "lucide-react";
-import { skipOnboarding, completeOnboarding } from "@/lib/onboarding-api";
+import { skipOnboarding, completeOnboarding } from "@/lib/api/onboarding.api";
 import { patchSessionUser } from "@/lib/services/auth-domain.service";
 import { ApiError } from "@/lib/errors/api-error";
 import { useRouter } from "next/navigation";

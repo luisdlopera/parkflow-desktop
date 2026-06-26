@@ -12,7 +12,7 @@ import {
   deleteRate,
   patchRateStatus,
   type RateRow
-} from "@/lib/settings-api";
+} from "@/lib/api/rates-api";
 import type { RateType } from "@/lib/types/parking.types";
 import type { DataTableColumn } from "@/components/ui/DataTable";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
@@ -64,7 +64,7 @@ export default function RatesSection({
     const base = editing ?? {
       id: "",
       name: "",
-      vehicleType: null as any,
+      vehicleType: null as string | null,
       rateType: "HOURLY" as RateType,
       amount: 0,
       graceMinutes: 0,

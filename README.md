@@ -207,16 +207,42 @@ Upon the first launch in `local` or `sync` mode, the database is seeded automati
 
 ## Documentation & Resources
 
+### Core Guides
 - **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Code of Conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 - **Security Policy**: [SECURITY.md](SECURITY.md)
 - **Changelog**: [CHANGELOG.md](CHANGELOG.md)
 - **License**: [LICENSE](LICENSE) (Apache 2.0)
-- **Architecture & Auth**: [Hybrid Auth v1](docs/architecture/auth-hybrid-v1.md)
+
+### Architecture & Design
+- **Architecture Decisions (ADRs)**:
+  - [ADR-0001: Hexagonal Architecture](docs/adr/0001-hexagonal-architecture.md) — Ports & adapters pattern
+  - [ADR-0002: God Service Elimination](docs/adr/0002-god-service-elimination.md) — Service size limits (≤5 methods)
+  - [ADR-0003: Authentication Strategy](docs/adr/0003-authentication-strategy.md) — JWT + role-based auth
+  - [ADR-0004: Multi-Tenant RLS](docs/adr/0004-multi-tenant-rls.md) — PostgreSQL row-level security
+  - [ADR-0005: API Deprecation Path](docs/adr/0005-deprecation-path.md) — Phased endpoint consolidation
+  - [ADR-0006: API Consolidation](docs/adr/0006-api-consolidation.md) — DTO centralization
+  - [ADR-0007: Test Infrastructure](docs/adr/0007-test-infrastructure.md) — H2 vs Testcontainers
+- **Hybrid Auth v1**: [Architecture & Auth](docs/architecture/auth-hybrid-v1.md)
 - **Port Management**: [Port Architecture Guide](docs/architecture/ports.md)
-- **API Documentation (Swagger)**: `http://localhost:6011/swagger-ui/index.html`
-- **Licensing System**: [Developer Guide](docs/DEVELOPER_GUIDE.md) | [Architecture](docs/LICENSING_ARCHITECTURE.md)
+
+### Production Deployment
+- **Production Readiness**: [Deployment Checklist](docs/PRODUCTION_CHECKLIST.md) — Pre-deployment, deployment, rollback procedures
+- **Deployment Runbook**: [deployment-runbook.md](docs/runbooks/deployment-runbook.md) — Step-by-step deployment guide
+- **Rollback Strategy**: [rollback-strategy.md](docs/runbooks/rollback-strategy.md) — Emergency rollback procedures
+- **Performance Baseline**: [performance-baseline.md](docs/performance-baseline.md) — Load testing, metrics, targets
+
+### Development & Quality
+- **Type Safety Guide**: [TYPE_SAFETY.md](docs/TYPE_SAFETY.md) — TypeScript `any` → proper types (327 remaining)
+- **API Contract Tests**: [39 tests covering critical paths](docs/api-contract-tests.md)
+- **Testing Strategy**: [TEST_ORGANIZATION.md](docs/TEST_ORGANIZATION.md)
 - **Troubleshooting**: [Debug Runbook](docs/runbooks/debug-api-request.md)
+
+### System Integration
+- **API Documentation (Swagger)**: `http://localhost:6011/swagger-ui/index.html` (live endpoints)
+- **Licensing System**: [Developer Guide](docs/DEVELOPER_GUIDE.md) | [Architecture](docs/LICENSING_ARCHITECTURE.md)
+- **Security Audit**: [SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) — Vulnerability findings & remediations
+- **Migration Guides**: [MIGRATION_GUIDE_DEPRECATED_SERVICES.md](docs/MIGRATION_GUIDE_DEPRECATED_SERVICES.md)
 
 ---
 

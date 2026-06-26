@@ -9,7 +9,7 @@ import {
   createConfigurationPaymentMethod,
   updateConfigurationPaymentMethod,
   patchConfigurationPaymentMethodStatus,
-} from "@/lib/settings-api";
+} from "@/lib/api/payment-methods-api";
 import { paymentMethodSchema, type PaymentMethodSchema } from "@/lib/schemas/config.schemas";
 import type { PaymentMethodRow } from "@/lib/types/settings.types";
 import { Button } from "@/components/bridge/Button";

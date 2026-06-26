@@ -285,18 +285,18 @@ export function QuickSearch() {
                 </div>
               ) : flatResults.length > 0 ? (
                 <div className="space-y-4 p-2">
-                  {Object.entries(groups ?? {}).map(([type, items]: [string, unknown]) => (
+                  {Object.entries(groups ?? {}).map(([type, items]: [string, SearchResult[]]) => (
                     <section key={type} className="space-y-2">
                       <div className="flex items-center justify-between px-3">
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-neutral-500">
                           <TypeIcon type={type as SearchType} />
                           {TYPE_META[type as SearchType]?.label ?? type}
                         </div>
-                        <span className="text-xs text-slate-400">{(items as any)?.length ?? 0} resultados</span>
+                        <span className="text-xs text-slate-400">{items.length ?? 0} resultados</span>
                       </div>
                       <Card className="overflow-hidden border border-slate-200/70 dark:border-neutral-800/70">
                         <Card.Content className="p-0">
-                          {(items as any)?.map((item: any) => {
+                          {items.map((item: SearchResult) => {
                             const isSelected = flatResults[selectedIndex]?.id === item.id;
                             return <SearchResultRow key={item.id} result={item} selected={isSelected} onSelect={handleSelect} />;
                           })}

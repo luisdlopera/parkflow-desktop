@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useCajaPage } from "../useCajaPage";
 import { cashRegisters, cashAudit, cashPrintClosing } from "@/lib/cash/cash-api";
-import { fetchConfigurationSites } from "@/lib/settings-api";
+import { fetchConfigurationSites } from "@/lib/api/sites-api";
 import { listCashOutboxPending } from "@/lib/cash/cash-outbox-idb";
 import { flushCashMovementOutbox } from "@/lib/cash/cash-sync";
 import { currentUser, hasPermission } from "@/lib/services/auth-domain.service";

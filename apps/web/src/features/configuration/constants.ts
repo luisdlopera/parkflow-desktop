@@ -1,6 +1,6 @@
 import type { RateType, VehicleType } from "@/lib/types/parking.types";
 import type { UserRole } from "@/lib/types/settings.types";
-import type { RateCategory } from "@/lib/settings-api";
+import type { RateCategory } from "@/lib/api/rates-api";
 
 export const VEHICLE_TYPES: VehicleType[] = ["CAR", "MOTORCYCLE", "BICYCLE", "TRUCK", "BUS", "VAN", "ELECTRIC", "OTHER"];
 export const RATE_TYPES: RateType[] = ["PER_MINUTE", "HOURLY", "DAILY", "FLAT"];

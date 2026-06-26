@@ -5,7 +5,7 @@ import { precalculateBulkExit, processBulkExit, BulkExitCalculateResponseDto, Bu
 import type { ActiveSessionDto } from "@/lib/api/sessions-api";
 import type { Selection } from "@heroui/react";
 import useSWR from "swr";
-import { fetchConfigurationPaymentMethods } from "@/lib/settings-api";
+import { fetchConfigurationPaymentMethods } from "@/lib/api/payment-methods-api";
 import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 import { useMemo } from "react";
 
@@ -51,7 +51,8 @@ export function useBulkExit(rows: ActiveSessionDto[], reload: () => void) {
       const result = await precalculateBulkExit({ locators: locators as string[], operatorUserId: user.id });
       setPrecalculation(result);
     } catch (err: unknown) {
-      alert("Error en pre-liquidación: " + (err as any).message);
+      const error = err as { message?: string };
+      alert("Error en pre-liquidación: " + (error.message || String(err)));
     } finally {
       setIsCalculating(false);
     }
@@ -69,7 +70,8 @@ export function useBulkExit(rows: ActiveSessionDto[], reload: () => void) {
       setSelectedKeys(new Set());
       reload();
     } catch (err: unknown) {
-      alert("Error procesando salida masiva: " + (err as any).message);
+      const error = err as { message?: string };
+      alert("Error procesando salida masiva: " + (error.message || String(err)));
     } finally {
       setIsProcessing(false);
     }

@@ -4,7 +4,7 @@ import { ColorArea, ColorField, ColorPicker, ColorSlider, ColorSwatch } from "@h
 import { Card } from "@/components/bridge/Card";
 import { Button } from "@/components/bridge/Button";
 import { DEFAULT_PRIMARY_COLOR, type BrandColors } from "@/lib/theme/ThemeProvider";
-import type { ThemeMode } from "@/lib/settings-api";
+import type { ThemeMode } from "@/lib/api/theme-api";
 import { useThemeConfig, type ThemeDraft } from "@/hooks/ui/useThemeConfig";
 import { BrandingSection } from "./BrandingSection";
 

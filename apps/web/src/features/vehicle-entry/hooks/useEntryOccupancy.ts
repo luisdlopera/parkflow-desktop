@@ -23,7 +23,7 @@ export function useEntryOccupancy(enabled: boolean) {
           availableSpaces: summaryData.availableSpaces,
           activeSpaces: summaryData.activeSpaces,
         });
-        setOccupancy(summaryData as any);
+        setOccupancy(summaryData);
       }
       setSpaces(spacesData.filter((s) => s.status === "ACTIVE" && !s.occupied));
     } catch {

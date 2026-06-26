@@ -5,6 +5,7 @@ import { hasPermission } from "@/lib/services/auth-domain.service";
 import type { CreatePrintJobRequest, PrintDocumentType, TicketDocument } from "@parkflow/types";
 import { createPrintJobRequestSchema } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
+import type { Permission } from "@parkflow/types";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -46,7 +47,7 @@ export async function syncCreatePrintJobAfterPhysicalPrint(input: {
     return;
   }
   // Only sync print jobs if the user has the tickets:imprimir permission
-  if (!await hasPermission("tickets:imprimir" as any)) {
+  if (!await hasPermission("tickets:imprimir" as Permission)) {
     return;
   }
 

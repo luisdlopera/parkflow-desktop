@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import { fetchOnboardingStatus, type OnboardingStatus } from "@/lib/onboarding-api";
+import { fetchOnboardingStatus, type OnboardingStatus } from "@/lib/api/onboarding.api";
 
 export function useOnboardingStatus(companyId: string | null) {
   return useSWR<OnboardingStatus>(

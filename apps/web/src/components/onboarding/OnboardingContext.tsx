@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useOnboardingStore } from "@/lib/stores/onboarding.store";
 import { useOnboardingStatus } from "@/hooks/auth/useOnboardingStatus";
-import { saveOnboardingStep, type OnboardingStatus } from "@/lib/onboarding-api";
+import { saveOnboardingStep, type OnboardingStatus } from "@/lib/api/onboarding.api";
 import {
   REQUIRED_STEPS,
   VEHICLE_OPTIONS,

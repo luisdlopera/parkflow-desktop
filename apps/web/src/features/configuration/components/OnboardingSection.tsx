@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card } from "@/components/bridge/Card";
 import { Button } from "@/components/bridge/Button";
 import { useDialog } from "@/providers/DialogProvider";
-import { resetOnboarding } from "@/lib/onboarding-api";
+import { resetOnboarding } from "@/lib/api/onboarding.api";
 import { refreshIfNeeded } from "@/features/auth/api/auth.api";
 import { loadSession, saveSession } from "@/lib/services/auth-storage.service";
 import { currentUser } from "@/lib/services/auth-domain.service";

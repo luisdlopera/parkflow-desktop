@@ -61,8 +61,8 @@ export async function confirmPasswordReset(token: string, newPassword: string): 
     body: JSON.stringify({ token, newPassword, deviceId: "web" }),
   });
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error((data as any).message || "Token inválido o expirado");
+    const data = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(data.message || "Token inválido o expirado");
   }
 }
 

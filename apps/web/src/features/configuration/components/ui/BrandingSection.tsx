@@ -2,7 +2,7 @@
 import { useRef } from "react";
 import { Button } from "@/components/bridge/Button";
 import { Card } from "@/components/bridge/Card";
-import type { ThemeConfig } from "@/lib/settings-api";
+import type { ThemeConfig } from "@/lib/api/theme-api";
 
 interface Props {
   savedConfig: ThemeConfig | null;

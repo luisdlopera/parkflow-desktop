@@ -12,7 +12,7 @@ import {
   resetParameters,
   validateParameters,
   type ParkingParametersPayload
-} from "@/lib/settings-api";
+} from "@/lib/api/parameters-api";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { useDialog } from "@/providers/DialogProvider";
 import { LOST_TICKET_POLICIES } from "@/features/configuration/constants";

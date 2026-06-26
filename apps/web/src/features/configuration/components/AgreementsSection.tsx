@@ -4,7 +4,7 @@ import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
 import DataTable from "@/components/ui/DataTable";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
-import type { AgreementRow } from "@/lib/settings-api";
+import { fetchAgreements, type AgreementRow } from "@/lib/api/agreements-api";
 
 export default function AgreementsSection({
   canEdit,
@@ -24,7 +24,6 @@ export default function AgreementsSection({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { fetchAgreements } = await import("@/lib/settings-api");
       const res = await fetchAgreements({ q: q || undefined, page, size: 15 });
       setRows(res.content);
       setTotalPages(res.totalPages);
@@ -47,11 +46,11 @@ export default function AgreementsSection({
         columns={[
           { key: "code", label: "Código" },
           { key: "companyName", label: "Empresa" },
-          { key: "discountPercent", label: "Descuento", render: (r: any) => `${r.discountPercent}%` },
-          { key: "flatAmount", label: "Tarifa Fija", render: (r: any) => r.flatAmount ? `$${r.flatAmount}` : "-" },
-          { key: "active", label: "Activo", render: (r: any) => (r.active ? "Sí" : "No") }
+          { key: "discountPercent", label: "Descuento", render: (r: AgreementRow) => `${r.discountPercent}%` },
+          { key: "flatAmount", label: "Tarifa Fija", render: (r: AgreementRow) => r.flatAmount ? `$${r.flatAmount}` : "-" },
+          { key: "active", label: "Activo", render: (r: AgreementRow) => (r.active ? "Sí" : "No") }
         ]}
-        rows={rows as any[]}
+        rows={rows}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { create } from "zustand";
-import { type OnboardingStatus } from "@/lib/onboarding-api";
+import { type OnboardingStatus } from "@/lib/api/onboarding.api";
 import {
   validateStep,
   type StepValidationErrors,

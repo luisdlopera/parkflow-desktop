@@ -59,11 +59,12 @@ export default function PlansPage() {
       setPlanToDelete(null);
       toast.success("Plan eliminado correctamente");
     } catch (err: unknown) {
-      const isUnauthorized = (err as any)?.status === 401 || (err as any)?.status === 403;
+      const error = err as { status?: number; message?: string };
+      const isUnauthorized = error?.status === 401 || error?.status === 403;
       toast.danger(
         isUnauthorized
           ? "No tienes permisos suficientes (SUPER_ADMIN) o tu sesión expiró."
-          : (err as any)?.message || "Ocurrió un error al eliminar el plan."
+          : error?.message || "Ocurrió un error al eliminar el plan."
       );
     } finally {
       setIsDeleting(false);
@@ -79,8 +80,9 @@ export default function PlansPage() {
           plan.isActive ? "Plan desactivado" : "Plan activado"
         );
       } catch (err: unknown) {
+        const error = err as { message?: string };
         toast.danger(
-          (err as any)?.message || "Error al cambiar estado del plan"
+          error?.message || "Error al cambiar estado del plan"
         );
       }
     },
@@ -94,8 +96,9 @@ export default function PlansPage() {
         mutate();
         toast.success("Plan duplicado correctamente");
       } catch (err: unknown) {
+        const error = err as { message?: string };
         toast.danger(
-          (err as any)?.message || "Error al duplicar el plan"
+          error?.message || "Error al duplicar el plan"
         );
       }
     },
@@ -345,7 +348,7 @@ export default function PlansPage() {
                 </HeroButton>
                 <Button
                   className="bg-danger text-white hover:bg-danger/90"
-                  onPress={confirmDelete as any}
+                  onPress={() => confirmDelete()}
                   isLoading={isDeleting}
                 >
                   Eliminar

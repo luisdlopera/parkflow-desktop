@@ -15,10 +15,13 @@ import {
   createConfigurationPrinter,
   updateConfigurationPrinter,
   patchConfigurationPrinterStatus,
+  type PrinterRow,
+} from "@/lib/api/printers-api";
+import {
   fetchConfigurationSites,
-} from "@/lib/settings-api";
+  type ParkingSiteRow,
+} from "@/lib/api/sites-api";
 import { printerSchema, type PrinterSchema } from "@/lib/schemas/config.schemas";
-import type { ParkingSiteRow, PrinterRow } from "@/lib/types/settings.types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/ui/FormDrawer";

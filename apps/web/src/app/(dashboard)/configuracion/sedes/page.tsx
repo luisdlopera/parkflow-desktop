@@ -15,7 +15,7 @@ import {
   createConfigurationSite,
   updateConfigurationSite,
   patchConfigurationSiteStatus,
-} from "@/lib/settings-api";
+} from "@/lib/api/sites-api";
 import { listCompanies } from "@/lib/licensing/api";
 import { parkingSiteSchema, type ParkingSiteSchema } from "@/lib/schemas/config.schemas";
 import type { ParkingSiteRow } from "@/lib/types/settings.types";

@@ -9,7 +9,7 @@ import { DataTableSection, type ColumnDef } from "@/components/settings/DataTabl
 import { FormDrawer } from "@/components/ui/FormDrawer";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { useConfigCrud } from "@/hooks/core/useConfigCrud";
-import type { SettingsPage } from "@/lib/settings-api";
+import type { SettingsPage } from "@/lib/api/_shared";
 
 interface ConfigSectionProps<T extends { id: string }> {
   title: string;

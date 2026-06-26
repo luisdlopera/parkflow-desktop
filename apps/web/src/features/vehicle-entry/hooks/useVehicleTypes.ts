@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { fetchMasterVehicleTypes, type MasterVehicleTypeRow } from "@/lib/settings-api";
+import { fetchMasterVehicleTypes, type MasterVehicleTypeRow } from "@/lib/api/vehicle-types-api";
 
 const FALLBACK_TYPES: MasterVehicleTypeRow[] = [
   { id: "fallback-car", code: "CAR", name: "Carro", isActive: true },

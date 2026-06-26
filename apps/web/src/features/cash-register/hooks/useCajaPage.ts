@@ -10,7 +10,7 @@ import {
 } from "@/lib/cash/cash-api";
 import type { ManualFormValues, CountFormValues } from "@/lib/validation/cash-session.schema";
 import { useCajaForms } from "./useCajaForms";
-import { fetchConfigurationSites } from "@/lib/settings-api";
+import { fetchConfigurationSites } from "@/lib/api/sites-api";
 import { listCashOutboxPending } from "@/lib/cash/cash-outbox-idb";
 import { flushCashMovementOutbox } from "@/lib/cash/cash-sync";
 import { currentUser, hasPermission } from "@/lib/services/auth-domain.service";

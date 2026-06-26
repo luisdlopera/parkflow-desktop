@@ -12,7 +12,13 @@ import { VehicleTypeIcon } from "@/components/vehicles/VehicleTypeIcon";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import type { DataTableColumn } from "@/components/ui/DataTable";
-import type { MasterVehicleTypeRow } from "@/lib/settings-api";
+import {
+  fetchMasterVehicleTypes,
+  saveMasterVehicleType,
+  patchVehicleTypeStatus,
+  deleteVehicleType,
+  type MasterVehicleTypeRow,
+} from "@/lib/api/vehicle-types-api";
 
 type VehicleTypeFormState = {
   code: string;
@@ -85,7 +91,6 @@ export default function MastersSection({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { fetchMasterVehicleTypes } = await import("@/lib/settings-api");
       setRows(await fetchMasterVehicleTypes());
     } catch (e) {
       onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA) });
@@ -98,7 +103,6 @@ export default function MastersSection({
 
   const toggleActive = useCallback(async (id: string, current: boolean) => {
     try {
-      const { patchVehicleTypeStatus } = await import("@/lib/settings-api");
       await patchVehicleTypeStatus(id, !current);
       setRows((prev) => prev.map((r) => r.id === id ? { ...r, isActive: !current } : r));
       onNotify({ kind: "ok", text: current ? "Tipo desactivado" : "Tipo activado" });
@@ -110,7 +114,6 @@ export default function MastersSection({
   const handleDelete = useCallback(async (id: string) => {
     if (!(await confirm("¿Eliminar este tipo de vehículo?"))) return;
     try {
-      const { deleteVehicleType } = await import("@/lib/settings-api");
       await deleteVehicleType(id);
       setRows((prev) => prev.filter((r) => r.id !== id));
       onNotify({ kind: "ok", text: "Tipo eliminado" });
@@ -300,8 +303,7 @@ export default function MastersSection({
               className="font-semibold text-white"
               onPress={async () => {
                 try {
-                  const { saveMasterVehicleType } = await import("@/lib/settings-api");
-                  await saveMasterVehicleType(form, editing?.id);
+                              await saveMasterVehicleType(form, editing?.id);
                   onNotify({ kind: "ok", text: "Tipo guardado exitosamente" });
                   setCreating(false);
                   setEditing(null);

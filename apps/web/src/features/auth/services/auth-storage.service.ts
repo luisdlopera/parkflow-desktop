@@ -2,8 +2,12 @@ import type { StoredSession } from "../types";
 
 const STORAGE_KEY = "parkflow.auth.session";
 
+interface WindowWithTauri extends Window {
+  __TAURI_INTERNALS__?: { invoke?: (cmd: string, payload?: unknown) => unknown };
+}
+
 export async function tauriInvoke<T>(cmd: string, payload?: unknown): Promise<T | null> {
-  const tauriInternals = typeof window !== "undefined" ? (window as any).__TAURI_INTERNALS__ : undefined;
+  const tauriInternals = typeof window !== "undefined" ? (window as WindowWithTauri).__TAURI_INTERNALS__ : undefined;
   if (typeof tauriInternals?.invoke !== "function") return null;
   try {
     const { invoke } = await import("@tauri-apps/api/core");
