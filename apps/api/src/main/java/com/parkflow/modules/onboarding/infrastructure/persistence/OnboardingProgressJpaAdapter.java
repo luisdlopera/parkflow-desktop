@@ -4,8 +4,10 @@ import com.parkflow.modules.onboarding.domain.OnboardingProgress;
 import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
+import jakarta.persistence.LockModeType;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -18,7 +20,7 @@ public class OnboardingProgressJpaAdapter implements OnboardingProgressPort {
 
   @Override
   public Optional<OnboardingProgress> findByCompanyId(UUID companyId) {
-    return jpaRepository.findByCompanyId(companyId);
+    return jpaRepository.findByCompanyIdWithLock(companyId);
   }
 
   @Override
@@ -34,5 +36,8 @@ public class OnboardingProgressJpaAdapter implements OnboardingProgressPort {
   @Repository
   interface OnboardingProgressJpaRepository extends JpaRepository<OnboardingProgress, UUID> {
     Optional<OnboardingProgress> findByCompanyId(UUID companyId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<OnboardingProgress> findByCompanyIdWithLock(UUID companyId);
   }
 }

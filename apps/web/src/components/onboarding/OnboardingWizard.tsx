@@ -192,7 +192,7 @@ function OnboardingContent() {
               clearStepErrors();
               persistStep(getPrevEnabledStep(step, enabledSteps));
             }}
-            isDisabled={step === enabledSteps[0]}
+            isDisabled={step === enabledSteps[0] || saveState === "saving"}
           >
             Atrás
           </Button>
@@ -204,7 +204,7 @@ function OnboardingContent() {
                 clearStepErrors();
                 persistStep(getNextEnabledStep(step, enabledSteps));
               }}
-              isDisabled={!canAdvance}
+              isDisabled={!canAdvance || saveState === "saving"}
             >
               Siguiente
             </Button>
@@ -215,6 +215,8 @@ function OnboardingContent() {
               size="lg"
               className="font-semibold px-6"
               startContent={<Check className="w-5 h-5" />}
+              isDisabled={saveState === "saving"}
+              isLoading={saveState === "saving"}
               onPress={async () => {
                 setSaveState("saving");
                 try {
@@ -225,8 +227,13 @@ function OnboardingContent() {
                   // configuración/tema sin estado cliente stale ni overlay colgado.
                   window.location.assign("/");
                 } catch (err) {
-                  console.error("Error completing onboarding:", err);
-                  setSaveState("error");
+                  if (err instanceof ApiError && err.status === 401) {
+                    await clearSession();
+                    router.push("/login?reason=expired");
+                  } else {
+                    console.error("Error completing onboarding:", err);
+                    setSaveState("error");
+                  }
                 }
               }}
             >

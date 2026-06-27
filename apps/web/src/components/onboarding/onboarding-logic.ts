@@ -9,7 +9,7 @@ import { PAYMENT_OPTIONS_FOR_ONBOARDING } from "@/lib/payment-method-catalog";
 export type OperationalProfile = "MOTORCYCLE_ONLY" | "CAR_ONLY" | "MIXED";
 
 export const REQUIRED_STEPS = [1, 2, 3, 4, 6];
-export const BASE_ENABLED_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 12];
+export const BASE_ENABLED_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 export const STEP_TITLES = [
   "Tipos de vehículo",
   "Capacidad",
