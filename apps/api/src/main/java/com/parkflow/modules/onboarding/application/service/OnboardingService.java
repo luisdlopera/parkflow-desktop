@@ -23,9 +23,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @deprecated Use {@link OnboardingProgressService} and {@link OnboardingQueryService} instead.
- * This class maintained for backward compatibility during migration to hexagonal architecture.
+ * This class is a legacy facade that duplicates functionality across two specialized services.
+ * To be removed in 2.2.0: migrate all callers to use OnboardingProgressService (mutations)
+ * and OnboardingQueryService (queries) directly.
+ *
+ * See: https://github.com/luisdlopera/parkflow-desktop/issues/onboarding-refactor
  */
-@Deprecated(since = "2.1.0", forRemoval = false)
+@Deprecated(since = "2.1.0", forRemoval = true)
 @Service
 @RequiredArgsConstructor
 public class OnboardingService implements OnboardingUseCase {
