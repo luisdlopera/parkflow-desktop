@@ -129,9 +129,6 @@ export function OnboardingProvider({
         await mutate(status, false);
         loadStepFromStatus(status, status.currentStep ?? 1);
       }
-      return () => {
-        if (timeoutId) clearTimeout(timeoutId);
-      };
     },
     [status, saveState, stepData, companyId, mutate, loadStepFromStatus, setSaveState]
   );

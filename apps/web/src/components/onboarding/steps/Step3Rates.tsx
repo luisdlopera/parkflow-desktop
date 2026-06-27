@@ -255,8 +255,8 @@ const Step3Rates = memo(function Step3Rates() {
                 className="w-48"
                 aria-label="Redondeo"
                 selectedKey={String(stepData.rounding ?? "EXACT")}
-                onSelectionChange={(keys: Set<React.Key>) => {
-                  const val = Array.from(keys)[0] as string | undefined;
+                onSelectionChange={(key) => {
+                  const val = String(key);
                   if (val && ["EXACT", "15_MIN", "30_MIN", "1_HOUR"].includes(val)) {
                     setStepData({ ...stepData, rounding: val });
                   }
