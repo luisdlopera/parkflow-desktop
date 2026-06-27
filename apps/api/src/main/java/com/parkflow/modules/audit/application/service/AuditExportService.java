@@ -20,9 +20,10 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
+import com.parkflow.modules.audit.application.port.in.AuditExportUseCase;
 
 @Service
-public class AuditExportService {
+public class AuditExportService implements AuditExportUseCase {
 
   private static final String[] HEADERS = {
       "ID", "Fecha (UTC)", "Módulo", "Acción", "Usuario", "Sucursal", "Entidad", "Estado"

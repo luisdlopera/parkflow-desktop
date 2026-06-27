@@ -1,6 +1,7 @@
 package com.parkflow.modules.audit.infrastructure;
 
-import com.parkflow.modules.audit.application.AuditQueryService;
+import com.parkflow.modules.audit.application.port.in.AuditQueryUseCase;
+import com.parkflow.modules.audit.application.port.in.AuditExportUseCase;
 import com.parkflow.modules.audit.domain.AuditEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,10 +21,10 @@ import java.util.UUID;
 @RequireModule(ModuleType.ADVANCED_AUDIT)
 public class AuditController {
 
-    private final AuditQueryService auditQueryService;
-    private final com.parkflow.modules.audit.application.service.AuditExportService auditExportService;
+    private final AuditQueryUseCase auditQueryService;
+    private final AuditExportUseCase auditExportService;
 
-    public AuditController(AuditQueryService auditQueryService, com.parkflow.modules.audit.application.service.AuditExportService auditExportService) {
+    public AuditController(AuditQueryUseCase auditQueryService, AuditExportUseCase auditExportService) {
         this.auditQueryService = auditQueryService;
         this.auditExportService = auditExportService;
     }

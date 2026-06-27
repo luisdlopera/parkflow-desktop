@@ -1,4 +1,4 @@
-package com.parkflow.modules.customers.controller;
+package com.parkflow.modules.customers.infrastructure.controller;
 
 import com.parkflow.modules.customers.application.service.CustomerService;
 import com.parkflow.modules.customers.dto.ClientListResponse;
