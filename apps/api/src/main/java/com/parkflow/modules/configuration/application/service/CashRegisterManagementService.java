@@ -157,11 +157,6 @@ public class CashRegisterManagementService implements CashRegisterUseCase {
     return StringUtils.hasText(site) ? site.trim() : "default";
   }
 
-  private static String resolveSite(String fallbackSite, ParkingSite parkingSite) {
-    return parkingSite != null && StringUtils.hasText(parkingSite.getCode())
-        ? parkingSite.getCode().trim()
-        : fallbackSite;
-  }
 
   private static String normalizeTerminal(String terminal) {
     if (!StringUtils.hasText(terminal)) {

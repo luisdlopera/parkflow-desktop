@@ -1,10 +1,10 @@
 package com.parkflow.modules.billing.infrastructure.providers.alegra;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.billing.infrastructure.providers.alegra.dto.AlegraContactDto;
 import com.parkflow.modules.billing.infrastructure.providers.alegra.dto.AlegraInvoiceDto;
 import com.parkflow.modules.billing.infrastructure.providers.alegra.dto.AlegraInvoiceResponseDto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -17,18 +17,15 @@ import java.util.Map;
  * Auth: Basic (email:token) encoded in Base64.
  * Base URL: https://app.alegra.com/api/r1/
  */
-@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Slf4j
 @Component
 public class AlegraClient {
 
   private static final String BASE_URL = "https://app.alegra.com/api/r1";
   private final RestTemplate restTemplate;
-  private final ObjectMapper objectMapper;
 
-  public AlegraClient(ObjectMapper objectMapper) {
+  public AlegraClient() {
     this.restTemplate = new RestTemplate();
-    this.objectMapper = objectMapper;
   }
 
   public AlegraInvoiceResponseDto createInvoice(AlegraInvoiceDto invoice, Map<String, String> credentials) {
@@ -89,13 +86,13 @@ public class AlegraClient {
     HttpEntity<AlegraContactDto> entity = new HttpEntity<>(contact, headers);
 
     try {
-      ResponseEntity<Map> response = restTemplate.exchange(
+      ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
           BASE_URL + "/contacts",
           HttpMethod.POST,
           entity,
-          Map.class
+          new ParameterizedTypeReference<Map<String, Object>>() {}
       );
-      Map<?, ?> body = response.getBody();
+      Map<String, Object> body = response.getBody();
       return body != null ? String.valueOf(body.get("id")) : null;
     } catch (Exception e) {
       log.error("[Alegra] createContact failed: {}", e.getMessage());
@@ -108,11 +105,11 @@ public class AlegraClient {
     HttpEntity<Void> entity = new HttpEntity<>(headers);
 
     try {
-      ResponseEntity<Map> response = restTemplate.exchange(
+      ResponseEntity<Void> response = restTemplate.exchange(
           BASE_URL + "/users/me",
           HttpMethod.GET,
           entity,
-          Map.class
+          Void.class
       );
       return response.getStatusCode().is2xxSuccessful();
     } catch (Exception e) {
@@ -140,16 +137,16 @@ public class AlegraClient {
     }
   }
 
-  public Map createNote(String invoiceId, Map<String, Object> note, Map<String, String> credentials) {
+  public Map<String, Object> createNote(String invoiceId, Map<String, Object> note, Map<String, String> credentials) {
     HttpHeaders headers = buildHeaders(credentials);
     HttpEntity<Map<String, Object>> entity = new HttpEntity<>(note, headers);
 
     try {
-      ResponseEntity<Map> response = restTemplate.exchange(
+      ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
           BASE_URL + "/invoices/" + invoiceId + "/notes",
           HttpMethod.POST,
           entity,
-          Map.class
+          new ParameterizedTypeReference<Map<String, Object>>() {}
       );
       return response.getBody();
     } catch (Exception e) {

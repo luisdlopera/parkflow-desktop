@@ -32,7 +32,6 @@ import java.util.UUID;
  * Handles invoice generation operations: create, send to provider, cancel.
  * Max 4 methods as per hexagonal architecture.
  */
-@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Slf4j
 @Service
 @RequiredArgsConstructor

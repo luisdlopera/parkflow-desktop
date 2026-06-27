@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SlaMonitoringService {
 
-    private final TicketAutomationService automationService;
+
 
     // Runs every 5 minutes
     @Scheduled(fixedRate = 300000)

@@ -12,7 +12,6 @@ import com.parkflow.modules.cash.dto.CashMovementResponse;
 import com.parkflow.modules.cash.dto.VoidMovementRequest;
 import com.parkflow.modules.cash.infrastructure.persistence.CashMovementRepository;
 import com.parkflow.modules.cash.infrastructure.persistence.CashSessionRepository;
-import com.parkflow.modules.cash.application.usecase.CashDomainAuditService;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.common.exception.OperationException;

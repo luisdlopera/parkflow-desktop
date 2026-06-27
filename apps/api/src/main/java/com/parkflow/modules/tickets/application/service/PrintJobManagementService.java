@@ -6,7 +6,6 @@ import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
-import com.parkflow.modules.tickets.application.port.in.TicketPrintUseCase;
 import com.parkflow.modules.tickets.dto.CreatePrintJobRequest;
 import com.parkflow.modules.tickets.dto.PrintJobResponse;
 import com.parkflow.modules.tickets.dto.RetryPrintJobRequest;

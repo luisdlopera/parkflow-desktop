@@ -9,7 +9,12 @@ import org.springframework.stereotype.Component;
 /**
  * Listens to domain events and triggers async invoice generation.
  * Invoice generation never blocks the main parking/payment flow.
+ *
+ * @deprecated Use {@link com.parkflow.modules.billing.application.service.InvoiceGenerationService}
+ * and hexagonal ports instead. This class depends on deprecated {@link InvoiceService}.
  */
+@Deprecated(since = "2.1.0", forRemoval = false)
+@SuppressWarnings("deprecation")
 @Slf4j
 @Component
 @RequiredArgsConstructor

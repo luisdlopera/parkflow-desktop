@@ -1,6 +1,5 @@
 package com.parkflow.modules.parking.spaces.application.service;
 
-import com.parkflow.modules.parking.spaces.domain.ParkingSpace;
 import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
 import com.parkflow.modules.parking.spaces.domain.ParkingSpaceStatus;
 import com.parkflow.modules.parking.spaces.dto.ParkingSpaceDto;

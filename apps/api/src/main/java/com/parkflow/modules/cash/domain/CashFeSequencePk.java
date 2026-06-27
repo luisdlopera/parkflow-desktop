@@ -7,12 +7,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class CashFeSequencePk implements Serializable {
+  private static final long serialVersionUID = 1L;
   private String siteCode;
 
   /** Vacio cuando el correlativo es unico por sede (sin particion por terminal). */

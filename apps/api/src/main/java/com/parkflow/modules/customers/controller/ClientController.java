@@ -14,6 +14,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * @deprecated Use CustomerManagementUseCase and CustomerQueryUseCase ports instead.
+ * This controller wraps the deprecated {@link CustomerService}.
+ */
+@Deprecated(since = "2.1.0", forRemoval = false)
+@SuppressWarnings("deprecation")
 @RestController
 @RequestMapping("/api/v1/companies/{companyId}/clients")
 @RequiredArgsConstructor

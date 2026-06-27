@@ -60,7 +60,7 @@ public class TicketManagementService {
 
     @Transactional
     public void addMessageToTicket(UUID ticketId, String content) {
-        Ticket ticket = getTicketOrThrow(ticketId);
+        getTicketOrThrow(ticketId);
         // Note: Full implementation would use ConversationRepository and MessageRepository
         log.info("Adding message to ticket {}: {}", ticketId, content);
     }

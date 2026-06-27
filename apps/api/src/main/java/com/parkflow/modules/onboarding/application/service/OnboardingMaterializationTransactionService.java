@@ -1,6 +1,7 @@
 package com.parkflow.modules.onboarding.application.service;
 
 import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -18,13 +19,18 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * FASE V: Distributed transaction management
  * Resolves Hallazgo #8: No cross-module transactionality
+ *
+ * @deprecated Wraps deprecated {@link OnboardingService}. Use hexagonal onboarding ports instead.
  */
+@Deprecated(since = "2.1.0", forRemoval = false)
+@SuppressWarnings("deprecation")
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class OnboardingMaterializationTransactionService {
 
   private final OnboardingService onboardingService;
+  private final CompanyPort companyRepository;
 
   /**
    * Wraps onboarding completion with transactional guarantees.
@@ -104,7 +110,11 @@ public class OnboardingMaterializationTransactionService {
   }
 
   private void validateOnboardingData(UUID companyId) {
-    // TODO: Add validation for required onboarding data
-    // E.g., check that company has provided necessary configuration
+    companyRepository.findById(companyId)
+        .orElseThrow(() -> new OperationException(
+            HttpStatus.NOT_FOUND,
+            "COMPANY_NOT_FOUND",
+            "Cannot complete onboarding: company " + companyId + " not found"
+        ));
   }
 }

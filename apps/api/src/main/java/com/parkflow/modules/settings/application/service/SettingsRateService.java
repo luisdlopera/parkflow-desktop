@@ -254,15 +254,6 @@ public class SettingsRateService implements com.parkflow.modules.settings.applic
     return target;
   }
 
-  private String resolveSite(String requestedSite, ParkingSite siteRef) {
-    String site = requestedSite == null || requestedSite.isBlank() ? "DEFAULT" : requestedSite.trim();
-    if (siteRef == null) {
-      return site;
-    }
-    return siteRef.getCode() != null && !siteRef.getCode().isBlank()
-        ? siteRef.getCode().trim()
-        : site;
-  }
 
   private static String normalizeQuery(String q) {
     return q == null || q.isBlank() ? null : q.trim();

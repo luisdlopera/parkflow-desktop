@@ -23,6 +23,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * @deprecated Use PlanManagementUseCase and PlanQueryUseCase ports instead.
+ * This controller wraps the deprecated {@link PlanService}.
+ */
+@Deprecated(since = "2.1.0", forRemoval = false)
+@SuppressWarnings("deprecation")
 @RestController
 @RequestMapping("/api/v1/admin/plans")
 @RequiredArgsConstructor

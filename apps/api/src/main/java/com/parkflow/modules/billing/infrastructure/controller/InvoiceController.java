@@ -22,6 +22,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+/**
+ * @deprecated Use {@link com.parkflow.modules.billing.application.service.InvoiceGenerationService}
+ * and {@link com.parkflow.modules.billing.application.service.InvoiceQueryService} with hexagonal ports instead.
+ */
+@Deprecated(since = "2.1.0", forRemoval = false)
+@SuppressWarnings("deprecation")
 @RestController
 @RequestMapping("/api/v1/billing/invoices")
 @RequiredArgsConstructor

@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static com.parkflow.config.CacheConfig.VEHICLE_TYPES_ALL;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
