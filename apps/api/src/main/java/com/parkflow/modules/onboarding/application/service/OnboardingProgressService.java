@@ -42,6 +42,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
   private final com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
   private final com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository appUserRepository;
   private final OnboardingMaterializationService materializationService;
+  private final OnboardingQueryService queryService;
 
   @Transactional
   public OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data, Integer targetStep) {
@@ -60,7 +61,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     }
     progress.setUpdatedAt(OffsetDateTime.now());
     onboardingProgressPort.save(progress);
-    return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+    return queryService.status(companyId);
   }
 
   @Transactional
@@ -104,7 +105,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     onboardingProgressPort.save(progress);
     company.setOnboardingCompleted(true);
     companyRepository.save(company);
-    return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+    return queryService.status(companyId);
   }
 
   @Transactional
@@ -113,7 +114,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     OnboardingProgress progress = findOrCreateProgress(company);
 
     if (Boolean.TRUE.equals(company.getOnboardingCompleted())) {
-      return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+      return queryService.status(companyId);
     }
 
     validateRequiredStepsCompleted(progress);
@@ -148,7 +149,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     onboardingProgressPort.save(progress);
     company.setOnboardingCompleted(true);
     companyRepository.save(company);
-    return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+    return queryService.status(companyId);
   }
 
   @Transactional
@@ -215,7 +216,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
         "onboardingCompleted=true, currentStep=" + progress.getCurrentStep(),
         "onboardingCompleted=false, currentStep=1",
         "Reinicio de onboarding multi-tenant. Snapshot v" + nextVersion + " guardado. " + auditContext);
-    return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+    return queryService.status(companyId);
   }
 
   private void applyOperationalProfile(Company company, Map<String, Object> step1) {
