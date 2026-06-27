@@ -53,6 +53,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     merged.put("step_" + step, sanitized);
     progress.setProgressData(merged);
     if (targetStep != null) {
+      validateTargetStep(targetStep, step);
       progress.setCurrentStep(targetStep);
     } else {
       progress.setCurrentStep(Math.max(progress.getCurrentStep(), Math.min(step + 1, 12)));
@@ -114,6 +115,8 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     if (Boolean.TRUE.equals(company.getOnboardingCompleted())) {
       return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
     }
+
+    validateRequiredStepsCompleted(progress);
 
     Map<String, Object> step2 = settingsMapper.stepMap(progress.getProgressData(), 2);
     validateCapacityConsistency(step2);
@@ -220,7 +223,9 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
         step1.getOrDefault("businessModel", "MIXED")));
     try {
       company.setOperationalProfile(OperationalProfile.valueOf(opStr));
-    } catch (Exception e) {
+    } catch (IllegalArgumentException e) {
+      org.slf4j.LoggerFactory.getLogger(getClass()).warn(
+          "Invalid operational profile '{}', defaulting to MIXED", opStr);
       company.setOperationalProfile(OperationalProfile.MIXED);
     }
   }
@@ -263,7 +268,37 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     if (step == 2) validateCapacityConsistency(data);
   }
 
+  private void validateTargetStep(Integer targetStep, int currentStep) {
+    if (targetStep == null || targetStep < 1 || targetStep > 12) {
+      throw new OperationException(HttpStatus.BAD_REQUEST, "Step debe estar entre 1 y 12.");
+    }
+    if (targetStep != currentStep && targetStep != currentStep + 1) {
+      throw new OperationException(HttpStatus.BAD_REQUEST,
+          "Solo puedes avanzar al siguiente paso. Intenta navegar al paso " + (currentStep + 1));
+    }
+  }
+
+  private void validateRequiredStepsCompleted(OnboardingProgress progress) {
+    Map<String, Object> data = progress.getProgressData();
+    if (data == null || data.isEmpty()) {
+      throw new OperationException(HttpStatus.BAD_REQUEST,
+          "No hay datos de onboarding. Completa al menos los pasos obligatorios.");
+    }
+    int[] requiredSteps = {1, 2, 3, 6};
+    for (int step : requiredSteps) {
+      Map<String, Object> stepData = settingsMapper.stepMap(data, step);
+      if (stepData == null || stepData.isEmpty()) {
+        throw new OperationException(HttpStatus.BAD_REQUEST,
+            "El paso " + step + " es obligatorio y debe completarse.");
+      }
+    }
+  }
+
   private void validateCapacityConsistency(Map<String, Object> data) {
+    if (data == null || data.isEmpty()) {
+      throw new OperationException(HttpStatus.BAD_REQUEST,
+          "Datos de capacidad no encontrados. Completa el paso 2.");
+    }
     int totalCapacity = settingsMapper.extractNumber(data.get("totalCapacity"), 0);
     if (totalCapacity <= 0) {
       throw new OperationException(HttpStatus.BAD_REQUEST, "La capacidad total debe ser mayor a 0.");
