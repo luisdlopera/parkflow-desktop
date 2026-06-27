@@ -23,7 +23,7 @@ class ParkingSpaceIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -52,7 +52,7 @@ class ParkingSpaceIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -76,7 +76,7 @@ class ParkingSpaceIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -153,7 +153,7 @@ class ParkingSpaceIntegrationTest extends BaseIntegrationTest {
                             "type": "CAR",
                             "rateId": "%s",
                             "operatorUserId": "%s",
-                            "site": "Test Site",
+                            "site": "DEFAULT",
                             "terminal": "TERM1",
                             "vehicleCondition": "Sin novedades"
                         }
@@ -222,7 +222,7 @@ class ParkingSpaceIntegrationTest extends BaseIntegrationTest {
                             "type": "CAR",
                             "rateId": "%s",
                             "operatorUserId": "%s",
-                            "site": "Test Site",
+                            "site": "DEFAULT",
                             "terminal": "TERM1",
                             "vehicleCondition": "Sin novedades"
                         }

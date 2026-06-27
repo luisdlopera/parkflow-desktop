@@ -127,6 +127,9 @@ class OnboardingQuestionConfigServiceUnitTest {
   @DisplayName("Should delete question config by id")
   void testDelete() {
     UUID id = UUID.randomUUID();
+    OnboardingQuestionConfig config = new OnboardingQuestionConfig();
+    config.setRequired(false);
+    when(repository.findById(id)).thenReturn(Optional.of(config));
 
     service.delete(id);
 

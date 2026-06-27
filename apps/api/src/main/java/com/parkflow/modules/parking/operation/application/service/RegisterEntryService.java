@@ -40,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("deprecation")
 public class RegisterEntryService implements RegisterEntryUseCase {
 
   // Collaborator services (extracted from God Service)

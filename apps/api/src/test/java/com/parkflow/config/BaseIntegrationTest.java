@@ -113,7 +113,7 @@ public abstract class BaseIntegrationTest {
     protected void resetDatabase() {
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
         jdbcTemplate.queryForList(
-                "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'PUBLIC' AND TABLE_TYPE = 'BASE TABLE'",
+                "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE LOWER(TABLE_SCHEMA) = 'public' AND TABLE_TYPE = 'BASE TABLE'",
                 String.class)
             .forEach(tableName -> jdbcTemplate.execute("TRUNCATE TABLE " + tableName));
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
@@ -135,8 +135,8 @@ public abstract class BaseIntegrationTest {
         ParkingSite site = new ParkingSite();
         site.setId(FIXED_ID);
         site.setCompany(company);
-        site.setCode("TS1");
-        site.setName("Test Site");
+        site.setCode("DEFAULT");
+        site.setName("DEFAULT");
         site.setTimezone("America/Bogota");
         site.setCurrency("COP");
         site.setActive(true);

@@ -22,7 +22,7 @@ class PrintJobIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "observations": "Ingreso para impresion",
                 "vehicleCondition": "Sin novedades"
@@ -71,7 +71,7 @@ class PrintJobIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "observations": "Ingreso para consulta de impresion",
                 "vehicleCondition": "Sin novedades"

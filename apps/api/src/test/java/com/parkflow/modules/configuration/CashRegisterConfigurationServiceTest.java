@@ -77,6 +77,7 @@ class CashRegisterConfigurationServiceTest {
 
     ParkingSite site = new ParkingSite();
     site.setId(siteId);
+    site.setCode("Main");
     Printer printer = new Printer();
     printer.setId(printerId);
     printer.setName("EPSON");

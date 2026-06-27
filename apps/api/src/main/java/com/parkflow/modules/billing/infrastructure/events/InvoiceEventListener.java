@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * and hexagonal ports instead. This class depends on deprecated {@link InvoiceService}.
  */
 @Deprecated(since = "2.1.0", forRemoval = false)
-@SuppressWarnings("deprecation")
+
 @Slf4j
 @Component
 @RequiredArgsConstructor

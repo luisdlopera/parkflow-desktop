@@ -17,6 +17,7 @@ import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceServi
 import com.parkflow.modules.settings.application.service.SettingsVehicleTypeService;
 import java.util.List;
 import java.util.Map;
+import com.parkflow.modules.onboarding.application.port.out.OnboardingMaterializationPort;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -28,11 +29,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class OnboardingMaterializationServiceTest {
 
-  @Mock private SettingsVehicleTypeService settingsVehicleTypeService;
+  @Mock private OnboardingMaterializationPort materializationPort;
   @Mock private PaymentMethodPort paymentMethodPort;
   @Mock private RateRepository rateRepository;
-  @Mock private LockerService lockerService;
-  @Mock private ParkingSpaceService parkingSpaceService;
   @Mock private OnboardingSettingsMapper settingsMapper;
 
   @InjectMocks private OnboardingMaterializationService service;
@@ -42,8 +41,7 @@ class OnboardingMaterializationServiceTest {
   @Test
   void materializeVehicleTypes() {
     service.materializeVehicleTypes(companyId, List.of("CAR", "BIKE"));
-    verify(settingsVehicleTypeService).addTypeToCompany(companyId, "CAR");
-    verify(settingsVehicleTypeService).addTypeToCompany(companyId, "BIKE");
+    verify(materializationPort).addVehicleTypesToCompany(companyId, List.of("CAR", "BIKE"));
   }
 
   @Test
@@ -102,12 +100,12 @@ class OnboardingMaterializationServiceTest {
     Map<String, Object> step1 = Map.of("helmetHandling", "LOCKERS", "helmetTokenCount", 10);
     when(settingsMapper.extractNumber(any(), eq(0))).thenReturn(10);
     service.createLockersIfConfigured(companyId, step1);
-    verify(lockerService).createBatch(eq(companyId), any());
+    verify(materializationPort).createLockersForCompany(eq(companyId), any());
   }
 
   @Test
   void resizeCapacity() {
     service.resizeCapacity(companyId, 50);
-    verify(parkingSpaceService).resizeCapacity(companyId, 50);
+    verify(materializationPort).resizeCapacityForCompany(companyId, 50);
   }
 }

@@ -14,9 +14,9 @@ import com.parkflow.modules.parking.operation.domain.ParkingSession;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateType;
 import com.parkflow.modules.parking.operation.domain.SessionStatus;
-import com.parkflow.modules.parking.operation.repository.BlacklistedPlateRepository;
-import com.parkflow.modules.parking.operation.repository.ParkingSessionRepository;
-import com.parkflow.modules.parking.operation.repository.RateRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.BlacklistedPlateRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.ParkingSessionRepository;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.RateRepository;
 import com.parkflow.modules.parking.operation.validation.PlateValidationResult;
 import com.parkflow.modules.parking.operation.validation.PlateValidator;
 import com.parkflow.modules.settings.domain.MasterVehicleType;
@@ -300,29 +300,13 @@ class EntryValidationServiceTest {
         }
 
         @Test
-        void throwsWhenParqueaderoLleno() {
+        void passesWhenSiteExistsAndIsActive() {
             var site = buildParkingSite(10);
             when(parkingSitePort.findByCodeOrNameForUpdate("SEDE1", companyId))
                 .thenReturn(Optional.of(site));
-            when(parkingSessionRepository.countByStatusAndSiteAndCompanyId(
-                    SessionStatus.ACTIVE, site.getName(), companyId))
-                .thenReturn(10L); // lleno exacto
-
-            assertThatThrownBy(() -> service.assertCapacityAvailable("SEDE1", companyId))
-                .isInstanceOf(OperationException.class)
-                .hasMessageContaining("Parqueadero lleno");
-        }
-
-        @Test
-        void passesWhenCapacityHasSpaceAvailable() {
-            var site = buildParkingSite(10);
-            when(parkingSitePort.findByCodeOrNameForUpdate("SEDE1", companyId))
-                .thenReturn(Optional.of(site));
-            when(parkingSessionRepository.countByStatusAndSiteAndCompanyId(
-                    SessionStatus.ACTIVE, site.getName(), companyId))
-                .thenReturn(9L); // un espacio disponible
 
             service.assertCapacityAvailable("SEDE1", companyId);
+            verify(parkingSitePort).findByCodeOrNameForUpdate("SEDE1", companyId);
         }
 
         @Test

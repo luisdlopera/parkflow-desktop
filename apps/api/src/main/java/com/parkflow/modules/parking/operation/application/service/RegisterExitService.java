@@ -51,6 +51,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("deprecation")
 public class RegisterExitService implements RegisterExitUseCase {
 
   private final ParkingSessionRepository parkingSessionRepository;

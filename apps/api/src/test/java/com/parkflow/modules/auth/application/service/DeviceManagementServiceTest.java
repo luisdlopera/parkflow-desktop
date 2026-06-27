@@ -182,7 +182,7 @@ class DeviceManagementServiceTest {
         d.setDeviceId(deviceId);
         d.setDisplayName("Terminal " + deviceId);
         d.setPlatform("Windows");
-        d.setFingerprint("fp-" + deviceId);
+        d.setFingerprintHash("fp-" + deviceId);
         d.setAuthorized(authorized);
         if (!authorized) d.setRevokedAt(OffsetDateTime.now().minusHours(1));
         return d;

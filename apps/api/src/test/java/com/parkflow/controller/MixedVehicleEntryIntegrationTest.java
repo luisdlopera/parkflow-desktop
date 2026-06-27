@@ -66,7 +66,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "CAR",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -86,7 +86,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -111,7 +111,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "CAR",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -130,7 +130,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -161,7 +161,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
             "entryMode": "VISITOR",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -187,7 +187,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
             "entryMode": "AGREEMENT",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -226,7 +226,7 @@ class MixedVehicleEntryIntegrationTest extends BaseIntegrationTest {
               "type": "%s",
               "rateId": "%s",
               "operatorUserId": "%s",
-              "site": "Test Site",
+              "site": "DEFAULT",
               "terminal": "TERM1",
               "vehicleCondition": "Sin novedades"
           }

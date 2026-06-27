@@ -47,7 +47,7 @@ public class FractionalPricingStrategy implements PricingStrategy {
     }
 
     List<RateFraction> active = fractions.stream()
-        .filter(rf -> rf.isActive())
+        .filter(com.parkflow.modules.configuration.domain.RateFraction::isActive)
         .sorted(Comparator.comparingInt(RateFraction::getFromMinute))
         .toList();
 

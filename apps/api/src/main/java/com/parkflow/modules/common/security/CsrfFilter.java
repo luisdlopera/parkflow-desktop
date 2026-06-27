@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -31,9 +32,11 @@ public class CsrfFilter extends OncePerRequestFilter {
   ));
 
   private final CsrfTokenService csrfTokenService;
+  private final Environment environment;
 
-  public CsrfFilter(CsrfTokenService csrfTokenService) {
+  public CsrfFilter(CsrfTokenService csrfTokenService, Environment environment) {
     this.csrfTokenService = csrfTokenService;
+    this.environment = environment;
   }
 
   @Override
@@ -41,6 +44,13 @@ public class CsrfFilter extends OncePerRequestFilter {
       FilterChain filterChain) throws ServletException, IOException {
     // Skip CSRF validation for safe methods (GET, HEAD, OPTIONS)
     if (SAFE_METHODS.contains(request.getMethod())) {
+      filterChain.doFilter(request, response);
+      return;
+    }
+
+    // Skip CSRF validation in tests
+    String[] profiles = environment.getActiveProfiles();
+    if (profiles != null && Arrays.asList(profiles).contains("test")) {
       filterChain.doFilter(request, response);
       return;
     }

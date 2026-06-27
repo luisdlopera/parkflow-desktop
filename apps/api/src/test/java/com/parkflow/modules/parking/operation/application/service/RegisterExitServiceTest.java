@@ -393,7 +393,7 @@ class RegisterExitServiceTest {
       param.setRequirePhotoExit(true);
       ParkingSite site = new ParkingSite();
       site.setId(UUID.randomUUID());
-      when(parkingSitePort.findByCodeAndCompanyId(eq("Test Site"), eq(companyId)))
+      when(parkingSitePort.findByCodeAndCompanyId(eq("DEFAULT"), eq(companyId)))
           .thenReturn(Optional.of(site));
       when(operationalParameterRepository.findBySite_Id(site.getId()))
           .thenReturn(Optional.of(param));
@@ -413,7 +413,7 @@ class RegisterExitServiceTest {
       param.setAllowExitWithoutPayment(true);
       ParkingSite site = new ParkingSite();
       site.setId(UUID.randomUUID());
-      when(parkingSitePort.findByCodeAndCompanyId(eq("Test Site"), eq(companyId)))
+      when(parkingSitePort.findByCodeAndCompanyId(eq("DEFAULT"), eq(companyId)))
           .thenReturn(Optional.of(site));
       when(operationalParameterRepository.findBySite_Id(site.getId()))
           .thenReturn(Optional.of(param));

@@ -90,7 +90,7 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "observations": "Ingreso moto para test de salida",
             "vehicleCondition": "Sin novedades"
@@ -117,7 +117,7 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
   private void openCashSession(String token) throws Exception {
     String cashOpenRequest = """
         {
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "registerLabel": "REG1",
             "openingAmount": 500000,
@@ -180,7 +180,7 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "observations": "Ingreso moto",
             "vehicleCondition": "GOOD",
@@ -250,7 +250,7 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades",
             "custodiedItems": [{"identifier": "L-02", "observations": "Casco azul"}]
@@ -333,7 +333,7 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
             "type": "CAR",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -388,7 +388,7 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
             "type": "CAR",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -445,7 +445,7 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
             "type": "CAR",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -500,7 +500,7 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
             "type": "CAR",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -590,7 +590,7 @@ class MotorcycleExitIntegrationTest extends BaseIntegrationTest {
             "type": "CAR",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }

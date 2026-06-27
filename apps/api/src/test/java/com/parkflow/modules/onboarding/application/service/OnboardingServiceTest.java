@@ -8,7 +8,6 @@ import static org.mockito.Mockito.*;
 
 import com.parkflow.modules.audit.application.port.out.AuditPort;
 import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
-import com.parkflow.modules.configuration.application.service.OperationalConfigurationService;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.licensing.enums.PlanType;
@@ -47,7 +46,7 @@ class OnboardingServiceTest {
   @Mock private FeatureAccessService featureAccessService;
   @Mock private CompanySettingsSnapshotPort companySettingsSnapshotPort;
   @Mock private AuditPort auditService;
-  @Mock private OperationalConfigurationService operationalConfigurationService;
+  @Mock private com.parkflow.modules.onboarding.application.port.out.OperationalConfigurationPort operationalConfigurationPort;
   @Mock private OnboardingQuestionConfigService onboardingQuestionConfigService;
   @Mock private OnboardingSettingsMapper settingsMapper;
   @Mock private ParkingSessionPort parkingSessionPort;
@@ -66,7 +65,8 @@ class OnboardingServiceTest {
     companyId = UUID.randomUUID();
     company = new Company();
     company.setId(companyId);
-    company.setPlan(PlanType.PRO);
+    company.setPlan(com.parkflow.modules.licensing.enums.PlanType.PRO);
+    company.setOperationalProfile(com.parkflow.modules.licensing.enums.OperationalProfile.MIXED);
   }
 
   @Test
@@ -277,6 +277,7 @@ class OnboardingServiceTest {
 
       when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
       when(companySettingsService.getSettingsOrDefault(company)).thenReturn(Map.of("key", "val"));
+      when(operationalConfigurationPort.getOperationConfiguration(companyId)).thenReturn(Map.of());
 
       Map<String, Object> response = onboardingService.getCompanySettings(companyId);
       assertEquals("val", response.get("key"));

@@ -48,7 +48,9 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
   private final ParkingSessionPort parkingSessionPort;
   private final AppUserPort appUserPort;
   private final PaymentPort paymentPort;
+  @SuppressWarnings("unused")
   private final ParkingSitePort parkingSiteRepository;
+  @SuppressWarnings("unused")
   private final OperationalParameterPort operationalParameterRepository;
   private final OperationIdempotencyPort operationIdempotencyPort;
   private final OperationAuditService auditService;
@@ -188,8 +190,9 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
   }
 
   private Optional<OperationalParameter> resolveOperationalParameter(ParkingSession session) {
-    // Site parameter removed — always returns empty
-    return Optional.empty();
+    return parkingSiteRepository.findByCodeAndCompanyId("DEFAULT", session.getCompanyId())
+        .or(() -> parkingSiteRepository.findByNameIgnoreCase("DEFAULT", session.getCompanyId()))
+        .flatMap(site -> operationalParameterRepository.findBySite_Id(site.getId()));
   }
 
   private Optional<OperationResultResponse> tryReplay(String idempotencyKey, IdempotentOperationType expected) {

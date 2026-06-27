@@ -1,6 +1,6 @@
 package com.parkflow.modules.auth.application.service;
 
-import com.parkflow.modules.auth.domain.AuthPermission;
+
 import com.parkflow.modules.auth.domain.AuthSession;
 import com.parkflow.modules.auth.domain.AuthorizedDevice;
 import com.parkflow.modules.auth.dto.AuthUserResponse;

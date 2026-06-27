@@ -68,7 +68,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "observations": "Ingreso moto de prueba",
             "vehicleCondition": "Sin novedades"
@@ -97,7 +97,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "observations": "Duplicado moto",
             "vehicleCondition": "Sin novedades"
@@ -132,7 +132,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "observations": "Cupo moto",
             "vehicleCondition": "Sin novedades"
@@ -169,7 +169,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "noPlateReason": "Moto sin placa visible",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -193,7 +193,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -217,7 +217,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "CAR",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -241,7 +241,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -265,7 +265,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -293,7 +293,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "noPlate": true,
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -315,7 +315,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -338,7 +338,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": ""
         }
@@ -360,7 +360,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "plate": "RAT12M",
             "type": "MOTORCYCLE",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -385,7 +385,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "UNKNOWN_VEHICLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -408,7 +408,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -431,7 +431,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -458,7 +458,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "CAR",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -486,7 +486,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }
@@ -511,7 +511,7 @@ class MotorcycleEntryIntegrationTest extends BaseIntegrationTest {
             "type": "MOTORCYCLE",
             "rateId": "%s",
             "operatorUserId": "%s",
-            "site": "Test Site",
+            "site": "DEFAULT",
             "terminal": "TERM1",
             "vehicleCondition": "Sin novedades"
         }

@@ -14,10 +14,10 @@ import com.parkflow.modules.configuration.dto.PrepaidBalancePurchaseRequest;
 import com.parkflow.modules.configuration.dto.PrepaidBalanceResponse;
 import com.parkflow.modules.configuration.dto.PrepaidPackageRequest;
 import com.parkflow.modules.configuration.dto.PrepaidPackageResponse;
-import com.parkflow.modules.configuration.repository.PrepaidBalanceRepository;
-import com.parkflow.modules.configuration.repository.PrepaidPackageRepository;
-import com.parkflow.modules.configuration.repository.ParkingSiteRepository;
-import com.parkflow.modules.configuration.service.PrepaidService;
+import com.parkflow.modules.configuration.infrastructure.persistence.PrepaidBalanceRepository;
+import com.parkflow.modules.configuration.infrastructure.persistence.PrepaidPackageRepository;
+import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
+import com.parkflow.modules.configuration.application.service.PrepaidService;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

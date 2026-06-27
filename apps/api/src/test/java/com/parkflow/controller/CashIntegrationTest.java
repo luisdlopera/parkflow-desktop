@@ -13,7 +13,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
         String token = getAuthToken();
         String openRequest = """
             {
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "registerLabel": "Register 1",
                 "openingAmount": 0,
@@ -37,7 +37,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
         String token = getAuthToken();
         String openRequest = """
             {
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "registerLabel": "Register 1",
                 "openingAmount": 0,
@@ -54,7 +54,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
         // Now get current
         mockMvc.perform(get("/api/v1/cash/current")
             .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
-            .param("site", "Test Site")
+            .param("site", "DEFAULT")
             .param("terminal", "TERM1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("OPEN"));
@@ -66,7 +66,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
         String token = getAuthToken();
         String openRequest = """
             {
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "registerLabel": "Register 1",
                 "openingAmount": 0,
@@ -113,7 +113,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
         String token = getAuthToken();
         String openRequest = """
             {
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "registerLabel": "Register 1",
                 "openingAmount": 0,

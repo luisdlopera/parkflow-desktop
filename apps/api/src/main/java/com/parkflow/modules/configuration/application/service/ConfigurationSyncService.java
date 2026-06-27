@@ -32,6 +32,7 @@ public class ConfigurationSyncService {
    * @param companyId the company whose progress should be synced
    * @param updatedSettings the new settings from Configuration API
    */
+  @SuppressWarnings("unchecked")
   public void syncConfigurationToProgress(UUID companyId, Map<String, Object> updatedSettings) {
     progressPort.findByCompanyId(companyId).ifPresent(progress -> {
       // Re-derive progress_data from settings

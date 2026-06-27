@@ -19,7 +19,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "observations": "Ingreso de prueba",
                 "vehicleCondition": "Sin novedades"
@@ -64,7 +64,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -90,7 +90,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 "noPlateReason": "Vehiculo oficial sin placa visible",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -124,7 +124,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 "entryMode": "AGREEMENT",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -159,7 +159,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -200,7 +200,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "observations": "Salida de prueba",
                 "vehicleCondition": "Sin novedades"
@@ -249,7 +249,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "observations": "Sin idempotency",
                 "vehicleCondition": "Sin novedades"
@@ -275,7 +275,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "observations": "Duplicado",
                 "vehicleCondition": "Sin novedades"
@@ -312,7 +312,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1"
             }
             """.formatted(System.currentTimeMillis(), rateId, adminUserId);
@@ -336,7 +336,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "observations": "Retry test",
                 "vehicleCondition": "Sin novedades"
@@ -379,7 +379,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 "plate": "NOR001",
                 "type": "CAR",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "observations": "Sin rateId",
                 "vehicleCondition": "Sin novedades"
@@ -408,7 +408,7 @@ class OperationsIntegrationTest extends BaseIntegrationTest {
                 "rateId": "%s",
                 "operatorUserId": "%s",
                 "terminal": "TERM1",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "observations": "Ingreso concurrente",
                 "vehicleCondition": "Sin novedades"
             }

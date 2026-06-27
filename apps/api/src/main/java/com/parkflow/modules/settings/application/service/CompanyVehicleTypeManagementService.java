@@ -33,7 +33,8 @@ public class CompanyVehicleTypeManagementService implements CompanyVehicleTypeMa
     private final MasterVehicleTypePort masterRepository;
     private final CompanyVehicleTypePort companyVehicleTypePort;
 
-    public CompanyVehicleTypeManagementService(MasterVehicleTypePort masterRepository,
+    @SuppressWarnings("null")
+  public CompanyVehicleTypeManagementService(MasterVehicleTypePort masterRepository,
                                                CompanyVehicleTypePort companyVehicleTypePort) {
         this.masterRepository = Objects.requireNonNull(masterRepository, "masterRepository");
         this.companyVehicleTypePort = Objects.requireNonNull(companyVehicleTypePort, "companyVehicleTypePort");

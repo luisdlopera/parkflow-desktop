@@ -31,7 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
-@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
+@SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)
 class AgreementServiceTest {
 

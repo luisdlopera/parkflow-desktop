@@ -6,11 +6,10 @@ import static org.mockito.Mockito.*;
 
 import com.parkflow.modules.customers.domain.Client;
 import com.parkflow.modules.customers.dto.ClientRequest;
-import com.parkflow.modules.customers.repository.ClientRepository;
 import com.parkflow.modules.customers.application.service.ContractExpirationJob;
 import com.parkflow.modules.configuration.domain.ContractStatus;
 import com.parkflow.modules.configuration.domain.MonthlyContract;
-import com.parkflow.modules.configuration.repository.MonthlyContractRepository;
+import com.parkflow.modules.configuration.infrastructure.persistence.MonthlyContractRepository;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;

@@ -31,7 +31,7 @@ class ActiveSessionsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -61,7 +61,7 @@ class ActiveSessionsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -74,7 +74,7 @@ class ActiveSessionsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -113,7 +113,7 @@ class ActiveSessionsIntegrationTest extends BaseIntegrationTest {
                     "type": "CAR",
                     "rateId": "%s",
                     "operatorUserId": "%s",
-                    "site": "Test Site",
+                    "site": "DEFAULT",
                     "terminal": "TERM1",
                     "vehicleCondition": "Sin novedades"
                 }
@@ -158,7 +158,7 @@ class ActiveSessionsIntegrationTest extends BaseIntegrationTest {
                     "type": "CAR",
                     "rateId": "%s",
                     "operatorUserId": "%s",
-                    "site": "Test Site",
+                    "site": "DEFAULT",
                     "terminal": "TERM1",
                     "vehicleCondition": "Sin novedades"
                 }
@@ -190,7 +190,7 @@ class ActiveSessionsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -210,7 +210,7 @@ class ActiveSessionsIntegrationTest extends BaseIntegrationTest {
 
         String cashOpenRequest = """
             {
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "registerLabel": "REG1",
                 "openingAmount": 500000,
@@ -261,7 +261,7 @@ class ActiveSessionsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -300,7 +300,7 @@ class ActiveSessionsIntegrationTest extends BaseIntegrationTest {
                 "type": "MOTORCYCLE",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "vehicleCondition": "Sin novedades"
             }
@@ -331,7 +331,7 @@ class ActiveSessionsIntegrationTest extends BaseIntegrationTest {
                 "type": "CAR",
                 "rateId": "%s",
                 "operatorUserId": "%s",
-                "site": "Test Site",
+                "site": "DEFAULT",
                 "terminal": "TERM1",
                 "observations": "Test observations",
                 "vehicleCondition": "Sin novedades"

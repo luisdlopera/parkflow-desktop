@@ -47,7 +47,7 @@ public interface RateRepository extends JpaRepository<Rate, UUID> {
    */
   @Query(value = """
       SELECT r.* FROM rate r
-      LEFT JOIN parking_site s ON r.site_id = s.id
+      LEFT JOIN parking_sites s ON r.site_id = s.id
       WHERE r.is_active = true
         AND r.company_id = :cid
         AND (s.code = :site OR r.site_id IS NULL)

@@ -36,6 +36,7 @@ import java.util.UUID;
 @Primary
 @RequiredArgsConstructor
 @Deprecated(since = "2.0.0", forRemoval = true)
+@SuppressWarnings("deprecation")
 public class CashSessionCompositeService implements CashSessionUseCase {
 
     private final CashSessionManagementUseCase managementUseCase;

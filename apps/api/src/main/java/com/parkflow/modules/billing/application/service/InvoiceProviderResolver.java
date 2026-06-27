@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
  * Adding a new provider requires only implementing InvoiceProviderPort
  * and annotating it with @Component — this resolver picks it up automatically.
  */
-@SuppressWarnings("unchecked")
 @Slf4j
 @Service
 public class InvoiceProviderResolver {
@@ -27,6 +26,7 @@ public class InvoiceProviderResolver {
   private final Map<InvoiceProviderType, InvoiceProviderPort> providerMap;
   private final InvoiceProviderConfigPort configPort;
 
+  @SuppressWarnings("null")
   public InvoiceProviderResolver(List<InvoiceProviderPort> providers, InvoiceProviderConfigPort configPort) {
     this.providerMap = providers.stream()
         .collect(Collectors.toMap(InvoiceProviderPort::getType, Function.identity()));

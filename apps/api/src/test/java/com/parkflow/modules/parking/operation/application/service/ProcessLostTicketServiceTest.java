@@ -240,7 +240,7 @@ class ProcessLostTicketServiceTest {
       param.setRequirePhotoExit(true);
       ParkingSite site = new ParkingSite();
       site.setId(UUID.randomUUID());
-      when(parkingSiteRepository.findByCodeAndCompanyId(eq("Test Site"), eq(companyId)))
+      when(parkingSiteRepository.findByCodeAndCompanyId(eq("DEFAULT"), eq(companyId)))
           .thenReturn(Optional.of(site));
       when(operationalParameterRepository.findBySite_Id(site.getId()))
           .thenReturn(Optional.of(param));

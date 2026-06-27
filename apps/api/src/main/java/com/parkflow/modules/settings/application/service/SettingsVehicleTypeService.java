@@ -35,7 +35,8 @@ public class SettingsVehicleTypeService implements VehicleTypeUseCase {
     private final MasterVehicleTypePort repository;
     private final CompanyVehicleTypePort companyVehicleTypePort;
 
-    public SettingsVehicleTypeService(MasterVehicleTypePort repository,
+    @SuppressWarnings("null")
+  public SettingsVehicleTypeService(MasterVehicleTypePort repository,
                                       CompanyVehicleTypePort companyVehicleTypePort) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.companyVehicleTypePort = Objects.requireNonNull(companyVehicleTypePort, "companyVehicleTypePort");
