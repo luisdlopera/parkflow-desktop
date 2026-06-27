@@ -115,10 +115,14 @@ export function useSessionMonitor() {
     // Verificar cada minuto
     checkIntervalRef.current = setInterval(checkSession, 60000);
 
-    // También verificar cuando la ventana recupera foco
+    // También verificar cuando la ventana recupera foco con debounce de 500ms
+    let debounceTimer: NodeJS.Timeout | null = null;
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        checkSession();
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          checkSession();
+        }, 500);
       }
     };
 
@@ -127,6 +131,9 @@ export function useSessionMonitor() {
     return () => {
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current);
+      }
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
       }
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };

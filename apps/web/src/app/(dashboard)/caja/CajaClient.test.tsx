@@ -102,7 +102,7 @@ vi.mock("@/features/cash-register/hooks/useCajaPage", () => ({
 }));
 
 vi.mock("@/lib/api", () => ({
-  buildApiHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test" }),
+  buildApiHeaders: vi.fn().mockResolvedValue({ "Content-Type": "application/json", "X-API-Key": "test-api-key" }),
 }));
 
 vi.mock("@/lib/services/auth-domain.service", () => ({

@@ -13,6 +13,8 @@ import { PageTransition } from "@/components/animations";
 import { ScrollToTopButton } from "@/components/animations";
 import { useSessionTimeout } from "@/hooks/core/useSessionTimeout";
 import { useAuthBroadcast } from "@/hooks/auth/useAuthBroadcast";
+import { useSessionMonitor } from "@/hooks/auth/useSessionMonitor";
+import { SessionExpiredModal } from "@/components/auth/SessionExpiredModal";
 
 function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(() =>
@@ -35,6 +37,7 @@ export default function DashboardClientWrapper({ children }: { children: ReactNo
   const { isOpen, isCollapsed, toggle, open, close } = useSidebar();
   const { setSidebarState } = useUIFacade();
   const { warningVisible, secondsLeft, extend, doLogout } = useSessionTimeout(15);
+  const { isExpired, renewSession, forceLogout } = useSessionMonitor();
   useAuthBroadcast();
   const isOnline = useOnlineStatus();
 
@@ -94,6 +97,11 @@ export default function DashboardClientWrapper({ children }: { children: ReactNo
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
+      <SessionExpiredModal
+        isOpen={isExpired}
+        onClose={forceLogout}
+        onRenew={renewSession}
+      />
     </>
   );
 }

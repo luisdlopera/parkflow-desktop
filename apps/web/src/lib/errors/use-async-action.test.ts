@@ -89,7 +89,7 @@ describe("useAsyncAction", () => {
   });
 
   it("should manage loading state", async () => {
-    const { result } = renderHook(() => useAsyncAction());
+    const { result } = renderHook(() => useAsyncAction<string>());
 
     let resolvePromise!: (v: string) => void;
     const promise = new Promise<string>((resolve) => {
@@ -122,7 +122,7 @@ describe("useAsyncAction", () => {
   });
 
   it("should return undefined on failure", async () => {
-    const { result } = renderHook(() => useAsyncAction());
+    const { result } = renderHook(() => useAsyncAction<string>());
 
     let returnValue: string | undefined;
     await act(async () => {

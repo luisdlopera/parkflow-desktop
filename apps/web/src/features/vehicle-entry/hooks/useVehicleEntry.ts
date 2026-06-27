@@ -248,7 +248,6 @@ export function useVehicleEntry({
           printWarning,
           spaceCode: payload?.receipt?.parkingSpaceCode,
         };
-        console.log("CALLING_ON_SUCCESS", successPayload);
         onSuccess(successPayload);
 
         onIncrementStats();

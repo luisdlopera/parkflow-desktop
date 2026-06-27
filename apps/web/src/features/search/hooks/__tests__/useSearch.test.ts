@@ -31,7 +31,7 @@ describe("useSearch", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
-    mockAuthHeaders.mockResolvedValue({ Authorization: "Bearer token" });
+    mockAuthHeaders.mockResolvedValue({ "Content-Type": "application/json", "X-API-Key": "test-api-key" });
     process.env.NEXT_PUBLIC_API_URL = "http://localhost:6011/api/v1/operations";
   });
 

@@ -7,6 +7,7 @@
  *    For new code, prefer:
  *    import { fetchProfile } from "@/lib/api/profile.api"
  */
+/* global RequestInit */
 import { authHeaders } from "@/lib/services/auth-domain.service";
 import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import { authBase } from "@/lib/api/config";
@@ -86,4 +87,25 @@ export async function changePassword(currentPassword: string, newPassword: strin
     body: JSON.stringify({ currentPassword, newPassword }),
   });
   if (!res.ok) throw await normalizeApiError(res);
+}
+
+export interface DeviceInfo {
+  id: string;
+  deviceId: string;
+  displayName: string;
+  platform: string;
+  authorized: boolean;
+  revokedAt: string | null;
+  lastSeenAt: string | null;
+}
+
+export async function fetchDevices(): Promise<DeviceInfo[]> {
+  return authFetch<DeviceInfo[]>("/devices", { cache: "no-store" });
+}
+
+export async function revokeDevice(deviceId: string, reason?: string): Promise<DeviceInfo> {
+  return authFetch<DeviceInfo>("/devices/revoke", {
+    method: "POST",
+    body: JSON.stringify({ deviceId, reason: reason ?? "Revocado por el usuario" })
+  });
 }

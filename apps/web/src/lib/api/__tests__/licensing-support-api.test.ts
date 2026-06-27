@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/services/auth-domain.service", () => ({
-  authHeaders: () => Promise.resolve({ Authorization: "Bearer test-token" }),
+  authHeaders: () => Promise.resolve({ "Content-Type": "application/json", "X-API-Key": "test-api-key" }),
 }));
 
 vi.mock("@/lib/api/config", () => ({
@@ -69,7 +69,7 @@ describe("licensing-support-api", () => {
       expect(fetchWithCredentials).toHaveBeenCalledWith(
         expect.stringContaining("/licensing/support/cases/priority"),
         expect.objectContaining({
-          headers: expect.objectContaining({ Authorization: "Bearer test-token" }),
+          headers: expect.objectContaining({ "Content-Type": "application/json", "X-API-Key": "test-api-key" }),
         }),
       );
       expect(result).toHaveLength(1);

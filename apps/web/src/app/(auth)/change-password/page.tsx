@@ -65,7 +65,7 @@ export default function ChangePasswordPage() {
           user: { ...session.user, requirePasswordChange: false }
         });
       }
-      window.location.href = "/";
+      router.push("/");
     } catch (err) {
       setPasswordError(err instanceof Error ? err.message : "Error al cambiar la contraseña");
     } finally {
@@ -81,7 +81,7 @@ export default function ChangePasswordPage() {
         user: { ...session.user, requirePasswordChange: false }
       });
     }
-    window.location.href = "/";
+    router.push("/");
   };
 
   if (loading) {

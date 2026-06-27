@@ -13,11 +13,15 @@ import { broadcastAuthEvent } from "@/hooks/auth/useAuthBroadcast";
 import { currentUser, canAccessSuperAdminPortal } from "@/lib/services/auth-domain.service";
 import type { AuthUser } from "@parkflow/types";
 import { Shield } from "lucide-react";
+import { Modal } from "@/components/bridge/Modal";
+import { Button } from "@/components/bridge/Button";
 
 export function UserMenu() {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmLogout, setShowConfirmLogout] = useState(false);
+  const [logoutType, setLogoutType] = useState<"single" | "all" | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -145,7 +149,10 @@ export function UserMenu() {
               </svg>
             }
             className="text-danger data-[hover]:bg-danger-50 data-[hover]:text-danger-700"
-            onPress={handleLogout}
+            onPress={() => {
+              setLogoutType("single");
+              setShowConfirmLogout(true);
+            }}
           >
             <div className="flex flex-col">
               <span className="font-medium">{isLoading ? "Cerrando sesión..." : "Cerrar sesión"}</span>
@@ -162,7 +169,10 @@ export function UserMenu() {
               </svg>
             }
             className="text-danger data-[hover]:bg-danger-50 data-[hover]:text-danger-700"
-            onPress={handleLogoutAll}
+            onPress={() => {
+              setLogoutType("all");
+              setShowConfirmLogout(true);
+            }}
           >
             <div className="flex flex-col">
               <span className="font-medium">{isLoading ? "Cerrando sesiones..." : "Cerrar todas las sesiones"}</span>
@@ -171,6 +181,38 @@ export function UserMenu() {
           </DropdownItem>
         </DropdownSection>
       </DropdownMenu>
+
+      <Modal state={{ isOpen: showConfirmLogout, setOpen: setShowConfirmLogout, open: () => {}, close: () => setShowConfirmLogout(false), toggle: () => {} }}>
+        <Modal.Content>
+          <Modal.Header>Cerrar Sesión</Modal.Header>
+          <Modal.Body>
+            <p className="text-slate-600 text-sm">
+              {logoutType === "all"
+                ? "¿Estás seguro de que deseas cerrar todas las sesiones activas en todos los dispositivos?"
+                : "¿Estás seguro de que deseas cerrar tu sesión actual?"}
+            </p>
+          </Modal.Body>
+          <Modal.Footer className="flex gap-2">
+            <Button variant="ghost" onPress={() => setShowConfirmLogout(false)}>
+              Cancelar
+            </Button>
+            <Button
+              color="danger"
+              onPress={async () => {
+                setShowConfirmLogout(false);
+                if (logoutType === "all") {
+                  await handleLogoutAll();
+                } else {
+                  await handleLogout();
+                }
+              }}
+              isLoading={isLoading}
+            >
+              Confirmar
+            </Button>
+          </Modal.Footer>
+        </Modal.Content>
+      </Modal>
     </Dropdown>
   );
 }

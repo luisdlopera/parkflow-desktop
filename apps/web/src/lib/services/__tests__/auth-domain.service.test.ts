@@ -9,7 +9,7 @@ import {
   canAccessSuperAdminPortal
 } from '../auth-domain.service';
 import * as authStorage from '../auth-storage.service';
-import * as authApi from '../../api/auth.api';
+import * as authApi from '@/features/auth/api/auth.api';
 
 // Mock dependencies
 vi.mock('../auth-storage.service', () => ({
@@ -17,7 +17,7 @@ vi.mock('../auth-storage.service', () => ({
   saveSession: vi.fn(),
 }));
 
-vi.mock('../../api/auth.api', () => ({
+vi.mock('@/features/auth/api/auth.api', () => ({
   refreshIfNeeded: vi.fn(),
   authHeadersApiKey: vi.fn().mockReturnValue('test-api-key'),
 }));

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/services/auth-domain.service", () => ({
-  authHeaders: vi.fn(() => Promise.resolve({ Authorization: "Bearer token" }))
+  authHeaders: vi.fn(() => Promise.resolve({ "Content-Type": "application/json", "X-API-Key": "test-api-key" }))
 }));
 
 vi.mock("@/lib/api/config", () => ({
@@ -310,7 +310,8 @@ describe("auth-api", () => {
     it("should change password successfully", async () => {
       const { authHeaders } = await import("@/lib/services/auth-domain.service");
       vi.mocked(authHeaders).mockResolvedValue({
-        Authorization: "Bearer token"
+        "Content-Type": "application/json",
+        "X-API-Key": "test-api-key"
       } as any);
 
       vi.mocked(fetchWithCredentials).mockResolvedValue({

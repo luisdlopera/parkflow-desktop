@@ -3,8 +3,9 @@ import { authLoginRequestSchema, authRefreshRequestSchema } from "@/lib/validati
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type { LoginRequest, LoginResponse } from "@parkflow/types";
 import type { StoredSession } from "../types";
-import { loadSession, saveSession, clearSession } from "../services/auth-storage.service";
+import { loadSession, saveSession, clearSession } from "@/lib/services/auth-storage.service";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+import { broadcastAuthEvent } from "@/hooks/auth/useAuthBroadcast";
 
 
 function operationsApiKey(): string {
@@ -114,7 +115,22 @@ export async function refreshIfNeeded(current: StoredSession): Promise<StoredSes
       });
 
       if (!response.ok) {
+        // [A2] PERMISSIONS_CHANGED: role changed — clear local session and broadcast logout
+        // so ALL tabs redirect to login immediately with fresh permissions.
+        let errorCode: string | undefined;
+        try {
+          const body = await response.clone().json() as { code?: string };
+          errorCode = body?.code;
+        } catch {
+          // ignore parse errors
+        }
+
         await clearSession();
+        broadcastAuthEvent({ type: "auth:logout" });
+
+        if (errorCode === "PERMISSIONS_CHANGED") {
+          throw new Error("PERMISSIONS_CHANGED");
+        }
         throw new Error("No se pudo refrescar la sesion");
       }
 
@@ -125,6 +141,8 @@ export async function refreshIfNeeded(current: StoredSession): Promise<StoredSes
         offlineLease: payload.offlineLease
       };
       await saveSession(rotated);
+      // [Deuda] Broadcast token refresh so other tabs update their session state
+      broadcastAuthEvent({ type: "auth:token_refreshed" });
       return rotated;
     } finally {
       refreshPromise = null;

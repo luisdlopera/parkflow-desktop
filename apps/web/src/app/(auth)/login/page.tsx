@@ -37,7 +37,7 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
     mode: "onBlur",
     defaultValues: {
-      email: "admin@parkflow.local",
+      email: "",
       password: "",
       rememberMe: false,
     },
@@ -146,6 +146,7 @@ export default function LoginPage() {
         deviceName,
         platform,
         fingerprint,
+        rememberMe: data.rememberMe,
         offlineRequestedHours: 48
       });
 

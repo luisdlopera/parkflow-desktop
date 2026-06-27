@@ -39,7 +39,7 @@ describe("_shared", () => {
   describe("buildApiHeaders", () => {
     it("delegates to the imported buildApiHeaders", async () => {
       const { buildApiHeaders } = await import("@/lib/api/_shared");
-      const mockHeaders = { "Content-Type": "application/json", Authorization: "Bearer x" };
+      const mockHeaders = { "Content-Type": "application/json", "X-API-Key": "test-api-key" };
       const mockedApi = await import("@/lib/api");
       vi.mocked(mockedApi.buildApiHeaders).mockResolvedValue(mockHeaders);
 

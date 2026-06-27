@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { login, logoutFromApi, logoutAllSessions, logoutDevice, refreshIfNeeded, authHeadersApiKey } from '../auth.api';
-import * as authStorage from '../../services/auth-storage.service';
+import * as authStorage from '@/lib/services/auth-storage.service';
 import * as fetchModule from '@/lib/api/fetch-with-credentials';
 import * as config from '@/lib/api/config';
 
-vi.mock('../../services/auth-storage.service', () => ({
+vi.mock('@/lib/services/auth-storage.service', () => ({
   loadSession: vi.fn(),
   saveSession: vi.fn(),
   clearSession: vi.fn(),

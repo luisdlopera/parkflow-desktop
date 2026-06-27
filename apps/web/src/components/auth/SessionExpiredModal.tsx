@@ -49,7 +49,7 @@ export function SessionExpiredModal({ isOpen, onClose, onRenew }: SessionExpired
     try {
       await onRenew();
       setCountdown(30);
-      close();
+      onClose();
     } catch {
       // Si falla la renovación, ir al login
       handleLoginRedirect();

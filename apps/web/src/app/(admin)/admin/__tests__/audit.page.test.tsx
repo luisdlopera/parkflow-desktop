@@ -3,13 +3,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import AuditPage from "../audit/page";
 
 vi.mock("@/features/auth/api/auth.api", () => ({
-  authHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token", "X-API-Key": "test-key" }),
+  authHeaders: vi.fn().mockResolvedValue({ "Content-Type": "application/json", "X-API-Key": "test-key" }),
 }));
 vi.mock("@/lib/services/auth-storage.service", () => ({
-  authHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token", "X-API-Key": "test-key" }),
+  authHeaders: vi.fn().mockResolvedValue({ "Content-Type": "application/json", "X-API-Key": "test-key" }),
 }));
 vi.mock("@/lib/services/auth-domain.service", () => ({
-  authHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token", "X-API-Key": "test-key" }),
+  authHeaders: vi.fn().mockResolvedValue({ "Content-Type": "application/json", "X-API-Key": "test-key" }),
 }));
 
 const mockFetch = vi.fn();

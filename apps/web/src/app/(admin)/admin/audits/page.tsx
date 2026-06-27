@@ -77,7 +77,7 @@ export default function AuditPage() {
                 </Chip>
               </TableCell>
               <TableCell>
-                <Button size="sm" variant="ghost" onPress={() => console.log("Ver detalles", item.id)}>
+                <Button size="sm" variant="ghost">
                   Ver Detalles
                 </Button>
               </TableCell>

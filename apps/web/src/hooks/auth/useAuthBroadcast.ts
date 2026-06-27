@@ -44,6 +44,10 @@ export function useAuthBroadcast(): void {
         router.push("/login");
       } else if (type === "auth:login") {
         router.refresh();
+      } else if (type === "auth:token_refreshed") {
+        // [Deuda] Another tab refreshed the token; trigger a soft refresh so
+        // RSC data and headers reflect the updated session without redirecting.
+        router.refresh();
       }
     };
 

@@ -106,7 +106,7 @@ describe("fetchRuntimeConfig", () => {
 
   it("includes auth headers in request", async () => {
     const companyId = "company-123";
-    const authHeaders = { "Authorization": "Bearer token123" };
+    const authHeaders = { "Content-Type": "application/json", "X-API-Key": "test-api-key" };
 
     vi.spyOn(currentCompanyModule, "resolveCurrentCompanyId").mockResolvedValueOnce(companyId);
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce(authHeaders);

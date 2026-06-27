@@ -38,7 +38,7 @@ function mock204Response(): Response {
 }
 
 describe("plans api", () => {
-  const FAKE_HEADERS = { Authorization: "Bearer test" };
+  const FAKE_HEADERS = { "Content-Type": "application/json", "X-API-Key": "test-api-key" };
 
   const samplePlan = {
     id: "plan-1",

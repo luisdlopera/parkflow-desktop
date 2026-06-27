@@ -99,14 +99,14 @@ export function AdminUsersPageClient() {
 
   const handleSave = async (data: Partial<AdminUser>, id?: string) => {
     if (id) {
-      setUsers(prev => prev.map(u => u.id === id ? { ...u, ...data } as AdminUser : u));
+      setUsers(prev => prev.map((u: AdminUser) => u.id === id ? { ...u, ...data } as AdminUser : u));
     } else {
       setUsers(prev => [...prev, { ...data, id: String(Date.now()), createdAt: new Date().toISOString() } as AdminUser]);
     }
   };
 
   const handleDelete = async (id: string) => {
-    setUsers(prev => prev.filter(u => u.id !== id));
+    setUsers(prev => prev.filter((u: AdminUser) => u.id !== id));
   };
 
   const columns: DataTableColumn<AdminUser>[] = [
@@ -144,7 +144,7 @@ export function AdminUsersPageClient() {
   const renderStats = () => (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
       <Card><Card.Content className="flex items-center gap-3"><Users className="w-5 h-5 text-primary" /><div><p>Total</p><p className="font-bold">{users.length}</p></div></Card.Content></Card>
-      <Card><Card.Content className="flex items-center gap-3"><Check className="w-5 h-5 text-success" /><div><p>Activos</p><p className="font-bold">{users.filter(u => u.active).length}</p></div></Card.Content></Card>
+      <Card><Card.Content className="flex items-center gap-3"><Check className="w-5 h-5 text-success" /><div><p>Activos</p><p className="font-bold">{users.filter((u: AdminUser) => u.active).length}</p></div></Card.Content></Card>
     </div>
   );
 
@@ -159,7 +159,7 @@ export function AdminUsersPageClient() {
         icon={Users}
         data={users}
         columns={columns}
-        getRowKey={(u) => u.id}
+        getRowKey={(u: AdminUser) => u.id}
         FormComponent={UserForm}
         onSave={handleSave}
         onDelete={handleDelete}

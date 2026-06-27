@@ -23,7 +23,7 @@ vi.mock("@/lib/validation/request-guard", () => ({
 
 describe("syncCreatePrintJobAfterPhysicalPrint", () => {
   beforeEach(() => {
-    mockBuildHeaders.mockResolvedValue({ Authorization: "Bearer test" });
+    mockBuildHeaders.mockResolvedValue({ "Content-Type": "application/json", "X-API-Key": "test-api-key" });
     mockHasPermission.mockResolvedValue(true);
     mockValidate.mockImplementation((_schema: unknown, data: unknown) => data);
   });

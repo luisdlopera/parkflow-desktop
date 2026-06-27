@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/services/auth-domain.service", () => ({
-  authHeaders: () => Promise.resolve({ Authorization: "Bearer test-token" }),
+  authHeaders: () => Promise.resolve({ "Content-Type": "application/json", "X-API-Key": "test-api-key" }),
 }));
 
 vi.mock("@/lib/errors/normalize-api-error", () => ({
@@ -51,8 +51,8 @@ describe("admin-onboarding.api", () => {
         expect.stringContaining("/admin/onboarding-questions"),
         expect.objectContaining({
           headers: expect.objectContaining({
-            Authorization: "Bearer test-token",
             "Content-Type": "application/json",
+            "X-API-Key": "test-api-key",
           }),
         }),
       );

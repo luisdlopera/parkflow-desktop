@@ -272,6 +272,27 @@ export default function ProfilePage() {
         </Card.Content>
       </Card>
 
+      <Card className="border border-default-200">
+        <Card.Header>
+          <h2 className="text-lg font-semibold text-slate-900">Seguridad y Sesiones</h2>
+          <p className="text-sm text-slate-500">
+            Administra los equipos autorizados que tienen acceso a tu cuenta.
+          </p>
+        </Card.Header>
+        <Card.Content className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <span className="text-sm text-slate-600 dark:text-neutral-400">
+            Puedes revocar el acceso a dispositivos antiguos o desconocidos para proteger tu cuenta.
+          </span>
+          <Button
+            variant="ghost"
+            color="primary"
+            onPress={() => router.push("/perfil/dispositivos")}
+          >
+            Gestionar dispositivos
+          </Button>
+        </Card.Content>
+      </Card>
+
       <Card>
         <Card.Header>
           <h2 className="text-lg font-semibold text-slate-900">Cambiar contraseña</h2>

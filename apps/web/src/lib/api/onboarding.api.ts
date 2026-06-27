@@ -7,6 +7,7 @@
  *    For new code, prefer:
  *    import { fetchOnboardingStatus } from "@/lib/api/onboarding.api"
  */
+/* global RequestInit */
 import { authHeaders } from "@/lib/services/auth-domain.service";
 import { normalizeApiError } from "@/lib/errors/normalize-api-error";
 import { ApiError } from "@/lib/errors/api-error";

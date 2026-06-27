@@ -12,7 +12,7 @@ function renderWithSWR(ui: React.ReactElement) {
 }
 
 vi.mock("@/lib/api", () => ({
-  buildApiHeaders: vi.fn().mockResolvedValue({ Authorization: "Bearer test-token", "X-API-Key": "test-key" }),
+  buildApiHeaders: vi.fn().mockResolvedValue({ "Content-Type": "application/json", "X-API-Key": "test-key" }),
 }));
 
 vi.mock("@/features/auth/api/auth.api", () => ({
