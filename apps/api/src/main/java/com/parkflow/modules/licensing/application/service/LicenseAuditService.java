@@ -34,6 +34,7 @@ public class LicenseAuditService {
   /**
    * Registra un evento de bloqueo automático.
    */
+  @Deprecated(since = "2.0.0", forRemoval = true)
   @Transactional
   public LicenseBlockEvent recordAutoBlock(
       UUID companyId,
@@ -81,6 +82,7 @@ public class LicenseAuditService {
   /**
    * Registra un intento de validación fallido.
    */
+  @Deprecated(since = "2.0.0", forRemoval = true)
   @Transactional
   public void recordFailedValidation(
       UUID companyId,
@@ -119,6 +121,7 @@ public class LicenseAuditService {
   /**
    * Registra que un pago fue recibido después de un bloqueo.
    */
+  @Deprecated(since = "2.0.0", forRemoval = true)
   @Transactional
   public void recordPaymentAfterBlock(UUID companyId, String paymentReference, OffsetDateTime paymentDate) {
     List<LicenseBlockEvent> unresolvedBlocks = blockEventRepository.findUnresolvedByCompanyId(companyId);
@@ -139,6 +142,7 @@ public class LicenseAuditService {
   /**
    * Realiza diagnóstico completo de una empresa.
    */
+  @Deprecated(since = "2.0.0", forRemoval = true)
   @Transactional(readOnly = true)
   public LicenseDiagnosticsResponse diagnoseCompany(UUID companyId) {
     Company company = companyRepository.findById(companyId)
@@ -196,7 +200,7 @@ public class LicenseAuditService {
 
     if (company.getStatus() == CompanyStatus.PAST_DUE || company.getStatus() == CompanyStatus.EXPIRED) {
       boolean hasPaymentAfterBlock = recentBlocks.stream()
-          .anyMatch(LicenseBlockEvent::getPaymentReceivedAfterBlock);
+          .anyMatch(e -> e.getPaymentReceivedAfterBlock());
       if (hasPaymentAfterBlock) {
         warnings.add("Se detectó pago después de bloqueo pero empresa sigue bloqueada");
         recommendations.add("Verificar que el pago fue aplicado correctamente y desbloquear empresa");
@@ -221,6 +225,7 @@ public class LicenseAuditService {
   /**
    * Diagnóstico de un dispositivo específico.
    */
+  @Deprecated(since = "2.0.0", forRemoval = true)
   @Transactional(readOnly = true)
   public DeviceDiagnosticsResponse diagnoseDevice(String deviceFingerprint) {
     LicensedDevice device = deviceRepository.findByDeviceFingerprint(deviceFingerprint)
@@ -263,6 +268,7 @@ public class LicenseAuditService {
   /**
    * Obtiene casos de soporte prioritarios (bloqueos con pagos).
    */
+  @Deprecated(since = "2.0.0", forRemoval = true)
   @Transactional(readOnly = true)
   public List<SupportCaseResponse> getPrioritySupportCases() {
     List<LicenseBlockEvent> cases = blockEventRepository.findBlocksWithSubsequentPayment();
@@ -272,6 +278,7 @@ public class LicenseAuditService {
   /**
    * Obtiene estadísticas de bloqueos.
    */
+  @Deprecated(since = "2.0.0", forRemoval = true)
   @Transactional(readOnly = true)
   public BlockStatisticsResponse getBlockStatistics(OffsetDateTime since) {
     List<Object[]> dailyStats = blockEventRepository.getDailyStats(since);
@@ -310,6 +317,7 @@ public class LicenseAuditService {
   /**
    * Resuelve un evento de bloqueo.
    */
+  @Deprecated(since = "2.0.0", forRemoval = true)
   @Transactional
   public void resolveBlockEvent(
       UUID blockEventId,
@@ -338,6 +346,7 @@ public class LicenseAuditService {
   /**
    * Marca un bloqueo como falso positivo.
    */
+  @Deprecated(since = "2.0.0", forRemoval = true)
   @Transactional
   public void markAsFalsePositive(UUID blockEventId, String resolvedBy, String notes) {
     LicenseBlockEvent event = blockEventRepository.findById(blockEventId)

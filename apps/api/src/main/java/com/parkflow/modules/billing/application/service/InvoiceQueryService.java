@@ -5,7 +5,6 @@ import com.parkflow.modules.billing.domain.Invoice;
 import com.parkflow.modules.billing.domain.InvoiceProviderConfig;
 import com.parkflow.modules.billing.domain.enums.InvoiceStatus;
 import com.parkflow.modules.billing.domain.repository.InvoicePort;
-import com.parkflow.modules.billing.domain.repository.InvoiceSyncLogPort;
 import com.parkflow.modules.billing.dto.InvoiceDashboardResponse;
 import com.parkflow.modules.billing.dto.InvoiceResponse;
 import com.parkflow.modules.billing.infrastructure.security.EncryptionService;
@@ -24,7 +23,6 @@ import java.util.UUID;
  * Handles invoice query operations: list, get, dashboard, PDF download.
  * Max 3 methods (read-only queries) + 1 special (PDF download).
  */
-@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -78,10 +76,8 @@ public class InvoiceQueryService {
     InvoiceProviderPort provider = providerResolver.resolveFor(companyId);
     InvoiceProviderConfig decryptedConfig = decryptConfig(config);
 
-    long start = System.currentTimeMillis();
     try {
-      byte[] pdf = provider.getInvoicePdf(invoice.getExternalId(), decryptedConfig);
-      return pdf;
+      return provider.getInvoicePdf(invoice.getExternalId(), decryptedConfig);
     } catch (Exception e) {
       throw new RuntimeException("Failed to download PDF for invoice " + invoiceId + ": " + e.getMessage(), e);
     }

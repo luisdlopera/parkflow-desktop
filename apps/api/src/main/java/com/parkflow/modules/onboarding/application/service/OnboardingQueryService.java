@@ -119,8 +119,8 @@ public class OnboardingQueryService implements OnboardingQueryUseCase {
     return filtered.stream()
         .sorted(Comparator
             .comparing((com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto q) -> !q.required())
-            .thenComparingInt(com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto::stepNumber))
-        .map(com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto::stepNumber)
+            .thenComparingInt(q -> q.stepNumber()))
+        .map(q -> q.stepNumber())
         .distinct()
         .toList();
   }

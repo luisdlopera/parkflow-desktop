@@ -63,13 +63,6 @@ public class PlanQueryService {
             "Plan no encontrado"));
   }
 
-  private String deserializeFeatures(String json) {
-    if (json == null || json.isBlank() || DEFAULT_FEATURES_JSON.equals(json)) {
-      return DEFAULT_FEATURES_JSON;
-    }
-    return json;
-  }
-
   PlanResponse toResponse(Plan plan) {
     return new PlanResponse(
         plan.getId(),

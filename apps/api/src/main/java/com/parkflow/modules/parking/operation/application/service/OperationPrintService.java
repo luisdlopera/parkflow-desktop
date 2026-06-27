@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Locale;
 
+@SuppressWarnings("deprecation")
 @Slf4j
 @Service
 @RequiredArgsConstructor

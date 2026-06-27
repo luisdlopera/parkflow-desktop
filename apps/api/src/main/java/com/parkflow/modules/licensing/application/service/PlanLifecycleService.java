@@ -126,7 +126,7 @@ public class PlanLifecycleService {
   private void ensureAtLeastOneActivePlanRemains(UUID excludingId) {
     long activeCount = planRepository.countByIsActiveTrueAndDeletedAtIsNull();
     boolean currentIsActive = planRepository.findById(excludingId)
-        .map(Plan::isActive)
+        .map(p -> p.isActive())
         .orElse(false);
     if (currentIsActive && activeCount <= 1) {
       throw new OperationException(HttpStatus.BAD_REQUEST, "LAST_ACTIVE_PLAN",

@@ -1,7 +1,8 @@
 package com.parkflow.modules.common.exception.domain;
 
-@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 public class EntityNotFoundException extends DomainException {
+    private static final long serialVersionUID = 1L;
+
     public EntityNotFoundException(String entity, String identifier) {
         super("NOT_FOUND", String.format("%s %s no encontrado", entity, identifier));
     }

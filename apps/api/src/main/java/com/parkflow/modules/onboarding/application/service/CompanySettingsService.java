@@ -20,7 +20,7 @@ public class CompanySettingsService {
   @Transactional(readOnly = true)
   public Map<String, Object> getSettingsOrDefault(Company company) {
     return companySettingsPort.findByCompanyId(company.getId())
-        .map(CompanySettings::getSettingsJson)
+        .map(cs -> cs.getSettingsJson())
         .orElseGet(this::defaultSettings);
   }
 

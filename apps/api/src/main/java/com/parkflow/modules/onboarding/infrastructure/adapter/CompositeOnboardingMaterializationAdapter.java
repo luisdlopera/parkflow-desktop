@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
  * Composite adapter implementing OnboardingMaterializationPort.
  * Delegates to respective service layers for vehicle types, lockers, and parking spaces.
  */
+@SuppressWarnings("deprecation")
 @Component
 @Primary
 @RequiredArgsConstructor

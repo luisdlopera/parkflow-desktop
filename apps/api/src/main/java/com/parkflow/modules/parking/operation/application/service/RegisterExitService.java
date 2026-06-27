@@ -240,8 +240,8 @@ public class RegisterExitService implements RegisterExitUseCase {
         }
       }
       BigDecimal sum = breakdown.stream()
-          .map(com.parkflow.modules.parking.operation.dto.PaymentBreakdownItem::amount)
-          .reduce(BigDecimal.ZERO, BigDecimal::add);
+          .map(item -> item.amount())
+          .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
       if (sum.compareTo(due) < 0) {
         throw new OperationException(HttpStatus.BAD_REQUEST,
             "El total del desglose de pago es menor al monto a cobrar");
@@ -255,7 +255,7 @@ public class RegisterExitService implements RegisterExitUseCase {
 
   private boolean isAllowExitWithoutPayment(ParkingSession session) {
     return resolveOperationalParameter(session)
-        .map(OperationalParameter::isAllowExitWithoutPayment)
+        .map(op -> op.isAllowExitWithoutPayment())
         .orElse(false);
   }
 
@@ -267,7 +267,7 @@ public class RegisterExitService implements RegisterExitUseCase {
   }
 
   private void assertExitPhotoIfRequired(ParkingSession session, String exitImageUrl) {
-    if (resolveOperationalParameter(session).map(OperationalParameter::isRequirePhotoExit).orElse(false)) {
+    if (resolveOperationalParameter(session).map(op -> op.isRequirePhotoExit()).orElse(false)) {
         if (isBlank(exitImageUrl)) {
             throw new OperationException(HttpStatus.BAD_REQUEST, "La sede exige foto en salida");
         }
@@ -314,7 +314,7 @@ public class RegisterExitService implements RegisterExitUseCase {
 
     List<UUID> returnedIds = request.returnedItemIds();
     if (returnedIds != null && !returnedIds.isEmpty()) {
-      Set<UUID> pendingIds = pending.stream().map(CustodiedItem::getId).collect(java.util.stream.Collectors.toSet());
+      Set<UUID> pendingIds = pending.stream().map(ci -> ci.getId()).collect(java.util.stream.Collectors.toSet());
       List<UUID> foreign = returnedIds.stream().filter(id -> !pendingIds.contains(id)).collect(java.util.stream.Collectors.toList());
       if (!foreign.isEmpty()) {
         throw new OperationException(HttpStatus.BAD_REQUEST,
@@ -459,6 +459,6 @@ public class RegisterExitService implements RegisterExitUseCase {
   private boolean isEmpty(List<?> l) { return l == null || l.isEmpty(); }
   private List<String> normalizeList(List<String> l) {
     if (l == null) return Collections.emptyList();
-    return l.stream().filter(s -> s != null && !s.isBlank()).map(String::trim).toList();
+    return l.stream().filter(s -> s != null && !s.isBlank()).map(s -> s.trim()).toList();
   }
 }

@@ -323,6 +323,6 @@ public class RegisterEntryService implements RegisterEntryUseCase {
   private boolean isEmpty(List<String> l) { return l == null || l.isEmpty(); }
   private List<String> normalizeList(List<String> l) {
     if (l == null) return Collections.emptyList();
-    return l.stream().filter(s -> s != null && !s.isBlank()).map(String::trim).toList();
+    return l.stream().filter(s -> s != null && !s.isBlank()).map(s -> s.trim()).toList();
   }
 }

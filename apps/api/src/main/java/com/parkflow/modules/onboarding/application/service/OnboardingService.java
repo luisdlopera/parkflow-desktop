@@ -14,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -43,6 +44,7 @@ public class OnboardingService implements OnboardingUseCase {
   private final com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository appUserRepository;
   private final OnboardingMaterializationService materializationService;
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional(readOnly = true)
   public OnboardingStatusResponse status(UUID companyId) {
     Company company = getCompany(companyId);
@@ -79,12 +81,13 @@ public class OnboardingService implements OnboardingUseCase {
     return filtered.stream()
         .sorted(java.util.Comparator
             .comparing((com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto q) -> !q.required())
-            .thenComparingInt(com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto::stepNumber))
-        .map(com.parkflow.modules.onboarding.dto.OnboardingQuestionConfigDto::stepNumber)
+            .thenComparingInt(q -> q.stepNumber()))
+        .map(q -> q.stepNumber())
         .distinct()
         .toList();
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional
   public OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data, Integer targetStep) {
     Company company = getCompany(companyId);
@@ -104,6 +107,7 @@ public class OnboardingService implements OnboardingUseCase {
     return status(companyId);
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional
   public OnboardingStatusResponse skipAndApplyDefaults(UUID companyId) {
     Company company = getCompany(companyId);
@@ -148,6 +152,7 @@ public class OnboardingService implements OnboardingUseCase {
     return status(companyId);
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional
   public OnboardingStatusResponse completeOnboarding(UUID companyId) {
     Company company = getCompany(companyId);
@@ -190,6 +195,7 @@ public class OnboardingService implements OnboardingUseCase {
     return status(companyId);
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Override
   @Transactional(readOnly = true)
   public boolean isFeatureEnabled(UUID companyId, String featureKey) {
@@ -198,6 +204,7 @@ public class OnboardingService implements OnboardingUseCase {
     return featureAccessService.isFeatureEnabled(settings, featureKey);
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Override
   @Transactional(readOnly = true)
   public Map<String, Object> getCompanySettings(UUID companyId) {
@@ -215,6 +222,7 @@ public class OnboardingService implements OnboardingUseCase {
     return mutable;
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Override
   @Transactional(readOnly = true)
   public CompanyCapabilitiesResponse getCapabilities(UUID companyId) {
@@ -222,9 +230,15 @@ public class OnboardingService implements OnboardingUseCase {
     Map<String, Object> plan = featureAccessService.getAvailableOptionsByPlan(company.getPlan());
     Map<String, Object> settings = companySettingsService.getSettingsOrDefault(company);
     List<String> rawVehicleTypes = settingsMapper.asStringList(settings.get("vehicleTypes"), List.of("MOTO", "CARRO"));
-    List<String> vehicleTypes = rawVehicleTypes.stream().map(settingsMapper::mapVehicleTypeCode).toList();
+    List<String> vehicleTypes = rawVehicleTypes.stream()
+        .map(settingsMapper::mapVehicleTypeCode)
+        .filter(Objects::nonNull)
+        .toList();
     List<String> rawPaymentMethods = settingsMapper.asStringList(settings.get("paymentMethods"), List.of("EFECTIVO"));
-    List<String> paymentMethods = rawPaymentMethods.stream().map(settingsMapper::mapPaymentMethodCode).toList();
+    List<String> paymentMethods = rawPaymentMethods.stream()
+        .map(settingsMapper::mapPaymentMethodCode)
+        .filter(Objects::nonNull)
+        .toList();
     int siteCount = settingsMapper.extractSitesCount(settings.get("sites"));
     boolean cashEnabled = settingsMapper.moduleEnabled(settings, "cash", true);
     boolean shiftsEnabled = settingsMapper.moduleEnabled(settings, "shifts", false);
@@ -239,6 +253,7 @@ public class OnboardingService implements OnboardingUseCase {
         vehicleTypes, paymentMethods);
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Override
   @Transactional
   public OnboardingStatusResponse resetOnboarding(UUID companyId, String reason) {
@@ -365,7 +380,11 @@ public class OnboardingService implements OnboardingUseCase {
     Map<String, Object> byType = new LinkedHashMap<>();
     Object rawByType = data.get("capacityByType");
     if (rawByType instanceof Map<?, ?> map) {
-      map.forEach((k, v) -> byType.put(String.valueOf(k), v));
+      map.forEach((k, v) -> {
+        if (v != null) {
+          byType.put(String.valueOf(k), v);
+        }
+      });
     }
     int sumByType = byType.values().stream()
         .mapToInt(v -> settingsMapper.extractNumber(v, 0))

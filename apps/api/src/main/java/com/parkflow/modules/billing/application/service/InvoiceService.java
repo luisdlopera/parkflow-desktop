@@ -39,7 +39,6 @@ import java.util.UUID;
  * All provider interactions are delegated via InvoiceProviderPort through InvoiceProviderResolver.
  */
 @Deprecated(since = "2.1.0", forRemoval = false)
-@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -51,6 +50,7 @@ public class InvoiceService {
   private final CentralizedAuditService auditService;
   private final EncryptionService encryptionService;
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional
   public InvoiceResponse createManualInvoice(UUID companyId, CreateInvoiceRequest request) {
     InvoiceProviderConfig config = providerResolver.resolveConfigFor(companyId);
@@ -68,6 +68,7 @@ public class InvoiceService {
     return toResponse(invoicePort.save(invoice));
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Async(value = "billingExecutor")
   @Transactional
   public void requestInvoiceFromPayment(UUID companyId, UUID sessionId, BigDecimal amount, UUID clientId) {
@@ -108,11 +109,13 @@ public class InvoiceService {
     }
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional(readOnly = true)
   public Page<InvoiceResponse> listInvoices(UUID companyId, InvoiceStatus status, String clientName, Pageable pageable) {
     return invoicePort.search(companyId, status, clientName, pageable).map(this::toResponse);
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional(readOnly = true)
   public InvoiceResponse getInvoice(UUID id, UUID companyId) {
     Invoice invoice = invoicePort.findByIdAndCompanyId(id, companyId)
@@ -120,6 +123,7 @@ public class InvoiceService {
     return toResponse(invoice);
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional
   public InvoiceResponse cancelInvoice(UUID id, UUID companyId, String reason) {
     Invoice invoice = invoicePort.findByIdAndCompanyId(id, companyId)
@@ -149,6 +153,7 @@ public class InvoiceService {
     return toResponse(invoicePort.save(invoice));
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional(readOnly = true)
   public InvoiceDashboardResponse getDashboard(UUID companyId) {
     long issued = invoicePort.countByCompanyIdAndStatus(companyId, InvoiceStatus.SENT)

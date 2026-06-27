@@ -37,6 +37,7 @@ public class PlanService {
   private final PlanRepository planRepository;
   private final ObjectMapper objectMapper;
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Cacheable(value = PLANS_LIST, key = "#includeDeleted + ':' + #active")
   @Transactional(readOnly = true)
   public List<PlanResponse> listPlans(boolean includeDeleted, Boolean active) {
@@ -57,11 +58,13 @@ public class PlanService {
     return plans.stream().map(this::toResponse).toList();
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional(readOnly = true)
   public PlanResponse getPlan(UUID id) {
     return toResponse(findById(id));
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @CacheEvict(value = PLANS_LIST, allEntries = true)
   @Transactional
   public PlanResponse createPlan(PlanRequest request) {
@@ -84,6 +87,7 @@ public class PlanService {
     return toResponse(plan);
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @CacheEvict(value = PLANS_LIST, allEntries = true)
   @Transactional
   public PlanResponse updatePlan(UUID id, PlanRequest request) {
@@ -100,6 +104,7 @@ public class PlanService {
     return toResponse(plan);
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @CacheEvict(value = PLANS_LIST, allEntries = true)
   @Transactional
   public void deletePlan(UUID id) {
@@ -113,6 +118,7 @@ public class PlanService {
     planRepository.save(plan);
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @CacheEvict(value = PLANS_LIST, allEntries = true)
   @Transactional
   public PlanResponse togglePlan(UUID id) {
@@ -127,6 +133,7 @@ public class PlanService {
     return toResponse(plan);
   }
 
+  @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional
   public PlanResponse duplicatePlan(UUID id) {
     Plan source = findById(id);
@@ -156,7 +163,7 @@ public class PlanService {
   private void ensureAtLeastOneActivePlanRemains(UUID excludingId) {
     long activeCount = planRepository.countByIsActiveTrueAndDeletedAtIsNull();
     boolean currentIsActive = planRepository.findById(excludingId)
-        .map(Plan::isActive)
+        .map(p -> p.isActive())
         .orElse(false);
     if (currentIsActive && activeCount <= 1) {
       throw new OperationException(HttpStatus.BAD_REQUEST, "LAST_ACTIVE_PLAN",

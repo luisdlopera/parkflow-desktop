@@ -44,16 +44,16 @@ public class FeatureAccessService {
   public Map<ModuleType, Boolean> getEnabledModulesForCompany(UUID companyId) {
     List<CompanyModule> modules = companyModulePort.findByCompanyIdAndEnabled(companyId, true);
     return modules.stream()
-        .filter(CompanyModule::isActive)
+        .filter(m -> m.isActive())
         .collect(java.util.stream.Collectors.toMap(
-            CompanyModule::getModuleType,
+            m -> m.getModuleType(),
             m -> true,
             (a, b) -> a));
   }
 
   public boolean isModuleEnabled(UUID companyId, ModuleType moduleType) {
     return companyModulePort.findByCompanyIdAndModuleType(companyId, moduleType)
-        .map(CompanyModule::isActive)
+        .map(m -> m.isActive())
         .orElse(false);
   }
 

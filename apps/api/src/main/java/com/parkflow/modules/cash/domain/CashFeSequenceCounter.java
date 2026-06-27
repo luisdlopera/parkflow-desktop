@@ -10,7 +10,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,6 +17,7 @@ import lombok.Setter;
 @Table(name = "cash_fe_sequence")
 @IdClass(CashFeSequencePk.class)
 public class CashFeSequenceCounter implements Serializable {
+  private static final long serialVersionUID = 1L;
 
   @Id
   @Column(name = "site_code", nullable = false, length = 80)

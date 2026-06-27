@@ -33,25 +33,25 @@ public class CashPolicyResolver {
 
   public boolean requireOpenForPayment(String siteLabel) {
     Optional<Boolean> b =
-        resolveData(siteLabel).map(ParkingParametersData::getCashRequireOpenForPayment);
+        resolveData(siteLabel).map(d -> d.getCashRequireOpenForPayment());
     return b.orElse(props.isRequireOpenForPayment());
   }
 
   public boolean offlineCloseAllowed(String siteLabel) {
     Optional<Boolean> b =
-        resolveData(siteLabel).map(ParkingParametersData::getCashOfflineCloseAllowed);
+        resolveData(siteLabel).map(d -> d.getCashOfflineCloseAllowed());
     return b.orElse(props.isOfflineCloseAllowed());
   }
 
   public BigDecimal offlineMaxManualMovement(String siteLabel) {
     return resolveData(siteLabel)
-        .map(ParkingParametersData::getCashOfflineMaxManualMovement)
+        .map(d -> d.getCashOfflineMaxManualMovement())
         .orElse(props.getOfflineMaxManualMovement());
   }
 
   public BigDecimal maxManualAdjustment(String siteLabel) {
     return resolveData(siteLabel)
-        .map(ParkingParametersData::getCashMaxManualAdjustment)
+        .map(d -> d.getCashMaxManualAdjustment())
         .orElse(new BigDecimal("500000.00"));
   }
 
@@ -61,25 +61,25 @@ public class CashPolicyResolver {
 
   public boolean allowMultipleOpenSessions(String siteLabel) {
     return resolveData(siteLabel)
-        .map(ParkingParametersData::getCashAllowMultipleOpenSessions)
+        .map(d -> d.getCashAllowMultipleOpenSessions())
         .orElse(props.isAllowMultipleOpenSessions());
   }
 
   public boolean allowMultipleSessionsPerUser(String siteLabel) {
     return resolveData(siteLabel)
-        .map(ParkingParametersData::getCashAllowMultipleSessionsPerUser)
+        .map(d -> d.getCashAllowMultipleSessionsPerUser())
         .orElse(props.isAllowMultipleSessionsPerUser());
   }
 
   public BigDecimal maxDiscrepancyTolerance(String siteLabel) {
     return resolveData(siteLabel)
-        .map(ParkingParametersData::getCashMaxDiscrepancyTolerance)
+        .map(d -> d.getCashMaxDiscrepancyTolerance())
         .orElse(props.getMaxDiscrepancyTolerance());
   }
 
   public boolean allowManualMovements(String siteLabel) {
     return resolveData(siteLabel)
-        .map(ParkingParametersData::getCashAllowManualMovements)
+        .map(d -> d.getCashAllowManualMovements())
         .orElse(props.isAllowManualMovements());
   }
 
@@ -87,7 +87,7 @@ public class CashPolicyResolver {
     if (!StringUtils.hasText(siteLabel)) {
       return parkingParametersPort
           .findBySiteCode("DEFAULT")
-          .map(ParkingParameters::getData);
+          .map(p -> p.getData());
     }
     String code = siteLabel.trim();
     Optional<ParkingParameters> row = parkingParametersPort.findBySiteCode(code);
@@ -96,6 +96,6 @@ public class CashPolicyResolver {
     }
     return parkingParametersPort
         .findBySiteCode("DEFAULT")
-        .map(ParkingParameters::getData);
+        .map(p -> p.getData());
   }
 }

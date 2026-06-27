@@ -31,7 +31,7 @@ public class AuditEventListener {
     public void handleAuditDomainEvent(AuditDomainEvent event) {
         // Find previous hash for integrity chain
         Optional<AuditEvent> previousEvent = repository.findFirstByOrderByTimestampUtcDesc();
-        String previousHash = previousEvent.map(AuditEvent::getIntegrityHash).orElse(null);
+        String previousHash = previousEvent.map(e -> e.getIntegrityHash()).orElse(null);
 
         // Build entity
         AuditEvent auditEntity = AuditEvent.builder()

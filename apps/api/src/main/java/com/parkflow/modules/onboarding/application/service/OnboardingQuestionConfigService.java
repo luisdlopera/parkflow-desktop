@@ -47,9 +47,9 @@ public class OnboardingQuestionConfigService {
   public List<OnboardingQuestionConfigDto> findAllEnabled() {
     List<OnboardingQuestionConfig> entities = repository.findAllEnabled();
     if (entities.isEmpty()) {
-      return DEFAULT_QUESTIONS.stream().filter(OnboardingQuestionConfigDto::enabled).toList();
+      return DEFAULT_QUESTIONS.stream().filter(dto -> dto.enabled()).toList();
     }
-    return entities.stream().filter(OnboardingQuestionConfig::isEnabled).map(mapper::toDto).toList();
+    return entities.stream().filter(e -> e.isEnabled()).map(mapper::toDto).toList();
   }
 
   @Transactional

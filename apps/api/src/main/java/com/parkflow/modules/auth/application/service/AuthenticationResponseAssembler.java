@@ -18,7 +18,7 @@ public class AuthenticationResponseAssembler {
 
   public AuthUserResponse toUser(AppUser user, boolean onboardingCompleted) {
     List<String> permissions =
-        RolePermissions.permissionsFor(user.getRole()).stream().map(AuthPermission::authority).toList();
+        RolePermissions.permissionsFor(user.getRole()).stream().map(p -> p.authority()).toList();
     return new AuthUserResponse(
         user.getId(),
         user.getCompanyId(),

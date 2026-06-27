@@ -80,7 +80,7 @@ public final class RolePermissions {
   }
 
   public static Map<String, Object> claims(UserRole role) {
-    var permissions = permissionsFor(role).stream().map(AuthPermission::authority).toList();
+    var permissions = permissionsFor(role).stream().map(p -> p.authority()).toList();
     return Map.of("role", role.name(), "permissions", permissions);
   }
 }

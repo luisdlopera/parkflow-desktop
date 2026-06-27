@@ -47,7 +47,7 @@ public class FractionalPricingStrategy implements PricingStrategy {
     }
 
     List<RateFraction> active = fractions.stream()
-        .filter(RateFraction::isActive)
+        .filter(rf -> rf.isActive())
         .sorted(Comparator.comparingInt(RateFraction::getFromMinute))
         .toList();
 

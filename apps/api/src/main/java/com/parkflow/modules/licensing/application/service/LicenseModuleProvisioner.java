@@ -23,7 +23,7 @@ public class LicenseModuleProvisioner {
 
   public List<String> enabledModuleNames(UUID companyId) {
     return moduleRepository.findByCompanyIdAndEnabled(companyId, true).stream()
-        .filter(CompanyModule::isActive)
+        .filter(m -> m.isActive())
         .map(module -> module.getModuleType().name())
         .toList();
   }

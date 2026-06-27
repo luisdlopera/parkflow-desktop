@@ -86,7 +86,7 @@ public class LicenseAuditDiagnosticsService implements AuditQueryUseCase {
 
     if (company.getStatus() == CompanyStatus.PAST_DUE || company.getStatus() == CompanyStatus.EXPIRED) {
       boolean hasPaymentAfterBlock = recentBlocks.stream()
-          .anyMatch(LicenseBlockEvent::getPaymentReceivedAfterBlock);
+          .anyMatch(e -> e.getPaymentReceivedAfterBlock());
       if (hasPaymentAfterBlock) {
         warnings.add("Se detectó pago después de bloqueo pero empresa sigue bloqueada");
         recommendations.add("Verificar que el pago fue aplicado correctamente y desbloquear empresa");

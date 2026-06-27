@@ -3,9 +3,9 @@ package com.parkflow.modules.cash.domain.exception;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
-@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 @Getter
 public class CashSessionException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
     private final HttpStatus status;
 
     public CashSessionException(HttpStatus status, String message) {

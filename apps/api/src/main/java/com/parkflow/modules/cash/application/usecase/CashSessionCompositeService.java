@@ -42,41 +42,49 @@ public class CashSessionCompositeService implements CashSessionUseCase {
     private final CashSessionQueryUseCase queryUseCase;
     private final CashSessionAuditUseCase auditUseCase;
 
+    @Deprecated(since = "2.0.0", forRemoval = true)
     @Override
     public CashSessionResponse open(OpenCashRequest request) {
         return managementUseCase.open(request);
     }
 
+    @Deprecated(since = "2.0.0", forRemoval = true)
     @Override
     public CashSessionResponse close(UUID sessionId, CashCloseRequest request) {
         return managementUseCase.close(sessionId, request);
     }
 
+    @Deprecated(since = "2.0.0", forRemoval = true)
     @Override
     public CashSessionResponse submitCount(UUID sessionId, CashCountRequest request) {
         return managementUseCase.submitCount(sessionId, request);
     }
 
+    @Deprecated(since = "2.0.0", forRemoval = true)
     @Override
     public CashSessionResponse getSession(UUID sessionId) {
         return queryUseCase.getSession(sessionId);
     }
 
+    @Deprecated(since = "2.0.0", forRemoval = true)
     @Override
     public CashSessionResponse getCurrent(String site, String terminal) {
         return queryUseCase.getCurrent(site, terminal);
     }
 
+    @Deprecated(since = "2.0.0", forRemoval = true)
     @Override
     public Page<CashSessionResponse> listSessions(Pageable pageable) {
         return queryUseCase.listSessions(pageable);
     }
 
+    @Deprecated(since = "2.0.0", forRemoval = true)
     @Override
     public CashSummaryResponse getSummary(UUID sessionId) {
         return auditUseCase.getSummary(sessionId);
     }
 
+    @Deprecated(since = "2.0.0", forRemoval = true)
     @Override
     public List<CashAuditEntryResponse> getAuditTrail(UUID sessionId) {
         return auditUseCase.getAuditTrail(sessionId);

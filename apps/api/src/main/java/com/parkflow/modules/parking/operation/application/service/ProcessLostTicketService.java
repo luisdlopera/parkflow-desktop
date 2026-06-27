@@ -176,11 +176,11 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
 
   private boolean isAllowExitWithoutPayment(ParkingSession session) {
     return resolveOperationalParameter(session)
-        .map(OperationalParameter::isAllowExitWithoutPayment).orElse(false);
+        .map(op -> op.isAllowExitWithoutPayment()).orElse(false);
   }
 
   private void assertExitPhotoIfRequired(ParkingSession session, String exitImageUrl) {
-    if (resolveOperationalParameter(session).map(OperationalParameter::isRequirePhotoExit).orElse(false)) {
+    if (resolveOperationalParameter(session).map(op -> op.isRequirePhotoExit()).orElse(false)) {
       if (blankToNull(exitImageUrl) == null) {
         throw new OperationException(HttpStatus.BAD_REQUEST, "La sede exige foto en salida");
       }
@@ -188,12 +188,8 @@ public class ProcessLostTicketService implements ProcessLostTicketUseCase {
   }
 
   private Optional<OperationalParameter> resolveOperationalParameter(ParkingSession session) {
-    String siteKey = null;  // Site removed
-    if (siteKey == null || siteKey.isBlank()) return Optional.empty();
-    UUID companyId = SecurityUtils.requireCompanyId();
-    return parkingSiteRepository.findByCodeAndCompanyId(siteKey.trim(), companyId)
-        .or(() -> parkingSiteRepository.findByNameIgnoreCase(siteKey.trim(), session.getCompanyId()))
-        .flatMap(site -> operationalParameterRepository.findBySite_Id(site.getId()));
+    // Site parameter removed — always returns empty
+    return Optional.empty();
   }
 
   private Optional<OperationResultResponse> tryReplay(String idempotencyKey, IdempotentOperationType expected) {

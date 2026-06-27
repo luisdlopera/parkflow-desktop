@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
  * Adapter that implements OnboardingMaterializationPort for parking space operations.
  * Delegates to ParkingSpaceService for space capacity resizing during onboarding.
  */
+@SuppressWarnings("deprecation")
 @Component
 @RequiredArgsConstructor
 public class OnboardingMaterializationSpaceAdapter implements OnboardingMaterializationPort {

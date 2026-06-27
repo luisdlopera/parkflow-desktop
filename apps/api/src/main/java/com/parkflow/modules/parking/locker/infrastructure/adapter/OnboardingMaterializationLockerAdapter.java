@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
  * Adapter that implements OnboardingMaterializationPort for locker operations.
  * Delegates to LockerService for batch locker creation during onboarding.
  */
+@SuppressWarnings("deprecation")
 @Component
 @RequiredArgsConstructor
 public class OnboardingMaterializationLockerAdapter implements OnboardingMaterializationPort {

@@ -380,7 +380,7 @@ public class OnboardingSettingsMapper {
 
   public List<String> asStringList(Object raw, List<String> fallback) {
     if (!(raw instanceof List<?> list)) return fallback;
-    List<String> out = list.stream().map(String::valueOf).map(String::trim).filter(s -> !s.isBlank()).toList();
+    List<String> out = list.stream().map(String::valueOf).map(s -> s.trim()).filter(s -> !s.isBlank()).toList();
     return out.isEmpty() ? fallback : out;
   }
 

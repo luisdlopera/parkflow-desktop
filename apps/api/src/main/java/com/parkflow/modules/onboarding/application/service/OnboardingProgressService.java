@@ -13,6 +13,7 @@ import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Handles onboarding progress operations: save steps, complete, skip, reset.
  * Max 4 methods as per hexagonal architecture.
  */
+@SuppressWarnings("deprecation")
 @Service
 @RequiredArgsConstructor
 public class OnboardingProgressService implements OnboardingProgressUseCase {
@@ -271,7 +273,11 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     Map<String, Object> byType = new LinkedHashMap<>();
     Object rawByType = data.get("capacityByType");
     if (rawByType instanceof Map<?, ?> map) {
-      map.forEach((k, v) -> byType.put(String.valueOf(k), v));
+      map.forEach((k, v) -> {
+        if (v != null) {
+          byType.put(String.valueOf(k), v);
+        }
+      });
     }
     int sumByType = byType.values().stream()
         .mapToInt(v -> settingsMapper.extractNumber(v, 0))

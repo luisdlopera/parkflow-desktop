@@ -21,6 +21,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 
+@SuppressWarnings("deprecation")
 @Service
 @RequiredArgsConstructor
 public class FindActiveSessionService implements FindActiveSessionUseCase {

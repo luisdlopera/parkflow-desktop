@@ -2,8 +2,8 @@ package com.parkflow.modules.common.exception;
 
 import org.springframework.http.HttpStatus;
 
-@SuppressWarnings({"serial", "rawtypes", "deprecation", "unchecked", "removal"})
 public class OperationException extends RuntimeException {
+  private static final long serialVersionUID = 1L;
   private final HttpStatus status;
   private final String code;
 

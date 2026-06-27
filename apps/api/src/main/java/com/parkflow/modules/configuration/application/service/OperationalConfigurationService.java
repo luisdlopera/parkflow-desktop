@@ -31,7 +31,7 @@ public class OperationalConfigurationService implements OperationalValidationUse
     public OperationalConfigurationService(CompanyPort companyPort, List<OperationalProfilePolicy> policies) {
         this.companyPort = companyPort;
         this.policyMap = policies.stream()
-                .collect(Collectors.toMap(OperationalProfilePolicy::getProfile, Function.identity()));
+                .collect(Collectors.toMap(pol -> pol.getProfile(), Function.identity()));
         log.info("[OperationalConfigurationService] Initialized with {} operational profile policies: {}",
                 policyMap.size(), policyMap.keySet());
     }

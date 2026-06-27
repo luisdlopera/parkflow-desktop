@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class ApiKeyManager {
   private static final int KEY_LENGTH = 32; // 256 bits
-  private static final int HASH_LENGTH = 64; // SHA-256 output
   private final ApiKeyRepository apiKeyRepository;
 
   public ApiKeyManager(ApiKeyRepository apiKeyRepository) {

@@ -121,13 +121,13 @@ public class MassExitService implements MassExitPreviewUseCase, MassExitProcessU
     BigDecimal totalCharged = results.stream()
         .filter(r -> r.status() == MassExitItemStatus.SUCCESS)
         .map(r -> r.amountCharged() != null ? r.amountCharged() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+        .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
     BigDecimal totalExempted = results.stream()
         .filter(r -> r.status() == MassExitItemStatus.SUCCESS
             && request.chargeMode() == MassExitFilterRequest.ChargeMode.FREE)
         .map(r -> r.amountCharged() != null ? r.amountCharged() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+        .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
     long durationMs = System.currentTimeMillis() - startMs;
 

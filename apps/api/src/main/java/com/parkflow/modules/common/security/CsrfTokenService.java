@@ -64,6 +64,6 @@ public class CsrfTokenService {
    * Clean up expired tokens (should be called periodically)
    */
   public void cleanupExpiredTokens() {
-    tokenStore.values().removeIf(CsrfToken::isExpired);
+    tokenStore.values().removeIf(t -> t.isExpired());
   }
 }
