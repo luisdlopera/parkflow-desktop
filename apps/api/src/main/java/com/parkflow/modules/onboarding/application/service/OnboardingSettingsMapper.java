@@ -320,7 +320,7 @@ public class OnboardingSettingsMapper {
     return result;
   }
 
-  private String mapVehicleTypeCode(String raw) {
+  public String mapVehicleTypeCode(String raw) {
     if (raw == null) return "OTHER";
     return switch (raw.toUpperCase()) {
       case "MOTO", "MOTORCYCLE", "MOTORBIKE" -> "MOTORCYCLE";
@@ -335,7 +335,7 @@ public class OnboardingSettingsMapper {
     };
   }
 
-  private String mapPaymentMethodCode(String raw) {
+  public String mapPaymentMethodCode(String raw) {
     if (raw == null) return "CASH";
     return switch (raw.toUpperCase()) {
       case "EFECTIVO", "CASH" -> "CASH";
@@ -351,12 +351,12 @@ public class OnboardingSettingsMapper {
     };
   }
 
-  private int extractSitesCount(Object rawSites) {
+  public int extractSitesCount(Object rawSites) {
     if (!(rawSites instanceof List<?> sites)) return 1;
     return Math.max(1, sites.size());
   }
 
-  private boolean moduleEnabled(Map<String, Object> settings, String key, boolean fallback) {
+  public boolean moduleEnabled(Map<String, Object> settings, String key, boolean fallback) {
     Object raw = settings.get("modules");
     if (raw instanceof Map<?, ?> map) {
       Object value = map.get(key);
@@ -384,7 +384,7 @@ public class OnboardingSettingsMapper {
     return OperationalProfile.MIXED;
   }
 
-  private int extractNumber(Object raw, int fallback) {
+  public int extractNumber(Object raw, int fallback) {
     if (raw instanceof Number n) return n.intValue();
     if (raw instanceof String s) {
       try {

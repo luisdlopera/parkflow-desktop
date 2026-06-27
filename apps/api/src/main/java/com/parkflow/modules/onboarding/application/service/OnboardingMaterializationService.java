@@ -21,115 +21,50 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * @deprecated Use {@link OnboardingMaterializationService} and {@link OnboardingRateInitializationService} instead.
- *             This facade is maintained for backward compatibility.
+ * Materialization facade: composes specialized materializers for different entity types.
+ * To be removed in 2.2.0: call materializer services directly instead of using this facade.
+ *
+ * @deprecated Use {@link VehicleTypeMaterializer}, {@link PaymentMethodMaterializer},
+ *             {@link RateMaterializer}, {@link CapacityMaterializer} directly.
  */
-@Deprecated(since = "2.1", forRemoval = false)
+@Deprecated(since = "2.1", forRemoval = true)
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class OnboardingMaterializationService {
 
-  private final OnboardingMaterializationPort materializationPort;
-  private final PaymentMethodPort paymentMethodPort;
-  private final RateRepository rateRepository;
-  private final OnboardingSettingsMapper settingsMapper;
+  private final VehicleTypeMaterializer vehicleTypeMaterializer;
+  private final PaymentMethodMaterializer paymentMethodMaterializer;
+  private final RateMaterializer rateMaterializer;
+  private final CapacityMaterializer capacityMaterializer;
 
   @Transactional
   public void materializeVehicleTypes(UUID companyId, List<String> codes) {
-    materializationPort.addVehicleTypesToCompany(companyId, codes);
+    vehicleTypeMaterializer.materialize(companyId, codes);
   }
 
   @Transactional
   public void materializePaymentMethods(UUID companyId, List<String> codes) {
-    for (String code : codes) {
-      if (paymentMethodPort.existsByCodeAndCompany(code, companyId)) continue;
-      PaymentMethod global = paymentMethodPort.findByCode(code).orElse(null);
-      PaymentMethod pm = new PaymentMethod();
-      pm.setCompanyId(companyId);
-      pm.setCode(code);
-      pm.setName(global != null ? global.getName() : code);
-      pm.setRequiresReference(global != null && global.isRequiresReference());
-      pm.setActive(true);
-      pm.setDisplayOrder(global != null ? global.getDisplayOrder() : 99);
-      paymentMethodPort.save(pm);
-    }
+    paymentMethodMaterializer.materialize(companyId, codes);
   }
 
   @Transactional
   public void createRatesFromOnboarding(Company company, Map<String, Object> progressData) {
-    Map<String, Object> step1 = settingsMapper.stepMap(progressData, 1);
-    Map<String, Object> step3 = settingsMapper.stepMap(progressData, 3);
-
-    List<String> vehicleTypes = settingsMapper.asStringList(step1.get("vehicleTypes"), List.of("MOTORCYCLE", "CAR"));
-    int baseValue = settingsMapper.extractNumber(step3.get("baseValue"), 2000);
-    int graceMinutes = settingsMapper.extractNumber(step3.get("graceMinutes"), 5);
-
-    Map<String, Object> ratesByType = new LinkedHashMap<>();
-    Object rawByType = step3.get("ratesByType");
-    if (rawByType instanceof Map<?, ?> map) {
-      map.forEach((k, v) -> ratesByType.put(String.valueOf(k), v));
-    }
-
-    deactivateExistingRates(company);
-    for (String vehicleType : vehicleTypes) {
-      int amount = settingsMapper.extractNumber(ratesByType.get(vehicleType), baseValue);
-      rateRepository.save(buildRate(company.getId(), vehicleType, amount, graceMinutes));
-    }
+    rateMaterializer.materializeFromOnboarding(company, progressData);
   }
 
   @Transactional
   public void createDefaultRates(Company company) {
-    deactivateExistingRates(company);
-    for (String vehicleType : List.of("MOTORCYCLE", "CAR")) {
-      int amount = "MOTORCYCLE".equals(vehicleType) ? 1000 : 2000;
-      rateRepository.save(buildRate(company.getId(), vehicleType, amount, 5));
-    }
+    rateMaterializer.materializeDefaults(company);
   }
 
+  @Transactional
   public void createLockersIfConfigured(UUID companyId, Map<String, Object> step1) {
-    if (step1 == null) return;
-    String handling = String.valueOf(step1.getOrDefault("helmetHandling", ""));
-    if (!"LOCKERS".equals(handling)) return;
-    int count = settingsMapper.extractNumber(step1.get("helmetTokenCount"), 0);
-    if (count <= 0 || count > 9999) return;
-    materializationPort.createLockersForCompany(companyId, new BatchLockerRequest("L-", 1, count));
+    capacityMaterializer.createLockersIfConfigured(companyId, step1);
   }
 
+  @Transactional
   public void resizeCapacity(UUID companyId, int totalCapacity) {
-    if (totalCapacity > 0) {
-      materializationPort.resizeCapacityForCompany(companyId, totalCapacity);
-    }
-  }
-
-  private void deactivateExistingRates(Company company) {
-    List<Rate> existing = rateRepository.findByCompanyId(company.getId());
-    for (Rate r : existing) {
-      r.setActive(false);
-      r.setUpdatedAt(OffsetDateTime.now());
-      rateRepository.save(r);
-    }
-  }
-
-  private Rate buildRate(UUID companyId, String vehicleType, int amount, int graceMinutes) {
-    Rate rate = new Rate();
-    rate.setCompanyId(companyId);
-    rate.setName("Tarifa " + vehicleType);
-    rate.setVehicleType(vehicleType);
-    rate.setRateType(RateType.HOURLY);
-    rate.setAmount(BigDecimal.valueOf(amount));
-    rate.setGraceMinutes(graceMinutes);
-    rate.setFractionMinutes(60);
-    // Site field removed - use siteRef instead
-    rate.setBaseValue(BigDecimal.ZERO);
-    rate.setBaseMinutes(0);
-    rate.setAdditionalValue(BigDecimal.ZERO);
-    rate.setAdditionalMinutes(0);
-    rate.setRoundingMode(RoundingMode.NEAREST);
-    rate.setLostTicketSurcharge(BigDecimal.ZERO);
-    rate.setActive(true);
-    rate.setCreatedAt(OffsetDateTime.now());
-    rate.setUpdatedAt(OffsetDateTime.now());
-    return rate;
+    capacityMaterializer.resizeCapacity(companyId, totalCapacity);
   }
 }
