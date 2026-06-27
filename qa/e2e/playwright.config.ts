@@ -1,21 +1,9 @@
-import { defineConfig, devices } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test';
+import { playwrightBase } from '@parkflow/config/playwright';
 
 export default defineConfig({
+  ...playwrightBase,
   testDir: './tests',
-  use: {
-    baseURL: 'http://localhost:6001',
-  },
-  webServer: {
-    command: 'pnpm --filter @parkflow/web dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: true,
-  },
-  retries: process.env.CI ? 2 : 0,
-  trace: 'on-first-retry',
-  reporter: [
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['list'],
-  ],
   projects: [
     {
       name: 'chromium',
@@ -34,4 +22,9 @@ export default defineConfig({
       use: { ...devices['iPhone 12'] },
     },
   ],
-})
+  webServer: {
+    command: 'pnpm --filter @parkflow/web dev',
+    url: 'http://localhost:6001',
+    reuseExistingServer: true,
+  },
+});

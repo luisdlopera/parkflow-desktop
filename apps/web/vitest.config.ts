@@ -1,34 +1,27 @@
-import { defineConfig } from 'vitest/config'
-import path from 'path'
+import { defineConfig, mergeConfig } from 'vitest/config';
+import baseConfig from '@parkflow/config/vitest';
+import path from 'path';
 
-export default defineConfig({
-  server: {
-    fs: {
-      allow: [path.resolve(__dirname, '../..')],
-    },
-  },
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./setupTests.ts'],
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['.next/**', 'node_modules/**', 'test-results/**'],
-    pool: 'threads',
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'lcov', 'html'],
-      reportsDirectory: './coverage',
-      thresholds: {
-        statements: 60,
-        branches: 50,
-        functions: 55,
-        lines: 65,
+export default mergeConfig(
+  baseConfig,
+  defineConfig({
+    server: {
+      fs: {
+        allow: [path.resolve(__dirname, '../..')],
       },
     },
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+    test: {
+      setupFiles: ['./setupTests.ts'],
+      include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      exclude: ['.next/**', 'node_modules/**', 'test-results/**'],
+      coverage: {
+        reportsDirectory: './coverage',
+      },
     },
-  },
-})
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
+  }),
+);

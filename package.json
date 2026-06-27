@@ -59,6 +59,7 @@
     "security:deps:fix": "pnpm audit --fix",
     "security:report": "node security/scripts/generate-report.mjs"
   },
+  "prettier": "@parkflow/config/prettier",
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
     "@playwright/test": "^1.59.1",
