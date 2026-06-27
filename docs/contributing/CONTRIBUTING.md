@@ -70,11 +70,25 @@ pnpm dev:web    # Terminal 2 - Frontend on :6001
 ### Backend (Java/Spring Boot)
 
 - **Architecture**: Hexagonal (`domain/` → `application/service/` → `infrastructure/controller/`)
+  - **See:** [HEXAGONAL_STRUCTURE.md](../architecture/HEXAGONAL_STRUCTURE.md) (complete guide)
+  - **Ports guide:** [HEXAGONAL_PORTS.md](../architecture/HEXAGONAL_PORTS.md) (input/output ports)
+  - **Antipatterns:** [ANTIPATTERNS.md](../architecture/ANTIPATTERNS.md) (what NOT to do)
+- **Modules**: 17 modules, all 100% compliant
+  - **See:** [backend-modules.md](../architecture/backend-modules.md) (directory structure, descriptions)
+  - **Detailed:** [api-modules.md](../architecture/api-modules.md) (ports table, dependencies)
 - **Package structure**: Each feature module in `com.parkflow.modules.<module>`
+  - Example: `/modules/configuration/`, `/modules/parking/operation/`
 - **DI**: Constructor injection only — no field injection
+  - See [ANTIPATTERNS.md - Dependency Injection](../architecture/ANTIPATTERNS.md#dependency-injection)
 - **DTOs**: Separate request/response DTOs; never expose entities directly
-- **Validation**: Use `jakarta.validation` annotations on DTOs
+  - **See:** [COMMON_DTOS.md](../architecture/COMMON_DTOS.md) (13 shared DTOs, validation patterns)
+  - Request DTOs validated with `@NotNull`, `@Size`, `@Email` etc.
+  - Response DTOs include audit fields (`id`, `createdAt`, `updatedAt`)
+- **Validation**: Use `jakarta.validation` annotations on DTOs (requests only)
 - **Tests**: JUnit 5 + Mockito + Testcontainers for integration tests
+  - Domain: Unit tests, no mocks
+  - Application: Unit tests, mocked ports
+  - Infrastructure: Integration tests, real database
 
 ### Frontend (TypeScript/React/Next.js)
 
@@ -265,11 +279,26 @@ Before requesting review, verify all items:
 - [ ] All existing tests pass locally
 - [ ] New code has >= 80% coverage (90% for business logic)
 
-### Architecture
-- [ ] Follows hexagonal architecture (backend) / layered architecture (frontend)
+### Architecture (Backend)
+- [ ] Follows hexagonal architecture (domain → application → infrastructure)
+  - [ ] `domain/` has entities + exceptions (ZERO framework deps)
+  - [ ] `application/port/in/` defines input ports
+  - [ ] `application/port/out/` defines output ports
+  - [ ] `application/service/` implements ports (max 5 public methods)
+  - [ ] `infrastructure/controller/` has REST endpoints
+  - [ ] `infrastructure/persistence/` has adapters + mappers
+  - **Check:** [HEXAGONAL_STRUCTURE.md](../architecture/HEXAGONAL_STRUCTURE.md) module checklist
 - [ ] No circular dependencies introduced
+- [ ] Services don't import other services (inject ports instead)
+  - **See:** [ANTIPATTERNS.md - Dependency Injection](../architecture/ANTIPATTERNS.md#dependency-injection)
+- [ ] No field injection (`@Autowired` on fields is ❌)
+- [ ] No god services (services have ≤5 public methods)
+  - **See:** [ANTIPATTERNS.md - Service Design](../architecture/ANTIPATTERNS.md#service-design)
+- [ ] No `*FacadeService` classes (use individual services)
+- [ ] No `service/` directory at module root (must be in `application/service/`)
+- [ ] No field mutations in domain entities (immutable)
 - [ ] API follows REST conventions with proper status codes
-- [ ] Error handling uses standardized patterns
+- [ ] Error handling uses standardized patterns (`ErrorResponse` from common)
 
 ### Security
 - [ ] Input validation on all user-facing endpoints
