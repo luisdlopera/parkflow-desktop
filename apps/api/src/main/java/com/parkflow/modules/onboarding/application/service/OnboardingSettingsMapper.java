@@ -13,17 +13,14 @@ import lombok.RequiredArgsConstructor;
 public class OnboardingSettingsMapper {
 
   private final FeatureAccessService featureAccessService;
+  private final VehicleTypeMapper vehicleTypeMapper;
+  private final PaymentMethodMapper paymentMethodMapper;
 
   public Map<String, Object> sanitizeStepDataByPlan(Company company, int step, Map<String, Object> data) {
     Map<String, Object> out = new LinkedHashMap<>(data);
     Map<String, Object> access = featureAccessService.getAvailableOptionsByPlan(company.getPlan());
     if (step == 6) {
-      List<String> allowedPayments = asStringList(access.get("paymentMethods"), List.of("EFECTIVO"));
-      List<String> current = asStringList(out.get("paymentMethods"), List.of("EFECTIVO"));
-      // Mapear ambos a códigos estandarizados para comparación consistente
-      List<String> standardizedAllowed = allowedPayments.stream().map(this::mapPaymentMethodCode).toList();
-      List<String> standardizedCurrent = current.stream().map(this::mapPaymentMethodCode).toList();
-      out.put("paymentMethods", standardizedCurrent.stream().filter(standardizedAllowed::contains).toList());
+      out.put("paymentMethods", paymentMethodMapper.mapPaymentMethods(out, access));
     }
     if ((step == 8 || step == 9) && Boolean.FALSE.equals(access.get("allowAgreementsAndMonthly"))) {
       out.put("enabled", false);
@@ -57,22 +54,12 @@ public class OnboardingSettingsMapper {
     OperationalProfile op = OperationalProfile.MIXED;
     try {
       op = OperationalProfile.valueOf(opStr);
-    } catch (Exception e) {
+    } catch (IllegalArgumentException e) {
       op = inferOperationalProfile(step1);
     }
 
-    List<String> vehicleTypes;
-    if (op == OperationalProfile.MOTORCYCLE_ONLY) {
-      vehicleTypes = List.of("MOTORCYCLE");
-    } else if (op == OperationalProfile.CAR_ONLY) {
-      vehicleTypes = List.of("CAR");
-    } else {
-      List<String> rawTypes = asStringList(step1.get("vehicleTypes"), List.of("MOTO", "CARRO"));
-      vehicleTypes = rawTypes.stream().map(this::mapVehicleTypeCode).toList();
-    }
-
-    List<String> rawPayments = asStringList(step6.get("paymentMethods"), List.of("EFECTIVO"));
-    List<String> paymentMethods = rawPayments.stream().map(this::mapPaymentMethodCode).toList();
+    List<String> vehicleTypes = vehicleTypeMapper.mapVehicleTypes(step1, op);
+    List<String> paymentMethods = paymentMethodMapper.mapPaymentMethods(step6, featureAccessService.getAvailableOptionsByPlan(company.getPlan()));
     
     boolean multiSite = Boolean.TRUE.equals(step10.get("multiSite"));
     List<Map<String, String>> sites = multiSite
@@ -300,7 +287,7 @@ public class OnboardingSettingsMapper {
    * Resuelve la configuración de cascos preferentemente desde el paso 1 (tipos de vehículo).
    * Mantiene retrocompatibilidad con onboards en curso que aún tengan la configuración en el paso 8.
    */
-  public Map<String, Object> resolveHelmetConfig(Map<String, Object> step1, Map<String, Object> step8) {
+  private Map<String, Object> resolveHelmetConfig(Map<String, Object> step1, Map<String, Object> step8) {
     Map<String, Object> primary = step1;
     Map<String, Object> fallback = step8;
 
@@ -333,7 +320,7 @@ public class OnboardingSettingsMapper {
     return result;
   }
 
-  public String mapVehicleTypeCode(String raw) {
+  private String mapVehicleTypeCode(String raw) {
     if (raw == null) return "OTHER";
     return switch (raw.toUpperCase()) {
       case "MOTO", "MOTORCYCLE", "MOTORBIKE" -> "MOTORCYCLE";
@@ -348,7 +335,7 @@ public class OnboardingSettingsMapper {
     };
   }
 
-  public String mapPaymentMethodCode(String raw) {
+  private String mapPaymentMethodCode(String raw) {
     if (raw == null) return "CASH";
     return switch (raw.toUpperCase()) {
       case "EFECTIVO", "CASH" -> "CASH";
@@ -364,12 +351,12 @@ public class OnboardingSettingsMapper {
     };
   }
 
-  public int extractSitesCount(Object rawSites) {
+  private int extractSitesCount(Object rawSites) {
     if (!(rawSites instanceof List<?> sites)) return 1;
     return Math.max(1, sites.size());
   }
 
-  public boolean moduleEnabled(Map<String, Object> settings, String key, boolean fallback) {
+  private boolean moduleEnabled(Map<String, Object> settings, String key, boolean fallback) {
     Object raw = settings.get("modules");
     if (raw instanceof Map<?, ?> map) {
       Object value = map.get(key);
@@ -397,7 +384,7 @@ public class OnboardingSettingsMapper {
     return OperationalProfile.MIXED;
   }
 
-  public int extractNumber(Object raw, int fallback) {
+  private int extractNumber(Object raw, int fallback) {
     if (raw instanceof Number n) return n.intValue();
     if (raw instanceof String s) {
       try {
