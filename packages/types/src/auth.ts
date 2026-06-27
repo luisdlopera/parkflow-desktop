@@ -72,6 +72,7 @@ export interface LoginRequest {
   deviceName: string;
   platform: string;
   fingerprint: string;
+  rememberMe?: boolean;
   offlineRequestedHours?: number;
 }
 
