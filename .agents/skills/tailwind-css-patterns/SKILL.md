@@ -45,8 +45,8 @@ Provides actionable patterns for responsive, accessible UIs with Tailwind CSS v4
   <!-- Items -->
 </div>
 
-<!-- Card component -->
-<div class="bg-white rounded-lg shadow-lg p-6">
+<!-- Card component (no shadows — use border for elevation) -->
+<div class="bg-white rounded-xl border border-slate-200 p-6">
   <h3 class="text-xl font-bold">Title</h3>
   <p class="text-gray-600">Description</p>
 </div>
@@ -68,7 +68,7 @@ Provides actionable patterns for responsive, accessible UIs with Tailwind CSS v4
 ```tsx
 function ProductCard({ product }: { product: Product }) {
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden sm:flex">
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden sm:flex">
       <img className="h-48 w-full object-cover sm:h-auto sm:w-48" src={product.image} />
       <div className="p-6">
         <h3 className="text-lg font-semibold">{product.name}</h3>
@@ -127,6 +127,7 @@ function ProductCard({ product }: { product: Product }) {
 
 ## Constraints and Warnings
 
+- **⚠️ ParkFlow Project Rule — NO Shadow Utilities**: `shadow-*`, `shadow-sm`, `shadow-md`, `shadow-lg`, `shadow-xl`, `drop-shadow-*` are **STRICTLY FORBIDDEN** in the ParkFlow project. Use `border border-default-200` (or `border-slate-200`) for elevation instead. This overrides any generic Tailwind shadow recommendation.
 - **Class Proliferation**: Long class strings reduce readability; extract into components
 - **Content Paths**: Misconfigured paths cause classes to be purged in production
 - **Arbitrary Values**: Use sparingly; prefer design tokens for consistency

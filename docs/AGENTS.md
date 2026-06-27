@@ -22,6 +22,41 @@
 - Stack principal: UI con HeroUI v3 + TailwindCSS v4. Usa el MCP `heroui-react` para consultar documentación de componentes antes de implementarlos.
 - **Form Elements**: Todos los elementos de formulario (Select, Checkbox, Input, Dropdown, TextArea, etc.) DEBEN usar componentes de HeroUI v3, no HTML nativo. Prohibido usar `<select>`, `<input type="checkbox">`, `<textarea>` nativos. Consulta el MCP `heroui-react` antes de implementar cualquier componente UI.
 
+### Backend — Arquitectura Hexagonal (OBLIGATORIA)
+
+Todos los módulos del backend (`apps/api`) deben seguir esta estructura exacta:
+
+```
+modules/<modulo>/
+├── application/
+│   ├── usecase/         (servicios de aplicación, máx. 5 métodos públicos)
+│   └── port/
+│       ├── in/          (interfaces de casos de uso)
+│       └── out/         (contratos de repositorios/servicios externos)
+├── domain/
+│   └── <bounded-context>/
+└── infrastructure/
+    ├── controller/      (REST endpoints — NUNCA "presentation/")
+    └── persistence/     (adapters JPA — NUNCA "repository/" en raíz)
+```
+
+**Patrones PROHIBIDOS:**
+- ❌ Directorio `service/` en la raíz del módulo
+- ❌ Capa `presentation/`
+- ❌ Directorio `repository/` en raíz (usar `infrastructure/persistence/`)
+- ❌ Servicios Facade que agregan múltiples flujos de negocio
+- ❌ Servicios con más de 5 métodos públicos
+
+### Frontend — Reglas de Estilos (ESTRICTAMENTE OBLIGATORIAS)
+
+**PROHIBIDO usar sombras.** Esta regla no tiene excepciones:
+
+- ❌ `shadow-sm`, `shadow-md`, `shadow-lg`, `shadow-xl`, `drop-shadow-*` — PROHIBIDOS
+- ✅ Usar `border border-default-200` o `border border-slate-200` para elevación
+- ✅ `rounded-xl` para cards, `rounded-lg` para inputs/botones
+
+**Rutas Next.js:** cada nuevo segmento de ruta DEBE tener `loading.tsx` y `error.tsx`.
+
 ## Clean Code
 
 - Aplica los principios de Clean Code de Robert C. Martin.
