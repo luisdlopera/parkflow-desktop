@@ -33,7 +33,7 @@ class CorrelationIdIntegrationTest {
     @Test
     @DisplayName("Should generate correlation ID when not provided")
     void shouldGenerateCorrelationIdWhenNotProvided() throws Exception {
-        mockMvc.perform(get("/actuator/health"))
+        mockMvc.perform(post("/api/v1/csrf/token"))
                 .andExpect(status().isOk())
                 .andExpect(header().exists(CorrelationIdFilter.CORRELATION_ID_HEADER))
                 .andExpect(header().string(CorrelationIdFilter.CORRELATION_ID_HEADER, org.hamcrest.Matchers.notNullValue()));
@@ -44,7 +44,7 @@ class CorrelationIdIntegrationTest {
     void shouldAcceptAndReturnProvidedCorrelationId() throws Exception {
         String providedCorrelationId = "test-correlation-id-123";
 
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(post("/api/v1/csrf/token")
                         .header(CorrelationIdFilter.CORRELATION_ID_HEADER, providedCorrelationId))
                 .andExpect(status().isOk())
                 .andExpect(header().string(CorrelationIdFilter.CORRELATION_ID_HEADER, providedCorrelationId));
@@ -76,7 +76,7 @@ class CorrelationIdIntegrationTest {
     @Test
     @DisplayName("Generated correlation ID should be valid UUID format")
     void generatedCorrelationIdShouldBeValidUUID() throws Exception {
-        MvcResult result = mockMvc.perform(get("/actuator/health"))
+        MvcResult result = mockMvc.perform(post("/api/v1/csrf/token"))
                 .andExpect(status().isOk())
                 .andReturn();
 

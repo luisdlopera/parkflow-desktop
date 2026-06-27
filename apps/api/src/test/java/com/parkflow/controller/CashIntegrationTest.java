@@ -14,7 +14,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
         String openRequest = """
             {
                 "site": "DEFAULT",
-                "terminal": "TERM1",
+                "terminal": "T1",
                 "registerLabel": "Register 1",
                 "openingAmount": 0,
                 "operatorUserId": "%s",
@@ -38,7 +38,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
         String openRequest = """
             {
                 "site": "DEFAULT",
-                "terminal": "TERM1",
+                "terminal": "T1",
                 "registerLabel": "Register 1",
                 "openingAmount": 0,
                 "operatorUserId": "%s",
@@ -55,7 +55,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/v1/cash/current")
             .cookie(new jakarta.servlet.http.Cookie("parkflow_access", token))
             .param("site", "DEFAULT")
-            .param("terminal", "TERM1"))
+            .param("terminal", "T1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("OPEN"));
     }
@@ -67,7 +67,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
         String openRequest = """
             {
                 "site": "DEFAULT",
-                "terminal": "TERM1",
+                "terminal": "T1",
                 "registerLabel": "Register 1",
                 "openingAmount": 0,
                 "operatorUserId": "%s",
@@ -114,7 +114,7 @@ class CashIntegrationTest extends BaseIntegrationTest {
         String openRequest = """
             {
                 "site": "DEFAULT",
-                "terminal": "TERM1",
+                "terminal": "T1",
                 "registerLabel": "Register 1",
                 "openingAmount": 0,
                 "operatorUserId": "%s",

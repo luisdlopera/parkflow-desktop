@@ -111,7 +111,7 @@ class CashControllerTest extends BaseIntegrationTest {
   @WithMockUser(authorities = "cierres_caja:cerrar")
   void count_ShouldReturnSession() throws Exception {
     UUID id = UUID.randomUUID();
-    CashCountRequest request = new CashCountRequest(BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "Notes", null);
+    CashCountRequest request = new CashCountRequest(BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "Notes", java.util.List.of(new com.parkflow.modules.cash.dto.DenominationDto(BigDecimal.TEN, 1)));
     CashSessionResponse response = new CashSessionResponse(
         id, null, UUID.randomUUID(), "Operator", "OPEN",
         BigDecimal.TEN, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
@@ -174,7 +174,7 @@ class CashControllerTest extends BaseIntegrationTest {
   @WithMockUser(authorities = "cierres_caja:cerrar")
   void count_ThrowsNotFound_WhenSessionDoesNotExist() throws Exception {
     UUID id = UUID.randomUUID();
-    CashCountRequest request = new CashCountRequest(BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "Notes", null);
+    CashCountRequest request = new CashCountRequest(BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "Notes", java.util.List.of(new com.parkflow.modules.cash.dto.DenominationDto(BigDecimal.TEN, 1)));
 
     when(cashSessionManagementUseCase.submitCount(eq(id), any(CashCountRequest.class)))
         .thenThrow(new OperationException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
@@ -220,7 +220,7 @@ class CashControllerTest extends BaseIntegrationTest {
   @WithMockUser(authorities = "cierres_caja:cerrar")
   void count_ThrowsConflict_WhenSessionNotArqueado() throws Exception {
     UUID id = UUID.randomUUID();
-    CashCountRequest request = new CashCountRequest(BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "Notes", null);
+    CashCountRequest request = new CashCountRequest(BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "Notes", java.util.List.of(new com.parkflow.modules.cash.dto.DenominationDto(BigDecimal.TEN, 1)));
 
     when(cashSessionManagementUseCase.submitCount(eq(id), any(CashCountRequest.class)))
         .thenThrow(new OperationException(HttpStatus.CONFLICT, "La sesion de caja ya esta cerrada"));
@@ -266,7 +266,7 @@ class CashControllerTest extends BaseIntegrationTest {
   @WithMockUser(authorities = "cierres_caja:cerrar")
   void count_ThrowsBadRequest_WhenDenominationsEmpty() throws Exception {
     UUID id = UUID.randomUUID();
-    CashCountRequest request = new CashCountRequest(BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "Notes", null);
+    CashCountRequest request = new CashCountRequest(BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "Notes", java.util.List.of(new com.parkflow.modules.cash.dto.DenominationDto(BigDecimal.TEN, 1)));
 
     when(cashSessionManagementUseCase.submitCount(eq(id), any(CashCountRequest.class)))
         .thenThrow(new OperationException(HttpStatus.BAD_REQUEST, "At least one denomination required"));
