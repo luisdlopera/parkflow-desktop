@@ -34,10 +34,13 @@ const Step3Rates = memo(function Step3Rates() {
         setStepData({
           ...stepData,
           billingModel: "HOURLY",
+          baseValue: Math.max(1, Number(stepData.baseValue) || 2000),
           hasNightRate: false,
           hasFullDayRate: false,
           hasFractions: false,
+          minFractionMinutes: 60,
           hasCourtesy: false,
+          graceMinutes: 5,
           enableRateByType: false,
           rounding: "EXACT",
         });
@@ -46,6 +49,7 @@ const Step3Rates = memo(function Step3Rates() {
         setStepData({
           ...stepData,
           billingModel: "HOURLY",
+          baseValue: Math.max(1, Number(stepData.baseValue) || 2000),
           hasNightRate: false,
           hasFullDayRate: false,
           hasFractions: true,
@@ -53,18 +57,23 @@ const Step3Rates = memo(function Step3Rates() {
           hasCourtesy: true,
           graceMinutes: 15,
           rounding: "15_MIN",
+          enableRateByType: false,
         });
         break;
       case "24H":
         setStepData({
           ...stepData,
           billingModel: "MIXED",
+          baseValue: Math.max(1, Number(stepData.baseValue) || 2000),
           hasNightRate: true,
           nightStartTime: "20:00",
           nightEndTime: "06:00",
           hasFullDayRate: true,
           hasFractions: false,
+          minFractionMinutes: 60,
           rounding: "EXACT",
+          enableRateByType: false,
+          graceMinutes: 5,
         });
         break;
     }
