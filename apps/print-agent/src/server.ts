@@ -122,92 +122,155 @@ function toJobStatus(result: PrintResult): PrintJobStatus {
   return "sent";
 }
 
-const app = Fastify({ logger: true });
+export async function buildApp(opts?: { skipSecurity?: boolean }) {
+  const app = Fastify({ logger: false });
 
-await app.register(cors, {
-  origin: (o, cb) => {
-    if (!o) {
-      cb(null, true);
+  if (!opts?.skipSecurity) {
+    await app.register(cors, {
+      origin: (o, cb) => {
+        if (!o) {
+          cb(null, true);
+          return;
+        }
+        cb(null, allowedOrigins.includes(o));
+      },
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-API-Key", "X-Request-ID"],
+      maxAge: 86400,
+    });
+
+    await app.register(helmet, {
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    });
+
+    await app.register(rateLimit, {
+      max: 100,
+      timeWindow: "1 minute",
+      keyGenerator: (req) => req.ip,
+    });
+  }
+
+  app.addHook("onRequest", async (req) => {
+    if (req.method === "OPTIONS") {
       return;
     }
-    cb(null, allowedOrigins.includes(o));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-API-Key", "X-Request-ID"],
-  maxAge: 86400,
-});
+    requireApiKey(req);
+    requireOrigin(req);
+  });
 
-await app.register(helmet, {
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false,
-});
+  // Request ID tracking
+  app.addHook("onRequest", async (req, reply) => {
+    req.id = (req.headers["x-request-id"] as string) || randomUUID();
+    reply.header("X-Request-ID", req.id);
+  });
 
-await app.register(rateLimit, {
-  max: 100,
-  timeWindow: "1 minute",
-  keyGenerator: (req) => req.ip,
-});
+  app.get("/health", async () => ({
+    ok: true,
+    version: "0.1.0",
+    printers: printers.length,
+    hasApiKey: Boolean(agentApiKey)
+  }));
 
-app.addHook("onRequest", async (req) => {
-  if (req.method === "OPTIONS") {
-    return;
-  }
-  requireApiKey(req);
-  requireOrigin(req);
-});
+  app.get("/printers", async () => ({
+    items: printers.map((p) => ({
+      id: p.id,
+      name: p.name,
+      modelProfile: p.modelProfile,
+      connection: p.connection
+    }))
+  }));
 
-// Request ID tracking
-app.addHook("onRequest", async (req, reply) => {
-  req.id = (req.headers["x-request-id"] as string) || randomUUID();
-  reply.header("X-Request-ID", req.id);
-});
+  app.get("/jobs/:id", async (req) => {
+    const { id } = req.params as { id: string };
+    const row = state.getById(id);
+    if (!row) {
+      return { error: "not found" };
+    }
+    return { job: state.toView(row), result: row.result };
+  });
 
-app.get("/health", async () => ({
-  ok: true,
-  version: "0.1.0",
-  printers: printers.length,
-  hasApiKey: Boolean(agentApiKey)
-}));
+  app.post("/print", async (req) => {
+    const body = req.body as LocalAgentPrintBody;
+    if (!body?.idempotencyKey?.trim() || !body.ticket || !body.documentType) {
+      return { error: "idempotencyKey, ticket, documentType required" };
+    }
 
-app.get("/printers", async () => ({
-  items: printers.map((p) => ({
-    id: p.id,
-    name: p.name,
-    modelProfile: p.modelProfile,
-    connection: p.connection
-  }))
-}));
+    const prior = state.getByIdempotency(body.idempotencyKey);
+    if (prior?.result) {
+      return { jobId: prior.id, result: prior.result, duplicate: true as const };
+    }
 
-app.get("/jobs/:id", async (req) => {
-  const { id } = req.params as { id: string };
-  const row = state.getById(id);
-  if (!row) {
-    return { error: "not found" };
-  }
-  return { job: state.toView(row), result: row.result };
-});
+    let inFlight = printInFlight.get(body.idempotencyKey);
+    if (!inFlight) {
+      inFlight = runLocalPrintJob(req, body).finally(() => {
+        printInFlight.delete(body.idempotencyKey);
+      });
+      printInFlight.set(body.idempotencyKey, inFlight);
+    }
+    return inFlight;
+  });
 
-app.post("/print", async (req) => {
-  const body = req.body as LocalAgentPrintBody;
-  if (!body?.idempotencyKey?.trim() || !body.ticket || !body.documentType) {
-    return { error: "idempotencyKey, ticket, documentType required" };
-  }
-
-  const prior = state.getByIdempotency(body.idempotencyKey);
-  if (prior?.result) {
-    return { jobId: prior.id, result: prior.result, duplicate: true as const };
-  }
-
-  let inFlight = printInFlight.get(body.idempotencyKey);
-  if (!inFlight) {
-    inFlight = runLocalPrintJob(req, body).finally(() => {
-      printInFlight.delete(body.idempotencyKey);
+  app.post("/test-print", async (req) => {
+    const q = req.query as { printerId?: string };
+    const device = findPrinter(q.printerId);
+    if (!device) {
+      return { error: "printer not found" };
+    }
+    const profile = resolveEscPosProfile(device.modelProfile);
+    const testTicket = {
+      ticketId: "test",
+      templateVersion: "ticket-layout-v1" as const,
+      paperWidthMm: 58 as const,
+      ticketNumber: "TEST",
+      parkingName: "Parkflow",
+      plate: "TEST",
+      vehicleType: "CAR" as const,
+      site: null,
+      lane: null,
+      booth: null,
+      terminal: null,
+      operatorName: null,
+      issuedAtIso: new Date().toISOString(),
+      legalMessage: null,
+      qrPayload: null,
+      barcodePayload: null,
+      copyNumber: 1,
+      printerProfile: device.modelProfile
+    };
+    buildEscPosReceiptBytes("ENTRY", testTicket, profile);
+    const disp = await dispatchEscPosJob(device, "ENTRY", testTicket);
+    const jobId = randomUUID();
+    const result = toPrintResult(jobId, disp);
+    appendAudit(auditPath, {
+      atIso: new Date().toISOString(),
+      event: "test_print",
+      jobId,
+      idempotencyKey: "test",
+      ticketId: "test",
+      documentType: "ENTRY",
+      terminalId: null,
+      operatorUserId: null,
+      clientOrigin: (req.headers.origin as string) ?? null,
+      ok: true,
+      message: "test_print"
     });
-    printInFlight.set(body.idempotencyKey, inFlight);
-  }
-  return inFlight;
-});
+    return { jobId, result };
+  });
+
+  app.get("/printers/:id/health", async (req) => {
+    const { id } = req.params as { id: string };
+    const p = findPrinter(id);
+    if (!p) {
+      return { error: "not found" };
+    }
+    const h = await printerQuickHealth(p, p.modelProfile);
+    return { printerId: p.id, ...h };
+  });
+
+  return app;
+}
 
 async function runLocalPrintJob(
   req: FastifyRequest,
@@ -305,67 +368,15 @@ async function runLocalPrintJob(
   }
 }
 
-app.post("/test-print", async (req) => {
-  const q = req.query as { printerId?: string };
-  const device = findPrinter(q.printerId);
-  if (!device) {
-    return { error: "printer not found" };
-  }
-  const profile = resolveEscPosProfile(device.modelProfile);
-  const testTicket = {
-    ticketId: "test",
-    templateVersion: "ticket-layout-v1" as const,
-    paperWidthMm: 58 as const,
-    ticketNumber: "TEST",
-    parkingName: "Parkflow",
-    plate: "TEST",
-    vehicleType: "CAR" as const,
-    site: null,
-    lane: null,
-    booth: null,
-    terminal: null,
-    operatorName: null,
-    issuedAtIso: new Date().toISOString(),
-    legalMessage: null,
-    qrPayload: null,
-    barcodePayload: null,
-    copyNumber: 1,
-    printerProfile: device.modelProfile
-  };
-  buildEscPosReceiptBytes("ENTRY", testTicket, profile);
-  const disp = await dispatchEscPosJob(device, "ENTRY", testTicket);
-  const jobId = randomUUID();
-  const result = toPrintResult(jobId, disp);
-  appendAudit(auditPath, {
-    atIso: new Date().toISOString(),
-    event: "test_print",
-    jobId,
-    idempotencyKey: "test",
-    ticketId: "test",
-    documentType: "ENTRY",
-    terminalId: null,
-    operatorUserId: null,
-    clientOrigin: (req.headers.origin as string) ?? null,
-    ok: true,
-    message: "test_print"
-  });
-  return { jobId, result };
-});
-
-app.get("/printers/:id/health", async (req) => {
-  const { id } = req.params as { id: string };
-  const p = findPrinter(id);
-  if (!p) {
-    return { error: "not found" };
-  }
-  const h = await printerQuickHealth(p, p.modelProfile);
-  return { printerId: p.id, ...h };
-});
-
-try {
-  await app.listen({ port: agentPort, host: "127.0.0.1" });
-  app.log.info(`Print agent http://127.0.0.1:${agentPort} dataDir=${path.resolve(dataDir)}`);
-} catch (err) {
-  app.log.error(err);
-  process.exit(1);
+if (!process.env.VITEST) {
+  const started = (async () => {
+    const app = await buildApp();
+    try {
+      await app.listen({ port: agentPort, host: "127.0.0.1" });
+      app.log.info(`Print agent http://127.0.0.1:${agentPort} dataDir=${path.resolve(dataDir)}`);
+    } catch (err) {
+      app.log.error(err);
+      process.exit(1);
+    }
+  })();
 }

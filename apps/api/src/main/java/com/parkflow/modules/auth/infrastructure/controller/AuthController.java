@@ -7,6 +7,7 @@ import com.parkflow.modules.auth.application.port.in.ProfileManagementUseCase;
 import com.parkflow.modules.auth.application.port.in.TokenRefreshUseCase;
 import com.parkflow.modules.auth.application.port.in.DeviceManagementUseCase;
 import com.parkflow.modules.auth.application.port.in.PasswordResetUseCase;
+import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -64,16 +65,8 @@ public class AuthController {
 
   @PostMapping("/refresh")
   public LoginResponse refresh(@Valid @RequestBody RefreshRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
-    String refreshToken = null;
-    if (httpRequest.getCookies() != null) {
-      for (jakarta.servlet.http.Cookie cookie : httpRequest.getCookies()) {
-        if ("parkflow_refresh".equals(cookie.getName())) {
-          refreshToken = cookie.getValue();
-          break;
-        }
-      }
-    }
-    if (refreshToken == null || refreshToken.isBlank()) {
+    String refreshToken = authCookieFactory.extractRefreshToken(httpRequest);
+    if (refreshToken == null) {
       throw new com.parkflow.modules.common.exception.OperationException(
           org.springframework.http.HttpStatus.UNAUTHORIZED,
           "AUTH_UNAUTHORIZED",
@@ -86,16 +79,8 @@ public class AuthController {
 
   @PostMapping("/restore-session")
   public LoginResponse restoreSession(HttpServletRequest request, HttpServletResponse response) {
-    String refreshToken = null;
-    if (request.getCookies() != null) {
-      for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
-        if ("parkflow_refresh".equals(cookie.getName())) {
-          refreshToken = cookie.getValue();
-          break;
-        }
-      }
-    }
-    if (refreshToken == null || refreshToken.isBlank()) {
+    String refreshToken = authCookieFactory.extractRefreshToken(request);
+    if (refreshToken == null) {
       throw new com.parkflow.modules.common.exception.OperationException(
           org.springframework.http.HttpStatus.UNAUTHORIZED,
           "AUTH_UNAUTHORIZED",
@@ -174,7 +159,7 @@ public class AuthController {
   @ResponseStatus(HttpStatus.OK)
   public void requestPasswordReset(@Valid @RequestBody PasswordResetRequest request,
                                    HttpServletRequest httpRequest) {
-    String ipAddress = getClientIp(httpRequest);
+    String ipAddress = SecurityUtils.getClientIp(httpRequest);
     passwordResetUseCase.requestReset(new PasswordResetRequest(
         request.email(), request.deviceId(), ipAddress));
   }
@@ -186,17 +171,5 @@ public class AuthController {
   @ResponseStatus(HttpStatus.OK)
   public void confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmRequest request) {
     passwordResetUseCase.confirmReset(request);
-  }
-
-  private String getClientIp(HttpServletRequest request) {
-    String xForwardedFor = request.getHeader("X-Forwarded-For");
-    if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-      return xForwardedFor.split(",")[0].trim();
-    }
-    String xRealIp = request.getHeader("X-Real-IP");
-    if (xRealIp != null && !xRealIp.isEmpty()) {
-      return xRealIp;
-    }
-    return request.getRemoteAddr();
   }
 }

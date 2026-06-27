@@ -134,3 +134,4 @@ pnpm-debug.log*
 
 # OS Trashes
 .Trashes
+test_out.log

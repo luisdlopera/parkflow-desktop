@@ -1,7 +1,7 @@
 package com.parkflow.modules.reports.application.service;
 
 import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.cash.application.usecase.CashLedgerSummaryCalculator;
+import com.parkflow.modules.cash.application.service.CashLedgerSummaryCalculator;
 import com.parkflow.modules.cash.domain.CashMovementType;
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.dto.CashSummaryResponse;

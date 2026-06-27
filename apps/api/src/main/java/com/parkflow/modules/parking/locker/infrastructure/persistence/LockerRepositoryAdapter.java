@@ -1,5 +1,6 @@
 package com.parkflow.modules.parking.locker.infrastructure.persistence;
 
+import com.parkflow.modules.parking.locker.application.port.out.LockerRepositoryPort;
 import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
 import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class LockerRepositoryAdapter implements LockerPort {
+public class LockerRepositoryAdapter implements LockerRepositoryPort, LockerPort {
 
   private final LockerRepository repository;
 

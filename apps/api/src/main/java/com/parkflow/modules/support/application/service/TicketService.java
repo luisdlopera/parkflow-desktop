@@ -1,6 +1,7 @@
 package com.parkflow.modules.support.application.service;
 
 import com.parkflow.modules.support.application.dto.CreateTicketRequest;
+import com.parkflow.modules.support.application.port.in.TicketUseCase;
 import com.parkflow.modules.support.domain.Ticket;
 import com.parkflow.modules.support.domain.enums.TicketStatus;
 import com.parkflow.modules.support.domain.repository.TicketRepository;
@@ -21,7 +22,7 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TicketService {
+public class TicketService implements TicketUseCase {
 
     private final TicketRepository ticketRepository;
 

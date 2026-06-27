@@ -29,6 +29,11 @@ public class ParkingSessionJpaAdapter implements ParkingSessionPort {
   }
 
   @Override
+  public long countByStatusAndCompanyIdAndEntryAtGreaterThanEqual(SessionStatus status, UUID companyId, OffsetDateTime entryAt) {
+    return jpaRepository.countByStatusAndCompanyIdAndEntryAtGreaterThanEqual(status, companyId, entryAt);
+  }
+
+  @Override
   public long countByRate_IdAndCompanyId(UUID rateId, UUID companyId) {
     return jpaRepository.countByRate_IdAndCompanyId(rateId, companyId);
   }
@@ -131,6 +136,7 @@ public class ParkingSessionJpaAdapter implements ParkingSessionPort {
   @Repository
   interface ParkingSessionJpaRepository extends JpaRepository<ParkingSession, UUID> {
     long countByStatusAndCompanyId(SessionStatus status, UUID companyId);
+    long countByStatusAndCompanyIdAndEntryAtGreaterThanEqual(SessionStatus status, UUID companyId, OffsetDateTime entryAt);
     long countByRate_IdAndCompanyId(UUID rateId, UUID companyId);
 
     @Query(

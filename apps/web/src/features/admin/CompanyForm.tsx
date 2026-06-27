@@ -112,8 +112,9 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
             control={control}
             render={({ field }) => (
               <Input
-                label="Nombre de la empresa *"
+                label="Nombre de la empresa"
                 placeholder="Ej: Parqueadero El Centro"
+                isRequired
                 {...field}
                 isInvalid={!!errors.name}
               />
@@ -227,7 +228,8 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
       <Separator className="my-2" />
 
       <Select
-        label="Plan *"
+        label="Plan"
+        isRequired
         value={[selectedPlan]}
         onChange={(keys: Set<string | number | boolean | null | undefined>) => {
           const plan = Array.from(keys)[0] as PlanType;

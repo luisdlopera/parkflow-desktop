@@ -130,8 +130,9 @@ export function GenerateLicenseDialog({
               </Alert>
 
               <Input
-                label="Device Fingerprint *"
+                label="Device Fingerprint"
                 placeholder="Ej: fp-a1b2c3d4e5f6..."
+                isRequired
                 value={deviceFingerprint}
                 onChange={(e) => setDeviceFingerprint(e.target.value)}
                 startContent={<Monitor className="w-4 h-4 text-default-400" />}

@@ -22,6 +22,10 @@ apps/
 
 **Current Work**: [Production Consolidation](/.claude/plans/act-a-como-un-staff-floating-starfish.md) — **SUBSTANTIALLY COMPLETE**
 
+> [!WARNING]
+> **Hexagonal Architecture Status:** 
+> Contrary to previous claims, the backend is NOT 100% compliant. Controllers have been moved to `infrastructure/controller/`, but `port/in` and `port/out` interfaces are still missing in 10 modules (audit, billing, customers, licensing, parking/locker, parking/spaces, search, support, sync, tickets). "God Services" (>200 lines) also remain to be decomposed (see `docs/REFACTOR_GOD_SERVICES.md`).
+
 **Scope**: Production-ready consolidation — eliminate debt, consolidate schemas, ensure integrity
 
 ### ✅ ALL PHASES COMPLETED (8 commits total)

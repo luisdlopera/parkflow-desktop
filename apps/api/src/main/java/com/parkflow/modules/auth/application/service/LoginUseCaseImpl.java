@@ -17,6 +17,7 @@ import com.parkflow.modules.auth.dto.LoginResult;
 import com.parkflow.modules.auth.security.JwtTokenService;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.RolePermissions;
+import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import java.time.OffsetDateTime;
@@ -58,12 +59,12 @@ public class LoginUseCaseImpl implements LoginUseCase {
     String deviceId = request.deviceId();
 
     log.info("AUTH: Login attempt - email={}, deviceId={}, platform={}",
-        maskEmail(email), deviceId, request.platform());
+        SecurityUtils.maskEmail(email), deviceId, request.platform());
 
     AppUser user = appUserRepository.findGlobalByEmail(email).orElse(null);
 
     if (user == null) {
-      log.warn("AUTH: Login failed - user not found - email={}, deviceId={}", maskEmail(email), deviceId);
+      log.warn("AUTH: Login failed - user not found - email={}, deviceId={}", SecurityUtils.maskEmail(email), deviceId);
       throw invalidCredentials(null, email, deviceId);
     }
 
@@ -77,7 +78,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
         appUserRepository.save(user);
       } else {
         log.warn("AUTH: Login failed - account blocked - userId={}, email={}, blockedUntil={}",
-            user.getId(), maskEmail(email), user.getBlockedUntil());
+            user.getId(), SecurityUtils.maskEmail(email), user.getBlockedUntil());
         authAuditService.log(
             AuthAuditAction.LOGIN_FAILED, user, null, "DENY_ACCOUNT_BLOCKED",
             Map.of("email", email, "deviceId", deviceId));
@@ -86,7 +87,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
     }
 
     if (!user.isActive()) {
-      log.warn("AUTH: Login failed - account inactive - userId={}, email={}", user.getId(), maskEmail(email));
+      log.warn("AUTH: Login failed - account inactive - userId={}, email={}", user.getId(), SecurityUtils.maskEmail(email));
       authAuditService.log(
           AuthAuditAction.LOGIN_FAILED, user, null, "DENY_ACCOUNT_INACTIVE",
           Map.of("email", email, "deviceId", deviceId));
@@ -94,16 +95,16 @@ public class LoginUseCaseImpl implements LoginUseCase {
     }
 
     if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
-      log.warn("AUTH: Login failed - no password set - userId={}, email={}", user.getId(), maskEmail(email));
+      log.warn("AUTH: Login failed - no password set - userId={}, email={}", user.getId(), SecurityUtils.maskEmail(email));
       throw invalidCredentials(user, email, deviceId);
     }
 
     if (!passwordHashService.matchesPassword(request.password(), user.getPasswordHash())) {
-      log.warn("AUTH: Login failed - invalid password - userId={}, email={}", user.getId(), maskEmail(email));
+      log.warn("AUTH: Login failed - invalid password - userId={}, email={}", user.getId(), SecurityUtils.maskEmail(email));
       throw invalidCredentials(user, email, deviceId);
     }
 
-    log.info("AUTH: Login credentials validated - userId={}, email={}", user.getId(), maskEmail(email));
+    log.info("AUTH: Login credentials validated - userId={}, email={}", user.getId(), SecurityUtils.maskEmail(email));
     
     // Reset failed attempts on success
     if (user.getFailedLoginAttempts() > 0) {
@@ -169,20 +170,6 @@ public class LoginUseCaseImpl implements LoginUseCase {
     );
   }
 
-  private String maskEmail(String email) {
-    if (email == null || email.length() < 3 || !email.contains("@")) {
-      return "***";
-    }
-    String[] parts = email.split("@");
-    String local = parts[0];
-    String domain = parts[1];
-
-    if (local.length() <= 1) {
-      return "***@" + domain;
-    }
-
-    return local.charAt(0) + "***@" + domain;
-  }
 
   private OperationException invalidCredentials(AppUser user, String email, String deviceId) {
     if (user != null) {

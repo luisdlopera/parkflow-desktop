@@ -1,6 +1,7 @@
 package com.parkflow.modules.parking.operation.application.service;
 
 import com.parkflow.modules.parking.operation.dto.OperationsSummaryResponse;
+import com.parkflow.modules.parking.operation.application.port.in.SupervisorUseCase;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.sync.domain.repository.SyncEventPort;
 import com.parkflow.modules.tickets.domain.PrintJobStatus;
@@ -17,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class SupervisorService {
+public class SupervisorService implements SupervisorUseCase {
 
   private final ParkingSessionPort parkingSessionPort;
   private final PrintJobPort printJobRepository;

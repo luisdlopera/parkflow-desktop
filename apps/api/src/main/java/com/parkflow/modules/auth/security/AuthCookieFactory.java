@@ -23,10 +23,10 @@ public class AuthCookieFactory {
   @Value("${app.security.refresh-token-ttl-days:7}")
   private int refreshTokenTtlDays;
 
-  @Value("${app.security.cookie.secure:false}")
+  @Value("${app.security.cookie.secure:true}")
   private boolean cookieSecure;
 
-  @Value("${app.security.cookie.same-site:Lax}")
+  @Value("${app.security.cookie.same-site:Strict}")
   private String cookieSameSite;
 
   public AuthCookieFactory(Environment environment) {
@@ -34,23 +34,27 @@ public class AuthCookieFactory {
   }
 
   /**
-   * Determine if Secure attribute should be enabled based on profile and explicit config.
-   * - Production/HTTPS: always true
-   * - Dev/localhost: respects app.security.cookie.secure (defaults to false)
+   * Determine if Secure attribute should be enabled.
+   * - Production: always true (HTTPS required)
+   * - Dev/test: respects explicit config (defaults to true, can override via app.security.cookie.secure=false)
+   * SECURITY: Default is true to prevent accidental production deployments without HTTPS.
    */
   private boolean isSecureEnabled() {
-    // Explicit override in config
-    if (cookieSecure) return true;
-
-    // Auto-detect production (any non-dev profile)
     String[] profiles = environment.getActiveProfiles();
-    if (profiles != null && profiles.length > 0) {
-      boolean isDev = Arrays.stream(profiles)
-          .anyMatch(p -> p.equalsIgnoreCase("dev") || p.equalsIgnoreCase("local") || p.equalsIgnoreCase("test"));
-      return !isDev; // Secure=true in prod
+    if (profiles == null || profiles.length == 0) {
+      // No profile specified - safer to require HTTPS
+      return true;
     }
 
-    return false; // Default to false for dev
+    boolean isDev = Arrays.stream(profiles)
+        .anyMatch(p -> p.equalsIgnoreCase("dev") || p.equalsIgnoreCase("local") || p.equalsIgnoreCase("test"));
+
+    // Dev can override via config; prod always requires Secure
+    if (isDev) {
+      return cookieSecure;
+    }
+
+    return true; // Production: always Secure
   }
 
   /**
@@ -70,6 +74,21 @@ public class AuthCookieFactory {
   public void clearAuthCookies(HttpServletResponse response) {
     response.addHeader("Set-Cookie", buildCookie("parkflow_access", "", 0));
     response.addHeader("Set-Cookie", buildCookie("parkflow_refresh", "", 0));
+  }
+
+  /**
+   * Extract refresh token from request cookies.
+   * @return token value, or null if not present
+   */
+  public String extractRefreshToken(jakarta.servlet.http.HttpServletRequest request) {
+    if (request.getCookies() == null) return null;
+    for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+      if ("parkflow_refresh".equals(cookie.getName())) {
+        String value = cookie.getValue();
+        return (value != null && !value.isBlank()) ? value : null;
+      }
+    }
+    return null;
   }
 
   /**

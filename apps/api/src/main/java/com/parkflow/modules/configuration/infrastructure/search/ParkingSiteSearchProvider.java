@@ -4,7 +4,7 @@ import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.search.domain.model.SearchResult;
 import com.parkflow.modules.search.domain.model.SearchType;
-import com.parkflow.modules.search.domain.port.SearchProvider;
+import com.parkflow.modules.search.application.port.out.SearchProviderPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class ParkingSiteSearchProvider implements SearchProvider {
+public class ParkingSiteSearchProvider implements SearchProviderPort {
 
     private final ParkingSitePort parkingSitePort;
 

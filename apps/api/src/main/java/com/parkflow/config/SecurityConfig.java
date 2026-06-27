@@ -66,29 +66,42 @@ public class SecurityConfig {
   }
 
   /**
-   * Fail fast if placeholder secrets are used outside the dev/test profiles.
-   * Prevents accidental production deployments with insecure defaults.
+   * Validate that required secrets are present and secure.
+   * Fails fast to prevent accidental insecure deployments.
+   * SECURITY: Stricter in production, but always validates critical secrets.
    */
   @PostConstruct
   public void validateSecrets() {
     Set<String> nonProdProfiles = Set.of("dev", "local", "test", "ci");
     String[] profiles = environment.getActiveProfiles();
-    // If no profiles are active, assume local development to avoid blocking a common dev workflow
-    if (profiles == null || profiles.length == 0) return;
-    boolean isDev = Arrays.stream(profiles).anyMatch(p -> nonProdProfiles.contains(p.toLowerCase()));
-    if (isDev) return;
 
-    if (apiKey.isBlank() || apiKey.startsWith("REPLACE_") || apiKey.equals("parkflow-dev-key")) {
-      throw new IllegalStateException(
-          "SECURITY: app.security.api-key must be set to a secure value via PARKFLOW_API_KEY env var");
-    }
-    if (seedAdminPassword.isBlank() || seedAdminPassword.startsWith("REPLACE_")) {
-      throw new IllegalStateException(
-          "SECURITY: app.security.seed-admin-password must be set via PARKFLOW_SEED_ADMIN_PASSWORD env var");
-    }
+    boolean isDev = profiles != null && profiles.length > 0 &&
+        Arrays.stream(profiles).anyMatch(p -> nonProdProfiles.contains(p.toLowerCase()));
+
+    // Always validate JWT secret (it's critical for all environments)
     if (jwtSecret.isBlank() || jwtSecret.startsWith("REPLACE_")) {
-      throw new IllegalStateException(
-          "SECURITY: app.security.jwt-secret must be set via PARKFLOW_JWT_SECRET_BASE64 env var");
+      if (isDev) {
+        // Dev: JwtTokenService will derive a key; warn but don't fail
+        org.slf4j.LoggerFactory.getLogger(SecurityConfig.class)
+            .warn("SECURITY: app.security.jwt-secret is empty or invalid in dev profile. JwtTokenService will derive a key from SHA-256.");
+      } else {
+        // Production: fail hard
+        throw new IllegalStateException(
+            "SECURITY: app.security.jwt-secret must be set to a 256-bit Base64 key via PARKFLOW_JWT_SECRET_BASE64 env var. "
+            + "Generate with: openssl rand -base64 32");
+      }
+    }
+
+    // Only validate API key and seed password in production
+    if (!isDev) {
+      if (apiKey.isBlank() || apiKey.startsWith("REPLACE_") || apiKey.equals("parkflow-dev-key")) {
+        throw new IllegalStateException(
+            "SECURITY: app.security.api-key must be set to a secure value via PARKFLOW_API_KEY env var");
+      }
+      if (seedAdminPassword.isBlank() || seedAdminPassword.startsWith("REPLACE_")) {
+        throw new IllegalStateException(
+            "SECURITY: app.security.seed-admin-password must be set via PARKFLOW_SEED_ADMIN_PASSWORD env var");
+      }
     }
   }
 

@@ -1,5 +1,7 @@
 package com.parkflow.modules.parking.locker.application.service;
 
+import com.parkflow.modules.parking.locker.application.port.in.LockerUseCase;
+
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.locker.domain.Locker;
@@ -25,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Deprecated(since = "2.1", forRemoval = false)
 @Service
 @RequiredArgsConstructor
-public class LockerService {
+public class LockerService implements LockerUseCase {
 
   private final LockerPort lockerPort;
   private final CustodiedItemRepository custodiedItemRepository;

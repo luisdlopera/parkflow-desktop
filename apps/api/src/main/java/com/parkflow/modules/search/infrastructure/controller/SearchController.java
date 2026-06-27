@@ -2,7 +2,7 @@ package com.parkflow.modules.search.infrastructure.controller;
 
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.search.application.dto.SearchResponse;
-import com.parkflow.modules.search.application.usecase.GlobalSearchUseCase;
+import com.parkflow.modules.search.application.port.in.GlobalSearchUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

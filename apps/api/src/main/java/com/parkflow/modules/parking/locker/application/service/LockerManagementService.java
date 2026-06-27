@@ -9,7 +9,9 @@ import com.parkflow.modules.parking.locker.dto.BatchLockerRequest;
 import com.parkflow.modules.parking.locker.dto.LockerResponse;
 import com.parkflow.modules.parking.locker.dto.PatchLockerRequest;
 import com.parkflow.modules.parking.operation.domain.CustodiedItemStatus;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.CustodiedItemRepository;
+import com.parkflow.modules.parking.locker.application.port.in.LockerManagementUseCase;
+import com.parkflow.modules.parking.locker.application.port.out.LockerRepositoryPort;
+import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -24,10 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
-public class LockerManagementService {
+public class LockerManagementService implements LockerManagementUseCase {
 
-  private final LockerPort lockerPort;
-  private final CustodiedItemRepository custodiedItemRepository;
+  private final LockerRepositoryPort lockerPort;
+  private final CustodiedItemPort custodiedItemRepository;
 
   @Transactional
   public LockerResponse createLocker(String code, String label) {
@@ -103,7 +105,7 @@ public class LockerManagementService {
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "LOCKER_NOT_FOUND",
             "Locker no encontrado"));
 
-    if (custodiedItemRepository.existsByLockerIdAndStatus(id, CustodiedItemStatus.RECEIVED)) {
+    if (custodiedItemRepository.existsActiveByLockerId(id)) {
       throw new OperationException(HttpStatus.CONFLICT, "LOCKER_OCCUPIED",
           "No se puede eliminar un locker que está en uso. Desactívalo en su lugar.");
     }
@@ -114,7 +116,7 @@ public class LockerManagementService {
   // ─── helpers ───────────────────────────────────────────────────────────────
 
   private LockerResponse toResponse(Locker locker) {
-    boolean occupied = custodiedItemRepository.existsByLockerIdAndStatus(locker.getId(), CustodiedItemStatus.RECEIVED);
+    boolean occupied = custodiedItemRepository.existsActiveByLockerId(locker.getId());
     return new LockerResponse(locker.getId(), locker.getCode(), locker.getLabel(),
         locker.getStatus(), Boolean.TRUE.equals(locker.getIsActive()), occupied);
   }

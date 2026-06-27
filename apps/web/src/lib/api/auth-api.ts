@@ -22,13 +22,6 @@ export interface SetupRequiredResponse {
   setupRequired: boolean;
 }
 
-export interface SetupPayload {
-  email: string;
-  password: string;
-  name: string;
-  companyName: string;
-  nit: string;
-}
 
 export async function checkSetupRequired(): Promise<SetupRequiredResponse> {
   const res = await fetchWithCredentials(`${AUTH_BASE}/setup-required`);
@@ -36,15 +29,6 @@ export async function checkSetupRequired(): Promise<SetupRequiredResponse> {
   return res.json();
 }
 
-export async function postInitialSetup(payload: SetupPayload): Promise<StoredSession> {
-  const res = await fetchWithCredentials(`${AUTH_BASE}/setup`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error("No se pudo registrar la configuración inicial");
-  return res.json() as Promise<StoredSession>;
-}
 
 export async function requestPasswordReset(email: string): Promise<void> {
   const res = await fetchWithCredentials(`${AUTH_BASE}/password-reset/request`, {

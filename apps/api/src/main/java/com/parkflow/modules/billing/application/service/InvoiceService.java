@@ -14,7 +14,7 @@ import com.parkflow.modules.billing.dto.ExternalInvoiceResult;
 import com.parkflow.modules.billing.dto.InvoiceDashboardResponse;
 import com.parkflow.modules.billing.dto.InvoiceResponse;
 import com.parkflow.modules.billing.infrastructure.security.EncryptionService;
-import com.parkflow.modules.audit.application.CentralizedAuditService;
+import com.parkflow.modules.audit.application.service.CentralizedAuditService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

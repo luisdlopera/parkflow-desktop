@@ -4,6 +4,7 @@ import com.parkflow.modules.cash.domain.CashSessionStatus;
 import com.parkflow.modules.cash.domain.repository.CashSessionPort;
 import com.parkflow.modules.licensing.domain.repository.LicensedDevicePort;
 import com.parkflow.modules.parking.operation.dto.OperationalHealthResponse;
+import com.parkflow.modules.parking.operation.application.port.in.OperationalHealthUseCase;
 import com.parkflow.modules.sync.domain.repository.SyncEventPort;
 import com.parkflow.modules.tickets.domain.PrintJobStatus;
 import com.parkflow.modules.tickets.domain.repository.PrintJobPort;
@@ -18,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class OperationalHealthService {
+public class OperationalHealthService implements OperationalHealthUseCase {
   private final PrintJobPort printJobRepository;
   private final SyncEventPort syncEventRepository;
   private final LicensedDevicePort licensedDeviceRepository;

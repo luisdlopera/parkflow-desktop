@@ -4,8 +4,9 @@ import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
 import com.parkflow.modules.parking.spaces.domain.ParkingSpaceStatus;
 import com.parkflow.modules.parking.spaces.dto.ParkingSpaceDto;
 import com.parkflow.modules.parking.spaces.dto.ParkingSpaceOccupancySummaryResponse;
-import com.parkflow.modules.parking.spaces.infrastructure.persistence.ParkingSpaceAssignmentRepository;
-import com.parkflow.modules.parking.spaces.infrastructure.persistence.ParkingSpaceRepository;
+import com.parkflow.modules.parking.spaces.application.port.in.SpaceQueryUseCase;
+import com.parkflow.modules.parking.spaces.application.port.out.ParkingSpaceAssignmentRepositoryPort;
+import com.parkflow.modules.parking.spaces.application.port.out.ParkingSpaceRepositoryPort;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
-public class SpaceQueryService {
+public class SpaceQueryService implements SpaceQueryUseCase {
 
-  private final ParkingSpaceRepository parkingSpaceRepository;
-  private final ParkingSpaceAssignmentRepository parkingSpaceAssignmentRepository;
+  private final ParkingSpaceRepositoryPort parkingSpaceRepository;
+  private final ParkingSpaceAssignmentRepositoryPort parkingSpaceAssignmentRepository;
 
   @Transactional(readOnly = true)
   public ParkingSpaceOccupancySummaryResponse getOccupancySummary(UUID companyId) {

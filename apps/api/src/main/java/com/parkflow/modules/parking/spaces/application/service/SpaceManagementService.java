@@ -9,8 +9,9 @@ import com.parkflow.modules.parking.spaces.domain.ParkingSpaceStatus;
 import com.parkflow.modules.parking.spaces.domain.ParkingSpaceType;
 import com.parkflow.modules.parking.spaces.dto.ParkingSpaceDto;
 import com.parkflow.modules.parking.spaces.dto.ParkingSpaceOccupancySummaryResponse;
-import com.parkflow.modules.parking.spaces.infrastructure.persistence.ParkingSpaceAssignmentRepository;
-import com.parkflow.modules.parking.spaces.infrastructure.persistence.ParkingSpaceRepository;
+import com.parkflow.modules.parking.spaces.application.port.in.SpaceManagementUseCase;
+import com.parkflow.modules.parking.spaces.application.port.out.ParkingSpaceAssignmentRepositoryPort;
+import com.parkflow.modules.parking.spaces.application.port.out.ParkingSpaceRepositoryPort;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -26,10 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
-public class SpaceManagementService {
+public class SpaceManagementService implements SpaceManagementUseCase {
 
-  private final ParkingSpaceRepository parkingSpaceRepository;
-  private final ParkingSpaceAssignmentRepository parkingSpaceAssignmentRepository;
+  private final ParkingSpaceRepositoryPort parkingSpaceRepository;
+  private final ParkingSpaceAssignmentRepositoryPort parkingSpaceAssignmentRepository;
 
   @Transactional
   public ParkingSpace assignNextAvailableSpace(UUID companyId, ParkingSession session) {

@@ -1,25 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PROTECTED_PATTERNS = [
-  /^\/(dashboard)(\/.*)?$/,
-  /^\/(admin)(\/.*)?$/,
-];
-
 const PUBLIC_PATHS = new Set([
   "/login",
   "/forgot-password",
   "/reset-password",
   "/change-password",
   "/onboarding",
+  "/api/v1/auth/setup-required",
+  "/",
+  "/error",
 ]);
 
 export function middleware(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
-  const isProtected = PROTECTED_PATTERNS.some((pattern) => pattern.test(pathname));
-  if (!isProtected) return NextResponse.next();
+  if (PUBLIC_PATHS.has(pathname) || pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
 
-  // httpOnly cookie — readable server-side but not via JS
   const refreshToken = request.cookies.get("parkflow_refresh")?.value;
   const accessToken = request.cookies.get("parkflow_access")?.value;
 
@@ -34,7 +32,6 @@ export function middleware(request: NextRequest): NextResponse {
 
 export const config = {
   matcher: [
-    "/(dashboard)/:path*",
-    "/(admin)/:path*",
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };

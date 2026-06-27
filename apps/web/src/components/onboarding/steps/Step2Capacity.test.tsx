@@ -5,7 +5,7 @@ import Step2Capacity from "./Step2Capacity";
 import { OnboardingProvider } from "../OnboardingContext";
 
 vi.mock("@/components/bridge/Input", () => ({
-  default: ({ label, value, onChange, ...props }: any) =>
+  Input: ({ label, value, onChange, ...props }: any) =>
     <div>
       <label>{label}</label>
       <input value={value} onChange={onChange} {...props} />

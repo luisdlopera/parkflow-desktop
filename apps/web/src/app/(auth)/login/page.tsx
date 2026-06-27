@@ -243,11 +243,7 @@ export default function LoginPage() {
               data-testid="username"
               {...(isSetupMode ? setupForm.register("email") : loginForm.register("email"))}
               type="email"
-              label={
-                <span>
-                  Correo Electrónico <span className="text-danger">*</span>
-                </span>
-              }
+              label="Correo Electrónico"
               placeholder="ejemplo@parkflow.com"
               autoComplete="username"
               isRequired
@@ -271,11 +267,7 @@ export default function LoginPage() {
                   data-testid="password"
                   {...setupForm.register("password")}
                   type={showPassword ? "text" : "password"}
-                  label={
-                    <span>
-                      Contraseña <span className="text-danger">*</span>
-                    </span>
-                  }
+                  label="Contraseña"
                   placeholder="••••••••"
                   autoComplete="new-password"
                   isRequired
@@ -312,11 +304,7 @@ export default function LoginPage() {
                 data-testid="password"
                 {...loginForm.register("password")}
                 type={showPassword ? "text" : "password"}
-                label={
-                  <span>
-                    Contraseña <span className="text-danger">*</span>
-                  </span>
-                }
+                label="Contraseña"
                 placeholder="••••••••"
                 autoComplete="current-password"
                 isRequired
