@@ -101,6 +101,7 @@ export function OnboardingProvider({
           : getPrevEnabledStep(step, enabledSteps);
 
       setSaveState("saving");
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
       try {
         const optimisticNext = {
           ...status,
@@ -120,40 +121,50 @@ export function OnboardingProvider({
           (next.progressData?.[`step_${safeTarget}`] as Record<string, unknown>) ?? {}
         );
         setSaveState("saved");
-        setTimeout(() => setSaveState("idle"), 2000);
+        timeoutId = setTimeout(() => setSaveState("idle"), 2000);
       } catch {
         setSaveState("error");
-        setTimeout(() => setSaveState("idle"), 3000);
+        timeoutId = setTimeout(() => setSaveState("idle"), 3000);
         // Rollback on error
         await mutate(status, false);
         loadStepFromStatus(status, status.currentStep ?? 1);
       }
+      return () => {
+        if (timeoutId) clearTimeout(timeoutId);
+      };
     },
     [status, saveState, stepData, companyId, mutate, loadStepFromStatus, setSaveState]
   );
 
   // Stable 10s autosave — only fires when stepData has actually changed
   useEffect(() => {
+    if (!status) return;
+    const currentStepSnapshot = status.currentStep;
     const id = setInterval(() => {
-      if (!status || saveState === "saving") return;
+      if (!status || saveState === "saving" || status.currentStep !== currentStepSnapshot) {
+        return; // Stop autosaving if step changed
+      }
       const current = JSON.stringify(stepData);
       if (current === lastSavedDataRef.current) return;
 
       setSaveState("saving");
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
       saveOnboardingStep(companyId, status.currentStep, stepData, status.currentStep)
         .then(async (next) => {
           await mutate(next, false);
           lastSavedDataRef.current = current;
           setSaveState("saved");
-          setTimeout(() => setSaveState("idle"), 2000);
+          timeoutId = setTimeout(() => setSaveState("idle"), 2000);
         })
         .catch(() => {
           setSaveState("error");
-          setTimeout(() => setSaveState("idle"), 3000);
+          timeoutId = setTimeout(() => setSaveState("idle"), 3000);
         });
     }, 10_000);
-    return () => clearInterval(id);
-  }, [stepData, saveState, status, companyId, mutate, setSaveState]);
+    return () => {
+      clearInterval(id);
+    };
+  }, [status?.currentStep, stepData, saveState, status, companyId, mutate, setSaveState]);
 
   const serverCtxValue = useMemo<OnboardingServerCtx>(
     () => ({ companyId, status: status ?? null, isLoading, persistStep, onDone }),

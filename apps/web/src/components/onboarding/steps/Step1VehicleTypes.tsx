@@ -191,6 +191,7 @@ const Step1VehicleTypes = memo(function Step1VehicleTypes() {
                   max={MAX_HELMET_LOCKERS}
                   className="w-28"
                   variant="bordered"
+                  label="Cantidad"
                   aria-label="Cantidad de lockers"
                   isRequired={helmetHandling === "LOCKERS"}
                   isInvalid={Boolean(stepErrors.helmetTokenCount)}

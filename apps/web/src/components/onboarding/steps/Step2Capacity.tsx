@@ -46,7 +46,7 @@ const Step2Capacity = memo(function Step2Capacity() {
             isInvalid={Boolean(stepErrors.totalCapacity)}
             errorMessage={stepErrors.totalCapacity}
             value={String(stepData.totalCapacity ?? "")}
-            onChange={(v) => setStepData({ ...stepData, totalCapacity: Math.max(0, Number(v.target.value) || 0) })}
+            onChange={(v) => setStepData({ ...stepData, totalCapacity: Math.max(1, Number(v.target.value) || 1) })}
           />
         </div>
         

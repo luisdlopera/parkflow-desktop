@@ -28,21 +28,29 @@ export type OnboardingStatus = {
   enabledSteps: number[];
 };
 
-async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
+async function apiFetch<T>(endpoint: string, options?: RequestInit, timeoutMs = 30000): Promise<T> {
   const headers = await authHeaders();
-  const response = await fetchWithCredentials(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      ...headers,
-      "X-Parkflow-Auth-Toast-Silent": "1",
-      ...options?.headers
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetchWithCredentials(`${API_BASE}${endpoint}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        ...headers,
+        "X-Parkflow-Auth-Toast-Silent": "1",
+        ...options?.headers
+      }
+    });
+    if (!response.ok) {
+      const apiError = await normalizeApiError(response);
+      throw apiError;
     }
-  });
-  if (!response.ok) {
-    const apiError = await normalizeApiError(response);
-    throw apiError;
+    return (await response.json()) as T;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return (await response.json()) as T;
 }
 
 export async function fetchOnboardingStatus(companyId: string): Promise<OnboardingStatus> {
