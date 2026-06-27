@@ -27,6 +27,7 @@ public class AuthController {
   private final DeviceManagementUseCase deviceManagementUseCase;
   private final PasswordResetUseCase passwordResetUseCase;
   private final AppUserRepository appUserRepository;
+  private final com.parkflow.modules.auth.security.AuthCookieFactory authCookieFactory;
 
   public AuthController(
       LoginUseCase loginUseCase,
@@ -35,7 +36,8 @@ public class AuthController {
       ProfileManagementUseCase profileManagementUseCase,
       DeviceManagementUseCase deviceManagementUseCase,
       PasswordResetUseCase passwordResetUseCase,
-      AppUserRepository appUserRepository) {
+      AppUserRepository appUserRepository,
+      com.parkflow.modules.auth.security.AuthCookieFactory authCookieFactory) {
     this.loginUseCase = loginUseCase;
     this.tokenRefreshUseCase = tokenRefreshUseCase;
     this.logoutUseCase = logoutUseCase;
@@ -43,6 +45,7 @@ public class AuthController {
     this.deviceManagementUseCase = deviceManagementUseCase;
     this.passwordResetUseCase = passwordResetUseCase;
     this.appUserRepository = appUserRepository;
+    this.authCookieFactory = authCookieFactory;
   }
 
   @GetMapping("/setup-required")
@@ -55,17 +58,8 @@ public class AuthController {
   @ResponseStatus(HttpStatus.OK)
   public LoginResponse login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
     LoginResult result = loginUseCase.login(request);
-    setAuthCookies(response, result.accessToken(), result.refreshToken());
+    authCookieFactory.setAuthCookies(response, result.accessToken(), result.refreshToken());
     return result.response();
-  }
-
-  private void setAuthCookies(HttpServletResponse response, String accessToken, String refreshToken) {
-    int accessTokenMaxAge = 3600;
-    int refreshTokenMaxAge = 86400 * 7;
-    String cookieAttributes = "; HttpOnly; Secure; SameSite=Strict; Path=/";
-
-    response.addHeader("Set-Cookie", "parkflow_access=" + accessToken + "; Max-Age=" + accessTokenMaxAge + cookieAttributes);
-    response.addHeader("Set-Cookie", "parkflow_refresh=" + refreshToken + "; Max-Age=" + refreshTokenMaxAge + cookieAttributes);
   }
 
   @PostMapping("/refresh")
@@ -86,7 +80,7 @@ public class AuthController {
           "Tu sesion expiro. Inicia sesion nuevamente.");
     }
     LoginResult result = tokenRefreshUseCase.refresh(request, refreshToken);
-    setAuthCookies(response, result.accessToken(), result.refreshToken());
+    authCookieFactory.setAuthCookies(response, result.accessToken(), result.refreshToken());
     return result.response();
   }
 
@@ -108,7 +102,7 @@ public class AuthController {
           "Tu sesion expiro. Inicia sesion nuevamente.");
     }
     LoginResult result = tokenRefreshUseCase.refreshFromCookie(refreshToken);
-    setAuthCookies(response, result.accessToken(), result.refreshToken());
+    authCookieFactory.setAuthCookies(response, result.accessToken(), result.refreshToken());
     return result.response();
   }
 
@@ -116,26 +110,21 @@ public class AuthController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void logout(@Valid @RequestBody LogoutRequest request, HttpServletResponse response) {
     logoutUseCase.logout(request);
-    clearAuthCookies(response);
-  }
-
-  private void clearAuthCookies(HttpServletResponse response) {
-    response.addHeader("Set-Cookie", "parkflow_access=; Max-Age=0; HttpOnly; Secure; SameSite=Strict; Path=/");
-    response.addHeader("Set-Cookie", "parkflow_refresh=; Max-Age=0; HttpOnly; Secure; SameSite=Strict; Path=/");
+    authCookieFactory.clearAuthCookies(response);
   }
 
   @PostMapping("/logout/all")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void logoutAll(HttpServletResponse response) {
     logoutUseCase.logoutAll();
-    clearAuthCookies(response);
+    authCookieFactory.clearAuthCookies(response);
   }
 
   @PostMapping("/logout/device/{deviceId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void logoutDevice(@PathVariable String deviceId, HttpServletResponse response) {
     logoutUseCase.logoutDevice(deviceId);
-    clearAuthCookies(response);
+    authCookieFactory.clearAuthCookies(response);
   }
 
   @GetMapping("/me")

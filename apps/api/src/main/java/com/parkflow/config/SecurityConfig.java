@@ -117,7 +117,7 @@ public class SecurityConfig {
                         "/api/v1/auth/password-reset/request",
                         "/api/v1/auth/password-reset/confirm",
                         "/api/v1/auth/setup-required",
-                        "/api/v1/csrf/token")
+                        "/error")
                     .permitAll()
                     .requestMatchers(swaggerMatchers())
                     .permitAll()

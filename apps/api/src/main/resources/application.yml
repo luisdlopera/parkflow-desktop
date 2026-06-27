@@ -83,6 +83,12 @@ app:
     lockout-minutes: ${PARKFLOW_LOCKOUT_MINUTES:30}
     seed-admin-email: ${PARKFLOW_SEED_ADMIN_EMAIL:admin@parkflow.local}
     seed-admin-password: ${PARKFLOW_SEED_ADMIN_PASSWORD:REPLACE_WITH_ADMIN_PASSWORD}
+    cookie:
+      # HttpOnly auth cookie attributes. Secure and SameSite are env-aware.
+      # - Secure: false for dev (allows localhost over HTTP); true for prod
+      # - SameSite: Lax for SPA (default); None for cross-site (requires Secure=true)
+      secure: ${PARKFLOW_COOKIE_SECURE:false}
+      same-site: ${PARKFLOW_COOKIE_SAME_SITE:Lax}
 
 parkflow:
   jwt:

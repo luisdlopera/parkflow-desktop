@@ -15,9 +15,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (initialized.current) return;
     initialized.current = true;
 
-    const timeoutId = setTimeout(() => {
-      setUser(null);
-    }, 3_000);
+    let timeoutId: NodeJS.Timeout;
 
     (async () => {
       try {
@@ -27,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           headers: { 'Content-Type': 'application/json' },
         });
         if (!response.ok) {
+          // Non-200 response means no valid session (401/403/etc)
           setUser(null);
           return;
         }
@@ -38,11 +37,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         setUser(payload.user);
       } catch {
-        setUser(null);
-      } finally {
-        clearTimeout(timeoutId);
+        // Network error or JSON parse error: wait before logging out
+        // (may recover on retry), so only force logout after timeout
+        timeoutId = setTimeout(() => {
+          setUser(null);
+        }, 3_000);
       }
     })();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [setUser]);
 
   if (isLoading) {
