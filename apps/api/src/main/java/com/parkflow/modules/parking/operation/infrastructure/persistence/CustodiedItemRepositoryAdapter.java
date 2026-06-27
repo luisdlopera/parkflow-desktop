@@ -3,7 +3,7 @@ package com.parkflow.modules.parking.operation.infrastructure.persistence;
 import com.parkflow.modules.parking.operation.domain.CustodiedItem;
 import com.parkflow.modules.parking.operation.domain.CustodiedItemStatus;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
-import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
+import com.parkflow.modules.parking.operation.application.port.out.CustodiedItemPort;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

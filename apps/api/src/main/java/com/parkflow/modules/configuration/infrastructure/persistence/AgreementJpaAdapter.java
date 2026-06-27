@@ -1,7 +1,7 @@
 package com.parkflow.modules.configuration.infrastructure.persistence;
 
 import com.parkflow.modules.configuration.domain.Agreement;
-import com.parkflow.modules.configuration.domain.repository.AgreementPort;
+import com.parkflow.modules.configuration.application.port.out.AgreementPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

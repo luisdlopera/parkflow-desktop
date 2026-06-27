@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.operation.application.service;
 
 import com.parkflow.modules.cash.domain.CashSessionStatus;
-import com.parkflow.modules.cash.domain.repository.CashSessionPort;
+import com.parkflow.modules.cash.application.port.out.CashSessionPort;
 import com.parkflow.modules.licensing.domain.repository.LicensedDevicePort;
 import com.parkflow.modules.parking.operation.dto.OperationalHealthResponse;
 import com.parkflow.modules.sync.domain.repository.SyncEventPort;

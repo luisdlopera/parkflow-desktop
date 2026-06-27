@@ -2,7 +2,7 @@ package com.parkflow.modules.configuration.infrastructure.persistence;
 
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.configuration.domain.RateCategory;
-import com.parkflow.modules.configuration.domain.repository.RatePort;
+import com.parkflow.modules.configuration.application.port.out.RatePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

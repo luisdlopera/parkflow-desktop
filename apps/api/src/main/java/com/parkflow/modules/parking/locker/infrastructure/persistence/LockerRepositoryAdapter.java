@@ -2,7 +2,7 @@ package com.parkflow.modules.parking.locker.infrastructure.persistence;
 
 import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
-import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
+import com.parkflow.modules.parking.locker.application.port.out.LockerPort;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

@@ -6,7 +6,7 @@ import com.parkflow.modules.configuration.dto.PrinterResponse;
 import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.domain.Printer;
 import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
-import com.parkflow.modules.configuration.domain.repository.PrinterPort;
+import com.parkflow.modules.configuration.application.port.out.PrinterPort;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.common.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;

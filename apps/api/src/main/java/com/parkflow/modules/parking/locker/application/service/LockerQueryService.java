@@ -2,7 +2,7 @@ package com.parkflow.modules.parking.locker.application.service;
 
 import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
-import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
+import com.parkflow.modules.parking.locker.application.port.out.LockerPort;
 import com.parkflow.modules.parking.locker.dto.LockerResponse;
 import com.parkflow.modules.parking.operation.domain.CustodiedItemStatus;
 import com.parkflow.modules.parking.operation.infrastructure.persistence.CustodiedItemRepository;

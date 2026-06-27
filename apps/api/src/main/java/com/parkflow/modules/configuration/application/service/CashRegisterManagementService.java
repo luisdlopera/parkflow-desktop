@@ -8,7 +8,7 @@ import com.parkflow.modules.configuration.dto.CashRegisterResponse;
 import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.domain.Printer;
 import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
-import com.parkflow.modules.configuration.domain.repository.PrinterPort;
+import com.parkflow.modules.configuration.application.port.out.PrinterPort;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;

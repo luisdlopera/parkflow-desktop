@@ -1,11 +1,11 @@
 package com.parkflow.modules.parking.operation.application.service;
 
 import com.parkflow.modules.audit.domain.Auditable;
-import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
-import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
-import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
-import com.parkflow.modules.parking.operation.domain.repository.PaymentPort;
-import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
+import com.parkflow.modules.parking.operation.application.port.out.CustodiedItemPort;
+import com.parkflow.modules.parking.operation.application.port.out.OperationIdempotencyPort;
+import com.parkflow.modules.parking.operation.application.port.out.VehicleConditionReportPort;
+import com.parkflow.modules.parking.operation.application.port.out.PaymentPort;
+import com.parkflow.modules.configuration.application.port.out.OperationalParameterPort;
 import com.parkflow.modules.cash.application.port.in.ParkingCashIntegrationUseCase;
 import com.parkflow.modules.cash.domain.CashMovementType;
 
@@ -14,7 +14,7 @@ import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
 import com.parkflow.modules.configuration.domain.OperationalParameter;
-import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.configuration.application.port.out.ParkingSitePort;
 import com.parkflow.modules.settings.application.port.in.ParkingParametersUseCase;
 import com.parkflow.modules.parking.operation.application.port.in.ParkingPricingUseCase;
 import com.parkflow.modules.parking.operation.application.port.in.RegisterExitUseCase;
@@ -26,8 +26,8 @@ import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
-import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.parking.locker.application.port.out.LockerPort;
+import com.parkflow.modules.parking.operation.application.port.out.AppUserPort;
 import com.parkflow.modules.parking.operation.infrastructure.persistence.*;
 import com.parkflow.modules.parking.operation.domain.pricing.PriceBreakdown;
 import com.parkflow.modules.tickets.domain.PrintDocumentType;

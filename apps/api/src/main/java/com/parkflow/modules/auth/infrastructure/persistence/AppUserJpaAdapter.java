@@ -2,7 +2,7 @@ package com.parkflow.modules.auth.infrastructure.persistence;
 
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
-import com.parkflow.modules.auth.domain.repository.AppUserPort;
+import com.parkflow.modules.auth.application.port.out.AppUserPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

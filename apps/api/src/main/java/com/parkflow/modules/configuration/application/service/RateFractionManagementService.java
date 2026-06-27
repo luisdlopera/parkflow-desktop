@@ -4,10 +4,10 @@ import com.parkflow.modules.configuration.application.port.in.RateFractionUseCas
 import com.parkflow.modules.configuration.dto.RateFractionRequest;
 import com.parkflow.modules.configuration.dto.RateFractionResponse;
 import com.parkflow.modules.configuration.domain.RateFraction;
-import com.parkflow.modules.configuration.domain.repository.RateFractionPort;
+import com.parkflow.modules.configuration.application.port.out.RateFractionPort;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.configuration.domain.repository.RatePort;
+import com.parkflow.modules.configuration.application.port.out.RatePort;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;

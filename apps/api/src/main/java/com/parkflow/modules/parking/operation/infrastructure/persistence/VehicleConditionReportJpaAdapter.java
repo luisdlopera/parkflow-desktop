@@ -3,7 +3,7 @@ package com.parkflow.modules.parking.operation.infrastructure.persistence;
 import com.parkflow.modules.parking.operation.domain.ConditionStage;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
 import com.parkflow.modules.parking.operation.domain.VehicleConditionReport;
-import com.parkflow.modules.parking.operation.domain.repository.VehicleConditionReportPort;
+import com.parkflow.modules.parking.operation.application.port.out.VehicleConditionReportPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

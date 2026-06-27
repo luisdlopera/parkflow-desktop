@@ -3,7 +3,7 @@ package com.parkflow.modules.parking.operation.application.service;
 import com.parkflow.modules.parking.operation.domain.IdempotentOperationType;
 import com.parkflow.modules.parking.operation.domain.OperationIdempotency;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
-import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
+import com.parkflow.modules.parking.operation.application.port.out.OperationIdempotencyPort;
 import com.parkflow.modules.parking.operation.dto.OperationResultResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.common.exception.OperationException;

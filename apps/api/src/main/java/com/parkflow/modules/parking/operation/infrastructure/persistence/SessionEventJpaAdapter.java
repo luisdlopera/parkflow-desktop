@@ -2,7 +2,7 @@ package com.parkflow.modules.parking.operation.infrastructure.persistence;
 
 import com.parkflow.modules.parking.operation.domain.SessionEvent;
 import com.parkflow.modules.parking.operation.domain.SessionEventType;
-import com.parkflow.modules.parking.operation.domain.repository.SessionEventPort;
+import com.parkflow.modules.parking.operation.application.port.out.SessionEventPort;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

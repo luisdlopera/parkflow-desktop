@@ -2,7 +2,7 @@ package com.parkflow.modules.cash.infrastructure.persistence;
 
 import com.parkflow.modules.cash.domain.CashFeSequenceCounter;
 import com.parkflow.modules.cash.domain.CashFeSequencePk;
-import com.parkflow.modules.cash.domain.repository.CashFeSequenceCounterPort;
+import com.parkflow.modules.cash.application.port.out.CashFeSequenceCounterPort;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;

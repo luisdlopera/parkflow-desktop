@@ -4,7 +4,7 @@ import com.parkflow.modules.configuration.application.port.in.PaymentMethodUseCa
 import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
 import com.parkflow.modules.configuration.dto.PaymentMethodResponse;
 import com.parkflow.modules.configuration.domain.PaymentMethod;
-import com.parkflow.modules.configuration.domain.repository.PaymentMethodPort;
+import com.parkflow.modules.configuration.application.port.out.PaymentMethodPort;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.common.dto.SettingsPageResponse;
 import lombok.RequiredArgsConstructor;

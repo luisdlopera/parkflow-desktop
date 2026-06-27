@@ -9,7 +9,7 @@ import com.parkflow.modules.parking.operation.application.port.in.MassExitPrevie
 import com.parkflow.modules.parking.operation.application.port.in.MassExitProcessUseCase;
 import com.parkflow.modules.parking.operation.application.port.in.RegisterExitUseCase;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
-import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
+import com.parkflow.modules.parking.operation.application.port.out.AppUserPort;
 import com.parkflow.modules.parking.operation.dto.ExitRequest;
 import com.parkflow.modules.parking.operation.dto.MassExitFilterRequest;
 import com.parkflow.modules.parking.operation.dto.MassExitItemResult;

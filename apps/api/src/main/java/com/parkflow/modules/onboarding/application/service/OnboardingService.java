@@ -43,8 +43,8 @@ public class OnboardingService implements OnboardingUseCase {
   private final OperationalConfigurationPort operationalConfigurationPort;
   private final OnboardingQuestionConfigService onboardingQuestionConfigService;
   private final OnboardingSettingsMapper settingsMapper;
-  private final com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort parkingSessionPort;
-  private final com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
+  private final com.parkflow.modules.parking.operation.application.port.out.ParkingSessionPort parkingSessionPort;
+  private final com.parkflow.modules.auth.application.port.out.AuthSessionPort authSessionPort;
   private final com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository appUserRepository;
   private final OnboardingMaterializationService materializationService;
 

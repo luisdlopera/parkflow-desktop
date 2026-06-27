@@ -3,7 +3,7 @@ package com.parkflow.modules.auth.application.service;
 import com.parkflow.modules.auth.application.port.in.AuthAuditQueryUseCase;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.domain.AuthAuditLog;
-import com.parkflow.modules.auth.domain.repository.AuthAuditLogPort;
+import com.parkflow.modules.auth.application.port.out.AuthAuditLogPort;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

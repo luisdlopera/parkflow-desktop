@@ -2,7 +2,7 @@ package com.parkflow.modules.parking.operation.infrastructure.persistence;
 
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
 import com.parkflow.modules.parking.operation.domain.SessionStatus;
-import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.operation.application.port.out.ParkingSessionPort;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;

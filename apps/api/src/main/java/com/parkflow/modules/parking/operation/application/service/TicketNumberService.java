@@ -3,7 +3,7 @@ package com.parkflow.modules.parking.operation.application.service;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.parking.operation.application.port.out.TicketPrefixPort;
 import com.parkflow.modules.parking.operation.domain.TicketCounter;
-import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
+import com.parkflow.modules.parking.operation.application.port.out.TicketCounterPort;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;

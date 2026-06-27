@@ -1,6 +1,6 @@
 package com.parkflow.modules.auth.infrastructure.persistence;
 
-import com.parkflow.modules.auth.domain.repository.AuthCompanyPort;
+import com.parkflow.modules.auth.application.port.out.AuthCompanyPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 

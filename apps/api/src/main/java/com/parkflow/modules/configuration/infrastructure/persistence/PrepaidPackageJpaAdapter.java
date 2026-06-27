@@ -1,7 +1,7 @@
 package com.parkflow.modules.configuration.infrastructure.persistence;
 
 import com.parkflow.modules.configuration.domain.PrepaidPackage;
-import com.parkflow.modules.configuration.domain.repository.PrepaidPackagePort;
+import com.parkflow.modules.configuration.application.port.out.PrepaidPackagePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

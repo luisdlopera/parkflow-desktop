@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.operation.application.service;
 
 import com.parkflow.modules.parking.operation.dto.OperationsSummaryResponse;
-import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.operation.application.port.out.ParkingSessionPort;
 import com.parkflow.modules.sync.domain.repository.SyncEventPort;
 import com.parkflow.modules.tickets.domain.PrintJobStatus;
 import com.parkflow.modules.tickets.domain.repository.PrintJobPort;

@@ -5,7 +5,7 @@ import com.parkflow.modules.auth.dto.PasswordResetConfirmRequest;
 import com.parkflow.modules.auth.dto.PasswordResetRequest;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.domain.PasswordResetToken;
-import com.parkflow.modules.auth.domain.repository.PasswordResetTokenPort;
+import com.parkflow.modules.auth.application.port.out.PasswordResetTokenPort;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.common.exception.OperationException;

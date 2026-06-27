@@ -1,8 +1,8 @@
 package com.parkflow.modules.parking.operation.domain.service;
 
-import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.configuration.application.port.out.ParkingSitePort;
 import com.parkflow.modules.parking.operation.domain.SessionStatus;
-import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.operation.application.port.out.ParkingSessionPort;
 import com.parkflow.modules.common.exception.OperationException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

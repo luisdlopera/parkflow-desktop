@@ -2,7 +2,7 @@ package com.parkflow.modules.auth.infrastructure.search;
 
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
-import com.parkflow.modules.auth.domain.repository.AppUserPort;
+import com.parkflow.modules.auth.application.port.out.AppUserPort;
 import com.parkflow.modules.search.domain.model.SearchResult;
 import com.parkflow.modules.search.domain.model.SearchType;
 import com.parkflow.modules.search.domain.port.SearchProvider;

@@ -1,6 +1,6 @@
 package com.parkflow.modules.auth.application.service;
 
-import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
+import com.parkflow.modules.auth.application.port.out.AuthSessionPort;
 import java.time.OffsetDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

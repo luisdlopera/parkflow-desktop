@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.domain.AuthAuditLog;
 import com.parkflow.modules.auth.domain.AuthorizedDevice;
-import com.parkflow.modules.auth.domain.repository.AuthAuditLogPort;
+import com.parkflow.modules.auth.application.port.out.AuthAuditLogPort;
 import com.parkflow.modules.auth.domain.AppUser;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

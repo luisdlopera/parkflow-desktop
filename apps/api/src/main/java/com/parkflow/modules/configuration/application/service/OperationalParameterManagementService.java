@@ -5,7 +5,7 @@ import com.parkflow.modules.configuration.dto.OperationalParameterRequest;
 import com.parkflow.modules.configuration.dto.OperationalParameterResponse;
 import com.parkflow.modules.configuration.domain.OperationalParameter;
 import com.parkflow.modules.configuration.domain.ParkingSite;
-import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
+import com.parkflow.modules.configuration.application.port.out.OperationalParameterPort;
 import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.auth.security.TenantContext;

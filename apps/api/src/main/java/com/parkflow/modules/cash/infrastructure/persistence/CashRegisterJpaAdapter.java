@@ -1,7 +1,7 @@
 package com.parkflow.modules.cash.infrastructure.persistence;
 
 import com.parkflow.modules.cash.domain.CashRegister;
-import com.parkflow.modules.cash.domain.repository.CashRegisterPort;
+import com.parkflow.modules.cash.application.port.out.CashRegisterPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

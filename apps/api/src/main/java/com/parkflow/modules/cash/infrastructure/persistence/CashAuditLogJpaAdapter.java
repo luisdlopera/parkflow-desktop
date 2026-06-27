@@ -1,7 +1,7 @@
 package com.parkflow.modules.cash.infrastructure.persistence;
 
 import com.parkflow.modules.cash.domain.CashAuditLog;
-import com.parkflow.modules.cash.domain.repository.CashAuditLogPort;
+import com.parkflow.modules.cash.application.port.out.CashAuditLogPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;

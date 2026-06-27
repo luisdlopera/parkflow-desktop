@@ -1,7 +1,7 @@
 package com.parkflow.modules.configuration.infrastructure.persistence;
 
 import com.parkflow.modules.configuration.domain.OperationalParameter;
-import com.parkflow.modules.configuration.domain.repository.OperationalParameterPort;
+import com.parkflow.modules.configuration.application.port.out.OperationalParameterPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;

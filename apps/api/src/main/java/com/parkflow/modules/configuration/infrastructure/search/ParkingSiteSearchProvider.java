@@ -1,7 +1,7 @@
 package com.parkflow.modules.configuration.infrastructure.search;
 
 import com.parkflow.modules.configuration.domain.ParkingSite;
-import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.configuration.application.port.out.ParkingSitePort;
 import com.parkflow.modules.search.domain.model.SearchResult;
 import com.parkflow.modules.search.domain.model.SearchType;
 import com.parkflow.modules.search.domain.port.SearchProvider;

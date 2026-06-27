@@ -1,7 +1,7 @@
 package com.parkflow.modules.configuration.infrastructure.persistence;
 
 import com.parkflow.modules.configuration.domain.PrepaidBalance;
-import com.parkflow.modules.configuration.domain.repository.PrepaidBalancePort;
+import com.parkflow.modules.configuration.application.port.out.PrepaidBalancePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;

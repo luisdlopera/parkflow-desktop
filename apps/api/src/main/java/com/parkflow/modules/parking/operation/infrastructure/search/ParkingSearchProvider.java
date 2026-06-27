@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.operation.infrastructure.search;
 
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
-import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.operation.application.port.out.ParkingSessionPort;
 import com.parkflow.modules.search.domain.model.SearchResult;
 import com.parkflow.modules.search.domain.model.SearchType;
 import com.parkflow.modules.search.domain.port.SearchProvider;

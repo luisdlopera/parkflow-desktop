@@ -1,7 +1,7 @@
 package com.parkflow.modules.auth.infrastructure.persistence;
 
 import com.parkflow.modules.auth.domain.PasswordResetToken;
-import com.parkflow.modules.auth.domain.repository.PasswordResetTokenPort;
+import com.parkflow.modules.auth.application.port.out.PasswordResetTokenPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

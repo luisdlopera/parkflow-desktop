@@ -1,7 +1,7 @@
 package com.parkflow.modules.cash.infrastructure.persistence;
 
 import com.parkflow.modules.cash.domain.CashMovement;
-import com.parkflow.modules.cash.domain.repository.CashMovementPort;
+import com.parkflow.modules.cash.application.port.out.CashMovementPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

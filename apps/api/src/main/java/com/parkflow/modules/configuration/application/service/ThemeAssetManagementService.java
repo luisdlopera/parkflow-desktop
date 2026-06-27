@@ -8,7 +8,7 @@ import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.configuration.application.port.in.ThemeConfigurationUseCase;
 import com.parkflow.modules.configuration.domain.ThemeConfiguration;
-import com.parkflow.modules.configuration.domain.repository.ThemeConfigurationPort;
+import com.parkflow.modules.configuration.application.port.out.ThemeConfigurationPort;
 import com.parkflow.modules.configuration.dto.ThemeConfigurationRequest;
 import com.parkflow.modules.configuration.dto.ThemeConfigurationResponse;
 import lombok.RequiredArgsConstructor;

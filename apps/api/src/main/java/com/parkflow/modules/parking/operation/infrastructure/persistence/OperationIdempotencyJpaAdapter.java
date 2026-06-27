@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.operation.infrastructure.persistence;
 
 import com.parkflow.modules.parking.operation.domain.OperationIdempotency;
-import com.parkflow.modules.parking.operation.domain.repository.OperationIdempotencyPort;
+import com.parkflow.modules.parking.operation.application.port.out.OperationIdempotencyPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;

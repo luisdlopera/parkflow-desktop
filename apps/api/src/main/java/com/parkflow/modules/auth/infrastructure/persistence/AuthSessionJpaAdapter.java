@@ -2,7 +2,7 @@ package com.parkflow.modules.auth.infrastructure.persistence;
 
 import com.parkflow.modules.auth.domain.AuthSession;
 import com.parkflow.modules.auth.domain.AuthorizedDevice;
-import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
+import com.parkflow.modules.auth.application.port.out.AuthSessionPort;
 import com.parkflow.modules.auth.domain.AppUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;

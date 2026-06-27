@@ -1,7 +1,7 @@
 package com.parkflow.modules.configuration.infrastructure.persistence;
 
 import com.parkflow.modules.configuration.domain.ParkingSite;
-import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.configuration.application.port.out.ParkingSitePort;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

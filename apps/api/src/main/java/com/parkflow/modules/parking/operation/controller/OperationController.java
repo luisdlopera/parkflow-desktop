@@ -2,7 +2,7 @@ package com.parkflow.modules.parking.operation.controller;
 
 import com.parkflow.modules.common.debug.AgentDebugNdjson;
 import com.parkflow.modules.parking.operation.domain.SessionEvent;
-import com.parkflow.modules.parking.operation.domain.repository.SessionEventPort;
+import com.parkflow.modules.parking.operation.application.port.out.SessionEventPort;
 import com.parkflow.modules.parking.operation.dto.*;
 import com.parkflow.modules.parking.operation.application.port.in.*;
 import com.parkflow.modules.parking.operation.application.service.SupervisorService;

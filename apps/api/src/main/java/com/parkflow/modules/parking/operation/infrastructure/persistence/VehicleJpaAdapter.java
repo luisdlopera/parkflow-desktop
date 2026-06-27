@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.operation.infrastructure.persistence;
 
 import com.parkflow.modules.parking.operation.domain.Vehicle;
-import com.parkflow.modules.parking.operation.domain.repository.VehiclePort;
+import com.parkflow.modules.parking.operation.application.port.out.VehiclePort;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;

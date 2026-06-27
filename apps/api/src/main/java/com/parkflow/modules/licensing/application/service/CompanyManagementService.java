@@ -24,7 +24,7 @@ import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
-import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
+import com.parkflow.modules.auth.application.port.out.AuthSessionPort;
 import com.parkflow.modules.common.exception.domain.BusinessValidationException;
 import com.parkflow.modules.common.exception.domain.EntityNotFoundException;
 

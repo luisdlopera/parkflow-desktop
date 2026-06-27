@@ -1,7 +1,7 @@
 package com.parkflow.modules.auth.infrastructure.persistence;
 
 import com.parkflow.modules.auth.domain.AuthAuditLog;
-import com.parkflow.modules.auth.domain.repository.AuthAuditLogPort;
+import com.parkflow.modules.auth.application.port.out.AuthAuditLogPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;

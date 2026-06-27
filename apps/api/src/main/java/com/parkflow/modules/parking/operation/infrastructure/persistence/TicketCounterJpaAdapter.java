@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.operation.infrastructure.persistence;
 
 import com.parkflow.modules.parking.operation.domain.TicketCounter;
-import com.parkflow.modules.parking.operation.domain.repository.TicketCounterPort;
+import com.parkflow.modules.parking.operation.application.port.out.TicketCounterPort;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,7 +1,7 @@
 package com.parkflow.modules.onboarding.application.service;
 
 import com.parkflow.modules.configuration.domain.PaymentMethod;
-import com.parkflow.modules.configuration.domain.repository.PaymentMethodPort;
+import com.parkflow.modules.configuration.application.port.out.PaymentMethodPort;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

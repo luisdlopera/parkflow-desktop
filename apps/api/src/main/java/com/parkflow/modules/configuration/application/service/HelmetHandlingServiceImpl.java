@@ -11,7 +11,7 @@ import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.onboarding.application.service.CompanySettingsService;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
-import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
+import com.parkflow.modules.parking.locker.application.port.out.LockerPort;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;

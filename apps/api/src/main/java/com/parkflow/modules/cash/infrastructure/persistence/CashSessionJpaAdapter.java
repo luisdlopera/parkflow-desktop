@@ -2,7 +2,7 @@ package com.parkflow.modules.cash.infrastructure.persistence;
 
 import com.parkflow.modules.cash.domain.CashSession;
 import com.parkflow.modules.cash.domain.CashSessionStatus;
-import com.parkflow.modules.cash.domain.repository.CashSessionPort;
+import com.parkflow.modules.cash.application.port.out.CashSessionPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

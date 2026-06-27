@@ -1,7 +1,7 @@
 package com.parkflow.modules.parking.operation.application.service;
 
-import com.parkflow.modules.configuration.domain.repository.MonthlyContractPort;
-import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
+import com.parkflow.modules.configuration.application.port.out.MonthlyContractPort;
+import com.parkflow.modules.configuration.application.port.out.ParkingSitePort;
 import com.parkflow.modules.configuration.application.port.in.OperationalValidationUseCase;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.Rate;

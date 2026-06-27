@@ -4,7 +4,7 @@ import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.locker.domain.Locker;
 import com.parkflow.modules.parking.locker.domain.LockerStatus;
-import com.parkflow.modules.parking.locker.domain.repository.LockerPort;
+import com.parkflow.modules.parking.locker.application.port.out.LockerPort;
 import com.parkflow.modules.parking.locker.dto.BatchLockerRequest;
 import com.parkflow.modules.parking.locker.dto.LockerResponse;
 import com.parkflow.modules.parking.locker.dto.PatchLockerRequest;

@@ -4,7 +4,7 @@ import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.parking.operation.domain.ParkingSession;
 import com.parkflow.modules.parking.operation.domain.SessionEvent;
 import com.parkflow.modules.parking.operation.domain.SessionEventType;
-import com.parkflow.modules.parking.operation.domain.repository.SessionEventPort;
+import com.parkflow.modules.parking.operation.application.port.out.SessionEventPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;

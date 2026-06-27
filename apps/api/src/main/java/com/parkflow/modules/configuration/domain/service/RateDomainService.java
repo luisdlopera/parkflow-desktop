@@ -2,7 +2,7 @@ package com.parkflow.modules.configuration.domain.service;
 
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.Rate;
-import com.parkflow.modules.parking.operation.domain.repository.RatePort;
+import com.parkflow.modules.parking.operation.application.port.out.RatePort;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
