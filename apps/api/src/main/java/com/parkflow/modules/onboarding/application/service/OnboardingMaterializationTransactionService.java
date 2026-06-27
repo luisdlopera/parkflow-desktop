@@ -21,8 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
  * Resolves Hallazgo #8: No cross-module transactionality
  *
  * @deprecated Wraps deprecated {@link OnboardingService}. Use hexagonal onboarding ports instead.
+ * To be removed in 2.2.0: Call specialized materializers directly instead.
  */
-@Deprecated(since = "2.1.0", forRemoval = false)
+@Deprecated(since = "2.1.0", forRemoval = true)
 @SuppressWarnings("deprecation")
 @Slf4j
 @Service
