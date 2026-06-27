@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableJpaRepositories
+@EnableJpaRepositories(considerNestedRepositories = true)
 @EnableScheduling
 @EnableConfigurationProperties(CashModuleProperties.class)
 public class ParkflowApiApplication {

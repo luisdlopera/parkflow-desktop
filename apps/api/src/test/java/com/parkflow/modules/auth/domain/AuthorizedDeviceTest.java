@@ -13,7 +13,7 @@ class AuthorizedDeviceTest {
     d.setDeviceId("dev-1");
     d.setDisplayName("Device 1");
     d.setPlatform("desktop");
-    d.setFingerprint("fp-1");
+    d.setFingerprintHash("fp-1");
     assertThat(d.isAuthorized()).isTrue();
     d.setAuthorized(false);
     d.setRevokedAt(OffsetDateTime.now());
