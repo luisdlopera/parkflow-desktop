@@ -1,5 +1,7 @@
 import Fastify, { type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import { randomUUID } from "node:crypto";
 import * as path from "node:path";
 import type { LocalAgentPrintBody, PrintJobStatus, PrintResult } from "@parkflow/types";
@@ -31,11 +33,7 @@ function requireApiKey(request: FastifyRequest): void {
   const fromBearer =
     typeof h === "string" && h.toLowerCase().startsWith("bearer ") ? h.slice(7).trim() : null;
   const fromHeader = typeof x === "string" ? x.trim() : null;
-  const fromQuery =
-    request.query && typeof request.query === "object" && "token" in request.query
-      ? String((request.query as { token?: string }).token ?? "")
-      : null;
-  const token = fromBearer || fromHeader || fromQuery;
+  const token = fromBearer || fromHeader;
   if (token !== agentApiKey) {
     appendAudit(auditPath, {
       atIso: new Date().toISOString(),
@@ -133,7 +131,22 @@ await app.register(cors, {
       return;
     }
     cb(null, allowedOrigins.includes(o));
-  }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-API-Key", "X-Request-ID"],
+  maxAge: 86400,
+});
+
+await app.register(helmet, {
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+});
+
+await app.register(rateLimit, {
+  max: 100,
+  timeWindow: "1 minute",
+  keyGenerator: (req) => req.ip,
 });
 
 app.addHook("onRequest", async (req) => {
@@ -142,6 +155,12 @@ app.addHook("onRequest", async (req) => {
   }
   requireApiKey(req);
   requireOrigin(req);
+});
+
+// Request ID tracking
+app.addHook("onRequest", async (req, reply) => {
+  req.id = (req.headers["x-request-id"] as string) || randomUUID();
+  reply.header("X-Request-ID", req.id);
 });
 
 app.get("/health", async () => ({
