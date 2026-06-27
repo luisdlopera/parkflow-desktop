@@ -12,7 +12,7 @@ import { login } from "@/features/auth/api/auth.api";
 import { loadSession, saveSession } from "@/lib/services/auth-storage.service";
 import { broadcastAuthEvent } from "@/hooks/auth/useAuthBroadcast";
 import { currentUser } from "@/lib/services/auth-domain.service";
-import { checkSetupRequired, postInitialSetup } from "@/lib/api/auth-api";
+import { checkSetupRequired } from "@/lib/api/auth-api";
 import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
@@ -164,28 +164,8 @@ export default function LoginPage() {
     }
   };
 
-  const onSetupSubmit = async (data: SetupInput) => {
-    setGlobalError(null);
-    try {
-      const session = await postInitialSetup({
-        email: data.email.trim(),
-        password: data.password,
-        name: data.adminName.trim(),
-        companyName: data.companyName.trim(),
-        nit: data.companyNit.trim(),
-      });
-
-      await saveSession(session);
-      useAuthStore.getState().setUser(session.user);
-      if (!session.user?.onboardingCompleted) {
-        router.replace("/onboarding");
-      } else {
-        router.replace(nextPath);
-      }
-    } catch (err) {
-      const userError = getUserErrorMessage(err, "auth.setup");
-      setGlobalError(`${userError.title}: ${userError.description}`);
-    }
+  const onSetupSubmit = async (_data: SetupInput) => {
+    setGlobalError("La configuración inicial debe hacerse a través del flujo de onboarding.");
   };
 
   const isSubmitting = activeFormState.isSubmitting;
