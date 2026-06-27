@@ -94,6 +94,10 @@ dependencies {
   testImplementation 'org.springframework.security:spring-security-test'
 }
 
+jacoco {
+  toolVersion = "0.8.13"
+}
+
 tasks.test {
   useJUnitPlatform()
   maxHeapSize = '2g'
@@ -125,7 +129,7 @@ jacocoTestCoverageVerification {
         counter = 'BRANCH'
       }
       limit {
-        minimum = 0.60
+        minimum = 0.70
         counter = 'CLASS'
       }
     }

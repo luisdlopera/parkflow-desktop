@@ -101,7 +101,18 @@ async function main() {
     log("✓ Archivo .env ya existe", "green");
   }
 
-  // 3. Instalar dependencias
+  // 3. Configurar git hooks
+  log("\nConfigurando git hooks...\n", "bright");
+
+  try {
+    execSync("git config core.hooksPath .githooks", { stdio: "ignore" });
+    execSync("chmod +x .githooks/pre-commit", { stdio: "ignore" });
+    log("✓ Git hooks configurados (.githooks/pre-commit)", "green");
+  } catch {
+    log("⚠ No se pudieron configurar los git hooks", "yellow");
+  }
+
+  // 4. Instalar dependencias
   log("\nInstalando dependencias...\n", "bright");
 
   try {
@@ -112,7 +123,7 @@ async function main() {
     process.exit(1);
   }
 
-  // 4. Verificar Docker/PostgreSQL
+  // 5. Verificar Docker/PostgreSQL
   log("\nVerificando base de datos...\n", "bright");
 
   if (checks.docker) {
@@ -123,7 +134,7 @@ async function main() {
     log("  Configura PostgreSQL manualmente en .env", "yellow");
   }
 
-  // 5. Resumen
+  // 6. Resumen
   log("\n========================================", "cyan");
   log("Setup completado exitosamente!", "green");
   log("========================================\n", "cyan");
