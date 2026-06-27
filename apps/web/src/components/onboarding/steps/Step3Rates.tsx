@@ -143,7 +143,7 @@ const Step3Rates = memo(function Step3Rates() {
               isInvalid={Boolean(stepErrors.baseValue)}
               errorMessage={stepErrors.baseValue}
               value={String(stepData.baseValue ?? "")}
-              onChange={(v) => setStepData({ ...stepData, baseValue: Math.max(0, Number(v.target.value) || 0) })}
+              onChange={(v) => setStepData({ ...stepData, baseValue: Math.max(1, Number(v.target.value) || 1) })}
             />
           </div>
         )}
@@ -162,7 +162,7 @@ const Step3Rates = memo(function Step3Rates() {
               isInvalid={Boolean(stepErrors.flatRate)}
               errorMessage={stepErrors.flatRate}
               value={String(stepData.flatRate ?? "")}
-              onChange={(v) => setStepData({ ...stepData, flatRate: Math.max(0, Number(v.target.value) || 0) })}
+              onChange={(v) => setStepData({ ...stepData, flatRate: Math.max(1, Number(v.target.value) || 1) })}
             />
           </div>
         )}
@@ -251,13 +251,15 @@ const Step3Rates = memo(function Step3Rates() {
             {/* Redondeo */}
             <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg flex items-center justify-between">
               <span className="text-sm font-medium">¿Cómo desea redondear el tiempo?</span>
-              <Select 
+              <Select
                 className="w-48"
                 aria-label="Redondeo"
                 selectedKey={String(stepData.rounding ?? "EXACT")}
-                onSelectionChange={(keys: any) => {
-                  const val = Array.from(keys)[0];
-                  if (val) setStepData({ ...stepData, rounding: val });
+                onSelectionChange={(keys: Set<React.Key>) => {
+                  const val = Array.from(keys)[0] as string | undefined;
+                  if (val && ["EXACT", "15_MIN", "30_MIN", "1_HOUR"].includes(val)) {
+                    setStepData({ ...stepData, rounding: val });
+                  }
                 }}
               >
                 <Select.Trigger aria-label="Seleccionar opción"><Select.Value aria-label="Seleccionar opción" /><Select.Indicator aria-label="Seleccionar opción" /></Select.Trigger>
