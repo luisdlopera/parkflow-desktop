@@ -108,17 +108,27 @@ public class JwtTokenService {
   }
 
   public String createRefreshToken(UUID userId, UUID sessionId, String refreshJti) {
+    return createRefreshToken(userId, sessionId, refreshJti, null, 1);
+  }
+
+  public String createRefreshToken(UUID userId, UUID sessionId, String refreshJti,
+      UUID familyId, int generation) {
     OffsetDateTime now = OffsetDateTime.now();
     OffsetDateTime exp = now.plus(refreshTtl);
-    return Jwts.builder()
+    var builder = Jwts.builder()
         .subject(userId.toString())
         .issuedAt(Date.from(now.toInstant()))
         .expiration(Date.from(exp.toInstant()))
         .claim("sid", sessionId.toString())
         .claim("jti", refreshJti)
-        .claim("typ", "refresh")
-        .signWith(key)
-        .compact();
+        .claim("typ", "refresh");
+
+    if (familyId != null) {
+      builder.claim("fid", familyId.toString());
+      builder.claim("gen", generation);
+    }
+
+    return builder.signWith(key).compact();
   }
 
   public Claims parse(String token) {
@@ -136,5 +146,27 @@ public class JwtTokenService {
 
   public Duration refreshTtl() {
     return refreshTtl;
+  }
+
+  public UUID extractFamilyId(String token) {
+    try {
+      Claims claims = parse(token);
+      String fid = claims.get("fid", String.class);
+      return fid != null ? UUID.fromString(fid) : null;
+    } catch (Exception e) {
+      log.debug("Failed to extract family ID from token", e);
+      return null;
+    }
+  }
+
+  public Integer extractGeneration(String token) {
+    try {
+      Claims claims = parse(token);
+      Integer gen = claims.get("gen", Integer.class);
+      return gen != null ? gen : 1;
+    } catch (Exception e) {
+      log.debug("Failed to extract generation from token", e);
+      return 1;
+    }
   }
 }

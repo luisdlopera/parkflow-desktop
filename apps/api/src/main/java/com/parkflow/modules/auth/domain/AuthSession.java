@@ -48,4 +48,10 @@ public class AuthSession {
 
   @Column(name = "company_id", nullable = false)
   private UUID companyId;
+
+  @Column(name = "token_family_id")
+  private UUID tokenFamilyId;
+
+  @Column(name = "token_generation", nullable = false)
+  private int tokenGeneration = 1;
 }
