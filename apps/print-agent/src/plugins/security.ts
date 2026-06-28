@@ -50,21 +50,34 @@ export default fp(async function (app: FastifyInstance) {
   });
 
   // CORS: Strict origin validation
+  const corsOrigins = (process.env.PRINT_AGENT_CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+
+  if (corsOrigins.length === 0) {
+    throw new Error(
+      'PRINT_AGENT_CORS_ORIGINS environment variable not set. ' +
+        'Please set comma-separated list of allowed origins (e.g., "https://app.parkflow.dev,https://admin.parkflow.dev,tauri://localhost")'
+    );
+  }
+
+  app.log.info(
+    { allowedOrigins: corsOrigins },
+    'CORS configured with allowed origins'
+  );
+
   await app.register(cors, {
     origin: (origin, cb) => {
-      const allowedOrigins = [
-        'http://localhost:3000',
-        'https://app.parkflow.dev',
-        'https://admin.parkflow.dev',
-        'tauri://localhost',
-      ];
-
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || corsOrigins.includes(origin)) {
         cb(null, true);
         return;
       }
 
-      app.log.warn({ origin }, 'CORS blocked request from unauthorized origin');
+      app.log.warn(
+        { origin, allowedOrigins: corsOrigins },
+        'CORS blocked request from unauthorized origin'
+      );
       cb(new Error('Not allowed by CORS'), false);
     },
     credentials: true,

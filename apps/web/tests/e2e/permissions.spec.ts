@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { ADMIN_PERMISSIONS, OPERADOR_PERMISSIONS, getPermissionsForRole } from './fixtures/auth-data';
 
 test.describe('User Permissions', () => {
   test.beforeEach(async ({ page }) => {
@@ -34,7 +35,7 @@ test.describe('User Permissions', () => {
             name: 'Admin',
             email: 'admin@parkflow.local',
             role: 'ADMIN',
-            permissions: ['*'],
+            permissions: Array.from(ADMIN_PERMISSIONS),
             active: true,
           },
           session: {
@@ -73,7 +74,7 @@ test.describe('User Permissions', () => {
             name: 'Operator',
             email: 'operator@parkflow.local',
             role: 'OPERADOR',
-            permissions: ['parking:entry', 'parking:exit'],
+            permissions: Array.from(OPERADOR_PERMISSIONS),
             active: true,
           },
           session: {

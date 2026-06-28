@@ -193,8 +193,8 @@ describe("Constants exports", () => {
       expect(ROLES).toContain("AUDITOR");
     });
 
-    it("has exactly 5 roles", () => {
-      expect(ROLES.length).toBe(5);
+    it("has exactly 6 roles", () => {
+      expect(ROLES.length).toBe(6);
     });
 
     it.each(["SUPER_ADMIN", "ADMIN", "CAJERO", "OPERADOR", "AUDITOR"])("includes %s", (role) => {
@@ -445,7 +445,7 @@ describe("Configuration constants integration", () => {
       label: role,
     }));
 
-    expect(options.length).toBe(5);
+    expect(options.length).toBe(6);
     options.forEach((opt) => {
       expect(opt.value).toBeTruthy();
     });

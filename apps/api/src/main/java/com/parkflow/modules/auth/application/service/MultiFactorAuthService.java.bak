@@ -1,0 +1,217 @@
+package com.parkflow.modules.auth.application.service;
+
+import com.parkflow.modules.auth.domain.MultiFactor;
+import com.parkflow.modules.auth.domain.MultiFactor.MFAMethod;
+import com.parkflow.modules.auth.security.TOTPService;
+import com.parkflow.modules.common.dto.OperationException;
+import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Multi-Factor Authentication Service
+ *
+ * <p>Handles MFA setup, verification, and enforcement. Supports TOTP with backup codes.
+ *
+ * <p>Typical flow:
+ * 1. User requests MFA setup
+ * 2. Service generates secret + QR code
+ * 3. User scans QR in Authenticator app
+ * 4. User provides verification code
+ * 5. MFA enabled (backup codes provided for recovery)
+ *
+ * <p>On login:
+ * 1. Initial password authentication succeeds
+ * 2. System checks if MFA enabled for user
+ * 3. Requests TOTP code from user
+ * 4. Validates code or backup code
+ * 5. Returns session token
+ */
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class MultiFactorAuthService {
+
+  private final MultiFactorRepository mfaRepository;
+  private final TOTPService totpService;
+  private final AppUserRepository userRepository;
+
+  /**
+   * Initiate MFA setup (TOTP method)
+   *
+   * @return QR code URL + secret for user to scan
+   */
+  @Transactional
+  public SetupMFAResponse initiateTOTPSetup(UUID userId, String userEmail) {
+    // Check if MFA already enabled
+    var existingMFA = mfaRepository.findByUserIdAndMethod(userId, MFAMethod.TOTP);
+    if (existingMFA != null && existingMFA.isEnabled()) {
+      throw new OperationException(HttpStatus.CONFLICT, "TOTP MFA already enabled for this user");
+    }
+
+    // Generate secret
+    String secret = totpService.generateSecret();
+
+    // Generate QR code
+    String qrCodeUrl = totpService.generateQrCodeUrl(userEmail, secret, "ParkFlow");
+
+    // Backup codes (not yet hashed)
+    List<String> backupCodes = totpService.generateBackupCodes();
+
+    // Save pending MFA configuration (not yet verified)
+    MultiFactor mfa =
+        MultiFactor.builder()
+            .userId(userId)
+            .method(MFAMethod.TOTP)
+            .enabled(false)
+            .totpSecret(secret)
+            .backupCodes(serializeBackupCodes(backupCodes))
+            .requiresVerification(true)
+            .createdAt(LocalDateTime.now())
+            .updatedAt(LocalDateTime.now())
+            .build();
+
+    mfaRepository.save(mfa);
+
+    log.info("MFA setup initiated for user {}: TOTP", userId);
+
+    return new SetupMFAResponse(
+        qrCodeUrl,
+        secret,
+        backupCodes,
+        "Please scan QR code with Google Authenticator, Authy, or Microsoft Authenticator");
+  }
+
+  /**
+   * Complete MFA setup by verifying TOTP code
+   */
+  @Transactional
+  public VerifyMFAResponse completeTOTPSetup(UUID userId, String verificationCode) {
+    var mfa = mfaRepository.findByUserIdAndMethod(userId, MFAMethod.TOTP);
+
+    if (mfa == null) {
+      throw new OperationException(HttpStatus.NOT_FOUND, "MFA setup not found. Initiate setup first.");
+    }
+
+    if (mfa.isEnabled()) {
+      throw new OperationException(HttpStatus.CONFLICT, "TOTP MFA already enabled");
+    }
+
+    // Verify the code provided
+    boolean isValid = totpService.verifyCode(mfa.getTotpSecret(), verificationCode);
+
+    if (!isValid) {
+      log.warn("Invalid TOTP code provided for user {}", userId);
+      throw new OperationException(
+          HttpStatus.UNAUTHORIZED,
+          "Invalid verification code. Please try again.");
+    }
+
+    // Activation successful
+    mfa.setEnabled(true);
+    mfa.setVerifiedAt(LocalDateTime.now());
+    mfa.setEnabledAt(LocalDateTime.now());
+    mfa.setRequiresVerification(false);
+    mfaRepository.save(mfa);
+
+    log.info("MFA enabled for user {}: TOTP successfully verified", userId);
+
+    List<String> backupCodes = deserializeBackupCodes(mfa.getBackupCodes());
+
+    return new VerifyMFAResponse(true, "MFA successfully enabled. Save your backup codes.", backupCodes);
+  }
+
+  /**
+   * Verify TOTP code during login
+   */
+  public boolean verifyLoginCode(UUID userId, String code) {
+    var mfa = mfaRepository.findByUserIdAndMethod(userId, MFAMethod.TOTP);
+
+    if (mfa == null || !mfa.isEnabled()) {
+      return false; // MFA not enabled
+    }
+
+    boolean isValidCode = totpService.verifyCode(mfa.getTotpSecret(), code);
+
+    if (isValidCode) {
+      log.info("MFA verification successful for user {} via TOTP code", userId);
+      return true;
+    }
+
+    // Check if backup code
+    List<String> backupCodes = deserializeBackupCodes(mfa.getBackupCodes());
+    boolean isBackupCode =
+        backupCodes.stream()
+            .anyMatch(
+                bc -> {
+                  // In production, backup codes should be hashed
+                  return bc.equals(code);
+                });
+
+    if (isBackupCode) {
+      log.warn("MFA verification via backup code for user {} - code now invalidated", userId);
+      // Remove used backup code
+      backupCodes.remove(code);
+      mfa.setBackupCodes(serializeBackupCodes(backupCodes));
+      mfaRepository.save(mfa);
+      return true;
+    }
+
+    log.warn("MFA verification failed for user {} - invalid code", userId);
+    return false;
+  }
+
+  /**
+   * Check if MFA is enabled for user
+   */
+  public boolean isMFAEnabled(UUID userId) {
+    var mfa = mfaRepository.findByUserIdAndMethod(userId, MFAMethod.TOTP);
+    return mfa != null && mfa.isEnabled();
+  }
+
+  /**
+   * Disable MFA for user
+   */
+  @Transactional
+  public void disableMFA(UUID userId) {
+    var mfa = mfaRepository.findByUserIdAndMethod(userId, MFAMethod.TOTP);
+
+    if (mfa != null) {
+      mfa.setEnabled(false);
+      mfa.setDisabledAt(LocalDateTime.now());
+      mfaRepository.save(mfa);
+      log.info("MFA disabled for user {}", userId);
+    }
+  }
+
+  private String serializeBackupCodes(List<String> codes) {
+    return codes.stream().collect(Collectors.joining(","));
+  }
+
+  private List<String> deserializeBackupCodes(String serialized) {
+    if (serialized == null || serialized.isEmpty()) {
+      return List.of();
+    }
+    return List.of(serialized.split(","));
+  }
+
+  // DTOs
+  public record SetupMFAResponse(
+      String qrCodeUrl, String secret, List<String> backupCodes, String message) {}
+
+  public record VerifyMFAResponse(boolean success, String message, List<String> backupCodes) {}
+}
+
+// Repository
+interface MultiFactorRepository extends org.springframework.data.jpa.repository.JpaRepository<MultiFactor, java.util.UUID> {
+  MultiFactor findByUserIdAndMethod(java.util.UUID userId, MFAMethod method);
+
+  MultiFactor findByUserIdAndEnabledIsTrue(java.util.UUID userId);
+}

@@ -34,8 +34,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   private final ObjectMapper objectMapper;
   
   // Short-lived cache to avoid DB hits on every request
+  // TTL: 1 second (was 5 seconds, reduced for faster account state changes)
   private final Cache<UUID, AppUserCacheEntry> userStatusCache = Caffeine.newBuilder()
-      .expireAfterWrite(5, TimeUnit.SECONDS)
+      .expireAfterWrite(1, TimeUnit.SECONDS)
       .maximumSize(10000)
       .build();
 

@@ -1,0 +1,360 @@
+package com.parkflow.modules.auth.security;
+
+import io.jsonwebtoken.security.Keys;
+import java.security.Key;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * JWT Key Rotation Service (Enterprise Feature)
+ *
+ * <p>Implements gradual JWT secret rotation for enhanced security. Allows rotating signing keys
+ * without invalidating all active tokens.
+ *
+ * <p>How it works:
+ * 1. New key is generated and stored in database (inactive initially)
+ * 2. Tokens issued with new key include Key ID (kid) in header
+ * 3. Old tokens can still be validated using cached old keys
+ * 4. After validation period (default 1 hour), new key is activated
+ * 5. Old keys are deactivated but kept for grace period (7 days)
+ *
+ * <p>This prevents: - Sudden token invalidation on key rotation - Key compromise requiring
+ * restart - Loss of session continuity across deployments
+ */
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class KeyRotationService {
+
+  private final KeyVersionRepository keyVersionRepository;
+  private final SecurityProperties securityProperties;
+
+  // In-memory cache of key versions (key version ID → Key object)
+  private final Map<Integer, Key> keyCache = new ConcurrentHashMap<>();
+
+  // Current active signing key version
+  private Integer currentKeyVersion;
+
+  @org.springframework.beans.factory.annotation.PostConstruct
+  public void init() {
+    loadKeysFromDatabase();
+    logKeyRotationStatus();
+  }
+
+  /**
+   * Load all active key versions from database into memory cache
+   */
+  private void loadKeysFromDatabase() {
+    try {
+      var keys = keyVersionRepository.findAllActive();
+
+      if (keys.isEmpty()) {
+        // First time setup: create initial key if none exists
+        createInitialKey();
+        keys = keyVersionRepository.findAllActive();
+      }
+
+      keyCache.clear();
+      for (KeyVersion keyVersion : keys) {
+        byte[] decodedKey = Base64.getDecoder().decode(keyVersion.getKeyMaterial());
+        Key key = Keys.hmacShaKeyFor(decodedKey);
+        keyCache.put(keyVersion.getVersion(), key);
+      }
+
+      // Current version is the latest active one
+      currentKeyVersion =
+          keys.stream()
+              .filter(KeyVersion::isActive)
+              .map(KeyVersion::getVersion)
+              .max(Integer::compareTo)
+              .orElse(1);
+
+      log.info(
+          "Loaded {} key versions from database. Current signing key: v{}",
+          keyCache.size(),
+          currentKeyVersion);
+    } catch (Exception e) {
+      log.error("Failed to load key versions from database", e);
+      throw new RuntimeException("Cannot initialize JWT key rotation", e);
+    }
+  }
+
+  /** Create initial key version on first startup */
+  private void createInitialKey() {
+    log.warn("No key versions found. Creating initial key v1");
+
+    byte[] randomKey = new byte[32]; // 256 bits
+    new SecureRandom().nextBytes(randomKey);
+    String keyMaterial = Base64.getEncoder().encodeToString(randomKey);
+
+    KeyVersion keyVersion =
+        KeyVersion.builder()
+            .version(1)
+            .keyMaterial(keyMaterial)
+            .active(true)
+            .createdAt(LocalDateTime.now())
+            .activatedAt(LocalDateTime.now())
+            .build();
+
+    keyVersionRepository.save(keyVersion);
+  }
+
+  /**
+   * Get current key for signing new tokens
+   */
+  public Key getCurrentSigningKey() {
+    Key key = keyCache.get(currentKeyVersion);
+    if (key == null) {
+      throw new IllegalStateException(
+          "Current key version " + currentKeyVersion + " not found in cache");
+    }
+    return key;
+  }
+
+  /**
+   * Get key by version ID (for validating tokens signed with old keys)
+   */
+  public Key getKeyByVersion(Integer keyVersion) {
+    Key key = keyCache.get(keyVersion);
+    if (key == null) {
+      throw new IllegalArgumentException("Unknown key version: " + keyVersion);
+    }
+    return key;
+  }
+
+  /**
+   * Get current key version ID (for including in JWT header as 'kid' claim)
+   */
+  public Integer getCurrentKeyVersion() {
+    return currentKeyVersion;
+  }
+
+  /**
+   * Rotate JWT secret (generate new key, keep old one active during grace period)
+   *
+   * <p>Process:
+   * 1. Generate new 256-bit key
+   * 2. Store in DB marked as inactive
+   * 3. Schedule activation after validation period (1 hour)
+   * 4. Keep old key active for grace period (7 days)
+   * 5. Deactivate old key after grace period
+   */
+  @Transactional
+  public synchronized void rotateKey() {
+    log.warn(
+        "Starting JWT key rotation. Current key: v{}",
+        currentKeyVersion);
+
+    try {
+      // Generate new key
+      byte[] newSecret = new byte[32];
+      new SecureRandom().nextBytes(newSecret);
+      String newKeyMaterial = Base64.getEncoder().encodeToString(newSecret);
+
+      // Create new key version (inactive)
+      Integer newVersion = currentKeyVersion + 1;
+      KeyVersion newKeyVersion =
+          KeyVersion.builder()
+              .version(newVersion)
+              .keyMaterial(newKeyMaterial)
+              .active(false) // Will be activated after validation period
+              .createdAt(LocalDateTime.now())
+              .build();
+
+      keyVersionRepository.save(newKeyVersion);
+
+      // Cache the new key
+      Key key = Keys.hmacShaKeyFor(newSecret);
+      keyCache.put(newVersion, key);
+
+      log.info(
+          "New key generated: v{}. Will be activated after validation period",
+          newVersion);
+
+      // Schedule activation of new key (1 hour from now)
+      scheduleKeyActivation(newVersion);
+
+      // Schedule deactivation of old key (7 days from now)
+      if (currentKeyVersion > 0) {
+        scheduleKeyDeactivation(currentKeyVersion);
+      }
+    } catch (Exception e) {
+      log.error("Key rotation failed", e);
+      throw new RuntimeException("Failed to rotate JWT key", e);
+    }
+  }
+
+  /**
+   * Scheduled task: Activate new key and promote to current signing key
+   * (runs hourly to check if any keys should be activated)
+   */
+  @Scheduled(fixedDelay = 3600000) // Run every 1 hour
+  @Transactional
+  public void activateReadyKeys() {
+    var keysToActivate = keyVersionRepository.findReadyForActivation();
+
+    for (KeyVersion keyVersion : keysToActivate) {
+      log.info("Activating key v{}", keyVersion.getVersion());
+
+      keyVersion.setActive(true);
+      keyVersion.setActivatedAt(LocalDateTime.now());
+      keyVersionRepository.save(keyVersion);
+
+      // Promote to current signing key
+      currentKeyVersion = keyVersion.getVersion();
+
+      log.warn(
+          "Key v{} is now active and used for signing new tokens",
+          keyVersion.getVersion());
+    }
+  }
+
+  /**
+   * Scheduled task: Deactivate old keys (runs daily to clean up old keys)
+   */
+  @Scheduled(fixedDelay = 86400000) // Run every 24 hours
+  @Transactional
+  public void deactivateExpiredKeys() {
+    var keysToDeactivate = keyVersionRepository.findReadyForDeactivation();
+
+    for (KeyVersion keyVersion : keysToDeactivate) {
+      log.info(
+          "Deactivating old key v{} (was active for 7 days)",
+          keyVersion.getVersion());
+
+      keyVersion.setActive(false);
+      keyVersion.setDeactivatedAt(LocalDateTime.now());
+      keyVersionRepository.save(keyVersion);
+    }
+  }
+
+  private void scheduleKeyActivation(Integer keyVersion) {
+    // In production, use a proper job scheduler (Quartz, Spring Scheduler, etc.)
+    // For now, activation happens via scheduled task above
+    log.debug("Key v{} scheduled for activation in 1 hour", keyVersion);
+  }
+
+  private void scheduleKeyDeactivation(Integer keyVersion) {
+    // In production, use a proper job scheduler
+    log.debug("Key v{} scheduled for deactivation in 7 days", keyVersion);
+  }
+
+  private void logKeyRotationStatus() {
+    var allKeys = keyVersionRepository.findAll();
+    log.info("=== JWT Key Rotation Status ===");
+    log.info("Total key versions: {}", allKeys.size());
+    log.info("Current signing key: v{}", currentKeyVersion);
+
+    for (KeyVersion keyVersion : allKeys) {
+      log.info(
+          "  v{}: active={}, created={}, activated={}, deactivated={}",
+          keyVersion.getVersion(),
+          keyVersion.isActive(),
+          keyVersion.getCreatedAt(),
+          keyVersion.getActivatedAt(),
+          keyVersion.getDeactivatedAt());
+    }
+  }
+}
+
+// Entity definition
+@lombok.Entity
+@lombok.Table(name = "jwt_key_versions")
+class KeyVersion {
+  @jakarta.persistence.Id private Integer version;
+
+  @jakarta.persistence.Column(columnDefinition = "TEXT")
+  private String keyMaterial;
+
+  private boolean active;
+  private LocalDateTime createdAt;
+  private LocalDateTime activatedAt;
+  private LocalDateTime deactivatedAt;
+
+  // Lombok builder + getters/setters
+  @lombok.Builder
+  KeyVersion(
+      Integer version,
+      String keyMaterial,
+      boolean active,
+      LocalDateTime createdAt,
+      LocalDateTime activatedAt,
+      LocalDateTime deactivatedAt) {
+    this.version = version;
+    this.keyMaterial = keyMaterial;
+    this.active = active;
+    this.createdAt = createdAt;
+    this.activatedAt = activatedAt;
+    this.deactivatedAt = deactivatedAt;
+  }
+
+  public Integer getVersion() {
+    return version;
+  }
+
+  public void setVersion(Integer version) {
+    this.version = version;
+  }
+
+  public String getKeyMaterial() {
+    return keyMaterial;
+  }
+
+  public void setKeyMaterial(String keyMaterial) {
+    this.keyMaterial = keyMaterial;
+  }
+
+  public boolean isActive() {
+    return active;
+  }
+
+  public void setActive(boolean active) {
+    this.active = active;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
+
+  public LocalDateTime getActivatedAt() {
+    return activatedAt;
+  }
+
+  public void setActivatedAt(LocalDateTime activatedAt) {
+    this.activatedAt = activatedAt;
+  }
+
+  public LocalDateTime getDeactivatedAt() {
+    return deactivatedAt;
+  }
+
+  public void setDeactivatedAt(LocalDateTime deactivatedAt) {
+    this.deactivatedAt = deactivatedAt;
+  }
+}
+
+// Repository definition
+@org.springframework.stereotype.Repository
+interface KeyVersionRepository extends org.springframework.data.jpa.repository.JpaRepository<KeyVersion, Integer> {
+  java.util.List<KeyVersion> findAllActive();
+
+  @org.springframework.data.jpa.repository.Query(
+      "SELECT k FROM KeyVersion k WHERE k.active = false AND k.activatedAt <= CURRENT_TIMESTAMP - 1 HOUR")
+  java.util.List<KeyVersion> findReadyForActivation();
+
+  @org.springframework.data.jpa.repository.Query(
+      "SELECT k FROM KeyVersion k WHERE k.active = true AND k.activatedAt <= CURRENT_TIMESTAMP - 7 DAY AND k.version != (SELECT MAX(v.version) FROM KeyVersion v WHERE v.active = true)")
+  java.util.List<KeyVersion> findReadyForDeactivation();
+}

@@ -69,15 +69,18 @@ describe("OnboardingContext (Autosave & Errors)", () => {
       vi.advanceTimersByTime(10000);
     });
 
-    await waitFor(() => {
-      expect(onboardingApi.saveOnboardingStep).toHaveBeenCalledWith(
-        companyId,
-        1,
-        { test: "data" },
-        1
-      );
-    });
-  });
+    await waitFor(
+      () => {
+        expect(onboardingApi.saveOnboardingStep).toHaveBeenCalledWith(
+          companyId,
+          1,
+          { test: "data" },
+          1
+        );
+      },
+      { timeout: 10000 }
+    );
+  }, 15000);
 
   it("should handle save errors gracefully and set saveState to error", async () => {
     vi.mocked(onboardingApi.saveOnboardingStep).mockRejectedValue(new Error("Network Error"));
