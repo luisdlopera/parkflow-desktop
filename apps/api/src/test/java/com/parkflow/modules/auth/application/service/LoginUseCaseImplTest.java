@@ -85,6 +85,9 @@ class LoginUseCaseImplTest {
         ReflectionTestUtils.setField(loginUseCase, "lockoutMinutes", 30);
         ReflectionTestUtils.setField(loginUseCase, "maxConcurrentSessions", 5);
 
+        // Mock app user repository save to return the user passed in
+        lenient().when(appUserRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
         // Mock refresh token family repository (lenient because not all tests use it)
         lenient().when(refreshTokenFamilyRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
