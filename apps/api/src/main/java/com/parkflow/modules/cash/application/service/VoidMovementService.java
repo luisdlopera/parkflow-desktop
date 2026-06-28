@@ -86,25 +86,15 @@ public class VoidMovementService implements VoidCashMovementUseCase {
     AppUser actor = appUserRepository.findById(SecurityUtils.requireUserId())
         .orElseThrow(() -> new OperationException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
 
-    OffsetDateTime now = OffsetDateTime.now();
-    m.setStatus(CashMovementStatus.VOIDED);
-    m.setVoidedAt(now);
-    m.setVoidReason(request.reason());
-    m.setVoidedBy(actor);
+    UUID companyId = TenantContext.getTenantIdOrThrow();
+    if (companyId == null) {
+      throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía no identificado");
+    }
 
+    OffsetDateTime now = OffsetDateTime.now();
     String voidKey = null;
     if (StringUtils.hasText(request.idempotencyKey())) {
       voidKey = "void:" + movementId + ":" + request.idempotencyKey().trim();
-      m.setIdempotencyKey(voidKey);
-    }
-
-    cashMovementRepository.save(m);
-
-    UUID companyId = TenantContext.getTenantId() != null
-        ? TenantContext.getTenantId()
-        : actor.getCompanyId();
-    if (companyId == null) {
-      throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía no identificado");
     }
 
     CashMovement offset = new CashMovement();
@@ -123,6 +113,16 @@ public class VoidMovementService implements VoidCashMovementUseCase {
 
     cashMovementRepository.save(offset);
 
+    m.setStatus(CashMovementStatus.VOIDED);
+    m.setVoidedAt(now);
+    m.setVoidReason(request.reason());
+    m.setVoidedBy(actor);
+    if (voidKey != null) {
+      m.setIdempotencyKey(voidKey);
+    }
+
+    cashMovementRepository.save(m);
+
     Map<String, Object> meta = responseMapper.baseMeta(session);
     meta.put("voidedMovementId", m.getId().toString());
     meta.put("offsetId", offset.getId().toString());
@@ -136,7 +136,8 @@ public class VoidMovementService implements VoidCashMovementUseCase {
   private CashSession requireOpenSession(UUID id) {
     CashSession s = cashSessionRepository.findById(id)
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
-    if (TenantContext.getTenantId() != null && !s.getCompanyId().equals(TenantContext.getTenantId())) {
+    UUID tenantId = TenantContext.getTenantIdOrThrow();
+    if (!s.getCompanyId().equals(tenantId)) {
       throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a esta sesión");
     }
     if (s.getStatus() != CashSessionStatus.OPEN) {

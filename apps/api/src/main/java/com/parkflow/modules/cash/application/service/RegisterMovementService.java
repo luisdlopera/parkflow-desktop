@@ -173,7 +173,8 @@ public class RegisterMovementService implements RegisterCashMovementUseCase {
   private CashSession requireOpenSession(UUID id) {
     CashSession s = cashSessionRepository.findById(id)
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
-    if (TenantContext.getTenantId() != null && !s.getCompanyId().equals(TenantContext.getTenantId())) {
+    UUID tenantId = TenantContext.getTenantIdOrThrow();
+    if (!s.getCompanyId().equals(tenantId)) {
       throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a esta sesión");
     }
     if (s.getStatus() != CashSessionStatus.OPEN) {

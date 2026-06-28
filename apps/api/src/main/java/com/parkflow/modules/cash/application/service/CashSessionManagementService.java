@@ -253,7 +253,8 @@ public class CashSessionManagementService implements CashSessionManagementUseCas
                 cashSessionRepository.findByCloseIdempotencyKey(request.closeIdempotencyKey().trim());
             if (done.isPresent() && done.get().getStatus() == CashSessionStatus.CLOSED) {
                 // Ensure same tenant on idempotency hit
-                if (!done.get().getCompanyId().equals(TenantContext.getTenantId())) {
+                UUID tenantId = TenantContext.getTenantIdOrThrow();
+                if (!done.get().getCompanyId().equals(tenantId)) {
                     throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a esta sesión");
                 }
                 return toSessionResponse(done.get());
@@ -388,8 +389,9 @@ public class CashSessionManagementService implements CashSessionManagementUseCas
         CashSession session = cashSessionRepository
             .findById(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
-            
-        if (TenantContext.getTenantId() != null && !session.getCompanyId().equals(TenantContext.getTenantId())) {
+
+        UUID tenantId = TenantContext.getTenantIdOrThrow();
+        if (!session.getCompanyId().equals(tenantId)) {
             throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a esta sesión");
         }
         return session;
@@ -407,8 +409,9 @@ public class CashSessionManagementService implements CashSessionManagementUseCas
         CashSession session = cashSessionRepository
             .findByIdWithPessimisticLock(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Sesion de caja no encontrada"));
-            
-        if (TenantContext.getTenantId() != null && !session.getCompanyId().equals(TenantContext.getTenantId())) {
+
+        UUID tenantId = TenantContext.getTenantIdOrThrow();
+        if (!session.getCompanyId().equals(tenantId)) {
             throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a esta sesión");
         }
         if (session.getStatus() != CashSessionStatus.OPEN) {
