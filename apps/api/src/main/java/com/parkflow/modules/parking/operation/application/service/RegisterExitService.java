@@ -88,6 +88,10 @@ public class RegisterExitService implements RegisterExitUseCase {
     ParkingSession session = requireActiveSessionForUpdate(request.ticketNumber(), request.plate(), companyId);
     AppUser operator = findRequiredOperator(request.operatorUserId(), companyId);
 
+    if (request.paymentMethod() != null) {
+      parkingCashIntegrationUseCase.assertCashOpenForParkingPayment(session, request.cashSessionId());
+    }
+
     if (exitAt.isBefore(session.getEntryAt())) {
       throw new OperationException(HttpStatus.BAD_REQUEST,
           "La fecha de salida no puede ser anterior a la fecha de entrada");
@@ -101,7 +105,6 @@ public class RegisterExitService implements RegisterExitUseCase {
     processCustodiedItemReturn(session, request, operator);
 
     if (price.total().compareTo(BigDecimal.ZERO) > 0 && request.paymentMethod() != null) {
-      parkingCashIntegrationUseCase.assertCashOpenForParkingPayment(session, request.cashSessionId());
       if (request.paymentMethod() == com.parkflow.modules.parking.operation.domain.PaymentMethod.MIXED) {
         for (com.parkflow.modules.parking.operation.dto.PaymentBreakdownItem item : request.paymentBreakdown()) {
             Payment payment = new Payment();

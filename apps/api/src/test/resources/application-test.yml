@@ -1,32 +1,48 @@
 spring:
   datasource:
-    url: jdbc:postgresql://host.docker.internal:5432/parkflow_test
-    username: parkflow
-    password: parkflow_pwd
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: create-drop
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQL11Dialect
+        dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
+  h2:
+    console:
+      enabled: true
   flyway:
-    enabled: true
-    baseline-on-migrate: true
-    locations: classpath:db/migration
-    baseline-version: 001
+    enabled: false
 
 app:
+  jwt:
+    access-ttl-minutes: 15
+    refresh-ttl-days: 7
+    issuer: https://parkflow.local
+    audience: parkflow-api
   security:
+    api-key: test-api-key-12345678901234567890
+    jwt-secret: dGVzdC1qd3Qtc2VjcmV0LWJhc2U2NC1lbmNvZGVkLWF0LWxlYXN0LTMyLWJ5dGVzLWxvbmctdGV4dC1oZXJl
     offline-lease-hours: 48
     lockout-minutes: 30
     max-concurrent-sessions: 5
-    jwt:
-      access-ttl-minutes: 15
-      refresh-ttl-days: 7
+    password:
+      min-length: 8
+      require-uppercase: true
+      require-numbers: true
+      require-special-chars: true
+    common-passwords-file: classpath:common-passwords.txt
+    cors:
+      allowed-origins: http://localhost:6001,http://localhost:3000
+      allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+      allowed-headers: '*'
+      allow-credentials: true
 
 logging:
   level:
     com.parkflow: DEBUG
     org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
