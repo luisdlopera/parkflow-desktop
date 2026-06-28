@@ -76,13 +76,6 @@ public class RegisterExitService implements RegisterExitUseCase {
   @Override
   @Transactional
   @Auditable(module = "OPERACION", action = "SALIDA", entityClass = ParkingSession.class)
-  public OperationResultResponse execute(ExitRequest request) {
-    return execute(request, false);
-  }
-
-  @Override
-  @Transactional
-  @Auditable(module = "OPERACION", action = "SALIDA", entityClass = ParkingSession.class)
   public OperationResultResponse execute(ExitRequest request, boolean forceFree) {
     UUID companyId = SecurityUtils.requireCompanyId();
     OffsetDateTime exitAt = request.exitAt() != null ? request.exitAt() : OffsetDateTime.now();
@@ -95,15 +88,17 @@ public class RegisterExitService implements RegisterExitUseCase {
     ParkingSession session = requireActiveSessionForUpdate(request.ticketNumber(), request.plate(), companyId);
     AppUser operator = findRequiredOperator(request.operatorUserId(), companyId);
 
+    if (exitAt.isBefore(session.getEntryAt())) {
+      throw new OperationException(HttpStatus.BAD_REQUEST,
+          "La fecha de salida no puede ser anterior a la fecha de entrada");
+    }
+
     PriceBreakdown price = parkingPricingUseCase.calculateComplexPrice(session, exitAt, request.agreementCode(), false, false);
     price = parkingPricingUseCase.applyCourtesyPricing(session, price, false);
 
     assertExitPaymentPolicy(session, request.paymentMethod(), price, request.paymentBreakdown(), forceFree);
     assertExitPhotoIfRequired(session, request.exitImageUrl());
     processCustodiedItemReturn(session, request, operator);
-
-    session.close(operator, exitAt, price, request.observations(), blankToNull(request.exitImageUrl()));
-    parkingSessionRepository.save(session);
 
     if (price.total().compareTo(BigDecimal.ZERO) > 0 && request.paymentMethod() != null) {
       parkingCashIntegrationUseCase.assertCashOpenForParkingPayment(session, request.cashSessionId());
@@ -117,9 +112,8 @@ public class RegisterExitService implements RegisterExitUseCase {
             payment.setCompanyId(companyId);
             paymentRepository.save(payment);
             parkingCashIntegrationUseCase.recordParkingPayment(
-                session, payment, operator, request.idempotencyKey() + "-" + item.method(), CashMovementType.PARKING_PAYMENT, request.cashSessionId());
+                session, payment, operator, idempotencyKeyForItem(request.idempotencyKey(), item.method(), item.amount()), CashMovementType.PARKING_PAYMENT, request.cashSessionId());
         }
-        // Publish billing event for async invoice generation
         publishPaymentCompletedEvent(session, companyId, price.total());
       } else {
         Payment payment = new Payment();
@@ -131,10 +125,12 @@ public class RegisterExitService implements RegisterExitUseCase {
         paymentRepository.save(payment);
         parkingCashIntegrationUseCase.recordParkingPayment(
             session, payment, operator, request.idempotencyKey(), CashMovementType.PARKING_PAYMENT, request.cashSessionId());
-        // Publish billing event for async invoice generation
         publishPaymentCompletedEvent(session, companyId, price.total());
       }
     }
+
+    session.close(operator, exitAt, price, request.observations(), blankToNull(request.exitImageUrl()));
+    parkingSessionRepository.save(session);
 
     saveVehicleCondition(session, ConditionStage.EXIT, request.vehicleCondition(),
         request.conditionChecklist(), request.conditionPhotoUrls(), operator);
@@ -152,19 +148,20 @@ public class RegisterExitService implements RegisterExitUseCase {
 
     boolean printExitTicket = true;
     try {
-        // Site field removed - using default site code
         com.parkflow.modules.common.dto.ParkingParametersData params = parkingParametersUseCase.get("DEFAULT");
         if (params != null && params.getPrintExitTicket() != null) {
             printExitTicket = params.getPrintExitTicket();
         }
     } catch (Exception e) {
-        log.warn("Could not retrieve parking parameters for default site, defaulting to printExitTicket=true");
+        log.warn("Could not retrieve parking parameters for default site");
     }
 
+    String printWarning = null;
     if (printExitTicket) {
       try {
         operationPrintService.enqueuePrintJob(session, operator, PrintDocumentType.EXIT, "exit");
       } catch (Exception e) {
+        printWarning = "La impresion fallo pero la salida fue registrada: " + e.getMessage();
         log.warn("Print job failed for session {}", session.getId());
       }
     }
@@ -180,12 +177,21 @@ public class RegisterExitService implements RegisterExitUseCase {
     return new OperationResultResponse(
         session.getId().toString(),
         toReceipt(session, duration.totalMinutes(), duration.human()),
-        "Salida registrada",
+        printWarning != null ? "Salida registrada (impresion pendiente)" : "Salida registrada",
         price.subtotal(),
         price.surcharge(),
         price.discount(),
         price.deductedMinutes(),
         price.total());
+  }
+
+  @Override
+  public OperationResultResponse execute(ExitRequest request) {
+    return execute(request, false);
+  }
+
+  private String idempotencyKeyForItem(String base, com.parkflow.modules.parking.operation.domain.PaymentMethod method, java.math.BigDecimal amount) {
+    return base + "-" + method.name() + "-" + amount.toPlainString();
   }
 
   @Override
@@ -376,12 +382,16 @@ public class RegisterExitService implements RegisterExitUseCase {
 
   private void safeRecordIdempotency(String key, IdempotentOperationType type, ParkingSession session) {
     if (isBlank(key)) return;
-    OperationIdempotency i = new OperationIdempotency();
-    i.setIdempotencyKey(key);
-    i.setOperationType(type);
-    i.setSession(session);
-    i.setCreatedAt(OffsetDateTime.now());
-    operationIdempotencyRepository.save(i);
+    try {
+      OperationIdempotency i = new OperationIdempotency();
+      i.setIdempotencyKey(key);
+      i.setOperationType(type);
+      i.setSession(session);
+      i.setCreatedAt(OffsetDateTime.now());
+      operationIdempotencyRepository.save(i);
+    } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+      log.debug("Idempotency key already recorded: {}", key);
+    }
   }
 
   private void saveVehicleCondition(ParkingSession session, ConditionStage stage, String observations,
