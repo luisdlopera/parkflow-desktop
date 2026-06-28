@@ -14,6 +14,8 @@ import com.parkflow.modules.auth.domain.repository.AuthorizedDevicePort;
 import com.parkflow.modules.auth.dto.LoginRequest;
 import com.parkflow.modules.auth.dto.LoginResponse;
 import com.parkflow.modules.auth.dto.LoginResult;
+import com.parkflow.modules.auth.domain.RefreshTokenFamily;
+import com.parkflow.modules.auth.domain.repository.RefreshTokenFamilyPort;
 import com.parkflow.modules.auth.security.JwtTokenService;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.PasswordValidationService;
@@ -42,6 +44,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
   private final AppUserPort appUserRepository;
   private final AuthorizedDevicePort authorizedDeviceRepository;
   private final AuthSessionPort authSessionRepository;
+  private final RefreshTokenFamilyPort refreshTokenFamilyRepository;
   private final JwtTokenService jwtTokenService;
   private final PasswordHashService passwordHashService;
   private final PasswordValidationService passwordValidationService;
@@ -171,9 +174,24 @@ public class LoginUseCaseImpl implements LoginUseCase {
     session.setRefreshExpiresAt(OffsetDateTime.now().plus(jwtTokenService.refreshTtl()));
     session.setAccessExpiresAt(OffsetDateTime.now().plus(jwtTokenService.accessTtl()));
     session.setRefreshTokenHash("pending:" + UUID.randomUUID());
+
+    // [SECURITY] Create refresh token family for theft detection
+    RefreshTokenFamily family = RefreshTokenFamily.builder()
+        .familyId(UUID.randomUUID())
+        .user(user)
+        .userId(user.getId())
+        .companyId(user.getCompanyId())
+        .generationNumber(1)
+        .createdAt(OffsetDateTime.now())
+        .build();
+    family = refreshTokenFamilyRepository.save(family);
+
+    session.setTokenFamilyId(family.getFamilyId());
+    session.setTokenGeneration(1);
     session = authSessionRepository.save(session);
 
-    String refreshToken = jwtTokenService.createRefreshToken(user.getId(), session.getId(), session.getRefreshJti());
+    String refreshToken = jwtTokenService.createRefreshToken(
+        user.getId(), session.getId(), session.getRefreshJti(), family.getFamilyId(), 1);
     session.setRefreshTokenHash(passwordHashService.sha256(refreshToken));
     session = authSessionRepository.save(session);
 

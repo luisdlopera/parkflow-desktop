@@ -5,8 +5,10 @@ import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
 import com.parkflow.modules.auth.domain.AuthSession;
 import com.parkflow.modules.auth.domain.AuthorizedDevice;
+import com.parkflow.modules.auth.domain.RefreshTokenFamily;
 import com.parkflow.modules.auth.domain.repository.AuthCompanyPort;
 import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
+import com.parkflow.modules.auth.domain.repository.RefreshTokenFamilyPort;
 import com.parkflow.modules.auth.dto.LoginResponse;
 import com.parkflow.modules.auth.dto.LoginResult;
 import com.parkflow.modules.auth.dto.RefreshRequest;
@@ -31,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TokenRefreshUseCaseImpl implements TokenRefreshUseCase {
 
   private final AuthSessionPort authSessionRepository;
+  private final RefreshTokenFamilyPort refreshTokenFamilyRepository;
   private final JwtTokenService jwtTokenService;
   private final PasswordHashService passwordHashService;
   private final AuthAuditService authAuditService;
@@ -100,6 +103,38 @@ public class TokenRefreshUseCaseImpl implements TokenRefreshUseCase {
           "Tu sesion expiro. Inicia sesion nuevamente.");
     }
 
+    // [SECURITY] Detect token theft via family generation tracking
+    UUID incomingFamilyId = jwtTokenService.extractFamilyId(rawRefreshToken);
+    Integer incomingGeneration = jwtTokenService.extractGeneration(rawRefreshToken);
+
+    if (incomingFamilyId != null) {
+      RefreshTokenFamily family = refreshTokenFamilyRepository.findById(incomingFamilyId)
+          .orElseThrow(() -> new OperationException(HttpStatus.UNAUTHORIZED, "AUTH_UNAUTHORIZED", "Tu sesion expiro. Inicia sesion nuevamente."));
+
+      if (family.isRevoked()) {
+        throw new OperationException(HttpStatus.UNAUTHORIZED, "AUTH_UNAUTHORIZED", "Tu sesion expiro. Inicia sesion nuevamente.");
+      }
+
+      // THREAT DETECTION: If incoming generation < family generation, token was replayed
+      if (incomingGeneration < family.getGenerationNumber()) {
+        log.warn("AUTH: Token theft detected - replayed generation - userId={}, familyId={}, incomingGen={}, currentGen={}",
+            current.getUser().getId(), incomingFamilyId, incomingGeneration, family.getGenerationNumber());
+
+        family.setRevokedAt(OffsetDateTime.now());
+        family.setRevokeReason("THEFT_DETECTED");
+        refreshTokenFamilyRepository.save(family);
+
+        authAuditService.log(
+            AuthAuditAction.LOGIN_FAILED,
+            current.getUser(),
+            current.getDevice(),
+            "TOKEN_THEFT_DETECTED",
+            Map.of("familyId", incomingFamilyId.toString(), "incomingGen", String.valueOf(incomingGeneration), "currentGen", String.valueOf(family.getGenerationNumber())));
+
+        throw new OperationException(HttpStatus.UNAUTHORIZED, "AUTH_UNAUTHORIZED", "Tu sesion expiro. Inicia sesion nuevamente.");
+      }
+    }
+
     current.setActive(false);
     current.setRevokedAt(OffsetDateTime.now());
     authSessionRepository.save(current);
@@ -110,6 +145,17 @@ public class TokenRefreshUseCaseImpl implements TokenRefreshUseCase {
       throw new OperationException(HttpStatus.FORBIDDEN, "Sesion invalida por estado de usuario/dispositivo");
     }
 
+    // Handle refresh token family (for theft detection)
+    UUID familyId = incomingFamilyId;
+    int nextGeneration = 1;
+
+    if (familyId != null) {
+      RefreshTokenFamily family = refreshTokenFamilyRepository.findById(familyId).orElseThrow();
+      nextGeneration = family.getGenerationNumber() + 1;
+      family.setGenerationNumber(nextGeneration);
+      refreshTokenFamilyRepository.save(family);
+    }
+
     AuthSession rotated = new AuthSession();
     rotated.setUser(user);
     rotated.setDevice(device);
@@ -118,10 +164,12 @@ public class TokenRefreshUseCaseImpl implements TokenRefreshUseCase {
     rotated.setRefreshExpiresAt(OffsetDateTime.now().plus(jwtTokenService.refreshTtl()));
     rotated.setAccessExpiresAt(OffsetDateTime.now().plus(jwtTokenService.accessTtl()));
     rotated.setRefreshTokenHash("pending:" + UUID.randomUUID());
+    rotated.setTokenFamilyId(familyId);
+    rotated.setTokenGeneration(nextGeneration);
     rotated = authSessionRepository.save(rotated);
 
     String refreshToken =
-        jwtTokenService.createRefreshToken(user.getId(), rotated.getId(), rotated.getRefreshJti());
+        jwtTokenService.createRefreshToken(user.getId(), rotated.getId(), rotated.getRefreshJti(), familyId, nextGeneration);
     rotated.setRefreshTokenHash(passwordHashService.sha256(refreshToken));
     rotated.setLastSeenAt(OffsetDateTime.now());
     rotated = authSessionRepository.save(rotated);
