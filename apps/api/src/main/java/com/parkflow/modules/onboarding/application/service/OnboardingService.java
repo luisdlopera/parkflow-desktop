@@ -43,6 +43,7 @@ public class OnboardingService implements OnboardingUseCase {
   private final com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
   private final com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository appUserRepository;
   private final OnboardingMaterializationService materializationService;
+  private final Step3DataValidator step3DataValidator;
 
   @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional(readOnly = true)
@@ -368,6 +369,18 @@ public class OnboardingService implements OnboardingUseCase {
       }
     }
     if (step == 2) validateCapacityConsistency(data);
+    if (step == 3) validateStep3Rates(data);  // S-01, S-03: server-side validation with whitelist
+  }
+
+  // S-01: Server-side field-level validation for Step 3
+  // S-03: Whitelist enforcement to prevent mass assignment
+  private void validateStep3Rates(Map<String, Object> data) {
+    Step3DataValidator.Step3ValidationResult result = step3DataValidator.validate(data);
+    if (!result.isValid) {
+      StringBuilder msg = new StringBuilder("Invalid Step 3 rates data:");
+      result.errors.forEach((field, error) -> msg.append(" [").append(field).append(": ").append(error).append("]"));
+      throw new OperationException(HttpStatus.BAD_REQUEST, msg.toString());
+    }
   }
 
   private void validateCapacityConsistency(Map<String, Object> data) {

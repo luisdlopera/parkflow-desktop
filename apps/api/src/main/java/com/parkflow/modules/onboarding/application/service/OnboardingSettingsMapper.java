@@ -398,10 +398,33 @@ public class OnboardingSettingsMapper {
   }
 
   public int extractNumber(Object raw, int fallback) {
-    if (raw instanceof Number n) return n.intValue();
+    return extractNumber(raw, fallback, Integer.MAX_VALUE);
+  }
+
+  // S-02, S-04: extractNumber with max value enforcement to prevent extreme values
+  public int extractNumber(Object raw, int fallback, int maxAllowed) {
+    if (raw instanceof Number n) {
+      int val = n.intValue();
+      return val >= 0 && val <= maxAllowed ? val : fallback;
+    }
     if (raw instanceof String s) {
       try {
-        return Integer.parseInt(s);
+        int val = Integer.parseInt(s);
+        return val >= 0 && val <= maxAllowed ? val : fallback;
+      } catch (NumberFormatException e) {
+        return fallback;
+      }
+    }
+    return fallback;
+  }
+
+  // I-06: extractDecimal for monetary/precise values using BigDecimal
+  public java.math.BigDecimal extractDecimal(Object raw, java.math.BigDecimal fallback) {
+    if (raw instanceof java.math.BigDecimal bd) return bd;
+    if (raw instanceof Number n) return java.math.BigDecimal.valueOf(n.doubleValue());
+    if (raw instanceof String s) {
+      try {
+        return new java.math.BigDecimal(s);
       } catch (NumberFormatException e) {
         return fallback;
       }
@@ -473,6 +496,10 @@ public class OnboardingSettingsMapper {
     features.put("helmetControl", helmetControl);         // step 1 helmetHandling
     features.put("lockerControl", lockerControl);         // step 1 helmetHandling=LOCKERS
     features.put("multiplePaymentMethods", multiplePaymentMethods); // step 6
+    // C-06: derive 24h flag from step 3 instead of hardcoding false
+    Map<String, Object> step3Data = stepMap(progressData, 3);
+    boolean is24hOperation = Boolean.TRUE.equals(step3Data.get("hasNightRate"))
+        || "MIXED".equals(String.valueOf(step3Data.getOrDefault("billingModel", "")));
     // Features not yet covered by wizard — keep false as safe default:
     features.put("prepaid", false);
     features.put("electronicBilling", false);
@@ -481,7 +508,7 @@ public class OnboardingSettingsMapper {
     features.put("frequentCustomers", false);
     features.put("accessoryControl", false);
     features.put("reservations", false);
-    features.put("operation24Hours", false);
+    features.put("operation24Hours", is24hOperation);
     return features;
   }
 
