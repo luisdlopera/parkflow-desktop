@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,6 +27,8 @@ import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.PasswordValidationService;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.auth.domain.repository.AppUserPort;
+import com.parkflow.modules.auth.domain.RefreshTokenFamily;
+import com.parkflow.modules.auth.domain.repository.RefreshTokenFamilyPort;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -56,6 +59,8 @@ class LoginUseCaseImplTest {
     @Mock
     private PasswordValidationService passwordValidationService;
     @Mock
+    private RefreshTokenFamilyPort refreshTokenFamilyRepository;
+    @Mock
     private AuthAuditService authAuditService;
     @Mock
     private AuditPort globalAuditService;
@@ -76,6 +81,10 @@ class LoginUseCaseImplTest {
     void setUp() {
         ReflectionTestUtils.setField(loginUseCase, "defaultOfflineLeaseHours", 48);
         ReflectionTestUtils.setField(loginUseCase, "lockoutMinutes", 30);
+        ReflectionTestUtils.setField(loginUseCase, "maxConcurrentSessions", 5);
+
+        // Mock refresh token family repository (lenient because not all tests use it)
+        lenient().when(refreshTokenFamilyRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         mockUser = new AppUser();
         mockUser.setId(UUID.randomUUID());

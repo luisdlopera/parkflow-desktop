@@ -1,10 +1,12 @@
 package com.parkflow.modules.onboarding.application.service;
 
+import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.enums.OperationalProfile;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 
@@ -14,7 +16,49 @@ public class OnboardingSettingsMapper {
 
   private final FeatureAccessService featureAccessService;
 
+  /**
+   * Checks whether the given step is allowed for the company's plan.
+   * Addresses C-06: Plan step access control.
+   *
+   * @param company the company whose plan to check
+   * @param step    the onboarding step number (1–12)
+   * @return {@code true} if the step is allowed, {@code false} otherwise
+   */
+  public boolean isPlanStepAllowed(Company company, int step) {
+    Map<String, Object> access = featureAccessService.getAvailableOptionsByPlan(company.getPlan());
+    return switch (step) {
+      case 8, 9 -> Boolean.TRUE.equals(access.get("allowAgreementsAndMonthly"));
+      case 10 -> Boolean.TRUE.equals(access.get("allowMultiLocation"));
+      case 11 -> Boolean.TRUE.equals(access.get("allowAdvancedPermissions"));
+      default -> true; // Steps 1–7, 12 are always allowed
+    };
+  }
+
+  /**
+   * Sanitizes step data according to the company plan.
+   *
+   * <p>C-06 enforcement: if the step is not allowed by the company plan, this method
+   * throws {@link OperationException} with HTTP 403 FORBIDDEN instead of silently
+   * stripping data. This prevents plan-bypassing via direct API calls.
+   *
+   * <p>For allowed steps, it still filters plan-restricted fields within the step
+   * (e.g., allowed payment methods for the plan).
+   *
+   * @param company the company
+   * @param step    the onboarding step
+   * @param data    the step data to sanitize
+   * @return sanitized data map
+   * @throws OperationException HTTP 403 if the step is not allowed by the company plan
+   */
   public Map<String, Object> sanitizeStepDataByPlan(Company company, int step, Map<String, Object> data) {
+    // C-06: Reject steps not allowed by plan BEFORE any processing
+    if (!isPlanStepAllowed(company, step)) {
+      throw new OperationException(
+          HttpStatus.FORBIDDEN,
+          "El paso " + step + " no está disponible en el plan " + company.getPlan().name()
+              + ". Actualiza tu plan para acceder a esta funcionalidad.");
+    }
+
     Map<String, Object> out = new LinkedHashMap<>(data);
     Map<String, Object> access = featureAccessService.getAvailableOptionsByPlan(company.getPlan());
     if (step == 6) {
@@ -25,15 +69,8 @@ public class OnboardingSettingsMapper {
       List<String> standardizedCurrent = current.stream().map(this::mapPaymentMethodCode).toList();
       out.put("paymentMethods", standardizedCurrent.stream().filter(standardizedAllowed::contains).toList());
     }
-    if ((step == 8 || step == 9) && Boolean.FALSE.equals(access.get("allowAgreementsAndMonthly"))) {
-      out.put("enabled", false);
-    }
-    if (step == 10 && Boolean.FALSE.equals(access.get("allowMultiLocation"))) {
-      out.put("multiSite", false);
-    }
-    if (step == 11 && Boolean.FALSE.equals(access.get("allowAdvancedPermissions"))) {
-      out.put("advanced", false);
-    }
+    // Note: steps 8, 9, 10, 11 are already rejected above via isPlanStepAllowed().
+    // No silent stripping needed here anymore.
     return out;
   }
 
