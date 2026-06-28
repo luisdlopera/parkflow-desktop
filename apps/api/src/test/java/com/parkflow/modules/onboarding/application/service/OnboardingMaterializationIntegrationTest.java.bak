@@ -13,7 +13,9 @@ import org.awaitility.Awaitility;
 import java.util.concurrent.TimeUnit;
 import java.time.Duration;
 
-@SpringBootTest
+import com.parkflow.ParkflowApiApplication;
+
+@SpringBootTest(classes = ParkflowApiApplication.class)
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("Integration test for Materialization (Atomicidad y Rollback)")

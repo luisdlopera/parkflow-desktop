@@ -215,9 +215,7 @@ public class RegisterEntryService implements RegisterEntryUseCase {
 
   private void saveVehicleCondition(ParkingSession session, ConditionStage stage, String observations,
                                     List<String> checklist, List<String> photoUrls, AppUser operator) {
-    if (isBlank(observations) && isEmpty(checklist) && isEmpty(photoUrls)) {
-      throw new OperationException(HttpStatus.BAD_REQUEST, "Debe registrar estado del vehículo");
-    }
+    if (isBlank(observations) && isEmpty(checklist) && isEmpty(photoUrls)) return;
     VehicleConditionReport report = new VehicleConditionReport();
     report.setSession(session);
     report.setStage(stage);

@@ -63,6 +63,7 @@ public class UserSearchProvider implements SearchProvider {
         return switch (role) {
             case SUPER_ADMIN -> "Super admin";
             case ADMIN -> "Administrador";
+            case SUPPORT -> "Soporte";
             case CAJERO -> "Cajero";
             case OPERADOR -> "Operador";
             case AUDITOR -> "Auditor";

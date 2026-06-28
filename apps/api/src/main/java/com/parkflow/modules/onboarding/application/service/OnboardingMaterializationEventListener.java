@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
-import com.parkflow.modules.onboarding.application.port.out.OnboardingProgressRepositoryPort;
+import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
 
 @Slf4j
 @Component
@@ -24,7 +24,7 @@ public class OnboardingMaterializationEventListener {
   private final OnboardingMaterializationService materializationService;
   private final OnboardingSettingsMapper settingsMapper;
   private final CompanySettingsService companySettingsService;
-  private final OnboardingProgressRepositoryPort progressRepository;
+  private final OnboardingProgressPort progressRepository;
 
   @Async
   @EventListener

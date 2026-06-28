@@ -58,6 +58,15 @@ public final class RolePermissions {
           AuthPermission.TARIFAS_LEER,
           AuthPermission.CONFIGURACION_LEER);
 
+  private static final Set<AuthPermission> SUPPORT_BASE =
+      EnumSet.of(
+          AuthPermission.CIERRES_CAJA_ABRIR,
+          AuthPermission.CIERRES_CAJA_CERRAR,
+          AuthPermission.REPORTES_LEER,
+          AuthPermission.USUARIOS_LEER,
+          AuthPermission.CONFIGURACION_LEER,
+          AuthPermission.TICKETS_EMITIR);
+
   public static Set<AuthPermission> permissionsFor(UserRole role) {
     return switch (role) {
       case SUPER_ADMIN -> {
@@ -73,6 +82,7 @@ public final class RolePermissions {
         set.addAll(ADMIN_EXTRA);
         yield set;
       }
+      case SUPPORT -> EnumSet.copyOf(SUPPORT_BASE);
       case CAJERO -> EnumSet.copyOf(CASHIER_BASE);
       case OPERADOR -> EnumSet.copyOf(OPERATOR_BASE);
       case AUDITOR -> EnumSet.copyOf(AUDITOR_BASE);

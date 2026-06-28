@@ -32,80 +32,113 @@ class OnboardingControllerIntegrationTest {
   @Autowired
   private ObjectMapper objectMapper;
 
+  @Autowired
+  private com.parkflow.modules.licensing.domain.repository.CompanyPort companyRepository;
+
+  private UUID createTestCompany() {
+    com.parkflow.modules.licensing.domain.Company company = new com.parkflow.modules.licensing.domain.Company();
+    company.setName("Integration Test Company");
+    company.setNit("123456789-" + UUID.randomUUID().toString().substring(0, 5));
+    company.setAddress("123 Main St");
+    company.setOperationalProfile(com.parkflow.modules.licensing.enums.OperationalProfile.PUBLIC);
+    return companyRepository.save(company).getId();
+  }
+
+  private void setupSecurityContext(UUID companyId, String role) {
+    com.parkflow.modules.auth.security.AuthPrincipal principal = new com.parkflow.modules.auth.security.AuthPrincipal(
+        UUID.randomUUID(), 
+        companyId, 
+        "test@parkflow.com", 
+        role, 
+        java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + role))
+    );
+    org.springframework.security.authentication.UsernamePasswordAuthenticationToken auth = 
+        new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+            principal, null, principal.authorities());
+    org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
+  }
+
+  @org.junit.jupiter.api.AfterEach
+  void tearDown() {
+    org.springframework.security.core.context.SecurityContextHolder.clearContext();
+  }
+
   @Test
-  @WithMockUser(roles = "ADMIN")
   @DisplayName("saveStep - Happy path / Autosave (Optimistic Lock ready)")
   void testSaveStep() throws Exception {
-    UUID companyId = UUID.randomUUID();
+    UUID companyId = createTestCompany();
+    setupSecurityContext(companyId, "ADMIN");
     SaveOnboardingStepRequest request = new SaveOnboardingStepRequest(
         1, // current step
-        Map.of("vehicles", "config"),
+        Map.of("vehicles", "config", "vehicleTypes", java.util.List.of("MOTORCYCLE"), "helmetHandling", "NONE"),
         2 // target step
     );
 
     mockMvc.perform(put("/api/v1/onboarding/companies/{companyId}/steps", companyId)
+            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request)))
+        .andDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print())
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.currentStep").value(2))
-        .andExpect(jsonPath("$.isCompleted").value(false));
+        .andExpect(jsonPath("$.onboardingCompleted").value(false));
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
   @DisplayName("completeOnboarding - Flujo completo con materialización (o error si faltan pasos)")
   void testCompleteOnboarding() throws Exception {
-    UUID companyId = UUID.randomUUID();
+    UUID companyId = createTestCompany();
+    setupSecurityContext(companyId, "ADMIN");
     
-    // Si la DB está vacía y tratamos de completar sin haber guardado los pasos,
-    // debería fallar con BadRequest o Conflict (dependiendo de la implementación de validación de OnboardingUseCase)
-    mockMvc.perform(post("/api/v1/onboarding/companies/{companyId}/complete", companyId))
+    // Si la DB está vacía y tratamos de completar sin haber guardado los pasos, fallará
+    mockMvc.perform(post("/api/v1/onboarding/companies/{companyId}/complete", companyId)
+            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
         .andExpect(status().is4xxClientError());
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
   @DisplayName("skipAndApplyDefaults - Debería aplicar defaults y marcar completado")
   void testSkipAndApplyDefaults() throws Exception {
-    UUID companyId = UUID.randomUUID();
+    UUID companyId = createTestCompany();
+    setupSecurityContext(companyId, "ADMIN");
     
-    // Suponiendo que el sistema permita skip para esta companyId, devolvería OK o Not Found si no la creamos en BD test.
-    // Usamos is4xx o isOk según si creamos la empresa antes o delegamos a NotFound.
-    // Lo más seguro es que arroje Not Found si no la persistimos antes.
-    mockMvc.perform(post("/api/v1/onboarding/companies/{companyId}/skip", companyId))
-        .andExpect(status().is4xxClientError()); 
+    mockMvc.perform(post("/api/v1/onboarding/companies/{companyId}/skip", companyId)
+            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+        .andExpect(status().isOk()); 
   }
 
   @Test
-  @WithMockUser(roles = "SUPER_ADMIN")
   @DisplayName("resetOnboarding - Debería reiniciar el estado y crear snapshot")
   void testResetOnboarding() throws Exception {
-    UUID companyId = UUID.randomUUID();
+    UUID companyId = createTestCompany();
+    setupSecurityContext(companyId, "SUPER_ADMIN");
     
     mockMvc.perform(post("/api/v1/onboarding/companies/{companyId}/reset", companyId)
+            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
             .param("reason", "Testing reset"))
-        .andExpect(status().is4xxClientError()); // Igualmente esperamos un 4xx si la empresa no existe en H2
+        .andExpect(status().isOk());
   }
 
   @Test
-  @WithMockUser(roles = "USER")
   @DisplayName("Security - No Administrador debe recibir 403 Forbidden")
   void testSecurityNonAdminForbidden() throws Exception {
-    UUID companyId = UUID.randomUUID();
+    UUID companyId = createTestCompany();
+    setupSecurityContext(companyId, "USER");
     
-    mockMvc.perform(post("/api/v1/onboarding/companies/{companyId}/skip", companyId))
+    mockMvc.perform(post("/api/v1/onboarding/companies/{companyId}/skip", companyId)
+            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
         .andExpect(status().isForbidden());
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN", username = "admin@othercompany.local")
   @DisplayName("Security - Tenant Isolation: Admin de otra compañía no puede acceder")
   void testSecurityTenantIsolation() throws Exception {
-    UUID companyId = UUID.randomUUID();
-    // SecurityUtils verifies tenant isolation using AuthPrincipal.
-    // Given mockMvc doesn't have the full AuthPrincipal configured with the correct companyId,
-    // it should fail at the controller/service layer either via 403 or 4xx.
-    mockMvc.perform(post("/api/v1/onboarding/companies/{companyId}/reset", companyId))
+    UUID companyId = createTestCompany();
+    UUID otherCompanyId = createTestCompany();
+    setupSecurityContext(otherCompanyId, "ADMIN");
+    
+    mockMvc.perform(post("/api/v1/onboarding/companies/{companyId}/reset", companyId)
+            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
         .andExpect(status().is4xxClientError()); 
   }
 }

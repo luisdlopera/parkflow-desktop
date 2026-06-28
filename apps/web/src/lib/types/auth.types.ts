@@ -3,7 +3,7 @@
  * Centralized to avoid duplication across auth features.
  */
 
-export type UserRole = "SUPER_ADMIN" | "ADMIN" | "CAJERO" | "OPERADOR" | "AUDITOR";
+export type UserRole = "SUPER_ADMIN" | "ADMIN" | "SUPPORT" | "CAJERO" | "OPERADOR" | "AUDITOR";
 
 export type User = {
   id: string;

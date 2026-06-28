@@ -43,6 +43,9 @@ class AuthControllerIntegrationTest {
   @Autowired
   private PasswordHashService passwordHashService;
 
+  @org.springframework.boot.test.mock.mockito.MockBean
+  private com.parkflow.modules.auth.application.service.AuthAuditService authAuditService;
+
   private AppUser testUser;
   private final String rawPassword = "SecurePassword123!";
 

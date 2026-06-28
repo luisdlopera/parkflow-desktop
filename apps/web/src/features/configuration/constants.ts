@@ -1,5 +1,5 @@
 import type { RateType, VehicleType } from "@/lib/types/parking.types";
-import type { UserRole } from "@/lib/types/settings.types";
+import type { UserRole } from "@/lib/types/auth.types";
 import type { RateCategory } from "@/lib/api/rates-api";
 
 export const VEHICLE_TYPES: VehicleType[] = ["CAR", "MOTORCYCLE", "BICYCLE", "TRUCK", "BUS", "VAN", "ELECTRIC", "OTHER"];
@@ -27,7 +27,7 @@ export const DAYS_OF_WEEK = [
   { label: "Dom", bit: 6 }
 ];
 export const ROUNDING: Array<"UP" | "DOWN" | "NEAREST"> = ["UP", "DOWN", "NEAREST"];
-export const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "CAJERO", "OPERADOR", "AUDITOR"];
+export const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "SUPPORT", "CAJERO", "OPERADOR", "AUDITOR"];
 export const LOST_TICKET_POLICIES = [
   { value: "SURCHARGE_RATE", label: "Recargo por tarifa (lostTicketSurcharge)" },
   { value: "BLOCK_EXIT", label: "Bloquear salida sin supervisor" },

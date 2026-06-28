@@ -86,7 +86,8 @@ export type CashRegisterRow = {
   updatedAt: string;
 };
 
-export type UserRole = "SUPER_ADMIN" | "ADMIN" | "CAJERO" | "OPERADOR" | "AUDITOR";
+// UserRole moved to auth.types.ts for single source of truth
+export { type UserRole } from "./auth.types";
 
 export type VehicleTypeRow = {
   id: string;

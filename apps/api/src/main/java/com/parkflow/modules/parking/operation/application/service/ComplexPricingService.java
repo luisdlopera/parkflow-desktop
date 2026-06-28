@@ -119,21 +119,21 @@ public class ComplexPricingService implements ComplexPricingPort {
     BigDecimal surcharge = basePrice.surcharge();
     BigDecimal discount = BigDecimal.ZERO;
     
-    // Apply Night Surcharge only when exit time falls inside the configured window
+    // Apply Night Surcharge when any part of [entryAt, exitAt] overlaps with the configured window
     if (rate.isAppliesNight()
         && rate.getNightSurchargePercent() != null
         && rate.getNightSurchargePercent().compareTo(BigDecimal.ZERO) > 0
-        && rateWindowResolver.isInWindow(rate, exitAt)) {
+        && rateWindowResolver.overlapsWithWindow(rate, session.getEntryAt(), exitAt)) {
       BigDecimal nightAdditional = subtotal.multiply(rate.getNightSurchargePercent())
           .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
       subtotal = subtotal.add(nightAdditional);
     }
 
-    // Apply Holiday Surcharge (holiday resolution relies on the Rate.windowStart/windowEnd window too)
+    // Apply Holiday Surcharge when any part of [entryAt, exitAt] overlaps with the configured window
     if (rate.isAppliesHoliday()
         && rate.getHolidaySurchargePercent() != null
         && rate.getHolidaySurchargePercent().compareTo(BigDecimal.ZERO) > 0
-        && rateWindowResolver.isInWindow(rate, exitAt)) {
+        && rateWindowResolver.overlapsWithWindow(rate, session.getEntryAt(), exitAt)) {
       BigDecimal holidayAdditional = subtotal.multiply(rate.getHolidaySurchargePercent())
           .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
       subtotal = subtotal.add(holidayAdditional);

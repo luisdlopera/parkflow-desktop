@@ -35,4 +35,31 @@ public class RateWindowResolver {
       return !time.isBefore(windowStart) || !time.isAfter(windowEnd);
     }
   }
+
+  /**
+   * Checks if ANY part of the interval [entryAt, exitAt] overlaps with the
+   * surcharge window. For overnight windows that wrap around midnight, this
+   * detects cases where the stay crosses the window boundary.
+   */
+  public boolean overlapsWithWindow(Rate rate, OffsetDateTime entryAt, OffsetDateTime exitAt) {
+    LocalTime windowStart = rate.getWindowStart();
+    LocalTime windowEnd = rate.getWindowEnd();
+
+    if (windowStart == null || windowEnd == null) {
+      return true;
+    }
+
+    if (isInWindow(rate, entryAt) || isInWindow(rate, exitAt)) {
+      return true;
+    }
+
+    LocalTime entryTime = entryAt.toLocalTime();
+    LocalTime exitTime = exitAt.toLocalTime();
+
+    if (windowStart.isBefore(windowEnd)) {
+      return entryTime.isBefore(windowStart) && exitTime.isAfter(windowEnd);
+    } else {
+      return entryTime.isBefore(windowStart) && exitTime.isAfter(windowEnd);
+    }
+  }
 }

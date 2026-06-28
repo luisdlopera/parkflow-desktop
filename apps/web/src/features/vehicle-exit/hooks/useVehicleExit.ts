@@ -86,6 +86,10 @@ function operationPrintPayload(
   };
 }
 
+function isNetworkError(err: unknown): boolean {
+  return err instanceof TypeError && err.message.includes("fetch");
+}
+
 export function useVehicleExit() {
   const { caja, requireOpenForPayment } = useTerminalCaja();
   const { config, isLoading: configLoading, hasPaymentMethod } = useRuntimeConfig();
@@ -270,9 +274,17 @@ export function useVehicleExit() {
         toast.success(`Salida registrada. Total: $${Number((payload as ActiveLookup).total ?? 0).toLocaleString("es-CO")}`);
         resetForm();
       }
-    } catch (err) {
+} catch (err) {
       const validationMessage = toUserMessageFromClientValidation(err);
       if (validationMessage) { lookupHook.setError(validationMessage); toast.danger(validationMessage); playError(); return; }
+
+      if (!isNetworkError(err)) {
+        const errMsg = getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA);
+        lookupHook.setError(errMsg);
+        toast.danger(errMsg);
+        playError();
+        return;
+      }
 
       const idempotencyFingerprint = JSON.stringify({ ticketNumber: active.receipt.ticketNumber, paymentMethod, total: totalDue });
       const queued = await queueOfflineOperation("EXIT_RECORDED", {
@@ -284,7 +296,7 @@ export function useVehicleExit() {
       });
       if (queued) {
         clearIdempotencyKey("exit", idempotencyFingerprint);
-        toast.success("Sin internet: salida guardada. Se sincronizará automáticamente al reconectar.");
+        toast.success("Sin internet: salida guardada. Se sincronizara automaticamente al reconectar.");
         playSuccess();
         resetForm();
       } else {

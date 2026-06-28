@@ -11,7 +11,7 @@
 import { authHeaders } from "@/lib/services/auth-domain.service";
 import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import { authBase } from "@/lib/api/config";
-import type { UserRole } from "@/lib/types/settings.types";
+import type { UserRole } from "@/lib/types/auth.types";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 
 

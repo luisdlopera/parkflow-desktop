@@ -25,7 +25,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+import com.parkflow.ParkflowApiApplication;
+
+@SpringBootTest(classes = ParkflowApiApplication.class)
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("Tenant Isolation Security Tests")

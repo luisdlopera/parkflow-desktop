@@ -10,6 +10,17 @@
 -- PostgreSQL version: 14+
 
 -- ─────────────────────────────────────────────────────────────────────────────
+-- Ensure required roles exist
+-- ─────────────────────────────────────────────────────────────────────────────
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'parkflow_service') THEN
+        CREATE ROLE parkflow_service NOLOGIN;
+    END IF;
+END
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
 -- I-06: Row Level Security for onboarding_progress
 -- ─────────────────────────────────────────────────────────────────────────────
 
