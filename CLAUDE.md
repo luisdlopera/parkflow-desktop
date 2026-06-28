@@ -400,6 +400,83 @@ public class VehicleTypeManagementService {
 - [ ] ✅ No `service/` directory at module root
 - [ ] ✅ All imports reference canonical paths (no cross-cutting exceptions)
 
+### ✅ Defensive Validation — 3-Layer Pattern (MANDATORY)
+
+**Problem Solved**: Data corruption, security vulnerabilities, ghost data silently persisted
+
+**Pattern**: Every user input must be validated at **3 layers** — frontend, backend, database. No layer trusts the others.
+
+**Layer 1: Frontend (React/TypeScript)**
+- ✅ Input validation in components + state management
+- ✅ Conditional field visibility based on rules
+- ✅ Visual error messages shown to user
+- ✅ Example: `onboarding-logic.ts` case 3 validates all Step 3 fields
+- ❌ DO NOT rely only on frontend validation (can be bypassed via network tab)
+
+**Layer 2: Backend (Spring/Java)**
+- ✅ Field-level validation in dedicated `*Validator` class
+- ✅ Whitelist of permitted fields (prevents mass assignment)
+- ✅ Type validation + range checking (e.g., `0 ≤ monetary_value ≤ 9_999_999`)
+- ✅ Example: `Step3DataValidator` validates 19 permitted fields for onboarding Step 3
+- ✅ Reject with `HttpStatus.BAD_REQUEST` + descriptive error message
+- ❌ DO NOT trust frontend validation; validate server-side defensively
+
+**Layer 3: Database (PostgreSQL)**
+- ✅ Constraints (CHECK, FK, UNIQUE) enforce invariants
+- ✅ NOT NULL constraints prevent nullable ghost data
+- ✅ Enum validation via CHECK constraint (e.g., `rate_type IN ('HOURLY', 'DAILY', ...)`)
+- ✅ Example: V040 migration ensures `RateType.FRACTIONAL` is in DB constraint
+- ❌ DO NOT skip DB constraints as a "performance optimization"
+
+**Validator Class Pattern** (Backend):
+```java
+@Component
+public class Step3DataValidator {
+  // Define whitelist of permitted fields
+  private static final Set<String> PERMITTED_FIELDS = Set.of(...);
+  private static final int MAX_RATE_VALUE = 9_999_999;
+  
+  // Validate and sanitize input
+  public ValidationResult validate(Map<String, Object> rawData) {
+    Map<String, String> errors = new HashMap<>();
+    Map<String, Object> sanitized = new HashMap<>();
+    
+    for (Map.Entry entry : rawData.entrySet()) {
+      if (!PERMITTED_FIELDS.contains(entry.getKey())) {
+        log.warn("Ignoring non-whitelisted field '{}'", entry.getKey());
+        continue; // S-03: Mass assignment prevention
+      }
+      // Field-specific validation...
+    }
+    return new ValidationResult(isValid, errors, sanitized);
+  }
+}
+```
+
+**Integration in Service**:
+```java
+@Transactional
+public OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data) {
+  // Step 3 validation
+  if (step == 3) {
+    Step3DataValidator.ValidationResult result = step3DataValidator.validate(data);
+    if (!result.isValid) {
+      throw new OperationException(HttpStatus.BAD_REQUEST, buildErrorMessage(result.errors));
+    }
+  }
+  // Proceed with sanitized data only
+  Map<String, Object> sanitized = settingsMapper.sanitizeStepDataByPlan(company, step, data);
+  ...
+}
+```
+
+**When Adding New User Input**:
+1. Define `*Validator` class with whitelist + field validations
+2. Integrate into service `validateStepData()` or equivalent
+3. Add DB constraint (CHECK or FK) matching backend enum/range
+4. Frontend shows conditional errors (`stepErrors.fieldName`)
+5. All 3 layers aligned = defense in depth
+
 ---
 
 ## Development Rules & Practices
@@ -412,6 +489,13 @@ public class VehicleTypeManagementService {
    - ✅ Reference docs via relative paths: `[docs/VERIFICATION_PLAN.md](docs/VERIFICATION_PLAN.md)`
 
 2. **Before Committing** ⚠️ **MANDATORY CHECKLIST**:
+   - [ ] **Validation Check** (if user input accepted):
+     - [ ] Frontend: Conditional field visibility + error messages shown in JSX
+     - [ ] Frontend: All fields in validation logic (onboarding-logic.ts or equivalent)
+     - [ ] Backend: Dedicated `*Validator` class created (whitelist + field validation)
+     - [ ] Backend: Validator integrated in service (`validateStepData`, etc.)
+     - [ ] Database: CHECK constraint added to DB migration for enums/ranges
+     - [ ] All 3 layers aligned (frontend validation ≈ backend validation ≈ DB constraint)
    - [ ] **Architecture Check** (Backend Only):
      - [ ] No new `service/` directories at module root
      - [ ] All services have ≤5 public methods
