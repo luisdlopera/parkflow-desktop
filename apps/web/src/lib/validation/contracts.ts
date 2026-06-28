@@ -157,6 +157,7 @@ export const authLoginRequestSchema = z.object({
   deviceName: z.string().min(1),
   platform: z.string().min(1),
   fingerprint: z.string().min(1),
+  rememberMe: z.boolean().optional(),
   offlineRequestedHours: z.number().int().min(0).nullable().optional()
 });
 

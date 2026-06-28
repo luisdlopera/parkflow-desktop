@@ -19,6 +19,16 @@ vi.mock("@/components/onboarding/OnboardingWizard", () => ({
   ),
 }));
 
+vi.mock("@/lib/stores/auth.store", () => ({
+  useAuthStore: vi.fn((selector) => {
+    const state = {
+      isLoading: false,
+      user: null,
+    };
+    return typeof selector === "function" ? selector(state) : state;
+  }),
+}));
+
 import { currentUser } from "@/lib/services/auth-domain.service";
 import { useRouter } from "next/navigation";
 

@@ -24,7 +24,8 @@ export async function login(request: LoginRequest): Promise<StoredSession> {
   const session: StoredSession = {
     user: payload.user,
     session: payload.session,
-    offlineLease: payload.offlineLease
+    offlineLease: payload.offlineLease,
+    rememberMe: request.rememberMe ?? false
   };
   await saveSession(session);
   return session;
@@ -118,7 +119,8 @@ export async function refreshIfNeeded(current: StoredSession): Promise<StoredSes
       const rotated: StoredSession = {
         user: payload.user,
         session: payload.session,
-        offlineLease: payload.offlineLease
+        offlineLease: payload.offlineLease,
+        rememberMe: current.rememberMe
       };
       await saveSession(rotated);
       // Update store so useSessionMonitor reads the correct new expiry

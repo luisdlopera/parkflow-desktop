@@ -94,6 +94,7 @@ class AuthControllerIntegrationTest {
           "Test Device",
           "Integration Test OS",
           "test-fingerprint",
+          true,
           24
       );
 
@@ -127,6 +128,7 @@ class AuthControllerIntegrationTest {
           "Test Device",
           "Integration Test OS",
           "test-fingerprint",
+          true,
           24
       );
 
@@ -157,6 +159,7 @@ class AuthControllerIntegrationTest {
           "Test Device",
           "Integration Test OS",
           "test-fingerprint",
+          true,
           24
       );
 
@@ -194,6 +197,7 @@ class AuthControllerIntegrationTest {
           "Test Device",
           "Integration Test OS",
           "test-fingerprint",
+          true,
           24
       );
 
@@ -230,6 +234,7 @@ class AuthControllerIntegrationTest {
           "Test Device",
           "Integration Test OS",
           "test-fingerprint",
+          true,
           24
       );
 
@@ -325,6 +330,7 @@ class AuthControllerIntegrationTest {
           "Test Device",
           "Integration Test OS",
           "test-fingerprint",
+          true,
           24
       );
 
@@ -357,6 +363,7 @@ class AuthControllerIntegrationTest {
           "Test Device",
           "Integration Test OS",
           "test-fingerprint",
+          true,
           24
       );
 
@@ -378,6 +385,132 @@ class AuthControllerIntegrationTest {
           .andExpect(status().isOk())
           .andExpect(cookie().exists("parkflow_access"))
           .andExpect(cookie().exists("parkflow_refresh"));
+    }
+  }
+
+  // ============================================================================
+  // FASE 5: LOGIN RESPONSE VALIDATION (user.companyId)
+  // ============================================================================
+
+  @Nested
+  @DisplayName("Login Response - User Details Including companyId")
+  class LoginResponseValidationTests {
+
+    @Test
+    @DisplayName("Login Response - Contains user.companyId matching test user")
+    void testLoginResponse_ContainsCompanyId() throws Exception {
+      LoginRequest loginRequest = new LoginRequest(
+          "integration@parkflow.com",
+          rawPassword,
+          "test-device-id",
+          "Test Device",
+          "Integration Test OS",
+          "test-fingerprint",
+          true,
+          24
+      );
+
+      MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(loginRequest)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.user").exists())
+          .andExpect(jsonPath("$.user.id").exists())
+          .andExpect(jsonPath("$.user.email").value("integration@parkflow.com"))
+          .andExpect(jsonPath("$.user.companyId").exists())
+          .andExpect(jsonPath("$.user.companyId").isNotEmpty())
+          .andExpect(jsonPath("$.user.role").value("ADMIN"))
+          .andExpect(jsonPath("$.user.onboardingCompleted").exists())
+          .andReturn();
+
+      // Verify companyId is the correct UUID (not null, not empty)
+      String companyIdStr = result.getResponse().getContentAsString();
+      assertThat(companyIdStr).contains("\"companyId\":\"" + testUser.getCompanyId());
+    }
+
+    @Test
+    @DisplayName("Login Response - User has correct metadata fields")
+    void testLoginResponse_UserMetadata() throws Exception {
+      LoginRequest loginRequest = new LoginRequest(
+          "integration@parkflow.com",
+          rawPassword,
+          "test-device-id",
+          "Test Device",
+          "Integration Test OS",
+          "test-fingerprint",
+          true,
+          24
+      );
+
+      mockMvc.perform(post("/api/v1/auth/login")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(loginRequest)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.user.id").isNotEmpty())
+          .andExpect(jsonPath("$.user.companyId").isNotEmpty())
+          .andExpect(jsonPath("$.user.name").value("Integration Test User"))
+          .andExpect(jsonPath("$.user.email").value("integration@parkflow.com"))
+          .andExpect(jsonPath("$.user.role").value("ADMIN"))
+          .andExpect(jsonPath("$.user.permissions").isArray())
+          .andExpect(jsonPath("$.user.active").value(true))
+          .andExpect(jsonPath("$.user.requirePasswordChange").value(false));
+    }
+  }
+
+  // ============================================================================
+  // FASE 6: RESTORE-SESSION VALIDATION
+  // ============================================================================
+
+  @Nested
+  @DisplayName("Restore Session - Verify companyId is returned and JWT is valid")
+  class RestoreSessionValidationTests {
+
+    @Test
+    @DisplayName("Restore Session - Returns user with companyId after successful refresh")
+    void testRestoreSession_ReturnsUserWithCompanyId() throws Exception {
+      // 1. Login to get cookies
+      LoginRequest loginRequest = new LoginRequest(
+          "integration@parkflow.com",
+          rawPassword,
+          "test-device-id",
+          "Test Device",
+          "Integration Test OS",
+          "test-fingerprint",
+          true,
+          24
+      );
+
+      MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(loginRequest)))
+          .andExpect(status().isOk())
+          .andReturn();
+
+      String refreshToken = extractCookieValue(loginResult, "parkflow_refresh");
+      assertThat(refreshToken).isNotEmpty();
+
+      // 2. Call /restore-session to simulate page reload
+      MvcResult restoreResult = mockMvc.perform(post("/api/v1/auth/restore-session")
+              .cookie(new Cookie("parkflow_refresh", refreshToken)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.user").exists())
+          .andExpect(jsonPath("$.user.companyId").exists())
+          .andExpect(jsonPath("$.user.companyId").isNotEmpty())
+          .andExpect(jsonPath("$.user.email").value("integration@parkflow.com"))
+          .andExpect(jsonPath("$.session").exists())
+          .andReturn();
+
+      // Verify the companyId matches the test user's companyId
+      String responseBody = restoreResult.getResponse().getContentAsString();
+      assertThat(responseBody).contains("\"companyId\":\"" + testUser.getCompanyId());
+    }
+
+    @Test
+    @DisplayName("Restore Session - Without refresh token returns 401")
+    void testRestoreSession_WithoutRefreshToken_Returns401() throws Exception {
+      mockMvc.perform(post("/api/v1/auth/restore-session"))
+          .andExpect(status().isUnauthorized())
+          .andExpect(jsonPath("$.errorCode").value("AUTH_UNAUTHORIZED"));
     }
   }
 

@@ -3,6 +3,7 @@ import { loadSession, saveSession } from "./auth-storage.service";
 import { refreshIfNeeded, authHeadersApiKey } from "@/features/auth/api/auth.api";
 import type { AuthHeaderOptions } from "@/features/auth/types";
 import { safeStorage } from "@/lib/utils/storage";
+import { useAuthStore } from "@/lib/stores/auth.store";
 
 
 export async function authHeaders(options?: AuthHeaderOptions): Promise<HeadersInit> {
@@ -49,6 +50,11 @@ export async function isOfflineLeaseValid(): Promise<boolean> {
 }
 
 export async function currentUser(): Promise<AuthUser | null> {
+  // First, try to get from authStore (this is updated by useSessionLoader after /restore-session)
+  const { user: storeUser } = useAuthStore.getState();
+  if (storeUser) return storeUser as AuthUser;
+
+  // Fallback to session storage (for cases where store hasn't been initialized yet)
   const session = await loadSession();
   if (!session) return null;
   return session.user ?? null;

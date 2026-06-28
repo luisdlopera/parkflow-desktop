@@ -60,12 +60,12 @@ public class AuthCookieFactory {
   /**
    * Set both access and refresh token cookies on the response.
    */
-  public void setAuthCookies(HttpServletResponse response, String accessToken, String refreshToken) {
+  public void setAuthCookies(HttpServletResponse response, String accessToken, String refreshToken, boolean rememberMe) {
     long accessMaxAge = accessTokenTtlMinutes * 60L;
     long refreshMaxAge = refreshTokenTtlDays * 86400L;
 
-    response.addHeader("Set-Cookie", buildCookie("parkflow_access", accessToken, accessMaxAge));
-    response.addHeader("Set-Cookie", buildCookie("parkflow_refresh", refreshToken, refreshMaxAge));
+    response.addHeader("Set-Cookie", buildCookie("parkflow_access", accessToken, rememberMe ? accessMaxAge : -1));
+    response.addHeader("Set-Cookie", buildCookie("parkflow_refresh", refreshToken, rememberMe ? refreshMaxAge : -1));
   }
 
   /**

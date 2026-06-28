@@ -4,6 +4,7 @@ export type StoredSession = {
   user: AuthUser;
   session: SessionInfo;
   offlineLease: OfflineLease | null;
+  rememberMe?: boolean;
 };
 
 export type AuthHeaderOptions = {

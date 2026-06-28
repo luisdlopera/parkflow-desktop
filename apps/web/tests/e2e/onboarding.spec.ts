@@ -65,6 +65,8 @@ test.describe('Onboarding Wizard Flow', () => {
 
     // Validar que volvemos al Paso 2, no al 1
     await expect(page.locator('text=/Capacidad|Capacity/i').first()).toBeVisible();
+  });
+
   test('Error de Red y Fallo 500: Debería manejar errores de servidor y prevenir avance', async ({ page }) => {
     // Interceptar la petición de guardado para simular un 500
     await page.route('**/api/v1/onboarding/companies/*/steps', route => {

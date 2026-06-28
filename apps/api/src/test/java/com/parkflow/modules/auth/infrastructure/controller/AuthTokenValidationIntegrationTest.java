@@ -81,6 +81,7 @@ class AuthTokenValidationIntegrationTest {
         "Test Device",
         "web",
         "test-fingerprint",
+        true,
         24
     );
 
@@ -128,7 +129,7 @@ class AuthTokenValidationIntegrationTest {
   void testLogin_MultipleLoginsCreateSeparateFamilies() throws Exception {
     // Login 1
     LoginRequest login1 = new LoginRequest(
-        "token-test@parkflow.com", rawPassword, "device-1", "Device 1", "web", "fp1", 24);
+        "token-test@parkflow.com", rawPassword, "device-1", "Device 1", "web", "fp1", true, 24);
 
     MvcResult result1 = mockMvc.perform(post("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
@@ -141,7 +142,7 @@ class AuthTokenValidationIntegrationTest {
 
     // Login 2 (different device)
     LoginRequest login2 = new LoginRequest(
-        "token-test@parkflow.com", rawPassword, "device-2", "Device 2", "mobile", "fp2", 48);
+        "token-test@parkflow.com", rawPassword, "device-2", "Device 2", "mobile", "fp2", true, 48);
 
     MvcResult result2 = mockMvc.perform(post("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)

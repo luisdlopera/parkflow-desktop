@@ -10,6 +10,7 @@ import {
 } from '../auth-domain.service';
 import * as authStorage from '../auth-storage.service';
 import * as authApi from '@/features/auth/api/auth.api';
+import { useAuthStore } from '@/lib/stores/auth.store';
 
 // Mock dependencies
 vi.mock('../auth-storage.service', () => ({
@@ -27,6 +28,8 @@ vi.mock('@/lib/utils/storage', () => ({
     getItem: vi.fn().mockReturnValue('mocked-terminal-123'),
   },
 }));
+
+vi.mock('@/lib/stores/auth.store');
 
 describe('Auth Domain Service', () => {
   const mockSession = {
@@ -150,16 +153,51 @@ describe('Auth Domain Service', () => {
   });
 
   describe('currentUser', () => {
-    it('should return user from session', async () => {
-      vi.mocked(authStorage.loadSession).mockResolvedValue(mockSession);
+    it('should return user from authStore if available', async () => {
+      const storeUser = { ...mockSession.user, companyId: 'comp-123' };
+      vi.mocked(useAuthStore).getState = vi.fn().mockReturnValue({
+        user: storeUser,
+        isLoading: false,
+      });
+
       const user = await currentUser();
-      expect(user).toEqual(mockSession.user);
+      expect(user).toEqual(storeUser);
+      // Should NOT call loadSession if user is in store
+      expect(authStorage.loadSession).not.toHaveBeenCalled();
     });
 
-    it('should return null if no session', async () => {
+    it('should fallback to session storage if authStore has no user', async () => {
+      vi.mocked(useAuthStore).getState = vi.fn().mockReturnValue({
+        user: null,
+        isLoading: false,
+      });
+      vi.mocked(authStorage.loadSession).mockResolvedValue(mockSession);
+
+      const user = await currentUser();
+      expect(user).toEqual(mockSession.user);
+      expect(authStorage.loadSession).toHaveBeenCalled();
+    });
+
+    it('should return null if no user in authStore or session', async () => {
+      vi.mocked(useAuthStore).getState = vi.fn().mockReturnValue({
+        user: null,
+        isLoading: false,
+      });
       vi.mocked(authStorage.loadSession).mockResolvedValue(null);
+
       const user = await currentUser();
       expect(user).toBeNull();
+    });
+
+    it('should include companyId in returned user', async () => {
+      const userWithCompanyId = { ...mockSession.user, companyId: 'comp-123' };
+      vi.mocked(useAuthStore).getState = vi.fn().mockReturnValue({
+        user: userWithCompanyId,
+        isLoading: false,
+      });
+
+      const user = await currentUser();
+      expect(user?.companyId).toBe('comp-123');
     });
   });
 

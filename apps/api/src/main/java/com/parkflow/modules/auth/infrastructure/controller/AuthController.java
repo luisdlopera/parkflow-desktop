@@ -59,7 +59,8 @@ public class AuthController {
   @ResponseStatus(HttpStatus.OK)
   public LoginResponse login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
     LoginResult result = loginUseCase.login(request);
-    authCookieFactory.setAuthCookies(response, result.accessToken(), result.refreshToken());
+    boolean rememberMe = request.rememberMe() != null && request.rememberMe();
+    authCookieFactory.setAuthCookies(response, result.accessToken(), result.refreshToken(), rememberMe);
     return result.response();
   }
 
@@ -73,7 +74,7 @@ public class AuthController {
           "Tu sesion expiro. Inicia sesion nuevamente.");
     }
     LoginResult result = tokenRefreshUseCase.refresh(request, refreshToken);
-    authCookieFactory.setAuthCookies(response, result.accessToken(), result.refreshToken());
+    authCookieFactory.setAuthCookies(response, result.accessToken(), result.refreshToken(), true);
     return result.response();
   }
 
@@ -87,7 +88,7 @@ public class AuthController {
           "Tu sesion expiro. Inicia sesion nuevamente.");
     }
     LoginResult result = tokenRefreshUseCase.refreshFromCookie(refreshToken);
-    authCookieFactory.setAuthCookies(response, result.accessToken(), result.refreshToken());
+    authCookieFactory.setAuthCookies(response, result.accessToken(), result.refreshToken(), true);
     return result.response();
   }
 

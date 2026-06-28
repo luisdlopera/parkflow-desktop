@@ -10,4 +10,5 @@ public record LoginRequest(
     @NotBlank String deviceName,
     @NotBlank String platform,
     @NotBlank String fingerprint,
+    Boolean rememberMe,
     Integer offlineRequestedHours) {}

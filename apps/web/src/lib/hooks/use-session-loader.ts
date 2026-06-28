@@ -25,10 +25,15 @@ export function useSessionLoader() {
         });
         if (!response.ok) {
           // Non-200 response means no valid session (401/403/etc) — don't retry
+          console.log('[useSessionLoader] No valid session (non-200 response), clearing user');
           setUser(null);
           return;
         }
         const payload = await response.json();
+        console.log('[useSessionLoader] Session restored successfully:', {
+          email: payload.user?.email,
+          companyId: payload.user?.companyId,
+        });
         await saveSession({
           user: payload.user,
           session: payload.session,
@@ -39,12 +44,15 @@ export function useSessionLoader() {
         if (payload.session?.accessTokenExpiresAtIso) {
           setSessionExpiresAt(payload.session.accessTokenExpiresAtIso);
         }
-      } catch {
+      } catch (error) {
+        console.error('[useSessionLoader] Error during restore:', error);
         // Network error: retry up to maxRetries times before forcing logout
         if (retryCount < maxRetries && initialized.current) {
           retryCount++;
+          console.log(`[useSessionLoader] Retrying restore-session (attempt ${retryCount}/${maxRetries})`);
           timeoutId = setTimeout(doRestore, retryCount * 1000);
         } else {
+          console.log('[useSessionLoader] Max retries exceeded or not mounted, clearing user');
           timeoutId = setTimeout(() => {
             setUser(null);
           }, 3_000);

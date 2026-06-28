@@ -66,8 +66,13 @@ export async function loadSession(): Promise<StoredSession | null> {
 export async function saveSession(session: StoredSession): Promise<void> {
   memorySession = session;
 
-  // Tauri desktop: save to secure storage
-  await tauriInvoke<void>("auth_store_session", { payloadJson: JSON.stringify(session) });
+  if (session.rememberMe !== false) {
+    // Tauri desktop: save to secure storage
+    await tauriInvoke<void>("auth_store_session", { payloadJson: JSON.stringify(session) });
+  } else {
+    // If it's a temporary session, ensure it's not stored persistently
+    await tauriInvoke<void>("auth_clear_session");
+  }
 
   // Web: tokens are in httpOnly cookies (set by server).
   // No client-side write needed. writeBrowserStorage() is deprecated.

@@ -100,7 +100,7 @@ class LoginUseCaseImplTest {
         mockUser.setCompanyId(UUID.randomUUID());
         mockUser.setRole(UserRole.CAJERO);
 
-        validRequest = new LoginRequest("test@example.com", "password123", "device123", "My Mac", "Mac", "fingerprint", 24);
+        validRequest = new LoginRequest("test@example.com", "password123", "device123", "My Mac", "Mac", "fingerprint", false, 24);
 
         mockDevice = new AuthorizedDevice();
         mockDevice.setId(UUID.randomUUID());
@@ -139,7 +139,7 @@ class LoginUseCaseImplTest {
     void testLoginWithInvalidEmail_Returns401() {
         // Arrange
         when(appUserRepository.findGlobalByEmail("unknown@example.com")).thenReturn(Optional.empty());
-        LoginRequest req = new LoginRequest("unknown@example.com", "password", "device", "My Mac", "Mac", "fp", 24);
+        LoginRequest req = new LoginRequest("unknown@example.com", "password", "device", "My Mac", "Mac", "fp", false, 24);
 
         // Act
         OperationException ex = catchThrowableOfType(() -> loginUseCase.login(req), OperationException.class);
@@ -155,7 +155,7 @@ class LoginUseCaseImplTest {
         // Arrange
         when(appUserRepository.findGlobalByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
         when(passwordHashService.matchesPassword("wrong", "hashed_password")).thenReturn(false);
-        LoginRequest req = new LoginRequest("test@example.com", "wrong", "device123", "My Mac", "Mac", "fp", 24);
+        LoginRequest req = new LoginRequest("test@example.com", "wrong", "device123", "My Mac", "Mac", "fp", false, 24);
 
         // Act
         OperationException ex = catchThrowableOfType(() -> loginUseCase.login(req), OperationException.class);
@@ -173,7 +173,7 @@ class LoginUseCaseImplTest {
         mockUser.setFailedLoginAttempts(4);
         when(appUserRepository.findGlobalByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
         when(passwordHashService.matchesPassword("wrong", "hashed_password")).thenReturn(false);
-        LoginRequest req = new LoginRequest("test@example.com", "wrong", "device123", "My Mac", "Mac", "fp", 24);
+        LoginRequest req = new LoginRequest("test@example.com", "wrong", "device123", "My Mac", "Mac", "fp", false, 24);
 
         // Act
         OperationException ex = catchThrowableOfType(() -> loginUseCase.login(req), OperationException.class);

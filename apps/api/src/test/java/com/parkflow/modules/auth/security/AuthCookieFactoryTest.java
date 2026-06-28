@@ -46,7 +46,7 @@ class AuthCookieFactoryTest {
     @Test
     void testSetAuthCookies_AddsCorrectHeaders() {
         // Act
-        factory.setAuthCookies(response, "access_val", "refresh_val");
+        factory.setAuthCookies(response, "access_val", "refresh_val", true);
 
         // Assert
         ArgumentCaptor<String> headerValueCaptor = ArgumentCaptor.forClass(String.class);
@@ -112,7 +112,7 @@ class AuthCookieFactoryTest {
         ReflectionTestUtils.setField(factory, "cookieSecure", false); // Configured to false
 
         // Act
-        factory.setAuthCookies(response, "access_val", "refresh_val");
+        factory.setAuthCookies(response, "access_val", "refresh_val", true);
 
         // Assert
         ArgumentCaptor<String> headerValueCaptor = ArgumentCaptor.forClass(String.class);
@@ -129,7 +129,7 @@ class AuthCookieFactoryTest {
         ReflectionTestUtils.setField(factory, "cookieSecure", false); // Configured to false
 
         // Act
-        factory.setAuthCookies(response, "access_val", "refresh_val");
+        factory.setAuthCookies(response, "access_val", "refresh_val", true);
 
         // Assert
         ArgumentCaptor<String> headerValueCaptor = ArgumentCaptor.forClass(String.class);
@@ -146,7 +146,7 @@ class AuthCookieFactoryTest {
     @Test
     void testCookieAttributes_AllPresent() {
         // Act
-        factory.setAuthCookies(response, "access_val", "refresh_val");
+        factory.setAuthCookies(response, "access_val", "refresh_val", true);
 
         // Assert
         ArgumentCaptor<String> headerValueCaptor = ArgumentCaptor.forClass(String.class);
@@ -169,7 +169,7 @@ class AuthCookieFactoryTest {
         ReflectionTestUtils.setField(factory, "accessTokenTtlMinutes", 15);
 
         // Act
-        factory.setAuthCookies(response, "access_val", "refresh_val");
+        factory.setAuthCookies(response, "access_val", "refresh_val", true);
 
         // Assert
         ArgumentCaptor<String> headerValueCaptor = ArgumentCaptor.forClass(String.class);
@@ -186,7 +186,7 @@ class AuthCookieFactoryTest {
         ReflectionTestUtils.setField(factory, "refreshTokenTtlDays", 7);
 
         // Act
-        factory.setAuthCookies(response, "access_val", "refresh_val");
+        factory.setAuthCookies(response, "access_val", "refresh_val", true);
 
         // Assert
         ArgumentCaptor<String> headerValueCaptor = ArgumentCaptor.forClass(String.class);
@@ -200,7 +200,7 @@ class AuthCookieFactoryTest {
     @Test
     void testCookieValues_NotEmpty() {
         // Act
-        factory.setAuthCookies(response, "access_val", "refresh_val");
+        factory.setAuthCookies(response, "access_val", "refresh_val", true);
 
         // Assert
         ArgumentCaptor<String> headerValueCaptor = ArgumentCaptor.forClass(String.class);
@@ -219,7 +219,7 @@ class AuthCookieFactoryTest {
     @Test
     void testCookieValues_AreDistinct() {
         // Act
-        factory.setAuthCookies(response, "access_token_123", "refresh_token_456");
+        factory.setAuthCookies(response, "access_token_123", "refresh_token_456", true);
 
         // Assert
         ArgumentCaptor<String> headerValueCaptor = ArgumentCaptor.forClass(String.class);
@@ -257,7 +257,7 @@ class AuthCookieFactoryTest {
     @Test
     void testCookiePath_AlwaysSlash() {
         // Act
-        factory.setAuthCookies(response, "token", "refresh");
+        factory.setAuthCookies(response, "token", "refresh", true);
 
         // Assert
         ArgumentCaptor<String> headerValueCaptor = ArgumentCaptor.forClass(String.class);
@@ -270,7 +270,7 @@ class AuthCookieFactoryTest {
     @Test
     void testSameSiteAttribute_AlwaysStrict() {
         // Act
-        factory.setAuthCookies(response, "token", "refresh");
+        factory.setAuthCookies(response, "token", "refresh", true);
 
         // Assert
         ArgumentCaptor<String> headerValueCaptor = ArgumentCaptor.forClass(String.class);
