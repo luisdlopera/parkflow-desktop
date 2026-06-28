@@ -157,7 +157,7 @@ public class TokenRefreshUseCaseImpl implements TokenRefreshUseCase {
     } else {
       RefreshTokenFamily family = new RefreshTokenFamily();
       family.setFamilyId(UUID.randomUUID());
-      family.setUserId(user.getId());
+      family.setUser(user);
       family.setCompanyId(user.getCompanyId());
       family.setGenerationNumber(1);
       family.setCreatedAt(OffsetDateTime.now());

@@ -29,9 +29,6 @@ public class RefreshTokenFamily {
     @JoinColumn(name = "user_id", nullable = false)
     private AppUser user;
 
-    @Column(name = "user_id", insertable = false, updatable = false)
-    private UUID userId;
-
     @Column(name = "company_id", nullable = false)
     private UUID companyId;
 
@@ -46,6 +43,10 @@ public class RefreshTokenFamily {
 
     @Column(name = "revoke_reason")
     private String revokeReason;
+
+    public UUID getUserId() {
+        return user != null ? user.getId() : null;
+    }
 
     public boolean isRevoked() {
         return revokedAt != null;

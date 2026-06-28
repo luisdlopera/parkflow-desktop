@@ -2467,3 +2467,184 @@ INSERT INTO payment_methods (code, name, requires_reference, display_order) VALU
 INSERT INTO operational_parameters (site_id, company_id, allow_entry_without_printer, allow_exit_without_payment, allow_reprint, allow_void, require_photo_entry, require_photo_exit, tolerance_minutes, max_time_no_charge, offline_mode_enabled)
 VALUES ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, 5, 15, TRUE);
 
+-- Add FRACTIONAL to rate_type constraint to match Java RateType enum
+-- Without this, inserting RateType.FRACTIONAL raises a DB constraint violation.
+-- Date: 2026-06-28
+
+ALTER TABLE rate DROP CONSTRAINT IF EXISTS chk_rate_type;
+
+ALTER TABLE rate ADD CONSTRAINT chk_rate_type CHECK (
+    rate_type IN ('PER_MINUTE', 'HOURLY', 'DAILY', 'FLAT', 'FRACTIONAL')
+);
+-- Add refresh token family tracking to detect token theft
+-- Date: 2026-06-28
+
+-- Create refresh_token_families table
+CREATE TABLE refresh_token_families (
+    family_id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    company_id UUID NOT NULL,
+    generation_number INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    revoked_at TIMESTAMPTZ,
+    revoke_reason VARCHAR(50),
+
+    CONSTRAINT fk_rtf_user FOREIGN KEY (user_id) REFERENCES app_user(id),
+    CONSTRAINT fk_rtf_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+
+-- Create indexes for quick lookups
+CREATE INDEX idx_rtf_user ON refresh_token_families(user_id);
+CREATE INDEX idx_rtf_company ON refresh_token_families(company_id);
+CREATE INDEX idx_rtf_revoked ON refresh_token_families(revoked_at) WHERE revoked_at IS NOT NULL;
+
+-- Add columns to auth_sessions table for token family tracking
+ALTER TABLE auth_sessions ADD COLUMN token_family_id UUID;
+ALTER TABLE auth_sessions ADD COLUMN token_generation INT NOT NULL DEFAULT 1;
+
+-- Add foreign key constraint to refresh_token_families
+ALTER TABLE auth_sessions ADD CONSTRAINT fk_as_family
+    FOREIGN KEY (token_family_id) REFERENCES refresh_token_families(family_id);
+
+-- Create index for quick session family lookups
+CREATE INDEX idx_as_family ON auth_sessions(token_family_id);
+CREATE INDEX idx_as_generation ON auth_sessions(token_generation);
+-- JWT Key Version Management Table (for gradual secret rotation)
+CREATE TABLE jwt_key_versions (
+    version INTEGER PRIMARY KEY,
+    key_material TEXT NOT NULL,
+    active BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    activated_at TIMESTAMPTZ,
+    deactivated_at TIMESTAMPTZ,
+
+    CONSTRAINT jwt_key_versions_key_material_not_empty CHECK (key_material != '')
+);
+
+CREATE INDEX idx_jwt_key_versions_active ON jwt_key_versions(active) WHERE active = true;
+CREATE INDEX idx_jwt_key_versions_created_at ON jwt_key_versions(created_at DESC);
+
+-- Multi-Factor Authentication Configuration Table
+CREATE TABLE mfa_configs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    method VARCHAR(20) NOT NULL, -- TOTP, SMS, EMAIL
+    enabled BOOLEAN DEFAULT false,
+    totp_secret VARCHAR(32),
+    backup_codes TEXT, -- JSON array of backup codes
+    verified_at TIMESTAMPTZ,
+    enabled_at TIMESTAMPTZ,
+    disabled_at TIMESTAMPTZ,
+    requires_verification BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+
+    CONSTRAINT fk_mfa_configs_user FOREIGN KEY (user_id)
+        REFERENCES app_user(id) ON DELETE CASCADE,
+    CONSTRAINT ck_mfa_method CHECK (method IN ('TOTP', 'SMS', 'EMAIL'))
+);
+
+CREATE INDEX idx_mfa_configs_user_method ON mfa_configs(user_id, method);
+CREATE INDEX idx_mfa_configs_enabled ON mfa_configs(user_id) WHERE enabled = true;
+CREATE INDEX idx_mfa_configs_created_at ON mfa_configs(created_at DESC);
+
+-- Multi-tenant security: Ensure user_id belongs to correct tenant
+
+
+-- Add column to track key version in tokens (for JWT rotation)
+ALTER TABLE auth_sessions
+ADD COLUMN key_version INTEGER DEFAULT 1;
+
+-- Create index for efficient lookup
+CREATE INDEX idx_auth_sessions_key_version ON auth_sessions(key_version);
+-- V042: Onboarding Security Hardening
+-- Addresses audit findings:
+--   I-06: Missing Row Level Security on onboarding_progress
+--   C-05: No schema validation on progress_data JSONB
+--
+-- NOTE: RLS policy uses app.tenant_id session variable set by the application layer
+-- via SET LOCAL app.tenant_id = '<uuid>' on every authenticated request.
+-- The parkflow_app role must be the role used by the Spring datasource.
+--
+-- PostgreSQL version: 14+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Ensure required roles exist
+-- ─────────────────────────────────────────────────────────────────────────────
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'parkflow_service') THEN
+        CREATE ROLE parkflow_service NOLOGIN;
+    END IF;
+END
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- I-06: Row Level Security for onboarding_progress
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Enable RLS on onboarding_progress table
+ALTER TABLE onboarding_progress ENABLE ROW LEVEL SECURITY;
+
+-- Create policy: only allow access to rows belonging to the current tenant
+-- The NULLIF handles the case where app.tenant_id is not set (e.g. SUPER_ADMIN bypass)
+CREATE POLICY rls_onboarding_progress_tenant_isolation
+    ON onboarding_progress
+    AS PERMISSIVE
+    FOR ALL
+    TO parkflow_app
+    USING (
+        company_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid
+        OR current_setting('app.tenant_id', true) IS NULL
+        OR current_setting('app.tenant_id', true) = ''
+    );
+
+-- Super admin bypass: allow service role unrestricted access
+-- (used for admin tools and migrations)
+CREATE POLICY rls_onboarding_progress_superadmin_bypass
+    ON onboarding_progress
+    AS PERMISSIVE
+    FOR ALL
+    TO parkflow_service
+    USING (true);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- C-05: Basic structural validation on progress_data JSONB
+-- ─────────────────────────────────────────────────────────────────────────────
+-- PostgreSQL CHECK constraints on JSONB can validate basic structure.
+-- We enforce that progress_data is a JSON object (not array/null/scalar).
+-- Full schema validation is done at the application layer (service + validator).
+ALTER TABLE onboarding_progress
+    ADD CONSTRAINT chk_onboarding_progress_data_is_object
+        CHECK (
+            progress_data IS NULL
+            OR jsonb_typeof(progress_data) = 'object'
+        );
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Index for performance: querying by company_id (used in findByCompanyId)
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_onboarding_progress_company_id
+    ON onboarding_progress (company_id);
+CREATE TABLE onboarding_rule_snapshots (
+    id UUID PRIMARY KEY,
+    version INTEGER NOT NULL UNIQUE,
+    applied_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    validation_rules JSONB NOT NULL,
+    default_values JSONB NOT NULL
+);
+
+-- Insert initial snapshot (Version 1)
+INSERT INTO onboarding_rule_snapshots (id, version, applied_at, validation_rules, default_values)
+VALUES (
+    gen_random_uuid(), 
+    1, 
+    now(), 
+    '{}'::jsonb, 
+    '{}'::jsonb
+);
+
+-- Add tracking columns to onboarding_progress
+ALTER TABLE onboarding_progress ADD COLUMN rule_version INTEGER;
+ALTER TABLE onboarding_progress ADD COLUMN snapshot_hash VARCHAR(255);
+ALTER TABLE onboarding_progress ADD COLUMN materialization_failed BOOLEAN NOT NULL DEFAULT FALSE;

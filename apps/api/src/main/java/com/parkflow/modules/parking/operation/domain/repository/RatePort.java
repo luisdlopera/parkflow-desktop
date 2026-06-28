@@ -23,5 +23,6 @@ public interface RatePort {
   Optional<Rate> findByIdAndCompanyId(UUID id, UUID companyId);
   Rate save(Rate rate);
   Optional<Rate> findById(UUID id);
+  List<Rate> findByCompanyId(UUID companyId);
   void delete(Rate rate);
 }

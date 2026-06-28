@@ -8,6 +8,7 @@ import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
 @Getter
+@SuppressWarnings("serial")
 public class OnboardingCompletedEvent extends ApplicationEvent {
 
   private final UUID companyId;

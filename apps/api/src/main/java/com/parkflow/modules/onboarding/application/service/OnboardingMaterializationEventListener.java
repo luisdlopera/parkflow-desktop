@@ -19,6 +19,7 @@ import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@SuppressWarnings("deprecation")
 public class OnboardingMaterializationEventListener {
 
   private final OnboardingMaterializationService materializationService;

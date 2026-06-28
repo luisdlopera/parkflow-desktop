@@ -119,14 +119,14 @@ public class LoginUseCaseImpl implements LoginUseCase {
     passwordValidationService.validatePasswordNotCommon(request.password());
 
     log.info("AUTH: Login credentials validated - userId={}, email={}", user.getId(), SecurityUtils.maskEmail(email));
-    
+
     // Reset failed attempts on success
     if (user.getFailedLoginAttempts() > 0) {
       user.setFailedLoginAttempts(0);
     }
 
     user.setLastAccessAt(OffsetDateTime.now());
-    appUserRepository.save(user);
+    user = appUserRepository.save(user);
 
     AuthorizedDevice device = upsertDevice(request, user);
     if (!device.isAuthorized()) {
@@ -178,7 +178,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
     // Create a new token family for this login session
     RefreshTokenFamily family = new RefreshTokenFamily();
     family.setFamilyId(UUID.randomUUID());
-    family.setUserId(user.getId());
+    family.setUser(user);
     family.setCompanyId(user.getCompanyId());
     family.setGenerationNumber(1);
     family.setCreatedAt(OffsetDateTime.now());

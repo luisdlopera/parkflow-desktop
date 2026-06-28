@@ -7,7 +7,7 @@ import com.parkflow.modules.onboarding.application.port.out.OnboardingMaterializ
 import com.parkflow.modules.parking.locker.dto.BatchLockerRequest;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.RateType;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.RateRepository;
+import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.licensing.domain.Company;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -32,7 +32,7 @@ public class OnboardingMaterializationService {
 
   private final OnboardingMaterializationPort materializationPort;
   private final PaymentMethodPort paymentMethodPort;
-  private final RateRepository rateRepository;
+  private final RatePort ratePort;
   private final OnboardingSettingsMapper settingsMapper;
 
   @Transactional
@@ -74,7 +74,7 @@ public class OnboardingMaterializationService {
     deactivateExistingRates(company);
     for (String vehicleType : vehicleTypes) {
       int amount = settingsMapper.extractNumber(ratesByType.get(vehicleType), baseValue);
-      rateRepository.save(buildRate(company.getId(), vehicleType, amount, graceMinutes));
+      ratePort.save(buildRate(company.getId(), vehicleType, amount, graceMinutes));
     }
   }
 
@@ -83,7 +83,7 @@ public class OnboardingMaterializationService {
     deactivateExistingRates(company);
     for (String vehicleType : List.of("MOTORCYCLE", "CAR")) {
       int amount = "MOTORCYCLE".equals(vehicleType) ? 1000 : 2000;
-      rateRepository.save(buildRate(company.getId(), vehicleType, amount, 5));
+      ratePort.save(buildRate(company.getId(), vehicleType, amount, 5));
     }
   }
 
@@ -103,11 +103,11 @@ public class OnboardingMaterializationService {
   }
 
   private void deactivateExistingRates(Company company) {
-    List<Rate> existing = rateRepository.findByCompanyId(company.getId());
+    List<Rate> existing = ratePort.findByCompanyId(company.getId());
     for (Rate r : existing) {
       r.setActive(false);
       r.setUpdatedAt(OffsetDateTime.now());
-      rateRepository.save(r);
+      ratePort.save(r);
     }
   }
 

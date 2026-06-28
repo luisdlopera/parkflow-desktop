@@ -58,6 +58,11 @@ public class ParkingRateJpaAdapter implements RatePort {
   }
 
   @Override
+  public List<Rate> findByCompanyId(UUID companyId) {
+    return jpaRepository.findByCompanyId(companyId);
+  }
+
+  @Override
   public void delete(Rate rate) {
     jpaRepository.delete(rate);
   }
@@ -109,5 +114,7 @@ public class ParkingRateJpaAdapter implements RatePort {
     boolean existsByNameAndIdNotAndCompanyId(String name, UUID excludeId, UUID companyId);
 
     Optional<Rate> findByIdAndCompanyId(UUID id, UUID companyId);
+    
+    List<Rate> findByCompanyId(UUID companyId);
   }
 }

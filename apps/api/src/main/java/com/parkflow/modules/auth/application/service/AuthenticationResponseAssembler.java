@@ -37,6 +37,7 @@ public class AuthenticationResponseAssembler {
         session.getId(),
         session.getUser().getId(),
         session.getDevice().getDeviceId(),
+        session.getTokenFamilyId(),
         session.getCreatedAt(),
         session.getAccessExpiresAt(),
         session.getRefreshExpiresAt(),
