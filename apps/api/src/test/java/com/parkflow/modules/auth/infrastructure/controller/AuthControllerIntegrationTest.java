@@ -49,6 +49,7 @@ class AuthControllerIntegrationTest {
   @BeforeEach
   void setUp() {
     testUser = new AppUser();
+    testUser.setName("Integration Test User");
     testUser.setEmail("integration@parkflow.com");
     testUser.setPasswordHash(passwordHashService.encodePassword(rawPassword));
     testUser.setCompanyId(UUID.randomUUID());
@@ -74,6 +75,7 @@ class AuthControllerIntegrationTest {
     mockMvc.perform(post("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(loginRequest)))
+        .andDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print())
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.user.email").value("integration@parkflow.com"))
         .andExpect(cookie().exists("parkflow_access"))
@@ -97,7 +99,7 @@ class AuthControllerIntegrationTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(loginRequest)))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.code").value("AUTH_INVALID_CREDENTIALS"));
+        .andExpect(jsonPath("$.errorCode").value("AUTH_INVALID_CREDENTIALS"));
   }
 
   @Test
