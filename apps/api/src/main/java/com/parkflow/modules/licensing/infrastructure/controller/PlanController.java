@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
  * This controller wraps the deprecated {@link PlanService}.
  */
 @Deprecated(since = "2.1.0", forRemoval = false)
-@SuppressWarnings("deprecation")
 @RestController
 @RequestMapping("/api/v1/admin/plans")
 @RequiredArgsConstructor
@@ -37,6 +36,7 @@ public class PlanController {
 
   private final PlanService planService;
 
+  @Deprecated
   @GetMapping
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "List all plans")
@@ -47,6 +47,7 @@ public class PlanController {
     return ResponseEntity.ok(planService.listPlans(includeDeleted, active));
   }
 
+  @Deprecated
   @GetMapping("/{id}")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Get plan detail")
@@ -56,6 +57,7 @@ public class PlanController {
     return ResponseEntity.ok(planService.getPlan(id));
   }
 
+  @Deprecated
   @PostMapping
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Create a new plan")
@@ -65,6 +67,7 @@ public class PlanController {
     return ResponseEntity.status(HttpStatus.CREATED).body(planService.createPlan(request));
   }
 
+  @Deprecated
   @PatchMapping("/{id}")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Update an existing plan")
@@ -76,6 +79,7 @@ public class PlanController {
     return ResponseEntity.ok(planService.updatePlan(id, request));
   }
 
+  @Deprecated
   @DeleteMapping("/{id}")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Soft delete a plan")
@@ -87,6 +91,7 @@ public class PlanController {
     return ResponseEntity.noContent().build();
   }
 
+  @Deprecated
   @PatchMapping("/{id}/toggle")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Toggle plan active/inactive status")
@@ -96,6 +101,7 @@ public class PlanController {
     return ResponseEntity.ok(planService.togglePlan(id));
   }
 
+  @Deprecated
   @PostMapping("/{id}/duplicate")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Duplicate a plan with all its features")

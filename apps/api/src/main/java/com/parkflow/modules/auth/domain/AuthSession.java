@@ -45,4 +45,7 @@ public class AuthSession {
   private OffsetDateTime lastSeenAt = OffsetDateTime.now();
 
   private OffsetDateTime revokedAt;
+
+  @Column(name = "company_id", nullable = false)
+  private UUID companyId;
 }

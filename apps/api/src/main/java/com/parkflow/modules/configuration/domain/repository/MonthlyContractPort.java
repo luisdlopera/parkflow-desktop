@@ -11,6 +11,9 @@ import java.util.UUID;
 
 public interface MonthlyContractPort {
   Page<MonthlyContract> search(String site, String plate, Boolean active, UUID companyId, Pageable pageable);
+  default Page<MonthlyContract> search(String site, String plate, Boolean active, Pageable pageable) {
+    return search(site, plate, active, null, pageable);
+  }
   List<MonthlyContract> findActiveForPlateAndDate(String plate, LocalDate date, UUID companyId);
   Optional<MonthlyContract> findFirstByPlateAndIsActiveTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
       String plate, LocalDate dateStart, LocalDate dateEnd, UUID companyId);

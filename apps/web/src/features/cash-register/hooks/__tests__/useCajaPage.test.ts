@@ -35,7 +35,7 @@ vi.mock("@/lib/cash/cash-api", () => ({
   cashSummary: vi.fn(),
 }));
 
-vi.mock("@/lib/settings-api", () => ({
+vi.mock("@/lib/api/sites-api", () => ({
   fetchConfigurationSites: vi.fn(),
 }));
 

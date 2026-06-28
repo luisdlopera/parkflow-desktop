@@ -153,6 +153,7 @@ export default function LoginPage() {
       // Notify other tabs that login succeeded
       broadcastAuthEvent({ type: "auth:login" });
       useAuthStore.getState().setUser(session.user);
+      useAuthStore.getState().setSessionExpiresAt(session.session.accessTokenExpiresAtIso);
       if (!session.user.onboardingCompleted) {
         router.replace("/onboarding");
       } else {

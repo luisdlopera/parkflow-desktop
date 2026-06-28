@@ -37,7 +37,7 @@ describe('print agent config', () => {
     vi.stubEnv('PRINT_AGENT_DATA_DIR', 'custom-data')
     vi.stubEnv('PRINT_AGENT_AUDIT_LOG', 'custom-audit.jsonl')
 
-    const mod = await import('../../../../apps/print-agent/src/config')
+    const mod = await import('@print-agent/config')
     expect(mod.loadPrintersFromEnv(dir)).toEqual([
       {
         id: 'p1',
@@ -59,7 +59,7 @@ describe('print agent config', () => {
   })
 
   it('falls back to default printer config when no file is present', async () => {
-    const mod = await import('../../../../apps/print-agent/src/config')
+    const mod = await import('@print-agent/config')
     const printers = mod.loadPrintersFromEnv(process.cwd())
 
     expect(printers).toHaveLength(1)

@@ -9,8 +9,8 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import com.parkflow.modules.common.security.ApiKeyManager;
+
 import com.parkflow.modules.common.security.ApiKeyRepository;
 import com.parkflow.modules.common.security.ApiKey;
 import org.springframework.http.ResponseEntity;

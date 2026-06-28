@@ -16,6 +16,7 @@ vi.mock('@/lib/api/fetch-with-credentials', () => ({
 
 vi.mock('@/lib/api/config', () => ({
   authBase: vi.fn().mockReturnValue('http://localhost/api/auth'),
+  API_CONFIG: { apiKey: 'test-api-key' },
 }));
 
 vi.stubEnv('NEXT_PUBLIC_API_KEY', 'test-api-key');

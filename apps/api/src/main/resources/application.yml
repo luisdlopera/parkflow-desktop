@@ -33,7 +33,7 @@ management:
         include: health,info,prometheus
   tracing:
     sampling:
-      probability: ${OTEL_SAMPLING_PROBABILITY:0.1}
+      probability: ${OTEL_SAMPLING_PROBABILITY:0.0}
   otlp:
     tracing:
       endpoint: ${OTEL_ENDPOINT:http://localhost:4318/v1/traces}
@@ -81,18 +81,17 @@ app:
     swagger-public: ${PARKFLOW_SWAGGER_PUBLIC:false}
     offline-lease-hours: ${PARKFLOW_OFFLINE_LEASE_HOURS:48}
     lockout-minutes: ${PARKFLOW_LOCKOUT_MINUTES:30}
+    max-concurrent-sessions: ${PARKFLOW_MAX_CONCURRENT_SESSIONS:5}
     seed-admin-email: ${PARKFLOW_SEED_ADMIN_EMAIL:admin@parkflow.local}
     seed-admin-password: ${PARKFLOW_SEED_ADMIN_PASSWORD:REPLACE_WITH_ADMIN_PASSWORD}
     cookie:
       # HttpOnly auth cookie attributes. Secure and SameSite are env-aware.
       # - Secure: false for dev (allows localhost over HTTP); true for prod
-      # - SameSite: Lax for SPA (default); None for cross-site (requires Secure=true)
+      # - SameSite: Strict (default, more secure); set to Lax only if OAuth cross-site flows are needed
       secure: ${PARKFLOW_COOKIE_SECURE:false}
-      same-site: ${PARKFLOW_COOKIE_SAME_SITE:Lax}
+      same-site: ${PARKFLOW_COOKIE_SAME_SITE:Strict}
 
 parkflow:
-  jwt:
-    secret: ${PARKFLOW_JWT_SECRET_BASE64:REPLACE_WITH_BASE64_JWT_SECRET}
   licensing:
     # Claves RSA para firma de licencias (Base64 encoded)
     private-key: ${PARKFLOW_LICENSE_PRIVATE_KEY:}

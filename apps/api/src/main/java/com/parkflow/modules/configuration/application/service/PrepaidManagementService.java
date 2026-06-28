@@ -7,9 +7,9 @@ import com.parkflow.modules.configuration.dto.PrepaidPackageResponse;
 import com.parkflow.modules.configuration.domain.PrepaidBalance;
 import com.parkflow.modules.configuration.domain.PrepaidPackage;
 import com.parkflow.modules.configuration.domain.ParkingSite;
-import com.parkflow.modules.configuration.infrastructure.persistence.PrepaidBalanceRepository;
-import com.parkflow.modules.configuration.infrastructure.persistence.PrepaidPackageRepository;
-import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
+import com.parkflow.modules.configuration.domain.repository.PrepaidBalancePort;
+import com.parkflow.modules.configuration.domain.repository.PrepaidPackagePort;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.common.exception.OperationException;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -26,9 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PrepaidManagementService {
 
-  private final PrepaidPackageRepository packageRepo;
-  private final PrepaidBalanceRepository balanceRepo;
-  private final ParkingSiteRepository siteRepository;
+  private final PrepaidPackagePort packageRepo;
+  private final PrepaidBalancePort balanceRepo;
+  private final ParkingSitePort siteRepository;
   private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 

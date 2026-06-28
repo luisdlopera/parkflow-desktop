@@ -67,6 +67,7 @@ describe('LoginPage', () => {
     it('calls login and redirects to dashboard on successful login', async () => {
       mockLogin.mockResolvedValueOnce({
         user: { id: '1', email: 'admin@test.com', onboardingCompleted: true },
+        session: { accessTokenExpiresAtIso: new Date().toISOString() },
       });
       render(<LoginPage />);
       const emailInput = screen.getByLabelText(/correo electrónico/i);
@@ -86,6 +87,7 @@ describe('LoginPage', () => {
     it('redirects to onboarding if user has not completed onboarding', async () => {
       mockLogin.mockResolvedValueOnce({
         user: { id: '1', email: 'admin@test.com', onboardingCompleted: false },
+        session: { accessTokenExpiresAtIso: new Date().toISOString() },
       });
       render(<LoginPage />);
       const emailInput = screen.getByLabelText(/correo electrónico/i);

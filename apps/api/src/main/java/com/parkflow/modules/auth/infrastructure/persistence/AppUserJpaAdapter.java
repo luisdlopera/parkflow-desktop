@@ -67,6 +67,11 @@ public class AppUserJpaAdapter implements AppUserPort {
   }
 
   @Override
+  public long count() {
+    return jpaRepository.count();
+  }
+
+  @Override
   public void delete(AppUser user) {
     jpaRepository.delete(user);
   }

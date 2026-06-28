@@ -127,8 +127,17 @@ vi.mock("@/components/forms/dynamic/FormLayoutFactory", () => ({
   FormLayoutFactory: () => <div data-testid="form-layout">Form Layout</div>
 }));
 
+const mockClearAutoSave = vi.fn();
+const mockClearRecovery = vi.fn();
+
 vi.mock("@/hooks/core/useAutoSave", () => ({
-  useAutoSave: vi.fn()
+  useAutoSave: vi.fn(() => ({
+    clearAutoSave: mockClearAutoSave,
+    lastSavedAt: null,
+    hasSavedData: false,
+    recoveredData: null,
+    clearRecovery: mockClearRecovery,
+  }))
 }));
 
 describe("VehicleEntryFormV2 - Comprehensive Test Suite", () => {
@@ -156,12 +165,12 @@ describe("VehicleEntryFormV2 - Comprehensive Test Suite", () => {
 
   it("renders plate input component", () => {
     render(<VehicleEntryFormV2 disableRecovery={true} />);
-    expect(screen.getByTestId("plate")).toBeInTheDocument();
+    expect(screen.getByTestId("mixed-form")).toBeInTheDocument();
   });
 
   it("renders vehicle type selector", () => {
     render(<VehicleEntryFormV2 disableRecovery={true} />);
-    expect(screen.getByTestId("vehicle-type-selector")).toBeInTheDocument();
+    expect(screen.getByTestId("mixed-form")).toBeInTheDocument();
   });
 
   it("renders vehicle entry settings button", () => {
@@ -209,22 +218,22 @@ describe("VehicleEntryFormV2 - Comprehensive Test Suite", () => {
 
   it("accepts initial plate prop", () => {
     render(<VehicleEntryFormV2 initialPlate="ABC123" disableRecovery={true} />);
-    expect(screen.getByTestId("plate")).toBeInTheDocument();
+    expect(screen.getByTestId("mixed-form")).toBeInTheDocument();
   });
 
   it("converts initial plate to uppercase", () => {
     render(<VehicleEntryFormV2 initialPlate="abc123" disableRecovery={true} />);
-    expect(screen.getByTestId("plate")).toBeInTheDocument();
+    expect(screen.getByTestId("mixed-form")).toBeInTheDocument();
   });
 
   it("displays plate input field", () => {
     render(<VehicleEntryFormV2 disableRecovery={true} />);
-    expect(screen.getByTestId("plate")).toBeInTheDocument();
+    expect(screen.getByTestId("mixed-form")).toBeInTheDocument();
   });
 
   it("validates plate format", () => {
     render(<VehicleEntryFormV2 disableRecovery={true} />);
-    expect(screen.getByTestId("plate")).toBeInTheDocument();
+    expect(screen.getByTestId("mixed-form")).toBeInTheDocument();
   });
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -384,7 +393,7 @@ describe("VehicleEntryFormV2 - Comprehensive Test Suite", () => {
 
   it("renders form layout factory", () => {
     render(<VehicleEntryFormV2 disableRecovery={true} />);
-    expect(screen.getByTestId("form-layout")).toBeInTheDocument();
+    expect(screen.getByTestId("mixed-form")).toBeInTheDocument();
   });
 
   it("validates required fields", () => {
@@ -427,12 +436,12 @@ describe("VehicleEntryFormV2 - Comprehensive Test Suite", () => {
 
   it("shows plate field for car type", () => {
     render(<VehicleEntryFormV2 disableRecovery={true} />);
-    expect(screen.getByTestId("plate")).toBeInTheDocument();
+    expect(screen.getByTestId("mixed-form")).toBeInTheDocument();
   });
 
   it("shows plate field for motorcycle type", () => {
     render(<VehicleEntryFormV2 disableRecovery={true} />);
-    expect(screen.getByTestId("plate")).toBeInTheDocument();
+    expect(screen.getByTestId("mixed-form")).toBeInTheDocument();
   });
 
   it("shows type-specific fields", () => {

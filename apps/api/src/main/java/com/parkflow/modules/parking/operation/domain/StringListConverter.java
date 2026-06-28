@@ -1,4 +1,4 @@
-package com.parkflow.modules.parking.operation.infrastructure.persistence;
+package com.parkflow.modules.parking.operation.domain;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -10,7 +10,6 @@ import java.util.List;
 
 /**
  * JPA converter that serializes {@code List<String>} to a JSON array TEXT column and back.
- * Keeps Jackson out of application services — serialization is an infrastructure concern.
  */
 @Converter
 public class StringListConverter implements AttributeConverter<List<String>, String> {

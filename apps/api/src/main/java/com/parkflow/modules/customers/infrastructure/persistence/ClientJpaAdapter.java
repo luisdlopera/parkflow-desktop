@@ -34,6 +34,16 @@ public class ClientJpaAdapter implements ClientPort {
   }
 
   @Override
+  public Optional<Client> findFirstByCompanyIdAndDocument(UUID companyId, String document) {
+    return repository.findFirstByCompanyIdAndDocument(companyId, document);
+  }
+
+  @Override
+  public Optional<Client> findFirstByCompanyIdAndNameIgnoreCase(UUID companyId, String name) {
+    return repository.findFirstByCompanyIdAndNameIgnoreCase(companyId, name);
+  }
+
+  @Override
   public void delete(UUID id) {
     repository.deleteById(id);
   }

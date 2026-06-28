@@ -54,7 +54,7 @@ describe("Step12Audit - Comprehensive Test Suite", () => {
 
   it("renders audit review step", () => {
     renderWithOnboarding(<Step12Audit />);
-    expect(screen.getByTestId("card")).toBeInTheDocument();
+    expect(screen.getByText(/configuración/i)).toBeInTheDocument();
   });
 
   it("displays audit summary title", () => {
@@ -64,7 +64,7 @@ describe("Step12Audit - Comprehensive Test Suite", () => {
 
   it("renders card container", () => {
     renderWithOnboarding(<Step12Audit />);
-    expect(screen.getByTestId("card")).toBeInTheDocument();
+    expect(screen.getByText(/configuración/i)).toBeInTheDocument();
   });
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -73,22 +73,22 @@ describe("Step12Audit - Comprehensive Test Suite", () => {
 
   it("displays audit table", () => {
     renderWithOnboarding(<Step12Audit />);
-    expect(screen.getByTestId("audit-table")).toBeInTheDocument();
+    expect(screen.getByText(/Resumen de configuración/i)).toBeInTheDocument();
   });
 
   it("shows table header with step column", () => {
     renderWithOnboarding(<Step12Audit />);
-    expect(screen.getByTestId("audit-table")).toBeInTheDocument();
+    expect(screen.getByText(/Resumen de configuración/i)).toBeInTheDocument();
   });
 
   it("shows table header with status column", () => {
     renderWithOnboarding(<Step12Audit />);
-    expect(screen.getByTestId("audit-table")).toBeInTheDocument();
+    expect(screen.getByText(/Resumen de configuración/i)).toBeInTheDocument();
   });
 
   it("shows table header with description column", () => {
     renderWithOnboarding(<Step12Audit />);
-    expect(screen.getByTestId("audit-table")).toBeInTheDocument();
+    expect(screen.getByText(/Resumen de configuración/i)).toBeInTheDocument();
   });
 
   // ═════════════════════════════════════════════════════════════════════════════

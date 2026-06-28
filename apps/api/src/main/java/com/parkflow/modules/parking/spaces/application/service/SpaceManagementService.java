@@ -25,9 +25,11 @@ import org.springframework.transaction.annotation.Transactional;
  * Handles space management operations: assignment, status changes, capacity resizing.
  * Max 5 methods as per hexagonal architecture.
  */
+@SuppressWarnings("null")
 @Service
 @RequiredArgsConstructor
 public class SpaceManagementService implements SpaceManagementUseCase {
+
 
   private final ParkingSpaceRepositoryPort parkingSpaceRepository;
   private final ParkingSpaceAssignmentRepositoryPort parkingSpaceAssignmentRepository;

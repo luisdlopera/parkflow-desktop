@@ -12,12 +12,12 @@ import com.parkflow.modules.auth.dto.ProfileResponse;
 import com.parkflow.modules.auth.dto.UpdateProfileRequest;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.security.SecurityUtils;
+import com.parkflow.modules.auth.security.PasswordValidationService;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
-import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -31,15 +31,15 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class ProfileManagementUseCaseImpl implements ProfileManagementUseCase {
 
-  private static final Pattern PASSWORD_PATTERN = Pattern.compile(
-      "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!.])(?=\\S+$).{8,}$");
 
-  private final AppUserRepository appUserRepository;
+
+  private final AppUserPort appUserRepository;
   private final AuthSessionPort authSessionRepository;
   private final PasswordHashService passwordHashService;
   private final AuthAuditService authAuditService;
   private final AuthCompanyPort authCompanyPort;
   private final AuthenticationResponseAssembler responseAssembler;
+  private final PasswordValidationService passwordValidationService;
 
   @Override
   @Transactional(readOnly = true)
@@ -94,7 +94,7 @@ public class ProfileManagementUseCaseImpl implements ProfileManagementUseCase {
       throw new OperationException(HttpStatus.CONFLICT, "Datos duplicados (correo o documento)");
     }
 
-    log.info("AUTH: Profile updated - userId={}, email={}", user.getId(), maskEmail(user.getEmail()));
+    log.info("AUTH: Profile updated - userId={}, email={}", user.getId(), SecurityUtils.maskEmail(user.getEmail()));
     return toProfile(user);
   }
 
@@ -107,14 +107,14 @@ public class ProfileManagementUseCaseImpl implements ProfileManagementUseCase {
             .findById(userId)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
-    log.info("AUTH: Password change attempt - userId={}, email={}", user.getId(), maskEmail(user.getEmail()));
+    log.info("AUTH: Password change attempt - userId={}, email={}", user.getId(), SecurityUtils.maskEmail(user.getEmail()));
 
     if (!passwordHashService.matchesPassword(request.currentPassword(), user.getPasswordHash())) {
       log.warn("AUTH: Password change failed - current password invalid - userId={}", user.getId());
       throw new OperationException(HttpStatus.UNAUTHORIZED, "Contrasena actual invalida");
     }
 
-    validatePasswordStrength(request.newPassword());
+    passwordValidationService.validatePasswordStrength(request.newPassword());
 
     user.setPasswordHash(passwordHashService.encodePassword(request.newPassword()));
     user.setPasswordChangedAt(OffsetDateTime.now());
@@ -134,17 +134,7 @@ public class ProfileManagementUseCaseImpl implements ProfileManagementUseCase {
         Map.of("sessionsRevoked", sessionsRevoked));
   }
 
-  private void validatePasswordStrength(String password) {
-    if (password == null || password.length() < 8) {
-      throw new OperationException(HttpStatus.BAD_REQUEST,
-          "La contraseña debe tener al menos 8 caracteres");
-    }
 
-    if (!PASSWORD_PATTERN.matcher(password).matches()) {
-      throw new OperationException(HttpStatus.BAD_REQUEST,
-          "La contraseña debe contener al menos: una mayúscula, una minúscula, un número y un carácter especial (@#$%^&+=!.))");
-    }
-  }
 
   private AppUser requireCurrentUser() {
     UUID userId = SecurityUtils.requireUserId();
@@ -185,18 +175,5 @@ public class ProfileManagementUseCaseImpl implements ProfileManagementUseCase {
     return value.trim();
   }
 
-  private String maskEmail(String email) {
-    if (email == null || email.length() < 3 || !email.contains("@")) {
-      return "***";
-    }
-    String[] parts = email.split("@");
-    String local = parts[0];
-    String domain = parts[1];
 
-    if (local.length() <= 1) {
-      return "***@" + domain;
-    }
-
-    return local.charAt(0) + "***@" + domain;
-  }
 }

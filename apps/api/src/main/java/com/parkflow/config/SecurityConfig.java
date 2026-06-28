@@ -136,8 +136,9 @@ public class SecurityConfig {
                     .permitAll()
                     .anyRequest()
                     .authenticated())
-        .addFilterBefore(new ApiKeyAuthFilter(apiKey), UsernamePasswordAuthenticationFilter.class)
+        // Explicit filter order: ApiKey → JWT → Onboarding
         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+        .addFilterBefore(new ApiKeyAuthFilter(apiKey), JwtAuthFilter.class)
         .addFilterAfter(onboardingSecurityFilter, JwtAuthFilter.class);
     return http.build();
   }
@@ -193,7 +194,7 @@ public class SecurityConfig {
     CorsConfiguration config = new CorsConfiguration();
     config.setAllowedOrigins(Arrays.stream(allowedOrigins.split(",")).map(s -> s.trim()).toList());
     config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-    config.setAllowedHeaders(Arrays.asList("*"));
+    config.addAllowedHeader("*");
     config.setExposedHeaders(Arrays.asList(CorrelationIdFilter.CORRELATION_ID_HEADER)); // Expose correlation ID to clients
     config.setAllowCredentials(true);
 

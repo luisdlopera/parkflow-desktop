@@ -57,6 +57,7 @@ vi.mock('@heroui/react', async (importOriginal) => {
   const actual: any = await importOriginal();
   return {
     ...actual,
+    TimeField: (props: any) => React.createElement('input', { type: 'time', 'data-testid': 'mock-time-input', ...props }),
     ListBox: Object.assign(({ children }: any) => React.createElement('div', null, children), {
       Item: ({ children }: any) => React.createElement('div', null, children)
     })

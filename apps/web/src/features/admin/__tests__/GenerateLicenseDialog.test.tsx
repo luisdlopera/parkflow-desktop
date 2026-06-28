@@ -130,7 +130,7 @@ describe("GenerateLicenseDialog", () => {
     expect(screen.getByText("Empresa Test")).toBeInTheDocument();
     expect(screen.getByText("PRO")).toBeInTheDocument();
     expect(screen.getByText("0 / 5")).toBeInTheDocument();
-    expect(screen.getByTestId("device-fingerprint-*")).toBeInTheDocument();
+    expect(screen.getByTestId("device-fingerprint")).toBeInTheDocument();
   });
 
   it("does not render when closed", () => {
@@ -161,7 +161,7 @@ describe("GenerateLicenseDialog", () => {
       />
     );
 
-    const fingerprintInput = screen.getByTestId("device-fingerprint-*");
+    const fingerprintInput = screen.getByTestId("device-fingerprint");
     await user.type(fingerprintInput, "fp-test-123");
 
     const generateButton = screen.getByRole("button", { name: /Generar Licencia/i });

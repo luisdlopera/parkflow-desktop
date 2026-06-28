@@ -52,7 +52,7 @@ vi.mock('node:net', () => ({
 describe('print agent dispatch', () => {
   it('dispatches ESC/POS job over tcp and reads status', async () => {
     emitAfterWrites = 2
-    const { dispatchEscPosJob } = await import('../../../../apps/print-agent/src/dispatch')
+    const { dispatchEscPosJob } = await import('@print-agent/dispatch')
 
     const result = await dispatchEscPosJob(
       {
@@ -97,7 +97,7 @@ describe('print agent dispatch', () => {
 
   it('reports health using the same tcp status path', async () => {
     emitAfterWrites = 1
-    const { printerQuickHealth } = await import('../../../../apps/print-agent/src/dispatch')
+    const { printerQuickHealth } = await import('@print-agent/dispatch')
 
     const health = await printerQuickHealth(
       {

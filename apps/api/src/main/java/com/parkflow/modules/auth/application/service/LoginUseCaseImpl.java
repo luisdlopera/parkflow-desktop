@@ -16,13 +16,17 @@ import com.parkflow.modules.auth.dto.LoginResponse;
 import com.parkflow.modules.auth.dto.LoginResult;
 import com.parkflow.modules.auth.security.JwtTokenService;
 import com.parkflow.modules.auth.security.PasswordHashService;
+import com.parkflow.modules.auth.security.PasswordValidationService;
 import com.parkflow.modules.auth.security.RolePermissions;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import java.time.OffsetDateTime;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,11 +39,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class LoginUseCaseImpl implements LoginUseCase {
 
-  private final AppUserRepository appUserRepository;
+  private final AppUserPort appUserRepository;
   private final AuthorizedDevicePort authorizedDeviceRepository;
   private final AuthSessionPort authSessionRepository;
   private final JwtTokenService jwtTokenService;
   private final PasswordHashService passwordHashService;
+  private final PasswordValidationService passwordValidationService;
   private final AuthAuditService authAuditService;
   private final AuditPort globalAuditService;
   private final AuthCompanyPort authCompanyPort;
@@ -50,6 +55,9 @@ public class LoginUseCaseImpl implements LoginUseCase {
 
   @Value("${app.security.lockout-minutes:30}")
   private int lockoutMinutes;
+
+  @Value("${app.security.max-concurrent-sessions:5}")
+  private int maxConcurrentSessions;
 
   @Override
   @Transactional
@@ -104,6 +112,9 @@ public class LoginUseCaseImpl implements LoginUseCase {
       throw invalidCredentials(user, email, deviceId);
     }
 
+    // [SECURITY] Validate password is not in common password list
+    passwordValidationService.validatePasswordNotCommon(request.password());
+
     log.info("AUTH: Login credentials validated - userId={}, email={}", user.getId(), SecurityUtils.maskEmail(email));
     
     // Reset failed attempts on success
@@ -125,13 +136,41 @@ public class LoginUseCaseImpl implements LoginUseCase {
       throw new OperationException(HttpStatus.FORBIDDEN, "Equipo revocado");
     }
 
+    // [SECURITY] Enforce max concurrent sessions limit
+    List<AuthSession> activeSessions = authSessionRepository.findByUserAndActiveTrue(user)
+        .stream()
+        .filter(s -> s.getDevice() != null && s.getDevice().isAuthorized())
+        .collect(Collectors.toList());
+
+    if (activeSessions.size() >= maxConcurrentSessions) {
+      AuthSession oldest = activeSessions.stream()
+          .min(Comparator.comparing(AuthSession::getCreatedAt))
+          .orElse(null);
+
+      if (oldest != null) {
+        oldest.setActive(false);
+        oldest.setRevokedAt(OffsetDateTime.now());
+        authSessionRepository.save(oldest);
+
+        log.info("AUTH: Session limit exceeded - revoked oldest session - userId={}, revokedSessionId={}, reason=CONCURRENT_LIMIT",
+            user.getId(), oldest.getId());
+        authAuditService.log(
+            AuthAuditAction.LOGIN_SUCCESS,
+            user,
+            device,
+            "REVOKED_OLDEST_SESSION_FOR_LIMIT",
+            Map.of("revokedSessionId", oldest.getId().toString(), "sessionCount", String.valueOf(activeSessions.size())));
+      }
+    }
+
     AuthSession session = new AuthSession();
     session.setUser(user);
     session.setDevice(device);
+    session.setCompanyId(user.getCompanyId());
     session.setRefreshJti(UUID.randomUUID().toString());
     session.setRefreshExpiresAt(OffsetDateTime.now().plus(jwtTokenService.refreshTtl()));
     session.setAccessExpiresAt(OffsetDateTime.now().plus(jwtTokenService.accessTtl()));
-    session.setRefreshTokenHash("pending");
+    session.setRefreshTokenHash("pending:" + UUID.randomUUID());
     session = authSessionRepository.save(session);
 
     String refreshToken = jwtTokenService.createRefreshToken(user.getId(), session.getId(), session.getRefreshJti());

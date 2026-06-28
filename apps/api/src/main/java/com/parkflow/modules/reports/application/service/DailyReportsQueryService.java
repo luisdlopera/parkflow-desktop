@@ -1,12 +1,11 @@
 package com.parkflow.modules.reports.application.service;
 
 import com.parkflow.modules.auth.security.TenantContext;
-import com.parkflow.modules.cash.infrastructure.persistence.CashMovementRepository;
 import com.parkflow.modules.parking.operation.domain.PaymentMethod;
 import com.parkflow.modules.parking.spaces.domain.ParkingSpaceStatus;
-import com.parkflow.modules.parking.spaces.infrastructure.persistence.ParkingSpaceRepository;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.ParkingSessionRepository;
 import com.parkflow.modules.reports.application.port.in.DailyReportsQueryUseCase;
+import com.parkflow.modules.reports.application.port.out.CashReportReaderPort;
+import com.parkflow.modules.reports.application.port.out.ParkingReportReaderPort;
 import com.parkflow.modules.reports.dto.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -24,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Handles reports for operations, occupancy, by operator, and by payment method.
  * Single responsibility: Daily operational insights.
  */
+@SuppressWarnings("null")
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -32,24 +32,23 @@ public class DailyReportsQueryService implements DailyReportsQueryUseCase {
   private static final ZoneId TZ_COLOMBIA = ZoneId.of("America/Bogota");
   private static final BigDecimal ZERO = BigDecimal.ZERO;
 
-  private final ParkingSessionRepository parkingSessionRepo;
-  private final CashMovementRepository cashMovementRepo;
-  private final ParkingSpaceRepository parkingSpaceRepo;
+  private final ParkingReportReaderPort parkingReportRepo;
+  private final CashReportReaderPort cashReportRepo;
 
   @Override
   public List<DailyOpsRow> dailyOperations(LocalDate from, LocalDate to) {
     UUID cid = TenantContext.getTenantId();
     List<DailyOpsRow> result = new ArrayList<>();
+
     for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
       OffsetDateTime start = d.atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
       OffsetDateTime end   = d.plusDays(1).atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
 
-      long entries    = parkingSessionRepo.countEntriesInPeriod(start, end, cid);
-      long exits      = parkingSessionRepo.countExitsInPeriod(start, end, cid);
-      long lostTickets = parkingSessionRepo.countLostTicketsInPeriod(start, end, cid);
+      long entries    = parkingReportRepo.countEntriesInPeriod(start, end, cid);
+      long exits      = parkingReportRepo.countExitsInPeriod(start, end, cid);
+      long lostTickets = parkingReportRepo.countLostTicketsInPeriod(start, end, cid);
 
-      // Revenue by payment method from POSTED movements in this day
-      Map<String, BigDecimal> pmTotals = cashMovementRepo
+      Map<String, BigDecimal> pmTotals = cashReportRepo
           .sumRevenueByPaymentMethodInPeriod(cid, start, end);
 
       BigDecimal cash     = pmTotals.getOrDefault("CASH", ZERO);
@@ -81,10 +80,10 @@ public class DailyReportsQueryService implements DailyReportsQueryUseCase {
         .atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
     OffsetDateTime todayEnd = todayStart.plusDays(1);
 
-    List<Object[]> activeByType = parkingSessionRepo.countActiveByVehicleType(cid);
-    List<Object[]> entriesToday = parkingSessionRepo.countEntriesByVehicleTypeInPeriod(cid, todayStart, todayEnd);
-    List<Object[]> exitsToday   = parkingSessionRepo.countExitsByVehicleTypeInPeriod(cid, todayStart, todayEnd);
-    List<Object[]> revenueToday = cashMovementRepo.sumRevenueByVehicleTypeInPeriod(cid, todayStart, todayEnd);
+    List<Object[]> activeByType = parkingReportRepo.countActiveByVehicleType(cid);
+    List<Object[]> entriesToday = parkingReportRepo.countEntriesByVehicleTypeInPeriod(cid, todayStart, todayEnd);
+    List<Object[]> exitsToday   = parkingReportRepo.countExitsByVehicleTypeInPeriod(cid, todayStart, todayEnd);
+    List<Object[]> revenueToday = cashReportRepo.sumRevenueByVehicleTypeInPeriod(cid, todayStart, todayEnd);
 
     Map<String, Long>       activeMap  = toStringLongMap(activeByType);
     Map<String, Long>       entryMap   = toStringLongMap(entriesToday);
@@ -109,13 +108,13 @@ public class DailyReportsQueryService implements DailyReportsQueryUseCase {
   @Override
   public OccupancyResponse occupancy() {
     UUID cid = TenantContext.getTenantId();
-    long total     = parkingSpaceRepo.countByCompanyId(cid);
-    long active    = parkingSpaceRepo.countByCompanyIdAndStatus(cid, ParkingSpaceStatus.ACTIVE);
-    long occupied  = parkingSessionRepo.countActive(cid);
+    long total     = parkingReportRepo.countByCompanyId(cid);
+    long active    = parkingReportRepo.countByCompanyIdAndStatus(cid, ParkingSpaceStatus.ACTIVE);
+    long occupied  = parkingReportRepo.countActive(cid);
     long available = Math.max(0, active - occupied);
     double pct     = active > 0 ? (occupied * 100.0 / active) : 0.0;
 
-    List<Object[]> byType = parkingSessionRepo.countActiveByVehicleType(cid);
+    List<Object[]> byType = parkingReportRepo.countActiveByVehicleType(cid);
     List<OccupancyByTypeItem> byVehicleType = byType.stream()
         .map(row -> new OccupancyByTypeItem((String) row[0], ((Number) row[1]).longValue()))
         .collect(Collectors.toList());
@@ -130,7 +129,7 @@ public class DailyReportsQueryService implements DailyReportsQueryUseCase {
     OffsetDateTime start = from.atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
     OffsetDateTime end   = to.plusDays(1).atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
 
-    List<Object[]> rows = cashMovementRepo.sumPostedByOperatorInPeriod(cid, start, end);
+    List<Object[]> rows = cashReportRepo.sumPostedByOperatorInPeriod(cid, start, end);
     return rows.stream().map(r -> {
       UUID opId       = (UUID) r[0];
       String opName   = (String) r[1];
@@ -150,13 +149,13 @@ public class DailyReportsQueryService implements DailyReportsQueryUseCase {
     OffsetDateTime start = from.atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
     OffsetDateTime end   = to.plusDays(1).atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
 
-    List<Object[]> rows = cashMovementRepo.sumPostedByPaymentMethodInPeriod(cid, start, end);
+    List<Object[]> rows = cashReportRepo.sumPostedByPaymentMethodInPeriod(cid, start, end);
     BigDecimal grandTotal = rows.stream()
         .map(r -> (BigDecimal) r[1])
         .reduce(ZERO, BigDecimal::add);
 
     return rows.stream().map(r -> {
-      String pm        = ((PaymentMethod) r[0]).name();
+      String pm        = (String) r[0];
       BigDecimal total = (BigDecimal) r[1];
       long count       = ((Number) r[2]).longValue();
       double pct       = grandTotal.compareTo(ZERO) > 0
@@ -167,20 +166,22 @@ public class DailyReportsQueryService implements DailyReportsQueryUseCase {
     }).collect(Collectors.toList());
   }
 
-  // ───── Helpers ─────
-
   private Map<String, Long> toStringLongMap(List<Object[]> rows) {
     Map<String, Long> map = new LinkedHashMap<>();
-    for (Object[] r : rows) {
-      map.put((String) r[0], ((Number) r[1]).longValue());
+    for (Object[] row : rows) {
+      if (row[0] != null && row[1] != null) {
+        map.put(row[0].toString(), ((Number) row[1]).longValue());
+      }
     }
     return map;
   }
 
   private Map<String, BigDecimal> toStringDecimalMap(List<Object[]> rows) {
     Map<String, BigDecimal> map = new LinkedHashMap<>();
-    for (Object[] r : rows) {
-      map.put((String) r[0], r[1] != null ? (BigDecimal) r[1] : ZERO);
+    for (Object[] row : rows) {
+      if (row[0] != null && row[1] != null) {
+        map.put(row[0].toString(), (BigDecimal) row[1]);
+      }
     }
     return map;
   }

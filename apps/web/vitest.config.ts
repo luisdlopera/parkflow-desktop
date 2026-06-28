@@ -21,6 +21,7 @@ export default mergeConfig(
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
+        '@print-agent': path.resolve(__dirname, '../print-agent/src'),
       },
     },
   }),

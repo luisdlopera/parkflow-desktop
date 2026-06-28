@@ -26,14 +26,20 @@ describe('AuthProvider', () => {
     mockSaveSession.mockReset();
   });
 
-  it('renders children', () => {
+  it('renders children', async () => {
+    mockFetchWithCredentials.mockResolvedValueOnce({
+      ok: false,
+    });
+
     const { getByText } = render(
       <AuthProvider>
         <div>child content</div>
       </AuthProvider>
     );
 
-    expect(getByText('child content')).toBeDefined();
+    await waitFor(() => {
+      expect(getByText('child content')).toBeDefined();
+    });
   });
 
   it('restores session on mount (success)', async () => {

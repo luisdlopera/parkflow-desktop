@@ -4,7 +4,7 @@ import com.parkflow.modules.configuration.application.port.in.ParkingSiteUseCase
 import com.parkflow.modules.configuration.dto.ParkingSiteRequest;
 import com.parkflow.modules.configuration.dto.ParkingSiteResponse;
 import com.parkflow.modules.configuration.domain.ParkingSite;
-import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.common.exception.OperationException;
@@ -24,7 +24,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ParkingSiteManagementService implements ParkingSiteUseCase {
 
-  private final ParkingSiteRepository parkingSiteRepository;
+  private final ParkingSitePort parkingSiteRepository;
   private final CompanyPort companyRepository;
 
   @Override
@@ -48,7 +48,7 @@ public class ParkingSiteManagementService implements ParkingSiteUseCase {
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Empresa no encontrada"));
     String code = req.code().trim().toUpperCase();
 
-    if (parkingSiteRepository.existsByCodeAndCompany_Id(code, companyId)) {
+    if (parkingSiteRepository.existsByCodeAndCompanyId(code, companyId)) {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe una sede con este código");
     }
 
@@ -81,7 +81,7 @@ public class ParkingSiteManagementService implements ParkingSiteUseCase {
     ParkingSite site = findById(id);
     String code = req.code().trim().toUpperCase();
 
-    if (!site.getCode().equalsIgnoreCase(code) && parkingSiteRepository.existsByCodeAndCompany_Id(code, site.getCompany().getId())) {
+    if (!site.getCode().equalsIgnoreCase(code) && parkingSiteRepository.existsByCodeAndCompanyId(code, site.getCompany().getId())) {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe una sede con este código");
     }
 

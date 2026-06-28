@@ -2,7 +2,7 @@ package com.parkflow.modules.configuration.application.service;
 
 import com.parkflow.modules.configuration.dto.AgreementResponse;
 import com.parkflow.modules.configuration.domain.Agreement;
-import com.parkflow.modules.configuration.infrastructure.persistence.AgreementRepository;
+import com.parkflow.modules.configuration.domain.repository.AgreementPort;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.common.dto.SettingsPageResponse;
 import com.parkflow.modules.common.exception.OperationException;
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AgreementQueryService {
 
-  private final AgreementRepository repo;
+  private final AgreementPort repo;
 
   @Transactional(readOnly = true)
   public SettingsPageResponse<AgreementResponse> list(

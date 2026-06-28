@@ -44,7 +44,7 @@ describe("Step2Capacity - Comprehensive Test Suite", () => {
 
   it("renders capacity step", () => {
     renderWithOnboarding(<Step2Capacity />);
-    expect(screen.getByTestId("card")).toBeInTheDocument();
+    expect(screen.getByText(/capacidad de tu parqueadero/i)).toBeInTheDocument();
   });
 
   it("displays capacity question", () => {
@@ -54,7 +54,7 @@ describe("Step2Capacity - Comprehensive Test Suite", () => {
 
   it("renders card container", () => {
     renderWithOnboarding(<Step2Capacity />);
-    expect(screen.getByTestId("card")).toBeInTheDocument();
+    expect(screen.getByText(/capacidad de tu parqueadero/i)).toBeInTheDocument();
   });
 
   // ═════════════════════════════════════════════════════════════════════════════

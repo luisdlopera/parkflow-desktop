@@ -9,6 +9,7 @@ import java.util.UUID;
 public interface PrepaidBalancePort {
   List<PrepaidBalance> findActiveByPlate(String plate, OffsetDateTime now, UUID companyId);
   List<PrepaidBalance> findAllByPlateAndCompanyIdOrderByExpiresAtAsc(String plate, UUID companyId);
+  List<PrepaidBalance> findAllByPlateOrderByExpiresAtAsc(String plate);
   Optional<PrepaidBalance> findFirstByPlateAndCompanyIdAndIsActiveTrueAndRemainingMinutesGreaterThanAndExpiresAtAfter(
       String plate, UUID companyId, int minMinutes, OffsetDateTime now);
   PrepaidBalance save(PrepaidBalance balance);

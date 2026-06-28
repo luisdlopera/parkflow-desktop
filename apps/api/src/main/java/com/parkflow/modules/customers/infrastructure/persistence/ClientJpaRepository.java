@@ -16,4 +16,7 @@ public interface ClientJpaRepository extends JpaRepository<Client, UUID> {
 
   @Query("SELECT COUNT(c) FROM Client c WHERE c.companyId = ?1 AND c.isActive = true")
   long countActiveByCompanyId(UUID companyId);
+
+  Optional<Client> findFirstByCompanyIdAndDocument(UUID companyId, String document);
+  Optional<Client> findFirstByCompanyIdAndNameIgnoreCase(UUID companyId, String name);
 }

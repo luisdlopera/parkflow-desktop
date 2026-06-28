@@ -4,12 +4,11 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Skeleton } from "@heroui/react";
 import { useAuthStore } from "@/lib/stores/auth.store";
-import { currentUser } from "@/lib/services/auth-domain.service";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isLoading, isAuthenticated } = useAuthStore();
+  const { isLoading, isAuthenticated, user } = useAuthStore();
 
   useEffect(() => {
     if (isLoading) return;
@@ -19,24 +18,23 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    void (async () => {
-      const user = await currentUser();
-      if (!user) return;
+    // Read navigation flags from auth store (set during login/restore-session).
+    // At runtime user is always AuthUser which has these fields; the store type marks them optional.
+    if (!user) return;
 
-      const isChangePasswordPage = pathname?.startsWith("/change-password");
-      const isOnboardingPage = pathname?.startsWith("/onboarding");
+    const isChangePasswordPage = pathname?.startsWith("/change-password");
+    const isOnboardingPage = pathname?.startsWith("/onboarding");
 
-      if (user.requirePasswordChange && !isChangePasswordPage && user.role !== "SUPER_ADMIN") {
-        router.replace("/change-password");
-      } else if (!user.requirePasswordChange && isChangePasswordPage) {
-        router.replace("/");
-      } else if (!user.onboardingCompleted && !isOnboardingPage) {
-        router.replace("/onboarding");
-      } else if (user.onboardingCompleted && isOnboardingPage) {
-        router.replace("/");
-      }
-    })();
-  }, [isLoading, isAuthenticated, pathname, router]);
+    if (user.requirePasswordChange && !isChangePasswordPage && user.role !== "SUPER_ADMIN") {
+      router.replace("/change-password");
+    } else if (!user.requirePasswordChange && isChangePasswordPage) {
+      router.replace("/");
+    } else if (!user.onboardingCompleted && !isOnboardingPage) {
+      router.replace("/onboarding");
+    } else if (user.onboardingCompleted && isOnboardingPage) {
+      router.replace("/");
+    }
+  }, [isLoading, isAuthenticated, user, pathname, router]);
 
   if (isLoading) {
     return (

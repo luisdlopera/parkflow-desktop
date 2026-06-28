@@ -136,14 +136,14 @@ describe("CompanyForm", () => {
   it("renders all fields with default values for creation", () => {
     render(<CompanyForm onSubmit={mockSubmit} isLoading={false} />);
 
-    expect(screen.getByText("Nombre de la empresa *")).toBeInTheDocument();
+    expect(screen.getByText("Nombre de la empresa")).toBeInTheDocument();
     expect(screen.getByText("NIT (Opcional)")).toBeInTheDocument();
     expect(screen.getByText("Email")).toBeInTheDocument();
     expect(screen.getByText("Teléfono")).toBeInTheDocument();
     expect(screen.getByText("Ciudad")).toBeInTheDocument();
     expect(screen.getByText("Nombre de contacto")).toBeInTheDocument();
     expect(screen.getByText("Dirección")).toBeInTheDocument();
-    expect(screen.getByText("Plan *")).toBeInTheDocument();
+    expect(screen.getByText("Plan")).toBeInTheDocument();
     expect(screen.getByText("Máx. dispositivos")).toBeInTheDocument();
     expect(screen.getByText("Máx. sedes")).toBeInTheDocument();
     expect(screen.getByText("Máx. usuarios")).toBeInTheDocument();
@@ -220,7 +220,7 @@ describe("CompanyForm", () => {
     expect(screen.getByDisplayValue("123")).toBeInTheDocument();
     expect(screen.getByDisplayValue("a@b.com")).toBeInTheDocument();
     // Verificamos el valor del select de Plan
-    expect(screen.getByTestId("select-Plan *")).toHaveValue("PRO");
+    expect(screen.getByTestId("select-Plan")).toHaveValue("PRO");
   });
 
   it("displays and toast error when onSubmit throws", async () => {

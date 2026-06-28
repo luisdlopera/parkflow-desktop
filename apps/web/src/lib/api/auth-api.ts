@@ -22,10 +22,27 @@ export interface SetupRequiredResponse {
   setupRequired: boolean;
 }
 
+export interface SetupPayload {
+  email: string;
+  password: string;
+  name: string;
+  companyName: string;
+  nit: string;
+}
 
 export async function checkSetupRequired(): Promise<SetupRequiredResponse> {
   const res = await fetchWithCredentials(`${AUTH_BASE}/setup-required`);
   if (!res.ok) throw new Error("No se pudo verificar el estado de configuración");
+  return res.json();
+}
+
+export async function postInitialSetup(payload: SetupPayload): Promise<any> {
+  const res = await fetchWithCredentials(`${AUTH_BASE}/setup`, {
+    method: "POST",
+    headers: apiKeyHeader,
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("No se pudo registrar el usuario inicial");
   return res.json();
 }
 

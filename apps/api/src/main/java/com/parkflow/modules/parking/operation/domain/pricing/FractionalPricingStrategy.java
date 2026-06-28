@@ -22,8 +22,10 @@ import org.springframework.stereotype.Component;
  *   61–120 min → $3,000
  * A 45-minute stay falls in the 31–60 tier → $2,000.
  */
+@SuppressWarnings("null")
 @Component
 public class FractionalPricingStrategy implements PricingStrategy {
+
 
   @Override
   public boolean supports(RateType rateType) {

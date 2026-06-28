@@ -34,6 +34,11 @@ public class PrepaidBalanceJpaAdapter implements PrepaidBalancePort {
   }
 
   @Override
+  public List<PrepaidBalance> findAllByPlateOrderByExpiresAtAsc(String plate) {
+    return jpaRepository.findAllByPlateOrderByExpiresAtAsc(plate);
+  }
+
+  @Override
   public Optional<PrepaidBalance> findFirstByPlateAndCompanyIdAndIsActiveTrueAndRemainingMinutesGreaterThanAndExpiresAtAfter(
       String plate, UUID companyId, int minMinutes, OffsetDateTime now) {
     return jpaRepository.findFirstByPlateAndCompanyIdAndIsActiveTrueAndRemainingMinutesGreaterThanAndExpiresAtAfter(
@@ -58,6 +63,8 @@ public class PrepaidBalanceJpaAdapter implements PrepaidBalancePort {
     List<PrepaidBalance> findActiveByPlate(@Param("plate") String plate, @Param("now") OffsetDateTime now, @Param("cid") UUID companyId);
 
     List<PrepaidBalance> findAllByPlateAndCompanyIdOrderByExpiresAtAsc(String plate, UUID companyId);
+
+    List<PrepaidBalance> findAllByPlateOrderByExpiresAtAsc(String plate);
 
     Optional<PrepaidBalance> findFirstByPlateAndCompanyIdAndIsActiveTrueAndRemainingMinutesGreaterThanAndExpiresAtAfter(
         String plate, UUID companyId, int minMinutes, OffsetDateTime now);

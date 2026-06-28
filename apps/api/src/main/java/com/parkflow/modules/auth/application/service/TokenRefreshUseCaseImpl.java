@@ -113,10 +113,11 @@ public class TokenRefreshUseCaseImpl implements TokenRefreshUseCase {
     AuthSession rotated = new AuthSession();
     rotated.setUser(user);
     rotated.setDevice(device);
+    rotated.setCompanyId(user.getCompanyId());
     rotated.setRefreshJti(UUID.randomUUID().toString());
     rotated.setRefreshExpiresAt(OffsetDateTime.now().plus(jwtTokenService.refreshTtl()));
     rotated.setAccessExpiresAt(OffsetDateTime.now().plus(jwtTokenService.accessTtl()));
-    rotated.setRefreshTokenHash("pending");
+    rotated.setRefreshTokenHash("pending:" + UUID.randomUUID());
     rotated = authSessionRepository.save(rotated);
 
     String refreshToken =

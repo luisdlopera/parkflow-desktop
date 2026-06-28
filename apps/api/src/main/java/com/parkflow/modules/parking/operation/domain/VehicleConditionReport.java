@@ -1,7 +1,6 @@
 package com.parkflow.modules.parking.operation.domain;
 
 import com.parkflow.modules.auth.domain.AppUser;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.StringListConverter;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;

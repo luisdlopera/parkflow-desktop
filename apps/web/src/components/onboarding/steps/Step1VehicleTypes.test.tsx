@@ -5,8 +5,19 @@ import Step1VehicleTypes from "./Step1VehicleTypes";
 import { OnboardingProvider } from "../OnboardingContext";
 
 vi.mock("@/components/bridge/Checkbox", () => ({
-  default: ({ label, isSelected, onChange, ...props }: any) =>
-    <input type="checkbox" checked={isSelected} onChange={onChange} aria-label={label} {...props} />
+  Checkbox: ({ label, children, isSelected, onChange, onValueChange, ...props }: any) => {
+    const handleChange = (e: any) => {
+      const checked = e.target.checked;
+      if (onChange) onChange(e);
+      if (onValueChange) onValueChange(checked);
+    };
+    return (
+      <label>
+        <input type="checkbox" checked={!!isSelected} onChange={handleChange} aria-label={label || (typeof children === "string" ? children : undefined)} {...props} />
+        {label || children}
+      </label>
+    );
+  }
 }));
 
 vi.mock("@/components/bridge/Card", () => ({
@@ -41,7 +52,7 @@ describe("Step1VehicleTypes - Comprehensive Test Suite", () => {
 
   it("renders vehicle types step", () => {
     renderWithOnboarding(<Step1VehicleTypes />);
-    expect(screen.getByTestId("card") || screen.getByText(/vehículo/i)).toBeTruthy();
+    expect(screen.getByText(/recibe tu parqueadero/i)).toBeInTheDocument();
   });
 
   it("displays question about vehicle types", () => {
@@ -51,7 +62,7 @@ describe("Step1VehicleTypes - Comprehensive Test Suite", () => {
 
   it("renders card container", () => {
     renderWithOnboarding(<Step1VehicleTypes />);
-    expect(screen.getByTestId("card")).toBeInTheDocument();
+    expect(screen.getByText(/recibe tu parqueadero/i)).toBeInTheDocument();
   });
 
   // ═════════════════════════════════════════════════════════════════════════════

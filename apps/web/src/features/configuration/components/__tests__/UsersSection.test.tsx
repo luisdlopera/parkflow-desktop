@@ -43,8 +43,8 @@ const mockPatchUser = vi.fn();
 const mockPatchUserStatus = vi.fn();
 const mockResetUserPassword = vi.fn();
 
-vi.mock("@/lib/settings-api", async () => {
-  const actual = await vi.importActual("@/lib/settings-api");
+vi.mock("@/lib/api/users-api", async () => {
+  const actual = await vi.importActual("@/lib/api/users-api");
   return {
     ...actual,
     fetchUsers: (...args: any[]) => mockFetchUsers(...args),

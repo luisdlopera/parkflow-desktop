@@ -1,3 +1,11 @@
+/**
+ * NOTA ARQUITECTURAL: Este middleware solo corre en modo desarrollo (pnpm dev) y en
+ * despliegues con un servidor Next.js activo. Con `output: "export"` (Tauri desktop),
+ * Next.js genera archivos estáticos y no hay servidor que ejecute este middleware.
+ * La protección real de rutas en producción Tauri es el componente `AuthGate` (client-side).
+ * Si el frontend se despliega también en web, el servidor proxy (nginx/Caddy) debe
+ * validar cookies antes de servir los archivos estáticos.
+ */
 import { NextRequest, NextResponse } from "next/server";
 
 const PUBLIC_PATHS = new Set([

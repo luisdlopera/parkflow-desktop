@@ -23,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
  * @deprecated Wraps deprecated {@link OnboardingService}. Use hexagonal onboarding ports instead.
  */
 @Deprecated(since = "2.1.0", forRemoval = false)
-@SuppressWarnings("deprecation")
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -39,6 +38,7 @@ public class OnboardingMaterializationTransactionService {
    * @param companyId company to complete onboarding for
    * @throws OperationException if any materialization step fails
    */
+  @Deprecated
   @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
   public void completeOnboardingAtomically(UUID companyId) {
     List<String> failures = new ArrayList<>();
@@ -75,6 +75,7 @@ public class OnboardingMaterializationTransactionService {
    * @param companyId company to complete onboarding for
    * @throws OperationException if all retry attempts fail
    */
+  @Deprecated
   public void completeOnboardingWithRetry(UUID companyId) {
     int maxAttempts = 3;
     int delay = 100; // ms

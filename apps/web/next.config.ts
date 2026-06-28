@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: "export",
+  output: process.env.NODE_ENV === "production" ? "export" : undefined,
   // React Compiler: auto-memoizes components/hooks. Components that break the
   // Rules of React are skipped silently by the compiler (and flagged by
   // eslint-plugin-react-hooks); see lint output after enabling.

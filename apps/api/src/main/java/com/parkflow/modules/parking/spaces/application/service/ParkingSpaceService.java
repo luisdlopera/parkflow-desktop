@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
  * This class maintained for backward compatibility during migration to hexagonal architecture.
  */
 @Deprecated(since = "2.1.0", forRemoval = false)
+@SuppressWarnings("null")
 @Service
 @RequiredArgsConstructor
 public class ParkingSpaceService {
@@ -32,8 +33,10 @@ public class ParkingSpaceService {
   private final ParkingSpaceRepository parkingSpaceRepository;
   private final ParkingSpaceAssignmentRepository parkingSpaceAssignmentRepository;
 
+  @Deprecated
   @Transactional
   public ParkingSpace assignNextAvailableSpace(UUID companyId, ParkingSession session) {
+
     ParkingSpace space =
         parkingSpaceRepository
             .findFirstAvailableForUpdate(companyId)
@@ -54,6 +57,7 @@ public class ParkingSpaceService {
     return space;
   }
 
+  @Deprecated
   @Transactional
   public ParkingSpace assignSpecificSpace(UUID companyId, UUID parkingSpaceId, ParkingSession session) {
     ParkingSpace space =
@@ -90,6 +94,7 @@ public class ParkingSpaceService {
     return space;
   }
 
+  @Deprecated
   @Transactional
   public void releaseSpaceBySession(UUID parkingSessionId) {
     parkingSpaceAssignmentRepository
@@ -102,6 +107,7 @@ public class ParkingSpaceService {
             });
   }
 
+  @Deprecated
   @Transactional(readOnly = true)
   public ParkingSpaceOccupancySummaryResponse getOccupancySummary(UUID companyId) {
     long total = parkingSpaceRepository.countByCompanyId(companyId);
@@ -117,6 +123,7 @@ public class ParkingSpaceService {
         companyId, total, active, occupied, available, maintenance, inactive, occupancy);
   }
 
+  @Deprecated
   @Transactional
   public ParkingSpaceOccupancySummaryResponse resizeCapacity(UUID companyId, int newCapacity) {
     if (newCapacity < 0) {
@@ -194,6 +201,7 @@ public class ParkingSpaceService {
     return getOccupancySummary(companyId);
   }
 
+  @Deprecated
   @Transactional(readOnly = true)
   public List<ParkingSpaceDto> listSpaces(UUID companyId, String filter) {
     return parkingSpaceRepository.findByCompanyIdOrderBySortOrderAscCodeAsc(companyId).stream()
@@ -225,6 +233,7 @@ public class ParkingSpaceService {
         .toList();
   }
 
+  @Deprecated
   @Transactional
   public ParkingSpaceDto patchSpace(
       UUID companyId,
@@ -272,6 +281,7 @@ public class ParkingSpaceService {
         null);
   }
 
+  @Deprecated
   @Transactional(readOnly = true)
   public ParkingSpaceAssignment findAssignmentBySessionId(UUID parkingSessionId) {
     return parkingSpaceAssignmentRepository.findLatestByParkingSessionId(parkingSessionId).orElse(null);

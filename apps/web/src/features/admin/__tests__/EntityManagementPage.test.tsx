@@ -59,7 +59,7 @@ vi.mock("@/components/ui/DataTable", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/DialogProvider", () => ({
+vi.mock("@/providers/DialogProvider", () => ({
   useDialog: () => ({
     confirm: vi.fn().mockResolvedValue(true),
   }),

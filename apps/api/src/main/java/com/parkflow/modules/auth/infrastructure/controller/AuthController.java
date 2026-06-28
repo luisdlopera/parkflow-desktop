@@ -8,7 +8,7 @@ import com.parkflow.modules.auth.application.port.in.TokenRefreshUseCase;
 import com.parkflow.modules.auth.application.port.in.DeviceManagementUseCase;
 import com.parkflow.modules.auth.application.port.in.PasswordResetUseCase;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -27,7 +27,7 @@ public class AuthController {
   private final ProfileManagementUseCase profileManagementUseCase;
   private final DeviceManagementUseCase deviceManagementUseCase;
   private final PasswordResetUseCase passwordResetUseCase;
-  private final AppUserRepository appUserRepository;
+  private final AppUserPort appUserRepository;
   private final com.parkflow.modules.auth.security.AuthCookieFactory authCookieFactory;
 
   public AuthController(
@@ -37,7 +37,7 @@ public class AuthController {
       ProfileManagementUseCase profileManagementUseCase,
       DeviceManagementUseCase deviceManagementUseCase,
       PasswordResetUseCase passwordResetUseCase,
-      AppUserRepository appUserRepository,
+      AppUserPort appUserRepository,
       com.parkflow.modules.auth.security.AuthCookieFactory authCookieFactory) {
     this.loginUseCase = loginUseCase;
     this.tokenRefreshUseCase = tokenRefreshUseCase;
@@ -110,6 +110,12 @@ public class AuthController {
   public void logoutDevice(@PathVariable String deviceId, HttpServletResponse response) {
     logoutUseCase.logoutDevice(deviceId);
     authCookieFactory.clearAuthCookies(response);
+  }
+
+  @PostMapping("/validate")
+  @ResponseStatus(HttpStatus.OK)
+  public Map<String, Boolean> validateSession() {
+    return Map.of("valid", true);
   }
 
   @GetMapping("/me")

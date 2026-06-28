@@ -44,42 +44,34 @@ export function useSessionMonitor() {
       const now = Date.now();
       const remaining = exp - now;
 
-      // Si ya expiró
-      if (remaining <= 0) {
+      // If expired or expiring within 5 minutes, attempt silent refresh before declaring expired.
+      // This avoids kicking the user out when a valid refresh token cookie exists.
+      if (remaining < 5 * 60 * 1000) {
+        try {
+          await refreshIfNeeded(session);
+          const newSession = await loadSession();
+          if (newSession) {
+            const newExp = Date.parse(newSession.session.accessTokenExpiresAtIso);
+            const newRemaining = newExp - Date.now();
+            if (newRemaining > 0) {
+              setState({ isExpired: false, timeRemaining: newRemaining, isChecking: false });
+              return;
+            }
+          }
+        } catch {
+          // refresh failed — fall through to expire
+        }
+        // Refresh either failed or new token is still expired
         await clearSession();
         setState({ isExpired: true, timeRemaining: 0, isChecking: false });
         return;
       }
 
-      // Si expira en menos de 5 minutos, intentar refrescar automáticamente
-      if (remaining < 5 * 60 * 1000) {
-        try {
-          await refreshIfNeeded(session);
-          // Recalcular después del refresh
-          const newSession = await loadSession();
-          if (newSession) {
-            const newExp = Date.parse(newSession.session.accessTokenExpiresAtIso);
-            setState({
-              isExpired: false,
-              timeRemaining: newExp - Date.now(),
-              isChecking: false
-            });
-          }
-        } catch {
-          // Si falla el refresh, mostrar modal
-          setState({
-            isExpired: true,
-            timeRemaining: remaining,
-            isChecking: false
-          });
-        }
-      } else {
-        setState({
-          isExpired: false,
-          timeRemaining: remaining,
-          isChecking: false
-        });
-      }
+      setState({
+        isExpired: false,
+        timeRemaining: remaining,
+        isChecking: false
+      });
     } catch {
       setState({
         isExpired: true,

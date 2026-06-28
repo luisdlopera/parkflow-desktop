@@ -20,6 +20,18 @@ vi.mock("@/components/bridge/Dropdown", () => ({
   DropdownSection: ({ children }: any) => <div>{children}</div>,
 }));
 
+vi.mock("@/components/bridge/Modal", () => ({
+  Modal: Object.assign(
+    ({ state, children }: any) => (state?.isOpen ? <div>{children}</div> : null),
+    {
+      Content: ({ children }: any) => <div>{children}</div>,
+      Header: ({ children }: any) => <div>{children}</div>,
+      Body: ({ children }: any) => <div>{children}</div>,
+      Footer: ({ children }: any) => <div>{children}</div>,
+    }
+  ),
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
@@ -30,10 +42,12 @@ vi.mock("@/lib/services/auth-domain.service", () => ({
 }));
 
 vi.mock("@/features/auth/api/auth.api", () => ({
+  logoutFromApi: vi.fn(async () => {}),
   logoutAllSessions: (...args: any[]) => mockLogoutAll(...args),
 }));
 
 vi.mock("@/lib/services/auth-storage.service", () => ({
+  loadSession: vi.fn(async () => null),
   clearSession: (...args: any[]) => mockClearSession(...args),
 }));
 
@@ -111,6 +125,8 @@ describe("UserMenu", () => {
     if (logoutBtn) {
       await userEvent.click(logoutBtn);
     }
+    const confirmBtn = await screen.findByRole("button", { name: /confirmar/i });
+    await userEvent.click(confirmBtn);
     await waitFor(() => {
       expect(mockClearSession).toHaveBeenCalled();
       expect(mockPush).toHaveBeenCalledWith("/login");

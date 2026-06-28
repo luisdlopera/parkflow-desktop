@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
  * This controller wraps the deprecated {@link CustomerService}.
  */
 @Deprecated(since = "2.1.0", forRemoval = false)
-@SuppressWarnings("deprecation")
 @RestController
 @RequestMapping("/api/v1/companies/{companyId}/clients")
 @RequiredArgsConstructor
@@ -27,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class ClientController {
   private final CustomerService customerService;
 
+  @Deprecated
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
   @Operation(summary = "List clients for a company")
@@ -38,6 +38,7 @@ public class ClientController {
     return ResponseEntity.ok(response);
   }
 
+  @Deprecated
   @GetMapping("/{clientId}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
   @Operation(summary = "Get a single client")
@@ -46,6 +47,7 @@ public class ClientController {
     return ResponseEntity.ok(response);
   }
 
+  @Deprecated
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   @Operation(summary = "Create a new client")
@@ -55,6 +57,7 @@ public class ClientController {
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
+  @Deprecated
   @PatchMapping("/{clientId}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   @Operation(summary = "Update a client")
@@ -66,6 +69,7 @@ public class ClientController {
     return ResponseEntity.ok(response);
   }
 
+  @Deprecated
   @DeleteMapping("/{clientId}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   @Operation(summary = "Deactivate a client (soft delete)")
@@ -74,6 +78,7 @@ public class ClientController {
     return ResponseEntity.noContent().build();
   }
 
+  @Deprecated
   @GetMapping("/count/active")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
   @Operation(summary = "Get count of active clients")

@@ -18,5 +18,6 @@ public interface AppUserPort {
   boolean existsByDocumentIgnoreCaseAndCompanyId(String document, UUID companyId);
   AppUser save(AppUser user);
   Optional<AppUser> findById(UUID id);
+  long count();
   void delete(AppUser user);
 }

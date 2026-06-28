@@ -80,8 +80,8 @@ const mockFetchRateById = vi.hoisted(() => vi.fn());
 const mockPatchRateStatus = vi.hoisted(() => vi.fn());
 const mockDeleteRate = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/settings-api", async () => {
-  const actual = await vi.importActual("@/lib/settings-api");
+vi.mock("@/lib/api/rates-api", async () => {
+  const actual = await vi.importActual("@/lib/api/rates-api");
   return {
     ...actual,
     fetchRates: (...args: any[]) => mockFetchRates(...args),
@@ -101,7 +101,7 @@ vi.mock("@/features/configuration/components/RateForm", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/DialogProvider", () => ({
+vi.mock("@/providers/DialogProvider", () => ({
   useDialog: () => ({
     confirm: vi.fn().mockResolvedValue(true),
   }),

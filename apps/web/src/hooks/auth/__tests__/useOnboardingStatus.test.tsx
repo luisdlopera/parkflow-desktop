@@ -4,7 +4,7 @@ import { SWRConfig } from 'swr';
 import { useOnboardingStatus } from '@/hooks/auth/useOnboardingStatus';
 import * as onboardingApi from '@/lib/api/onboarding.api';
 
-vi.mock('@/lib/onboarding-api', () => ({
+vi.mock('@/lib/api/onboarding.api', () => ({
   fetchOnboardingStatus: vi.fn(),
 }));
 

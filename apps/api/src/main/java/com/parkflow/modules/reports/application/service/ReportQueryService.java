@@ -32,11 +32,13 @@ import org.springframework.transaction.annotation.Transactional;
  *             or {@link CashReportsQueryService} for cash-related reports.
  *             This legacy service will be removed in a future release.
  */
+@SuppressWarnings("null")
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Deprecated(since = "2.0.0", forRemoval = true)
 public class ReportQueryService {
+
 
   private static final ZoneId TZ_COLOMBIA = ZoneId.of("America/Bogota");
   private static final BigDecimal ZERO = BigDecimal.ZERO;
@@ -50,6 +52,7 @@ public class ReportQueryService {
 
   // ── Daily Operations ──────────────────────────────────────────────────────
 
+  @Deprecated
   public List<DailyOpsRow> dailyOperations(LocalDate from, LocalDate to) {
     UUID cid = TenantContext.getTenantId();
     List<DailyOpsRow> result = new ArrayList<>();
@@ -89,6 +92,7 @@ public class ReportQueryService {
 
   // ── Cash Session History ─────────────────────────────────────────────────
 
+  @Deprecated
   public Page<CashSessionRow> cashSessionHistory(LocalDate from, LocalDate to, Pageable pageable) {
     UUID cid = TenantContext.getTenantId();
     OffsetDateTime start = from.atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
@@ -117,6 +121,7 @@ public class ReportQueryService {
 
   // ── Cash Session Summary ─────────────────────────────────────────────────
 
+  @Deprecated
   public CashSummaryResponse cashSessionSummary(UUID sessionId) {
     UUID cid = TenantContext.getTenantId();
     CashSession session = cashSessionRepo.findById(sessionId)
@@ -129,6 +134,7 @@ public class ReportQueryService {
 
   // ── Vehicle Type Snapshot ─────────────────────────────────────────────────
 
+  @Deprecated
   public List<VehicleTypeRow> vehicleTypeSnapshot() {
     UUID cid = TenantContext.getTenantId();
     OffsetDateTime todayStart = LocalDate.now(TZ_COLOMBIA)
@@ -162,6 +168,7 @@ public class ReportQueryService {
 
   // ── Paid Tickets ──────────────────────────────────────────────────────────
 
+  @Deprecated
   public Page<PaidTicketRow> paidTickets(LocalDate from, LocalDate to, Pageable pageable) {
     UUID cid = TenantContext.getTenantId();
     OffsetDateTime start = from.atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
@@ -180,6 +187,7 @@ public class ReportQueryService {
 
   // ── Voided Tickets ────────────────────────────────────────────────────────
 
+  @Deprecated
   public List<VoidedTicketRow> voidedTickets(LocalDate from, LocalDate to) {
     UUID cid = TenantContext.getTenantId();
     OffsetDateTime start = from.atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
@@ -204,6 +212,7 @@ public class ReportQueryService {
 
   // ── Income / Expense ──────────────────────────────────────────────────────
 
+  @Deprecated
   public IncomeExpenseResponse incomeExpense(LocalDate from, LocalDate to) {
     UUID cid = TenantContext.getTenantId();
     OffsetDateTime start = from.atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
@@ -236,6 +245,7 @@ public class ReportQueryService {
 
   // ── Occupancy ─────────────────────────────────────────────────────────────
 
+  @Deprecated
   public OccupancyResponse occupancy() {
     UUID cid = TenantContext.getTenantId();
     long total     = parkingSpaceRepo.countByCompanyId(cid);
@@ -255,6 +265,7 @@ public class ReportQueryService {
 
   // ── By Operator ───────────────────────────────────────────────────────────
 
+  @Deprecated
   public List<OperatorRow> byOperator(LocalDate from, LocalDate to) {
     UUID cid = TenantContext.getTenantId();
     OffsetDateTime start = from.atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
@@ -276,6 +287,7 @@ public class ReportQueryService {
 
   // ── By Payment Method ─────────────────────────────────────────────────────
 
+  @Deprecated
   public List<PaymentMethodRow> byPaymentMethod(LocalDate from, LocalDate to) {
     UUID cid = TenantContext.getTenantId();
     OffsetDateTime start = from.atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();

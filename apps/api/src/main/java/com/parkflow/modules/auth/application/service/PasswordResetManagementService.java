@@ -9,9 +9,11 @@ import com.parkflow.modules.auth.domain.repository.PasswordResetTokenPort;
 import com.parkflow.modules.auth.security.PasswordHashService;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
+import com.parkflow.modules.auth.security.SecurityUtils;
+import com.parkflow.modules.auth.security.PasswordValidationService;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
@@ -34,21 +36,22 @@ public class PasswordResetManagementService implements PasswordResetUseCase {
       "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!.])(?=\\S+$).{8,}$");
 
   private final PasswordResetTokenPort tokenRepository;
-  private final AppUserRepository userRepository;
+  private final AppUserPort userRepository;
   private final PasswordHashService passwordHashService;
   private final AuthAuditService authAuditService;
+  private final PasswordValidationService passwordValidationService;
   private final SecureRandom secureRandom = new SecureRandom();
 
   @Override
   @Transactional
   public void requestReset(PasswordResetRequest request) {
     String email = request.email().trim().toLowerCase();
-    log.info("AUTH: Password reset requested - email={}", maskEmail(email));
+    log.info("AUTH: Password reset requested - email={}", SecurityUtils.maskEmail(email));
 
     Optional<AppUser> userOpt = userRepository.findGlobalByEmail(email);
 
     if (userOpt.isEmpty()) {
-      log.warn("AUTH: Password reset requested for non-existent user - email={}", maskEmail(email));
+      log.warn("AUTH: Password reset requested for non-existent user - email={}", SecurityUtils.maskEmail(email));
       return;
     }
 
@@ -105,7 +108,7 @@ public class PasswordResetManagementService implements PasswordResetUseCase {
       throw new OperationException(HttpStatus.BAD_REQUEST, "Token expirado");
     }
 
-    validatePasswordStrength(request.newPassword());
+    passwordValidationService.validatePasswordStrength(request.newPassword());
 
     AppUser user = userRepository.findById(token.getUserId())
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
@@ -127,28 +130,6 @@ public class PasswordResetManagementService implements PasswordResetUseCase {
     byte[] bytes = new byte[TOKEN_LENGTH];
     secureRandom.nextBytes(bytes);
     return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-  }
-
-  private void validatePasswordStrength(String password) {
-    if (password == null || password.length() < 8) {
-      throw new OperationException(HttpStatus.BAD_REQUEST,
-          "La contraseña debe tener al menos 8 caracteres");
-    }
-
-    if (!PASSWORD_PATTERN.matcher(password).matches()) {
-      throw new OperationException(HttpStatus.BAD_REQUEST,
-          "La contraseña debe contener al menos: una mayúscula, una minúscula, un número y un carácter especial");
-    }
-  }
-
-  private String maskEmail(String email) {
-    if (email == null || email.length() < 3 || !email.contains("@")) {
-      return "***";
-    }
-    String[] parts = email.split("@");
-    String local = parts[0];
-    String domain = parts[1];
-    return local.charAt(0) + "***@" + domain;
   }
 
   private boolean isDevEnvironment() {

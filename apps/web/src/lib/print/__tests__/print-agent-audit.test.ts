@@ -11,7 +11,7 @@ afterEach(() => {
 
 describe('print agent audit', () => {
   it('creates the audit directory and appends jsonl rows', async () => {
-    const { appendAudit } = await import('../../../../apps/print-agent/src/audit')
+    const { appendAudit } = await import('@print-agent/audit')
     const dir = mkdtempSync(join(tmpdir(), 'pf-audit-'))
     const auditFile = join(dir, 'nested', 'audit.log.jsonl')
 

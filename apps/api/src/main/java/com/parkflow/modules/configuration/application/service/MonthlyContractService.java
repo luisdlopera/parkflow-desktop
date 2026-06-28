@@ -5,15 +5,15 @@ import com.parkflow.modules.configuration.dto.MonthlyContractResponse;
 import com.parkflow.modules.configuration.domain.MonthlyContract;
 import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.domain.ContractStatus;
-import com.parkflow.modules.configuration.infrastructure.persistence.MonthlyContractRepository;
-import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
+import com.parkflow.modules.configuration.domain.repository.MonthlyContractPort;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.customers.domain.Client;
-import com.parkflow.modules.customers.infrastructure.persistence.ClientRepository;
+import com.parkflow.modules.customers.domain.port.ClientPort;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.parking.operation.domain.Vehicle;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.RateRepository;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.VehicleRepository;
+import com.parkflow.modules.parking.operation.domain.repository.RatePort;
+import com.parkflow.modules.parking.operation.domain.repository.VehiclePort;
 import com.parkflow.modules.common.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -34,11 +34,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MonthlyContractService implements MonthlyContractUseCase {
 
-  private final MonthlyContractRepository repo;
-  private final RateRepository rateRepository;
-  private final ParkingSiteRepository siteRepository;
-  private final ClientRepository clientRepository;
-  private final VehicleRepository vehicleRepository;
+  private final MonthlyContractPort repo;
+  private final RatePort rateRepository;
+  private final ParkingSitePort siteRepository;
+  private final ClientPort clientRepository;
+  private final VehiclePort vehicleRepository;
   private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 

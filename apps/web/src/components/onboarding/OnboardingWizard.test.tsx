@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 import { DialogProvider } from "@/providers/DialogProvider";
+import { fetchOnboardingStatus } from "@/lib/api/onboarding.api";
 
 // Mock next/navigation so useRouter doesn't throw in jsdom
 vi.mock("next/navigation", () => ({
@@ -20,8 +21,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 // Mock useDialog so confirm() resolves immediately without rendering HeroUI AlertDialog
-vi.mock("@/components/ui/DialogProvider", async (importOriginal) => {
-  const original = await importOriginal<typeof import("@/components/ui/DialogProvider")>();
+vi.mock("@/providers/DialogProvider", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/providers/DialogProvider")>();
   return {
     ...original,
     useDialog: () => ({
@@ -120,8 +121,14 @@ Object.defineProperty(window, "location", {
   writable: true,
 });
 
+import { SWRConfig } from "swr";
+
 function renderWithDialog(ui: React.ReactElement) {
-  return render(<DialogProvider>{ui}</DialogProvider>);
+  return render(
+    <SWRConfig value={{ dedupingInterval: 0, provider: () => new Map() }}>
+      <DialogProvider>{ui}</DialogProvider>
+    </SWRConfig>
+  );
 }
 
 function buildStatus(overrides = {}) {
@@ -144,13 +151,20 @@ function buildStatus(overrides = {}) {
   };
 }
 
+import { mutate } from "swr";
+
 describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
   beforeEach(() => {
+    mutate(() => true, undefined, false);
     vi.clearAllMocks();
+    vi.mocked(fetchOnboardingStatus).mockImplementation(async (id = "c1") => buildStatus({ companyId: id, currentStep: 1 }) as any);
     assignMock.mockReset();
   });
 
   afterEach(() => {
+    mutate(() => true, undefined, false);
+    cleanup();
+    document.body.innerHTML = "";
     vi.clearAllMocks();
   });
 
@@ -160,7 +174,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
 
   it("renders loading spinner initially", async () => {
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
-    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
   });
 
   it("renders first step and progress after loading", async () => {
@@ -200,16 +214,16 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
     await waitFor(() => expect(screen.getByText("Paso 1 de 12")).toBeInTheDocument());
   });
 
-  it("renders with all step titles defined", () => {
+  it("renders with all step titles defined", async () => {
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
     // All titles are statically defined in component
-    expect(screen.getByText("Tipos de vehículo")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Tipos de vehículo")).toBeInTheDocument());
   });
 
-  it("has 12 total steps available", () => {
+  it("has 12 total steps available", async () => {
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
     // Total steps = 12, shown in "Paso X de 12"
-    expect(screen.getByText(/de 12/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/de 12/i)).toBeInTheDocument());
   });
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -409,6 +423,7 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
   // ═════════════════════════════════════════════════════════════════════════════
 
   it("displays warning box for required steps when incomplete", async () => {
+    vi.mocked(fetchOnboardingStatus).mockImplementation(async (id) => buildStatus({ companyId: id, progressData: {} }) as any);
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
     await waitFor(() => {
       const warning = screen.queryByText(/Debes completar los pasos obligatorios/i);
@@ -533,9 +548,9 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
     await waitFor(() => expect(screen.getByText("Paso 1 de 12")).toBeInTheDocument());
   });
 
-  it("step counter follows X de 12 format", () => {
+  it("step counter follows X de 12 format", async () => {
     renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
-    expect(screen.getByText(/Paso \d+ de 12/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/Paso \d+ de 12/)).toBeInTheDocument());
   });
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -592,7 +607,6 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
   // ═════════════════════════════════════════════════════════════════════════════
 
   it("renders with different company IDs", async () => {
-    const { fetchOnboardingStatus } = await import("@/lib/api/onboarding.api");
     vi.mocked(fetchOnboardingStatus).mockResolvedValueOnce(buildStatus({ companyId: "c2" }));
 
     renderWithDialog(<OnboardingWizard companyId="c2" onDone={() => undefined} />);
@@ -615,18 +629,16 @@ describe("OnboardingWizard - Comprehensive Test Suite (90+ tests)", () => {
   });
 
   it("displays different step component based on current step", async () => {
-    const { fetchOnboardingStatus } = await import("@/lib/api/onboarding.api");
-    vi.mocked(fetchOnboardingStatus).mockResolvedValueOnce(buildStatus({ currentStep: 3 }));
+    vi.mocked(fetchOnboardingStatus).mockImplementation(async (id) => buildStatus({ companyId: id, currentStep: 3 }) as any);
 
-    renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
+    renderWithDialog(<OnboardingWizard companyId="c3" onDone={() => undefined} />);
     await waitFor(() => expect(screen.getByTestId("step-3")).toBeInTheDocument());
   });
 
   it("shows correct button layout for middle steps (neither first nor last)", async () => {
-    const { fetchOnboardingStatus } = await import("@/lib/api/onboarding.api");
-    vi.mocked(fetchOnboardingStatus).mockResolvedValueOnce(buildStatus({ currentStep: 6 }));
+    vi.mocked(fetchOnboardingStatus).mockImplementation(async (id) => buildStatus({ companyId: id, currentStep: 6 }) as any);
 
-    renderWithDialog(<OnboardingWizard companyId="c1" onDone={() => undefined} />);
+    renderWithDialog(<OnboardingWizard companyId="c4" onDone={() => undefined} />);
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /Atrás/i })).not.toBeDisabled();
       expect(screen.getByRole("button", { name: /Siguiente/i })).toBeInTheDocument();

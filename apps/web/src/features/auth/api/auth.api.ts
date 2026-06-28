@@ -1,4 +1,4 @@
-import { authBase } from "@/lib/api/config";
+import { authBase, API_CONFIG } from "@/lib/api/config";
 import { authLoginRequestSchema, authRefreshRequestSchema } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type { LoginRequest, LoginResponse } from "@parkflow/types";
@@ -6,23 +6,15 @@ import type { StoredSession } from "../types";
 import { loadSession, saveSession, clearSession } from "@/lib/services/auth-storage.service";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 import { broadcastAuthEvent } from "@/hooks/auth/useAuthBroadcast";
+import { useAuthStore } from "@/lib/stores/auth.store";
 
-
-function operationsApiKey(): string {
-  const key = process.env.NEXT_PUBLIC_API_KEY;
-  if (!key || key.trim().length === 0) return "";
-  return key.trim();
-}
 
 export async function login(request: LoginRequest): Promise<StoredSession> {
   const validatedRequest = validatePayloadOrThrow(authLoginRequestSchema, request);
   const response = await fetchWithCredentials(`${authBase()}/login`, {
     method: "POST",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": operationsApiKey()
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(validatedRequest)
   });
 
@@ -43,10 +35,7 @@ export async function logoutFromApi(session: StoredSession): Promise<void> {
     await fetchWithCredentials(`${authBase()}/logout`, {
       method: "POST",
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": operationsApiKey()
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId: session.session.sessionId })
     });
   } catch {
@@ -61,10 +50,7 @@ export async function logoutAllSessions(): Promise<void> {
     await fetchWithCredentials(`${authBase()}/logout/all`, {
       method: "POST",
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": operationsApiKey()
-      }
+      headers: { "Content-Type": "application/json" }
     });
   } catch {
     // Best-effort
@@ -78,10 +64,7 @@ export async function logoutDevice(deviceId: string): Promise<void> {
   await fetchWithCredentials(`${authBase()}/logout/device/${encodeURIComponent(deviceId)}`, {
     method: "POST",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": operationsApiKey()
-    }
+    headers: { "Content-Type": "application/json" }
   });
 }
 
@@ -90,7 +73,7 @@ let refreshPromise: Promise<StoredSession> | null = null;
 export async function refreshIfNeeded(current: StoredSession): Promise<StoredSession> {
   const exp = Date.parse(current.session.accessTokenExpiresAtIso);
   const thresholdMs = 60_000;
-  
+
   if (!Number.isFinite(exp) || exp - Date.now() > thresholdMs) {
     return current;
   }
@@ -104,18 +87,15 @@ export async function refreshIfNeeded(current: StoredSession): Promise<StoredSes
       const response = await fetchWithCredentials(`${authBase()}/refresh`, {
         method: "POST",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": operationsApiKey()
-        },
-        // We no longer send refreshToken in body; the server will read the HTTP-Only cookie.
+        headers: { "Content-Type": "application/json" },
+        // Server reads the httpOnly refresh cookie automatically
         body: JSON.stringify(validatePayloadOrThrow(authRefreshRequestSchema, {
           deviceId: current.session.deviceId
         }))
       });
 
       if (!response.ok) {
-        // [A2] PERMISSIONS_CHANGED: role changed — clear local session and broadcast logout
+        // PERMISSIONS_CHANGED: role changed — clear local session and broadcast logout
         // so ALL tabs redirect to login immediately with fresh permissions.
         let errorCode: string | undefined;
         try {
@@ -141,7 +121,8 @@ export async function refreshIfNeeded(current: StoredSession): Promise<StoredSes
         offlineLease: payload.offlineLease
       };
       await saveSession(rotated);
-      // [Deuda] Broadcast token refresh so other tabs update their session state
+      // Update store so useSessionMonitor reads the correct new expiry
+      useAuthStore.getState().setSessionExpiresAt(rotated.session.accessTokenExpiresAtIso);
       broadcastAuthEvent({ type: "auth:token_refreshed" });
       return rotated;
     } finally {
@@ -152,6 +133,8 @@ export async function refreshIfNeeded(current: StoredSession): Promise<StoredSes
   return refreshPromise;
 }
 
+// Used by auth-domain.service for general API calls that include X-API-Key
 export function authHeadersApiKey(): string {
-  return operationsApiKey();
+  const key = API_CONFIG.apiKey;
+  return key && key.trim().length > 0 ? key.trim() : "";
 }

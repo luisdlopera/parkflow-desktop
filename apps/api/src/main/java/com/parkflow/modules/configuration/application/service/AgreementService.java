@@ -4,11 +4,11 @@ import com.parkflow.modules.configuration.dto.AgreementRequest;
 import com.parkflow.modules.configuration.dto.AgreementResponse;
 import com.parkflow.modules.configuration.domain.Agreement;
 import com.parkflow.modules.configuration.domain.ParkingSite;
-import com.parkflow.modules.configuration.infrastructure.persistence.AgreementRepository;
-import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
+import com.parkflow.modules.configuration.domain.repository.AgreementPort;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.RateRepository;
+import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.common.dto.SettingsPageResponse;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -29,9 +29,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AgreementService implements AgreementUseCase {
 
-  private final AgreementRepository repo;
-  private final ParkingSiteRepository siteRepository;
-  private final RateRepository rateRepository;
+  private final AgreementPort repo;
+  private final ParkingSitePort siteRepository;
+  private final RatePort rateRepository;
   private final com.parkflow.modules.audit.application.port.out.AuditPort globalAuditService;
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 

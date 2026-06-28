@@ -1,5 +1,5 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { useAnimatedAction } from "../useAnimatedAction";
+import { useAnimatedAction } from "../ui/useAnimatedAction";
 
 const mockShowAnimatedToast = vi.fn();
 

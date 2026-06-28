@@ -13,6 +13,8 @@ public interface ClientPort {
   List<Client> findByCompanyId(UUID companyId);
 
   Optional<Client> findByDocumentAndCompanyId(String document, UUID companyId);
+  Optional<Client> findFirstByCompanyIdAndDocument(UUID companyId, String document);
+  Optional<Client> findFirstByCompanyIdAndNameIgnoreCase(UUID companyId, String name);
 
   void delete(UUID id);
 

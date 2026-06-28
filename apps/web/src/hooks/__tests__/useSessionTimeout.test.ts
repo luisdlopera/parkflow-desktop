@@ -1,5 +1,5 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { useSessionTimeout } from "../useSessionTimeout";
+import { useSessionTimeout } from "../core/useSessionTimeout";
 
 const mockReplace = vi.fn();
 const mockLogout = vi.fn();

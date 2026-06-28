@@ -2246,6 +2246,7 @@ pub fn run() {
       local_first::local_login,
       local_first::local_refresh,
       local_first::local_get_profile,
+      local_first::get_local_me,
       local_first::local_update_profile,
       local_first::local_change_password,
       local_first::local_get_settings,

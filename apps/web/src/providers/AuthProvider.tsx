@@ -8,7 +8,7 @@ import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setUser, isLoading } = useAuthStore();
+  const { setUser, setSessionExpiresAt, isLoading } = useAuthStore();
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -16,8 +16,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initialized.current = true;
 
     let timeoutId: NodeJS.Timeout;
+    let retryCount = 0;
+    const maxRetries = 2;
 
-    (async () => {
+    const doRestore = async () => {
       try {
         const response = await fetchWithCredentials(`${authBase()}/restore-session`, {
           method: 'POST',
@@ -25,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           headers: { 'Content-Type': 'application/json' },
         });
         if (!response.ok) {
-          // Non-200 response means no valid session (401/403/etc)
+          // Non-200 response means no valid session (401/403/etc) — don't retry
           setUser(null);
           return;
         }
@@ -36,19 +38,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           offlineLease: payload.offlineLease,
         });
         setUser(payload.user);
+        // Keep session expiry in store so useSessionMonitor can read it without loadSession()
+        if (payload.session?.accessTokenExpiresAtIso) {
+          setSessionExpiresAt(payload.session.accessTokenExpiresAtIso);
+        }
       } catch {
-        // Network error or JSON parse error: wait before logging out
-        // (may recover on retry), so only force logout after timeout
-        timeoutId = setTimeout(() => {
-          setUser(null);
-        }, 3_000);
+        // Network error: retry up to maxRetries times before forcing logout
+        if (retryCount < maxRetries && initialized.current) {
+          retryCount++;
+          timeoutId = setTimeout(doRestore, retryCount * 1000);
+        } else {
+          timeoutId = setTimeout(() => {
+            setUser(null);
+          }, 3_000);
+        }
       }
-    })();
+    };
+
+    void doRestore();
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [setUser]);
+  }, [setUser, setSessionExpiresAt]);
 
   if (isLoading) {
     return (

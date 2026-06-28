@@ -17,7 +17,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       expect(button).toBeInTheDocument();
     });
 
@@ -25,23 +25,23 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={true} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
-      expect(button).toHaveAttribute("aria-pressed", "true");
+      const button = screen.getByRole("switch");
+      expect(button).toHaveAttribute("aria-checked", "true");
     });
 
     it("should render with inactive state", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
-      expect(button).toHaveAttribute("aria-pressed", "false");
+      const button = screen.getByRole("switch");
+      expect(button).toHaveAttribute("aria-checked", "false");
     });
 
     it("should have correct button type", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button") as HTMLButtonElement;
+      const button = screen.getByRole("switch") as HTMLButtonElement;
       expect(button.type).toBe("button");
     });
   });
@@ -52,7 +52,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       expect(handleChange).toHaveBeenCalledWith(true);
@@ -63,7 +63,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={true} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       expect(handleChange).toHaveBeenCalledWith(false);
@@ -76,7 +76,7 @@ describe("StatusToggle Component", () => {
       });
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       await waitFor(() => {
@@ -89,7 +89,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       expect(handleChange).toHaveBeenCalledTimes(1);
@@ -102,7 +102,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} disabled={true} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       expect(handleChange).not.toHaveBeenCalled();
@@ -112,7 +112,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} disabled={true} />);
 
-      const button = screen.getByRole("button") as HTMLButtonElement;
+      const button = screen.getByRole("switch") as HTMLButtonElement;
       expect(button.disabled).toBe(true);
     });
 
@@ -120,7 +120,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} disabled={true} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       expect(button).toHaveClass("opacity-50", "cursor-not-allowed");
     });
 
@@ -128,7 +128,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} disabled={false} />);
 
-      const button = screen.getByRole("button") as HTMLButtonElement;
+      const button = screen.getByRole("switch") as HTMLButtonElement;
       expect(button.disabled).toBe(false);
     });
 
@@ -136,7 +136,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button") as HTMLButtonElement;
+      const button = screen.getByRole("switch") as HTMLButtonElement;
       expect(button.disabled).toBe(false);
     });
   });
@@ -149,7 +149,7 @@ describe("StatusToggle Component", () => {
       });
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button") as HTMLButtonElement;
+      const button = screen.getByRole("switch") as HTMLButtonElement;
       await user.click(button);
 
       // Button should be disabled while pending
@@ -168,7 +168,7 @@ describe("StatusToggle Component", () => {
       });
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
 
       // Click once
       await user.click(button);
@@ -187,7 +187,7 @@ describe("StatusToggle Component", () => {
       });
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       expect(button).toHaveClass("opacity-50", "cursor-not-allowed");
@@ -200,13 +200,13 @@ describe("StatusToggle Component", () => {
       });
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
-      expect(button).toHaveAttribute("aria-pressed", "false");
+      const button = screen.getByRole("switch");
+      expect(button).toHaveAttribute("aria-checked", "false");
 
       await user.click(button);
 
       // aria-pressed should still reflect the state being toggled to
-      expect(button).toHaveAttribute("aria-pressed", "false");
+      expect(button).toHaveAttribute("aria-checked", "false");
     });
   });
 
@@ -224,7 +224,7 @@ describe("StatusToggle Component", () => {
         />
       );
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       // The confirmation should be shown, onChange might not be called yet
@@ -252,7 +252,7 @@ describe("StatusToggle Component", () => {
         />
       );
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       // Since confirmation was rejected, onChange might not be called
@@ -272,7 +272,7 @@ describe("StatusToggle Component", () => {
         />
       );
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       expect(button).toBeInTheDocument();
@@ -289,7 +289,7 @@ describe("StatusToggle Component", () => {
         />
       );
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       expect(handleChange).toHaveBeenCalledWith(true);
@@ -301,7 +301,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={true} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       expect(button).toHaveClass("bg-emerald-500");
     });
 
@@ -309,7 +309,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       expect(button).toHaveClass("bg-slate-300");
     });
 
@@ -317,7 +317,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       expect(button).toHaveClass("rounded-full");
     });
 
@@ -325,7 +325,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       expect(button).toHaveClass("h-6", "w-11");
     });
 
@@ -360,15 +360,15 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={true} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
-      expect(button).toHaveAttribute("aria-pressed");
+      const button = screen.getByRole("switch");
+      expect(button).toHaveAttribute("aria-checked");
     });
 
     it("should have aria-label attribute", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={true} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       expect(button).toHaveAttribute("aria-label");
     });
 
@@ -376,7 +376,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={true} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       expect(button).toHaveAttribute("aria-label", "Desactivado");
     });
 
@@ -384,7 +384,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       expect(button).toHaveAttribute("aria-label", "Activado");
     });
 
@@ -393,7 +393,7 @@ describe("StatusToggle Component", () => {
       const handleChange = vi.fn();
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       button.focus();
       expect(button).toHaveFocus();
 
@@ -417,8 +417,8 @@ describe("StatusToggle Component", () => {
         />
       );
 
-      const button = screen.getByRole("button");
-      expect(button).toHaveAttribute("aria-pressed", "true");
+      const button = screen.getByRole("switch");
+      expect(button).toHaveAttribute("aria-checked", "true");
       expect(button).toBeInTheDocument();
     });
 
@@ -436,7 +436,7 @@ describe("StatusToggle Component", () => {
         />
       );
 
-      const button = screen.getByRole("button") as HTMLButtonElement;
+      const button = screen.getByRole("switch") as HTMLButtonElement;
       await user.click(button);
 
       expect(button.disabled).toBe(true);
@@ -451,7 +451,7 @@ describe("StatusToggle Component", () => {
 
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       expect(handleChange).toHaveBeenCalled();
@@ -463,7 +463,7 @@ describe("StatusToggle Component", () => {
 
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       // Component should still be in the document
@@ -478,7 +478,7 @@ describe("StatusToggle Component", () => {
 
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
 
       // Try to click multiple times rapidly
       await user.click(button);
@@ -501,7 +501,7 @@ describe("StatusToggle Component", () => {
         />
       );
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       expect(handleChange).toHaveBeenCalledWith(true);
@@ -519,7 +519,7 @@ describe("StatusToggle Component", () => {
         />
       );
 
-      const button = screen.getByRole("button");
+      const button = screen.getByRole("switch");
       await user.click(button);
 
       expect(handleChange).toHaveBeenCalledWith(true);
@@ -544,7 +544,7 @@ describe("StatusToggle Component", () => {
         </>
       );
 
-      const buttons = screen.getAllByRole("button");
+      const buttons = screen.getAllByRole("switch");
       await user.click(buttons[0]);
 
       expect(handlers[0]).toHaveBeenCalled();
@@ -562,7 +562,7 @@ describe("StatusToggle Component", () => {
         </>
       );
 
-      const buttons = screen.getAllByRole("button");
+      const buttons = screen.getAllByRole("switch");
       await user.click(buttons[0]);
 
       expect(handler1).toHaveBeenCalledWith(false);

@@ -4,8 +4,8 @@ import com.parkflow.modules.configuration.dto.PrepaidBalanceResponse;
 import com.parkflow.modules.configuration.dto.PrepaidPackageResponse;
 import com.parkflow.modules.configuration.domain.PrepaidBalance;
 import com.parkflow.modules.configuration.domain.PrepaidPackage;
-import com.parkflow.modules.configuration.infrastructure.persistence.PrepaidBalanceRepository;
-import com.parkflow.modules.configuration.infrastructure.persistence.PrepaidPackageRepository;
+import com.parkflow.modules.configuration.domain.repository.PrepaidBalancePort;
+import com.parkflow.modules.configuration.domain.repository.PrepaidPackagePort;
 import com.parkflow.modules.common.dto.SettingsPageResponse;
 import java.util.List;
 import java.util.UUID;
@@ -23,8 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PrepaidQueryService {
 
-  private final PrepaidPackageRepository packageRepo;
-  private final PrepaidBalanceRepository balanceRepo;
+  private final PrepaidPackagePort packageRepo;
+  private final PrepaidBalancePort balanceRepo;
 
   @Transactional(readOnly = true)
   public SettingsPageResponse<PrepaidPackageResponse> listPackages(

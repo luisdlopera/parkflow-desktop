@@ -13,7 +13,7 @@ import com.parkflow.modules.auth.domain.repository.AuthorizedDevicePort;
 import com.parkflow.modules.auth.dto.LogoutRequest;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
+import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +32,7 @@ public class LogoutUseCaseImpl implements LogoutUseCase {
 
   private final AuthSessionPort authSessionRepository;
   private final AuthorizedDevicePort authorizedDeviceRepository;
-  private final AppUserRepository appUserRepository;
+  private final AppUserPort appUserRepository;
   private final AuthAuditService authAuditService;
   private final AuditPort globalAuditService;
 
