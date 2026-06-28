@@ -3,6 +3,7 @@ package com.parkflow.modules.auth.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -339,10 +340,9 @@ class LoginUseCaseImplTest {
         }
 
         when(appUserRepository.findGlobalByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
-        when(passwordHashService.matchesPassword("validpassword", "hashed_password")).thenReturn(true);
-        lenient().doNothing().when(passwordValidationService).validatePasswordStrength("validpassword");
-        lenient().doNothing().when(passwordValidationService).validatePasswordNotCommon("validpassword");
-        when(authorizedDeviceRepository.findByDeviceId("test-device")).thenReturn(Optional.of(mockDevice));
+        when(passwordHashService.matchesPassword(anyString(), anyString())).thenReturn(true);
+        when(authorizedDeviceRepository.findByDeviceId("device123")).thenReturn(Optional.of(mockDevice));
+        when(authorizedDeviceRepository.save(any())).thenReturn(mockDevice);
         when(authSessionRepository.findByUserAndActiveTrue(mockUser)).thenReturn(activeSessions);
         when(authSessionRepository.save(any(AuthSession.class))).thenAnswer(arg -> {
             AuthSession session = arg.getArgument(0);
@@ -353,7 +353,12 @@ class LoginUseCaseImplTest {
         when(jwtTokenService.refreshTtl()).thenReturn(Duration.ofDays(7));
         when(jwtTokenService.createRefreshToken(any(), any(), any(), any(), anyInt())).thenReturn("refresh_token");
         when(jwtTokenService.createAccessToken(any(), any(), any(), any(), any())).thenReturn("access_token");
-        lenient().when(refreshTokenFamilyRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(refreshTokenFamilyRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(authCompanyPort.isOnboardingCompleted(any())).thenReturn(true);
+        when(responseAssembler.toUser(any(), anyBoolean())).thenReturn(null);
+        when(responseAssembler.toSession(any())).thenReturn(null);
+        when(responseAssembler.toDevice(any())).thenReturn(null);
+        when(responseAssembler.offlineLease(any(), anyInt(), anyInt())).thenReturn(null);
 
         // Act
         LoginResult result = loginUseCase.login(validRequest);
@@ -369,10 +374,9 @@ class LoginUseCaseImplTest {
     void testLoginWithZeroActiveSessions_CreatesFirst() {
         // Given: User has no active sessions
         when(appUserRepository.findGlobalByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
-        when(passwordHashService.matchesPassword("validpassword", "hashed_password")).thenReturn(true);
-        lenient().doNothing().when(passwordValidationService).validatePasswordStrength("validpassword");
-        lenient().doNothing().when(passwordValidationService).validatePasswordNotCommon("validpassword");
-        when(authorizedDeviceRepository.findByDeviceId("test-device")).thenReturn(Optional.of(mockDevice));
+        when(passwordHashService.matchesPassword("password123", "hashed_password")).thenReturn(true);
+        when(authorizedDeviceRepository.findByDeviceId("device123")).thenReturn(Optional.of(mockDevice));
+        when(authorizedDeviceRepository.save(any())).thenReturn(mockDevice);
         when(authSessionRepository.findByUserAndActiveTrue(mockUser)).thenReturn(new ArrayList<>());
         when(authSessionRepository.save(any(AuthSession.class))).thenAnswer(arg -> {
             AuthSession session = arg.getArgument(0);
@@ -383,7 +387,12 @@ class LoginUseCaseImplTest {
         when(jwtTokenService.refreshTtl()).thenReturn(Duration.ofDays(7));
         when(jwtTokenService.createRefreshToken(any(), any(), any(), any(), anyInt())).thenReturn("refresh_token");
         when(jwtTokenService.createAccessToken(any(), any(), any(), any(), any())).thenReturn("access_token");
-        lenient().when(refreshTokenFamilyRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(refreshTokenFamilyRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(authCompanyPort.isOnboardingCompleted(any())).thenReturn(true);
+        when(responseAssembler.toUser(any(), anyBoolean())).thenReturn(null);
+        when(responseAssembler.toSession(any())).thenReturn(null);
+        when(responseAssembler.toDevice(any())).thenReturn(null);
+        when(responseAssembler.offlineLease(any(), anyInt(), anyInt())).thenReturn(null);
 
         // Act
         LoginResult result = loginUseCase.login(validRequest);

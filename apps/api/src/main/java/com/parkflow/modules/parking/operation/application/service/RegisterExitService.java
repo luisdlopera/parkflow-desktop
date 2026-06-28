@@ -93,7 +93,7 @@ public class RegisterExitService implements RegisterExitUseCase {
     }
 
     ParkingSession session = requireActiveSessionForUpdate(request.ticketNumber(), request.plate(), companyId);
-    AppUser operator = findRequiredOperator(request.operatorUserId());
+    AppUser operator = findRequiredOperator(request.operatorUserId(), companyId);
 
     PriceBreakdown price = parkingPricingUseCase.calculateComplexPrice(session, exitAt, request.agreementCode(), false, false);
     price = parkingPricingUseCase.applyCourtesyPricing(session, price, false);
@@ -299,13 +299,20 @@ public class RegisterExitService implements RegisterExitUseCase {
     throw new OperationException(HttpStatus.BAD_REQUEST, "ticketNumber o plate es obligatorio");
   }
 
-  private AppUser findRequiredOperator(UUID userId) {
+  private AppUser findRequiredOperator(UUID userId, UUID companyId) {
     if (userId == null) {
       return appUserRepository.findGlobalByEmail("system@parkflow.local")
           .orElseThrow(() -> new OperationException(HttpStatus.INTERNAL_SERVER_ERROR, "Operador de sistema no encontrado"));
     }
-    return appUserRepository.findById(userId)
+    AppUser operator = appUserRepository.findById(userId)
         .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Operador no encontrado"));
+    if (!operator.isActive()) {
+      throw new OperationException(HttpStatus.FORBIDDEN, "Operador inactivo");
+    }
+    if (operator.getCompanyId() != null && !operator.getCompanyId().equals(companyId)) {
+      throw new OperationException(HttpStatus.FORBIDDEN, "Operador no pertenece a la empresa");
+    }
+    return operator;
   }
 
 
