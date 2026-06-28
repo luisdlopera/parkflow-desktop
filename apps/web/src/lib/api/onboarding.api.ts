@@ -49,19 +49,32 @@ export async function fetchOnboardingStatus(companyId: string): Promise<Onboardi
   return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}`);
 }
 
-export async function saveOnboardingStep(companyId: string, step: number, data: Record<string, unknown>, targetStep?: number): Promise<OnboardingStatus> {
+export async function saveOnboardingStep(
+  companyId: string, 
+  step: number, 
+  data: Record<string, unknown>, 
+  targetStep?: number,
+  options?: RequestInit
+): Promise<OnboardingStatus> {
   return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}/steps`, {
+    ...options,
     method: "PUT",
     body: JSON.stringify({ step, data, targetStep })
   });
 }
 
 export async function skipOnboarding(companyId: string): Promise<OnboardingStatus> {
-  return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}/skip`, { method: "POST" });
+  return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}/skip`, { 
+    method: "POST",
+    headers: { "Idempotency-Key": crypto.randomUUID() }
+  });
 }
 
 export async function completeOnboarding(companyId: string): Promise<OnboardingStatus> {
-  return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}/complete`, { method: "POST" });
+  return apiFetch<OnboardingStatus>(`/onboarding/companies/${companyId}/complete`, { 
+    method: "POST",
+    headers: { "Idempotency-Key": crypto.randomUUID() }
+  });
 }
 
 export async function resetOnboarding(companyId: string, reason: string = "Reinicio manual"): Promise<OnboardingStatus> {

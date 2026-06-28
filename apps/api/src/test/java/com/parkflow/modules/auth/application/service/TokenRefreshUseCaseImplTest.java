@@ -113,6 +113,7 @@ class TokenRefreshUseCaseImplTest {
         lenient().when(jwtTokenService.createRefreshToken(any(), any(), any())).thenReturn("new_token");
         lenient().when(jwtTokenService.createRefreshToken(any(), any(), any(), any(), anyInt())).thenReturn("new_token");
         lenient().when(jwtTokenService.createAccessToken(any(), any(), any(), any(), any())).thenReturn("new_access");
+        lenient().when(refreshTokenFamilyRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         // Act
         LoginResult result = tokenRefreshUseCase.refreshFromCookie("valid_raw_token");
@@ -309,5 +310,74 @@ class TokenRefreshUseCaseImplTest {
         assertThat(family.getGenerationNumber()).isEqualTo(3); // Should be incremented
         assertThat(family.isRevoked()).isFalse(); // Should not be revoked for valid refresh
         verify(refreshTokenFamilyRepository).save(family);
+    }
+
+    @Test
+    void testRefresh_FamilyRevoked_RejectsAllTokens() {
+        // Given: Token family was already revoked (theft detected previously)
+        UUID familyId = UUID.randomUUID();
+        RefreshTokenFamily family = new RefreshTokenFamily();
+        family.setFamilyId(familyId);
+        family.setGenerationNumber(5);
+        family.setRevokedAt(java.time.OffsetDateTime.now().minusHours(1));
+        family.setRevokeReason("THEFT_DETECTED");
+
+        mockSession.setTokenFamilyId(familyId);
+        mockSession.setTokenGeneration(5);
+
+        when(mockClaims.get("typ", String.class)).thenReturn("refresh");
+        when(mockClaims.get("jti", String.class)).thenReturn("jti123");
+        when(jwtTokenService.parse("revoked_family_token")).thenReturn(mockClaims);
+        when(authSessionRepository.findByRefreshJtiAndActiveTrue("jti123")).thenReturn(Optional.of(mockSession));
+        when(passwordHashService.sha256("revoked_family_token")).thenReturn("hashed_token");
+        when(jwtTokenService.extractFamilyId("revoked_family_token")).thenReturn(familyId);
+        when(jwtTokenService.extractGeneration("revoked_family_token")).thenReturn(5);
+        when(refreshTokenFamilyRepository.findById(familyId)).thenReturn(Optional.of(family));
+
+        RefreshRequest req = new RefreshRequest("device123");
+
+        // Act
+        OperationException ex = catchThrowableOfType(() -> tokenRefreshUseCase.refresh(req, "revoked_family_token"), OperationException.class);
+
+        // Assert
+        assertThat(ex).isNotNull();
+        assertThat(ex.getStatus().value()).isEqualTo(401);
+        assertThat(family.isRevoked()).isTrue();
+        assertThat(family.getRevokeReason()).isEqualTo("THEFT_DETECTED");
+    }
+
+    @Test
+    void testRefresh_MultipleTheftDetections_ConsistentRevocation() {
+        // Given: Multiple tokens from same family attempted after theft detected
+        UUID familyId = UUID.randomUUID();
+        RefreshTokenFamily family = new RefreshTokenFamily();
+        family.setFamilyId(familyId);
+        family.setGenerationNumber(10);
+
+        mockSession.setTokenFamilyId(familyId);
+        mockSession.setTokenGeneration(5); // Older generation = suspicious
+
+        when(mockClaims.get("typ", String.class)).thenReturn("refresh");
+        when(mockClaims.get("jti", String.class)).thenReturn("jti123");
+        when(jwtTokenService.parse(anyString())).thenReturn(mockClaims);
+        when(authSessionRepository.findByRefreshJtiAndActiveTrue("jti123")).thenReturn(Optional.of(mockSession));
+        when(passwordHashService.sha256(anyString())).thenReturn("hashed_token");
+        when(jwtTokenService.extractFamilyId(anyString())).thenReturn(familyId);
+        when(jwtTokenService.extractGeneration(anyString())).thenReturn(5); // Always older
+        when(refreshTokenFamilyRepository.findById(familyId)).thenReturn(Optional.of(family));
+        when(refreshTokenFamilyRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        RefreshRequest req = new RefreshRequest("device123");
+
+        // Act: First attempt
+        catchThrowableOfType(() -> tokenRefreshUseCase.refresh(req, "stolen_token_1"), OperationException.class);
+        assertThat(family.isRevoked()).isTrue();
+
+        // Act: Second attempt with different token from same family
+        catchThrowableOfType(() -> tokenRefreshUseCase.refresh(req, "stolen_token_2"), OperationException.class);
+
+        // Assert: Family remains revoked
+        assertThat(family.isRevoked()).isTrue();
+        assertThat(family.getRevokeReason()).isEqualTo("THEFT_DETECTED");
     }
 }

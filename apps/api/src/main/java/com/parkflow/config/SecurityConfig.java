@@ -108,7 +108,17 @@ public class SecurityConfig {
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http.cors(Customizer.withDefaults())
-        .csrf(csrf -> csrf.disable())
+        .csrf(csrf -> csrf
+            .csrfTokenRepository(org.springframework.security.web.csrf.CookieCsrfTokenRepository.withHttpOnlyFalse())
+            .ignoringRequestMatchers(
+                "/api/v1/auth/login",
+                "/api/v1/auth/refresh",
+                "/api/v1/auth/restore-session",
+                "/api/v1/auth/password-reset/request",
+                "/api/v1/auth/password-reset/confirm",
+                "/api/v1/auth/setup-required"
+            )
+        )
         .exceptionHandling(
             ex ->
                 ex.authenticationEntryPoint(this::handleUnauthorized)

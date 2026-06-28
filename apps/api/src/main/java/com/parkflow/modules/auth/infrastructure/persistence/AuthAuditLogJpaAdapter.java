@@ -33,6 +33,11 @@ public class AuthAuditLogJpaAdapter implements AuthAuditLogPort {
     return jpaRepository.search(userId, action, outcome, from, to, companyId, pageable);
   }
 
+  @Override
+  public int deleteOlderThan(java.time.OffsetDateTime date) {
+    return jpaRepository.deleteOlderThan(date);
+  }
+
   @Repository
   interface AuthAuditLogJpaRepository extends JpaRepository<AuthAuditLog, UUID> {
     @org.springframework.data.jpa.repository.Query("SELECT a FROM AuthAuditLog a WHERE " +
@@ -51,5 +56,9 @@ public class AuthAuditLogJpaAdapter implements AuthAuditLogPort {
         @org.springframework.data.repository.query.Param("companyId") UUID companyId,
         org.springframework.data.domain.Pageable pageable
     );
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM AuthAuditLog a WHERE a.createdAt < :date")
+    int deleteOlderThan(@org.springframework.data.repository.query.Param("date") java.time.OffsetDateTime date);
   }
 }

@@ -42,9 +42,15 @@ public class AuthorizedDeviceJpaAdapter implements AuthorizedDevicePort {
     return jpaRepository.findById(id);
   }
 
+  @Override
+  public Optional<AuthorizedDevice> findByIdAndCompanyId(UUID id, UUID companyId) {
+    return jpaRepository.findByIdAndCompanyId(id, companyId);
+  }
+
   @Repository
   interface AuthorizedDeviceJpaRepository extends JpaRepository<AuthorizedDevice, UUID> {
     Optional<AuthorizedDevice> findByDeviceId(String deviceId);
     List<AuthorizedDevice> findAllByCompanyId(UUID companyId);
+    Optional<AuthorizedDevice> findByIdAndCompanyId(UUID id, UUID companyId);
   }
 }

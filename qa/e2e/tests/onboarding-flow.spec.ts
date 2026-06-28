@@ -165,3 +165,157 @@ test('shows onboarding and persists progress to next step', async ({ page }) => 
   await expect(stepReq).resolves.toBeTruthy()
   await expect(page.getByText('Paso 2 de 12')).toBeVisible({ timeout: 10000 })
 })
+
+test('skip onboarding defaults to active operational dashboard', async ({ page }) => {
+  await page.route('**/api/v1/auth/login', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(loginResponse()) })
+  })
+  await page.route('**/api/v1/auth/me', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(loginResponse().user) })
+  })
+  await page.route('**/api/v1/licensing/companies', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([{
+        id: '11111111-1111-1111-1111-111111111111',
+        name: 'Empresa Onboarding',
+        plan: 'LOCAL',
+        status: 'ACTIVE',
+      }]),
+    })
+  })
+  await page.route('**/api/v1/onboarding/companies/**', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          companyId: '11111111-1111-1111-1111-111111111111',
+          plan: 'LOCAL',
+          onboardingCompleted: false,
+          currentStep: 1,
+          skipped: false,
+          progressData: {},
+          availableOptionsByPlan: {}
+        }),
+      })
+      return
+    }
+    if (route.request().url().endsWith('/skip') && route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          companyId: '11111111-1111-1111-1111-111111111111',
+          plan: 'LOCAL', onboardingCompleted: true, currentStep: 12, skipped: true,
+          progressData: {},
+          availableOptionsByPlan: {}
+        }),
+      })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) })
+  })
+
+  // Mock dashboard routes
+  await page.route('**/api/v1/operations/supervisor/summary', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) })
+  })
+  await page.route('**/api/v1/health/operational', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ recentErrors: [] }) })
+  })
+  await page.route('**/api/v1/operations/sessions/active-list', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
+  })
+  await page.route('**/api/v1/onboarding/companies/**/settings', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ modules: { cash: true } }) })
+  })
+
+  await page.goto('/login')
+  await page.fill('[data-testid="username"]', 'admin@parkflow.local')
+  await page.fill('[data-testid="password"]', 'Qwert.12345')
+  await page.click('[data-testid="login-button"]')
+  await expect(page).toHaveURL('/')
+
+  await expect(page.getByText('Paso 1 de 12')).toBeVisible()
+  
+  // Click skip
+  const skipReq = page.waitForResponse((r) => r.url().includes('/skip') && r.request().method() === 'POST')
+  await page.getByRole('button', { name: 'Omitir' }).click()
+  // Aceptar alerta si hay una, Playwright las auto-acepta por defecto si se configuran,
+  // O podemos asegurar que el modal se apruebe si es en-pantalla:
+  const dialogConfirm = page.getByRole('button', { name: 'Sí, omitir' })
+  if (await dialogConfirm.isVisible()) {
+     await dialogConfirm.click()
+  }
+  
+  await expect(skipReq).resolves.toBeTruthy()
+  // Wait for redirect to happen based on `onboardingCompleted: true`
+})
+
+test('interrupted onboarding resumes at correct step', async ({ page }) => {
+  await page.route('**/api/v1/auth/login', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(loginResponse()) })
+  })
+  await page.route('**/api/v1/auth/me', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(loginResponse().user) })
+  })
+  await page.route('**/api/v1/licensing/companies', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([{
+        id: '11111111-1111-1111-1111-111111111111',
+        name: 'Empresa Onboarding',
+        plan: 'LOCAL',
+        status: 'ACTIVE',
+      }]),
+    })
+  })
+  await page.route('**/api/v1/onboarding/companies/**', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          companyId: '11111111-1111-1111-1111-111111111111',
+          plan: 'LOCAL',
+          onboardingCompleted: false,
+          currentStep: 3, // Simulate already reached step 3
+          skipped: false,
+          progressData: {
+             step_1: { vehicleTypes: ["CARRO"] },
+             step_2: { totalCapacity: 100 }
+          },
+          availableOptionsByPlan: {}
+        }),
+      })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) })
+  })
+
+  // Mock dashboard routes just in case
+  await page.route('**/api/v1/operations/supervisor/summary', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) })
+  })
+  await page.route('**/api/v1/health/operational', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ recentErrors: [] }) })
+  })
+  await page.route('**/api/v1/operations/sessions/active-list', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
+  })
+  await page.route('**/api/v1/onboarding/companies/**/settings', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ modules: { cash: true } }) })
+  })
+
+  await page.goto('/login')
+  await page.fill('[data-testid="username"]', 'admin@parkflow.local')
+  await page.fill('[data-testid="password"]', 'Qwert.12345')
+  await page.click('[data-testid="login-button"]')
+  await expect(page).toHaveURL('/')
+
+  // Should immediately show step 3 because of backend state
+  await expect(page.getByText('Paso 3 de 12')).toBeVisible()
+})

@@ -18,6 +18,7 @@ import org.springframework.scheduling.annotation.Async;
 @RequiredArgsConstructor
 public class AuthAuditService {
   private final AuthAuditLogPort authAuditLogRepository;
+  private final SecurityAlertService securityAlertService;
   private final ObjectMapper objectMapper;
 
   @Async("auditExecutor")
@@ -39,5 +40,17 @@ public class AuthAuditService {
       row.setMetadataJson("{\"error\":\"metadata_serialize_failed\"}");
     }
     authAuditLogRepository.save(row);
+
+    // Check if we need to alert
+    if ("TOKEN_THEFT_DETECTED".equals(outcome) || "DENY_INVALID_CREDENTIALS".equals(outcome) || "DENY_DEVICE_REVOKED".equals(outcome)) {
+      if ("TOKEN_THEFT_DETECTED".equals(outcome)) {
+        securityAlertService.emitAlert("CRITICAL_THREAT", action, user, device, outcome, metadata);
+      } else if (user != null && user.getFailedLoginAttempts() >= 4) {
+        // Almost blocked or already blocked
+        securityAlertService.emitAlert("MULTIPLE_FAILURES", action, user, device, outcome, metadata);
+      } else if ("DENY_DEVICE_REVOKED".equals(outcome)) {
+        securityAlertService.emitAlert("REVOKED_DEVICE_USED", action, user, device, outcome, metadata);
+      }
+    }
   }
 }

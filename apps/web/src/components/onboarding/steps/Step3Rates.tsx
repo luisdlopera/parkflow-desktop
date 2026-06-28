@@ -19,7 +19,7 @@ const parseTimeString = (timeStr?: string | unknown) => {
   return new Time(hours, minutes);
 };
 
-const formatTime = (time: Time) => {
+const formatTime = (time: any) => {
   return `${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}`;
 };
 

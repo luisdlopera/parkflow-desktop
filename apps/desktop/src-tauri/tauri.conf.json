@@ -14,7 +14,8 @@
         "title": "Parkflow Desktop",
         "width": 1280,
         "height": 800,
-        "resizable": true
+        "resizable": true,
+        "fullscreen": false
       }
     ],
     "security": {
@@ -41,6 +42,15 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "copyright": "Copyright (c) 2026 Jarkiers SAS",
+    "category": "Business",
+    "shortDescription": "ParkFlow Desktop — Gestión de estacionamientos",
+    "longDescription": "Aplicación de escritorio para la gestión operativa de estacionamientos. Funciona offline-first con sincronización en la nube.",
+    "windows": {
+      "wix": {
+        "language": "es-ES"
+      }
+    }
   }
 }

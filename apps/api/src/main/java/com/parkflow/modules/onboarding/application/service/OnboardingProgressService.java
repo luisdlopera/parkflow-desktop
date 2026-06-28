@@ -4,6 +4,7 @@ import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.onboarding.application.port.in.OnboardingProgressUseCase;
 import com.parkflow.modules.onboarding.application.port.out.OperationalConfigurationPort;
+import com.parkflow.modules.onboarding.domain.OnboardingDomainInvariants;
 import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.domain.OnboardingProgress;
 import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
@@ -14,9 +15,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Max 4 methods as per hexagonal architecture.
  */
 @SuppressWarnings("deprecation")
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OnboardingProgressService implements OnboardingProgressUseCase {
@@ -43,21 +44,31 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
   private final com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
   private final com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository appUserRepository;
   private final OnboardingMaterializationService materializationService;
+  private final Step2DataValidator step2DataValidator;
+  private final Step3DataValidator step3DataValidator;
+  private final com.parkflow.modules.onboarding.domain.OnboardingStateMachine onboardingStateMachine;
+  private final org.springframework.context.ApplicationEventPublisher eventPublisher;
+  private final com.parkflow.modules.onboarding.infrastructure.persistence.OnboardingRuleSnapshotRepository ruleSnapshotRepository;
 
   @Transactional
   public OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data, Integer targetStep) {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
-    validateStepData(step, data);
+
+    // E-05: Guard — completed onboarding cannot be mutated without explicit reset
+    OnboardingDomainInvariants.assertNotCompleted(Boolean.TRUE.equals(company.getOnboardingCompleted()));
+
+    // C-06: isPlanStepAllowed is enforced inside sanitizeStepDataByPlan() — throws FORBIDDEN
+    validateStepData(step, data, progress.getProgressData());
     Map<String, Object> sanitized = settingsMapper.sanitizeStepDataByPlan(company, step, data);
     Map<String, Object> merged = new LinkedHashMap<>(progress.getProgressData());
     merged.put("step_" + step, sanitized);
     progress.setProgressData(merged);
-    if (targetStep != null) {
-      progress.setCurrentStep(targetStep);
-    } else {
-      progress.setCurrentStep(Math.max(progress.getCurrentStep(), Math.min(step + 1, 12)));
-    }
+    
+    // I-02, I-03: Use state machine to determine the next valid step
+    int nextStep = onboardingStateMachine.determineNextStep(company, progress.getCurrentStep(), targetStep);
+    progress.setCurrentStep(nextStep);
+
     progress.setUpdatedAt(OffsetDateTime.now());
     onboardingProgressPort.save(progress);
     return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
@@ -67,6 +78,12 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
   public OnboardingStatusResponse skipAndApplyDefaults(UUID companyId) {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
+
+    // C-03: Idempotency guard — if already completed, return current state without re-materializing
+    if (Boolean.TRUE.equals(company.getOnboardingCompleted())) {
+      log.info("skipAndApplyDefaults called for already-completed company {}. Returning current state.", companyId);
+      return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+    }
 
     Map<String, Object> progressData = progress.getProgressData();
     boolean hasProgress = progressData != null && !progressData.isEmpty();
@@ -81,19 +98,14 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     companyRepository.save(company);
     companySettingsService.upsertSettings(company, settings);
 
-    @SuppressWarnings("unchecked")
-    List<String> vehicleTypeCodes = (List<String>) settings.getOrDefault("vehicleTypes", List.of("MOTORCYCLE", "CAR"));
-    materializationService.materializeVehicleTypes(companyId, vehicleTypeCodes);
+    eventPublisher.publishEvent(new com.parkflow.modules.onboarding.domain.OnboardingCompletedEvent(
+        this, company, progressData, settings, true
+    ));
 
-    @SuppressWarnings("unchecked")
-    List<String> paymentMethodCodes = (List<String>) settings.getOrDefault("paymentMethods", List.of("CASH"));
-    materializationService.materializePaymentMethods(companyId, paymentMethodCodes);
-
-    if (hasProgress) {
-      materializationService.createLockersIfConfigured(companyId, step1);
-      materializationService.createRatesFromOnboarding(company, progressData);
-    } else {
-      materializationService.createDefaultRates(company);
+    var snapshot = ruleSnapshotRepository.findLatestSnapshot();
+    if (snapshot != null) {
+      progress.setRuleVersion(snapshot.getVersion());
+      progress.setSnapshotHash(String.valueOf(snapshot.getValidationRules().hashCode()));
     }
 
     progress.setSkipped(true);
@@ -112,33 +124,54 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     Company company = getCompany(companyId);
     OnboardingProgress progress = findOrCreateProgress(company);
 
+    // C-03: Idempotency — already completed returns current state
     if (Boolean.TRUE.equals(company.getOnboardingCompleted())) {
       return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
     }
 
-    Map<String, Object> step2 = settingsMapper.stepMap(progress.getProgressData(), 2);
+    Map<String, Object> progressData = progress.getProgressData();
+    Map<String, Object> step1 = settingsMapper.stepMap(progressData, 1);
+    Map<String, Object> step2 = settingsMapper.stepMap(progressData, 2);
+    Map<String, Object> step3 = settingsMapper.stepMap(progressData, 3);
+
+    // INV-1: Pre-completion cross-step consistency checks (C-01, I-01)
+    List<String> vehicleTypes = extractVehicleTypesFromProgress(progressData);
+
+    // C-01: Assert ratesByType keys ⊆ vehicleTypes
+    if (!step3.isEmpty() && step3.get("ratesByType") instanceof java.util.Map<?, ?> ratesMap) {
+      java.util.Map<String, Object> typedRates = new java.util.LinkedHashMap<>();
+      ratesMap.forEach((k, v) -> typedRates.put(String.valueOf(k), v));
+      if (!vehicleTypes.isEmpty()) {
+        OnboardingDomainInvariants.assertRatesByTypeConsistentWithVehicleTypes(typedRates, vehicleTypes);
+      }
+    }
+
+    // I-01: Assert capacityByType keys ⊆ vehicleTypes
+    if (Boolean.TRUE.equals(step2.get("controlSlots"))
+        && step2.get("capacityByType") instanceof java.util.Map<?, ?> capMap) {
+      java.util.Map<String, Object> typedCap = new java.util.LinkedHashMap<>();
+      capMap.forEach((k, v) -> typedCap.put(String.valueOf(k), v));
+      if (!vehicleTypes.isEmpty()) {
+        OnboardingDomainInvariants.assertCapacityByTypeConsistentWithVehicleTypes(typedCap, vehicleTypes);
+      }
+    }
+
     validateCapacityConsistency(step2);
 
-    Map<String, Object> finalSettings = settingsMapper.buildSettingsFromProgress(company, progress.getProgressData());
-    Map<String, Object> step1 = settingsMapper.stepMap(progress.getProgressData(), 1);
+    Map<String, Object> finalSettings = settingsMapper.buildSettingsFromProgress(company, progressData);
     applyOperationalProfile(company, step1);
 
     companySettingsService.upsertSettings(company, finalSettings);
 
-    @SuppressWarnings("unchecked")
-    List<String> vehicleTypeCodes = (List<String>) finalSettings.getOrDefault("vehicleTypes", List.of("MOTORCYCLE", "CAR"));
-    materializationService.materializeVehicleTypes(companyId, vehicleTypeCodes);
+    eventPublisher.publishEvent(new com.parkflow.modules.onboarding.domain.OnboardingCompletedEvent(
+        this, company, progressData, finalSettings, false
+    ));
 
-    @SuppressWarnings("unchecked")
-    List<String> paymentMethodCodes = (List<String>) finalSettings.getOrDefault("paymentMethods", List.of("CASH"));
-    materializationService.materializePaymentMethods(companyId, paymentMethodCodes);
-
-    materializationService.createLockersIfConfigured(companyId, step1);
-
-    int totalCapacity = settingsMapper.extractNumber(step2.get("totalCapacity"), 0);
-    materializationService.resizeCapacity(companyId, totalCapacity);
-
-    materializationService.createRatesFromOnboarding(company, progress.getProgressData());
+    var snapshot = ruleSnapshotRepository.findLatestSnapshot();
+    if (snapshot != null) {
+      progress.setRuleVersion(snapshot.getVersion());
+      progress.setSnapshotHash(String.valueOf(snapshot.getValidationRules().hashCode()));
+    }
 
     progress.setCompleted(true);
     progress.setCurrentStep(12);
@@ -246,7 +279,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
         });
   }
 
-  private void validateStepData(int step, Map<String, Object> data) {
+  private void validateStepData(int step, Map<String, Object> data, Map<String, Object> existingProgress) {
     if (data == null) return;
     if (step == 1) {
       List<String> vehicleTypes = settingsMapper.asStringList(data.get("vehicleTypes"), List.of());
@@ -261,7 +294,24 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
         if (count > 9999) throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de lockers no puede superar 9999.");
       }
     }
-    if (step == 2) validateCapacityConsistency(data);
+
+    if (step == 2) {
+      // I-01: Validate capacityByType keys ⊆ vehicleTypes from step 1
+      List<String> vehicleTypes = extractVehicleTypesFromProgress(existingProgress);
+      step2DataValidator.validateAndSanitize(data, vehicleTypes);
+    }
+
+    if (step == 3) {
+      // C-01: Cross-step consistency — ratesByType keys must be ⊆ step1.vehicleTypes
+      List<String> vehicleTypes = extractVehicleTypesFromProgress(existingProgress);
+      Step3DataValidator.Step3ValidationResult result =
+          step3DataValidator.validateWithVehicleTypes(data, vehicleTypes);
+      if (!result.isValid) {
+        StringBuilder msg = new StringBuilder("Datos de tarifas inválidos:");
+        result.errors.forEach((field, error) -> msg.append(" [").append(field).append(": ").append(error).append("]"));
+        throw new OperationException(HttpStatus.BAD_REQUEST, msg.toString());
+      }
+    }
   }
 
   private void validateCapacityConsistency(Map<String, Object> data) {
@@ -288,5 +338,19 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
           "La suma de las capacidades configuradas por tipo (" + sumByType
               + ") supera la capacidad total permitida (" + totalCapacity + ").");
     }
+  }
+
+  /**
+   * Extracts vehicle types from the existing progress data (step 1).
+   * Used for cross-step consistency validation.
+   *
+   * @param existingProgress the current onboarding progress data
+   * @return list of vehicle type codes, or empty list if step 1 not yet saved
+   */
+  private List<String> extractVehicleTypesFromProgress(Map<String, Object> existingProgress) {
+    if (existingProgress == null || existingProgress.isEmpty()) return List.of();
+    Map<String, Object> step1 = settingsMapper.stepMap(existingProgress, 1);
+    List<String> rawTypes = settingsMapper.asStringList(step1.get("vehicleTypes"), List.of());
+    return rawTypes.stream().map(settingsMapper::mapVehicleTypeCode).toList();
   }
 }

@@ -154,6 +154,16 @@ public class TokenRefreshUseCaseImpl implements TokenRefreshUseCase {
       nextGeneration = family.getGenerationNumber() + 1;
       family.setGenerationNumber(nextGeneration);
       refreshTokenFamilyRepository.save(family);
+    } else {
+      RefreshTokenFamily family = new RefreshTokenFamily();
+      family.setFamilyId(UUID.randomUUID());
+      family.setUserId(user.getId());
+      family.setCompanyId(user.getCompanyId());
+      family.setGenerationNumber(1);
+      family.setCreatedAt(OffsetDateTime.now());
+      family = refreshTokenFamilyRepository.save(family);
+      familyId = family.getFamilyId();
+      nextGeneration = 1;
     }
 
     AuthSession rotated = new AuthSession();

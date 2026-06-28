@@ -1,0 +1,166 @@
+package com.parkflow.modules.onboarding.application.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.licensing.domain.Company;
+import com.parkflow.modules.licensing.domain.repository.CompanyPort;
+import com.parkflow.modules.onboarding.application.port.out.OperationalConfigurationPort;
+import com.parkflow.modules.onboarding.domain.OnboardingProgress;
+import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
+import com.parkflow.modules.onboarding.domain.repository.CompanySettingsSnapshotPort;
+import com.parkflow.modules.audit.application.port.out.AuditPort;
+import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
+import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
+import com.parkflow.modules.auth.security.SecurityUtils;
+import com.parkflow.modules.auth.domain.UserRole;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+
+@ExtendWith(MockitoExtension.class)
+class OnboardingProgressServiceTest {
+
+  @Mock private CompanyPort companyRepository;
+  @Mock private OnboardingProgressPort onboardingProgressPort;
+  @Mock private CompanySettingsService companySettingsService;
+  @Mock private FeatureAccessService featureAccessService;
+  @Mock private CompanySettingsSnapshotPort companySettingsSnapshotPort;
+  @Mock private AuditPort auditService;
+  @Mock private OperationalConfigurationPort operationalConfigurationPort;
+  @Mock private OnboardingQuestionConfigService onboardingQuestionConfigService;
+  @Mock private OnboardingSettingsMapper settingsMapper;
+  @Mock private ParkingSessionPort parkingSessionPort;
+  @Mock private AuthSessionPort authSessionPort;
+  @Mock private AppUserRepository appUserRepository;
+  @Mock private OnboardingMaterializationService materializationService;
+  @Mock private Step2DataValidator step2DataValidator;
+  @Mock private Step3DataValidator step3DataValidator;
+
+  @InjectMocks
+  private OnboardingProgressService service;
+
+  private MockedStatic<SecurityUtils> securityUtilsMock;
+  private UUID companyId;
+  private Company company;
+  private OnboardingProgress progress;
+
+  @BeforeEach
+  void setUp() {
+    companyId = UUID.randomUUID();
+    company = new Company();
+    company.setId(companyId);
+    company.setOnboardingCompleted(false);
+    
+    progress = new OnboardingProgress();
+    progress.setCompany(company);
+    progress.setProgressData(new LinkedHashMap<>());
+
+    securityUtilsMock = Mockito.mockStatic(SecurityUtils.class);
+    securityUtilsMock.when(SecurityUtils::requireCompanyId).thenReturn(companyId);
+    securityUtilsMock.when(SecurityUtils::requireUserRole).thenReturn(UserRole.ADMIN);
+  }
+
+  @AfterEach
+  void tearDown() {
+    securityUtilsMock.close();
+  }
+
+  @Test
+  @DisplayName("complete_ThrowsIfAlreadyCompleted: (E-05) debe manejar si la empresa ya completó el onboarding devolviendo el estado actual")
+  void complete_ReturnsCurrentStateIfAlreadyCompleted() {
+    // Arrange
+    company.setOnboardingCompleted(true);
+    when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
+    when(onboardingProgressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
+    
+    // Act
+    var result = service.completeOnboarding(companyId);
+    
+    // Assert
+    // No debe materializar nada si ya está completo (Idempotencia)
+    verify(materializationService, never()).resizeCapacity(any(), any(Integer.class));
+    verify(companyRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("complete_DelegatesToMaterialization: Valida que llama al servicio de materialización")
+  void complete_DelegatesToMaterialization() {
+    // Arrange
+    when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
+    when(onboardingProgressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
+    
+    Map<String, Object> step2 = Map.of("totalCapacity", 100);
+    progress.getProgressData().put("step_2", step2);
+    
+    when(settingsMapper.stepMap(any(), eq(1))).thenReturn(Map.of());
+    when(settingsMapper.stepMap(any(), eq(2))).thenReturn(step2);
+    when(settingsMapper.stepMap(any(), eq(3))).thenReturn(Map.of());
+    when(settingsMapper.extractNumber(eq(100), any(Integer.class))).thenReturn(100);
+
+    // Act
+    service.completeOnboarding(companyId);
+    
+    // Assert
+    verify(materializationService).resizeCapacity(companyId, 100);
+    verify(materializationService).createRatesFromOnboarding(company, progress.getProgressData());
+    verify(onboardingProgressPort).save(progress);
+    assertThat(progress.isCompleted()).isTrue();
+  }
+
+  @Test
+  @DisplayName("saveStep_ThrowsIfPlanDoesNotAllow: (C-06) Valida restricciones del plan y rechaza paso no permitido por FORBIDDEN")
+  void saveStep_ThrowsIfPlanDoesNotAllow() {
+    // Arrange
+    when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
+    when(onboardingProgressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
+    
+    // Configurar mapper para lanzar excepción simulando plan restriction violation
+    when(settingsMapper.sanitizeStepDataByPlan(eq(company), eq(10), any()))
+        .thenThrow(new OperationException(HttpStatus.FORBIDDEN, "El plan de tu empresa no permite configurar esta opción."));
+
+    // Act & Assert
+    assertThatThrownBy(() -> service.saveOnboardingStep(companyId, 10, Map.of(), null))
+        .isInstanceOf(OperationException.class)
+        .hasMessageContaining("El plan de tu empresa no permite");
+        
+    verify(onboardingProgressPort, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("saveStep_OptimisticLocking: Valida manejo de colisión concurrente (OptimisticLockingFailureException)")
+  void saveStep_ThrowsOptimisticLockingFailure() {
+    // Arrange
+    when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
+    when(onboardingProgressPort.findByCompanyId(companyId)).thenReturn(Optional.of(progress));
+    when(settingsMapper.sanitizeStepDataByPlan(any(), any(Integer.class), any())).thenReturn(Map.of());
+
+    // Simulamos que al guardar ocurre una excepción de concurrencia
+    when(onboardingProgressPort.save(any(OnboardingProgress.class)))
+        .thenThrow(new org.springframework.orm.ObjectOptimisticLockingFailureException(OnboardingProgress.class, "Simulated concurrency collision"));
+
+    // Act & Assert
+    assertThatThrownBy(() -> service.saveOnboardingStep(companyId, 1, Map.of(), null))
+        .isInstanceOf(org.springframework.orm.ObjectOptimisticLockingFailureException.class);
+  }
+}

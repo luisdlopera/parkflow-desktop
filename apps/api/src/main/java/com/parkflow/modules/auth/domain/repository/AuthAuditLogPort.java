@@ -10,4 +10,5 @@ public interface AuthAuditLogPort {
   org.springframework.data.domain.Page<AuthAuditLog> search(
       UUID userId, com.parkflow.modules.auth.domain.AuthAuditAction action, String outcome,
       java.time.OffsetDateTime from, java.time.OffsetDateTime to, UUID companyId, org.springframework.data.domain.Pageable pageable);
+  int deleteOlderThan(java.time.OffsetDateTime date);
 }

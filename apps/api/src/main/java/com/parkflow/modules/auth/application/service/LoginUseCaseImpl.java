@@ -20,6 +20,7 @@ import com.parkflow.modules.auth.security.PasswordValidationService;
 import com.parkflow.modules.auth.security.RolePermissions;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.auth.domain.RefreshTokenFamily;
+import com.parkflow.modules.auth.domain.repository.RefreshTokenFamilyPort;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.auth.domain.repository.AppUserPort;
 import java.time.OffsetDateTime;
@@ -50,6 +51,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
   private final AuditPort globalAuditService;
   private final AuthCompanyPort authCompanyPort;
   private final AuthenticationResponseAssembler responseAssembler;
+  private final RefreshTokenFamilyPort refreshTokenFamilyRepository;
 
   @Value("${app.security.offline-lease-hours:48}")
   private int defaultOfflineLeaseHours;
@@ -172,10 +174,22 @@ public class LoginUseCaseImpl implements LoginUseCase {
     session.setRefreshExpiresAt(OffsetDateTime.now().plus(jwtTokenService.refreshTtl()));
     session.setAccessExpiresAt(OffsetDateTime.now().plus(jwtTokenService.accessTtl()));
     session.setRefreshTokenHash("pending:" + UUID.randomUUID());
-    // Note: tokenFamilyId and tokenGeneration will be set in TokenRefreshUseCaseImpl on first refresh
+
+    // Create a new token family for this login session
+    RefreshTokenFamily family = new RefreshTokenFamily();
+    family.setFamilyId(UUID.randomUUID());
+    family.setUserId(user.getId());
+    family.setCompanyId(user.getCompanyId());
+    family.setGenerationNumber(1);
+    family.setCreatedAt(OffsetDateTime.now());
+    family = refreshTokenFamilyRepository.save(family);
+
+    session.setTokenFamilyId(family.getFamilyId());
+    session.setTokenGeneration(1);
     session = authSessionRepository.save(session);
 
-    String refreshToken = jwtTokenService.createRefreshToken(user.getId(), session.getId(), session.getRefreshJti());
+    String refreshToken = jwtTokenService.createRefreshToken(
+        user.getId(), session.getId(), session.getRefreshJti(), family.getFamilyId(), 1);
     session.setRefreshTokenHash(passwordHashService.sha256(refreshToken));
     session = authSessionRepository.save(session);
 

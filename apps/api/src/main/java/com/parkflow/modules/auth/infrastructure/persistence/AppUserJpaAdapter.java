@@ -67,6 +67,11 @@ public class AppUserJpaAdapter implements AppUserPort {
   }
 
   @Override
+  public Optional<AppUser> findByIdAndCompanyId(UUID id, UUID companyId) {
+    return jpaRepository.findByIdAndCompanyId(id, companyId);
+  }
+
+  @Override
   public long count() {
     return jpaRepository.count();
   }
@@ -97,5 +102,7 @@ public class AppUserJpaAdapter implements AppUserPort {
     boolean existsByDocumentIgnoreCaseAndCompanyIdAndIdNot(String document, UUID companyId, UUID id);
 
     boolean existsByDocumentIgnoreCaseAndCompanyId(String document, UUID companyId);
+    
+    Optional<AppUser> findByIdAndCompanyId(UUID id, UUID companyId);
   }
 }

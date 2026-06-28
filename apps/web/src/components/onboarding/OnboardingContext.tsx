@@ -87,11 +87,21 @@ export function OnboardingProvider({
     }
   }, [status, isLoading, onDone, loadStepFromStatus]);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // Saves current step and navigates to targetStep. Updates SWR cache directly
   // via mutate(next, false) to avoid a redundant re-fetch.
   const persistStep = useCallback(
     async (targetStep: number) => {
-      if (!status || saveState === "saving") return;
+      if (!status) return;
+
+      // Abort any ongoing save request (either from autosave or previous click)
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort("New save request initiated");
+      }
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
       const step = status.currentStep ?? 1;
       const enabledSteps = status.enabledSteps ?? DEFAULT_ENABLED_STEPS;
       const safeTarget = enabledSteps.includes(targetStep)
@@ -113,7 +123,7 @@ export function OnboardingProvider({
         await mutate(optimisticNext, false);
         loadStepFromStatus(optimisticNext as OnboardingStatus, safeTarget);
 
-        const next = await saveOnboardingStep(companyId, step, stepData, safeTarget);
+        const next = await saveOnboardingStep(companyId, step, stepData, safeTarget, { signal });
         await mutate(next, false);
         loadStepFromStatus(next, safeTarget);
         lastSavedDataRef.current = JSON.stringify(
@@ -121,39 +131,65 @@ export function OnboardingProvider({
         );
         setSaveState("saved");
         setTimeout(() => setSaveState("idle"), 2000);
-      } catch {
+      } catch (err: any) {
+        if (err.name === "AbortError") return; // Ignored if aborted
         setSaveState("error");
         setTimeout(() => setSaveState("idle"), 3000);
-        // Rollback on error
-        await mutate(status, false);
-        loadStepFromStatus(status, status.currentStep ?? 1);
+        // If 403 Forbidden, the admin likely changed the plan constraints.
+        // Force a strict re-fetch of the status to get the updated allowed steps.
+        if (err?.response?.status === 403 || err?.status === 403) {
+          await mutate(); // Re-fetch from server
+        } else {
+          // Rollback on other errors
+          await mutate(status, false);
+          loadStepFromStatus(status, status.currentStep ?? 1);
+        }
+      } finally {
+        if (abortControllerRef.current?.signal === signal) {
+          abortControllerRef.current = null;
+        }
       }
     },
-    [status, saveState, stepData, companyId, mutate, loadStepFromStatus, setSaveState]
+    [status, stepData, companyId, mutate, loadStepFromStatus, setSaveState]
   );
 
   // Stable 10s autosave — only fires when stepData has actually changed
   useEffect(() => {
     const id = setInterval(() => {
-      if (!status || saveState === "saving") return;
+      if (!status) return;
       const current = JSON.stringify(stepData);
       if (current === lastSavedDataRef.current) return;
 
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort("New autosave request initiated");
+      }
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
       setSaveState("saving");
-      saveOnboardingStep(companyId, status.currentStep, stepData, status.currentStep)
+      saveOnboardingStep(companyId, status.currentStep, stepData, status.currentStep, { signal })
         .then(async (next) => {
           await mutate(next, false);
           lastSavedDataRef.current = current;
           setSaveState("saved");
           setTimeout(() => setSaveState("idle"), 2000);
         })
-        .catch(() => {
+        .catch((err: any) => {
+          if (err.name === "AbortError") return;
           setSaveState("error");
           setTimeout(() => setSaveState("idle"), 3000);
+          if (err?.response?.status === 403 || err?.status === 403) {
+            mutate();
+          }
+        })
+        .finally(() => {
+          if (abortControllerRef.current?.signal === signal) {
+            abortControllerRef.current = null;
+          }
         });
     }, 10_000);
     return () => clearInterval(id);
-  }, [stepData, saveState, status, companyId, mutate, setSaveState]);
+  }, [stepData, status, companyId, mutate, setSaveState]);
 
   const serverCtxValue = useMemo<OnboardingServerCtx>(
     () => ({ companyId, status: status ?? null, isLoading, persistStep, onDone }),

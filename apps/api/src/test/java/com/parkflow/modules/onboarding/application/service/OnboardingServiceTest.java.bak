@@ -1,0 +1,110 @@
+package com.parkflow.modules.onboarding.application.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.parkflow.modules.licensing.domain.Company;
+import com.parkflow.modules.licensing.domain.repository.CompanyPort;
+import com.parkflow.modules.onboarding.domain.OnboardingProgress;
+import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
+import com.parkflow.modules.common.exception.OperationException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+
+@ExtendWith(MockitoExtension.class)
+class OnboardingServiceTest {
+
+  @Mock
+  private CompanyPort companyRepository;
+  
+  @Mock
+  private OnboardingProgressPort onboardingProgressPort;
+  
+  @Mock
+  private CompanySettingsService companySettingsService;
+  
+  @Mock
+  private OnboardingSettingsMapper settingsMapper;
+  
+  @Mock
+  private OnboardingMaterializationService materializationService;
+  
+  @Mock
+  private FeatureAccessService featureAccessService;
+
+  @InjectMocks
+  private OnboardingService onboardingService;
+
+  private Company company;
+  private OnboardingProgress progress;
+
+  @BeforeEach
+  void setUp() {
+    company = new Company();
+    company.setId(UUID.randomUUID());
+    company.setPlan(com.parkflow.modules.licensing.enums.PlanType.PRO);
+    company.setOnboardingCompleted(false);
+
+    progress = new OnboardingProgress();
+    progress.setCompany(company);
+    progress.setProgressData(new LinkedHashMap<>());
+  }
+
+  @Test
+  @DisplayName("completeOnboarding - Exitoso cuando todos los datos son válidos")
+  void completeOnboarding_Success() {
+    try (MockedStatic<com.parkflow.modules.auth.security.SecurityUtils> utilities = Mockito.mockStatic(com.parkflow.modules.auth.security.SecurityUtils.class)) {
+      utilities.when(com.parkflow.modules.auth.security.SecurityUtils::requireCompanyId).thenReturn(company.getId());
+      utilities.when(com.parkflow.modules.auth.security.SecurityUtils::requireUserRole).thenReturn(com.parkflow.modules.auth.domain.UserRole.ADMIN);
+
+      when(companyRepository.findById(company.getId())).thenReturn(Optional.of(company));
+      when(onboardingProgressPort.findByCompanyId(company.getId())).thenReturn(Optional.of(progress));
+      
+      Map<String, Object> mockSettings = Map.of("key", "value");
+      when(settingsMapper.buildSettingsFromProgress(any(), any())).thenReturn(mockSettings);
+      when(settingsMapper.stepMap(any(), Mockito.eq(1))).thenReturn(new LinkedHashMap<>());
+      when(settingsMapper.stepMap(any(), Mockito.eq(2))).thenReturn(new LinkedHashMap<>());
+
+      var response = onboardingService.completeOnboarding(company.getId());
+
+      assertThat(response).isNotNull();
+      verify(materializationService).createRatesFromOnboarding(any(), any());
+      verify(companyRepository).save(company);
+      assertThat(response.onboardingCompleted()).isTrue();
+    }
+  }
+
+  @Test
+  @DisplayName("saveOnboardingStep - Falla si la empresa ya completó el onboarding")
+  void saveOnboardingStep_FailsIfAlreadyCompleted() {
+    company.setOnboardingCompleted(true);
+    
+    try (MockedStatic<com.parkflow.modules.auth.security.SecurityUtils> utilities = Mockito.mockStatic(com.parkflow.modules.auth.security.SecurityUtils.class)) {
+      utilities.when(com.parkflow.modules.auth.security.SecurityUtils::requireCompanyId).thenReturn(company.getId());
+      utilities.when(com.parkflow.modules.auth.security.SecurityUtils::requireUserRole).thenReturn(com.parkflow.modules.auth.domain.UserRole.ADMIN);
+
+      when(companyRepository.findById(company.getId())).thenReturn(Optional.of(company));
+      when(onboardingProgressPort.findByCompanyId(company.getId())).thenReturn(Optional.of(progress));
+
+      assertThatThrownBy(() -> onboardingService.saveOnboardingStep(company.getId(), 1, Map.of(), 2))
+          .isInstanceOf(OperationException.class)
+          .hasMessageContaining("El onboarding ya fue completado");
+    }
+  }
+
+}

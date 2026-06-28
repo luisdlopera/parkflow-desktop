@@ -67,133 +67,40 @@ export function isStepCompleted(progressData: Record<string, unknown>, step: num
   ).isValid;
 }
 
+import { Step1Schema, getStep2Schema, getStep3Schema, Step4Schema, Step6Schema, formatZodErrors } from "./onboarding-schema";
+
 export function validateStep(
   step: number,
   data: Record<string, unknown>,
   vehicleTypes: string[],
 ): { isValid: boolean; errors: StepValidationErrors } {
-  const errors: StepValidationErrors = {};
-
+  let result;
+  
   switch (step) {
-    case 1: {
-      if (!Array.isArray(data.vehicleTypes) || (data.vehicleTypes as string[]).length === 0) {
-        errors.vehicleTypes = "Selecciona al menos un tipo de vehículo.";
-      }
-      const selectedTypes = Array.isArray(data.vehicleTypes)
-        ? (data.vehicleTypes as string[])
-        : vehicleTypes;
-      if (selectedTypes.includes("MOTORCYCLE")) {
-        const handling = data.helmetHandling;
-        if (handling !== "LOCKERS" && handling !== "NONE") {
-          errors.helmetHandling = "Selecciona una opción de custodia de cascos.";
-        }
-        if (handling === "LOCKERS") {
-          const count =
-            typeof data.helmetTokenCount === "number"
-              ? data.helmetTokenCount
-              : Number(data.helmetTokenCount);
-          if (!Number.isFinite(count) || count <= 0) {
-            errors.helmetTokenCount = "La cantidad de lockers debe ser mayor a 0.";
-          } else if (count > 9999) {
-            errors.helmetTokenCount = "La cantidad de lockers no puede superar 9999.";
-          }
-        }
-      }
+    case 1:
+      result = Step1Schema.safeParse(data);
       break;
-    }
-    case 2: {
-      const total =
-        typeof data.totalCapacity === "number" ? data.totalCapacity : Number(data.totalCapacity);
-      if (!Number.isFinite(total) || total <= 0) {
-        errors.totalCapacity = "La capacidad total debe ser mayor a 0.";
-      }
-      if (Boolean(data.controlSlots)) {
-        const byType = (data.capacityByType as Record<string, number>) ?? {};
-        const selectedTypes = vehicleTypes.length > 0 ? vehicleTypes : Object.keys(byType);
-        const sum = selectedTypes.reduce((acc, type) => acc + (Number(byType[type]) || 0), 0);
-        if (Number.isFinite(total) && sum > total) {
-          errors.capacityByType = `La suma de capacidades por tipo (${sum}) supera la capacidad total (${total}).`;
-        }
-      }
+    case 2:
+      result = getStep2Schema(vehicleTypes).safeParse(data);
       break;
-    }
-    case 3: {
-      const model = data.billingModel as string;
-      if (!model) {
-        errors.billingModel = "Selecciona un modelo de cobro.";
-      } else {
-        // C-04: FRACTION also needs a base rate
-        if (model === "HOURLY" || model === "MIXED" || model === "FRACTION") {
-          const base = typeof data.baseValue === "number" ? data.baseValue : Number(data.baseValue);
-          if (!Number.isFinite(base) || base <= 0) {
-            errors.baseValue = "La tarifa base debe ser mayor a 0.";
-          }
-        }
-        if (model === "FLAT" || model === "FULL_DAY") {
-          const flatRate = typeof data.flatRate === "number" ? data.flatRate : Number(data.flatRate);
-          if (!Number.isFinite(flatRate) || flatRate <= 0) {
-            errors.flatRate = "La tarifa única/día completo debe ser mayor a 0.";
-          }
-        }
-        if (data.hasNightRate) {
-          const nightRate = typeof data.nightRate === "number" ? data.nightRate : Number(data.nightRate);
-          if (!Number.isFinite(nightRate) || nightRate <= 0) {
-            errors.nightRate = "La tarifa nocturna debe ser mayor a 0.";
-          }
-          const start = typeof data.nightStartTime === "string" ? data.nightStartTime : "";
-          const end = typeof data.nightEndTime === "string" ? data.nightEndTime : "";
-          if (!start) errors.nightStartTime = "Ingresa la hora de inicio de la tarifa nocturna.";
-          if (!end) errors.nightEndTime = "Ingresa la hora de fin de la tarifa nocturna.";
-          if (start && end && start === end) {
-            errors.nightStartTime = "La hora de inicio y fin no pueden ser iguales.";
-          }
-        }
-        if (data.hasFullDayRate && model !== "FULL_DAY" && model !== "FLAT") {
-          const fullDayRate = typeof data.fullDayRate === "number" ? data.fullDayRate : Number(data.fullDayRate);
-          if (!Number.isFinite(fullDayRate) || fullDayRate <= 0) {
-            errors.fullDayRate = "La tarifa de día completo debe ser mayor a 0.";
-          }
-        }
-        if (data.hasWeekendRate) {
-          const weekendRate = typeof data.weekendRate === "number" ? data.weekendRate : Number(data.weekendRate);
-          if (!Number.isFinite(weekendRate) || weekendRate <= 0) {
-            errors.weekendRate = "La tarifa de fin de semana debe ser mayor a 0.";
-          }
-        }
-        if (data.hasFractions) {
-          const minMin = typeof data.minFractionMinutes === "number" ? data.minFractionMinutes : Number(data.minFractionMinutes);
-          if (!Number.isFinite(minMin) || minMin <= 0) {
-            errors.minFractionMinutes = "Los minutos mínimos de fracción deben ser mayor a 0.";
-          }
-          const fracVal = typeof data.fractionValue === "number" ? data.fractionValue : Number(data.fractionValue);
-          if (!Number.isFinite(fracVal) || fracVal <= 0) {
-            errors.fractionValue = "El valor de la fracción debe ser mayor a 0.";
-          }
-        }
-        if (data.hasCourtesy) {
-          const grace = typeof data.graceMinutes === "number" ? data.graceMinutes : Number(data.graceMinutes);
-          if (!Number.isFinite(grace) || grace <= 0) {
-            errors.graceMinutes = "Los minutos de cortesía deben ser mayor a 0.";
-          }
-        }
-      }
+    case 3:
+      result = getStep3Schema(vehicleTypes).safeParse(data);
       break;
-    }
-    case 4: {
-      if (typeof data.countryCode !== "string" || data.countryCode.length === 0) {
-        errors.countryCode = "Selecciona un país.";
-      }
+    case 4:
+      result = Step4Schema.safeParse(data);
       break;
-    }
-    case 6: {
-      if (!Array.isArray(data.paymentMethods) || (data.paymentMethods as string[]).length === 0) {
-        errors.paymentMethods = "Selecciona al menos un método de pago.";
-      }
+    case 6:
+      result = Step6Schema.safeParse(data);
       break;
-    }
+    default:
+      return { isValid: true, errors: {} };
   }
 
-  return { isValid: Object.keys(errors).length === 0, errors };
+  if (result.success) {
+    return { isValid: true, errors: {} };
+  } else {
+    return { isValid: false, errors: formatZodErrors(result.error) };
+  }
 }
 
 export function areRequiredStepsCompleted(progressData: Record<string, unknown>) {

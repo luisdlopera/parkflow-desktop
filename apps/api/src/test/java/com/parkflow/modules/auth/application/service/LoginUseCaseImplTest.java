@@ -3,6 +3,7 @@ package com.parkflow.modules.auth.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -114,9 +115,10 @@ class LoginUseCaseImplTest {
         when(authorizedDeviceRepository.findByDeviceId("device123")).thenReturn(Optional.of(mockDevice));
         when(authorizedDeviceRepository.save(any())).thenReturn(mockDevice);
         when(authSessionRepository.save(any())).thenReturn(mockSession);
+        when(refreshTokenFamilyRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(jwtTokenService.accessTtl()).thenReturn(Duration.ofMinutes(15));
         when(jwtTokenService.refreshTtl()).thenReturn(Duration.ofDays(7));
-        when(jwtTokenService.createRefreshToken(any(), any(), any())).thenReturn("refresh_token");
+        when(jwtTokenService.createRefreshToken(any(), any(), any(), any(), anyInt())).thenReturn("refresh_token");
         when(jwtTokenService.createAccessToken(any(), any(), any(), any(), any())).thenReturn("access_token");
 
         // Act
@@ -207,9 +209,10 @@ class LoginUseCaseImplTest {
         when(authorizedDeviceRepository.findByDeviceId("device123")).thenReturn(Optional.of(mockDevice));
         when(authorizedDeviceRepository.save(any())).thenReturn(mockDevice);
         when(authSessionRepository.save(any())).thenReturn(mockSession);
+        when(refreshTokenFamilyRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(jwtTokenService.accessTtl()).thenReturn(Duration.ofMinutes(15));
         when(jwtTokenService.refreshTtl()).thenReturn(Duration.ofDays(7));
-        when(jwtTokenService.createRefreshToken(any(), any(), any())).thenReturn("refresh_token");
+        when(jwtTokenService.createRefreshToken(any(), any(), any(), any(), anyInt())).thenReturn("refresh_token");
         when(jwtTokenService.createAccessToken(any(), any(), any(), any(), any())).thenReturn("access_token");
 
         // Act
@@ -276,8 +279,9 @@ class LoginUseCaseImplTest {
         });
 
         when(jwtTokenService.accessTtl()).thenReturn(Duration.ofMinutes(15));
+        when(refreshTokenFamilyRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(jwtTokenService.refreshTtl()).thenReturn(Duration.ofDays(7));
-        when(jwtTokenService.createRefreshToken(any(), any(), any())).thenReturn("refresh_token");
+        when(jwtTokenService.createRefreshToken(any(), any(), any(), any(), anyInt())).thenReturn("refresh_token");
         when(jwtTokenService.createAccessToken(any(), any(), any(), any(), any())).thenReturn("access_token");
 
         // Act
@@ -318,5 +322,75 @@ class LoginUseCaseImplTest {
         assertThat(ex.getStatus().value()).isEqualTo(400);
         assertThat(ex.getMessage()).contains("muy común");
         verify(passwordValidationService).validatePasswordNotCommon("password123");
+    }
+
+    @Test
+    void testLoginWithMaxSessionsReached_KeepsNewestSessions() {
+        // Given: User has exactly 5 active sessions (at limit)
+        List<AuthSession> activeSessions = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            AuthSession session = new AuthSession();
+            session.setId(UUID.randomUUID());
+            session.setUser(mockUser);
+            session.setDevice(mockDevice);
+            session.setActive(true);
+            session.setCreatedAt(OffsetDateTime.now().minusHours(5 - i)); // Oldest first
+            activeSessions.add(session);
+        }
+
+        when(appUserRepository.findGlobalByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
+        when(passwordHashService.matchesPassword("validpassword", "hashed_password")).thenReturn(true);
+        lenient().doNothing().when(passwordValidationService).validatePasswordStrength("validpassword");
+        lenient().doNothing().when(passwordValidationService).validatePasswordNotCommon("validpassword");
+        when(authorizedDeviceRepository.findByDeviceId("test-device")).thenReturn(Optional.of(mockDevice));
+        when(authSessionRepository.findByUserAndActiveTrue(mockUser)).thenReturn(activeSessions);
+        when(authSessionRepository.save(any(AuthSession.class))).thenAnswer(arg -> {
+            AuthSession session = arg.getArgument(0);
+            if (session.getId() == null) session.setId(UUID.randomUUID());
+            return session;
+        });
+        when(jwtTokenService.accessTtl()).thenReturn(Duration.ofMinutes(15));
+        when(jwtTokenService.refreshTtl()).thenReturn(Duration.ofDays(7));
+        when(jwtTokenService.createRefreshToken(any(), any(), any(), any(), anyInt())).thenReturn("refresh_token");
+        when(jwtTokenService.createAccessToken(any(), any(), any(), any(), any())).thenReturn("access_token");
+        lenient().when(refreshTokenFamilyRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        // Act
+        LoginResult result = loginUseCase.login(validRequest);
+
+        // Assert: Oldest session (first) is revoked, 4 others remain
+        assertThat(activeSessions.get(0).isActive()).isFalse();
+        for (int i = 1; i < 5; i++) {
+            assertThat(activeSessions.get(i).isActive()).isTrue();
+        }
+    }
+
+    @Test
+    void testLoginWithZeroActiveSessions_CreatesFirst() {
+        // Given: User has no active sessions
+        when(appUserRepository.findGlobalByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
+        when(passwordHashService.matchesPassword("validpassword", "hashed_password")).thenReturn(true);
+        lenient().doNothing().when(passwordValidationService).validatePasswordStrength("validpassword");
+        lenient().doNothing().when(passwordValidationService).validatePasswordNotCommon("validpassword");
+        when(authorizedDeviceRepository.findByDeviceId("test-device")).thenReturn(Optional.of(mockDevice));
+        when(authSessionRepository.findByUserAndActiveTrue(mockUser)).thenReturn(new ArrayList<>());
+        when(authSessionRepository.save(any(AuthSession.class))).thenAnswer(arg -> {
+            AuthSession session = arg.getArgument(0);
+            if (session.getId() == null) session.setId(UUID.randomUUID());
+            return session;
+        });
+        when(jwtTokenService.accessTtl()).thenReturn(Duration.ofMinutes(15));
+        when(jwtTokenService.refreshTtl()).thenReturn(Duration.ofDays(7));
+        when(jwtTokenService.createRefreshToken(any(), any(), any(), any(), anyInt())).thenReturn("refresh_token");
+        when(jwtTokenService.createAccessToken(any(), any(), any(), any(), any())).thenReturn("access_token");
+        lenient().when(refreshTokenFamilyRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        // Act
+        LoginResult result = loginUseCase.login(validRequest);
+
+        // Assert: New session created successfully
+        assertThat(result).isNotNull();
+        assertThat(result.accessToken()).isNotBlank();
+        verify(authSessionRepository, org.mockito.Mockito.times(2)).save(any(AuthSession.class));
     }
 }

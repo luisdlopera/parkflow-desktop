@@ -11,4 +11,5 @@ public interface AuthorizedDevicePort {
   List<AuthorizedDevice> findAllByCompanyId(UUID companyId);
   AuthorizedDevice save(AuthorizedDevice device);
   Optional<AuthorizedDevice> findById(UUID id);
+  Optional<AuthorizedDevice> findByIdAndCompanyId(UUID id, UUID companyId);
 }

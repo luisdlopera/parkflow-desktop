@@ -4,6 +4,7 @@ import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;
 import com.parkflow.modules.onboarding.dto.SaveOnboardingStepRequest;
 import com.parkflow.modules.onboarding.application.port.in.OnboardingUseCase;
+import com.parkflow.modules.onboarding.application.service.IdempotencyService;
 import jakarta.validation.Valid;
 import java.util.Map;
 import java.util.UUID;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class OnboardingController {
 
   private final OnboardingUseCase onboardingUseCase;
+  private final IdempotencyService idempotencyService;
 
   @GetMapping("/companies/{companyId}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
@@ -35,14 +37,34 @@ public class OnboardingController {
 
   @PostMapping("/companies/{companyId}/skip")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<OnboardingStatusResponse> skip(@PathVariable UUID companyId) {
-    return ResponseEntity.ok(onboardingUseCase.skipAndApplyDefaults(companyId));
+  public ResponseEntity<OnboardingStatusResponse> skip(
+      @PathVariable UUID companyId,
+      @RequestHeader(value = "Idempotency-Key", required = false) UUID idempotencyKey) {
+    if (idempotencyKey != null) {
+      OnboardingStatusResponse cached = idempotencyService.getCachedResponse(idempotencyKey);
+      if (cached != null) return ResponseEntity.ok(cached);
+    }
+    OnboardingStatusResponse response = onboardingUseCase.skipAndApplyDefaults(companyId);
+    if (idempotencyKey != null) {
+      idempotencyService.cacheResponse(idempotencyKey, response);
+    }
+    return ResponseEntity.ok(response);
   }
 
   @PostMapping("/companies/{companyId}/complete")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<OnboardingStatusResponse> complete(@PathVariable UUID companyId) {
-    return ResponseEntity.ok(onboardingUseCase.completeOnboarding(companyId));
+  public ResponseEntity<OnboardingStatusResponse> complete(
+      @PathVariable UUID companyId,
+      @RequestHeader(value = "Idempotency-Key", required = false) UUID idempotencyKey) {
+    if (idempotencyKey != null) {
+      OnboardingStatusResponse cached = idempotencyService.getCachedResponse(idempotencyKey);
+      if (cached != null) return ResponseEntity.ok(cached);
+    }
+    OnboardingStatusResponse response = onboardingUseCase.completeOnboarding(companyId);
+    if (idempotencyKey != null) {
+      idempotencyService.cacheResponse(idempotencyKey, response);
+    }
+    return ResponseEntity.ok(response);
   }
 
   @PostMapping("/companies/{companyId}/reset")
