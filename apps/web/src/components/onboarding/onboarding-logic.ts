@@ -122,16 +122,58 @@ export function validateStep(
       if (!model) {
         errors.billingModel = "Selecciona un modelo de cobro.";
       } else {
-        if (model === "HOURLY" || model === "MIXED") {
+        // C-04: FRACTION also needs a base rate
+        if (model === "HOURLY" || model === "MIXED" || model === "FRACTION") {
           const base = typeof data.baseValue === "number" ? data.baseValue : Number(data.baseValue);
           if (!Number.isFinite(base) || base <= 0) {
-            errors.baseValue = "La tarifa por hora debe ser mayor a 0.";
+            errors.baseValue = "La tarifa base debe ser mayor a 0.";
           }
         }
         if (model === "FLAT" || model === "FULL_DAY") {
           const flatRate = typeof data.flatRate === "number" ? data.flatRate : Number(data.flatRate);
           if (!Number.isFinite(flatRate) || flatRate <= 0) {
             errors.flatRate = "La tarifa única/día completo debe ser mayor a 0.";
+          }
+        }
+        if (data.hasNightRate) {
+          const nightRate = typeof data.nightRate === "number" ? data.nightRate : Number(data.nightRate);
+          if (!Number.isFinite(nightRate) || nightRate <= 0) {
+            errors.nightRate = "La tarifa nocturna debe ser mayor a 0.";
+          }
+          const start = typeof data.nightStartTime === "string" ? data.nightStartTime : "";
+          const end = typeof data.nightEndTime === "string" ? data.nightEndTime : "";
+          if (!start) errors.nightStartTime = "Ingresa la hora de inicio de la tarifa nocturna.";
+          if (!end) errors.nightEndTime = "Ingresa la hora de fin de la tarifa nocturna.";
+          if (start && end && start === end) {
+            errors.nightStartTime = "La hora de inicio y fin no pueden ser iguales.";
+          }
+        }
+        if (data.hasFullDayRate && model !== "FULL_DAY" && model !== "FLAT") {
+          const fullDayRate = typeof data.fullDayRate === "number" ? data.fullDayRate : Number(data.fullDayRate);
+          if (!Number.isFinite(fullDayRate) || fullDayRate <= 0) {
+            errors.fullDayRate = "La tarifa de día completo debe ser mayor a 0.";
+          }
+        }
+        if (data.hasWeekendRate) {
+          const weekendRate = typeof data.weekendRate === "number" ? data.weekendRate : Number(data.weekendRate);
+          if (!Number.isFinite(weekendRate) || weekendRate <= 0) {
+            errors.weekendRate = "La tarifa de fin de semana debe ser mayor a 0.";
+          }
+        }
+        if (data.hasFractions) {
+          const minMin = typeof data.minFractionMinutes === "number" ? data.minFractionMinutes : Number(data.minFractionMinutes);
+          if (!Number.isFinite(minMin) || minMin <= 0) {
+            errors.minFractionMinutes = "Los minutos mínimos de fracción deben ser mayor a 0.";
+          }
+          const fracVal = typeof data.fractionValue === "number" ? data.fractionValue : Number(data.fractionValue);
+          if (!Number.isFinite(fracVal) || fracVal <= 0) {
+            errors.fractionValue = "El valor de la fracción debe ser mayor a 0.";
+          }
+        }
+        if (data.hasCourtesy) {
+          const grace = typeof data.graceMinutes === "number" ? data.graceMinutes : Number(data.graceMinutes);
+          if (!Number.isFinite(grace) || grace <= 0) {
+            errors.graceMinutes = "Los minutos de cortesía deben ser mayor a 0.";
           }
         }
       }
