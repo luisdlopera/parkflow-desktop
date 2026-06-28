@@ -3,6 +3,7 @@ package com.parkflow.modules.onboarding.application.service;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.enums.OperationalProfile;
+import com.parkflow.modules.onboarding.domain.repository.PlanStepValidationPort;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class OnboardingSettingsMapper {
+public class OnboardingSettingsMapper implements PlanStepValidationPort {
 
   private final FeatureAccessService featureAccessService;
 
