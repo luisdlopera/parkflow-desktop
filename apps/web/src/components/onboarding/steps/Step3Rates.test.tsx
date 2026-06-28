@@ -162,7 +162,8 @@ describe("Step3Rates Component", () => {
   });
 
   describe("Comprehensive Form Workflow", () => {
-    it("should complete a full BASIC rate configuration", async () => {
+    // M-07: Tests must verify actual state, not just text presence
+    it("should complete a full BASIC rate configuration with correct state", async () => {
       const user = userEvent.setup();
       renderWithOnboarding(<Step3Rates />);
 
@@ -170,10 +171,20 @@ describe("Step3Rates Component", () => {
       const basicCard = screen.getByText("Básico").closest("div").parentElement;
       await user.click(basicCard!);
 
-      expect(screen.getByText("Configuración de Tarifas Inteligente")).toBeInTheDocument();
+      // Verify BASIC preset state (not just presence of text)
+      const hourlyRadio = screen.getByDisplayValue("HOURLY") as HTMLInputElement;
+      expect(hourlyRadio.checked).toBe(true);
+
+      // Verify fractions are disabled in BASIC
+      const fractionsTrigger = screen.getByLabelText("¿Cobra fracciones?") as HTMLInputElement;
+      expect(fractionsTrigger.checked).toBe(false);
+
+      // Verify courtesy is disabled in BASIC
+      const courtesyTrigger = screen.getByLabelText("¿Minutos de cortesía (Gratis)?") as HTMLInputElement;
+      expect(courtesyTrigger.checked).toBe(false);
     });
 
-    it("should complete a full COMMERCIAL rate configuration", async () => {
+    it("should complete a full COMMERCIAL rate configuration with fractions enabled", async () => {
       const user = userEvent.setup();
       renderWithOnboarding(<Step3Rates />);
 
@@ -181,11 +192,20 @@ describe("Step3Rates Component", () => {
       const commercialCard = screen.getByText("Comercial").closest("div").parentElement;
       await user.click(commercialCard!);
 
-      // Verify fractions are enabled
-      expect(screen.getByText("Tarifas Especiales")).toBeInTheDocument();
+      // Verify COMMERCIAL preset state (not just text presence)
+      const hourlyRadio = screen.getByDisplayValue("HOURLY") as HTMLInputElement;
+      expect(hourlyRadio.checked).toBe(true);
+
+      // Verify fractions ARE enabled in COMMERCIAL
+      const fractionsTrigger = screen.getByLabelText("¿Cobra fracciones?") as HTMLInputElement;
+      expect(fractionsTrigger.checked).toBe(true);
+
+      // Verify courtesy IS enabled in COMMERCIAL
+      const courtesyTrigger = screen.getByLabelText("¿Minutos de cortesía (Gratis)?") as HTMLInputElement;
+      expect(courtesyTrigger.checked).toBe(true);
     });
 
-    it("should complete a full 24H rate configuration", async () => {
+    it("should complete a full 24H rate configuration with correct toggles", async () => {
       const user = userEvent.setup();
       renderWithOnboarding(<Step3Rates />);
 
@@ -193,9 +213,21 @@ describe("Step3Rates Component", () => {
       const fullDayCard = screen.getByText("24 Horas").closest("div").parentElement;
       await user.click(fullDayCard!);
 
-      // Verify night rate is enabled
+      // Verify MIXED model is selected
       const mixedRadio = screen.getByDisplayValue("MIXED") as HTMLInputElement;
       expect(mixedRadio.checked).toBe(true);
+
+      // Verify night rate IS enabled in 24H
+      const nightRateTrigger = screen.getByLabelText("¿Maneja tarifa nocturna?") as HTMLInputElement;
+      expect(nightRateTrigger.checked).toBe(true);
+
+      // Verify full day rate IS enabled in 24H
+      const fullDayTrigger = screen.getByLabelText("¿Maneja tarifa de día completo (24h)?") as HTMLInputElement;
+      expect(fullDayTrigger.checked).toBe(true);
+
+      // Verify fractions are NOT enabled in 24H
+      const fractionsTrigger = screen.getByLabelText("¿Cobra fracciones?") as HTMLInputElement;
+      expect(fractionsTrigger.checked).toBe(false);
     });
   });
 
