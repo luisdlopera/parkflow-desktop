@@ -193,7 +193,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                           router.push(`/configuracion?group=${group.id}`);
                         }}
                         aria-label={`Ver opciones de ${group.label}`}
-                        className="w-full flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all group hover:bg-default-200 dark:hover:bg-default-300 hover:text-default-900 dark:hover:text-default-50 text-default-600 dark:text-default-300"
+                        className="w-full flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all border group text-default-600 dark:text-default-300 border-transparent hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40"
                       >
                         <div className="flex items-center gap-3">
                           <group.icon className="w-5 h-5 flex-shrink-0 transition-colors group-hover:text-brand-600" aria-hidden="true" />
