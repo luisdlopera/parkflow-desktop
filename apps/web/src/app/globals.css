@@ -691,7 +691,9 @@ textarea:hover,
 input:not([type="checkbox"]):not([type="radio"]):focus-within,
 textarea:focus-within,
 [data-slot="input-wrapper"]:focus-within,
-[data-slot="trigger"]:focus-within {
+[data-slot="trigger"]:focus-within,
+input:not([type="checkbox"]):not([type="radio"]):active,
+textarea:active {
   border-color: var(--color-brand-500, #D97757) !important;
   box-shadow: 0 0 0 3px var(--color-primary-ring) !important;
 }

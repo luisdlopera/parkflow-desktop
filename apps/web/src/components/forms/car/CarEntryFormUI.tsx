@@ -65,6 +65,7 @@ export const CarEntryFormUI = memo(function CarEntryFormUI({
                   placeholder="ABC123"
                   disabled={noPlate}
                   autoFocus
+                  maxLength={17}
                   value={field.value || ""}
                   onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                   onKeyDown={(e) => {

@@ -8,6 +8,7 @@ export const vehicleEntrySchema = z.object({
   entryMode: z.enum(["VISITOR", "AGREEMENT", "SUBSCRIBER", "EMPLOYEE"]).default("VISITOR"),
   noPlate: z.boolean().default(false),
   noPlateReason: z.string().max(200).optional().default(""),
+  foreignPlate: z.boolean().default(false),
   rateId: z.string().optional().default(""),
   site: z.string().optional().default(""),
   lane: z.string().optional().default(""),
@@ -41,6 +42,11 @@ export const vehicleEntrySchema = z.object({
       message: "Placa obligatoria",
       path: ["plate"]
     });
+    return;
+  }
+
+  // Si es placa extranjera, solo validar que no esté vacía (ya lo hicimos)
+  if (data.foreignPlate) {
     return;
   }
 

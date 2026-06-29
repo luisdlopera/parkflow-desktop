@@ -117,6 +117,46 @@ export function MotorcycleEntryFormUI({
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Opciones de Placa */}
+      <div className="flex gap-4 px-1">
+        <Controller
+          name="foreignPlate"
+          control={form.control}
+          render={({ field }) => (
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                {...field}
+                type="checkbox"
+                checked={field.value || false}
+                onChange={(e) => field.onChange(e.target.checked)}
+                className="w-4 h-4 cursor-pointer accent-brand-500"
+              />
+              <span className="text-sm font-medium text-default-600 dark:text-default-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                Placa extranjera
+              </span>
+            </label>
+          )}
+        />
+        <Controller
+          name="noPlate"
+          control={form.control}
+          render={({ field }) => (
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                {...field}
+                type="checkbox"
+                checked={field.value || false}
+                onChange={(e) => field.onChange(e.target.checked)}
+                className="w-4 h-4 cursor-pointer accent-brand-500"
+              />
+              <span className="text-sm font-medium text-default-600 dark:text-default-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                No tiene placa
+              </span>
+            </label>
+          )}
+        />
+      </div>
+
       {/* Placa — Input nativo gigante */}
       <div className="relative group">
         <div className="absolute -inset-1 bg-brand-500 rounded-2xl group-focus-within:block hidden"></div>
@@ -171,6 +211,31 @@ export function MotorcycleEntryFormUI({
         </div>
       </div>
 
+      {/* Campo de Observaciones para "No tiene placa" */}
+      {noPlate && (
+        <Controller
+          name="noPlateReason"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-default-600 dark:text-default-400 px-1">
+                Razón por la que no tiene placa
+              </label>
+              <textarea
+                {...field}
+                placeholder="Ej: Sin documentos, vehículo nuevo, etc."
+                className="w-full px-4 py-3 rounded-xl bg-default-50 dark:bg-default-100 dark:bg-default-900 border border-default-200 dark:border-default-700 text-foreground dark:text-default-50 placeholder:text-default-400 dark:placeholder:text-default-600 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 transition-all resize-none min-h-[80px]"
+              />
+              {fieldState.error && (
+                <p className="text-xs text-red-600 dark:text-red-400 font-semibold">
+                  {fieldState.error.message}
+                </p>
+              )}
+            </div>
+          )}
+        />
+      )}
+
       {/* Sección de Casco Interactiva */}
       {showHelmetSection && (
         <div className="space-y-3 pt-2">
@@ -180,7 +245,7 @@ export function MotorcycleEntryFormUI({
               type="button"
               aria-pressed={!helmetDelivered}
               onClick={handleClearHelmets}
-              className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
+              className={`cursor-pointer relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 !helmetDelivered
                   ? "border-brand-500 bg-brand-500 text-default-50 scale-[1.02]"
                   : "border-default-200 dark:border-default-700 bg-default-50 dark:bg-default-100 dark:bg-default-900 text-default-600 dark:text-default-400 hover:border-default-300 dark:hover:border-default-600 hover:bg-default-50 dark:hover:bg-default-800"
@@ -207,7 +272,7 @@ export function MotorcycleEntryFormUI({
               type="button"
               aria-pressed={helmetDelivered}
               onClick={handleAddHelmets}
-              className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
+              className={`cursor-pointer relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 helmetDelivered
                   ? "border-brand-500 bg-brand-500 text-default-50 scale-[1.02]"
                   : "border-default-200 dark:border-default-700 bg-default-50 dark:bg-default-100 dark:bg-default-900 text-default-600 dark:text-default-400 hover:border-brand-300 dark:hover:border-brand-600 hover:bg-brand-50 dark:hover:bg-default-800"

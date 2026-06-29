@@ -48,6 +48,7 @@ export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, 
                 placeholder={placeholder}
                 disabled={noPlate}
                 autoFocus
+                maxLength={17}
                 value={field.value || ""}
                 onChange={(e: any) => field.onChange(e.target.value.toUpperCase())}
                 onKeyDown={(e: any) => {

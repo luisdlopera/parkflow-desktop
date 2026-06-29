@@ -92,6 +92,7 @@ export default function VehicleEntryFormV2({
       entryMode: "VISITOR",
       noPlate: false,
       noPlateReason: "",
+      foreignPlate: false,
       rateId: "",
       site: "Principal",
       lane: "",
