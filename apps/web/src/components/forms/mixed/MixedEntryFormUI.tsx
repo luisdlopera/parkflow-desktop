@@ -4,6 +4,7 @@ import { ListBox, Autocomplete, SearchField, Label, FieldError, useFilter } from
 import { Input } from "@/components/bridge/Input";
 import { Select } from "@/components/bridge/Select";
 import { Button } from "@/components/bridge/Button";
+import { Checkbox } from "@/components/bridge/Checkbox";
 import PlateInput from "@/components/forms/PlateInput";
 import VehicleTypeSelector from "@/components/forms/VehicleTypeSelector";
 import type { VehicleType } from "@parkflow/types";
@@ -12,6 +13,7 @@ import { MotorRacingHelmet } from "@/features/vehicle-entry/components/MotorRaci
 import { User, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchAvailableLockers } from "@/lib/api/lockers-api";
+import { useFormErrorHandling } from "@/hooks/useFormErrorHandling";
 
 interface MixedEntryFormUIProps {
   form: any;
@@ -123,8 +125,40 @@ export function MixedEntryFormUI({
     [fields.length, append, remove],
   );
 
+  const { translatedErrors } = useFormErrorHandling(form);
+
   return (
     <div className="space-y-4">
+      {/* Opciones de Placa */}
+      <div className="flex gap-4 px-1">
+        <Controller
+          name="foreignPlate"
+          control={form.control}
+          render={({ field }) => (
+            <Checkbox
+              isSelected={field.value || false}
+              onChange={field.onChange}
+              className="cursor-pointer"
+            >
+              Placa extranjera
+            </Checkbox>
+          )}
+        />
+        <Controller
+          name="noPlate"
+          control={form.control}
+          render={({ field }) => (
+            <Checkbox
+              isSelected={field.value || false}
+              onChange={field.onChange}
+              className="cursor-pointer"
+            >
+              No tiene placa
+            </Checkbox>
+          )}
+        />
+      </div>
+
       {/* Placa */}
       {!noPlate && (
         <PlateInput
