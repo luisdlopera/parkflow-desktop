@@ -82,9 +82,18 @@ export function OnboardingProvider({
 
     if (loadedStepRef.current !== status.currentStep) {
       loadedStepRef.current = status.currentStep;
-      loadStepFromStatus(status, status.currentStep);
       const fresh =
         (status.progressData?.[`step_${status.currentStep}`] as Record<string, unknown>) ?? {};
+
+      // Only load from server if we haven't made local changes to this step
+      const { stepData: currentStepData } = useOnboardingStore.getState();
+      const currentStepJson = JSON.stringify(currentStepData);
+
+      // If local data differs from what was saved, keep the local data (avoid overwriting unsaved changes)
+      if (currentStepJson === lastSavedDataRef.current) {
+        loadStepFromStatus(status, status.currentStep);
+      }
+
       lastSavedDataRef.current = JSON.stringify(fresh);
     }
   }, [status, isLoading, onDone, loadStepFromStatus]);
