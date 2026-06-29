@@ -14,6 +14,7 @@ import { Autocomplete, ListBox, SearchField, useFilter, Label, FieldError, toast
 import { Checkbox } from "@/components/bridge/Checkbox";
 import { fetchAvailableLockers } from "@/lib/api/lockers-api";
 import { useFeatureFlags } from "@/providers/FeatureFlagProvider";
+import { useFormErrorHandling } from "@/hooks/useFormErrorHandling";
 
 interface MotorcycleEntryFormUIProps {
   form: UseFormReturn<VehicleEntryFormValues>;
@@ -42,6 +43,7 @@ export function MotorcycleEntryFormUI({
 }: MotorcycleEntryFormUIProps) {
   const flags = useFeatureFlags();
   const { isSubmitting } = form.formState;
+  const { translatedErrors } = useFormErrorHandling(form);
   const showHelmetSection = flags.helmets;
   const usesLockers = flags.lockers;
 
