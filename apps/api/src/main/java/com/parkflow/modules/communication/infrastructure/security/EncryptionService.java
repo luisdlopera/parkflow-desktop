@@ -13,12 +13,10 @@ import java.util.Arrays;
 import java.util.Base64;
 
 import com.parkflow.modules.communication.application.port.out.EncryptionPort;
-import com.parkflow.modules.communication.application.port.out.CommunicationConnectionPort;
 
 @Slf4j
 @Service("communicationEncryptionService")
-@RequiredArgsConstructor
-public class EncryptionService implements EncryptionPort, CommunicationConnectionPort {
+public class EncryptionService implements EncryptionPort {
 
     private final String keyString;
     private SecretKeySpec secretKey;

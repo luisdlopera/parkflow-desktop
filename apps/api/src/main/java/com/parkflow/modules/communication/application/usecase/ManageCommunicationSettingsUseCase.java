@@ -7,7 +7,7 @@ import com.parkflow.modules.communication.infrastructure.dto.BulkEmailSettingsDt
 import com.parkflow.modules.communication.infrastructure.dto.CommunicationSettingsResponseDto;
 import com.parkflow.modules.communication.infrastructure.dto.EmailSettingsDto;
 import com.parkflow.modules.communication.infrastructure.dto.SmsSettingsDto;
-import com.parkflow.modules.communication.infrastructure.security.EncryptionService;
+import com.parkflow.modules.communication.application.port.out.EncryptionPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class ManageCommunicationSettingsUseCase {
 
     private final CommunicationSettingsPort port;
-    private final EncryptionService encryptionService;
+    private final EncryptionPort encryptionPort;
     private static final String MASK = "************";
 
     @Transactional(readOnly = true)
@@ -43,7 +43,7 @@ public class ManageCommunicationSettingsUseCase {
         settings.setUsername(dto.getUsername());
         
         if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
-            settings.setPasswordEncrypted(encryptionService.encrypt(dto.getPassword()));
+            settings.setPasswordEncrypted(encryptionPort.encrypt(dto.getPassword()));
         }
 
         settings.setSecurityMode(dto.getSecurityMode());
@@ -68,13 +68,13 @@ public class ManageCommunicationSettingsUseCase {
         settings.setDailyLimit(dto.getDailyLimit() != null ? dto.getDailyLimit() : 0);
 
         if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
-            settings.setPasswordEncrypted(encryptionService.encrypt(dto.getPassword()));
+            settings.setPasswordEncrypted(encryptionPort.encrypt(dto.getPassword()));
         }
         if (dto.getApiKey() != null && !dto.getApiKey().isBlank()) {
-            settings.setApiKeyEncrypted(encryptionService.encrypt(dto.getApiKey()));
+            settings.setApiKeyEncrypted(encryptionPort.encrypt(dto.getApiKey()));
         }
         if (dto.getApiSecret() != null && !dto.getApiSecret().isBlank()) {
-            settings.setApiSecretEncrypted(encryptionService.encrypt(dto.getApiSecret()));
+            settings.setApiSecretEncrypted(encryptionPort.encrypt(dto.getApiSecret()));
         }
 
         return mapToResponse(port.save(settings));
@@ -96,10 +96,10 @@ public class ManageCommunicationSettingsUseCase {
         settings.setDailyLimit(dto.getDailyLimit() != null ? dto.getDailyLimit() : 0);
 
         if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
-            settings.setPasswordEncrypted(encryptionService.encrypt(dto.getPassword()));
+            settings.setPasswordEncrypted(encryptionPort.encrypt(dto.getPassword()));
         }
         if (dto.getApiKey() != null && !dto.getApiKey().isBlank()) {
-            settings.setApiKeyEncrypted(encryptionService.encrypt(dto.getApiKey()));
+            settings.setApiKeyEncrypted(encryptionPort.encrypt(dto.getApiKey()));
         }
 
         return mapToResponse(port.save(settings));
@@ -147,7 +147,7 @@ public class ManageCommunicationSettingsUseCase {
         // We will decrypt it just to get its length/prefix if we wanted, 
         // but for safety, we just return a static mask or prefix.
         try {
-            String raw = encryptionService.decrypt(encryptedSecret);
+            String raw = encryptionPort.decrypt(encryptedSecret);
             if (raw == null || raw.length() <= 4) return MASK;
             return raw.substring(0, 3) + MASK;
         } catch (Exception e) {

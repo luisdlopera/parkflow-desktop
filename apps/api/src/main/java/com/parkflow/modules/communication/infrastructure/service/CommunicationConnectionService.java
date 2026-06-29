@@ -15,10 +15,12 @@ import java.util.UUID;
 import jakarta.mail.Session;
 import jakarta.mail.Transport;
 
+import com.parkflow.modules.communication.application.port.out.CommunicationConnectionPort;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CommunicationConnectionService {
+public class CommunicationConnectionService implements CommunicationConnectionPort {
 
     private final CommunicationSettingsPort port;
     private final EncryptionService encryptionService;

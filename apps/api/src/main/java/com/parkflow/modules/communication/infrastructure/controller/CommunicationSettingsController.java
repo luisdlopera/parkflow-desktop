@@ -18,7 +18,7 @@ public class CommunicationSettingsController {
 
     private final com.parkflow.modules.communication.application.usecase.ManageCommunicationSettingsUseCase manageSettingsUseCase;
     private final com.parkflow.modules.communication.application.usecase.CommunicationStatsUseCase statsUseCase;
-    private final com.parkflow.modules.communication.infrastructure.service.CommunicationConnectionService connectionService;
+    private final com.parkflow.modules.communication.application.port.out.CommunicationConnectionPort connectionPort;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
@@ -53,19 +53,19 @@ public class CommunicationSettingsController {
     @PostMapping("/email/test-connection")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public void testEmailConnection(@PathVariable UUID companyId) {
-        connectionService.testConnection(companyId, com.parkflow.modules.communication.domain.enums.ChannelType.EMAIL);
+        connectionPort.testConnection(companyId, com.parkflow.modules.communication.domain.enums.ChannelType.EMAIL);
     }
 
     @PostMapping("/sms/test-connection")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public void testSmsConnection(@PathVariable UUID companyId) {
-        connectionService.testConnection(companyId, com.parkflow.modules.communication.domain.enums.ChannelType.SMS);
+        connectionPort.testConnection(companyId, com.parkflow.modules.communication.domain.enums.ChannelType.SMS);
     }
 
     @PostMapping("/bulk-email/test-connection")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public void testBulkEmailConnection(@PathVariable UUID companyId) {
-        connectionService.testConnection(companyId, com.parkflow.modules.communication.domain.enums.ChannelType.BULK_EMAIL);
+        connectionPort.testConnection(companyId, com.parkflow.modules.communication.domain.enums.ChannelType.BULK_EMAIL);
     }
 
     @GetMapping("/stats")

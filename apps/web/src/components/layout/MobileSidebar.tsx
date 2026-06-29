@@ -102,19 +102,6 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
 
           {/* Navigation */}
           <nav className="mt-6 space-y-1 flex-1">
-            {/* Back button (only show when in config view) */}
-            {configView && (
-              <button
-                onClick={() => setConfigView(false)}
-                className="flex items-center gap-2 text-xs font-semibold text-default-500 hover:text-default-800 dark:hover:text-default-200 transition-colors px-1 mb-3"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Volver al inicio
-              </button>
-            )}
-
             {/* Main nav items (hidden when in config view) */}
             {!configView && (
               <>
