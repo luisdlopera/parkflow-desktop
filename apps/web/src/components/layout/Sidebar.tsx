@@ -294,7 +294,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                                 {!collapsed && <span className="truncate">{item.label}</span>}
                               </div>
                               {!collapsed && (
-                                <svg className="w-4 h-4 transition-colors text-default-400 group-hover:text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <svg className="w-4 h-4 transition-colors text-default-400 group-hover:text-brand-600 bg-default-200 group-hover:bg-brand-200 rounded px-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>
                               )}
