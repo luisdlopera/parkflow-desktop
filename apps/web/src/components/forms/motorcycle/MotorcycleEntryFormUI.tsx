@@ -10,7 +10,7 @@ import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, CheckCircle2, AlertCircle } from "lucide-react";
 import { MotorRacingHelmet } from "@/features/vehicle-entry/components/MotorRacingHelmet";
-import { Autocomplete, ListBox, SearchField, useFilter, Label, FieldError } from "@heroui/react";
+import { Autocomplete, ListBox, SearchField, useFilter, Label, FieldError, toast } from "@heroui/react";
 import { fetchAvailableLockers } from "@/lib/api/lockers-api";
 import { useFeatureFlags } from "@/providers/FeatureFlagProvider";
 
@@ -119,7 +119,7 @@ export function MotorcycleEntryFormUI({
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Placa — Input nativo gigante */}
       <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-brand-500 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
+        <div className="absolute -inset-1 bg-brand-500 rounded-2xl group-focus-within:block hidden"></div>
         <div className="relative bg-default-50 dark:bg-default-100 dark:bg-default-900 rounded-2xl p-1">
           <Controller
             name="plate"
@@ -362,27 +362,6 @@ export function MotorcycleEntryFormUI({
         </div>
       )}
 
-      {/* Estado del formulario */}
-      <div
-        className={`flex items-center gap-2 text-sm rounded-xl px-4 py-3 ${
-          isSubmitDisabled
-            ? "bg-amber-50 text-amber-800 border border-amber-100"
-            : "bg-emerald-50 text-emerald-700 border border-emerald-100"
-        }`}
-        data-testid="entry-status-banner"
-      >
-        {isSubmitDisabled ? (
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-        ) : (
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-        )}
-        <span>
-          {isSubmitDisabled
-            ? submitDisabledReason || "Completa los datos requeridos"
-            : "Listo para registrar el ingreso"}
-        </span>
-      </div>
-
       {/* Botón de ingreso — Masivo */}
       <div className="pt-2">
         <Tooltip
@@ -392,13 +371,21 @@ export function MotorcycleEntryFormUI({
           <div className="w-full">
             <Button
               type="button"
-              onClick={() => onSubmit()}
+              onClick={() => {
+                if (isSubmitDisabled) {
+                  toast.warning(submitDisabledReason || "Completa los datos requeridos", {
+                    timeout: 5000,
+                  });
+                } else {
+                  onSubmit();
+                }
+              }}
               size="lg"
               isLoading={isSubmitting}
-              isDisabled={isSubmitDisabled}
+              isDisabled={false}
               className={`w-full font-black text-xl border h-16 rounded-2xl group relative overflow-hidden transition-colors ${
                 isSubmitDisabled
-                  ? "bg-default-300 text-default-500 border-default-200 cursor-not-allowed"
+                  ? "bg-default-300 text-default-500 border-default-200 cursor-not-allowed opacity-60"
                   : "bg-brand text-default-50 border-brand hover:bg-brand-600"
               }`}
               data-testid="register-entry"

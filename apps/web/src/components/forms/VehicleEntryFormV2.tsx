@@ -343,21 +343,30 @@ export default function VehicleEntryFormV2({
       />
 
       {/* Título dinámico */}
-      <div>
-        <p className="text-sm uppercase tracking-[0.3em] text-brand-600/80 font-semibold">
-          Nuevo ingreso
-        </p>
-        <h1 className="text-3xl font-bold text-foreground">
-          {isMotorcycleOnly
-            ? "Registrar entrada de moto"
-            : isCarOnly
-              ? "Registrar entrada de carro"
-              : "Registrar entrada de vehículo"}
-        </h1>
-        {lastSavedAt && (
-          <p className="text-xs text-default-400 mt-0.5">
-            Borrador guardado {lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm uppercase tracking-[0.3em] text-brand-600/80 font-semibold">
+            Nuevo ingreso
           </p>
+          <h1 className="text-3xl font-bold text-foreground">
+            {isMotorcycleOnly
+              ? "Registrar entrada de moto"
+              : isCarOnly
+                ? "Registrar entrada de carro"
+                : "Registrar entrada de vehículo"}
+          </h1>
+          {lastSavedAt && (
+            <p className="text-xs text-default-400 mt-0.5">
+              Borrador guardado {lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </p>
+          )}
+        </div>
+        {occupancy && (
+          <div className={`${occupancy.availableSpaces <= 0 ? "bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800" : "bg-brand-100 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-900/40"} rounded-xl px-4 py-3 whitespace-nowrap`}>
+            <span className={`text-sm font-semibold ${occupancy.availableSpaces <= 0 ? "text-rose-700 dark:text-rose-400" : "text-brand-700 dark:text-brand-200"}`}>
+              Disponibles: {occupancy.availableSpaces} / {occupancy.activeSpaces}
+            </span>
+          </div>
         )}
       </div>
 
