@@ -343,37 +343,20 @@ export default function VehicleEntryFormV2({
       />
 
       {/* Título dinámico */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-brand-600/80 font-semibold">
-            Nuevo ingreso
-          </p>
-          <h1 className="text-3xl font-bold text-foreground">
-            {isMotorcycleOnly
-              ? "Registrar entrada de moto"
-              : isCarOnly
-                ? "Registrar entrada de carro"
-                : "Registrar entrada de vehículo"}
-          </h1>
-          {lastSavedAt && (
-            <p className="text-xs text-default-400 mt-0.5">
-              Borrador guardado {lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-            </p>
-          )}
-        </div>
-        {isSingleType && occupancy && (
-          <p
-            role="status"
-            aria-live="polite"
-            className={`text-sm font-medium px-3 py-1.5 rounded-full ${
-              occupancy.availableSpaces <= 0
-                ? "bg-rose-100 text-rose-700"
-                : "bg-brand-100 text-brand-700"
-            }`}
-          >
-            {occupancy.availableSpaces <= 0
-              ? "Sin celdas disponibles"
-              : `${occupancy.availableSpaces} celdas disponibles`}
+      <div>
+        <p className="text-sm uppercase tracking-[0.3em] text-brand-600/80 font-semibold">
+          Nuevo ingreso
+        </p>
+        <h1 className="text-3xl font-bold text-foreground">
+          {isMotorcycleOnly
+            ? "Registrar entrada de moto"
+            : isCarOnly
+              ? "Registrar entrada de carro"
+              : "Registrar entrada de vehículo"}
+        </h1>
+        {lastSavedAt && (
+          <p className="text-xs text-default-400 mt-0.5">
+            Borrador guardado {lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </p>
         )}
       </div>

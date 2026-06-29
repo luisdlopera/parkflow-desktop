@@ -21,7 +21,18 @@ export default function VehicleEntryHeader({
     { key: "speed", label: "Velocidad" },
   ];
 
-  if (isSingleType) return null;
+  // Single type shows simplified header with just availability; multi-type shows full controls
+  if (isSingleType) {
+    return (
+      <div className="flex items-center gap-2">
+        {occupancy && (
+          <div className={`${occupancy.availableSpaces <= 0 ? "bg-rose-50 border border-rose-100" : "bg-brand-100 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-900/40"} rounded-xl px-3 py-2`}>
+            <span className={`text-xs ${occupancy.availableSpaces <= 0 ? "text-rose-700 font-bold" : "text-brand-700 dark:text-brand-200 font-medium"} whitespace-nowrap`}>Disponibles: {occupancy.availableSpaces} / {occupancy.activeSpaces}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
