@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import { useOnboarding, profileLabel } from "../OnboardingContext";
 import { Button } from "@/components/bridge/Button";
 import { AlertTriangle, Car, Banknote, Monitor, Ticket, ArrowRight, LucideIcon } from "lucide-react";
+import { PAYMENT_METHOD_CATALOG } from "@/lib/payment-method-catalog";
 
 const Step12Audit = memo(function Step12Audit() {
   const { allProgressData, vehicleTypes, detectedProfile, persistStep } = useOnboarding();
@@ -49,7 +50,12 @@ const Step12Audit = memo(function Step12Audit() {
                        step3Data?.billingModel === "MIXED" ? "Fracciones y Plana" : "No configurado";
                        
   const paymentMethods = Array.isArray(step6Data?.paymentMethods) && step6Data.paymentMethods.length > 0
-    ? step6Data.paymentMethods.join(", ")
+    ? step6Data.paymentMethods
+        .map((code: string) => {
+          const method = PAYMENT_METHOD_CATALOG.find(m => m.code === code);
+          return method?.label || code;
+        })
+        .join(", ")
     : "Efectivo";
 
   return (
