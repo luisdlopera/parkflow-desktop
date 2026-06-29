@@ -186,6 +186,19 @@ function OnboardingContent() {
         )}
 
         <div className="mt-6 flex flex-wrap gap-3">
+          {step !== 12 && (
+            <Button
+              variant="light"
+              color="warning"
+              size="sm"
+              onPress={() => {
+                clearStepErrors();
+                persistStep(12);
+              }}
+            >
+              Volver a revisión
+            </Button>
+          )}
           <Button
             variant="ghost"
             onPress={() => {
