@@ -114,7 +114,7 @@ export function useVehicleExit() {
   const { data: dbMethodsData, isLoading: methodsLoading } = useSWR(
     "active-payment-methods",
     () => fetchConfigurationPaymentMethods({ active: true, size: 50 }),
-    { revalidateOnFocus: false }
+    { revalidateOnFocus: false, revalidateOnMount: true }
   );
 
   const availablePaymentMethods = useMemo(() => {
