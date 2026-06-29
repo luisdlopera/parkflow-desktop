@@ -15,6 +15,7 @@ import {
   Database,
   Handshake,
   Ticket,
+  Mail,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +47,7 @@ export const CONFIG_NAVIGATION: ConfigNavGroup[] = [
       { key: "interface", label: "Interfaz", href: "/configuracion?section=interface", icon: LayoutTemplate, description: "Personalización de la interfaz" },
       { key: "masters", label: "Maestros", href: "/configuracion?section=masters", icon: Database, description: "Tipos de vehículo y maestros" },
       { key: "onboarding", label: "Asistente Inicial", href: "/configuracion?section=onboarding", icon: Wand2, description: "Ejecuta el asistente inicial" },
+      { key: "comunicaciones", label: "Comunicaciones", href: "/configuracion/comunicaciones", icon: Mail, description: "Configuración de Email y SMS" },
     ],
   },
   {

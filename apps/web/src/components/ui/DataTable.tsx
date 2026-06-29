@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback, useRef, memo } from "react";
+import React, { useMemo, useState, useCallback, useRef, memo } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   Pagination,
@@ -12,13 +12,17 @@ import {
   useFilter,
   SearchField,
   Label,
+  Dropdown,
+  Button,
+  Chip,
   type SortDescriptor,
   type Selection,
   type Key,
 } from "@heroui/react";
 import { Input } from "@/components/bridge/Input";
 import { Autocomplete } from "@/components/bridge/Autocomplete";
-import { ChevronUp, Inbox, Search } from "lucide-react";
+import { ChevronUp, Inbox, Search, ChevronDown, FileSpreadsheet, FileText } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export type DataTableColumn<T> = {
   key: keyof T | (string & {});
@@ -27,6 +31,7 @@ export type DataTableColumn<T> = {
   priority?: "high" | "medium" | "low";
   sortable?: boolean;
   sortType?: "string" | "number" | "date" | "boolean";
+  format?: "currency" | "datetime" | "date" | "boolean" | "badge";
   render?: (row: T) => React.ReactNode;
   align?: "left" | "center" | "right";
   resizable?: boolean;
@@ -73,6 +78,13 @@ export type DataTableProps<T> = {
   sortDescriptor?: SortDescriptor;
   onSortChange?: (descriptor: SortDescriptor) => void;
   serverSide?: boolean;
+  exportOptions?: {
+    csv?: boolean;
+    excel?: boolean;
+    onExport?: (type: "csv" | "excel") => void;
+  };
+  hideColumnsToggle?: boolean;
+  syncWithUrl?: boolean;
 };
 
 function SortableHeader({
@@ -147,8 +159,17 @@ function DataTableInner<T extends object>({
   sortDescriptor: controlledSortDescriptor,
   onSortChange: controlledOnSortChange,
   serverSide = false,
+  exportOptions,
+  hideColumnsToggle,
+  syncWithUrl = false,
 }: DataTableProps<T>) {
   const { contains } = useFilter({ sensitivity: "base" });
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [visibleColumns, setVisibleColumns] = useState<Selection>("all");
+
   const source = useMemo(() => data ?? rows ?? [], [data, rows]);
   const [internalSortDescriptor, setInternalSortDescriptor] = useState<SortDescriptor>();
   
@@ -226,7 +247,11 @@ function DataTableInner<T extends object>({
   );
 
   const displayColumns = useMemo(() => {
-    const cols = [...columns];
+    let cols = [...columns];
+    if (visibleColumns !== "all") {
+      cols = cols.filter(c => visibleColumns.has(String(c.key)));
+    }
+
     if (selectable) {
       cols.unshift({
         key: "_selection",
@@ -240,7 +265,25 @@ function DataTableInner<T extends object>({
       cols.push({ key: "_actions", label: "Acciones", align: "right" });
     }
     return cols;
-  }, [columns, actions, selectable]);
+  }, [columns, actions, selectable, visibleColumns]);
+
+  const numberFormatter = useMemo(() => new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }), []);
+
+  const dateFormatter = useMemo(() => new Intl.DateTimeFormat('es-CO', {
+    dateStyle: 'long',
+    timeZone: 'America/Bogota',
+  }), []);
+
+  const dateTimeFormatter = useMemo(() => new Intl.DateTimeFormat('es-CO', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+    timeZone: 'America/Bogota',
+  }), []);
 
   const renderCell = (col: DataTableColumn<T>, row: T, index: number) => {
     if (col.key === "_selection") {
@@ -258,7 +301,37 @@ function DataTableInner<T extends object>({
     }
     if (col.key === "_actions" && actions) return actions(row);
     if (col.render) return col.render(row);
-    return String(row[col.key as keyof T] ?? "");
+
+    const rawValue = row[col.key as keyof T];
+
+    if (rawValue === undefined || rawValue === null) {
+      return <span className="text-default-400">-</span>;
+    }
+
+    if (col.format) {
+      switch (col.format) {
+        case "currency":
+          return <span className="text-primary font-medium">{numberFormatter.format(Number(rawValue))}</span>;
+        case "date":
+          return dateFormatter.format(new Date(String(rawValue)));
+        case "datetime":
+          return dateTimeFormatter.format(new Date(String(rawValue)));
+        case "boolean":
+          return (
+            <Chip color={rawValue ? "success" : "default"} size="sm" variant="flat">
+              {rawValue ? "Sí" : "No"}
+            </Chip>
+          );
+        case "badge":
+          return (
+            <Chip color="primary" size="sm" variant="flat">
+              {String(rawValue)}
+            </Chip>
+          );
+      }
+    }
+
+    return String(rawValue);
   };
 
   const skeletonRow = (skKey: string) => (
@@ -271,10 +344,35 @@ function DataTableInner<T extends object>({
     </Table.Row>
   );
 
+  const handleSearchChange = useCallback((query: string) => {
+    onSearchChange?.(query);
+    if (syncWithUrl) {
+      const params = new URLSearchParams(searchParams.toString());
+      if (query) {
+        params.set("search", query);
+      } else {
+        params.delete("search");
+      }
+      params.delete("page"); // reset to page 1
+      router.push(`${pathname}?${params.toString()}`);
+    }
+  }, [syncWithUrl, pathname, router, searchParams, onSearchChange]);
+
+  const handlePaginationChange = useCallback((page: number, pageSize: number) => {
+    onPaginationChange?.(page, pageSize);
+    if (syncWithUrl) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", String(page));
+      params.set("pageSize", String(pageSize));
+      router.push(`${pathname}?${params.toString()}`);
+    }
+  }, [syncWithUrl, pathname, router, searchParams, onPaginationChange]);
+
   const topContent = useMemo(() => {
     const hasSearch = searchable && onSearchChange;
     const hasFilters = filters && filters.length > 0 && onFilterChange;
-    if (!hasSearch && !hasFilters) return null;
+    
+    if (!hasSearch && !hasFilters && hideColumnsToggle && !exportOptions) return null;
 
     return (
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4">
@@ -285,11 +383,11 @@ function DataTableInner<T extends object>({
             placeholder={searchPlaceholder}
             aria-label="Buscar en la tabla"
             startContent={<Search className="text-default-300 size-4" />}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             size="sm"
           />
         )}
-        <div className="flex w-full sm:w-auto items-center gap-3">
+        <div className="flex w-full sm:w-auto items-center gap-3 flex-wrap sm:flex-nowrap">
           {hasFilters &&
             filters.map((filter) => {
               if (filter.type === "select" && filter.options) {
@@ -336,10 +434,62 @@ function DataTableInner<T extends object>({
               }
               return null;
             })}
+          
+          {exportOptions?.csv && (
+            <Button
+              aria-label="Exportar a CSV"
+              onPress={() => exportOptions.onExport?.("csv")}
+              color="warning"
+              variant="flat"
+              isIconOnly
+              size="sm"
+            >
+              <FileText className="size-4" />
+            </Button>
+          )}
+          {exportOptions?.excel && (
+            <Button
+              aria-label="Exportar a Excel"
+              onPress={() => exportOptions.onExport?.("excel")}
+              color="success"
+              variant="flat"
+              isIconOnly
+              size="sm"
+            >
+              <FileSpreadsheet className="size-4" />
+            </Button>
+          )}
+
+          {!hideColumnsToggle && (
+            <Dropdown>
+              <Button variant="flat" size="sm" endContent={<ChevronDown className="size-4" />}>
+                Columnas
+              </Button>
+              <Dropdown.Popover>
+                <Dropdown.Menu
+                  aria-label="Columnas de la tabla"
+                  selectionMode="multiple"
+                  selectedKeys={visibleColumns}
+                  onSelectionChange={setVisibleColumns}
+                  className="max-h-80 overflow-scroll"
+                >
+                  {columns.map((col) => (
+                    <Dropdown.Item id={String(col.key)} key={String(col.key)} textValue={getDisplayLabel(col)}>
+                      <Label>{getDisplayLabel(col)}</Label>
+                      <Dropdown.ItemIndicator />
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown.Popover>
+            </Dropdown>
+          )}
         </div>
       </div>
     );
-  }, [searchable, searchPlaceholder, onSearchChange, filters, onFilterChange]);
+  }, [
+    searchable, searchPlaceholder, handleSearchChange, filters, onFilterChange,
+    exportOptions, hideColumnsToggle, columns, visibleColumns
+  ]);
 
   const tableContent = (
     <Table.Content
@@ -565,7 +715,7 @@ function DataTableInner<T extends object>({
             <Table.Footer>
               <TableFooterContent
                 config={paginationConfig}
-                onChange={onPaginationChange}
+                onChange={handlePaginationChange}
                 selectionCount={
                   selectable ? (controlledSelectedKeys?.size ?? 0) : undefined
                 }
@@ -579,7 +729,7 @@ function DataTableInner<T extends object>({
         <Table.Footer>
           <TableFooterContent
             config={paginationConfig}
-            onChange={onPaginationChange}
+            onChange={handlePaginationChange}
             selectionCount={
               selectable ? (controlledSelectedKeys?.size ?? 0) : undefined
             }
