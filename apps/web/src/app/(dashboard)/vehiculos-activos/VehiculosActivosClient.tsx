@@ -17,6 +17,7 @@ import { TicketPreviewModal } from "@/features/active-vehicles/components/Ticket
 import { BulkExitConfirmModal, BulkExitSuccessModal } from "@/features/active-vehicles/components/BulkExitModals";
 import { useColumnVisibility } from "@/features/active-vehicles/hooks/useColumnVisibility";
 import { VehiculosActivosFilters } from "@/features/active-vehicles/components/VehiculosActivosFilters";
+import { SearchAndFiltersToolbar } from "@/features/active-vehicles/components/SearchAndFiltersToolbar";
 import { hasPermission } from "@/lib/services/auth-domain.service";
 
 export default function VehiculosActivosClient({ fallbackData }: { fallbackData?: { sessions: any; summary: any } | undefined }) {
@@ -81,7 +82,7 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
   const filteredRows = rows;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {caja.status === "closed" && requireOpenForPayment && (
         <Modal.Backdrop isOpen isDismissable={false} isKeyboardDismissDisabled onOpenChange={() => {}}>
           <Modal.Container size="full">
@@ -131,9 +132,14 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
       )}
 
       {caja.status === "closed" && !requireOpenForPayment && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <p className="font-semibold">Caja no abierta</p>
-          <p className="mt-1">No hay una sesión de caja abierta. Puedes operar igualmente, pero los cobros no quedarán asociados a una sesión de caja.{" "}<Link href="/caja" className="underline font-medium">Ir a caja</Link>.</p>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 flex items-center justify-between gap-2">
+          <div>
+            <p className="font-semibold text-sm">Caja no abierta</p>
+            <p className="text-xs text-amber-700">Sin sesión de caja - los cobros no se asociarán.</p>
+          </div>
+          <Link href="/caja">
+            <Button size="sm" variant="solid" color="warning" className="font-semibold whitespace-nowrap">Ir a caja</Button>
+          </Link>
         </div>
       )}
 
@@ -153,29 +159,51 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
       {error && <p className="text-sm text-rose-700 font-medium">{error}</p>}
 
       {summary && (summary.activeSpaces === undefined || summary.activeSpaces === null || summary.activeSpaces === 0) && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-800 space-y-2">
-          <p className="font-semibold flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> No tienes celdas configuradas</p>
-          <p>Para visualizar la disponibilidad de espacios y registrar ingresos, primero debes configurar la capacidad de tu parqueadero.</p>
-          <Link href="/configuracion/espacios"><Button size="sm" color="warning" className="mt-1">Ir a Configurar Espacios</Button></Link>
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-800 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-sm">No tienes celdas configuradas</p>
+              <p className="text-xs text-rose-700">Configura la capacidad para registrar ingresos.</p>
+            </div>
+          </div>
+          <Link href="/configuracion/espacios">
+            <Button size="sm" color="danger" className="font-semibold whitespace-nowrap">Configurar</Button>
+          </Link>
         </div>
       )}
 
       {showHelmetAlert && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 space-y-2">
-          <p className="font-semibold flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> No tienes lockers configurados</p>
-          <p>Para registrar cascos en custodia al ingresar motocicletas, necesitas configurar los lockers numerados.</p>
-          <Link href="/configuracion/lockers"><Button size="sm" color="warning" className="mt-1">Ir a Configurar Lockers</Button></Link>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-sm">No tienes lockers configurados</p>
+              <p className="text-xs text-amber-700">Necesarios para registrar cascos al ingresar motos.</p>
+            </div>
+          </div>
+          <Link href="/configuracion/lockers">
+            <Button size="sm" color="warning" className="font-semibold whitespace-nowrap">Configurar</Button>
+          </Link>
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="rounded-2xl border border-default-200 bg-default-50 dark:bg-default-100 px-4 py-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 px-3 py-2">
           <p className="text-xs uppercase tracking-wider text-default-500 font-semibold">Ocupados</p>
-          <p className="text-2xl font-bold text-foreground">{summary ? summary.activeSpaces - summary.availableSpaces : rows.length}</p>
+          <p className="text-lg font-bold text-foreground">{summary ? summary.activeSpaces - summary.availableSpaces : rows.length}</p>
         </div>
-        <div className="rounded-2xl border border-default-200 bg-default-50 dark:bg-default-100 px-4 py-3">
+        <div className="rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 px-3 py-2">
           <p className="text-xs uppercase tracking-wider text-default-500 font-semibold">Disponibles</p>
-          <p className="text-2xl font-bold text-emerald-700">{summary ? `${summary.availableSpaces} / ${summary.activeSpaces}` : "—"}</p>
+          <p className="text-lg font-bold text-emerald-700">{summary ? `${summary.availableSpaces} / ${summary.activeSpaces}` : "—"}</p>
+        </div>
+        <div className="rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 px-3 py-2">
+          <p className="text-xs uppercase tracking-wider text-default-500 font-semibold">Capacidad</p>
+          <p className="text-lg font-bold text-foreground">{summary ? `${Math.round(((summary.activeSpaces - summary.availableSpaces) / summary.activeSpaces) * 100)}%` : "—"}</p>
+        </div>
+        <div className="rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 px-3 py-2">
+          <p className="text-xs uppercase tracking-wider text-default-500 font-semibold">Total</p>
+          <p className="text-lg font-bold text-foreground">{meta?.total ?? rows.length}</p>
         </div>
       </div>
 
@@ -194,14 +222,22 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
         </div>
       )}
 
+      {/* Integrated Search and Filters Toolbar */}
+      <SearchAndFiltersToolbar
+        searchValue={params.search || ""}
+        onSearchChange={(search) => setParams((p) => ({ ...p, search, page: 1 }))}
+        filterValues={filterValues}
+        onFilterChange={handleFilterChange}
+        onClearFilters={() => {
+          setFilterValues({});
+          setParams((p) => ({ ...p, vehicleType: "all", page: 1 }));
+        }}
+        vehicleTypeOptions={vehicleTypeOptions}
+        hasActiveFilters={filterValues.vehicleType && filterValues.vehicleType !== "all" ? true : false}
+      />
+
       <div className="rounded-2xl border border-default-200 overflow-hidden bg-default-50 dark:bg-default-100">
-        <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2 border-b border-default-100">
-          <VehiculosActivosFilters
-            filterValues={filterValues}
-            onFilterChange={handleFilterChange}
-            vehicleTypeOptions={vehicleTypeOptions}
-            isLoading={loading}
-          />
+        <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-2 border-b border-default-100">
           <div className="flex items-center gap-2">
             <Dropdown>
             <Button size="sm" variant="ghost" color="default" isIconOnly aria-label="Columnas visibles">
@@ -233,9 +269,6 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
         selectedKeys={selectedKeys === "all" ? new Set(filteredRows.map((r: ActiveSessionDto) => r.ticketNumber)) : (selectedKeys as Set<string>)}
         onRowSelectionChange={(keys: Set<string | number | boolean | null | undefined>) => setSelectedKeys(keys as Set<string>)}
         serverSide
-        searchable
-        searchPlaceholder="Buscar por placa o ticket..."
-        onSearchChange={(search) => setParams((p) => ({ ...p, search, page: 1 }))}
         sortDescriptor={{ column: params.sortBy || "entryAt", direction: params.sortDir === "asc" ? "ascending" : "descending" }}
         onSortChange={(desc) => setParams((p) => ({ ...p, sortBy: String(desc.column), sortDir: desc.direction === "ascending" ? "asc" : "desc" }))}
         pagination={{ page: params.page || 1, pageSize: params.limit || 25, total: meta?.total ?? 0 }}
