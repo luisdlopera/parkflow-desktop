@@ -20,7 +20,7 @@ import { VehiculosActivosFilters } from "@/features/active-vehicles/components/V
 import { hasPermission } from "@/lib/services/auth-domain.service";
 
 export default function VehiculosActivosClient({ fallbackData }: { fallbackData?: { sessions: any; summary: any } | undefined }) {
-  const [params, setParams] = useState<GetActiveSessionsQuery>({ page: 1, limit: 25, search: "", sortBy: "entryAt", sortDir: "desc" });
+  const [params, setParams] = useState<GetActiveSessionsQuery>({ page: 1, limit: 25, search: "", sortBy: "entryAt", sortDir: "desc", vehicleType: "all" });
   const { rows, meta, summary, loading, error, reload } = useActiveSessions(params, fallbackData);
   const { caja, requireOpenForPayment } = useTerminalCaja();
   const { runtimeConfig } = useTenantConfig();
@@ -62,7 +62,11 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
 
   const handleFilterChange = (values: Record<string, string>) => {
     setFilterValues((prev) => ({ ...prev, ...values }));
-    setParams((p) => ({ ...p, page: 1 }));
+    setParams((p) => ({
+      ...p,
+      page: 1,
+      vehicleType: values.vehicleType || p.vehicleType || "all"
+    }));
   };
 
   useEffect(() => {
@@ -72,13 +76,9 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
     }
   }, [enableCustodiedItem, hasMotorcycles]);
 
-  const filteredRows = useMemo(() => {
-    let result = rows;
-    if (filterValues.vehicleType && filterValues.vehicleType !== "all") {
-      result = result.filter((r: ActiveSessionDto) => r.vehicleType === filterValues.vehicleType);
-    }
-    return result;
-  }, [rows, filterValues]);
+  // Filtrado ya ocurre en el backend con params.vehicleType
+  // No hacer filtrado local para no ocultar resultados de búsqueda
+  const filteredRows = rows;
 
   return (
     <div className="space-y-6">

@@ -52,6 +52,7 @@ export type GetActiveSessionsQuery = {
   search?: string;
   sortBy?: string;
   sortDir?: "asc" | "desc";
+  vehicleType?: string;
 };
 
 export async function fetchActiveSessions(params?: GetActiveSessionsQuery): Promise<PaginatedResponse<ActiveSessionDto> | ActiveSessionDto[]> {
@@ -61,9 +62,10 @@ export async function fetchActiveSessions(params?: GetActiveSessionsQuery): Prom
   if (params?.search) queryParams.set("search", params.search);
   if (params?.sortBy) queryParams.set("sortBy", params.sortBy);
   if (params?.sortDir) queryParams.set("sortDir", params.sortDir);
+  if (params?.vehicleType && params.vehicleType !== "all") queryParams.set("vehicleType", params.vehicleType);
 
   const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
-  
+
   const res = await fetchWithCredentials(`${getOperationsApiBase().replace(/\/$/, "")}/sessions/active-list${queryString}`, {
     headers: await buildApiHeaders()
   });
