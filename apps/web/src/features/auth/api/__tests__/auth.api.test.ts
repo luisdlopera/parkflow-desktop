@@ -26,6 +26,7 @@ describe('Auth API', () => {
     user: { id: 'usr-1', email: 'test@example.com' },
     session: { sessionId: 'sess-1', deviceId: 'dev-1', accessTokenExpiresAtIso: new Date(Date.now() + 86400000).toISOString() },
     offlineLease: null,
+    rememberMe: false,
   };
 
   beforeEach(() => {
@@ -39,6 +40,10 @@ describe('Auth API', () => {
   });
 
   describe('login', () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
     it('throws error if fetch fails', async () => {
       vi.mocked(fetchModule.fetchWithCredentials).mockResolvedValue({
         ok: false,
@@ -60,8 +65,24 @@ describe('Auth API', () => {
         user: mockSessionPayload.user,
         session: mockSessionPayload.session,
         offlineLease: mockSessionPayload.offlineLease,
+        rememberMe: mockSessionPayload.rememberMe,
       });
       expect(authStorage.saveSession).toHaveBeenCalledWith(result);
+    });
+
+    it('clears logout flag after successful login', async () => {
+      // Set logout flag before login
+      localStorage.setItem('parkflow_just_logged_out', 'true');
+
+      vi.mocked(fetchModule.fetchWithCredentials).mockResolvedValue({
+        ok: true,
+        json: async () => mockSessionPayload,
+      } as any);
+
+      await login({ email: 'test@example.com', password: 'password', deviceId: 'dev-1', deviceName: 'test', platform: 'test', fingerprint: 'test' } as any);
+
+      // Flag should be cleared after login
+      expect(localStorage.getItem('parkflow_just_logged_out')).toBeNull();
     });
   });
 
@@ -78,6 +99,10 @@ describe('Auth API', () => {
   });
 
   describe('logoutAllSessions', () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
     it('does nothing if no session', async () => {
       vi.mocked(authStorage.loadSession).mockResolvedValue(null);
       await logoutAllSessions();
@@ -87,13 +112,39 @@ describe('Auth API', () => {
     it('calls logout all endpoint and clears session', async () => {
       vi.mocked(authStorage.loadSession).mockResolvedValue({} as any);
       vi.mocked(fetchModule.fetchWithCredentials).mockResolvedValue({ ok: true } as any);
-      
+
       await logoutAllSessions();
-      
+
       expect(fetchModule.fetchWithCredentials).toHaveBeenCalledWith(
         'http://localhost/api/auth/logout/all',
         expect.objectContaining({ method: 'POST' })
       );
+      expect(authStorage.clearSession).toHaveBeenCalled();
+    });
+
+    it('sets logout flag immediately to prevent session restoration', async () => {
+      vi.mocked(authStorage.loadSession).mockResolvedValue({} as any);
+      vi.mocked(fetchModule.fetchWithCredentials).mockResolvedValue({ ok: true } as any);
+
+      // Flag should not exist before logout
+      expect(localStorage.getItem('parkflow_just_logged_out')).toBeNull();
+
+      await logoutAllSessions();
+
+      // Flag should be set after logout to prevent session restoration
+      expect(localStorage.getItem('parkflow_just_logged_out')).toBe('true');
+      expect(authStorage.clearSession).toHaveBeenCalled();
+    });
+
+    it('clears session even if logout endpoint fails', async () => {
+      vi.mocked(authStorage.loadSession).mockResolvedValue({} as any);
+      vi.mocked(fetchModule.fetchWithCredentials).mockRejectedValue(new Error('Network error'));
+
+      await logoutAllSessions();
+
+      // Should still set logout flag
+      expect(localStorage.getItem('parkflow_just_logged_out')).toBe('true');
+      // Should still clear session
       expect(authStorage.clearSession).toHaveBeenCalled();
     });
   });
