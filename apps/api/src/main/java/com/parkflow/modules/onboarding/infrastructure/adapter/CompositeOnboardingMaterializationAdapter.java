@@ -3,7 +3,7 @@ package com.parkflow.modules.onboarding.infrastructure.adapter;
 import com.parkflow.modules.onboarding.application.port.out.OnboardingMaterializationPort;
 import com.parkflow.modules.parking.locker.application.service.LockerService;
 import com.parkflow.modules.parking.locker.dto.BatchLockerRequest;
-import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
+import com.parkflow.modules.parking.spaces.application.port.in.SpaceManagementUseCase;
 import com.parkflow.modules.settings.application.service.CompanyVehicleTypeManagementService;
 import java.util.List;
 import java.util.UUID;
@@ -23,7 +23,7 @@ public class CompositeOnboardingMaterializationAdapter implements OnboardingMate
 
   private final CompanyVehicleTypeManagementService companyVehicleTypeManagementService;
   private final LockerService lockerService;
-  private final ParkingSpaceService parkingSpaceService;
+  private final SpaceManagementUseCase spaceManagementUseCase;
 
   @Override
   public void addVehicleTypesToCompany(UUID companyId, List<String> vehicleTypeCodes) {
@@ -39,6 +39,6 @@ public class CompositeOnboardingMaterializationAdapter implements OnboardingMate
 
   @Override
   public void resizeCapacityForCompany(UUID companyId, int totalCapacity) {
-    parkingSpaceService.resizeCapacity(companyId, totalCapacity);
+    spaceManagementUseCase.resizeCapacity(companyId, totalCapacity);
   }
 }

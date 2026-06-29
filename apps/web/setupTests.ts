@@ -57,7 +57,18 @@ vi.mock('@heroui/react', async (importOriginal) => {
   const actual: any = await importOriginal();
   return {
     ...actual,
-    TimeField: (props: any) => React.createElement('input', { type: 'time', 'data-testid': 'mock-time-input', ...props }),
+    TimeField: Object.assign(
+      ({ children, isInvalid, isRequired, isDisabled, isReadOnly, errorMessage, hourCycle, ...props }: any) => 
+        React.createElement('div', { 'data-testid': 'mock-time-field' }, 
+          React.createElement('input', { type: 'time', 'data-testid': 'mock-time-input', ...props }),
+          children
+        ),
+      {
+        Group: ({ children }: any) => React.createElement('div', null, children),
+        Input: ({ children }: any) => React.createElement('div', null, typeof children === 'function' ? children({}) : children),
+        Segment: ({ children }: any) => React.createElement('span', null, children)
+      }
+    ),
     ListBox: Object.assign(({ children }: any) => React.createElement('div', null, children), {
       Item: ({ children }: any) => React.createElement('div', null, children)
     })

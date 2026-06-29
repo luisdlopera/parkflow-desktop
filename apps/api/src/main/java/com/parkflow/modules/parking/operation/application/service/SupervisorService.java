@@ -3,6 +3,7 @@ package com.parkflow.modules.parking.operation.application.service;
 import com.parkflow.modules.parking.operation.dto.OperationsSummaryResponse;
 import com.parkflow.modules.parking.operation.application.port.in.SupervisorUseCase;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
+import com.parkflow.modules.parking.locker.application.port.in.LockerQueryUseCase;
 import com.parkflow.modules.sync.domain.repository.SyncEventPort;
 import com.parkflow.modules.tickets.domain.PrintJobStatus;
 import com.parkflow.modules.tickets.domain.repository.PrintJobPort;
@@ -23,6 +24,7 @@ public class SupervisorService implements SupervisorUseCase {
   private final ParkingSessionPort parkingSessionPort;
   private final PrintJobPort printJobRepository;
   private final SyncEventPort syncEventRepository;
+  private final LockerQueryUseCase lockerQueryService;
 
   @Transactional(readOnly = true)
   public OperationsSummaryResponse buildSummary(ZoneId siteZone) {
@@ -45,7 +47,14 @@ public class SupervisorService implements SupervisorUseCase {
         printJobRepository.countByCompanyIdAndStatusInAndCreatedAtAfter(
             companyId, EnumSet.of(PrintJobStatus.DEAD_LETTER), dayStart);
     long syncPending = syncEventRepository.countByCompanyIdAndSyncedAtIsNull(companyId);
+
+    // Get total capacity and available spaces from lockers
+    long totalCapacity = lockerQueryService.listLockers(companyId).size();
+    long availableSpaces = lockerQueryService.listAvailableLockers(companyId).size();
+
+    double occupancyPercent = totalCapacity > 0 ? ((totalCapacity - availableSpaces) * 100.0 / totalCapacity) : 0.0;
+
     return new OperationsSummaryResponse(
-        active, 0, 0, 0.0, entries, exits, reprints, lost, printFailed, deadLetter, syncPending, now);
+        active, totalCapacity, availableSpaces, occupancyPercent, entries, exits, reprints, lost, printFailed, deadLetter, syncPending, now);
   }
 }

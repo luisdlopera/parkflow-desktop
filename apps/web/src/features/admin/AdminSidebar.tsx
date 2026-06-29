@@ -93,20 +93,22 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
           ${collapsed ? "py-6 justify-center" : "py-6"}
         `}
       >
-        <div
-          className={`
-            rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-default-50 grid place-content-center font-bold border border-default-200 -500/30
-            ${collapsed ? "h-10 w-10 text-lg" : "h-12 w-12 text-xl"}
-          `}
-        >
-          <Shield className={collapsed ? "w-5 h-5" : "w-6 h-6"} />
-        </div>
-        {!collapsed && (
-          <div className="flex-1 overflow-hidden">
-            <p className="text-xs uppercase tracking-[0.2em] text-default-400">ParkFlow</p>
-            <p className="text-lg font-bold text-foreground">Super Admin</p>
+        <Link href="/" className="flex items-center gap-3 flex-1 overflow-hidden hover:opacity-80 transition-opacity">
+          <div
+            className={`
+              rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-default-50 grid place-content-center font-bold border border-default-200 -500/30
+              ${collapsed ? "h-10 w-10 text-lg" : "h-12 w-12 text-xl"}
+            `}
+          >
+            <Shield className={collapsed ? "w-5 h-5" : "w-6 h-6"} />
           </div>
-        )}
+          {!collapsed && (
+            <div className="flex-1 overflow-hidden">
+              <p className="text-xs uppercase tracking-[0.2em] text-default-400">ParkFlow</p>
+              <p className="text-lg font-bold text-foreground">Super Admin</p>
+            </div>
+          )}
+        </Link>
         {/* Toggle button (visible when expanded) */}
         <button
           onClick={onToggle}

@@ -239,6 +239,11 @@
   --accent: #D97757;
   --accent-foreground: #ffffff;
 
+  /* Sidebar surfaces — dark mode */
+  --color-sidebar: #16161a;
+  --color-sidebar-hover: #2a2a33;
+  --color-sidebar-active: #3a3a44;
+
   /* Surface elevation system — lighter = higher (dark mode principle) */
   --elevation-1: color-mix(in oklab, white 5%, var(--background));
   --elevation-2: color-mix(in oklab, white 7%, var(--background));
@@ -276,6 +281,15 @@
     --color-slate-800: #e4e4e7;
     --color-slate-900: #fafafa;
     --color-slate-950: #ffffff;
+
+    /* Semantic surface palette dark mode variants */
+    --color-bg-secondary: #18181b;
+    --color-surface: #09090b;
+    --color-surface-hover: #18181b;
+    --color-sidebar: #09090b;
+    --color-sidebar-hover: #18181b;
+    --color-sidebar-active: #27272a;
+    --color-border: #27272a;
   }
 }
 
@@ -1140,5 +1154,39 @@ textarea:focus-within,
   /* Modal/Drawer safe area for keyboard on mobile */
   .modal-keyboard-safe {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  /* ── TimeField Input Background (match Input component) ── */
+  .date-input-group__input {
+    background-color: #f4f4f5;
+    color: var(--color-foreground);
+    border: none;
+    border-radius: 0.75rem;
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  .dark .date-input-group__input,
+  [data-theme="dark"] .date-input-group__input {
+    background-color: rgba(39, 39, 42, 0.6);
+    color: var(--default-50, #f4f4f6);
+  }
+
+  /* ── Checkbox Background (match Input component for consistency) ── */
+  .checkbox__control {
+    background-color: var(--color-default-50, #f5f5f2);
+    border: 1px solid var(--color-default-200, #e5e5e0);
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.5rem;
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  .dark .checkbox__control,
+  [data-theme="dark"] .checkbox__control {
+    background-color: var(--default-100, #1c1c22);
+    border-color: var(--default-200, #27272a);
   }
 }

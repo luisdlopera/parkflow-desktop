@@ -49,40 +49,43 @@ const Step2Capacity = memo(function Step2Capacity() {
             onChange={(v) => setStepData({ ...stepData, totalCapacity: Math.max(0, Number(v.target.value) || 0) })}
           />
         </div>
-        
-        <Switch isSelected={Boolean(stepData.controlSlots)} onChange={(v) => setStepData({ ...stepData, controlSlots: v })} aria-label="Alternar opción">
-          ¿Quieres controlar cupos?
-        </Switch>
-        
-          {Boolean(stepData.controlSlots) && vehicleTypes.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-default-600">Capacidad por tipo de vehículo:</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {vehicleTypes.map((typeCode) => {
-                const vehicle = VEHICLE_OPTIONS.find(v => v.code === typeCode);
-                const capacity = getCapacityByType()[typeCode] ?? 0;
-                return (
-                  <div key={typeCode} className="flex items-center justify-between p-2 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
-                    <span className="text-sm">{vehicle?.label}</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      className="w-24"
-                      aria-label={`Capacidad ${vehicle?.label ?? typeCode}`}
-                      isInvalid={Boolean(stepErrors.capacityByType)}
-                      value={String(capacity)}
-                      onChange={(v) => {
-                        const current = getCapacityByType();
-                        const next = { ...current, [typeCode]: Math.max(0, Number(v.target.value) || 0) };
-                        setStepData({ ...stepData, capacityByType: next });
-                      }}
-                    />
-                  </div>
-                );
-              })}
+      {vehicleTypes.length > 1 && (
+        <div className="space-y-3">
+          <Switch isSelected={Boolean(stepData.controlSlots)} onChange={(v) => setStepData({ ...stepData, controlSlots: v })} aria-label="Alternar opción">
+            ¿Quieres controlar cupos?
+          </Switch>
+          
+          {Boolean(stepData.controlSlots) && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-default-600">Capacidad por tipo de vehículo:</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {vehicleTypes.map((typeCode) => {
+                  const vehicle = VEHICLE_OPTIONS.find(v => v.code === typeCode);
+                  const capacity = getCapacityByType()[typeCode] ?? 0;
+                  return (
+                    <div key={typeCode} className="flex items-center justify-between p-2 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
+                      <span className="text-sm">{vehicle?.label}</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        className="w-24"
+                        aria-label={`Capacidad ${vehicle?.label ?? typeCode}`}
+                        isInvalid={Boolean(stepErrors.capacityByType)}
+                        value={String(capacity)}
+                        onChange={(v) => {
+                          const current = getCapacityByType();
+                          const next = { ...current, [typeCode]: Math.max(0, Number(v.target.value) || 0) };
+                          setStepData({ ...stepData, capacityByType: next });
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      )}
       </div>
     </div>
   );

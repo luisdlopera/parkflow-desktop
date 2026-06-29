@@ -22,7 +22,7 @@ export const STEP_TITLES = [
   "Convenios",
   "Sedes",
   "Roles y permisos",
-  "Auditoría",
+  "Revisión final",
 ];
 
 export const VEHICLE_OPTIONS: Array<{ code: string; label: string; description: string }> = [

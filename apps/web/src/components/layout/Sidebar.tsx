@@ -108,7 +108,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
 
   return (
     <aside data-testid="desktop-sidebar" className={`
-      hidden md:flex sticky top-0 z-20 h-screen border-r border-default-200 bg-[var(--color-sidebar)] dark:bg-default-100 backdrop-blur
+      hidden md:flex sticky top-0 z-20 h-screen border-r border-default-200 bg-[var(--color-sidebar)] backdrop-blur
       flex-col transition-all duration-300 ease-in-out
       ${collapsed ? "w-[72px]" : "w-[260px]"}
     `} style={{ paddingLeft: 'env(safe-area-inset-left)' }}>
@@ -117,18 +117,20 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
           flex items-center gap-3 transition-all duration-300
           ${collapsed ? "py-6 justify-center" : "py-6"}
         `}>
-          <div className={`
-            rounded-2xl bg-brand text-default-50 grid place-content-center font-bold border border-default-200
-            ${collapsed ? "h-10 w-10 text-lg" : "h-12 w-12 text-xl"}
-          `}>
-            P
-          </div>
-          {!collapsed && (
-            <div className="flex-1 overflow-hidden">
-              <p className="text-xs uppercase tracking-[0.2em] text-default-400">Parkflow</p>
-              <p className="text-lg font-bold text-foreground">Desktop</p>
+          <Link href="/" className="flex items-center gap-3 flex-1 overflow-hidden hover:opacity-80 transition-opacity">
+            <div className={`
+              rounded-2xl bg-brand text-default-50 grid place-content-center font-bold border border-default-200
+              ${collapsed ? "h-10 w-10 text-lg" : "h-12 w-12 text-xl"}
+            `}>
+              P
             </div>
-          )}
+            {!collapsed && (
+              <div className="flex-1 overflow-hidden">
+                <p className="text-xs uppercase tracking-[0.2em] text-default-400">Parkflow</p>
+                <p className="text-lg font-bold text-foreground">Desktop</p>
+              </div>
+            )}
+          </Link>
           <button
             onClick={onToggle}
             className={`

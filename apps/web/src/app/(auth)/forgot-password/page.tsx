@@ -3,6 +3,7 @@ import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { requestPasswordReset } from "@/lib/api/auth-api";
 
 export default function ForgotPasswordPage() {
@@ -29,7 +30,7 @@ export default function ForgotPasswordPage() {
   if (success) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-        <div className="surface w-full space-y-4 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-default-200/80 dark:border-default-200 bg-default-50 dark:bg-default-100/90 text-center">
+        <div className="surface w-full space-y-4 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border-default-200 bg-default-50 dark:bg-default-100 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -54,14 +55,14 @@ export default function ForgotPasswordPage() {
           <p className="text-xs text-default-500">
             Revisa tu bandeja de entrada y carpetas de spam.
           </p>
-          <Button
-            as={Link}
-            href="/login"
-            color="primary"
-            className="w-full"
-          >
-            Volver al inicio de sesión
-          </Button>
+          <Link href="/login" className="w-full">
+            <Button
+              color="primary"
+              className="w-full"
+            >
+              Volver al inicio de sesión
+            </Button>
+          </Link>
         </div>
       </main>
     );
@@ -69,7 +70,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-default-200/80 dark:border-default-200 bg-default-50 dark:bg-default-100/90">
+      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border-default-200 bg-default-50 dark:bg-default-100">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-amber-700/80">Parkflow</p>
           <h1 className="text-2xl font-semibold text-foreground">Recuperar contraseña</h1>
@@ -78,7 +79,7 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
-        <div className="bg-default-50 dark:bg-default-100 dark:bg-default-100 p-5 rounded-2xl border border-default-200/60 dark:border-default-200 border border-default-200 space-y-4">
+        <div className="bg-default-50 dark:bg-default-100 p-5 rounded-2xl border border-default-200 dark:border-default-200 space-y-4">
           <Input
             type="email"
             label="Email"

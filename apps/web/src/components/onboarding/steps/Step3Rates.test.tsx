@@ -176,11 +176,11 @@ describe("Step3Rates Component", () => {
       expect(hourlyRadio.checked).toBe(true);
 
       // Verify fractions are disabled in BASIC
-      const fractionsTrigger = screen.getByLabelText("¿Cobra fracciones?") as HTMLInputElement;
+      const fractionsTrigger = screen.getByLabelText("Activar cobro por fracciones") as HTMLInputElement;
       expect(fractionsTrigger.checked).toBe(false);
 
       // Verify courtesy is disabled in BASIC
-      const courtesyTrigger = screen.getByLabelText("¿Minutos de cortesía (Gratis)?") as HTMLInputElement;
+      const courtesyTrigger = screen.getByLabelText("Activar minutos de cortesía") as HTMLInputElement;
       expect(courtesyTrigger.checked).toBe(false);
     });
 
@@ -197,11 +197,11 @@ describe("Step3Rates Component", () => {
       expect(hourlyRadio.checked).toBe(true);
 
       // Verify fractions ARE enabled in COMMERCIAL
-      const fractionsTrigger = screen.getByLabelText("¿Cobra fracciones?") as HTMLInputElement;
+      const fractionsTrigger = screen.getByLabelText("Activar cobro por fracciones") as HTMLInputElement;
       expect(fractionsTrigger.checked).toBe(true);
 
       // Verify courtesy IS enabled in COMMERCIAL
-      const courtesyTrigger = screen.getByLabelText("¿Minutos de cortesía (Gratis)?") as HTMLInputElement;
+      const courtesyTrigger = screen.getByLabelText("Activar minutos de cortesía") as HTMLInputElement;
       expect(courtesyTrigger.checked).toBe(true);
     });
 
@@ -218,15 +218,15 @@ describe("Step3Rates Component", () => {
       expect(mixedRadio.checked).toBe(true);
 
       // Verify night rate IS enabled in 24H
-      const nightRateTrigger = screen.getByLabelText("¿Maneja tarifa nocturna?") as HTMLInputElement;
+      const nightRateTrigger = screen.getByLabelText("Activar tarifa nocturna") as HTMLInputElement;
       expect(nightRateTrigger.checked).toBe(true);
 
       // Verify full day rate IS enabled in 24H
-      const fullDayTrigger = screen.getByLabelText("¿Maneja tarifa de día completo (24h)?") as HTMLInputElement;
+      const fullDayTrigger = screen.getByLabelText("Activar tarifa de día completo") as HTMLInputElement;
       expect(fullDayTrigger.checked).toBe(true);
 
       // Verify fractions are NOT enabled in 24H
-      const fractionsTrigger = screen.getByLabelText("¿Cobra fracciones?") as HTMLInputElement;
+      const fractionsTrigger = screen.getByLabelText("Activar cobro por fracciones") as HTMLInputElement;
       expect(fractionsTrigger.checked).toBe(false);
     });
   });

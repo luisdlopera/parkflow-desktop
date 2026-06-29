@@ -57,7 +57,7 @@ export default function LoginPage() {
         });
       }
     })();
-  }, [loginForm]);
+  }, []);  // Only run on mount, remember-me data is loaded once
 
   // Initialize setup form with react-hook-form
   const setupForm = useForm<SetupInput>({
@@ -117,7 +117,7 @@ export default function LoginPage() {
         setIsSetupMode(false);
       }
     })();
-  }, []);
+  }, []);  // Only run on mount, remember-me data is loaded once
 
   // Separate effect to check session and redirect on mount
   useEffect(() => {

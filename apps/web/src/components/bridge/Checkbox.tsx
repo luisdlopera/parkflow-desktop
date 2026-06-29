@@ -23,6 +23,8 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     if (size === "lg") mappedClassName += " scale-110";
     // Add dark mode specific styles for checkbox visibility
     mappedClassName += " focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-default-100";
+    // Add background and better visibility in dark mode (similar to Input component)
+    mappedClassName += " px-3 py-2 rounded-lg bg-default-50 dark:bg-default-100 border border-default-200 dark:border-default-200";
     // Ensure checkbox is visible in dark mode (add border to unchecked state)
     mappedClassName += " [&_[role=checkbox]:not([aria-checked=true])]:border-default-400 dark:[&_[role=checkbox]:not([aria-checked=true])]:border-default-500";
 

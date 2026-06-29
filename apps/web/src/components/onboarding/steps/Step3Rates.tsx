@@ -1,11 +1,12 @@
 import { Input } from "@/components/bridge/Input";
 import { Switch } from "@/components/bridge/Switch";
 import { Select } from "@/components/bridge/Select";
-import { RadioGroup, Radio, Card, ListBox, FieldError, TimeField } from "@heroui/react";
+import { TimeInput } from "@/components/bridge/TimeInput";
+import { RadioGroup, Radio, Card, ListBox, FieldError, Tabs } from "@heroui/react";
 import QuestionHelp from "../QuestionHelp";
 import { memo, useEffect } from "react";
 import { useOnboardingData, useOnboardingMetadata, VEHICLE_OPTIONS } from "../OnboardingContext";
-import { Check, Moon, Zap, RefreshCcw } from "lucide-react";
+import { Check, Moon, Zap, RefreshCcw, SlidersHorizontal, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Time } from "@internationalized/date";
 
 function RequiredMark() {
@@ -46,6 +47,7 @@ const Step3Rates = memo(function Step3Rates() {
   const isBasicSelected = billingModel === "HOURLY" && !hasFractions && !hasNightRate && !hasFullDayRate && !hasWeekendRate && rounding === "EXACT";
   const isCommercialSelected = billingModel === "HOURLY" && hasFractions && hasCourtesy && !hasWeekendRate && rounding === "15_MIN";
   const is24HSelected = billingModel === "MIXED" && hasNightRate && hasFullDayRate && !hasFractions && !hasWeekendRate && rounding === "EXACT";
+  const isCustomSelected = !isBasicSelected && !isCommercialSelected && !is24HSelected && billingModel !== "";
 
   // Cleanup effect: use functional setStepData to avoid running on every keystroke (I-05 / P-01)
   useEffect(() => {
@@ -157,67 +159,118 @@ const Step3Rates = memo(function Step3Rates() {
           </QuestionHelp>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Card className={`cursor-pointer transition-all border ${isBasicSelected ? 'border-primary bg-brand/5 ring-2 ring-primary/20' : 'border-transparent hover:border-primary'}`} role="button" tabIndex={0} onClick={() => applyPreset("BASIC")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("BASIC"); } }}>
-            <Card.Content className="p-3 text-center flex flex-col items-center gap-2 relative">
-              {isBasicSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-brand" />}
-              <Zap className={`w-5 h-5 ${isBasicSelected ? 'text-brand' : 'text-warning'}`} />
-              <p className="text-sm font-semibold">Básico</p>
-              <p className="text-xs text-default-500">Solo cobro por hora. Simple y directo.</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
+          <Card
+            className={`cursor-pointer transition-all border ${isBasicSelected ? 'border-brand bg-brand/10 dark:bg-brand/10 ring-2 ring-brand/30' : 'border-default-200 dark:border-zinc-600 dark:bg-zinc-800/40 hover:border-brand dark:hover:border-brand/50 dark:hover:bg-zinc-700/50'}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => applyPreset("BASIC")}
+            onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("BASIC"); } }}
+          >
+            <Card.Content className="p-2 lg:p-3 text-center flex flex-col items-center gap-1 lg:gap-2">
+              {isBasicSelected && <Check className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-brand" />}
+              <Zap className={`w-4 lg:w-5 h-4 lg:h-5 ${isBasicSelected ? 'text-brand' : 'text-warning'}`} />
+              <p className="text-xs lg:text-sm font-semibold">Básico</p>
+              <p className="text-[10px] lg:text-xs text-default-500">Solo cobro por hora</p>
             </Card.Content>
           </Card>
-          <Card className={`cursor-pointer transition-all border ${isCommercialSelected ? 'border-primary bg-brand/5 ring-2 ring-primary/20' : 'border-transparent hover:border-primary'}`} role="button" tabIndex={0} onClick={() => applyPreset("COMMERCIAL")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("COMMERCIAL"); } }}>
-            <Card.Content className="p-3 text-center flex flex-col items-center gap-2 relative">
-              {isCommercialSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-brand" />}
-              <RefreshCcw className={`w-5 h-5 ${isCommercialSelected ? 'text-brand' : 'text-success'}`} />
-              <p className="text-sm font-semibold">Comercial</p>
-              <p className="text-xs text-default-500">Cobro por hora, con fracciones y tiempo de cortesía.</p>
+
+          <Card
+            className={`cursor-pointer transition-all border ${isCommercialSelected ? 'border-brand bg-brand/10 dark:bg-brand/10 ring-2 ring-brand/30' : 'border-default-200 dark:border-zinc-600 dark:bg-zinc-800/40 hover:border-brand dark:hover:border-brand/50 dark:hover:bg-zinc-700/50'}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => applyPreset("COMMERCIAL")}
+            onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("COMMERCIAL"); } }}
+          >
+            <Card.Content className="p-2 lg:p-3 text-center flex flex-col items-center gap-1 lg:gap-2">
+              {isCommercialSelected && <Check className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-brand" />}
+              <RefreshCcw className={`w-4 lg:w-5 h-4 lg:h-5 ${isCommercialSelected ? 'text-brand' : 'text-success'}`} />
+              <p className="text-xs lg:text-sm font-semibold">Comercial</p>
+              <p className="text-[10px] lg:text-xs text-default-500">Con fracciones</p>
             </Card.Content>
           </Card>
-          {/* M-01: Moon icon was always text-brand regardless of selected state */}
-          <Card className={`cursor-pointer transition-all border ${is24HSelected ? 'border-primary bg-brand/5 ring-2 ring-primary/20' : 'border-transparent hover:border-primary'}`} role="button" tabIndex={0} onClick={() => applyPreset("24H")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("24H"); } }}>
-            <Card.Content className="p-3 text-center flex flex-col items-center gap-2 relative">
-              {is24HSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-brand" />}
-              <Moon className={`w-5 h-5 ${is24HSelected ? 'text-brand' : 'text-default-400'}`} />
-              <p className="text-sm font-semibold">24 Horas</p>
-              <p className="text-xs text-default-500">Incluye tarifa nocturna y cobro por día completo.</p>
+
+          <Card
+            className={`cursor-pointer transition-all border ${is24HSelected ? 'border-brand bg-brand/10 dark:bg-brand/10 ring-2 ring-brand/30' : 'border-default-200 dark:border-zinc-600 dark:bg-zinc-800/40 hover:border-brand dark:hover:border-brand/50 dark:hover:bg-zinc-700/50'}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => applyPreset("24H")}
+            onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("24H"); } }}
+          >
+            <Card.Content className="p-2 lg:p-3 text-center flex flex-col items-center gap-1 lg:gap-2">
+              {is24HSelected && <Check className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-brand" />}
+              <Moon className={`w-4 lg:w-5 h-4 lg:h-5 ${is24HSelected ? 'text-brand' : 'text-default-400'}`} />
+              <p className="text-xs lg:text-sm font-semibold">24 Horas</p>
+              <p className="text-[10px] lg:text-xs text-default-500">Tarifa nocturna</p>
+            </Card.Content>
+          </Card>
+
+          <Card
+            className={`cursor-default transition-all border ${isCustomSelected ? 'border-brand bg-brand/10 dark:bg-brand/10 ring-2 ring-brand/30' : 'border-default-200 dark:border-zinc-600 dark:bg-zinc-800/40'}`}
+          >
+            <Card.Content className="p-2 lg:p-3 text-center flex flex-col items-center gap-1 lg:gap-2">
+              {isCustomSelected && <Check className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-brand" />}
+              <SlidersHorizontal className={`w-4 lg:w-5 h-4 lg:h-5 ${isCustomSelected ? 'text-brand' : 'text-default-400'}`} />
+              <p className="text-xs lg:text-sm font-semibold">Personal.</p>
+              <p className="text-[10px] lg:text-xs text-default-500">A tu medida</p>
             </Card.Content>
           </Card>
         </div>
       </div>
 
       {/* 1. Modelo Tarifario */}
-      <div className="space-y-4 p-4 bg-default-50 dark:bg-zinc-900/50 rounded-xl border border-default-200">
-        <p className="text-sm font-semibold text-brand">1. Modelo de Cobro Principal <RequiredMark/></p>
-        <RadioGroup
-          orientation="horizontal"
-          value={billingModel}
-          onChange={(val) => setStepData((prev) => ({
-            ...prev,
-            billingModel: val,
-            // C-04: selecting FRACTION auto-enables fractions rule section
-            ...(val === "FRACTION" ? { hasFractions: true } : {})
-          }))}
-          isInvalid={Boolean(stepErrors.billingModel)}
-          aria-label="Modelo de cobro principal"
-        >
-          <Radio value="HOURLY">Por hora</Radio>
-          <Radio value="FRACTION">Fracción</Radio>
-          <Radio value="FLAT">Tarifa Única</Radio>
-          <Radio value="FULL_DAY">Día Completo</Radio>
-          <Radio value="MIXED">Mixto</Radio>
-          {stepErrors.billingModel && <FieldError>{stepErrors.billingModel}</FieldError>}
-        </RadioGroup>
+      <div className="space-y-4 p-4 bg-default-50 dark:bg-zinc-800/40 dark:border-zinc-700 rounded-xl border border-default-200">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-semibold text-brand">1. Modelo de Cobro Principal <RequiredMark/></p>
+          <QuestionHelp title="Modelo de Cobro">
+            Elige cómo se calcula el cobro: por hora completa, por fracciones de tiempo, precio fijo único, día completo, o una combinación.
+          </QuestionHelp>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          {[
+            { val: "HOURLY", label: "Por hora", desc: "Cobro por cada hora", Icon: Zap },
+            { val: "FRACTION", label: "Fracción", desc: "Periodos de tiempo", Icon: RefreshCcw },
+            { val: "FLAT", label: "Tarifa Única", desc: "Precio fijo", Icon: Check },
+            { val: "FULL_DAY", label: "Día Completo", desc: "Día de 24h", Icon: Moon },
+            { val: "MIXED", label: "Mixto", desc: "Combinado", Icon: SlidersHorizontal },
+          ].map(({ val, label, desc, Icon }) => (
+            <button
+              key={val}
+              onClick={() => setStepData((prev) => ({
+                ...prev,
+                billingModel: val,
+                ...(val === "FRACTION" ? { hasFractions: true } : {})
+              }))}
+              className={`p-2 rounded-lg border-2 transition-all text-center ${
+                billingModel === val
+                  ? 'border-brand bg-brand/10 dark:bg-brand/10'
+                  : 'border-default-200 dark:border-zinc-600 dark:bg-zinc-800/40 hover:border-brand dark:hover:border-brand/50 dark:hover:bg-zinc-700/50'
+              }`}
+            >
+              <Icon className={`w-5 h-5 mx-auto ${billingModel === val ? 'text-brand' : 'text-default-400'}`} />
+              <p className="text-xs font-semibold leading-tight mt-1">{label}</p>
+              <p className="text-[10px] text-default-500 leading-tight">{desc}</p>
+            </button>
+          ))}
+        </div>
+
+        {stepErrors.billingModel && (
+          <div className="flex items-center gap-2 p-2 bg-danger/10 text-danger rounded-lg text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {stepErrors.billingModel}
+          </div>
+        )}
 
         {showBaseRate && (
-          <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg mt-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-default-50 dark:bg-zinc-700/50 border border-default-200 dark:border-zinc-600 rounded-lg mt-4">
             <span className="text-sm font-medium">
               {baseRateLabel} <RequiredMark />
             </span>
             <Input
               type="number"
               min={1}
-              className="w-40"
+              className="w-full sm:w-40"
               label="Valor"
               isRequired
               isInvalid={Boolean(stepErrors.baseValue)}
@@ -228,16 +281,15 @@ const Step3Rates = memo(function Step3Rates() {
           </div>
         )}
 
-        {/* C-01: FLAT model now shows its rate input (previously only FULL_DAY did) */}
         {showFlatRate && (
-          <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg mt-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-default-50 dark:bg-zinc-700/50 border border-default-200 dark:border-zinc-600 rounded-lg mt-4">
             <span className="text-sm font-medium">
               {flatRateLabel} <RequiredMark />
             </span>
             <Input
               type="number"
               min={1}
-              className="w-40"
+              className="w-full sm:w-40"
               label="Valor"
               isRequired
               isInvalid={Boolean(stepErrors.flatRate)}
@@ -253,13 +305,15 @@ const Step3Rates = memo(function Step3Rates() {
         <>
           {/* 2. Tarifas Especiales */}
           <div className="space-y-4">
-            <p className="text-sm font-semibold border-b border-default-200 pb-2">Tarifas Especiales</p>
+            <div className="flex items-center gap-2 pb-2">
+              <p className="text-sm font-semibold">2. Tarifas Especiales</p>
+              <span className="text-xs text-default-500">(Opcional)</span>
+            </div>
 
             <div className="space-y-3">
               {/* Tarifa Nocturna */}
-              <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
+              <div className="p-3 bg-default-50 dark:bg-zinc-700/50 border border-default-200 dark:border-zinc-600 rounded-lg">
                 <div className="flex items-center justify-between">
-                  {/* I-01: Set default times in store when enabling, not just as display fallback */}
                   <Switch
                     isSelected={hasNightRate}
                     onChange={(v) => setStepData((prev) => ({
@@ -272,21 +326,22 @@ const Step3Rates = memo(function Step3Rates() {
                     }))}
                     aria-label="Activar tarifa nocturna"
                   >
-                    <span className="text-sm font-medium">¿Maneja tarifa nocturna?</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">Tarifa nocturna</span>
+                      <QuestionHelp title="Tarifa Nocturna">Cobro diferente (generalmente más alto) en horario nocturno.</QuestionHelp>
+                    </div>
                   </Switch>
                 </div>
                 {hasNightRate && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-3 border-t border-default-100 items-end">
-                    <TimeField
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-3 border-t border-default-200 dark:border-zinc-600 items-end">
+                    <TimeInput
                       label="Hora inicio"
-                      // @ts-expect-error type version mismatch between HeroUI and app
-                      value={parseTimeString(stepData.nightStartTime ?? "20:00")}
+                      value={parseTimeString(stepData.nightStartTime ?? "20:00") as any}
                       onChange={(v) => v && setStepData((prev) => ({ ...prev, nightStartTime: formatTime(v) }))}
                     />
-                    <TimeField
+                    <TimeInput
                       label="Hora fin"
-                      // @ts-expect-error type version mismatch between HeroUI and app
-                      value={parseTimeString(stepData.nightEndTime ?? "06:00")}
+                      value={parseTimeString(stepData.nightEndTime ?? "06:00") as any}
                       onChange={(v) => v && setStepData((prev) => ({ ...prev, nightEndTime: formatTime(v) }))}
                     />
                     <Input
@@ -307,14 +362,17 @@ const Step3Rates = memo(function Step3Rates() {
 
               {/* Día Completo — hidden when FULL_DAY or FLAT are already the main model */}
               {!showFlatRate && (
-                <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
-                  <div className="flex items-center justify-between">
+                <div className="p-3 bg-default-50 dark:bg-zinc-700/50 border border-default-200 dark:border-zinc-600 rounded-lg">
+                  <div className="flex items-center justify-between gap-3">
                     <Switch
                       isSelected={hasFullDayRate}
                       onChange={(v) => setStepData((prev) => ({ ...prev, hasFullDayRate: v }))}
                       aria-label="Activar tarifa de día completo"
                     >
-                      <span className="text-sm font-medium">¿Maneja tarifa de día completo (24h)?</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-medium">Día completo (24h)</span>
+                        <QuestionHelp title="Día Completo">Cobro fijo para permanencias largas.</QuestionHelp>
+                      </div>
                     </Switch>
                     {hasFullDayRate && (
                       <Input
@@ -334,14 +392,17 @@ const Step3Rates = memo(function Step3Rates() {
               )}
 
               {/* Fines de semana */}
-              <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
-                <div className="flex items-center justify-between">
+              <div className="p-3 bg-default-50 dark:bg-zinc-700/50 border border-default-200 dark:border-zinc-600 rounded-lg">
+                <div className="flex items-center justify-between gap-3">
                   <Switch
                     isSelected={hasWeekendRate}
                     onChange={(v) => setStepData((prev) => ({ ...prev, hasWeekendRate: v }))}
                     aria-label="Activar tarifa de fin de semana"
                   >
-                    <span className="text-sm font-medium">¿Tarifa diferente en fines de semana/festivos?</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">Fin de semana/Festivos</span>
+                      <QuestionHelp title="Fin de Semana">Precio diferente en sábado, domingo o festivos.</QuestionHelp>
+                    </div>
                   </Switch>
                   {hasWeekendRate && (
                     <Input
@@ -363,24 +424,30 @@ const Step3Rates = memo(function Step3Rates() {
 
           {/* 3. Reglas de Cobro */}
           <div className="space-y-4">
-            <p className="text-sm font-semibold border-b border-default-200 pb-2">Reglas de Cobro</p>
+            <div className="flex items-center gap-2 pb-2">
+              <p className="text-sm font-semibold">3. Reglas de Cobro</p>
+              <span className="text-xs text-default-500">(Opcional)</span>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Fracciones */}
-              <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg space-y-3">
+              <div className="p-3 bg-default-50 dark:bg-zinc-700/50 border border-default-200 dark:border-zinc-600 rounded-lg space-y-3">
                 <Switch
                   isSelected={hasFractions}
                   onChange={(v) => setStepData((prev) => ({ ...prev, hasFractions: v }))}
                   aria-label="Activar cobro por fracciones"
                 >
-                  <span className="text-sm font-medium">¿Cobra fracciones?</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-medium">Cobro por fracciones</span>
+                    <QuestionHelp title="Cobro por Fracciones">Cobrar en periodos pequeños (15 min, 30 min) en lugar de hora completa.</QuestionHelp>
+                  </div>
                 </Switch>
                 {hasFractions && (
                   <div className="flex gap-2">
                     <Input
                       type="number"
                       min={0}
-                      label="Minutos mínimos"
+                      label="Minutos mín."
                       className="flex-1"
                       isInvalid={Boolean(stepErrors.minFractionMinutes)}
                       errorMessage={stepErrors.minFractionMinutes}
@@ -390,7 +457,7 @@ const Step3Rates = memo(function Step3Rates() {
                     <Input
                       type="number"
                       min={0}
-                      label="Valor fracción"
+                      label="Valor frac."
                       className="flex-1"
                       isInvalid={Boolean(stepErrors.fractionValue)}
                       errorMessage={stepErrors.fractionValue}
@@ -402,19 +469,22 @@ const Step3Rates = memo(function Step3Rates() {
               </div>
 
               {/* Cortesía */}
-              <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg space-y-3">
+              <div className="p-3 bg-default-50 dark:bg-zinc-700/50 border border-default-200 dark:border-zinc-600 rounded-lg space-y-3">
                 <Switch
                   isSelected={hasCourtesy}
                   onChange={(v) => setStepData((prev) => ({ ...prev, hasCourtesy: v }))}
                   aria-label="Activar minutos de cortesía"
                 >
-                  <span className="text-sm font-medium">¿Minutos de cortesía (Gratis)?</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-medium">Minutos de cortesía</span>
+                    <QuestionHelp title="Tiempo de Cortesía">Minutos iniciales gratis sin cobro.</QuestionHelp>
+                  </div>
                 </Switch>
                 {hasCourtesy && (
                   <Input
                     type="number"
                     min={0}
-                    label="Minutos de cortesía"
+                    label="Minutos gratis"
                     isInvalid={Boolean(stepErrors.graceMinutes)}
                     errorMessage={stepErrors.graceMinutes}
                     value={stepData.graceMinutes !== undefined ? String(stepData.graceMinutes) : ""}
@@ -425,10 +495,13 @@ const Step3Rates = memo(function Step3Rates() {
             </div>
 
             {/* Redondeo */}
-            <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg flex items-center justify-between">
-              <span className="text-sm font-medium">¿Cómo desea redondear el tiempo?</span>
+            <div className="p-3 bg-default-50 dark:bg-zinc-700/50 border border-default-200 dark:border-zinc-600 rounded-lg space-y-3">
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-medium">Redondeo de tiempo</span>
+                <QuestionHelp title="Redondeo de Tiempo">Cobro exacto o redondeado en bloques (15 min, 30 min, etc).</QuestionHelp>
+              </div>
               <Select
-                className="w-48"
+                className="w-full"
                 aria-label="Tipo de redondeo"
                 selectedKey={rounding}
                 onSelectionChange={(keys: any) => {
@@ -451,30 +524,35 @@ const Step3Rates = memo(function Step3Rates() {
 
           {/* 4. Tarifas por Vehículo */}
           <div className="space-y-4">
-            <p className="text-sm font-semibold border-b border-default-200 pb-2">Tarifas por Vehículo</p>
-            <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
+            <div className="flex items-center gap-2 pb-2">
+              <p className="text-sm font-semibold">4. Tarifas por Vehículo</p>
+              <span className="text-xs text-default-500">(Opcional)</span>
+            </div>
+            <div className="p-3 bg-default-50 dark:bg-zinc-700/50 border border-default-200 dark:border-zinc-600 rounded-lg space-y-3">
               <Switch
                 isSelected={enableRateByType}
                 onChange={(v) => setStepData((prev) => ({ ...prev, enableRateByType: v }))}
                 aria-label="Activar tarifas por tipo de vehículo"
               >
-                <span className="text-sm font-medium">¿Desea manejar tarifas diferentes por tipo de vehículo?</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium">Tarifas distintas por tipo de vehículo</span>
+                  <QuestionHelp title="Tarifas por Vehículo">Cobro diferente para Motos, Carros, Bicicletas, etc.</QuestionHelp>
+                </div>
               </Switch>
 
               {enableRateByType && vehicleTypes.length > 0 && (
-                <div className="mt-4 space-y-2">
+                <div className="space-y-2 pt-2 border-t border-default-200 dark:border-zinc-600">
                   <div className="grid gap-2 sm:grid-cols-2">
                     {vehicleTypes.map((typeCode) => {
                       const vehicle = VEHICLE_OPTIONS.find(v => v.code === typeCode);
-                      // I-08: use Number() + || 0 to avoid "" from parseNumber being falsy-but-not-nullish
                       const rate = getRatesByType()[typeCode] ?? (Number(stepData.baseValue) || 0);
                       return (
-                        <div key={typeCode} className="flex items-center justify-between p-2 bg-default-50 dark:bg-zinc-800/50 rounded-lg">
+                        <div key={typeCode} className="flex items-center justify-between p-2 bg-default-50 dark:bg-zinc-800/40 dark:border-zinc-600 rounded">
                           <span className="text-sm font-medium">{vehicle?.label || typeCode}</span>
                           <Input
                             type="number"
                             min={0}
-                            className="w-32"
+                            className="w-28"
                             aria-label={`Tarifa ${vehicle?.label ?? typeCode}`}
                             value={rate !== undefined ? String(rate) : ""}
                             onChange={(v) => {
@@ -490,11 +568,11 @@ const Step3Rates = memo(function Step3Rates() {
                 </div>
               )}
 
-              {/* U-08: explain to user why no inputs appear */}
               {enableRateByType && vehicleTypes.length === 0 && (
-                <p className="mt-3 text-sm text-default-500">
-                  Configura los tipos de vehículo en el Paso 1 para habilitar tarifas individuales.
-                </p>
+                <div className="flex items-center gap-2 p-2 bg-info/10 text-info rounded text-sm">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  Configura tipos de vehículo en Paso 1 para usar esta opción.
+                </div>
               )}
             </div>
           </div>

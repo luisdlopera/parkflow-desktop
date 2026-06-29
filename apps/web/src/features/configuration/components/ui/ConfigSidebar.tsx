@@ -89,10 +89,10 @@ export default function ConfigSidebar() {
                 <Link
                   key={item.key}
                   href={item.href}
-                  className={`group relative flex flex-col gap-3 rounded-2xl border p-5 transition-all hover:border-brand-400 dark:border-brand-900/60 hover:bg-brand-100 dark:bg-brand-900/30/30 ${
+                  className={`group relative flex flex-col gap-3 rounded-2xl border p-5 transition-all hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40 ${
                     isActive
-                      ? "border-brand-400 dark:border-brand-900/60 bg-brand-100 dark:bg-brand-900/30/50"
-                      : "border-default-200 bg-default-50 dark:bg-default-100"
+                      ? "border-brand-400 bg-brand-100 dark:border-brand-400 dark:bg-brand-900/50"
+                      : "border-default-200 bg-default-50 dark:border-default-700 dark:bg-default-100"
                   }`}
                 >
                   <div className="flex items-center gap-3">

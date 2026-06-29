@@ -1,6 +1,6 @@
 import { Input } from "@/components/bridge/Input";
 import { Switch } from "@/components/bridge/Switch";
-import { TimeField } from "@heroui/react";
+import { TimeInput } from "@/components/bridge/TimeInput";
 import { Time } from "@internationalized/date";
 import { memo } from "react";
 import { useOnboardingData } from "../OnboardingContext";
@@ -36,7 +36,7 @@ const Step5Shifts = memo(function Step5Shifts() {
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="flex items-center justify-between p-2 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
               <span className="text-sm w-1/2">Turno diurno inicio</span>
-              <TimeField 
+              <TimeInput 
                 className="w-1/2"
                 aria-label="Inicio turno diurno"
                 // @ts-expect-error type version mismatch between HeroUI and app
@@ -46,7 +46,7 @@ const Step5Shifts = memo(function Step5Shifts() {
             </div>
             <div className="flex items-center justify-between p-2 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
               <span className="text-sm w-1/2">Turno diurno fin</span>
-              <TimeField 
+              <TimeInput 
                 className="w-1/2"
                 aria-label="Fin turno diurno"
                 // @ts-expect-error type version mismatch between HeroUI and app
@@ -56,7 +56,7 @@ const Step5Shifts = memo(function Step5Shifts() {
             </div>
             <div className="flex items-center justify-between p-2 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
               <span className="text-sm w-1/2">Turno nocturno inicio</span>
-              <TimeField 
+              <TimeInput 
                 className="w-1/2"
                 aria-label="Inicio turno nocturno"
                 // @ts-expect-error type version mismatch between HeroUI and app
@@ -66,7 +66,7 @@ const Step5Shifts = memo(function Step5Shifts() {
             </div>
             <div className="flex items-center justify-between p-2 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
               <span className="text-sm w-1/2">Turno nocturno fin</span>
-              <TimeField 
+              <TimeInput 
                 className="w-1/2"
                 aria-label="Fin turno nocturno"
                 // @ts-expect-error type version mismatch between HeroUI and app

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Tabs, ListBox, Spinner, TimeField } from '@heroui/react';
+import { Tabs, ListBox, Spinner } from '@heroui/react';
 import { Time } from "@internationalized/date";
+import { TimeInput } from '@/components/bridge/TimeInput';
 import { Card } from '@/components/bridge/Card';
 import { Button } from '@/components/bridge/Button';
 import { Input } from '@/components/bridge/Input';
@@ -261,14 +262,14 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
 
             {shiftsEnabled && (
               <div className="grid grid-cols-2 gap-4">
-                <TimeField
+                <TimeInput
                   label="Turno Día - Inicio"
                   // @ts-expect-error type version mismatch between HeroUI and app
                   value={parseTimeString(dayShiftStart)}
                   onChange={(v) => v && setDayShiftStart(formatTime(v))}
                   isDisabled={loading}
                 />
-                <TimeField
+                <TimeInput
                   label="Turno Día - Fin"
                   // @ts-expect-error type version mismatch between HeroUI and app
                   value={parseTimeString(dayShiftEnd)}

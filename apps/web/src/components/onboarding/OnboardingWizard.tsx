@@ -230,7 +230,7 @@ function OnboardingContent() {
                 }
               }}
             >
-              Finalizar onboarding
+              Finalizar configuración
             </Button>
           )}
           {requiredCompleted && (

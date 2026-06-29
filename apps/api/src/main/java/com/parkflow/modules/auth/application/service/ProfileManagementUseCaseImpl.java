@@ -82,6 +82,8 @@ public class ProfileManagementUseCaseImpl implements ProfileManagementUseCase {
       throw new OperationException(HttpStatus.CONFLICT, "Ya existe un usuario con este documento");
     }
 
+    boolean emailChanged = !user.getEmail().equalsIgnoreCase(email);
+
     user.setName(request.name().trim());
     user.setEmail(email);
     user.setDocument(doc);
@@ -92,6 +94,15 @@ public class ProfileManagementUseCaseImpl implements ProfileManagementUseCase {
       user = appUserRepository.save(user);
     } catch (DataIntegrityViolationException ex) {
       throw new OperationException(HttpStatus.CONFLICT, "Datos duplicados (correo o documento)");
+    }
+
+    if (emailChanged) {
+      authSessionRepository.findByUserAndActiveTrue(user).forEach(session -> {
+        session.setActive(false);
+        session.setRevokedAt(OffsetDateTime.now());
+        authSessionRepository.save(session);
+      });
+      log.info("AUTH: Email changed - invalidated all active sessions for reauthentication - userId={}", userId);
     }
 
     log.info("AUTH: Profile updated - userId={}, email={}", user.getId(), SecurityUtils.maskEmail(user.getEmail()));

@@ -14,12 +14,14 @@ import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.auth.security.PasswordValidationService;
+import com.parkflow.common.infrastructure.email.EmailService;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +42,11 @@ public class PasswordResetManagementService implements PasswordResetUseCase {
   private final PasswordHashService passwordHashService;
   private final AuthAuditService authAuditService;
   private final PasswordValidationService passwordValidationService;
+  private final EmailService emailService;
   private final SecureRandom secureRandom = new SecureRandom();
+
+  @Value("${app.frontend-url:http://localhost:6001}")
+  private String frontendUrl;
 
   @Override
   @Transactional
@@ -81,6 +87,16 @@ public class PasswordResetManagementService implements PasswordResetUseCase {
     tokenRepository.save(token);
 
     log.info("AUTH: Password reset token generated - userId={}, tokenId={}", user.getId(), token.getId());
+
+    String resetLink = String.format("%s/reset-password?token=%s", frontendUrl, plainToken);
+
+    try {
+      emailService.sendPasswordResetEmail(email, resetLink);
+      log.info("AUTH: Password reset email sent - userId={}", user.getId());
+    } catch (Exception e) {
+      log.error("AUTH: Failed to send password reset email - userId={}, error={}", user.getId(), e.getMessage());
+      // Don't throw - email sending failure shouldn't block the reset request
+    }
 
     if (isDevEnvironment()) {
       log.info("DEV ONLY - Reset token for {}: {}", email, plainToken);
