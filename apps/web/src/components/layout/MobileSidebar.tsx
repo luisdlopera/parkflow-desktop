@@ -117,88 +117,115 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
 
           {/* Navigation */}
           <nav className="mt-6 space-y-1 flex-1">
-            {allNavItems.map((item) => {
-              const active = pathname === item.href;
-              const isConfig = item.href === "/configuracion";
-              const isConfigExpanded = configView && configView !== "ROOT";
+            {/* Back button (only show when in config view) */}
+            {configView && (
+              <button
+                onClick={() => setConfigView(false)}
+                className="flex items-center gap-2 text-xs font-semibold text-default-500 hover:text-default-800 dark:hover:text-default-200 transition-colors px-1 mb-3"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Volver al inicio
+              </button>
+            )}
 
-              return (
-                <div key={item.href}>
-                  {isConfig ? (
-                    <button
-                      onClick={() => setConfigView(configView ? false : "ROOT")}
-                      className={`
-                        w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
-                        ${configView
-                          ? "bg-brand text-default-50 border border-default-200"
-                          : "text-default-600 dark:text-default-400 hover:bg-default-200 dark:hover:bg-default-800 hover:text-foreground dark:hover:text-default-50"}
-                      `}
-                    >
-                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
-                      </svg>
-                      <span>{item.label}</span>
-                      <ChevronDown className={`ml-auto w-4 h-4 transition-transform ${configView ? "rotate-180" : ""}`} />
-                    </button>
-                  ) : (
-                    <Link
-                      href={item.href}
-                      onClick={onClose}
-                      className={`
-                        flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
-                        ${active
-                          ? "bg-brand text-default-50 border border-default-200"
-                          : "text-default-600 dark:text-default-400 hover:bg-default-200 dark:hover:bg-default-800 hover:text-foreground dark:hover:text-default-50"}
-                      `}
-                    >
-                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
-                      </svg>
-                      <span>{item.label}</span>
-                      {item.shortcut && (
-                        <kbd className={`
-                          ml-auto inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded
-                         ${active
-                             ? "bg-default-50 dark:bg-default-100/20 text-default-50"
-                             : "bg-default-200 dark:bg-default-700 text-default-500 dark:text-default-400"}
-                        `}>
-                          {item.shortcut}
-                        </kbd>
+            {/* Main nav items (hidden when in config view) */}
+            {!configView && (
+              <>
+                {allNavItems.map((item) => {
+                  const active = pathname === item.href;
+                  const isConfig = item.href === "/configuracion";
+
+                  return (
+                    <div key={item.href}>
+                      {isConfig ? (
+                        <button
+                          onClick={() => setConfigView("ROOT")}
+                          className={`
+                            w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
+                            ${active
+                              ? "bg-brand text-default-50 border border-default-200"
+                              : "text-default-600 dark:text-default-400 hover:bg-default-200 dark:hover:bg-default-800 hover:text-foreground dark:hover:text-default-50"}
+                          `}
+                        >
+                          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+                          </svg>
+                          <span>{item.label}</span>
+                          <ChevronDown className={`ml-auto w-4 h-4 transition-transform`} />
+                        </button>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          onClick={onClose}
+                          className={`
+                            flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
+                            ${active
+                              ? "bg-brand text-default-50 border border-default-200"
+                              : "text-default-600 dark:text-default-400 hover:bg-default-200 dark:hover:bg-default-800 hover:text-foreground dark:hover:text-default-50"}
+                          `}
+                        >
+                          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+                          </svg>
+                          <span>{item.label}</span>
+                          {item.shortcut && (
+                            <kbd className={`
+                              ml-auto inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded
+                             ${active
+                                 ? "bg-default-50 dark:bg-default-100/20 text-default-50"
+                                 : "bg-default-200 dark:bg-default-700 text-default-500 dark:text-default-400"}
+                            `}>
+                              {item.shortcut}
+                            </kbd>
+                          )}
+                        </Link>
                       )}
-                    </Link>
-                  )}
-
-                  {/* Config submenu */}
-                  {isConfig && configView && (
-                    <div className="mt-2 ml-2 space-y-1 border-l border-default-300/50 dark:border-default-600/50">
-                      {CONFIG_NAVIGATION.map((group) => (
-                        <div key={group.id}>
-                          <p className="text-xs font-semibold text-default-500 uppercase px-3 py-1 tracking-wider">{group.label}</p>
-                          {group.items.map((menuItem) => {
-                            const isActive = pathname === menuItem.href;
-                            return (
-                              <Link
-                                key={menuItem.href}
-                                href={menuItem.href}
-                                onClick={onClose}
-                                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all pl-4 ${
-                                  isActive
-                                    ? "bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400"
-                                    : "text-default-600 dark:text-default-400 hover:bg-default-100 dark:hover:bg-default-800 hover:text-foreground dark:hover:text-default-50"
-                                }`}
-                              >
-                                <span className={`w-1 h-1 rounded-full ${isActive ? "bg-brand-600 dark:bg-brand-400" : "bg-brand"}`} />
-                                {menuItem.label}
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      ))}
                     </div>
-                  )}
+                  );
+                })}
+              </>
+            )}
+
+            {/* Config submenu (shown when in config view) */}
+            {configView && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 px-1">
+                  <svg className="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span className="text-sm font-semibold text-foreground">Configuración</span>
                 </div>
-              );
-            })}
+
+                {CONFIG_NAVIGATION.map((group) => (
+                  <div key={group.id}>
+                    <p className="text-xs font-semibold text-default-500 uppercase px-3 py-2 tracking-wider">{group.label}</p>
+                    <div className="space-y-1">
+                      {group.items.map((menuItem) => {
+                        const isActive = pathname === menuItem.href;
+                        return (
+                          <Link
+                            key={menuItem.href}
+                            href={menuItem.href}
+                            onClick={onClose}
+                            className={`
+                              flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-all group
+                              ${isActive
+                                ? "bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400"
+                                : "text-default-600 dark:text-default-400 hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40 border border-default-200 dark:border-default-700"}
+                            `}
+                          >
+                            <span className={`w-1 h-1 rounded-full ${isActive ? "bg-brand-600 dark:bg-brand-400" : "bg-brand"}`} />
+                            {menuItem.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </nav>
 
           {/* Help tip */}
