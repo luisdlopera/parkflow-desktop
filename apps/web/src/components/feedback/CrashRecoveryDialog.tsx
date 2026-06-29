@@ -40,10 +40,10 @@ export function CrashRecoveryDialog({ formKey, onRestore, onDismiss }: CrashReco
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-default-100/50 backdrop-blur-sm">
-      <div className="bg-default-50 dark:bg-default-100 rounded-2xl border border-default-200 p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200 dark:bg-default-200 dark:border border-default-200">
+      <div className="bg-default-50 dark:bg-zinc-800 rounded-2xl border border-default-200 dark:border-zinc-700 p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+            <svg className="w-6 h-6 text-amber-600 dark:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
@@ -53,11 +53,11 @@ export function CrashRecoveryDialog({ formKey, onRestore, onDismiss }: CrashReco
           </div>
         </div>
 
-        <div className="bg-default-50 rounded-xl p-4 mb-4 dark:bg-default-200">
-          <p className="text-sm text-default-600">
+        <div className="bg-default-50 dark:bg-zinc-700/50 rounded-xl p-4 mb-4 border border-default-200 dark:border-zinc-600">
+          <p className="text-sm text-default-600 dark:text-default-300">
             Se encontraron datos de una sesión anterior que no se completó:
           </p>
-          <ul className="mt-2 space-y-1 text-sm text-default-700 dark:text-default-300">
+          <ul className="mt-2 space-y-1 text-sm text-default-700 dark:text-default-200">
             <li className="flex items-center gap-2">
               <svg className="w-4 h-4 text-default-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

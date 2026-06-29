@@ -44,7 +44,7 @@ export function ThemeToggle() {
       </button>
 
       {isDark && (
-        <span className="ml-1 text-xs text-gray-500 dark:text-default-400 hidden sm:inline">
+        <span className="ml-1 text-xs text-gray-500 dark:text-default-400 hidden lg:inline">
           Modo nocturno
         </span>
       )}

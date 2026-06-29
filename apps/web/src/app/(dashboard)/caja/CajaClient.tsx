@@ -210,7 +210,7 @@ export default function CajaClient() {
             <div className="text-sm space-y-1">
               <div className="flex items-center gap-2">
                 <p className="text-default-500">Terminal configurada</p>
-                <Tooltip content="Editar desde Configuración › Cajas">
+                <Tooltip content="¿Deseas cambiar el nombre de esta terminal? Ve a Configuración › Cajas para editarlo.">
                   <HelpCircle className="w-4 h-4 text-default-400 hover:text-default-600 cursor-help transition-colors" />
                 </Tooltip>
               </div>

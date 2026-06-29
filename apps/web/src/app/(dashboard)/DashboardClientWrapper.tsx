@@ -14,6 +14,7 @@ import { ScrollToTopButton } from "@/components/animations";
 import { useSessionTimeout } from "@/hooks/core/useSessionTimeout";
 import { useAuthBroadcast } from "@/hooks/auth/useAuthBroadcast";
 import { useSessionMonitor } from "@/hooks/auth/useSessionMonitor";
+import { useSessionKeepAlive } from "@/hooks/auth/useSessionKeepAlive";
 import { SessionExpiredModal } from "@/components/auth/SessionExpiredModal";
 
 function useOnlineStatus() {
@@ -39,6 +40,7 @@ export default function DashboardClientWrapper({ children }: { children: ReactNo
   const { warningVisible, secondsLeft, extend, doLogout } = useSessionTimeout(15);
   const { isExpired, renewSession, forceLogout } = useSessionMonitor();
   useAuthBroadcast();
+  useSessionKeepAlive(); // Keep session alive while user is active
   const isOnline = useOnlineStatus();
 
   const handleToggle = useCallback(() => {
