@@ -247,10 +247,10 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                           key={sub.key}
                           href={sub.href}
                           className={`
-                            flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
+                            flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all border
                             ${subActive
-                              ? "bg-brand text-default-50 border border-default-200"
-                              : "text-default-600 dark:text-default-300 hover:bg-default-200 dark:hover:bg-default-300 hover:text-default-900 dark:hover:text-default-50"}
+                              ? "bg-brand text-default-50 border-brand-400"
+                              : "text-default-600 dark:text-default-300 border-transparent hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40 hover:text-default-900 dark:hover:text-default-50"}
                           `}
                         >
                           <Icon className="w-5 h-5 flex-shrink-0" />
@@ -278,23 +278,23 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                                 router.push("/configuracion");
                               }}
                               className={`
-                                w-full flex items-center rounded-xl font-medium transition-all border
+                                w-full flex items-center rounded-xl font-medium transition-all border group
                                 ${pathname?.startsWith("/configuracion")
-                                  ? "bg-brand text-default-50 border-default-200"
-                                  : "text-default-600 dark:text-default-300 border-default-200 dark:border-default-700 hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40"}
+                                  ? "bg-brand text-default-50 border-brand-400"
+                                  : "text-default-600 dark:text-default-300 border-transparent hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40"}
                                 ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
                               `}
                               title={collapsed ? item.label : undefined}
                               aria-label={item.label}
                             >
                               <div className="flex items-center gap-3">
-                                <svg className={`w-5 h-5 flex-shrink-0 ${collapsed ? "text-default-700 dark:text-gray-100" : "text-default-600 dark:text-gray-200"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <svg className={`w-5 h-5 flex-shrink-0 transition-colors ${collapsed ? "text-default-700 dark:text-gray-100" : pathname?.startsWith("/configuracion") ? "text-default-50" : "text-default-600 dark:text-gray-200 group-hover:text-brand-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
                                 </svg>
                                 {!collapsed && <span className="truncate">{item.label}</span>}
                               </div>
                               {!collapsed && (
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <svg className="w-4 h-4 transition-colors text-default-400 group-hover:text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>
                               )}
@@ -308,25 +308,25 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                           key={item.href}
                           href={item.href}
                           className={`
-                            flex items-center rounded-xl font-medium transition-all border
+                            flex items-center rounded-xl font-medium transition-all border group
                             ${active
-                              ? "bg-brand text-default-50 border-default-200"
-                              : "text-default-600 dark:text-default-300 border-default-200 dark:border-default-700 hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40"}
+                              ? "bg-brand text-default-50 border-brand-400"
+                              : "text-default-600 dark:text-default-300 border-transparent hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40"}
                             ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
                           `}
                           title={collapsed ? item.label : undefined}
                           aria-label={item.label}
                         >
                           <div className="flex items-center gap-3">
-                            <svg className={`w-5 h-5 flex-shrink-0 ${collapsed ? "text-default-700 dark:text-gray-100" : "text-default-600 dark:text-gray-200"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <svg className={`w-5 h-5 flex-shrink-0 transition-colors ${collapsed ? "text-default-700 dark:text-gray-100" : active ? "text-default-50" : "text-default-600 dark:text-gray-200 group-hover:text-brand-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
                             </svg>
                             {!collapsed && <span className="truncate">{item.label}</span>}
                           </div>
                           {!collapsed && item.shortcut && (
                             <kbd className={`
-                              inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded flex-shrink-0
-                              ${active ? "bg-default-50 dark:bg-default-100/20 text-default-50" : "bg-default-200 text-default-500 dark:bg-gray-700 dark:text-gray-200"}
+                              inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded flex-shrink-0 transition-colors
+                              ${active ? "bg-default-50 dark:bg-default-100/20 text-default-50" : "bg-default-200 text-default-500 dark:bg-gray-700 dark:text-gray-200 group-hover:bg-brand-200 group-hover:text-brand-600"}
                             `} aria-hidden="true">
                               {item.shortcut}
                             </kbd>

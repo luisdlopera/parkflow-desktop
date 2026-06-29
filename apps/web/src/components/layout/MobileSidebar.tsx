@@ -144,39 +144,39 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                         <button
                           onClick={() => setConfigView("ROOT")}
                           className={`
-                            w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all border
+                            w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all border group
                             ${active
-                              ? "bg-brand text-default-50 border-default-200"
-                              : "text-default-600 dark:text-default-400 border-default-200 dark:border-default-700 hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40 hover:text-foreground dark:hover:text-default-50"}
+                              ? "bg-brand text-default-50 border-brand-400"
+                              : "text-default-600 dark:text-default-400 border-transparent hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40 hover:text-foreground dark:hover:text-default-50"}
                           `}
                         >
-                          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className={`w-5 h-5 flex-shrink-0 transition-colors ${active ? "text-default-50" : "group-hover:text-brand-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
                           </svg>
                           <span>{item.label}</span>
-                          <ChevronDown className={`ml-auto w-4 h-4 transition-transform`} />
+                          <ChevronDown className={`ml-auto w-4 h-4 transition-colors ${active ? "text-default-50" : "text-default-400 group-hover:text-brand-600"}`} />
                         </button>
                       ) : (
                         <Link
                           href={item.href}
                           onClick={onClose}
                           className={`
-                            flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all border
+                            flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all border group
                             ${active
-                              ? "bg-brand text-default-50 border-default-200"
-                              : "text-default-600 dark:text-default-400 border-default-200 dark:border-default-700 hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40 hover:text-foreground dark:hover:text-default-50"}
+                              ? "bg-brand text-default-50 border-brand-400"
+                              : "text-default-600 dark:text-default-400 border-transparent hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40 hover:text-foreground dark:hover:text-default-50"}
                           `}
                         >
-                          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className={`w-5 h-5 flex-shrink-0 transition-colors ${active ? "text-default-50" : "group-hover:text-brand-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
                           </svg>
                           <span>{item.label}</span>
                           {item.shortcut && (
                             <kbd className={`
-                              ml-auto inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded
+                              ml-auto inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded transition-colors
                              ${active
                                  ? "bg-default-50 dark:bg-default-100/20 text-default-50"
-                                 : "bg-default-200 dark:bg-default-700 text-default-500 dark:text-default-400"}
+                                 : "bg-default-200 dark:bg-default-700 text-default-500 dark:text-default-400 group-hover:bg-brand-200 group-hover:text-brand-600"}
                             `}>
                               {item.shortcut}
                             </kbd>
@@ -211,13 +211,13 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                             href={menuItem.href}
                             onClick={onClose}
                             className={`
-                              flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-all group
+                              flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-all border group
                               ${isActive
-                                ? "bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400"
-                                : "text-default-600 dark:text-default-400 hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40 border border-default-200 dark:border-default-700"}
+                                ? "bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 border-brand-400"
+                                : "text-default-600 dark:text-default-400 border-transparent hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40"}
                             `}
                           >
-                            <span className={`w-1 h-1 rounded-full ${isActive ? "bg-brand-600 dark:bg-brand-400" : "bg-brand"}`} />
+                            <span className={`w-1 h-1 rounded-full transition-colors ${isActive ? "bg-brand-600 dark:bg-brand-400" : "bg-default-300 group-hover:bg-brand-600"}`} />
                             {menuItem.label}
                           </Link>
                         );
