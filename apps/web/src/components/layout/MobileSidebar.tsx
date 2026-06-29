@@ -41,6 +41,13 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
     fetchRuntimeConfig().then(setRuntimeConfig).catch(() => setRuntimeConfig(null));
   }, []);
 
+  // Sync configView with pathname to highlight active configuration submenu
+  useEffect(() => {
+    if (pathname.startsWith("/configuracion")) {
+      setConfigView("ROOT");
+    }
+  }, [pathname]);
+
   const visibleItems = navItems.filter((item) => {
     if (item.href === "/caja") return flags.cash;
     return true;
@@ -167,17 +174,24 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                       {CONFIG_NAVIGATION.map((group) => (
                         <div key={group.id}>
                           <p className="text-xs font-semibold text-default-500 uppercase px-3 py-1 tracking-wider">{group.label}</p>
-                          {group.items.map((menuItem) => (
-                            <Link
-                              key={menuItem.href}
-                              href={menuItem.href}
-                              onClick={onClose}
-                              className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-default-600 dark:text-default-400 hover:bg-default-100 dark:hover:bg-default-800 hover:text-foreground dark:hover:text-default-50 transition-all pl-4"
-                            >
-                              <span className="w-1 h-1 rounded-full bg-brand" />
-                              {menuItem.label}
-                            </Link>
-                          ))}
+                          {group.items.map((menuItem) => {
+                            const isActive = pathname === menuItem.href;
+                            return (
+                              <Link
+                                key={menuItem.href}
+                                href={menuItem.href}
+                                onClick={onClose}
+                                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all pl-4 ${
+                                  isActive
+                                    ? "bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400"
+                                    : "text-default-600 dark:text-default-400 hover:bg-default-100 dark:hover:bg-default-800 hover:text-foreground dark:hover:text-default-50"
+                                }`}
+                              >
+                                <span className={`w-1 h-1 rounded-full ${isActive ? "bg-brand-600 dark:bg-brand-400" : "bg-brand"}`} />
+                                {menuItem.label}
+                              </Link>
+                            );
+                          })}
                         </div>
                       ))}
                     </div>
