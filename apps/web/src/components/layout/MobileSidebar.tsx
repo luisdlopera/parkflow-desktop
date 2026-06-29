@@ -9,6 +9,7 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 import { useFeatureFlags } from "@/providers/FeatureFlagProvider";
 import { CONFIG_NAVIGATION } from "@/features/configuration/constants/navigation";
 import { NAV_ITEMS, useConfigView } from "@/lib/navigation";
+import { ExpandableNavButton } from "./ExpandableNavButton";
 import { ChevronDown } from "lucide-react";
 
 interface MobileSidebarProps {
@@ -124,21 +125,25 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                   return (
                     <div key={item.href}>
                       {isConfig ? (
-                        <button
+                        <ExpandableNavButton
+                          label={item.label}
+                          icon={
+                            <svg
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d={item.icon}
+                              />
+                            </svg>
+                          }
                           onClick={() => setConfigView("ROOT")}
-                          className={`
-                            w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all border group
-                            ${active
-                              ? "bg-brand text-default-50 border-brand-400"
-                              : "text-default-600 dark:text-default-400 border-transparent hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40 hover:text-foreground dark:hover:text-default-50"}
-                          `}
-                        >
-                          <svg className={`w-5 h-5 flex-shrink-0 transition-colors ${active ? "text-default-50" : "group-hover:text-brand-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
-                          </svg>
-                          <span>{item.label}</span>
-                          <ChevronDown className={`ml-auto w-4 h-4 transition-colors ${active ? "text-default-50" : "text-default-400 group-hover:text-brand-600"}`} />
-                        </button>
+                          isActive={active}
+                        />
                       ) : (
                         <Link
                           href={item.href}

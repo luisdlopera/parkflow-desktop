@@ -9,6 +9,7 @@ import { useFeatureFlags } from "@/providers/FeatureFlagProvider";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { CONFIG_NAVIGATION } from "@/features/configuration/constants/navigation";
 import { NAV_ITEMS, useConfigView } from "@/lib/navigation";
+import { ExpandableNavButton } from "./ExpandableNavButton";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
@@ -134,23 +135,16 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
 
                   <nav className="space-y-1">
                     {CONFIG_NAVIGATION.map((group) => (
-                      <button
+                      <ExpandableNavButton
                         key={group.id}
+                        label={group.label}
+                        icon={<group.icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />}
                         onClick={() => {
                           setConfigView(group.id);
                           router.push(`/configuracion?group=${group.id}`);
                         }}
-                        aria-label={`Ver opciones de ${group.label}`}
-                        className="w-full flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all border group text-default-600 dark:text-default-300 border-transparent hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40 cursor-pointer"
-                      >
-                        <div className="flex items-center gap-3">
-                          <group.icon className="w-5 h-5 flex-shrink-0 transition-colors group-hover:text-brand-600" aria-hidden="true" />
-                          <span>{group.label}</span>
-                        </div>
-                        <svg className="w-4 h-4 text-default-400 transition-colors group-hover:text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
+                        collapsed={false}
+                      />
                     ))}
                   </nav>
                 </motion.div>
@@ -220,33 +214,30 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                       if (isConfig) {
                         return (
                           <div key={item.href}>
-                            <button
+                            <ExpandableNavButton
+                              label={item.label}
+                              icon={
+                                <svg
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d={item.icon}
+                                  />
+                                </svg>
+                              }
                               onClick={() => {
                                 setConfigView("ROOT");
                                 router.push("/configuracion");
                               }}
-                              className={`
-                                w-full flex items-center rounded-xl font-medium transition-all border group
-                                ${pathname?.startsWith("/configuracion")
-                                  ? "bg-brand text-default-50 border-brand-400"
-                                  : "text-default-600 dark:text-default-300 border-transparent hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40"}
-                                ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
-                              `}
-                              title={collapsed ? item.label : undefined}
-                              aria-label={item.label}
-                            >
-                              <div className="flex items-center gap-3">
-                                <svg className={`w-5 h-5 flex-shrink-0 transition-colors ${collapsed ? "text-default-700 dark:text-gray-100" : pathname?.startsWith("/configuracion") ? "text-default-50" : "text-default-600 dark:text-gray-200 group-hover:text-brand-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
-                                </svg>
-                                {!collapsed && <span className="truncate">{item.label}</span>}
-                              </div>
-                              {!collapsed && (
-                                <svg className="w-4 h-4 transition-colors text-default-400 group-hover:text-brand-600 bg-default-200 group-hover:bg-brand-200 rounded px-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                              )}
-                            </button>
+                              isActive={pathname?.startsWith("/configuracion")}
+                              collapsed={collapsed}
+                            />
                           </div>
                         );
                       }
