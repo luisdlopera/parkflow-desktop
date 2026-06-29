@@ -157,3 +157,64 @@ export function getUserFriendlyErrorMessage(error: unknown, fallbackAction: Fron
 
   return FallbackActionMessages[fallbackAction];
 }
+
+export function getApiErrorMessage(error: any): string {
+  if (!error) {
+    return "Ocurrió un error interno. Intenta nuevamente más tarde.";
+  }
+
+  // Network / connection errors
+  const isNetworkError =
+    error.status === 0 ||
+    error.code === "NETWORK_ERROR" ||
+    error.code === "ERR_NETWORK" ||
+    (error.message && (
+      error.message.toLowerCase().includes("network error") ||
+      error.message.toLowerCase().includes("failed to fetch") ||
+      error.message.toLowerCase().includes("sin conexion") ||
+      error.message.toLowerCase().includes("no se pudo conectar")
+    ));
+
+  if (isNetworkError) {
+    return "No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.";
+  }
+
+  // Extract from backend structures
+  const userMessage =
+    error.userMessage ||
+    error.response?.data?.userMessage ||
+    error.data?.userMessage;
+
+  const message =
+    error.message ||
+    error.response?.data?.message ||
+    error.data?.message;
+
+  const developerMessage =
+    error.developerMessage ||
+    error.response?.data?.developerMessage ||
+    error.data?.developerMessage;
+
+  const extractedMessage = userMessage || message || developerMessage;
+
+  // Check HTTP statuses
+  const status = error.status || error.response?.status;
+
+  if (status === 400) {
+    return extractedMessage || "Datos inválidos o incompletos. Por favor, revisa la información ingresada.";
+  }
+  if (status === 401) {
+    return "Tu sesión expiró. Inicia sesión nuevamente.";
+  }
+  if (status === 403) {
+    return "No tienes permisos para guardar esta configuración.";
+  }
+  if (status === 409) {
+    return extractedMessage || "Conflicto con los datos actuales. Es posible que el registro ya exista o haya sido modificado.";
+  }
+  if (status === 500) {
+    return "Ocurrió un error interno. Intenta nuevamente más tarde.";
+  }
+
+  return extractedMessage || "Ocurrió un error interno. Intenta nuevamente más tarde.";
+}

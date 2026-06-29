@@ -12,6 +12,8 @@ import {
 import { useOnboardingStore } from "@/lib/stores/onboarding.store";
 import { useOnboardingStatus } from "@/hooks/auth/useOnboardingStatus";
 import { saveOnboardingStep, type OnboardingStatus } from "@/lib/api/onboarding.api";
+import { toast } from "@heroui/react";
+import { getApiErrorMessage } from "@/lib/errors/error-messages";
 import {
   REQUIRED_STEPS,
   VEHICLE_OPTIONS,
@@ -135,6 +137,14 @@ export function OnboardingProvider({
         if (err.name === "AbortError") return; // Ignored if aborted
         setSaveState("error");
         setTimeout(() => setSaveState("idle"), 3000);
+
+        if (step === 2) {
+          toast.danger("No se pudo guardar", {
+            description: getApiErrorMessage(err),
+            timeout: 6000,
+          });
+        }
+
         // If 403 Forbidden, the admin likely changed the plan constraints.
         // Force a strict re-fetch of the status to get the updated allowed steps.
         if (err?.response?.status === 403 || err?.status === 403) {

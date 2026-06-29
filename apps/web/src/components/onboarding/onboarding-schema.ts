@@ -23,23 +23,92 @@ export const Step1Schema = z.object({
 });
 
 export const getStep2Schema = (vehicleTypes: string[]) => z.object({
-  totalCapacity: z.coerce.number().min(1, "La capacidad total debe ser mayor a 0."),
+  totalCapacity: z.preprocess(
+    (val) => {
+      if (val === "" || val === undefined || val === null) return undefined;
+      const num = Number(val);
+      return Number.isNaN(num) ? val : num;
+    },
+    z.number({ required_error: "La capacidad total debe ser mayor a 0.", invalid_type_error: "La capacidad total debe ser un número entero." })
+      .int("La capacidad total debe ser un número entero.")
+      .min(1, "La capacidad total debe ser mayor a 0.")
+  ),
   controlSlots: z.coerce.boolean().optional(),
-  capacityByType: z.record(z.coerce.number()).optional(),
+  capacityByType: z.record(z.any()).optional(),
+  allowLowerCapacity: z.coerce.boolean().optional(),
 }).superRefine((data, ctx) => {
   if (data.controlSlots) {
     const byType = data.capacityByType || {};
     const selectedTypes = vehicleTypes.length > 0 ? vehicleTypes : Object.keys(byType);
-    const sum = selectedTypes.reduce((acc, type) => acc + (byType[type] || 0), 0);
-    
-    if (sum > data.totalCapacity) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `La suma de capacidades por tipo (${sum}) supera la capacidad total (${data.totalCapacity}).`, path: ["capacityByType"] });
+    let hasInvalidField = false;
+    let sum = 0;
+
+    for (const type of selectedTypes) {
+      const val = byType[type];
+      if (val === "" || val === undefined || val === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "El cupo no puede estar vacío.",
+          path: ["capacityByType", type]
+        });
+        hasInvalidField = true;
+      } else {
+        const num = Number(val);
+        if (Number.isNaN(num)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Ingresa un número válido.",
+            path: ["capacityByType", type]
+          });
+          hasInvalidField = true;
+        } else if (!Number.isInteger(num)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "El cupo debe ser un número entero.",
+            path: ["capacityByType", type]
+          });
+          hasInvalidField = true;
+        } else if (num < 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Debe existir al menos 1 cupo por tipo de vehículo habilitado.",
+            path: ["capacityByType", type]
+          });
+          hasInvalidField = true;
+        } else {
+          sum += num;
+        }
+      }
     }
-    
+
+    if (hasInvalidField) {
+      return;
+    }
+
+    if (sum > data.totalCapacity) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `La suma de capacidades por tipo (${sum}) supera la capacidad total (${data.totalCapacity}).`,
+        path: ["capacityByType"]
+      });
+    } else if (sum < data.totalCapacity) {
+      if (!data.allowLowerCapacity) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `La suma de capacidades por tipo (${sum}) es menor que la capacidad total (${data.totalCapacity}).`,
+          path: ["allowLowerCapacity"]
+        });
+      }
+    }
+
     if (vehicleTypes.length > 0) {
       const invalidTypes = Object.keys(byType).filter(t => t && !vehicleTypes.includes(t));
       if (invalidTypes.length > 0) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `La capacidad por tipo contiene tipos no configurados en paso 1: ${invalidTypes.join(", ")}.`, path: ["capacityByType"] });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `La capacidad por tipo contiene tipos no configurados en paso 1: ${invalidTypes.join(", ")}.`,
+          path: ["capacityByType"]
+        });
       }
     }
   }
