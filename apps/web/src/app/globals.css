@@ -1214,4 +1214,15 @@ textarea:active {
   [data-slot="menu-item"]:focus-visible {
     outline: none !important;
   }
+
+  /* Columns button styling when columns are selected */
+  button[data-columns-selection="active"] {
+    background-color: rgb(217, 119, 87, 0.1) !important;
+    color: #d97757 !important;
+  }
+
+  .dark button[data-columns-selection="active"] {
+    background-color: rgba(217, 119, 87, 0.1) !important;
+    color: #f4a17b !important;
+  }
 }

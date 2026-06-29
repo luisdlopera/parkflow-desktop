@@ -466,7 +466,8 @@ function DataTableInner<T extends object>({
                 variant="flat"
                 size="sm"
                 endContent={<ChevronDown className="size-4" />}
-                className={visibleColumns !== "all" && visibleColumns.size > 0 ? "bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400" : ""}
+                data-columns-selection={visibleColumns !== "all" ? "active" : ""}
+                className={visibleColumns !== "all" && visibleColumns.size > 0 ? "data-columns-selected" : ""}
               >
                 Columnas
               </Button>
