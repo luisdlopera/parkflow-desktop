@@ -126,6 +126,7 @@ export function UserMenu() {
           <DropdownItem
             key="edit-profile"
             textValue="Editar perfil"
+            className="data-[hover]:bg-default-50 dark:data-[hover]:bg-default-900/20 data-[hover]:text-default-foreground"
             startContent={
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -147,6 +148,7 @@ export function UserMenu() {
             <DropdownItem
               key="admin"
               textValue="Panel Super Admin"
+              className="data-[hover]:bg-default-50 dark:data-[hover]:bg-default-900/20 data-[hover]:text-default-foreground"
               startContent={<Shield className="w-4 h-4 shrink-0" aria-hidden />}
               onPress={() => router.push("/admin")}
             >
