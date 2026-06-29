@@ -6,7 +6,9 @@ import { VehicleEntryFormValues } from "@/lib/schemas/vehicle.schema";
 import { Input } from "@/components/bridge/Input";
 import { Button } from "@/components/bridge/Button";
 import { Tooltip } from "@/components/bridge/Tooltip";
+import { Checkbox } from "@/components/bridge/Checkbox";
 import { CheckCircle2, AlertCircle } from "lucide-react";
+import { useFormErrorHandling } from "@/hooks/useFormErrorHandling";
 
 interface CarEntryFormUIProps {
   form: UseFormReturn<VehicleEntryFormValues>;
@@ -34,12 +36,44 @@ export const CarEntryFormUI = memo(function CarEntryFormUI({
   noPlate,
 }: CarEntryFormUIProps) {
   const { isSubmitting } = form.formState;
+  const { translatedErrors } = useFormErrorHandling(form);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Placa — Input nativo gigante */}
-      <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-brand-500 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
+      {/* Opciones de Placa */}
+      <div className="flex gap-4 px-1">
+        <Controller
+          name="foreignPlate"
+          control={form.control}
+          render={({ field }) => (
+            <Checkbox
+              isSelected={field.value || false}
+              onChange={field.onChange}
+              className="cursor-pointer"
+            >
+              Placa extranjera
+            </Checkbox>
+          )}
+        />
+        <Controller
+          name="noPlate"
+          control={form.control}
+          render={({ field }) => (
+            <Checkbox
+              isSelected={field.value || false}
+              onChange={field.onChange}
+              className="cursor-pointer"
+            >
+              No tiene placa
+            </Checkbox>
+          )}
+        />
+      </div>
+
+      {/* Placa — Input nativo gigante (hidden when noPlate) */}
+      {!noPlate && (
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-brand-500 rounded-2xl opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
         <div className="relative bg-default-50 dark:bg-default-100 dark:bg-default-900 rounded-2xl p-1">
           <Controller
             name="plate"
@@ -90,9 +124,7 @@ export const CarEntryFormUI = memo(function CarEntryFormUI({
             )}
           />
         </div>
-      </div>
-
-
+      )}
 
       {/* Estado del formulario */}
       <div
