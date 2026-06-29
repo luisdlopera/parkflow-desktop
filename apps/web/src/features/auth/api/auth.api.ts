@@ -53,8 +53,9 @@ export async function logoutAllSessions(): Promise<void> {
       credentials: "include",
       headers: { "Content-Type": "application/json" }
     });
-  } catch {
-    // Best-effort
+  } catch (error) {
+    // Best-effort: log error but continue with cleanup
+    console.error("Error calling /logout/all:", error);
   }
   await clearSession();
 }

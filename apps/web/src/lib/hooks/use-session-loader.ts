@@ -17,6 +17,15 @@ export function useSessionLoader() {
     const maxRetries = 2;
 
     const doRestore = async () => {
+      // Check if we just logged out — don't attempt to restore session
+      const justLoggedOut = typeof window !== 'undefined' && window.sessionStorage?.getItem('parkflow_just_logged_out');
+      if (justLoggedOut) {
+        console.log('[useSessionLoader] Just logged out, skipping session restore');
+        window.sessionStorage?.removeItem('parkflow_just_logged_out');
+        setUser(null);
+        return;
+      }
+
       try {
         const response = await fetchWithCredentials(`${authBase()}/restore-session`, {
           method: 'POST',

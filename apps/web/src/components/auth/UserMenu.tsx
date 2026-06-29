@@ -34,13 +34,23 @@ export function UserMenu() {
     setIsLoading(true);
     try {
       const session = await loadSession();
-      if (session) await logoutFromApi(session);
+      if (session) {
+        try {
+          await logoutFromApi(session);
+        } catch (error) {
+          console.error("Advertencia: No se pudo contactar al servidor para logout, pero se limpiará la sesión local", error);
+        }
+      }
       await clearSession();
       broadcastAuthEvent({ type: "auth:logout" });
+      setShowConfirmLogout(false);
+      // Mark that we just logged out so useSessionLoader doesn't try to restore the session
+      if (typeof window !== "undefined") {
+        window.sessionStorage?.setItem("parkflow_just_logged_out", "true");
+      }
       router.push("/login");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -48,11 +58,20 @@ export function UserMenu() {
   const handleLogoutAll = async () => {
     setIsLoading(true);
     try {
-      await logoutAllSessions();
+      try {
+        await logoutAllSessions();
+      } catch (error) {
+        console.error("Advertencia: No se pudo contactar al servidor para logout all, pero se limpiará la sesión local", error);
+        await clearSession();
+      }
+      setShowConfirmLogout(false);
+      // Mark that we just logged out so useSessionLoader doesn't try to restore the session
+      if (typeof window !== "undefined") {
+        window.sessionStorage?.setItem("parkflow_just_logged_out", "true");
+      }
       router.push("/login");
     } catch (error) {
       console.error("Error al cerrar todas las sesiones:", error);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -82,7 +101,7 @@ export function UserMenu() {
       <Avatar
         name="?"
         size="sm"
-        className="bg-slate-200 text-slate-500 dark:bg-neutral-800 dark:text-neutral-300"
+        className="bg-default-200 text-default-500 dark:bg-neutral-800 dark:text-neutral-300"
       />
     );
   }
@@ -90,15 +109,15 @@ export function UserMenu() {
   return (
     <Dropdown placement="bottom-end">
       <DropdownTrigger>
-        <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-neutral-800/35 rounded-full px-2 py-1 transition-colors">
+        <div className="flex items-center gap-2 cursor-pointer hover:bg-default-100 dark:hover:bg-neutral-800/35 rounded-full px-2 py-1 transition-colors">
           <div className="hidden sm:block text-right">
-            <p className="text-xs font-medium text-slate-700 dark:text-neutral-200 leading-tight">{user.name}</p>
-            <p className="text-[10px] text-slate-500 dark:text-neutral-400 leading-tight">{getRoleLabel(user.role)}</p>
+            <p className="text-xs font-medium text-default-700 dark:text-neutral-200 leading-tight">{user.name}</p>
+            <p className="text-[10px] text-default-500 dark:text-neutral-400 leading-tight">{getRoleLabel(user.role)}</p>
           </div>
           <Avatar
             name={getInitials(user.name)}
             size="sm"
-            className="bg-primary-500 text-white font-semibold"
+            className="bg-brand-500 text-default-50 font-semibold"
           />
         </div>
       </DropdownTrigger>
@@ -186,7 +205,7 @@ export function UserMenu() {
         <Modal.Content>
           <Modal.Header>Cerrar Sesión</Modal.Header>
           <Modal.Body>
-            <p className="text-slate-600 text-sm">
+            <p className="text-default-600 text-sm">
               {logoutType === "all"
                 ? "¿Estás seguro de que deseas cerrar todas las sesiones activas en todos los dispositivos?"
                 : "¿Estás seguro de que deseas cerrar tu sesión actual?"}

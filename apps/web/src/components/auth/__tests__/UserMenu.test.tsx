@@ -130,6 +130,7 @@ describe("UserMenu", () => {
     await waitFor(() => {
       expect(mockClearSession).toHaveBeenCalled();
       expect(mockPush).toHaveBeenCalledWith("/login");
+      expect(sessionStorage.getItem("parkflow_just_logged_out")).toBe("true");
     });
   });
 });
