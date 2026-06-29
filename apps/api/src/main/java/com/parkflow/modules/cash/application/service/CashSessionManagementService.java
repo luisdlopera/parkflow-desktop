@@ -12,6 +12,7 @@ import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.parking.operation.domain.SessionStatus;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
@@ -50,6 +51,7 @@ public class CashSessionManagementService implements CashSessionManagementUseCas
     private final CashSessionDenominationRepository cashSessionDenominationRepository;
     private final ParkingSessionPort parkingSessionRepository;
     private final CashPolicyResolver cashPolicyResolver;
+    private final ParkingSitePort parkingSitePort;
 
     @Override
     @Transactional
@@ -78,6 +80,11 @@ public class CashSessionManagementService implements CashSessionManagementUseCas
                                     ? request.registerLabel().trim()
                                     : terminal);
                             r.setUpdatedAt(OffsetDateTime.now());
+                            UUID companyId = TenantContext.getTenantId();
+                            if (companyId != null) {
+                                parkingSitePort.findByCodeAndCompanyId(site, companyId)
+                                    .ifPresent(r::setSiteRef);
+                            }
                             return cashRegisterRepository.save(r);
                         });
         } catch (org.springframework.dao.DataIntegrityViolationException e) {

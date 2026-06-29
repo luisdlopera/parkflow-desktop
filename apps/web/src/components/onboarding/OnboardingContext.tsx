@@ -150,7 +150,7 @@ export function OnboardingProvider({
         if (step === 2) {
           toast.danger("No se pudo guardar", {
             description: getApiErrorMessage(err),
-            timeout: 6000,
+            timeout: 10000,
           });
         }
 

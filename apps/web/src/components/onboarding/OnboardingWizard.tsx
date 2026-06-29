@@ -69,7 +69,7 @@ function OnboardingContent() {
       const firstError = Object.values(validation.errors)[0];
       toast.danger("Completa los campos requeridos", {
         description: firstError,
-        timeout: 5000,
+        timeout: 8000,
       });
       return;
     }

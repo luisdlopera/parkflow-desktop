@@ -934,6 +934,17 @@ textarea:focus-within,
   color: #a5b4fc !important;
 }
 
+/* HeroUI Card — remove shadows and apply 1px border */
+[data-slot="base"]:where(.card, [role="region"]) {
+  box-shadow: none !important;
+  border: 1px solid var(--color-default-200, #E5E5E0) !important;
+}
+
+.dark [data-slot="base"]:where(.card, [role="region"]),
+[data-theme="dark"] [data-slot="base"]:where(.card, [role="region"]) {
+  border-color: #3f3f46 !important;
+}
+
 /* HeroUI Card — ensure dark surfaces inside admin/operational shells */
 .dark [data-slot="base"].border border-default-200,
 .dark [data-slot="base"].border border-default-200,

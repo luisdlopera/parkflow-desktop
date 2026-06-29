@@ -33,7 +33,6 @@ export function ConfigPageHeader({ title, description, groupLabel, groupId, sect
           <span className="text-amber-700/80">{sectionLabel}</span>
         </div>
         <h1 className="text-3xl font-semibold text-foreground">{title}</h1>
-        {description && <p className="mt-2 max-w-3xl text-sm text-default-600">{description}</p>}
       </div>
     </div>
   );
