@@ -33,7 +33,15 @@ const Step12Audit = memo(function Step12Audit() {
   }, [step1Data, step4Data, step2Data, step3Data, vehicleTypes]);
 
   // UI mapping
-  const vehiclesLabel = vehicleTypes.length > 0 ? vehicleTypes.map(t => t.toLowerCase()).join(", ") : "no configurados";
+  const vehicleLabels: Record<string, string> = {
+    CAR: "Carros",
+    MOTORCYCLE: "Motos",
+    BICYCLE: "Bicicletas",
+    VAN: "Vans",
+    TRUCK: "Camiones",
+    BUS: "Buses",
+  };
+  const vehiclesLabel = vehicleTypes.length > 0 ? vehicleTypes.map(t => vehicleLabels[t] || t).join(", ") : "no configurados";
   const capacity = step2Data?.totalCapacity ? String(step2Data.totalCapacity) : "0";
   
   const billingModel = step3Data?.billingModel === "FLAT" ? "Tarifa Plana" : 

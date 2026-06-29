@@ -175,7 +175,7 @@ const Step1VehicleTypes = memo(function Step1VehicleTypes() {
           </div>
 
           {helmetHandling === "LOCKERS" && (
-            <div className="p-4 bg-default-50 dark:bg-zinc-900 border border-default-200 rounded-xl space-y-3">
+            <div className="p-4 bg-default-50 dark:bg-zinc-800/60 border border-default-200 dark:border-default-700 rounded-xl space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <label className="text-sm font-medium text-default-900">
