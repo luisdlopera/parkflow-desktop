@@ -462,7 +462,12 @@ function DataTableInner<T extends object>({
 
           {!hideColumnsToggle && (
             <Dropdown>
-              <Button variant="flat" size="sm" endContent={<ChevronDown className="size-4" />}>
+              <Button
+                variant="flat"
+                size="sm"
+                endContent={<ChevronDown className="size-4" />}
+                className={visibleColumns !== "all" && visibleColumns.size > 0 ? "bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400" : ""}
+              >
                 Columnas
               </Button>
               <Dropdown.Popover>
