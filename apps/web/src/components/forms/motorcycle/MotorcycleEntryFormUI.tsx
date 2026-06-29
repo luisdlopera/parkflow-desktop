@@ -153,7 +153,7 @@ export function MotorcycleEntryFormUI({
                       onSubmit();
                     }
                   }}
-                  className={`w-full text-5xl sm:text-6xl font-black uppercase tracking-[0.2em] text-center h-[200px] text-foreground dark:text-default-200 placeholder:text-default-200 dark:placeholder:text-default-600 bg-default-50/50 dark:bg-default-800/50 hover:bg-default-50 dark:hover:bg-default-800 focus:bg-default-50 dark:bg-default-100 dark:focus:bg-default-800 transition-all rounded-xl border-0 outline-none focus:outline-none focus:ring-0 ${
+                  className={`w-full text-5xl sm:text-6xl font-black uppercase tracking-[0.2em] text-center h-[200px] text-foreground dark:text-default-200 placeholder:text-default-200 dark:placeholder:text-default-600 bg-default-50/50 dark:bg-default-800/50 hover:bg-default-50/50 dark:hover:bg-default-800/50 focus:bg-default-50/50 dark:focus:bg-default-800/50 transition-all rounded-xl border-0 outline-none focus:outline-none focus:ring-0 ${
                     fieldState.error ? "border-2 border-red-600 dark:border-red-500" : ""
                   }`}
                   autoComplete="off"

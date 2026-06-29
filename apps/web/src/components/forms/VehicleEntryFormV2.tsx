@@ -84,7 +84,7 @@ export default function VehicleEntryFormV2({
 
   const form = useForm<VehicleEntryFormValues>({
     resolver: zodResolver(vehicleEntrySchema),
-    mode: "onChange",
+    mode: "onSubmit",
     defaultValues: {
       plate: "",
       type: settings.defaultVehicleType,
@@ -322,17 +322,6 @@ export default function VehicleEntryFormV2({
           reprintLoading={reprintLoading}
         />
       )}
-
-      {/* Header stats + mode selector — extraído a componente */}
-      <VehicleEntryHeader
-        stats={stats}
-        occupancy={occupancy}
-        settings={settings}
-        updateSettings={updateSettings}
-        showSettings={showSettings}
-        setShowSettings={setShowSettings}
-        isSingleType={isSingleType}
-      />
 
       <VehicleEntrySettings
         isSingleType={isSingleType}
