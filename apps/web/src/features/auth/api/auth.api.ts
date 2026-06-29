@@ -28,6 +28,10 @@ export async function login(request: LoginRequest): Promise<StoredSession> {
     rememberMe: request.rememberMe ?? false
   };
   await saveSession(session);
+  // Clear any previous logout flag to allow session restoration in the future
+  if (typeof window !== "undefined") {
+    window.localStorage?.removeItem("parkflow_just_logged_out");
+  }
   return session;
 }
 
@@ -45,6 +49,10 @@ export async function logoutFromApi(session: StoredSession): Promise<void> {
 }
 
 export async function logoutAllSessions(): Promise<void> {
+  // Mark logout immediately so any tab restoration is prevented
+  if (typeof window !== "undefined") {
+    window.localStorage?.setItem("parkflow_just_logged_out", "true");
+  }
   const session = await loadSession();
   if (!session) return;
   try {

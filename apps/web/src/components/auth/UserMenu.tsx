@@ -46,7 +46,7 @@ export function UserMenu() {
       setShowConfirmLogout(false);
       // Mark that we just logged out so useSessionLoader doesn't try to restore the session
       if (typeof window !== "undefined") {
-        window.sessionStorage?.setItem("parkflow_just_logged_out", "true");
+        window.localStorage?.setItem("parkflow_just_logged_out", "true");
       }
       router.push("/login");
     } catch (error) {
@@ -67,7 +67,7 @@ export function UserMenu() {
       setShowConfirmLogout(false);
       // Mark that we just logged out so useSessionLoader doesn't try to restore the session
       if (typeof window !== "undefined") {
-        window.sessionStorage?.setItem("parkflow_just_logged_out", "true");
+        window.localStorage?.setItem("parkflow_just_logged_out", "true");
       }
       router.push("/login");
     } catch (error) {

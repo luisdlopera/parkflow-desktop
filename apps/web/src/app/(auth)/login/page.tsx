@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/bridge/Button";
 import { Checkbox } from "@/components/bridge/Checkbox";
@@ -152,6 +152,10 @@ export default function LoginPage() {
 
       // Notify other tabs that login succeeded
       broadcastAuthEvent({ type: "auth:login" });
+      // Clear any previous logout flag so useSessionLoader can restore future sessions normally
+      if (typeof window !== "undefined") {
+        window.localStorage?.removeItem("parkflow_just_logged_out");
+      }
       useAuthStore.getState().setUser(session.user);
       useAuthStore.getState().setSessionExpiresAt(session.session.accessTokenExpiresAtIso);
       if (!session.user.onboardingCompleted) {
@@ -181,15 +185,15 @@ export default function LoginPage() {
             ? setupForm.handleSubmit(onSetupSubmit)(e)
             : loginForm.handleSubmit(onLoginSubmit)(e));
         }}
-        className="surface w-full space-y-6 rounded-[2rem] p-6 sm:p-8 md:p-10 border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950"
+        className="surface w-full space-y-6 rounded-[2rem] p-6 sm:p-8 md:p-10 border border-default-200 dark:border-default-200 bg-default-50 dark:bg-default-100 dark:bg-default-100"
         aria-label={isSetupMode ? "Formulario de configuración inicial" : "Formulario de inicio de sesión"}
       >
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-700/80 mb-2">Parkflow</p>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl font-black text-foreground dark:text-default-50 tracking-tight">
             {isSetupMode ? "Configuración Inicial" : "¡Bienvenido!"}
           </h1>
-          <p className="text-slate-500 text-sm mt-2">
+          <p className="text-default-500 text-sm mt-2">
             {isSetupMode
               ? "Crea tu cuenta de administrador y registra tu negocio"
               : "Ingresa tus credenciales para continuar"}
@@ -203,8 +207,8 @@ export default function LoginPage() {
 
         <div className="space-y-4">
           {isSetupMode && (
-            <div className="space-y-4 bg-slate-50 dark:bg-neutral-900 p-5 rounded-2xl border border-slate-200 dark:border-neutral-800 mb-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Datos del Administrador</p>
+            <div className="space-y-4 bg-default-50 dark:bg-default-100 p-5 rounded-2xl border border-default-200 dark:border-default-200 mb-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-default-400">Datos del Administrador</p>
 
               <Input
                 {...setupForm.register("adminName")}
@@ -212,14 +216,14 @@ export default function LoginPage() {
                 label="Nombre Completo"
                 placeholder="Nombre del Administrador"
                 size="md"
-                startContent={<User size={18} className="text-slate-400" />}
+                startContent={<User size={18} className="text-default-400" />}
                 errorMessage={setupForm.formState.errors.adminName?.message}
                 isInvalid={!!setupForm.formState.errors.adminName}
               />
             </div>
           )}
 
-          <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 space-y-4">
+          <div className="bg-default-50 dark:bg-default-100 dark:bg-default-100 p-5 rounded-2xl border border-default-200/60 dark:border-default-200 space-y-4">
             <Input
               data-testid="username"
               {...(isSetupMode ? setupForm.register("email") : loginForm.register("email"))}
@@ -229,7 +233,7 @@ export default function LoginPage() {
               autoComplete="username"
               isRequired
               size="md"
-              startContent={<Mail size={18} className="text-slate-400" />}
+              startContent={<Mail size={18} className="text-default-400" />}
               errorMessage={
                 isSetupMode
                   ? setupForm.formState.errors.email?.message
@@ -253,13 +257,13 @@ export default function LoginPage() {
                   autoComplete="new-password"
                   isRequired
                   size="md"
-                  startContent={<Lock size={18} className="text-slate-400" />}
+                  startContent={<Lock size={18} className="text-default-400" />}
                   endContent={
                     <button
                       type="button"
                       aria-label="Mostrar contraseña"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors focus:outline-none"
+                      className="text-xs font-semibold text-default-400 hover:text-default-600 dark:text-default-500 dark:hover:text-default-300 transition-colors focus:outline-none"
                       tabIndex={-1}
                     >
                       {showPassword ? "Ocultar" : "Mostrar"}
@@ -275,7 +279,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   autoComplete="new-password"
                   size="md"
-                  startContent={<Lock size={18} className="text-slate-400" />}
+                  startContent={<Lock size={18} className="text-default-400" />}
                   errorMessage={setupForm.formState.errors.confirmPassword?.message}
                   isInvalid={!!setupForm.formState.errors.confirmPassword}
                 />
@@ -290,13 +294,13 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 isRequired
                 size="md"
-                startContent={<Lock size={18} className="text-slate-400" />}
+                startContent={<Lock size={18} className="text-default-400" />}
                 endContent={
                   <button
                     type="button"
                     aria-label="Mostrar contraseña"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors focus:outline-none"
+                    className="text-xs font-semibold text-default-400 hover:text-default-600 dark:text-default-500 dark:hover:text-default-300 transition-colors focus:outline-none"
                     tabIndex={-1}
                   >
                     {showPassword ? "Ocultar" : "Mostrar"}
@@ -309,8 +313,8 @@ export default function LoginPage() {
           </div>
 
           {isSetupMode && (
-            <div className="space-y-4 bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 mt-6">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Datos de la Empresa / Parqueadero</p>
+            <div className="space-y-4 bg-default-50 dark:bg-default-100 dark:bg-default-100 p-5 rounded-2xl border border-default-200/60 dark:border-default-200 mt-6">
+              <p className="text-xs font-bold uppercase tracking-wider text-default-400">Datos de la Empresa / Parqueadero</p>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
@@ -319,7 +323,7 @@ export default function LoginPage() {
                   label="Nombre del Parqueadero"
                   placeholder="Mi Parqueadero Local"
                   size="md"
-                  startContent={<Building size={18} className="text-slate-400" />}
+                  startContent={<Building size={18} className="text-default-400" />}
                   errorMessage={setupForm.formState.errors.companyName?.message}
                   isInvalid={!!setupForm.formState.errors.companyName}
                 />
@@ -330,7 +334,7 @@ export default function LoginPage() {
                   label="NIT / Registro Tributario"
                   placeholder="900123456"
                   size="md"
-                  startContent={<Landmark size={18} className="text-slate-400" />}
+                  startContent={<Landmark size={18} className="text-default-400" />}
                   errorMessage={setupForm.formState.errors.companyNit?.message}
                   isInvalid={!!setupForm.formState.errors.companyNit}
                 />
@@ -351,14 +355,21 @@ export default function LoginPage() {
 
         {!isSetupMode && (
           <div className="flex items-center justify-between">
-            <Checkbox
-              isSelected={loginForm.watch("rememberMe")}
-              onValueChange={(checked: boolean) => loginForm.setValue("rememberMe", checked)}
-              size="sm"
-              className="text-slate-600"
-            >
-              Recordarme
-            </Checkbox>
+            <Controller
+              control={loginForm.control}
+              name="rememberMe"
+              render={({ field: { onChange, value, ref } }) => (
+                <Checkbox
+                  ref={ref}
+                  isSelected={value}
+                  onValueChange={onChange}
+                  size="sm"
+                  className="text-default-600"
+                >
+                  Recordarme
+                </Checkbox>
+              )}
+            />
             <Link href="/forgot-password" className="text-sm font-bold text-amber-700 hover:underline">
               ¿Olvidaste tu contraseña?
             </Link>
@@ -370,7 +381,7 @@ export default function LoginPage() {
           type="submit"
           color={isSetupMode ? "success" : "primary"}
           size="lg"
-          className="w-full font-bold border border-default-200 text-white"
+          className="w-full font-bold border border-default-200 text-default-50"
           isLoading={isSubmitting}
           isDisabled={isSubmitting}
         >
@@ -384,7 +395,7 @@ export default function LoginPage() {
           )}
         </Button>
 
-        <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-2">
+        <p className="text-center text-[10px] font-bold text-default-400 uppercase tracking-widest pt-2">
           &copy; 2026 ParkFlow Operations. v2.0
         </p>
       </form>

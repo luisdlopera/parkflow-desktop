@@ -18,10 +18,10 @@ export function useSessionLoader() {
 
     const doRestore = async () => {
       // Check if we just logged out — don't attempt to restore session
-      const justLoggedOut = typeof window !== 'undefined' && window.sessionStorage?.getItem('parkflow_just_logged_out');
+      const justLoggedOut = typeof window !== 'undefined' && window.localStorage?.getItem('parkflow_just_logged_out');
       if (justLoggedOut) {
         console.log('[useSessionLoader] Just logged out, skipping session restore');
-        window.sessionStorage?.removeItem('parkflow_just_logged_out');
+        window.localStorage?.removeItem('parkflow_just_logged_out');
         setUser(null);
         return;
       }
@@ -75,6 +75,20 @@ export function useSessionLoader() {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [setUser, setSessionExpiresAt]);
+
+  // Listen for logout events from other tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'parkflow_just_logged_out' && e.newValue === 'true') {
+        console.log('[useSessionLoader] Logout detected from another tab');
+        setUser(null);
+        window.localStorage?.removeItem('parkflow_just_logged_out');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [setUser]);
 
   return { isLoading };
 }
