@@ -200,6 +200,7 @@ export function useTheme() {
 
   return {
     theme: themeState.theme,
+    userSetTheme: themeState.userSetTheme,
     setTheme: themeState.setTheme,
     isDark: themeState.isDark,
     applyBrandColors,

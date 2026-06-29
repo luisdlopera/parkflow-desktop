@@ -32,7 +32,7 @@ export function SuperAdminGate({ children }: { children: React.ReactNode }) {
 
   if (allowed === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6 text-sm text-slate-600">
+      <div className="flex min-h-screen items-center justify-center p-6 text-sm text-default-600">
         <div className="flex flex-col items-center gap-3">
           <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
           Verificando acceso de administrador...

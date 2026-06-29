@@ -78,7 +78,7 @@ export default function MonitoringPage() {
           <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-danger/10 rounded-lg"><AlertTriangle className="w-5 h-5 text-danger" /></div><div><p className="text-sm text-default-500">Bloqueos Activos</p><p className="text-xl font-bold">{statistics.unresolvedBlocks}</p></div></Card.Content></Card>
           <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-success/10 rounded-lg"><Check className="w-5 h-5 text-success" /></div><div><p className="text-sm text-default-500">Resueltos (7d)</p><p className="text-xl font-bold">{statistics.resolvedBlocks}</p></div></Card.Content></Card>
           <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-warning/10 rounded-lg"><Flag className="w-5 h-5 text-warning" /></div><div><p className="text-sm text-default-500">Falsos Positivos</p><p className="text-xl font-bold">{statistics.falsePositives}</p></div></Card.Content></Card>
-          <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-primary/10 rounded-lg"><Activity className="w-5 h-5 text-primary" /></div><div><p className="text-sm text-default-500">Tiempo Promedio Resolución</p><p className="text-xl font-bold">{Math.round(statistics.averageResolutionTimeMinutes)}m</p></div></Card.Content></Card>
+          <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-brand/10 rounded-lg"><Activity className="w-5 h-5 text-brand" /></div><div><p className="text-sm text-default-500">Tiempo Promedio Resolución</p><p className="text-xl font-bold">{Math.round(statistics.averageResolutionTimeMinutes)}m</p></div></Card.Content></Card>
         </div>
       )}
 
@@ -112,8 +112,8 @@ export default function MonitoringPage() {
                   const maxCount = Math.max(...statistics.blocksByDay.map((d) => d.count), 1);
                   return (
                     <div key={day.date} className="flex-1 flex flex-col items-center gap-2">
-                      <div className="w-full bg-primary/20 rounded-t" style={{ height: `${(day.count / maxCount) * 100}%`, minHeight: day.count > 0 ? "4px" : "0" }}>
-                        {day.count > 0 && <div className="w-full h-full bg-primary rounded-t" />}
+                      <div className="w-full bg-brand/20 rounded-t" style={{ height: `${(day.count / maxCount) * 100}%`, minHeight: day.count > 0 ? "4px" : "0" }}>
+                        {day.count > 0 && <div className="w-full h-full bg-brand rounded-t" />}
                       </div>
                       <span className="text-xs text-default-400">{new Date(day.date).toLocaleDateString("es-CO", { weekday: "short" })}</span>
                       <span className="text-xs font-medium">{day.count}</span>

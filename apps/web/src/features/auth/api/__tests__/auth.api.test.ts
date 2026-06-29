@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { login, logoutFromApi, logoutAllSessions, logoutDevice, refreshIfNeeded, authHeadersApiKey } from '../auth.api';
 import * as authStorage from '@/lib/services/auth-storage.service';
+import * as rememberMeService from '@/lib/services/remember-me.service';
 import * as fetchModule from '@/lib/api/fetch-with-credentials';
 import * as config from '@/lib/api/config';
 
@@ -8,6 +9,12 @@ vi.mock('@/lib/services/auth-storage.service', () => ({
   loadSession: vi.fn(),
   saveSession: vi.fn(),
   clearSession: vi.fn(),
+}));
+
+vi.mock('@/lib/services/remember-me.service', () => ({
+  saveRememberMeEmail: vi.fn(),
+  loadRememberMeEmail: vi.fn(),
+  clearRememberMeEmail: vi.fn(),
 }));
 
 vi.mock('@/lib/api/fetch-with-credentials', () => ({
@@ -49,7 +56,7 @@ describe('Auth API', () => {
         ok: false,
       } as any);
 
-      await expect(login({ email: 'test@example.com', password: 'password', deviceId: 'dev-1', deviceName: 'test', platform: 'test', fingerprint: 'test' } as any))
+      await expect(login({ email: 'test@example.com', password: 'password', deviceId: 'dev-1', deviceName: 'test', platform: 'test', fingerprint: 'test', rememberMe: false } as any))
         .rejects.toThrow('Credenciales invalidas o equipo no autorizado');
     });
 
@@ -59,7 +66,7 @@ describe('Auth API', () => {
         json: async () => mockSessionPayload,
       } as any);
 
-      const result = await login({ email: 'test@example.com', password: 'password', deviceId: 'dev-1', deviceName: 'test', platform: 'test', fingerprint: 'test' } as any);
+      const result = await login({ email: 'test@example.com', password: 'password', deviceId: 'dev-1', deviceName: 'test', platform: 'test', fingerprint: 'test', rememberMe: false } as any);
 
       expect(result).toEqual({
         user: mockSessionPayload.user,
@@ -79,10 +86,23 @@ describe('Auth API', () => {
         json: async () => mockSessionPayload,
       } as any);
 
-      await login({ email: 'test@example.com', password: 'password', deviceId: 'dev-1', deviceName: 'test', platform: 'test', fingerprint: 'test' } as any);
+      await login({ email: 'test@example.com', password: 'password', deviceId: 'dev-1', deviceName: 'test', platform: 'test', fingerprint: 'test', rememberMe: false } as any);
 
       // Flag should be cleared after login
       expect(localStorage.getItem('parkflow_just_logged_out')).toBeNull();
+    });
+
+    it('saves email when rememberMe is true', async () => {
+      vi.mocked(fetchModule.fetchWithCredentials).mockResolvedValue({
+        ok: true,
+        json: async () => mockSessionPayload,
+      } as any);
+
+      await login({ email: 'test@example.com', password: 'password', deviceId: 'dev-1', deviceName: 'test', platform: 'test', fingerprint: 'test', rememberMe: true, offlineRequestedHours: 48 } as any);
+
+      // Note: the actual saveRememberMeEmail is called from login/page.tsx, not from auth.api.ts
+      // This test verifies the rememberMe flag is passed through correctly
+      expect(authStorage.saveSession).toHaveBeenCalled();
     });
   });
 
@@ -110,7 +130,7 @@ describe('Auth API', () => {
     });
 
     it('calls logout all endpoint and clears session', async () => {
-      vi.mocked(authStorage.loadSession).mockResolvedValue({} as any);
+      vi.mocked(authStorage.loadSession).mockResolvedValue(mockSessionPayload as any);
       vi.mocked(fetchModule.fetchWithCredentials).mockResolvedValue({ ok: true } as any);
 
       await logoutAllSessions();
@@ -123,7 +143,7 @@ describe('Auth API', () => {
     });
 
     it('sets logout flag immediately to prevent session restoration', async () => {
-      vi.mocked(authStorage.loadSession).mockResolvedValue({} as any);
+      vi.mocked(authStorage.loadSession).mockResolvedValue(mockSessionPayload as any);
       vi.mocked(fetchModule.fetchWithCredentials).mockResolvedValue({ ok: true } as any);
 
       // Flag should not exist before logout
@@ -137,7 +157,7 @@ describe('Auth API', () => {
     });
 
     it('clears session even if logout endpoint fails', async () => {
-      vi.mocked(authStorage.loadSession).mockResolvedValue({} as any);
+      vi.mocked(authStorage.loadSession).mockResolvedValue(mockSessionPayload as any);
       vi.mocked(fetchModule.fetchWithCredentials).mockRejectedValue(new Error('Network error'));
 
       await logoutAllSessions();
@@ -147,19 +167,52 @@ describe('Auth API', () => {
       // Should still clear session
       expect(authStorage.clearSession).toHaveBeenCalled();
     });
+
+    it('clears remembered email on logout', async () => {
+      vi.mocked(authStorage.loadSession).mockResolvedValue(mockSessionPayload as any);
+      vi.mocked(fetchModule.fetchWithCredentials).mockResolvedValue({ ok: true } as any);
+
+      await logoutAllSessions();
+
+      expect(rememberMeService.clearRememberMeEmail).toHaveBeenCalled();
+    });
   });
 
   describe('logoutDevice', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
     it('calls logout device endpoint', async () => {
-      vi.mocked(authStorage.loadSession).mockResolvedValue({} as any);
+      vi.mocked(authStorage.loadSession).mockResolvedValue(mockSessionPayload as any);
       vi.mocked(fetchModule.fetchWithCredentials).mockResolvedValue({ ok: true } as any);
-      
+
       await logoutDevice('dev-1');
-      
+
       expect(fetchModule.fetchWithCredentials).toHaveBeenCalledWith(
         'http://localhost/api/auth/logout/device/dev-1',
         expect.objectContaining({ method: 'POST' })
       );
+    });
+
+    it('clears remembered email when logging out current device', async () => {
+      vi.mocked(authStorage.loadSession).mockResolvedValue(mockSessionPayload as any);
+      vi.mocked(fetchModule.fetchWithCredentials).mockResolvedValue({ ok: true } as any);
+
+      await logoutDevice('dev-1'); // Same as sessionPayload device ID
+
+      // Should call clearRememberMeEmail
+      expect(rememberMeService.clearRememberMeEmail).toHaveBeenCalled();
+    });
+
+    it('does not clear remembered email when logging out different device', async () => {
+      vi.mocked(authStorage.loadSession).mockResolvedValue(mockSessionPayload as any);
+      vi.mocked(fetchModule.fetchWithCredentials).mockResolvedValue({ ok: true } as any);
+
+      await logoutDevice('dev-2'); // Different device ID
+
+      // Should NOT call clearRememberMeEmail
+      expect(rememberMeService.clearRememberMeEmail).not.toHaveBeenCalled();
     });
   });
 

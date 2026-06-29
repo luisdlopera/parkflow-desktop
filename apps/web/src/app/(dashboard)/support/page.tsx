@@ -20,7 +20,7 @@ export default function SupportDashboardPage() {
             <h4 className="font-bold text-large">Open Tickets</h4>
           </Card.Header>
           <Card.Content className="py-2">
-            <p className="text-4xl font-bold text-primary">24</p>
+            <p className="text-4xl font-bold text-brand">24</p>
           </Card.Content>
         </Card>
         

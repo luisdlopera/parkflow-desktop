@@ -134,8 +134,8 @@ export default function LockersPage() {
         <div className="bg-amber-50 rounded-full p-4 mb-4">
           <Tags className="w-10 h-10 text-amber-500" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Lockers no configurados</h2>
-        <p className="text-slate-500 max-w-md mb-6">
+        <h2 className="text-2xl font-bold text-foreground mb-2">Lockers no configurados</h2>
+        <p className="text-default-500 max-w-md mb-6">
           Tu parqueadero actualmente no tiene habilitado el sistema de lockers para la custodia de cascos.
         </p>
         <Link href="/configuracion/operacion">
@@ -201,8 +201,8 @@ export default function LockersPage() {
       </div>
 
       {showCreateSingle && (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-          <h3 className="font-semibold text-sm text-slate-700">Nuevo locker</h3>
+        <div className="rounded-2xl border border-default-200 bg-default-50 p-4 space-y-3">
+          <h3 className="font-semibold text-sm text-default-700">Nuevo locker</h3>
           <div className="flex flex-col sm:flex-row gap-3">
             <Input
               label="Código"
@@ -231,9 +231,9 @@ export default function LockersPage() {
       )}
 
       {showBatch && (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-          <h3 className="font-semibold text-sm text-slate-700">Crear lockers en lote</h3>
-          <p className="text-xs text-slate-500">
+        <div className="rounded-2xl border border-default-200 bg-default-50 p-4 space-y-3">
+          <h3 className="font-semibold text-sm text-default-700">Crear lockers en lote</h3>
+          <p className="text-xs text-default-500">
             Genera varios lockers con un prefijo común y un rango numérico. Ej: L-01, L-02, ..., L-10
           </p>
           <div className="flex flex-col sm:flex-row gap-3 items-end">
@@ -281,7 +281,7 @@ export default function LockersPage() {
             key: "label",
             label: "Etiqueta",
             priority: "medium",
-            render: (row) => row.label ?? <span className="text-slate-400">—</span>,
+            render: (row) => row.label ?? <span className="text-default-400">—</span>,
           },
           {
             key: "status",
@@ -365,9 +365,9 @@ export default function LockersPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">{label}</p>
-      <p className="text-2xl font-bold text-slate-900">{value}</p>
+    <div className="rounded-2xl border border-default-200 bg-default-50 dark:bg-default-100 px-4 py-3">
+      <p className="text-xs uppercase tracking-wider text-default-500 font-semibold">{label}</p>
+      <p className="text-2xl font-bold text-foreground">{value}</p>
     </div>
   );
 }

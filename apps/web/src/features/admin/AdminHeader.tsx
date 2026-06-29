@@ -10,13 +10,13 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   return (
-    <header className="flex items-center justify-between border-b border-slate-200/70 dark:border-neutral-800/70 bg-white/70 dark:bg-neutral-950/65 px-4 lg:px-8 py-4 backdrop-blur">
+    <header className="flex items-center justify-between border-b border-default-200/70 dark:border-neutral-800/70 bg-default-50 dark:bg-default-100/70 dark:bg-neutral-950/65 px-4 lg:px-8 py-4 backdrop-blur">
       {/* Left side: Hamburger + Title */}
       <div className="flex items-center gap-3">
         {/* Mobile menu button */}
         <button
           onClick={onMenuClick}
-          className="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800/35 text-slate-600 dark:text-neutral-300 transition-colors"
+          className="md:hidden p-2 rounded-lg hover:bg-default-100 dark:hover:bg-neutral-800/35 text-default-600 dark:text-neutral-300 transition-colors"
           aria-label="Abrir menú"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,12 +25,12 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 text-white border border-default-200 -500/20">
+          <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 text-default-50 border border-default-200 -500/20">
             <Shield className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400 hidden sm:block">ParkFlow Admin</p>
-            <h2 className="text-lg font-bold text-slate-900">Panel de Administración</h2>
+            <p className="text-xs uppercase tracking-[0.2em] text-default-400 hidden sm:block">ParkFlow Admin</p>
+            <h2 className="text-lg font-bold text-foreground">Panel de Administración</h2>
           </div>
         </div>
       </div>
@@ -49,7 +49,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         </div>
 
         {/* Divider */}
-        <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-neutral-800 mx-1" />
+        <div className="hidden sm:block w-px h-8 bg-default-200 dark:bg-neutral-800 mx-1" />
 
         {/* User Menu with Avatar */}
         <UserMenu />

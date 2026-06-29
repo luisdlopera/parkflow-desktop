@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/bridge/Checkbox";
 import { Input } from "@/components/bridge/Input";
 import { login } from "@/features/auth/api/auth.api";
 import { loadSession, saveSession } from "@/lib/services/auth-storage.service";
+import { loadRememberMeEmail, saveRememberMeEmail, clearRememberMeEmail } from "@/lib/services/remember-me.service";
 import { broadcastAuthEvent } from "@/hooks/auth/useAuthBroadcast";
 import { currentUser } from "@/lib/services/auth-domain.service";
 import { checkSetupRequired } from "@/lib/api/auth-api";
@@ -42,6 +43,21 @@ export default function LoginPage() {
       rememberMe: false,
     },
   });
+
+  // Load remembered email on component mount
+  useEffect(() => {
+    void (async () => {
+      if (typeof window === "undefined") return;
+      const remembered = loadRememberMeEmail();
+      if (remembered) {
+        loginForm.reset({
+          email: remembered.email,
+          password: "",
+          rememberMe: true,
+        });
+      }
+    })();
+  }, [loginForm]);
 
   // Initialize setup form with react-hook-form
   const setupForm = useForm<SetupInput>({
@@ -149,6 +165,13 @@ export default function LoginPage() {
         rememberMe: data.rememberMe,
         offlineRequestedHours: 48
       });
+
+      // Save email if user marked "Recordarme"
+      if (data.rememberMe) {
+        saveRememberMeEmail(emailValue);
+      } else {
+        clearRememberMeEmail();
+      }
 
       // Notify other tabs that login succeeded
       broadcastAuthEvent({ type: "auth:login" });

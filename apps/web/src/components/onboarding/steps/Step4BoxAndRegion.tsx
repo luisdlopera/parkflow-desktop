@@ -46,7 +46,7 @@ const Step4BoxAndRegion = memo(function Step4BoxAndRegion() {
           ))}
         </div>
         
-        <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
           <span className="text-sm font-medium">Prefijo de placa (opcional)</span>
           <Input 
             className="w-32"
@@ -59,7 +59,7 @@ const Step4BoxAndRegion = memo(function Step4BoxAndRegion() {
       </div>
       
       <div className="border-t border-default-200 pt-4 space-y-4">
-        <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
           <span className="text-sm font-medium">¿Cuántas terminales/cajas tienes?</span>
           <Input
             className="w-24"
@@ -75,6 +75,9 @@ const Step4BoxAndRegion = memo(function Step4BoxAndRegion() {
         </div>
         <Switch isSelected={Boolean(stepData.enabled)} onChange={(v) => setStepData({ ...stepData, enabled: v })} aria-label="Alternar opción">
           ¿Manejas caja por operador?
+        </Switch>
+        <Switch isSelected={Boolean(stepData.cashRequireOpenForPayment ?? true)} onChange={(v) => setStepData({ ...stepData, cashRequireOpenForPayment: v })} aria-label="Cobro exige caja abierta">
+          ¿Cobro exige caja abierta?
         </Switch>
       </div>
     </div>

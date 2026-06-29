@@ -23,9 +23,9 @@ import CloseSessionPanel from "@/features/cash-register/components/CloseSessionP
 import type { CashMovementDto } from "@/lib/cash/cash-api";
 
 function getStepColor(done: boolean, isCountPending: boolean, index: number): string {
-  if (done) return "bg-emerald-500 text-white";
-  if (isCountPending && index === 2) return "bg-blue-500 text-white";
-  return "bg-slate-200 text-slate-400";
+  if (done) return "bg-emerald-500 text-default-50";
+  if (isCountPending && index === 2) return "bg-blue-500 text-default-50";
+  return "bg-default-200 text-default-400";
 }
 
 function CountDiffIndicator({
@@ -146,7 +146,7 @@ export default function CajaClient() {
       {/* Header */}
       <div>
         <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Caja</p>
-        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">Cierre de caja</h1>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">Cierre de caja</h1>
         {p.outboxCount > 0 ? (
           <div className="mt-2 rounded-xl border border-red-400 bg-red-100 px-4 py-3 text-red-900">
             <p className="font-bold uppercase text-red-800">¡Alerta de Sincronización!</p>
@@ -223,11 +223,11 @@ export default function CajaClient() {
       <div className={`grid gap-4 sm:gap-6 grid-cols-1 ${p.session ? "" : "lg:grid-cols-2"}`}>
         {!p.session || !p.isOpen ? (
           <div className="surface rounded-2xl p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-slate-900">Estado actual</h2>
+            <h2 className="text-lg font-semibold text-foreground">Estado actual</h2>
             {p.loading ? (
-              <p className="mt-4 text-sm text-slate-600">Cargando...</p>
+              <p className="mt-4 text-sm text-default-600">Cargando...</p>
             ) : !p.session ? (
-              <div className="mt-4 text-sm text-slate-600">
+              <div className="mt-4 text-sm text-default-600">
                 <p>No hay una caja abierta en este terminal.</p>
                 <p className="mt-2">Para operar caja: ingresa el monto inicial y presiona <strong>Abrir caja</strong>.</p>
               </div>
@@ -239,8 +239,8 @@ export default function CajaClient() {
 
         {!p.session ? (
           <div className="surface rounded-2xl p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-slate-900">Abrir caja</h2>
-            <p className="mt-2 text-sm text-slate-600">Requiere permiso de apertura y terminal configurado.</p>
+            <h2 className="text-lg font-semibold text-foreground">Abrir caja</h2>
+            <p className="mt-2 text-sm text-default-600">Requiere permiso de apertura y terminal configurado.</p>
             <div className="mt-4">
               <Input
                 label="Monto inicial"
@@ -268,7 +268,7 @@ export default function CajaClient() {
       {p.isOpen ? (
         <>
           <div className="surface rounded-2xl p-4 sm:p-6 mt-4">
-            <h2 className="text-lg font-semibold text-slate-900">Estado actual</h2>
+            <h2 className="text-lg font-semibold text-foreground">Estado actual</h2>
             <SessionStatusCard p={p} />
           </div>
 
@@ -284,7 +284,7 @@ export default function CajaClient() {
             {/* Movimientos tab */}
             <Tabs.Panel id="movimientos" className="pt-4">
               <div className="surface rounded-2xl p-4 sm:p-6 mt-4">
-                <h2 className="text-lg font-semibold text-slate-900">Movimientos</h2>
+                <h2 className="text-lg font-semibold text-foreground">Movimientos</h2>
                 <DataTable<CashMovementDto> 
                   columns={movementColumns} 
                   rows={p.movements} 
@@ -292,7 +292,7 @@ export default function CajaClient() {
                   onFilterChange={handleFilterChange}
                 />
                 {p.movements.length === 0 && p.isOpen ? (
-                  <p className="mt-3 text-xs text-slate-500 text-center">
+                  <p className="mt-3 text-xs text-default-500 text-center">
                     No hay movimientos registrados en esta sesión.
                   </p>
                 ) : null}
@@ -317,7 +317,7 @@ export default function CajaClient() {
       ) : null}
 
       {p.isOpen && !p.perms.canClose ? (
-        <p className="mt-6 text-xs text-slate-500 italic">
+        <p className="mt-6 text-xs text-default-500 italic">
           No tienes permiso para cerrar la caja. Solicita el permiso <strong>cierres_caja:cerrar</strong>.
         </p>
       ) : null}
@@ -325,8 +325,8 @@ export default function CajaClient() {
       {/* Closed session — print closing */}
       {p.closed && p.session ? (
         <div className="surface rounded-2xl p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Caja cerrada</h2>
-          <p className="mt-2 text-sm text-slate-600">Imprima el comprobante de cierre para archivo.</p>
+          <h2 className="text-lg font-semibold text-foreground">Caja cerrada</h2>
+          <p className="mt-2 text-sm text-default-600">Imprima el comprobante de cierre para archivo.</p>
           <div className="mt-6 w-full sm:max-w-md">
             <Button className="w-full font-bold" color="primary"
               isDisabled={p.busy} isLoading={p.busy}
@@ -342,7 +342,7 @@ export default function CajaClient() {
         <Modal.Content>
           <Modal.Header>Cambio de turno</Modal.Header>
           <Modal.Body>
-            <p className="text-sm text-slate-600 mb-4">Se cerrará la caja actual y se dejará lista para el siguiente operador.</p>
+            <p className="text-sm text-default-600 mb-4">Se cerrará la caja actual y se dejará lista para el siguiente operador.</p>
             <Controller name="nextOpenAmount" control={p.shiftForm.control}
               render={({ field }) => <Input label="Monto base para siguiente turno" type="number" {...field} />}
             />
@@ -382,7 +382,7 @@ export default function CajaClient() {
                     <p className="text-xs text-rose-600 mt-1">Esta acción genera una contrapartida contable y no se puede deshacer.</p>
                   </div>
                 )}
-                <p className="text-sm text-slate-600 mb-2">Motivo obligatorio (auditoría).</p>
+                <p className="text-sm text-default-600 mb-2">Motivo obligatorio (auditoría).</p>
                 <Controller name="voidReason" control={p.voidForm.control}
                   render={({ field }) => (
                     <TextArea label="Motivo" placeholder="Describa la razón de la anulación..." {...field} />

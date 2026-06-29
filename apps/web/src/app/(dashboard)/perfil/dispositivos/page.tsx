@@ -69,10 +69,10 @@ export default function DispositivosPage() {
         <PageBackButton />
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Seguridad</p>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-neutral-100">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground dark:text-neutral-100">
             Dispositivos y Sesiones
           </h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-neutral-400">
+          <p className="mt-2 text-sm text-default-600 dark:text-neutral-400">
             Gestiona los dispositivos autorizados para acceder a tu cuenta y revoca sesiones activas si es necesario.
           </p>
         </div>
@@ -88,8 +88,8 @@ export default function DispositivosPage() {
       <Card className="border border-default-200">
         <Card.Header className="flex justify-between items-center pb-2">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">Dispositivos Autorizados</h2>
-            <p className="text-xs text-slate-500">Historial de equipos vinculados a tu empresa</p>
+            <h2 className="text-lg font-semibold text-foreground dark:text-neutral-100">Dispositivos Autorizados</h2>
+            <p className="text-xs text-default-500">Historial de equipos vinculados a tu empresa</p>
           </div>
           <Button size="sm" variant="ghost" onPress={loadDevices} isDisabled={loading}>
             Actualizar
@@ -98,14 +98,14 @@ export default function DispositivosPage() {
 
         <Card.Content>
           {loading ? (
-            <div className="py-8 text-center text-slate-500">Cargando dispositivos...</div>
+            <div className="py-8 text-center text-default-500">Cargando dispositivos...</div>
           ) : devices.length === 0 ? (
-            <div className="py-8 text-center text-slate-500">No se encontraron dispositivos vinculados.</div>
+            <div className="py-8 text-center text-default-500">No se encontraron dispositivos vinculados.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
-                  <tr className="border-b border-default-100 text-slate-400 font-medium">
+                  <tr className="border-b border-default-100 text-default-400 font-medium">
                     <th className="py-3 px-4">Dispositivo</th>
                     <th className="py-3 px-4">Plataforma</th>
                     <th className="py-3 px-4">Estado</th>
@@ -118,20 +118,20 @@ export default function DispositivosPage() {
                     const isMobile = device.platform?.toLowerCase().includes("android") || device.platform?.toLowerCase().includes("ios");
                     return (
                       <tr key={device.id} className="hover:bg-default-50/50 transition-colors">
-                        <td className="py-4 px-4 font-medium text-slate-900 dark:text-neutral-200">
+                        <td className="py-4 px-4 font-medium text-foreground dark:text-neutral-200">
                           <div className="flex items-center gap-2">
                             {isMobile ? (
-                              <Smartphone className="w-4 h-4 text-slate-400" />
+                              <Smartphone className="w-4 h-4 text-default-400" />
                             ) : (
-                              <Laptop className="w-4 h-4 text-slate-400" />
+                              <Laptop className="w-4 h-4 text-default-400" />
                             )}
                             <div>
                               <p>{device.displayName || "Dispositivo Desconocido"}</p>
-                              <p className="text-xs text-slate-400 font-mono select-all">{device.deviceId}</p>
+                              <p className="text-xs text-default-400 font-mono select-all">{device.deviceId}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-4 text-slate-600 dark:text-neutral-400 capitalize">
+                        <td className="py-4 px-4 text-default-600 dark:text-neutral-400 capitalize">
                           {device.platform || "Desconocida"}
                         </td>
                         <td className="py-4 px-4">
@@ -145,7 +145,7 @@ export default function DispositivosPage() {
                             </span>
                           )}
                         </td>
-                        <td className="py-4 px-4 text-slate-600 dark:text-neutral-400">
+                        <td className="py-4 px-4 text-default-600 dark:text-neutral-400">
                           {formatDate(device.lastSeenAt)}
                         </td>
                         <td className="py-4 px-4 text-right">

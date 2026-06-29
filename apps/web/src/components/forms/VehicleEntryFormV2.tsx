@@ -348,7 +348,7 @@ export default function VehicleEntryFormV2({
           <p className="text-sm uppercase tracking-[0.3em] text-brand-600/80 font-semibold">
             Nuevo ingreso
           </p>
-          <h1 className="text-3xl font-bold text-slate-900">
+          <h1 className="text-3xl font-bold text-foreground">
             {isMotorcycleOnly
               ? "Registrar entrada de moto"
               : isCarOnly
@@ -356,7 +356,7 @@ export default function VehicleEntryFormV2({
                 : "Registrar entrada de vehículo"}
           </h1>
           {lastSavedAt && (
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-default-400 mt-0.5">
               Borrador guardado {lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </p>
           )}

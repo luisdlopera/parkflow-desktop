@@ -120,7 +120,7 @@ export default function DevicesPage() {
     return (
       <div className="space-y-4 mb-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-primary/10 rounded-lg"><Monitor className="w-5 h-5 text-primary" /></div><div><p className="text-sm text-default-500">Total</p><p className="text-xl font-bold">{total}</p></div></Card.Content></Card>
+          <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-brand/10 rounded-lg"><Monitor className="w-5 h-5 text-brand" /></div><div><p className="text-sm text-default-500">Total</p><p className="text-xl font-bold">{total}</p></div></Card.Content></Card>
           <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-success/10 rounded-lg"><Play className="w-5 h-5 text-success" /></div><div><p className="text-sm text-default-500">En Línea</p><p className="text-xl font-bold">{online}</p></div></Card.Content></Card>
           <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-default/10 rounded-lg"><Pause className="w-5 h-5 text-default-500" /></div><div><p className="text-sm text-default-500">Desconectados</p><p className="text-xl font-bold">{offline}</p></div></Card.Content></Card>
           <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-warning/10 rounded-lg"><RefreshCw className="w-5 h-5 text-warning" /></div><div><p className="text-sm text-default-500">Sync Pendiente</p><p className="text-xl font-bold">{sync}</p></div></Card.Content></Card>
@@ -173,7 +173,7 @@ export default function DevicesPage() {
         <Modal.Content>
           <Modal.Header>
             <div className="flex items-center gap-3">
-              <Monitor className="w-6 h-6 text-primary" />
+              <Monitor className="w-6 h-6 text-brand" />
               <div>
                 <h2 className="text-xl font-bold">{selectedDevice?.hostname || "Dispositivo sin nombre"}</h2>
                 <p className="text-sm text-default-500 font-mono">{selectedDevice?.deviceFingerprint}</p>
@@ -201,7 +201,7 @@ export default function DevicesPage() {
         <Modal.Content>
           <Modal.Header>
             <div className="flex items-center gap-3">
-              <Send className="w-6 h-6 text-primary" />
+              <Send className="w-6 h-6 text-brand" />
               <div><h2 className="text-xl font-bold">Enviar Comando Remoto</h2><p className="text-sm text-default-500">{selectedDevice?.hostname}</p></div>
             </div>
           </Modal.Header>

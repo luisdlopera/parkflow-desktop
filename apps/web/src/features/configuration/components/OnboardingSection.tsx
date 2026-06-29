@@ -22,13 +22,13 @@ export default function OnboardingSection({
     <div className="space-y-6">
       <Card>
         <Card.Header>
-          <h2 className="text-lg font-semibold text-slate-900">Parametrización Automática</h2>
+          <h2 className="text-lg font-semibold text-foreground">Parametrización Automática</h2>
         </Card.Header>
         <Card.Content className="space-y-4">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-default-600">
             Puedes re-ejecutar el asistente inicial para configurar rápidamente los aspectos básicos de la operación de la empresa (Tipos de vehículo, métodos de pago, módulos, etc.).
           </p>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-default-600">
             Al confirmar, se reiniciará el progreso y serás redirigido al asistente inicial.
             Las configuraciones críticas del onboarding serán preservadas automáticamente.
           </p>

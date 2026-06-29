@@ -57,7 +57,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity md:hidden"
+          className="fixed inset-0 z-40 bg-default-100/50 backdrop-blur-sm transition-opacity md:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -67,7 +67,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
       <aside
         className={`
           fixed top-0 left-0 z-50 h-screen w-[280px] max-w-[85vw]
-          border-r border-slate-200/70 bg-[var(--color-sidebar)] dark:bg-gray-900/95 dark:border-gray-700/70 backdrop-blur-xl
+          border-r border-default-200/70 bg-[var(--color-sidebar)] dark:bg-default-100/95 dark:border-default-200/70 backdrop-blur-xl
           transform transition-transform duration-300 ease-in-out
           md:hidden
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
@@ -77,17 +77,17 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
           {/* Header with close button */}
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-brand text-white grid place-content-center font-bold text-lg border border-default-200">
+              <div className="h-10 w-10 rounded-xl bg-brand text-default-50 grid place-content-center font-bold text-lg border border-default-200">
                 P
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Parkflow</p>
-                <p className="text-base font-bold text-slate-900">Desktop</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-default-400">Parkflow</p>
+                <p className="text-base font-bold text-foreground">Desktop</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 dark:text-slate-400 dark:hover:bg-gray-800"
+              className="p-2 rounded-lg hover:bg-default-200 text-default-500 dark:text-default-400 dark:hover:bg-default-300"
               aria-label="Cerrar menú"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +98,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
 
           {/* Status indicator */}
           <div className="mt-6 px-2">
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2 text-xs text-default-500 dark:text-default-400 bg-default-100 dark:bg-default-800 rounded-lg px-3 py-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Sistema operativo
             </div>
@@ -116,8 +116,8 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                   className={`
                     flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
                     ${active
-                      ? "bg-brand text-white border border-default-200"
-                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"}
+                      ? "bg-brand text-default-50 border border-default-200"
+                      : "text-default-600 dark:text-default-400 hover:bg-default-200 dark:hover:bg-default-800 hover:text-foreground dark:hover:text-default-50"}
                   `}
                 >
                   <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,8 +128,8 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                     <kbd className={`
                       ml-auto inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded
                      ${active
-                         ? "bg-white/20 text-white"
-                         : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"}
+                         ? "bg-default-50 dark:bg-default-100/20 text-default-50"
+                         : "bg-default-200 dark:bg-default-700 text-default-500 dark:text-default-400"}
                     `}>
                       {item.shortcut}
                     </kbd>
@@ -141,23 +141,23 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
 
           {/* Help tip */}
           <div className="mt-auto pt-6 px-2">
-            <div className="rounded-xl bg-slate-100/80 p-3 text-xs text-slate-600 dark:bg-gray-800 dark:text-gray-300">
+            <div className="rounded-xl bg-default-100/80 p-3 text-xs text-default-600 dark:bg-default-200 dark:text-default-400">
               <p className="font-semibold mb-2">Atajos de teclado:</p>
-              <div className="space-y-1.5 text-slate-500">
+              <div className="space-y-1.5 text-default-500">
                 <div className="flex items-center justify-between">
-                   <span><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1.5 py-0.5 rounded">F1</kbd> Nuevo ingreso</span>
+                   <span><kbd className="font-mono bg-default-50 dark:bg-default-100/80 dark:bg-default-200 px-1.5 py-0.5 rounded">F1</kbd> Nuevo ingreso</span>
                 </div>
                 <div className="flex items-center justify-between">
-                   <span><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1.5 py-0.5 rounded">F2</kbd> Salida/cobro</span>
+                   <span><kbd className="font-mono bg-default-50 dark:bg-default-100/80 dark:bg-default-200 px-1.5 py-0.5 rounded">F2</kbd> Salida/cobro</span>
                 </div>
                 <div className="flex items-center justify-between">
-                   <span><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1.5 py-0.5 rounded">F3</kbd> Vehículos</span>
+                   <span><kbd className="font-mono bg-default-50 dark:bg-default-100/80 dark:bg-default-200 px-1.5 py-0.5 rounded">F3</kbd> Vehículos</span>
                 </div>
                 <div className="flex items-center justify-between">
-                   <span><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1.5 py-0.5 rounded">F4</kbd> Caja</span>
+                   <span><kbd className="font-mono bg-default-50 dark:bg-default-100/80 dark:bg-default-200 px-1.5 py-0.5 rounded">F4</kbd> Caja</span>
                 </div>
                 <div className="flex items-center justify-between">
-                   <span><kbd className="font-mono bg-white/80 dark:bg-gray-700 px-1.5 py-0.5 rounded">Esc</kbd> Dashboard</span>
+                   <span><kbd className="font-mono bg-default-50 dark:bg-default-100/80 dark:bg-default-200 px-1.5 py-0.5 rounded">Esc</kbd> Dashboard</span>
                 </div>
               </div>
             </div>

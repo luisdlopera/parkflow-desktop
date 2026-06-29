@@ -114,14 +114,14 @@ const Step1VehicleTypes = memo(function Step1VehicleTypes() {
         </div>
 
         {vehicleTypes.length > 0 && (
-          <div className="mt-4 p-4 rounded-lg bg-primary-50 border border-primary-200">
+          <div className="mt-4 p-4 rounded-lg bg-brand-100 dark:bg-brand-900/30 border border-brand-300 dark:border-brand-900/50">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-semibold text-primary">Perfil detectado:</span>
-              <span className="text-sm font-bold text-primary">
+              <span className="text-sm font-semibold text-brand">Perfil detectado:</span>
+              <span className="text-sm font-bold text-brand">
                 {profileLabel(detectedProfile)}
               </span>
             </div>
-            <p className="text-xs text-primary-600">{profileDescription(detectedProfile)}</p>
+            <p className="text-xs text-brand-600 dark:text-brand-300">{profileDescription(detectedProfile)}</p>
           </div>
         )}
 

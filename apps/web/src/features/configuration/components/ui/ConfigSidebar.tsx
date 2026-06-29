@@ -7,6 +7,7 @@ import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 import { useFeatureFlags } from "@/providers/FeatureFlagProvider";
 import { CONFIG_NAVIGATION } from "../../constants/navigation";
 import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
 
 export default function ConfigSidebar() {
   const pathname = usePathname();
@@ -58,11 +59,20 @@ export default function ConfigSidebar() {
       animate="show" 
       className="space-y-8"
     >
+      <motion.div variants={itemVariants} className="mb-2">
+        <Link
+          href={groupParam ? "/configuracion" : "/"}
+          className="inline-flex items-center gap-2 text-sm font-medium text-default-500 hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          {groupParam ? "Volver a categorías" : "Volver al inicio"}
+        </Link>
+      </motion.div>
       {filteredGridGroups.map((group) => (
         <motion.div key={group.id} variants={itemVariants}>
           <div className="flex items-center gap-2 mb-4">
-            <group.icon className="w-5 h-5 text-slate-400" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">
+            <group.icon className="w-5 h-5 text-default-400" />
+            <h2 className="text-sm font-bold uppercase tracking-wider text-default-500">
               {group.label}
             </h2>
           </div>
@@ -79,31 +89,31 @@ export default function ConfigSidebar() {
                 <Link
                   key={item.key}
                   href={item.href}
-                  className={`group relative flex flex-col gap-3 rounded-2xl border p-5 transition-all hover:border-primary-300 hover:bg-primary-50/30 ${
+                  className={`group relative flex flex-col gap-3 rounded-2xl border p-5 transition-all hover:border-brand-400 dark:border-brand-900/60 hover:bg-brand-100 dark:bg-brand-900/30/30 ${
                     isActive
-                      ? "border-primary-300 bg-primary-50/50"
-                      : "border-slate-200 bg-white"
+                      ? "border-brand-400 dark:border-brand-900/60 bg-brand-100 dark:bg-brand-900/30/50"
+                      : "border-default-200 bg-default-50 dark:bg-default-100"
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div
                       className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl transition-colors ${
                         isActive
-                          ? "bg-primary-500 text-white"
-                          : "bg-slate-100 text-slate-500 group-hover:bg-primary-100 group-hover:text-primary-600"
+                          ? "bg-brand-500 text-default-50"
+                          : "bg-default-100 text-default-500 group-hover:bg-brand-200 dark:bg-brand-900/40 group-hover:text-brand-600 dark:text-brand-300"
                       }`}
                     >
                       <Icon className="w-5 h-5" />
                     </div>
                     <p
                       className={`text-sm font-bold ${
-                        isActive ? "text-primary-900" : "text-slate-700 group-hover:text-slate-900"
+                        isActive ? "text-brand-900 dark:text-brand-50" : "text-default-700 group-hover:text-foreground"
                       }`}
                     >
                       {item.label}
                     </p>
                   </div>
-                  <p className="text-xs text-slate-500 leading-relaxed">
+                  <p className="text-xs text-default-500 leading-relaxed">
                     {item.description}
                   </p>
                 </Link>

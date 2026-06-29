@@ -43,9 +43,9 @@ export function HelmetSection({ control, selectedVehicleType }: HelmetSectionPro
 
   return (
     <>
-      <div className="col-span-2 border-t border-slate-200/50 pt-3 mt-1 flex flex-col gap-3">
+      <div className="col-span-2 border-t border-default-200/50 pt-3 mt-1 flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+          <p className="text-sm font-medium text-default-700 dark:text-default-200">
             Cascos en Custodia al Ingreso
           </p>
           <div className="flex items-center gap-2">
@@ -78,10 +78,10 @@ export function HelmetSection({ control, selectedVehicleType }: HelmetSectionPro
       {fields.map((field, index) => (
         <div
           key={field.id}
-          className="col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800"
+          className="col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-default-50 dark:bg-default-800/50 rounded-lg border border-default-100 dark:border-default-800"
         >
           <div className="col-span-1 sm:col-span-3 flex justify-between items-center mb-1">
-            <span className="text-xs font-semibold text-slate-500 uppercase">
+            <span className="text-xs font-semibold text-default-500 uppercase">
               Casco #{index + 1}
             </span>
           </div>

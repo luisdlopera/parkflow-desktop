@@ -110,7 +110,7 @@ export function MixedEntryFormUI({
 
       {/* Tipo de vehículo */}
       <div className={vehicleTypes.length === 1 ? "hidden" : "block"}>
-        <label className="text-sm font-semibold text-slate-700 mb-2 block">Tipo de Vehículo</label>
+        <label className="text-sm font-semibold text-default-700 mb-2 block">Tipo de Vehículo</label>
         <VehicleTypeSelector
           vehicleTypes={vehicleTypes}
           loadingTypes={loadingTypes}
@@ -136,7 +136,7 @@ export function MixedEntryFormUI({
           size={isSpeed ? "lg" : "md"}
           isLoading={isSubmitting}
           isDisabled={!!printWarning}
-          className={`w-full font-bold bg-brand text-white hover:bg-brand-600 ${isSpeed ? "text-lg border border-brand" : ""}`}
+          className={`w-full font-bold bg-brand text-default-50 hover:bg-brand-600 ${isSpeed ? "text-lg border border-brand" : ""}`}
           data-testid="register-entry"
         >
           {isSubmitting ? "Registrando..." : isSpeed ? "REGISTRAR INGRESO (Enter)" : "Registrar Ingreso"}

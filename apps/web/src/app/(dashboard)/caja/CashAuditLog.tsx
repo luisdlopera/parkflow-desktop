@@ -18,12 +18,12 @@ function CashAuditLogInner({
   if (auditLog.length === 0 || !canAudit) return null;
 
   return (
-    <div className="mt-4 max-h-48 overflow-auto rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
-      <p className="font-semibold text-slate-800">Pista de auditoría (resumen)</p>
+    <div className="mt-4 max-h-48 overflow-auto rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 p-3 text-xs text-default-700">
+      <p className="font-semibold text-foreground">Pista de auditoría (resumen)</p>
       <ul className="mt-2 space-y-1">
         {auditLog.slice(0, 40).map((a) => (
-          <li key={a.id} className="border-b border-slate-100 pb-1">
-            <span className="text-slate-500">{new Date(a.createdAt).toLocaleString()}</span>{" "}
+          <li key={a.id} className="border-b border-default-100 pb-1">
+            <span className="text-default-500">{new Date(a.createdAt).toLocaleString()}</span>{" "}
             <strong>{a.action}</strong>
             {a.actorName ? ` · ${a.actorName}` : ""}
             {a.terminalId ? ` · terminal ${a.terminalId}` : ""}

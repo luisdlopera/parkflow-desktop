@@ -30,7 +30,7 @@ const PROVIDER_LABELS: Record<InvoiceProviderType, string> = {
 
 const STATUS_CHIP: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-700",
-  inactive: "bg-slate-100 text-slate-500",
+  inactive: "bg-default-100 text-default-500",
 };
 
 export default function FacturacionConfiguracionPage() {
@@ -117,14 +117,14 @@ export default function FacturacionConfiguracionPage() {
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Proveedores de Facturación</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-xl font-semibold text-foreground">Proveedores de Facturación</h1>
+          <p className="mt-1 text-sm text-default-500">
             Configura Alegra u otros proveedores. Cada tenant puede tener su propio proveedor activo.
           </p>
         </div>
         <button
           onClick={() => setDrawerOpen(true)}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-default-50 hover:opacity-90"
         >
           + Agregar proveedor
         </button>
@@ -137,9 +137,9 @@ export default function FacturacionConfiguracionPage() {
           ))}
         </div>
       ) : providers.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-default-300 bg-white p-10 text-center">
-          <p className="text-sm font-medium text-slate-600">No hay proveedores configurados</p>
-          <p className="mt-1 text-xs text-slate-400">
+        <div className="rounded-xl border border-dashed border-default-300 bg-default-50 dark:bg-default-100 p-10 text-center">
+          <p className="text-sm font-medium text-default-600">No hay proveedores configurados</p>
+          <p className="mt-1 text-xs text-default-400">
             Agrega Alegra para comenzar a emitir facturas electrónicas en Colombia
           </p>
         </div>
@@ -148,13 +148,13 @@ export default function FacturacionConfiguracionPage() {
           {providers.map((p) => {
             const health = healthResult[p.id];
             return (
-              <div key={p.id} className="rounded-xl border border-default-200 bg-white p-5">
+              <div key={p.id} className="rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold text-slate-900">{PROVIDER_LABELS[p.providerType] ?? p.providerType}</p>
+                      <p className="font-semibold text-foreground">{PROVIDER_LABELS[p.providerType] ?? p.providerType}</p>
                       {p.isDefault && (
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                        <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-semibold text-brand">
                           Por defecto
                         </span>
                       )}
@@ -162,13 +162,13 @@ export default function FacturacionConfiguracionPage() {
                         {p.isActive ? "Activo" : "Inactivo"}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-default-500">
                       País: {p.countryCode} · Moneda: {p.currency}
                       {p.resolutionNumber ? ` · Resolución: ${p.resolutionNumber}` : ""}
                       {p.taxRegime ? ` · Régimen: ${p.taxRegime}` : ""}
                     </p>
                     {p.hasCredentials && (
-                      <p className="mt-0.5 text-xs text-slate-400">Credenciales configuradas ✓</p>
+                      <p className="mt-0.5 text-xs text-default-400">Credenciales configuradas ✓</p>
                     )}
                     {health && (
                       <p className={`mt-1 text-xs font-medium ${health.healthy ? "text-emerald-600" : "text-red-600"}`}>
@@ -180,7 +180,7 @@ export default function FacturacionConfiguracionPage() {
                     <button
                       onClick={() => handleTest(p.id)}
                       disabled={testing === p.id}
-                      className="rounded-lg border border-default-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      className="rounded-lg border border-default-200 px-3 py-1.5 text-xs font-semibold text-default-700 hover:bg-default-50 disabled:opacity-50"
                     >
                       {testing === p.id ? "Probando..." : "Probar conexión"}
                     </button>
@@ -201,15 +201,15 @@ export default function FacturacionConfiguracionPage() {
       {/* Drawer for new provider */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50 flex">
-          <button className="flex-1 bg-black/30" onClick={() => setDrawerOpen(false)} />
-          <div className="flex w-full max-w-md flex-col border-l border-default-200 bg-white shadow-none">
+          <button className="flex-1 bg-default-100/30" onClick={() => setDrawerOpen(false)} />
+          <div className="flex w-full max-w-md flex-col border-l border-default-200 bg-default-50 dark:bg-default-100 shadow-none">
             <div className="flex items-center justify-between border-b border-default-200 px-6 py-4">
-              <h2 className="font-semibold text-slate-900">Configurar proveedor</h2>
-              <button onClick={() => setDrawerOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              <h2 className="font-semibold text-foreground">Configurar proveedor</h2>
+              <button onClick={() => setDrawerOpen(false)} className="text-default-400 hover:text-default-600">✕</button>
             </div>
             <div className="flex-1 space-y-4 overflow-y-auto p-6">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-700">Proveedor</label>
+                <label className="mb-1 block text-xs font-semibold text-default-700">Proveedor</label>
                 <select
                   value={form.providerType}
                   onChange={(e) => setForm((f) => ({ ...f, providerType: e.target.value as InvoiceProviderType }))}
@@ -223,7 +223,7 @@ export default function FacturacionConfiguracionPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-700">País</label>
+                  <label className="mb-1 block text-xs font-semibold text-default-700">País</label>
                   <select
                     value={form.countryCode}
                     onChange={(e) => setForm((f) => ({ ...f, countryCode: e.target.value as CountryCode }))}
@@ -235,7 +235,7 @@ export default function FacturacionConfiguracionPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-700">Moneda</label>
+                  <label className="mb-1 block text-xs font-semibold text-default-700">Moneda</label>
                   <input
                     value={form.currency}
                     onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))}
@@ -248,7 +248,7 @@ export default function FacturacionConfiguracionPage() {
               {form.providerType === "ALEGRA" && (
                 <>
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-slate-700">Email Alegra</label>
+                    <label className="mb-1 block text-xs font-semibold text-default-700">Email Alegra</label>
                     <input
                       type="email"
                       value={form.email}
@@ -258,7 +258,7 @@ export default function FacturacionConfiguracionPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-slate-700">Token API Alegra</label>
+                    <label className="mb-1 block text-xs font-semibold text-default-700">Token API Alegra</label>
                     <input
                       type="password"
                       value={form.token}
@@ -274,7 +274,7 @@ export default function FacturacionConfiguracionPage() {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="mb-1 block text-xs font-semibold text-slate-700">Resolución DIAN</label>
+                      <label className="mb-1 block text-xs font-semibold text-default-700">Resolución DIAN</label>
                       <input
                         value={form.resolutionNumber}
                         onChange={(e) => setForm((f) => ({ ...f, resolutionNumber: e.target.value }))}
@@ -283,7 +283,7 @@ export default function FacturacionConfiguracionPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-semibold text-slate-700">Prefijo</label>
+                      <label className="mb-1 block text-xs font-semibold text-default-700">Prefijo</label>
                       <input
                         value={form.resolutionPrefix}
                         onChange={(e) => setForm((f) => ({ ...f, resolutionPrefix: e.target.value }))}
@@ -293,7 +293,7 @@ export default function FacturacionConfiguracionPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-slate-700">Régimen tributario</label>
+                    <label className="mb-1 block text-xs font-semibold text-default-700">Régimen tributario</label>
                     <select
                       value={form.taxRegime}
                       onChange={(e) => setForm((f) => ({ ...f, taxRegime: e.target.value }))}
@@ -306,7 +306,7 @@ export default function FacturacionConfiguracionPage() {
                 </>
               )}
 
-              <label className="flex items-center gap-2 text-sm text-slate-700">
+              <label className="flex items-center gap-2 text-sm text-default-700">
                 <input
                   type="checkbox"
                   checked={form.isDefault}
@@ -319,14 +319,14 @@ export default function FacturacionConfiguracionPage() {
             <div className="flex gap-3 border-t border-default-200 px-6 py-4">
               <button
                 onClick={() => setDrawerOpen(false)}
-                className="flex-1 rounded-lg border border-default-200 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="flex-1 rounded-lg border border-default-200 py-2 text-sm font-semibold text-default-700 hover:bg-default-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 rounded-lg bg-primary py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-default-50 hover:opacity-90 disabled:opacity-50"
               >
                 {saving ? "Guardando..." : "Guardar configuración"}
               </button>

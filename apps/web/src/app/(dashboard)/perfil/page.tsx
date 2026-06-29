@@ -18,7 +18,8 @@ const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN: "Administrador",
   CAJERO: "Cajero",
   OPERADOR: "Operador",
-  AUDITOR: "Auditor"
+  AUDITOR: "Auditor",
+  SUPPORT: "Soporte",
 };
 
 function formatDate(iso: string | null): string {
@@ -128,13 +129,13 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return <p className="text-sm text-slate-500">Cargando perfil…</p>;
+    return <p className="text-sm text-default-500">Cargando perfil…</p>;
   }
 
   if (!profile) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold text-slate-900">Editar perfil</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Editar perfil</h1>
         <p className="text-sm text-danger">{message?.text ?? "No se pudo cargar el perfil"}</p>
       </div>
     );
@@ -146,10 +147,10 @@ export default function ProfilePage() {
         <PageBackButton />
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Cuenta</p>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-neutral-100">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground dark:text-neutral-100">
             Editar perfil
           </h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-neutral-400">
+          <p className="mt-2 text-sm text-default-600 dark:text-neutral-400">
             Actualice sus datos personales y credenciales de acceso.
           </p>
         </div>
@@ -170,7 +171,7 @@ export default function ProfilePage() {
 
       <Card>
         <Card.Header>
-          <h2 className="text-lg font-semibold text-slate-900">Datos personales</h2>
+          <h2 className="text-lg font-semibold text-foreground">Datos personales</h2>
         </Card.Header>
         <Card.Content className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -229,42 +230,42 @@ export default function ProfilePage() {
 
       <Card>
         <Card.Header>
-          <h2 className="text-lg font-semibold text-slate-900">Información de la cuenta</h2>
-          <p className="text-sm text-slate-500">Solo lectura — gestionada por un administrador</p>
+          <h2 className="text-lg font-semibold text-foreground">Información de la cuenta</h2>
+          <p className="text-sm text-default-500">Solo lectura — gestionada por un administrador</p>
         </Card.Header>
         <Card.Content>
           <dl className="grid gap-3 sm:grid-cols-2 text-sm">
             <div>
-              <dt className="text-slate-500">Rol</dt>
-              <dd className="font-medium text-slate-900">{ROLE_LABELS[profile.role]}</dd>
+              <dt className="text-default-500">Rol</dt>
+              <dd className="font-medium text-foreground">{ROLE_LABELS[profile.role]}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Estado</dt>
-              <dd className="font-medium text-slate-900">{profile.active ? "Activo" : "Inactivo"}</dd>
+              <dt className="text-default-500">Estado</dt>
+              <dd className="font-medium text-foreground">{profile.active ? "Activo" : "Inactivo"}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Último acceso</dt>
-              <dd className="font-medium text-slate-900">{formatDate(profile.lastAccessAt)}</dd>
+              <dt className="text-default-500">Último acceso</dt>
+              <dd className="font-medium text-foreground">{formatDate(profile.lastAccessAt)}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Contraseña actualizada</dt>
-              <dd className="font-medium text-slate-900">{formatDate(profile.passwordChangedAt)}</dd>
+              <dt className="text-default-500">Contraseña actualizada</dt>
+              <dd className="font-medium text-foreground">{formatDate(profile.passwordChangedAt)}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Puede anular tickets</dt>
-              <dd className="font-medium text-slate-900">{profile.canVoidTickets ? "Sí" : "No"}</dd>
+              <dt className="text-default-500">Puede anular tickets</dt>
+              <dd className="font-medium text-foreground">{profile.canVoidTickets ? "Sí" : "No"}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Puede reimprimir tickets</dt>
-              <dd className="font-medium text-slate-900">{profile.canReprintTickets ? "Sí" : "No"}</dd>
+              <dt className="text-default-500">Puede reimprimir tickets</dt>
+              <dd className="font-medium text-foreground">{profile.canReprintTickets ? "Sí" : "No"}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Puede cerrar caja</dt>
-              <dd className="font-medium text-slate-900">{profile.canCloseCash ? "Sí" : "No"}</dd>
+              <dt className="text-default-500">Puede cerrar caja</dt>
+              <dd className="font-medium text-foreground">{profile.canCloseCash ? "Sí" : "No"}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Cambio de contraseña obligatorio</dt>
-              <dd className="font-medium text-slate-900">
+              <dt className="text-default-500">Cambio de contraseña obligatorio</dt>
+              <dd className="font-medium text-foreground">
                 {profile.requirePasswordChange ? "Sí" : "No"}
               </dd>
             </div>
@@ -274,13 +275,13 @@ export default function ProfilePage() {
 
       <Card className="border border-default-200">
         <Card.Header>
-          <h2 className="text-lg font-semibold text-slate-900">Seguridad y Sesiones</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-foreground">Seguridad y Sesiones</h2>
+          <p className="text-sm text-default-500">
             Administra los equipos autorizados que tienen acceso a tu cuenta.
           </p>
         </Card.Header>
         <Card.Content className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <span className="text-sm text-slate-600 dark:text-neutral-400">
+          <span className="text-sm text-default-600 dark:text-neutral-400">
             Puedes revocar el acceso a dispositivos antiguos o desconocidos para proteger tu cuenta.
           </span>
           <Button
@@ -295,8 +296,8 @@ export default function ProfilePage() {
 
       <Card>
         <Card.Header>
-          <h2 className="text-lg font-semibold text-slate-900">Cambiar contraseña</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-foreground">Cambiar contraseña</h2>
+          <p className="text-sm text-default-500">
             Al cambiar la contraseña se cerrarán todas las sesiones activas.
           </p>
         </Card.Header>

@@ -19,7 +19,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         <button
           onClick={onMenuClick}
           data-testid="mobile-menu"
-          className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600 dark:text-slate-400 dark:hover:bg-gray-800 transition-colors"
+          className="md:hidden p-2 rounded-lg hover:bg-default-200 text-default-600 dark:text-default-400 dark:hover:bg-default-300 transition-colors"
           aria-label="Abrir menú"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,8 +28,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
         </button>
 
         <div>
-          <p className="text-[11px] uppercase tracking-[0.15em] text-slate-300/60 dark:text-slate-500/40 hidden sm:block font-normal">Parkflow Desktop</p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">Operación Diaria</h2>
+          <p className="text-[11px] uppercase tracking-[0.15em] text-default-300/60 dark:text-default-500/40 hidden sm:block font-normal">Parkflow Desktop</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground dark:text-default-200">Operación Diaria</h2>
         </div>
       </div>
 
@@ -42,7 +42,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         </div>
 
         {/* Divider */}
-        <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-slate-700 mx-1" />
+        <div className="hidden sm:block w-px h-8 bg-default-200 dark:bg-default-700 mx-1" />
 
         {/* User Menu with Avatar */}
         <UserMenu />

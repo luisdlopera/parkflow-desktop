@@ -21,7 +21,7 @@ export default function DashboardError({
         <AlertCircle size={40} />
       </div>
       <h2 className="text-xl font-bold text-foreground mb-2">Ocurrió un error inesperado</h2>
-      <p className="text-sm text-slate-500 mb-6 max-w-sm">
+      <p className="text-sm text-default-500 mb-6 max-w-sm">
         {error.message || "No se pudo cargar esta sección. Intenta de nuevo."}
       </p>
       <Button onClick={reset} variant="outline">

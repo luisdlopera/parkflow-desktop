@@ -310,7 +310,7 @@ describe("StatusToggle Component", () => {
       renderWithDialog(<StatusToggle active={false} onChange={handleChange} />);
 
       const button = screen.getByRole("switch");
-      expect(button).toHaveClass("bg-slate-300");
+      expect(button).toHaveClass("bg-default-300");
     });
 
     it("should have rounded shape", () => {

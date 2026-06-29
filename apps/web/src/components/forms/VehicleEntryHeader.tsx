@@ -28,14 +28,14 @@ export default function VehicleEntryHeader({
       <div className="flex items-center gap-2 sm:gap-3">
 
         {occupancy && (
-          <div className={`${occupancy.availableSpaces <= 0 ? "bg-rose-50 border border-rose-100" : "bg-primary-50 border border-primary-100"} rounded-xl px-3 py-2`}>
-            <span className={`text-xs ${occupancy.availableSpaces <= 0 ? "text-rose-700 font-bold" : "text-primary-700 font-medium"} whitespace-nowrap`}>Disponibles: {occupancy.availableSpaces} / {occupancy.activeSpaces}</span>
+          <div className={`${occupancy.availableSpaces <= 0 ? "bg-rose-50 border border-rose-100" : "bg-brand-100 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-900/40"} rounded-xl px-3 py-2`}>
+            <span className={`text-xs ${occupancy.availableSpaces <= 0 ? "text-rose-700 font-bold" : "text-brand-700 dark:text-brand-200 font-medium"} whitespace-nowrap`}>Disponibles: {occupancy.availableSpaces} / {occupancy.activeSpaces}</span>
           </div>
         )}
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-500 whitespace-nowrap">Modo:</span>
+        <span className="text-xs text-default-500 whitespace-nowrap">Modo:</span>
         <Select
           aria-label="Modo de operación"
           value={[settings.mode]}

@@ -35,8 +35,8 @@ export interface InputProps extends Omit<HeroInputProps, "size" | "color" | "var
 }
 
 /** Default styling: white bg + subtle border for clear contrast against any container */
-const INPUT_BASE_CLASS = "bg-[#f4f4f5] text-slate-900 border-none dark:bg-zinc-800/60 dark:text-white rounded-xl transition-colors focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900 text-base";
-const INPUT_BORDERED_CLASS = "bg-transparent text-slate-900 border-2 border-default-200 rounded-xl transition-colors dark:text-white focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900 text-base";
+const INPUT_BASE_CLASS = "bg-[#f4f4f5] text-foreground border-none dark:bg-zinc-800/60 dark:text-default-50 rounded-xl transition-colors focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900 text-base";
+const INPUT_BORDERED_CLASS = "bg-transparent text-foreground border-2 border-default-200 rounded-xl transition-colors dark:text-default-50 focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900 text-base";
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, description, errorMessage, isInvalid, isRequired, className, classNames, startContent, endContent, isClearable, onClear, size, color, variant, radius, isDisabled, disabled, value, defaultValue, name, onChange, onBlur, onValueChange, "aria-label": ariaLabel, "aria-describedby": ariaDescribedby, "aria-required": ariaRequired, ...rest }, ref) => {

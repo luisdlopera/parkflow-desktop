@@ -72,14 +72,14 @@ export function FeatureFlagsSection({ onNotify }: FeatureFlagsSectionProps) {
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="animate-pulse rounded-xl border border-slate-200 p-4"
+            className="animate-pulse rounded-xl border border-default-200 p-4"
           >
             <div className="flex items-center justify-between">
               <div className="space-y-2">
-                <div className="h-4 w-40 rounded bg-slate-200" />
-                <div className="h-3 w-64 rounded bg-slate-100" />
+                <div className="h-4 w-40 rounded bg-default-200" />
+                <div className="h-3 w-64 rounded bg-default-100" />
               </div>
-              <div className="h-6 w-20 rounded-full bg-slate-200" />
+              <div className="h-6 w-20 rounded-full bg-default-200" />
             </div>
           </div>
         ))}
@@ -110,10 +110,10 @@ export function FeatureFlagsSection({ onNotify }: FeatureFlagsSectionProps) {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <p className="text-xs uppercase tracking-wider text-slate-500">
+          <p className="text-xs uppercase tracking-wider text-default-500">
             Características del Negocio
           </p>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-default-600">
             Habilita o deshabilita las funcionalidades del sistema según el modelo de negocio
           </p>
         </div>
@@ -131,11 +131,11 @@ export function FeatureFlagsSection({ onNotify }: FeatureFlagsSectionProps) {
         return (
           <div key={category} className="space-y-3">
             <div className="space-y-1">
-              <h3 className="text-base font-semibold text-slate-900">
+              <h3 className="text-base font-semibold text-foreground">
                 {catInfo?.label ?? category}
               </h3>
               {catInfo && (
-                <p className="text-xs text-slate-500">{catInfo.description}</p>
+                <p className="text-xs text-default-500">{catInfo.description}</p>
               )}
             </div>
             <div className="space-y-2">

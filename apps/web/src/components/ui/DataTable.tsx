@@ -265,7 +265,7 @@ function DataTableInner<T extends object>({
     <Table.Row key={skKey}>
       {displayColumns.map((col) => (
         <Table.Cell key={String(col.key)} className="py-4">
-          <div className="h-4 w-full rounded bg-slate-100 dark:bg-slate-700 animate-pulse" />
+          <div className="h-4 w-full rounded bg-default-100 dark:bg-default-700 animate-pulse" />
         </Table.Cell>
       ))}
     </Table.Row>
@@ -463,7 +463,7 @@ function DataTableInner<T extends object>({
             <tbody style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px` }}>
               {sortedSource.length === 0 ? (
                 <tr>
-                  <td colSpan={displayColumns.length} className="text-center py-16 text-slate-500">
+                  <td colSpan={displayColumns.length} className="text-center py-16 text-default-500">
                     {emptyMessage}
                   </td>
                 </tr>
@@ -473,7 +473,7 @@ function DataTableInner<T extends object>({
                   return (
                     <tr
                       key={getKey(row, virtualRow.index)}
-                      className="border-b border-slate-100 dark:border-zinc-800"
+                      className="border-b border-default-100 dark:border-zinc-800"
                       style={{
                         position: 'absolute',
                         top: 0,
@@ -491,7 +491,7 @@ function DataTableInner<T extends object>({
                             getAlignClass(col.align),
                             getPriorityClass(col.priority),
                             col.key === "_actions"
-                              ? "sticky right-0 z-10 border-l border-default-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                              ? "sticky right-0 z-10 border-l border-default-200 dark:border-zinc-700 bg-default-50 dark:bg-default-100 dark:bg-zinc-900"
                               : "",
                           )}
                         >
@@ -509,10 +509,10 @@ function DataTableInner<T extends object>({
         <Table.Body
           renderEmptyState={() => (
             <EmptyState className="flex h-full w-full flex-col items-center justify-center gap-4 text-center py-16">
-              <div className="mb-2 rounded-full border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
-                <Inbox className="size-8 text-slate-300 dark:text-slate-600" />
+              <div className="mb-2 rounded-full border border-default-100 dark:border-default-700 bg-default-50 dark:bg-default-800 p-4">
+                <Inbox className="size-8 text-default-300 dark:text-default-600" />
               </div>
-              <span className="text-base font-medium text-slate-500 dark:text-slate-400">
+              <span className="text-base font-medium text-default-500 dark:text-default-400">
                 {emptyMessage}
               </span>
             </EmptyState>
@@ -548,7 +548,7 @@ function DataTableInner<T extends object>({
     <div className="flex flex-col gap-4">
       {topContent}
       {shouldVirtualize ? (
-        <div className="border border-slate-200 dark:border-zinc-700 rounded-xl overflow-hidden">
+        <div className="border border-default-200 dark:border-zinc-700 rounded-xl overflow-hidden">
           {tableContent}
         </div>
       ) : (

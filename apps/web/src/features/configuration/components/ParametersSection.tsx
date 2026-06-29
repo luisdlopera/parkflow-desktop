@@ -64,9 +64,9 @@ export default function ParametersSection({
 
   useEffect(() => { load().catch(() => {}); }, [load]);
 
-  if (loading && !data) return <p className="text-sm text-slate-500">Cargando parametros...</p>;
+  if (loading && !data) return <p className="text-sm text-default-500">Cargando parametros...</p>;
   if (error && !data) return <p className="text-sm text-rose-700">{error}</p>;
-  if (!data) return <p className="text-sm text-slate-600">Sin datos.</p>;
+  if (!data) return <p className="text-sm text-default-600">Sin datos.</p>;
 
   const setField = (k: keyof ParkingParametersPayload, v: string | number | boolean | undefined) => {
     setData((d) => ({ ...(d ?? {}) as ParkingParametersPayload, [k]: v }));
@@ -78,8 +78,8 @@ export default function ParametersSection({
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900">Parametros del parqueadero</h2>
-        <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 pb-4">
+        <h2 className="text-lg font-semibold text-foreground">Parametros del parqueadero</h2>
+        <div className="flex flex-wrap items-end gap-3 border-b border-default-100 pb-4">
           <Input
             label="Codigo de sede (persistencia)"
             size="sm"
@@ -147,7 +147,7 @@ export default function ParametersSection({
           <Field label="Timeout impresion (seg)" value={String(data.printTimeoutSeconds ?? "")} onChange={(v: string) => setOptionalNumber("printTimeoutSeconds", v)} />
           <Field label="QR / codigo" value={data.qrConfig ?? ""} onChange={(v: string) => setField("qrConfig", v)} />
 
-          <div className="col-span-full grid gap-4 border-t border-slate-100 pt-6 md:grid-cols-2">
+          <div className="col-span-full grid gap-4 border-t border-default-100 pt-6 md:grid-cols-2">
             <TextArea label="Mensaje encabezado ticket" size="sm" minRows={2} value={data.ticketHeaderMessage ?? ""} onChange={(e: ReactChangeEvent<HTMLTextAreaElement>) => setField("ticketHeaderMessage", e.target.value)} />
             <TextArea label="Mensaje pie ticket" size="sm" minRows={2} value={data.ticketFooterMessage ?? ""} onChange={(e: ReactChangeEvent<HTMLTextAreaElement>) => setField("ticketFooterMessage", e.target.value)} />
             <TextArea label="Mensaje legal ticket" size="sm" minRows={3} value={data.ticketLegalMessage ?? ""} onChange={(e: ReactChangeEvent<HTMLTextAreaElement>) => setField("ticketLegalMessage", e.target.value)} />
@@ -160,9 +160,9 @@ export default function ParametersSection({
             <Checkbox isSelected={Boolean(data.printExitTicket ?? true)} onChange={(v: boolean) => setField("printExitTicket", v)}>Imprimir tiquete de salida</Checkbox>
           </div>
 
-          <div className="col-span-full pt-6 border-t border-slate-100 mt-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Facturacion electronica Colombia (DIAN)</p>
-            <p className="text-xs text-slate-500 mb-4 max-w-3xl leading-relaxed">
+          <div className="col-span-full pt-6 border-t border-default-100 mt-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-default-600 mb-1">Facturacion electronica Colombia (DIAN)</p>
+            <p className="text-xs text-default-500 mb-4 max-w-3xl leading-relaxed">
               Estos datos aparecen en el comprobante de cierre tipo Z termico y documentacion soporte. CUFE, firma XAdES y envio XML a la DIAN requieren PSC certificado; aqui solo se guardan parametros de autorizacion y numeracion por sede.
             </p>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -177,9 +177,9 @@ export default function ParametersSection({
             </div>
           </div>
 
-          <div className="col-span-full pt-6 border-t border-slate-100 mt-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Integracion PSC (cierre caja)</p>
-            <p className="text-xs text-slate-500 mb-4 max-w-3xl leading-relaxed">
+          <div className="col-span-full pt-6 border-t border-default-100 mt-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-default-600 mb-1">Integracion PSC (cierre caja)</p>
+            <p className="text-xs text-default-500 mb-4 max-w-3xl leading-relaxed">
               Consecutivos y webhook se aplican cuando se ejecuta cerrar caja (commit). El servidor envia POST JSON con evento parkflow.cash.closed.v1; el PSC debe responder 2xx sin bloquear al cajero.
             </p>
             <div className="flex flex-wrap gap-x-10 gap-y-3 py-1">
@@ -211,7 +211,7 @@ export default function ParametersSection({
           </div>
 
           <div className="col-span-full pt-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Politica de caja (override por sede)</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-default-500 mb-4">Politica de caja (override por sede)</p>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Select
                 label="Cobro exige caja abierta"
@@ -358,7 +358,7 @@ export default function ParametersSection({
             </Button>
           </div>
         ) : (
-          <p className="text-xs text-slate-500">Solo lectura: no tiene permiso de edicion.</p>
+          <p className="text-xs text-default-500">Solo lectura: no tiene permiso de edicion.</p>
         )}
       </div>
     </div>

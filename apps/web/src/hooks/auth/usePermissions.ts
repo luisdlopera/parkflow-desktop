@@ -47,5 +47,5 @@ export function usePermissions() {
  */
 export function useHasPermission(permission: string): boolean {
   const { user } = useAuthStore();
-  return user?.permissions.includes(permission) ?? false;
+  return user?.permissions?.includes(permission) ?? false;
 }

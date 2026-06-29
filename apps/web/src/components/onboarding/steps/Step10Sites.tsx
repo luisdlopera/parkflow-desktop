@@ -16,7 +16,7 @@ const Step10Sites = memo(function Step10Sites() {
       
       {Boolean(stepData.multiSite) && canMultiSite && (
         <div className="mt-3 space-y-2">
-          <div className="flex items-center justify-between p-2 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+          <div className="flex items-center justify-between p-2 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
             <span className="text-sm">Nombre sede principal</span>
             <Input 
               className="w-48"
@@ -25,7 +25,7 @@ const Step10Sites = memo(function Step10Sites() {
               onChange={(v) => setStepData({ ...stepData, siteName1: v.target.value })} 
             />
           </div>
-          <div className="flex items-center justify-between p-2 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+          <div className="flex items-center justify-between p-2 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
             <span className="text-sm">Nombre sede secundaria</span>
             <Input 
               className="w-48"

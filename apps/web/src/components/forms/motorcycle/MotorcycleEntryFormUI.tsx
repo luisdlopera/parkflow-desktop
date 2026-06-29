@@ -120,14 +120,14 @@ export function MotorcycleEntryFormUI({
       {/* Placa — Input nativo gigante */}
       <div className="relative group">
         <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-brand-500 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
-        <div className="relative bg-white dark:bg-slate-900 rounded-2xl p-1">
+        <div className="relative bg-default-50 dark:bg-default-100 dark:bg-default-900 rounded-2xl p-1">
           <Controller
             name="plate"
             control={form.control}
             render={({ field, fieldState }) => (
               <div className="flex flex-col">
                 <label className="flex items-center justify-between w-full text-base font-semibold px-3 pt-2 pb-1">
-                  <span className="text-slate-600 dark:text-slate-300">Placa de la moto</span>
+                  <span className="text-default-600 dark:text-default-300">Placa de la moto</span>
                   {platePrefix && (
                     <span className="text-xs font-bold text-brand-700 bg-brand-100 px-2.5 py-0.5 rounded-md">
                       {platePrefix}
@@ -153,7 +153,7 @@ export function MotorcycleEntryFormUI({
                       onSubmit();
                     }
                   }}
-                  className={`w-full text-5xl sm:text-6xl font-black uppercase tracking-[0.2em] text-center h-[200px] text-slate-800 dark:text-slate-100 placeholder:text-slate-200 dark:placeholder:text-slate-600 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 transition-all rounded-xl border-0 outline-none focus:outline-none focus:ring-0 ${
+                  className={`w-full text-5xl sm:text-6xl font-black uppercase tracking-[0.2em] text-center h-[200px] text-foreground dark:text-default-200 placeholder:text-default-200 dark:placeholder:text-default-600 bg-default-50/50 dark:bg-default-800/50 hover:bg-default-50 dark:hover:bg-default-800 focus:bg-default-50 dark:bg-default-100 dark:focus:bg-default-800 transition-all rounded-xl border-0 outline-none focus:outline-none focus:ring-0 ${
                     fieldState.error ? "border-2 border-danger" : ""
                   }`}
                   autoComplete="off"
@@ -161,7 +161,7 @@ export function MotorcycleEntryFormUI({
                 {fieldState.error ? (
                   <p className="text-xs text-danger px-3 pt-1 pb-2">{fieldState.error.message}</p>
                 ) : (
-                  <p className="text-xs text-slate-400 dark:text-slate-500 px-3 pt-1 pb-2 text-center">
+                  <p className="text-xs text-default-400 dark:text-default-500 px-3 pt-1 pb-2 text-center">
                     Formato esperado: 3 letras + 2 números + 1 letra · Ej: ABC12D
                   </p>
                 )}
@@ -174,7 +174,7 @@ export function MotorcycleEntryFormUI({
       {/* Sección de Casco Interactiva */}
       {showHelmetSection && (
         <div className="space-y-3 pt-2">
-          <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">Gestión de Cascos</p>
+          <p className="text-sm font-semibold text-default-600 dark:text-default-300">Gestión de Cascos</p>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
@@ -182,22 +182,22 @@ export function MotorcycleEntryFormUI({
               onClick={handleClearHelmets}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 !helmetDelivered
-                  ? "border-brand-500 bg-brand-500 text-white scale-[1.02]"
-                  : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  ? "border-brand-500 bg-brand-500 text-default-50 scale-[1.02]"
+                  : "border-default-200 dark:border-default-700 bg-default-50 dark:bg-default-100 dark:bg-default-900 text-default-600 dark:text-default-400 hover:border-default-300 dark:hover:border-default-600 hover:bg-default-50 dark:hover:bg-default-800"
               }`}
             >
               <User
-                className={`w-7 h-7 mb-2 ${!helmetDelivered ? "text-white" : "text-slate-500 dark:text-slate-400"}`}
+                className={`w-7 h-7 mb-2 ${!helmetDelivered ? "text-default-50" : "text-default-500 dark:text-default-400"}`}
               />
               <span className="font-bold text-sm sm:text-base">Lleva el Casco</span>
               {!helmetDelivered && (
                 <>
                   <motion.div
                     layoutId="helmet-indicator"
-                    className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white"
+                    className="absolute top-2 right-2 w-2 h-2 rounded-full bg-default-50 dark:bg-default-100"
                   />
                   <div className="absolute top-2 left-2">
-                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <CheckCircle2 className="w-4 h-4 text-default-50" />
                   </div>
                 </>
               )}
@@ -209,22 +209,22 @@ export function MotorcycleEntryFormUI({
               onClick={handleAddHelmets}
               className={`relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 helmetDelivered
-                  ? "border-brand-500 bg-brand-500 text-white scale-[1.02]"
-                  : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-brand-300 dark:hover:border-brand-600 hover:bg-brand-50 dark:hover:bg-slate-800"
+                  ? "border-brand-500 bg-brand-500 text-default-50 scale-[1.02]"
+                  : "border-default-200 dark:border-default-700 bg-default-50 dark:bg-default-100 dark:bg-default-900 text-default-600 dark:text-default-400 hover:border-brand-300 dark:hover:border-brand-600 hover:bg-brand-50 dark:hover:bg-default-800"
               }`}
             >
               <MotorRacingHelmet
-                className={`w-7 h-7 mb-2 ${helmetDelivered ? "text-white" : "text-brand-500"}`}
+                className={`w-7 h-7 mb-2 ${helmetDelivered ? "text-default-50" : "text-brand-500"}`}
               />
               <span className="font-bold text-sm sm:text-base">Deja Casco(s)</span>
               {helmetDelivered && (
                 <>
                   <motion.div
                     layoutId="helmet-indicator"
-                    className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white"
+                    className="absolute top-2 right-2 w-2 h-2 rounded-full bg-default-50 dark:bg-default-100"
                   />
                   <div className="absolute top-2 left-2">
-                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <CheckCircle2 className="w-4 h-4 text-default-50" />
                   </div>
                 </>
               )}
@@ -240,10 +240,10 @@ export function MotorcycleEntryFormUI({
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className="overflow-hidden"
               >
-                <div className="bg-transparent border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex flex-col gap-4 mt-3">
+                <div className="bg-transparent border border-default-200 dark:border-default-700 rounded-2xl p-4 flex flex-col gap-4 mt-3">
                   {/* Selector rápido de cantidad */}
-                  <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl p-2 border border-slate-200 dark:border-slate-700">
-                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400 px-2">
+                  <div className="flex items-center justify-between bg-default-50 dark:bg-default-100 dark:bg-default-900 rounded-xl p-2 border border-default-200 dark:border-default-700">
+                    <span className="text-sm font-medium text-default-600 dark:text-default-400 px-2">
                       Cantidad a guardar:
                     </span>
                     <div className="flex gap-2">
@@ -256,7 +256,7 @@ export function MotorcycleEntryFormUI({
                           className={`px-4 py-1.5 rounded-lg border text-sm font-bold transition-colors ${
                             fields.length === num
                               ? "bg-brand-100 border-brand-300 text-brand-800 dark:bg-brand-900/30 dark:border-brand-700 dark:text-brand-300"
-                              : "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-400 hover:bg-brand-50 dark:hover:bg-slate-800"
+                              : "border-default-200 dark:border-default-700 text-default-700 dark:text-default-400 hover:bg-brand-50 dark:hover:bg-default-800"
                           }`}
                         >
                           {num} {num === 1 ? "Casco" : "Cascos"}
@@ -301,7 +301,7 @@ export function MotorcycleEntryFormUI({
                             isInvalid={!!fieldState.error} aria-label="Campo Autocomplete"
                           >
                             <Label className="text-sm">Número de Locker</Label>
-                            <Autocomplete.Trigger className="bg-white dark:bg-slate-900">
+                            <Autocomplete.Trigger className="bg-default-50 dark:bg-default-100 dark:bg-default-900">
                               <Autocomplete.Value />
                               <Autocomplete.ClearButton />
                               <Autocomplete.Indicator />
@@ -347,7 +347,7 @@ export function MotorcycleEntryFormUI({
                             isInvalid={!!fieldState.error}
                             errorMessage={fieldState.error?.message}
                             classNames={{
-                              inputWrapper: "bg-white",
+                              inputWrapper: "bg-default-50 dark:bg-default-100",
                             }}
                           />
                         )}
@@ -398,8 +398,8 @@ export function MotorcycleEntryFormUI({
               isDisabled={isSubmitDisabled}
               className={`w-full font-black text-xl border h-16 rounded-2xl group relative overflow-hidden transition-colors ${
                 isSubmitDisabled
-                  ? "bg-slate-300 text-slate-500 border-slate-200 cursor-not-allowed"
-                  : "bg-brand text-white border-brand hover:bg-brand-600"
+                  ? "bg-default-300 text-default-500 border-default-200 cursor-not-allowed"
+                  : "bg-brand text-default-50 border-brand hover:bg-brand-600"
               }`}
               data-testid="register-entry"
               aria-describedby={isSubmitDisabled ? "entry-disabled-reason" : undefined}
@@ -423,7 +423,7 @@ export function MotorcycleEntryFormUI({
                 )}
               </span>
               {!isSubmitDisabled && (
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+                <div className="absolute inset-0 bg-default-50 dark:bg-default-100/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
               )}
             </Button>
           </div>

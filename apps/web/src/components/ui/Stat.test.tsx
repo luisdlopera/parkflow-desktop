@@ -29,9 +29,9 @@ describe("Stat", () => {
   it("has correct styling classes", () => {
     const { container } = render(<Stat label="Test" value="Value" />);
     const div = container.firstChild as HTMLElement;
-    expect(div.className).toContain("border-slate-200");
-    expect(div.className).toContain("bg-white");
-    expect(div.className).toContain("dark:border-slate-700");
-    expect(div.className).toContain("dark:bg-slate-900");
+    expect(div.className).toContain("border-default-200");
+    expect(div.className).toContain("bg-default-50 dark:bg-default-100");
+    expect(div.className).toContain("dark:border-default-700");
+    expect(div.className).toContain("dark:bg-default-900");
   });
 });

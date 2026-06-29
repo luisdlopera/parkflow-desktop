@@ -14,7 +14,7 @@ const Step9Agreements = memo(function Step9Agreements() {
       
       {Boolean(stepData.enabled) && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between p-2 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+          <div className="flex items-center justify-between p-2 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
             <span className="text-sm">Descuento por convenio (%)</span>
             <Input 
               type="number" 

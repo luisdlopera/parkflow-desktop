@@ -16,7 +16,7 @@ export default function AdminIndexPage() {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6 text-sm text-slate-500">
+    <div className="flex min-h-screen items-center justify-center p-6 text-sm text-default-500">
       Cargando administración...
     </div>
   );

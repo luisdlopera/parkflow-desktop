@@ -32,9 +32,9 @@ export function Steps({ current, children }: StepsProps) {
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
                     isCompleted
-                      ? "bg-success text-white"
+                      ? "bg-success text-default-50"
                       : isActive
-                      ? "bg-primary text-white"
+                      ? "bg-brand text-default-50"
                       : "bg-default-100 text-default-500"
                   }`}
                 >

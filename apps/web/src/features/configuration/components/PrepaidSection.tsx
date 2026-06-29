@@ -34,7 +34,7 @@ export default function PrepaidSection({
   return (
     <div className="space-y-4">
       <div className="surface rounded-2xl p-4 flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-slate-900">Paquetes Prepagados</h2>
+        <h2 className="text-lg font-semibold text-foreground">Paquetes Prepagados</h2>
         <Button color="primary" variant="outline" size="md" onPress={() => { load().catch(() => {}); }} isLoading={loading}>Actualizar</Button>
       </div>
       <DataTable

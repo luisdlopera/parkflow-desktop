@@ -5,7 +5,7 @@ import { Switch } from "@/components/bridge/Switch";
 
 const ThemeConfigSection = dynamic(
   () => import("@/features/configuration/components/ui/ThemeConfigSection").then((m) => ({ default: m.ThemeConfigSection })),
-  { ssr: false, loading: () => <p className="text-sm text-slate-600">Cargando personalización...</p> }
+  { ssr: false, loading: () => <p className="text-sm text-default-600">Cargando personalización...</p> }
 );
 
 export default function InterfaceSection({
@@ -23,13 +23,13 @@ export default function InterfaceSection({
     <div className="space-y-6">
       <Card>
         <Card.Header>
-          <h2 className="text-lg font-semibold text-slate-900">Personalización del Sidebar</h2>
+          <h2 className="text-lg font-semibold text-foreground">Personalización del Sidebar</h2>
         </Card.Header>
         <Card.Content className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-slate-800">Mostrar estado del sistema</p>
-              <p className="text-sm text-slate-500">
+              <p className="font-medium text-foreground">Mostrar estado del sistema</p>
+              <p className="text-sm text-default-500">
                 Muestra el indicador "Sistema operativo" en el sidebar con el punto verde de estado.
               </p>
             </div>
@@ -43,8 +43,8 @@ export default function InterfaceSection({
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-slate-800">Mostrar atajos de teclado</p>
-              <p className="text-sm text-slate-500">
+              <p className="font-medium text-foreground">Mostrar atajos de teclado</p>
+              <p className="text-sm text-default-500">
                 Muestra la sección de atajos de teclado (F1, F2, F3, F4, Esc) en la parte inferior del sidebar.
               </p>
             </div>

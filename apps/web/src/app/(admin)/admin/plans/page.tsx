@@ -192,8 +192,8 @@ export default function PlansPage() {
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
       <Card>
         <Card.Content className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Receipt className="w-5 h-5 text-primary" />
+          <div className="p-2 bg-brand/10 rounded-lg">
+            <Receipt className="w-5 h-5 text-brand" />
           </div>
           <div>
             <p className="text-sm text-default-500">Total Planes</p>
@@ -347,7 +347,7 @@ export default function PlansPage() {
                   Cancelar
                 </HeroButton>
                 <Button
-                  className="bg-danger text-white hover:bg-danger/90"
+                  className="bg-danger text-default-50 hover:bg-danger/90"
                   onPress={() => confirmDelete()}
                   isLoading={isDeleting}
                 >

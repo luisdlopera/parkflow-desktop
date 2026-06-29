@@ -4,6 +4,7 @@ import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type { LoginRequest, LoginResponse } from "@parkflow/types";
 import type { StoredSession } from "../types";
 import { loadSession, saveSession, clearSession } from "@/lib/services/auth-storage.service";
+import { clearRememberMeEmail } from "@/lib/services/remember-me.service";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 import { broadcastAuthEvent } from "@/hooks/auth/useAuthBroadcast";
 import { useAuthStore } from "@/lib/stores/auth.store";
@@ -66,6 +67,8 @@ export async function logoutAllSessions(): Promise<void> {
     console.error("Error calling /logout/all:", error);
   }
   await clearSession();
+  // Clear remembered email so next login starts fresh
+  clearRememberMeEmail();
 }
 
 export async function logoutDevice(deviceId: string): Promise<void> {
@@ -76,6 +79,10 @@ export async function logoutDevice(deviceId: string): Promise<void> {
     credentials: "include",
     headers: { "Content-Type": "application/json" }
   });
+  // If logging out current device, clear remembered email
+  if (session.session.deviceId === deviceId) {
+    clearRememberMeEmail();
+  }
 }
 
 let refreshPromise: Promise<StoredSession> | null = null;

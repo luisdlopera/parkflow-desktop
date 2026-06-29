@@ -27,6 +27,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.parkflow.modules.auth.security.JwtAuthFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
 @EnableMethodSecurity
@@ -107,9 +110,20 @@ public class SecurityConfig {
 
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    var cookieCsrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+    cookieCsrfRepository.setCookieCustomizer(builder -> builder
+        .sameSite("Lax")
+        .secure(Boolean.parseBoolean(
+            System.getenv().getOrDefault("PARKFLOW_COOKIE_SECURE", "false"))));
+    // Plain (non-XOR) request handler so the XSRF-TOKEN cookie value
+    // matches the X-XSRF-TOKEN header value verbatim.
+    var csrfTokenRequestHandler = new CsrfTokenRequestAttributeHandler();
+    csrfTokenRequestHandler.setCsrfRequestAttributeName(null);
+
     http.cors(Customizer.withDefaults())
         .csrf(csrf -> csrf
-            .csrfTokenRepository(org.springframework.security.web.csrf.CookieCsrfTokenRepository.withHttpOnlyFalse())
+            .csrfTokenRepository(cookieCsrfRepository)
+            .csrfTokenRequestHandler(csrfTokenRequestHandler)
             .ignoringRequestMatchers(
                 "/api/v1/auth/login",
                 "/api/v1/auth/refresh",
@@ -147,7 +161,10 @@ public class SecurityConfig {
                     .permitAll()
                     .anyRequest()
                     .authenticated())
-        // Explicit filter order: ApiKey → JWT → Onboarding
+        // Explicit filter order:
+        //  Spring CsrfFilter (sets request attribute) → CsrfCookieFilter (materialises cookie)
+        //  → ApiKey → JWT → Onboarding
+        .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(new ApiKeyAuthFilter(apiKey), JwtAuthFilter.class)
         .addFilterAfter(onboardingSecurityFilter, JwtAuthFilter.class);

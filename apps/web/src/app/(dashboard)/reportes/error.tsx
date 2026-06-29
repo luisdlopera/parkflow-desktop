@@ -23,11 +23,11 @@ export default function ReportesError({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-slate-900 mb-2">Error al cargar reportes</h2>
-        <p className="text-slate-600 mb-6 text-sm">
+        <h2 className="text-xl font-bold text-foreground mb-2">Error al cargar reportes</h2>
+        <p className="text-default-600 mb-6 text-sm">
           No pudimos procesar los datos analíticos en este momento. Por favor intente nuevamente.
         </p>
-        <Button onClick={() => reset()} className="w-full bg-brand-600 text-white hover:bg-brand-700">
+        <Button onClick={() => reset()} className="w-full bg-brand-600 text-default-50 hover:bg-brand-700">
           Reintentar
         </Button>
       </Card>

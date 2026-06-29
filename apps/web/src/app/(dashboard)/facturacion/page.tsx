@@ -8,7 +8,7 @@ const STATUS_COLORS: Record<string, string> = {
   issued: "bg-emerald-50 text-emerald-700 border-emerald-200",
   pending: "bg-amber-50 text-amber-700 border-amber-200",
   rejected: "bg-red-50 text-red-700 border-red-200",
-  cancelled: "bg-slate-50 text-slate-500 border-slate-200",
+  cancelled: "bg-default-50 text-default-500 border-default-200",
 };
 
 interface MetricCard {
@@ -43,8 +43,8 @@ export default function FacturacionPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-6">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">Facturación Electrónica</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-xl font-semibold text-foreground">Facturación Electrónica</h1>
+        <p className="mt-1 text-sm text-default-500">
           Gestión de facturas, notas crédito y débito conectadas con tu proveedor configurado.
         </p>
       </div>
@@ -77,9 +77,9 @@ export default function FacturacionPage() {
       )}
 
       {dashboard && (
-        <div className="rounded-xl border border-default-200 bg-slate-50 px-5 py-4">
-          <p className="text-xs text-slate-500">Total facturado este mes</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
+        <div className="rounded-xl border border-default-200 bg-default-50 px-5 py-4">
+          <p className="text-xs text-default-500">Total facturado este mes</p>
+          <p className="mt-1 text-2xl font-bold text-foreground">
             {new Intl.NumberFormat("es-CO", {
               style: "currency",
               currency: dashboard.currency || "COP",
@@ -92,24 +92,24 @@ export default function FacturacionPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link
           href="/facturacion/configuracion"
-          className="rounded-xl border border-default-200 bg-white p-5 transition-colors hover:bg-slate-50"
+          className="rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 p-5 transition-colors hover:bg-default-100"
         >
-          <p className="font-semibold text-slate-800">⚙ Configurar proveedor</p>
-          <p className="mt-1 text-xs text-slate-500">Alegra, Siigo, Xero y más</p>
+          <p className="font-semibold text-foreground">⚙ Configurar proveedor</p>
+          <p className="mt-1 text-xs text-default-500">Alegra, Siigo, Xero y más</p>
         </Link>
         <Link
           href="/facturacion/facturas"
-          className="rounded-xl border border-default-200 bg-white p-5 transition-colors hover:bg-slate-50"
+          className="rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 p-5 transition-colors hover:bg-default-100"
         >
-          <p className="font-semibold text-slate-800">📄 Ver facturas</p>
-          <p className="mt-1 text-xs text-slate-500">Listado, filtros y exportación</p>
+          <p className="font-semibold text-foreground">📄 Ver facturas</p>
+          <p className="mt-1 text-xs text-default-500">Listado, filtros y exportación</p>
         </Link>
         <Link
           href="/facturacion/logs"
-          className="rounded-xl border border-default-200 bg-white p-5 transition-colors hover:bg-slate-50"
+          className="rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 p-5 transition-colors hover:bg-default-100"
         >
-          <p className="font-semibold text-slate-800">🔍 Logs de sincronización</p>
-          <p className="mt-1 text-xs text-slate-500">Solicitudes, respuestas y errores</p>
+          <p className="font-semibold text-foreground">🔍 Logs de sincronización</p>
+          <p className="mt-1 text-xs text-default-500">Solicitudes, respuestas y errores</p>
         </Link>
       </div>
     </div>

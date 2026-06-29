@@ -70,10 +70,10 @@ export function SessionExpiredModal({ isOpen, onClose, onRenew }: SessionExpired
           </div>
         </Modal.Header>
         <Modal.Body>
-          <p className="text-slate-600">
+          <p className="text-default-600">
             Tu sesión ha expirado por inactividad o el token ha caducado.
           </p>
-          <p className="text-sm text-slate-500 mt-2">
+          <p className="text-sm text-default-500 mt-2">
             Serás redirigido al login en <span className="font-semibold text-amber-600">{countdown}</span> segundos.
           </p>
           <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">

@@ -97,7 +97,7 @@ export default function EspaciosPage() {
         <Stat label="Ocupación" value={summary ? `${Math.round(summary.occupancyPercentage)}%` : "—"} />
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col sm:flex-row gap-3 items-end">
+      <div className="rounded-2xl border border-default-200 bg-default-50 dark:bg-default-100 p-4 flex flex-col sm:flex-row gap-3 items-end">
         <Input
           type="number"
           min={0}
@@ -152,9 +152,9 @@ export default function EspaciosPage() {
 
 function Stat({ label, value }: Readonly<{ label: string; value: number | string | undefined }>) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">{label}</p>
-      <p className="text-2xl font-bold text-slate-900">{value ?? "—"}</p>
+    <div className="rounded-2xl border border-default-200 bg-default-50 dark:bg-default-100 px-4 py-3">
+      <p className="text-xs uppercase tracking-wider text-default-500 font-semibold">{label}</p>
+      <p className="text-2xl font-bold text-foreground">{value ?? "—"}</p>
     </div>
   );
 }

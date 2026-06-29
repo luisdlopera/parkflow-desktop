@@ -8,8 +8,8 @@ import { TextArea } from "@/components/bridge/TextArea";
 export default function CloseSessionPanel({ p, confirm }: any) {
   return (
     <div className="surface rounded-2xl p-4 sm:p-6 mt-4">
-      <h3 className="text-lg font-semibold text-slate-900">Cierre</h3>
-      <p className="mt-2 text-xs text-slate-500">El usuario que ejecuta el cierre queda registrado en el sistema.</p>
+      <h3 className="text-lg font-semibold text-foreground">Cierre</h3>
+      <p className="mt-2 text-xs text-default-500">El usuario que ejecuta el cierre queda registrado en el sistema.</p>
       <div className="mt-4">
         <Controller name="closeNotes" control={p.closeForm.control}
           render={({ field }) => (

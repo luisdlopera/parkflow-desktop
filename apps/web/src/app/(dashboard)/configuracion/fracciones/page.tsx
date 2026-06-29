@@ -29,7 +29,7 @@ const COLS: ColumnDef<RateFractionRow>[] = [
     key: "isActive",
     label: "Activo",
     render: (r) => (
-      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.isActive ? "bg-emerald-100 text-emerald-700" : "bg-default-100 text-default-500"}`}>
         {r.isActive ? "Sí" : "No"}
       </span>
     ),
@@ -77,7 +77,7 @@ export default function FraccionesPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <ConfigPageHeader title="Fracciones de Tarifa" groupLabel="Cobro" groupId="cobro" sectionLabel="Fracciones de tiempo y cobro" />
-      <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200">
+      <div className="flex flex-col sm:flex-row items-center gap-4 bg-default-50 dark:bg-default-100 p-4 rounded-2xl border border-default-200">
         <Input
           type="text"
           placeholder="ID de tarifa"

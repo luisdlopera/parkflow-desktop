@@ -173,7 +173,7 @@ export function EntityManagementPage<T extends object>({
           <Modal.Content>
             <Modal.Header>
               <div className="flex items-center gap-3">
-                {Icon && <Icon className="w-6 h-6 text-primary" />}
+                {Icon && <Icon className="w-6 h-6 text-brand" />}
                 <div>
                   <h2 className="text-xl font-bold">
                     {isEditing ? "Editar Registro" : "Nuevo Registro"}

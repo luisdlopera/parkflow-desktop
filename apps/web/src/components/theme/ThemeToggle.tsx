@@ -8,8 +8,8 @@ export function ThemeToggle() {
   return (
     <div className="flex items-center gap-2">
       <button
-        onClick={() => setTheme("auto")}
-        className={`p-2 rounded-lg transition-colors ${theme === "auto" ? "bg-brand text-white border border-default-200" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 hover:dark:bg-gray-700"}`}
+        onClick={() => setTheme("auto", true)}
+        className={`p-2 rounded-lg transition-colors ${theme === "auto" ? "bg-brand text-default-50 border border-default-200" : "bg-gray-100 text-gray-700 dark:bg-default-200 dark:text-default-300 hover:dark:bg-default-200"}`}
         title="Automático"
         aria-label="Modo automático"
         aria-pressed={theme === "auto"}
@@ -20,8 +20,8 @@ export function ThemeToggle() {
       </button>
 
       <button
-        onClick={() => setTheme("light")}
-        className={`p-2 rounded-lg transition-colors ${theme === "light" ? "bg-brand text-white border border-default-200" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 hover:dark:bg-gray-700"}`}
+        onClick={() => setTheme("light", true)}
+        className={`p-2 rounded-lg transition-colors ${theme === "light" ? "bg-brand text-default-50 border border-default-200" : "bg-gray-100 text-gray-700 dark:bg-default-200 dark:text-default-300 hover:dark:bg-default-200"}`}
         title="Modo claro"
         aria-label="Modo claro"
         aria-pressed={theme === "light"}
@@ -32,8 +32,8 @@ export function ThemeToggle() {
       </button>
 
       <button
-        onClick={() => setTheme("dark")}
-        className={`p-2 rounded-lg transition-colors ${theme === "dark" ? "bg-brand text-white border border-default-200" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 hover:dark:bg-gray-700"}`}
+        onClick={() => setTheme("dark", true)}
+        className={`p-2 rounded-lg transition-colors ${theme === "dark" ? "bg-brand text-default-50 border border-default-200" : "bg-gray-100 text-gray-700 dark:bg-default-200 dark:text-default-300 hover:dark:bg-default-200"}`}
         title="Modo oscuro"
         aria-label="Modo oscuro"
         aria-pressed={theme === "dark"}
@@ -44,7 +44,7 @@ export function ThemeToggle() {
       </button>
 
       {isDark && (
-        <span className="ml-1 text-xs text-gray-500 dark:text-gray-300 hidden sm:inline">
+        <span className="ml-1 text-xs text-gray-500 dark:text-default-400 hidden sm:inline">
           Modo nocturno
         </span>
       )}

@@ -14,8 +14,8 @@ export function PageSkeleton() {
       </div>
 
       {/* Table skeleton */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="h-12 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700 animate-shimmer" />
+      <div className="rounded-xl border border-default-200 dark:border-default-700 overflow-hidden">
+        <div className="h-12 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border-b border-default-200 dark:border-default-700 animate-shimmer" />
         <AnimatedSkeletonLoader count={5} height="h-14" variant="table" />
       </div>
     </div>

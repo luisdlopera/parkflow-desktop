@@ -60,7 +60,7 @@ export function DataTableSection<T extends { id: string }>({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
         <div className="flex items-center gap-3">
           {onSearch && (
             <Input

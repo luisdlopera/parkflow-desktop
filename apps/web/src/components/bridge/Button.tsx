@@ -56,7 +56,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       mappedVariant = "outline";
       // Add hover state for outline buttons if not already in colorClasses
       if (!colorClasses) {
-        colorClasses = "hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-400 dark:hover:border-slate-600 transition-all duration-200";
+        colorClasses = "hover:bg-default-100 dark:hover:bg-default-800 hover:border-default-400 dark:hover:border-default-600 transition-all duration-200";
       }
     } else if (variant === "tertiary") {
       mappedVariant = "tertiary";
@@ -67,26 +67,26 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // Map color (only if explicitly set in color or variant prop)
     if (color === "danger" || variant === "danger") {
       mappedColor = "danger";
-      colorClasses = "bg-red-600 text-white hover:bg-red-700";
+      colorClasses = "bg-red-600 text-default-50 hover:bg-red-700";
     } else if (color === "warning" || variant === "warning") {
       mappedColor = "warning";
-      colorClasses = "bg-yellow-600 text-white hover:bg-yellow-700";
+      colorClasses = "bg-yellow-600 text-default-50 hover:bg-yellow-700";
     } else if (color === "secondary" || variant === "secondary") {
       mappedColor = "secondary";
-      colorClasses = "bg-slate-600 text-white hover:bg-slate-700";
+      colorClasses = "bg-default-600 text-default-50 hover:bg-default-700";
     } else if (color === "success" || variant === "success") {
       mappedColor = "success";
-      colorClasses = "bg-green-600 text-white hover:bg-green-700";
+      colorClasses = "bg-green-600 text-default-50 hover:bg-green-700";
     } else if (color === "default" || variant === "default") {
       mappedColor = "default";
-      colorClasses = "bg-slate-200 text-slate-900 hover:bg-slate-300 hover:border-slate-400 transition-all duration-200";
+      colorClasses = "bg-default-200 text-foreground hover:bg-default-300 hover:border-default-400 transition-all duration-200";
     } else if (variant === "tertiary") {
       mappedColor = "default";
       colorClasses = ""; // let className prop control all styling
     } else {
       // Default to primary brand color
       mappedColor = "primary";
-      colorClasses = "bg-brand-500 text-white hover:bg-brand-600";
+      colorClasses = "bg-brand-500 text-default-50 hover:bg-brand-600";
     }
 
     return (

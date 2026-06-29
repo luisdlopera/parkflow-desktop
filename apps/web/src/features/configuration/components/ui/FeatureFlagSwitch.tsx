@@ -21,13 +21,13 @@ export function FeatureFlagSwitch({
   onChange,
 }: FeatureFlagSwitchProps) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 p-4 transition-colors hover:border-slate-300">
+    <div className="flex items-start justify-between gap-4 rounded-xl border border-default-200 p-4 transition-colors hover:border-default-300">
       <div className="flex-1 space-y-1">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-slate-900">{label}</span>
+          <span className="text-sm font-medium text-foreground">{label}</span>
           <Tooltip delay={0}>
             <Tooltip.Trigger aria-label="Más información">
-              <span className="inline-flex size-4 cursor-help items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-500 hover:bg-slate-300">
+              <span className="inline-flex size-4 cursor-help items-center justify-center rounded-full bg-default-200 text-[10px] font-bold text-default-500 hover:bg-default-300">
                 ?
               </span>
             </Tooltip.Trigger>
@@ -37,12 +37,12 @@ export function FeatureFlagSwitch({
             </Tooltip.Content>
           </Tooltip>
         </div>
-        <Description className="text-xs text-slate-500">{description}</Description>
+        <Description className="text-xs text-default-500">{description}</Description>
       </div>
       <div className="flex items-center gap-3">
         <span
           className={`text-xs font-medium ${
-            isSelected ? "text-emerald-600" : "text-slate-400"
+            isSelected ? "text-emerald-600" : "text-default-400"
           }`}
         >
           {isSelected ? "Activo" : "Inactivo"}

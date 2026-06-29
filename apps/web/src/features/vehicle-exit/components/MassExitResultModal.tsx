@@ -77,7 +77,7 @@ export function MassExitResultModal({ result, onClose }: Props) {
           )}
           <div>
             <p className="text-xs uppercase tracking-widest text-violet-600 font-medium mb-0.5">Resultado</p>
-            <h3 className="text-lg font-semibold text-slate-800">
+            <h3 className="text-lg font-semibold text-foreground">
               {allSuccess ? "Salida masiva completada" : "Salida masiva con errores"}
             </h3>
           </div>
@@ -102,15 +102,15 @@ export function MassExitResultModal({ result, onClose }: Props) {
                   color === "rose" ? "bg-rose-50 border-rose-200" :
                   color === "amber" ? "bg-amber-50 border-amber-200" :
                   color === "violet" ? "bg-violet-50 border-violet-200" :
-                  "bg-slate-50 border-slate-200"}`}
+                  "bg-default-50 border-default-200"}`}
             >
-              <p className="text-xs text-slate-500 uppercase font-semibold">{label}</p>
+              <p className="text-xs text-default-500 uppercase font-semibold">{label}</p>
               <p className={`text-lg font-bold
                 ${color === "emerald" ? "text-emerald-700" :
                   color === "rose" ? "text-rose-700" :
                   color === "amber" ? "text-amber-700" :
                   color === "violet" ? "text-violet-700" :
-                  "text-slate-800"}`}>
+                  "text-foreground"}`}>
                 {value}
               </p>
             </div>
@@ -118,32 +118,32 @@ export function MassExitResultModal({ result, onClose }: Props) {
         </div>
 
         {/* Batch ID */}
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-default-400">
           Lote: <span className="font-mono">{result.batchId}</span>
         </p>
 
         {/* Items table */}
-        <div className="border border-slate-200 rounded-xl overflow-hidden">
+        <div className="border border-default-200 rounded-xl overflow-hidden">
           <div className="max-h-72 overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
+              <thead className="sticky top-0 bg-default-50 border-b border-default-200">
                 <tr>
-                  <th className="text-left px-3 py-2 font-semibold text-slate-600">Placa</th>
-                  <th className="text-left px-3 py-2 font-semibold text-slate-600">Ticket</th>
-                  <th className="text-left px-3 py-2 font-semibold text-slate-600">Estado</th>
-                  <th className="text-right px-3 py-2 font-semibold text-slate-600">Cobrado</th>
-                  <th className="text-left px-3 py-2 font-semibold text-slate-600 hidden md:table-cell">Error</th>
+                  <th className="text-left px-3 py-2 font-semibold text-default-600">Placa</th>
+                  <th className="text-left px-3 py-2 font-semibold text-default-600">Ticket</th>
+                  <th className="text-left px-3 py-2 font-semibold text-default-600">Estado</th>
+                  <th className="text-right px-3 py-2 font-semibold text-default-600">Cobrado</th>
+                  <th className="text-left px-3 py-2 font-semibold text-default-600 hidden md:table-cell">Error</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {result.items.map((item, idx) => (
                   <tr key={idx}>
-                    <td className="px-3 py-2 font-mono text-slate-800">{item.plate ?? "—"}</td>
-                    <td className="px-3 py-2 text-slate-600">{item.ticketNumber}</td>
+                    <td className="px-3 py-2 font-mono text-foreground">{item.plate ?? "—"}</td>
+                    <td className="px-3 py-2 text-default-600">{item.ticketNumber}</td>
                     <td className="px-3 py-2">
                       <StatusBadge status={item.status} />
                     </td>
-                    <td className="px-3 py-2 text-right font-medium text-slate-800">
+                    <td className="px-3 py-2 text-right font-medium text-foreground">
                       {item.status === "SUCCESS" ? formatCurrency(item.amountCharged) : "—"}
                     </td>
                     <td className="px-3 py-2 text-xs text-rose-600 hidden md:table-cell max-w-48 truncate">

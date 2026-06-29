@@ -205,7 +205,7 @@ export function PlanForm({ onSubmit, isLoading, initialData }: PlanFormProps) {
           {Object.entries(FEATURE_CATEGORIES).map(([categoryKey, items]) => (
             <div
               key={categoryKey}
-              className="border border-slate-200 rounded-xl p-4 space-y-3"
+              className="border border-default-200 rounded-xl p-4 space-y-3"
             >
               <h3 className="text-sm font-semibold text-default-600 uppercase tracking-wider">
                 {FEATURE_CATEGORY_LABELS[categoryKey]}
@@ -233,7 +233,7 @@ export function PlanForm({ onSubmit, isLoading, initialData }: PlanFormProps) {
         </div>
       </section>
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+      <div className="flex justify-end gap-3 pt-4 border-t border-default-200">
         <Button
           type="submit"
           color="primary"

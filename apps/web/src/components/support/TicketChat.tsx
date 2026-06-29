@@ -29,9 +29,9 @@ export function TicketChat() {
           <Avatar size="sm" color="accent">
             <Avatar.Fallback>S</Avatar.Fallback>
           </Avatar>
-          <div className="bg-primary text-primary-foreground rounded-lg p-3">
+          <div className="bg-brand text-brand-foreground rounded-lg p-3">
             <p className="text-sm">Hello John, I am opening the gate for you remotely right now.</p>
-            <span className="text-tiny text-primary-200 mt-1">10:45 AM</span>
+            <span className="text-tiny text-brand-300 dark:text-brand-400 mt-1">10:45 AM</span>
           </div>
         </div>
       </div>

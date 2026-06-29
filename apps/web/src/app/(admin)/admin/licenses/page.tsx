@@ -142,7 +142,7 @@ export default function LicensesPage() {
     <div className="space-y-4 mb-4">
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-primary/10 rounded-lg"><FileBadge className="w-5 h-5 text-primary" /></div><div><p className="text-sm text-default-500">Total Licencias</p><p className="text-xl font-bold">{stats.total}</p></div></Card.Content></Card>
+          <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-brand/10 rounded-lg"><FileBadge className="w-5 h-5 text-brand" /></div><div><p className="text-sm text-default-500">Total Licencias</p><p className="text-xl font-bold">{stats.total}</p></div></Card.Content></Card>
           <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-success/10 rounded-lg"><FileBadge className="w-5 h-5 text-success" /></div><div><p className="text-sm text-default-500">Activas</p><p className="text-xl font-bold">{stats.active}</p></div></Card.Content></Card>
           <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-warning/10 rounded-lg"><FileBadge className="w-5 h-5 text-warning" /></div><div><p className="text-sm text-default-500">Por Vencer</p><p className="text-xl font-bold">{stats.pastDue}</p></div></Card.Content></Card>
           <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-danger/10 rounded-lg"><FileBadge className="w-5 h-5 text-danger" /></div><div><p className="text-sm text-default-500">Expiradas</p><p className="text-xl font-bold">{stats.expired}</p></div></Card.Content></Card>
@@ -188,7 +188,7 @@ export default function LicensesPage() {
         <Modal.Content>
           <Modal.Header>
             <div className="flex items-center gap-3">
-              <Building2 className="w-6 h-6 text-primary" />
+              <Building2 className="w-6 h-6 text-brand" />
               <div><h2 className="text-xl font-bold">{selectedCompany?.name}</h2><p className="text-sm text-default-500">{selectedCompany?.nit}</p></div>
             </div>
           </Modal.Header>

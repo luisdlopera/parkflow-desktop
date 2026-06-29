@@ -40,7 +40,7 @@ export default function SettingsPage() {
         <PageBackButton />
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Preferencias</p>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-neutral-100">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground dark:text-neutral-100">
             Idioma e interfaz
           </h1>
         </div>
@@ -67,11 +67,11 @@ export default function SettingsPage() {
       </Select.Popover>
     </Select>
 
-      <div className="surface rounded-2xl p-6 border border-slate-100 dark:border-neutral-800">
-        <p data-testid="welcome-text" className="text-xl font-medium text-slate-800 dark:text-neutral-100">
+      <div className="surface rounded-2xl p-6 border border-default-100 dark:border-neutral-800">
+        <p data-testid="welcome-text" className="text-xl font-medium text-foreground dark:text-neutral-100">
           {language === "es" ? "Bienvenido a ParkFlow" : "Welcome to ParkFlow"}
         </p>
-        <p className="text-sm text-slate-500 dark:text-neutral-400 mt-1">
+        <p className="text-sm text-default-500 dark:text-neutral-400 mt-1">
           {language === "es"
             ? "El sistema se ha configurado correctamente."
             : "The system has been configured correctly."}
@@ -80,23 +80,23 @@ export default function SettingsPage() {
 
       <div>
         <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Personalización</p>
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-neutral-100">Interfaz</h2>
-        <p className="mt-2 text-sm text-slate-600 dark:text-neutral-400">
+        <h2 className="text-2xl font-semibold text-foreground dark:text-neutral-100">Interfaz</h2>
+        <p className="mt-2 text-sm text-default-600 dark:text-neutral-400">
           Estas preferencias se guardan solo en tu navegador y no afectan a otros usuarios.
         </p>
       </div>
 
       <Card>
         <Card.Header>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
+          <h3 className="text-lg font-semibold text-foreground dark:text-neutral-100">
             Personalización del Sidebar
           </h3>
         </Card.Header>
         <Card.Content className="space-y-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="font-medium text-slate-800 dark:text-neutral-200">Mostrar estado del sistema</p>
-              <p className="text-sm text-slate-500 dark:text-neutral-400">
+              <p className="font-medium text-foreground dark:text-neutral-200">Mostrar estado del sistema</p>
+              <p className="text-sm text-default-500 dark:text-neutral-400">
                 Muestra el indicador &quot;Sistema operativo&quot; en el sidebar con el punto verde de estado.
               </p>
             </div>
@@ -110,8 +110,8 @@ export default function SettingsPage() {
 
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="font-medium text-slate-800 dark:text-neutral-200">Mostrar atajos de teclado</p>
-              <p className="text-sm text-slate-500 dark:text-neutral-400">
+              <p className="font-medium text-foreground dark:text-neutral-200">Mostrar atajos de teclado</p>
+              <p className="text-sm text-default-500 dark:text-neutral-400">
                 Muestra la sección de atajos de teclado (F1, F2, F3, F4, Esc) en la parte inferior del sidebar.
               </p>
             </div>

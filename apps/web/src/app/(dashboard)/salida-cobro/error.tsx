@@ -21,8 +21,8 @@ export default function Error({
         <AlertTriangle className="w-10 h-10 text-rose-600" />
       </div>
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Error procesando salida</h2>
-        <p className="text-slate-600 max-w-md mx-auto">
+        <h2 className="text-2xl font-bold text-foreground mb-2">Error procesando salida</h2>
+        <p className="text-default-600 max-w-md mx-auto">
           Tuvimos un problema cargando los datos para la liquidación. Verifica tu conexión e intenta de nuevo.
         </p>
       </div>

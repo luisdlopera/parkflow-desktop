@@ -54,7 +54,7 @@ export function ModulesTab({ companyId }: ModulesTabProps) {
   }, [companyId, api]);
 
   if (!config) {
-    return <p className="text-sm text-slate-600">Cargando módulos...</p>;
+    return <p className="text-sm text-default-600">Cargando módulos...</p>;
   }
 
   const handleModuleToggle = async (module: keyof Omit<ModuleConfig, 'licensePlan'>, value: boolean) => {
@@ -125,7 +125,7 @@ export function ModulesTab({ companyId }: ModulesTabProps) {
               <div
                 key={module.key}
                 className={`p-4 border rounded-lg transition-opacity ${
-                  isRestricted && !isEnabled ? 'opacity-60 bg-slate-50' : 'border-slate-200'
+                  isRestricted && !isEnabled ? 'opacity-60 bg-default-50' : 'border-default-200'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -133,13 +133,13 @@ export function ModulesTab({ companyId }: ModulesTabProps) {
                     <span className="text-xl">{module.icon}</span>
                     <div>
                       <p className="font-medium">{module.label}</p>
-                      <p className="text-xs text-slate-500">{module.desc}</p>
+                      <p className="text-xs text-default-500">{module.desc}</p>
                     </div>
                   </div>
 
                   {isRestricted && !isEnabled ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500">🔒</span>
+                      <span className="text-xs text-default-500">🔒</span>
                     </div>
                   ) : (
                     <Checkbox
@@ -168,7 +168,7 @@ export function ModulesTab({ companyId }: ModulesTabProps) {
       </Card>
 
       <Card className="p-6 border-blue-200 bg-blue-50">
-        <p className="text-sm text-slate-700">
+        <p className="text-sm text-default-700">
           <strong>Nota:</strong> Los cambios en módulos se aplican inmediatamente. Algunos requieren configuración adicional.
         </p>
       </Card>

@@ -221,49 +221,49 @@ export default function RatesSection({
       </div>
 
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
-      {loading ? <p className="text-sm text-slate-500">Cargando...</p> : null}
+      {loading ? <p className="text-sm text-default-500">Cargando...</p> : null}
       {!loading && rows.length === 0 && !error ? (
-        <p className="text-sm text-slate-600">No hay tarifas para los filtros actuales.</p>
+        <p className="text-sm text-default-600">No hay tarifas para los filtros actuales.</p>
       ) : null}
 
-      {rateDetailLoading ? <p className="text-sm text-slate-500">Cargando detalle...</p> : null}
+      {rateDetailLoading ? <p className="text-sm text-default-500">Cargando detalle...</p> : null}
       {rateDetail ? (
-        <div className="surface rounded-2xl p-4 text-sm text-slate-800 space-y-1">
+        <div className="surface rounded-2xl p-4 text-sm text-foreground space-y-1">
           <div className="flex justify-between gap-2">
-            <h3 className="font-semibold text-slate-900">Detalle tarifa</h3>
+            <h3 className="font-semibold text-foreground">Detalle tarifa</h3>
             <Button size="sm" variant="ghost" color="primary" className="font-semibold" onPress={() => setRateDetail(null)}>Cerrar</Button>
           </div>
-          <p><span className="text-slate-500">Nombre:</span> {rateDetail.name}</p>
+          <p><span className="text-default-500">Nombre:</span> {rateDetail.name}</p>
           <p>
-            <span className="text-slate-500">Sede:</span> {rateDetail.site} ·{" "}
-            <span className="text-slate-500">Estado:</span> {rateDetail.active ? "Activa" : "Inactiva"}
+            <span className="text-default-500">Sede:</span> {rateDetail.site} ·{" "}
+            <span className="text-default-500">Estado:</span> {rateDetail.active ? "Activa" : "Inactiva"}
           </p>
           <p>
-            <span className="text-slate-500">Tipo / vehiculo:</span> {rateDetail.rateType} /{" "}
+            <span className="text-default-500">Tipo / vehiculo:</span> {rateDetail.rateType} /{" "}
             {rateDetail.vehicleType ?? "Cualquiera"}
           </p>
           <p>
-            <span className="text-slate-500">Valor:</span> {Number(rateDetail.amount).toFixed(2)} ·{" "}
-            <span className="text-slate-500">Fraccion:</span> {rateDetail.fractionMinutes} min ·{" "}
-            <span className="text-slate-500">Redondeo:</span> {rateDetail.roundingMode}
+            <span className="text-default-500">Valor:</span> {Number(rateDetail.amount).toFixed(2)} ·{" "}
+            <span className="text-default-500">Fraccion:</span> {rateDetail.fractionMinutes} min ·{" "}
+            <span className="text-default-500">Redondeo:</span> {rateDetail.roundingMode}
           </p>
           <p>
-            <span className="text-slate-500">Gracia / tolerancia:</span> {rateDetail.graceMinutes} /{" "}
+            <span className="text-default-500">Gracia / tolerancia:</span> {rateDetail.graceMinutes} /{" "}
             {rateDetail.toleranceMinutes} min
           </p>
           <p>
-            <span className="text-slate-500">Franja:</span>{" "}
+            <span className="text-default-500">Franja:</span>{" "}
             {rateDetail.windowStart && rateDetail.windowEnd
               ? `${rateDetail.windowStart.slice(0, 5)} – ${rateDetail.windowEnd.slice(0, 5)}`
               : "24h"}
           </p>
           <p>
-            <span className="text-slate-500">Vigencia programada:</span>{" "}
+            <span className="text-default-500">Vigencia programada:</span>{" "}
             {rateDetail.scheduledActiveFrom || rateDetail.scheduledActiveTo
               ? `${rateDetail.scheduledActiveFrom ?? "—"} → ${rateDetail.scheduledActiveTo ?? "—"}`
               : "Sin programar"}
           </p>
-          <p className="text-xs text-slate-500">Creada {rateDetail.createdAt} · Actualizada {rateDetail.updatedAt}</p>
+          <p className="text-xs text-default-500">Creada {rateDetail.createdAt} · Actualizada {rateDetail.updatedAt}</p>
         </div>
       ) : null}
 
@@ -271,7 +271,7 @@ export default function RatesSection({
 
       <div className="flex items-center gap-4">
         <Button size="sm" variant="tertiary" color="primary" isDisabled={page <= 0} onPress={() => setPage((p) => Math.max(0, p - 1))}>Anterior</Button>
-        <span className="text-sm font-medium text-slate-600">Pagina {page + 1} de {Math.max(1, totalPages)}</span>
+        <span className="text-sm font-medium text-default-600">Pagina {page + 1} de {Math.max(1, totalPages)}</span>
         <Button size="sm" variant="tertiary" color="primary" isDisabled={page + 1 >= totalPages} onPress={() => setPage((p) => p + 1)}>Siguiente</Button>
       </div>
 

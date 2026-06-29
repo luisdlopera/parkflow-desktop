@@ -32,8 +32,8 @@ function CountDiffIndicator({ countCash, countCard, countTransfer, countOther, e
 export default function ArqueoForm({ p }: any) {
   return (
     <div className="surface rounded-2xl p-4 sm:p-6 mt-4">
-      <h2 className="text-lg font-semibold text-slate-900">Arqueo</h2>
-      <p className="mt-2 text-sm text-slate-600">Si hay diferencia respecto al esperado, las observaciones son obligatorias.</p>
+      <h2 className="text-lg font-semibold text-foreground">Arqueo</h2>
+      <p className="mt-2 text-sm text-default-600">Si hay diferencia respecto al esperado, las observaciones son obligatorias.</p>
       <div className="mt-6 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Controller name="countCash" control={p.countForm.control}
           render={({ field }) => <Input label="Efectivo contado" size="sm" type="number" {...field} />}

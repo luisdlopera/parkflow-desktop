@@ -90,10 +90,10 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
                 <div className="w-20 h-20 rounded-full bg-brand-100 flex items-center justify-center">
                   <AlertTriangle className="w-10 h-10 text-brand-600" />
                 </div>
-                <Modal.Heading className="text-3xl font-bold text-slate-900">Caja no abierta</Modal.Heading>
+                <Modal.Heading className="text-3xl font-bold text-foreground">Caja no abierta</Modal.Heading>
               </Modal.Header>
               <Modal.Body className="max-w-md">
-                <p className="text-lg text-slate-600">No hay una sesión de caja abierta en este terminal. Debes abrir caja antes de procesar entradas o salidas de vehículos.</p>
+                <p className="text-lg text-default-600">No hay una sesión de caja abierta en este terminal. Debes abrir caja antes de procesar entradas o salidas de vehículos.</p>
               </Modal.Body>
               <Modal.Footer className="flex-col gap-3 w-full max-w-xs">
                 <Link href="/caja" className="w-full">
@@ -113,10 +113,10 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
                 <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center">
                   <AlertTriangle className="w-10 h-10 text-rose-600" />
                 </div>
-                <Modal.Heading className="text-3xl font-bold text-slate-900">Error de conexión</Modal.Heading>
+                <Modal.Heading className="text-3xl font-bold text-foreground">Error de conexión</Modal.Heading>
               </Modal.Header>
               <Modal.Body className="max-w-md space-y-3">
-                <p className="text-lg text-slate-600">
+                <p className="text-lg text-default-600">
                   {caja.reason === "network" ? "No se puede conectar con el servidor de caja (puerto 6011). Verifica que el backend esté corriendo."
                     : caja.reason === "auth" ? "Tu sesión expiró. Inicia sesión nuevamente para continuar."
                     : "Ocurrió un error al verificar el estado de la caja. Intenta recargar la página."}
@@ -140,10 +140,10 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="space-y-1">
           <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80 font-medium">Control Diario</p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Vehículos Activos</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Vehículos Activos</h1>
         </div>
         <div className="flex items-center gap-4">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <p className="text-xs font-bold text-default-400 uppercase tracking-wider">
             {loading ? "Cargando..." : `${meta?.total ?? rows.length} vehículos en patio`}
           </p>
           <Button size="sm" variant="tertiary" color="warning" className="font-bold" onPress={() => reload()} isLoading={loading}>Actualizar</Button>
@@ -169,12 +169,12 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-          <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Ocupados</p>
-          <p className="text-2xl font-bold text-slate-900">{summary ? summary.activeSpaces - summary.availableSpaces : rows.length}</p>
+        <div className="rounded-2xl border border-default-200 bg-default-50 dark:bg-default-100 px-4 py-3">
+          <p className="text-xs uppercase tracking-wider text-default-500 font-semibold">Ocupados</p>
+          <p className="text-2xl font-bold text-foreground">{summary ? summary.activeSpaces - summary.availableSpaces : rows.length}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-          <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Disponibles</p>
+        <div className="rounded-2xl border border-default-200 bg-default-50 dark:bg-default-100 px-4 py-3">
+          <p className="text-xs uppercase tracking-wider text-default-500 font-semibold">Disponibles</p>
           <p className="text-2xl font-bold text-emerald-700">{summary ? `${summary.availableSpaces} / ${summary.activeSpaces}` : "—"}</p>
         </div>
       </div>
@@ -182,10 +182,10 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
       {ticketPreview && <TicketPreviewModal ticket={ticketPreview} onClose={() => setTicketPreview(null)} />}
 
       {hasSelection && (
-        <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t border-slate-200 p-4 flex justify-between items-center z-50">
+        <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-default-50 dark:bg-default-100 border-t border-default-200 p-4 flex justify-between items-center z-50">
           <div className="flex items-center gap-3">
             <div className="bg-amber-100 text-amber-800 rounded-full w-8 h-8 flex items-center justify-center font-bold">{selectionCount}</div>
-            <span className="font-semibold text-slate-700">Vehículos seleccionados</span>
+            <span className="font-semibold text-default-700">Vehículos seleccionados</span>
           </div>
           <div className="flex gap-3">
             <Button color="default" variant="flat" onPress={() => setSelectedKeys(new Set())}>Cancelar</Button>
@@ -194,8 +194,8 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
         </div>
       )}
 
-      <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white">
-        <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2 border-b border-slate-100">
+      <div className="rounded-2xl border border-default-200 overflow-hidden bg-default-50 dark:bg-default-100">
+        <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2 border-b border-default-100">
           <VehiculosActivosFilters
             filterValues={filterValues}
             onFilterChange={handleFilterChange}
@@ -205,22 +205,22 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
           <div className="flex items-center gap-2">
             <Dropdown>
             <Button size="sm" variant="ghost" color="default" isIconOnly aria-label="Columnas visibles">
-              <Columns className="h-4 w-4 text-slate-500" />
+              <Columns className="h-4 w-4 text-default-500" />
             </Button>
             <Dropdown.Popover>
               <Dropdown.Menu aria-label="Columnas visibles" onAction={(key) => { if (key === "reset") { resetColumns(); } else { toggleColumn(String(key)); } }}>
                 {colDefs.filter((c) => c.key !== "actions").map((col) => (
                   <Dropdown.Item key={col.key} textValue={col.label}>
                     <div className="flex items-center gap-2">
-                      <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${isVisible(col.key) ? "bg-primary-500 border-primary-500" : "border-slate-300"}`}>
-                        {isVisible(col.key) && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                      <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${isVisible(col.key) ? "bg-brand-500 border-brand-500" : "border-default-300"}`}>
+                        {isVisible(col.key) && <svg className="w-2.5 h-2.5 text-default-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                       </div>
                       <span className="text-sm">{col.label}</span>
                     </div>
                   </Dropdown.Item>
                 ))}
-                <Dropdown.Item key="reset" textValue="Restaurar" className="border-t border-slate-100 mt-1 pt-1">
-                  <div className="flex items-center gap-2 text-xs text-primary-600 font-medium">Restaurar predeterminado</div>
+                <Dropdown.Item key="reset" textValue="Restaurar" className="border-t border-default-100 mt-1 pt-1">
+                  <div className="flex items-center gap-2 text-xs text-brand-600 dark:text-brand-300 font-medium">Restaurar predeterminado</div>
                 </Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown.Popover>
@@ -251,18 +251,18 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
           ...(isVisible("vehicleType") ? [{ key: "vehicleType" as const, label: "Tipo", priority: "high" as const, sortable: false }] : []),
           ...(isVisible("parkingSpaceCode") ? [{
             key: "parkingSpaceCode" as const, label: "Celda", priority: "high" as const, sortable: false,
-            render: (row: ActiveSessionDto) => row.parkingSpaceCode ?? <span className="text-slate-400">Sin asignar</span>,
+            render: (row: ActiveSessionDto) => row.parkingSpaceCode ?? <span className="text-default-400">Sin asignar</span>,
           }] : []),
           ...(isVisible("duration") ? [{ key: "duration" as const, label: "Tiempo", priority: "medium" as const, sortable: false }] : []),
           ...(isVisible("rateName") ? [{
             key: "rateName" as const, label: "Tarifa", priority: "low" as const, sortable: false,
-            render: (row: ActiveSessionDto) => row.rateName ?? <span className="text-slate-400">Sin tarifa</span>,
+            render: (row: ActiveSessionDto) => row.rateName ?? <span className="text-default-400">Sin tarifa</span>,
           }] : []),
           ...(isVisible("cascos") ? [{
             key: "cascos" as const, label: "Cascos", priority: "medium" as const, sortable: false,
             render: (row: any) => {
               const items = (row as ActiveSessionDto).custodiedItems;
-              if (!items || items.length === 0) return <span className="text-slate-400">—</span>;
+              if (!items || items.length === 0) return <span className="text-default-400">—</span>;
               return (
                 <div className="flex flex-wrap gap-1">
                   {items.map((item: any) => (
@@ -282,7 +282,7 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
               <div className="flex justify-end relative">
                 <Dropdown>
                   <Button size="sm" variant="ghost" color="default" isIconOnly aria-label="Opciones">
-                    <MoreVertical className="h-4 w-4 text-slate-500" />
+                    <MoreVertical className="h-4 w-4 text-default-500" />
                   </Button>
                   <Dropdown.Popover>
                     <Dropdown.Menu aria-label="Acciones de vehículo" onAction={(key) => {
@@ -290,14 +290,14 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
                       if (key === "checkout" || key === "reprint") router.push(`/salida-cobro?ticketNumber=${encodeURIComponent(row.ticketNumber)}`);
                     }}>
                       <Dropdown.Item id="view" textValue="Ver detalle">
-                        <div className="flex items-center gap-2"><Eye className="w-4 h-4 text-slate-500" /><span>Ver detalle</span></div>
+                        <div className="flex items-center gap-2"><Eye className="w-4 h-4 text-default-500" /><span>Ver detalle</span></div>
                       </Dropdown.Item>
                       <Dropdown.Item id="edit" textValue="Editar">
-                        <div className="flex items-center gap-2"><Edit className="w-4 h-4 text-slate-500" /><span>Editar</span></div>
+                        <div className="flex items-center gap-2"><Edit className="w-4 h-4 text-default-500" /><span>Editar</span></div>
                       </Dropdown.Item>
                       {runtimeConfig?.tickets?.allowReprint !== false && userCanReprint && (
                         <Dropdown.Item id="reprint" textValue="Reimprimir ticket">
-                          <div className="flex items-center gap-2"><Printer className="w-4 h-4 text-slate-500" /><span>Reimprimir ticket</span></div>
+                          <div className="flex items-center gap-2"><Printer className="w-4 h-4 text-default-500" /><span>Reimprimir ticket</span></div>
                         </Dropdown.Item>
                       )}
                       <Dropdown.Item id="checkout" textValue="Registrar salida" variant="danger">

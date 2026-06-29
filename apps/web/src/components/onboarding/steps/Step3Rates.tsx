@@ -158,27 +158,27 @@ const Step3Rates = memo(function Step3Rates() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Card className={`cursor-pointer transition-all border ${isBasicSelected ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-transparent hover:border-primary'}`} role="button" tabIndex={0} onClick={() => applyPreset("BASIC")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("BASIC"); } }}>
+          <Card className={`cursor-pointer transition-all border ${isBasicSelected ? 'border-primary bg-brand/5 ring-2 ring-primary/20' : 'border-transparent hover:border-primary'}`} role="button" tabIndex={0} onClick={() => applyPreset("BASIC")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("BASIC"); } }}>
             <Card.Content className="p-3 text-center flex flex-col items-center gap-2 relative">
-              {isBasicSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-primary" />}
-              <Zap className={`w-5 h-5 ${isBasicSelected ? 'text-primary' : 'text-warning'}`} />
+              {isBasicSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-brand" />}
+              <Zap className={`w-5 h-5 ${isBasicSelected ? 'text-brand' : 'text-warning'}`} />
               <p className="text-sm font-semibold">Básico</p>
               <p className="text-xs text-default-500">Solo cobro por hora. Simple y directo.</p>
             </Card.Content>
           </Card>
-          <Card className={`cursor-pointer transition-all border ${isCommercialSelected ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-transparent hover:border-primary'}`} role="button" tabIndex={0} onClick={() => applyPreset("COMMERCIAL")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("COMMERCIAL"); } }}>
+          <Card className={`cursor-pointer transition-all border ${isCommercialSelected ? 'border-primary bg-brand/5 ring-2 ring-primary/20' : 'border-transparent hover:border-primary'}`} role="button" tabIndex={0} onClick={() => applyPreset("COMMERCIAL")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("COMMERCIAL"); } }}>
             <Card.Content className="p-3 text-center flex flex-col items-center gap-2 relative">
-              {isCommercialSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-primary" />}
-              <RefreshCcw className={`w-5 h-5 ${isCommercialSelected ? 'text-primary' : 'text-success'}`} />
+              {isCommercialSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-brand" />}
+              <RefreshCcw className={`w-5 h-5 ${isCommercialSelected ? 'text-brand' : 'text-success'}`} />
               <p className="text-sm font-semibold">Comercial</p>
               <p className="text-xs text-default-500">Cobro por hora, con fracciones y tiempo de cortesía.</p>
             </Card.Content>
           </Card>
-          {/* M-01: Moon icon was always text-primary regardless of selected state */}
-          <Card className={`cursor-pointer transition-all border ${is24HSelected ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-transparent hover:border-primary'}`} role="button" tabIndex={0} onClick={() => applyPreset("24H")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("24H"); } }}>
+          {/* M-01: Moon icon was always text-brand regardless of selected state */}
+          <Card className={`cursor-pointer transition-all border ${is24HSelected ? 'border-primary bg-brand/5 ring-2 ring-primary/20' : 'border-transparent hover:border-primary'}`} role="button" tabIndex={0} onClick={() => applyPreset("24H")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyPreset("24H"); } }}>
             <Card.Content className="p-3 text-center flex flex-col items-center gap-2 relative">
-              {is24HSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-primary" />}
-              <Moon className={`w-5 h-5 ${is24HSelected ? 'text-primary' : 'text-default-400'}`} />
+              {is24HSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-brand" />}
+              <Moon className={`w-5 h-5 ${is24HSelected ? 'text-brand' : 'text-default-400'}`} />
               <p className="text-sm font-semibold">24 Horas</p>
               <p className="text-xs text-default-500">Incluye tarifa nocturna y cobro por día completo.</p>
             </Card.Content>
@@ -188,7 +188,7 @@ const Step3Rates = memo(function Step3Rates() {
 
       {/* 1. Modelo Tarifario */}
       <div className="space-y-4 p-4 bg-default-50 dark:bg-zinc-900/50 rounded-xl border border-default-200">
-        <p className="text-sm font-semibold text-primary">1. Modelo de Cobro Principal <RequiredMark/></p>
+        <p className="text-sm font-semibold text-brand">1. Modelo de Cobro Principal <RequiredMark/></p>
         <RadioGroup
           orientation="horizontal"
           value={billingModel}
@@ -210,7 +210,7 @@ const Step3Rates = memo(function Step3Rates() {
         </RadioGroup>
 
         {showBaseRate && (
-          <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg mt-4">
+          <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg mt-4">
             <span className="text-sm font-medium">
               {baseRateLabel} <RequiredMark />
             </span>
@@ -230,7 +230,7 @@ const Step3Rates = memo(function Step3Rates() {
 
         {/* C-01: FLAT model now shows its rate input (previously only FULL_DAY did) */}
         {showFlatRate && (
-          <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg mt-4">
+          <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg mt-4">
             <span className="text-sm font-medium">
               {flatRateLabel} <RequiredMark />
             </span>
@@ -257,7 +257,7 @@ const Step3Rates = memo(function Step3Rates() {
 
             <div className="space-y-3">
               {/* Tarifa Nocturna */}
-              <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+              <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
                 <div className="flex items-center justify-between">
                   {/* I-01: Set default times in store when enabling, not just as display fallback */}
                   <Switch
@@ -307,7 +307,7 @@ const Step3Rates = memo(function Step3Rates() {
 
               {/* Día Completo — hidden when FULL_DAY or FLAT are already the main model */}
               {!showFlatRate && (
-                <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+                <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
                   <div className="flex items-center justify-between">
                     <Switch
                       isSelected={hasFullDayRate}
@@ -334,7 +334,7 @@ const Step3Rates = memo(function Step3Rates() {
               )}
 
               {/* Fines de semana */}
-              <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+              <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
                 <div className="flex items-center justify-between">
                   <Switch
                     isSelected={hasWeekendRate}
@@ -367,7 +367,7 @@ const Step3Rates = memo(function Step3Rates() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Fracciones */}
-              <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg space-y-3">
+              <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg space-y-3">
                 <Switch
                   isSelected={hasFractions}
                   onChange={(v) => setStepData((prev) => ({ ...prev, hasFractions: v }))}
@@ -402,7 +402,7 @@ const Step3Rates = memo(function Step3Rates() {
               </div>
 
               {/* Cortesía */}
-              <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg space-y-3">
+              <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg space-y-3">
                 <Switch
                   isSelected={hasCourtesy}
                   onChange={(v) => setStepData((prev) => ({ ...prev, hasCourtesy: v }))}
@@ -425,7 +425,7 @@ const Step3Rates = memo(function Step3Rates() {
             </div>
 
             {/* Redondeo */}
-            <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg flex items-center justify-between">
+            <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg flex items-center justify-between">
               <span className="text-sm font-medium">¿Cómo desea redondear el tiempo?</span>
               <Select
                 className="w-48"
@@ -452,7 +452,7 @@ const Step3Rates = memo(function Step3Rates() {
           {/* 4. Tarifas por Vehículo */}
           <div className="space-y-4">
             <p className="text-sm font-semibold border-b border-default-200 pb-2">Tarifas por Vehículo</p>
-            <div className="p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+            <div className="p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
               <Switch
                 isSelected={enableRateByType}
                 onChange={(v) => setStepData((prev) => ({ ...prev, enableRateByType: v }))}

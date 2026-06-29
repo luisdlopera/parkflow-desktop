@@ -11,12 +11,12 @@ export default function ErrorPage({
 }) {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-lg items-center justify-center px-4 sm:px-6 py-10">
-      <form className="surface w-full space-y-6 rounded-[2rem] p-6 sm:p-8 md:p-10 border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950">
+      <form className="surface w-full space-y-6 rounded-[2rem] p-6 sm:p-8 md:p-10 border border-default-200 dark:border-default-200 bg-default-50 dark:bg-default-100 dark:bg-default-100">
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-700/80 mb-2">
             Parkflow
           </p>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl font-black text-foreground dark:text-default-50 tracking-tight">
             Algo salió mal
           </h1>
         </div>
@@ -49,7 +49,7 @@ export default function ErrorPage({
           </Button>
         </div>
 
-        <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-2">
+        <p className="text-center text-[10px] font-bold text-default-400 uppercase tracking-widest pt-2">
           &copy; 2026 ParkFlow Operations. v2.0
         </p>
       </form>

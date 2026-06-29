@@ -39,8 +39,8 @@ export function CrashRecoveryDialog({ formKey, onRestore, onDismiss }: CrashReco
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl border border-default-200 p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200 dark:bg-gray-800 dark:border border-default-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-default-100/50 backdrop-blur-sm">
+      <div className="bg-default-50 dark:bg-default-100 rounded-2xl border border-default-200 p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200 dark:bg-default-200 dark:border border-default-200">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
             <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,24 +48,24 @@ export function CrashRecoveryDialog({ formKey, onRestore, onDismiss }: CrashReco
             </svg>
           </div>
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Recuperar datos</h3>
-            <p className="text-sm text-slate-500 dark:text-gray-300">Se detectó información no guardada</p>
+            <h3 className="text-lg font-bold text-foreground dark:text-default-50">Recuperar datos</h3>
+            <p className="text-sm text-default-500 dark:text-default-400">Se detectó información no guardada</p>
           </div>
         </div>
 
-        <div className="bg-slate-50 rounded-xl p-4 mb-4 dark:bg-gray-700">
-          <p className="text-sm text-slate-600">
+        <div className="bg-default-50 rounded-xl p-4 mb-4 dark:bg-default-200">
+          <p className="text-sm text-default-600">
             Se encontraron datos de una sesión anterior que no se completó:
           </p>
-          <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-gray-200">
+          <ul className="mt-2 space-y-1 text-sm text-default-700 dark:text-default-300">
             <li className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-default-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Guardado: {recoveryInfo.timestamp?.toLocaleString("es-CO")}
             </li>
             <li className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-default-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               Estado: Pendiente de sincronización
@@ -95,7 +95,7 @@ export function CrashRecoveryDialog({ formKey, onRestore, onDismiss }: CrashReco
           </Button>
         </div>
 
-        <p className="mt-3 text-xs text-slate-400 text-center">
+        <p className="mt-3 text-xs text-default-400 text-center">
           Los datos se guardan automáticamente cada 3 segundos para prevenir pérdidas.
         </p>
       </div>

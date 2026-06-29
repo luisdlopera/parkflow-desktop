@@ -39,21 +39,21 @@ function ColorRow({ slot, value, onChange }: { slot: ColorSlotDef; value: string
     <div className="flex items-center gap-4">
       <ColorPicker value={safeHex} onChange={handleColorChange}>
         <ColorPicker.Trigger>
-          <ColorSwatch color={safeHex} className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer flex-shrink-0" />
+          <ColorSwatch color={safeHex} className="w-10 h-10 rounded-lg border border-default-200 cursor-pointer flex-shrink-0" />
         </ColorPicker.Trigger>
         <ColorPicker.Popover placement="bottom start">
-          <div className="flex flex-col gap-3 p-4 w-64 bg-white border border-slate-200 rounded-xl">
-            <ColorArea colorSpace="hsb" xChannel="saturation" yChannel="brightness" className="w-full h-36 rounded-lg border border-slate-200">
+          <div className="flex flex-col gap-3 p-4 w-64 bg-default-50 dark:bg-default-100 border border-default-200 rounded-xl">
+            <ColorArea colorSpace="hsb" xChannel="saturation" yChannel="brightness" className="w-full h-36 rounded-lg border border-default-200">
               <ColorArea.Thumb className="w-4 h-4 rounded-full border-2 border-white" />
             </ColorArea>
             <ColorSlider colorSpace="hsb" channel="hue">
-              <ColorSlider.Track className="h-3 rounded-full border border-slate-200">
+              <ColorSlider.Track className="h-3 rounded-full border border-default-200">
                 <ColorSlider.Thumb className="w-4 h-4 rounded-full border-2 border-white top-1/2" />
               </ColorSlider.Track>
             </ColorSlider>
             <ColorField aria-label="Valor HEX">
-              <ColorField.Group className="flex items-center border border-slate-200 rounded-lg overflow-hidden">
-                <ColorField.Prefix className="px-2 text-xs text-slate-400 bg-slate-50 border-r border-slate-200 h-8 flex items-center">HEX</ColorField.Prefix>
+              <ColorField.Group className="flex items-center border border-default-200 rounded-lg overflow-hidden">
+                <ColorField.Prefix className="px-2 text-xs text-default-400 bg-default-50 border-r border-default-200 h-8 flex items-center">HEX</ColorField.Prefix>
                 <ColorField.Input className="flex-1 px-2 text-sm font-mono uppercase h-8 outline-none" />
               </ColorField.Group>
             </ColorField>
@@ -61,10 +61,10 @@ function ColorRow({ slot, value, onChange }: { slot: ColorSlotDef; value: string
         </ColorPicker.Popover>
       </ColorPicker>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-800">{slot.label}</p>
-        <p className="text-xs text-slate-500">{slot.description}</p>
+        <p className="text-sm font-medium text-foreground">{slot.label}</p>
+        <p className="text-xs text-default-500">{slot.description}</p>
       </div>
-      <span className="text-xs font-mono text-slate-500 flex-shrink-0 w-20 text-right">{value.toUpperCase()}</span>
+      <span className="text-xs font-mono text-default-500 flex-shrink-0 w-20 text-right">{value.toUpperCase()}</span>
     </div>
   );
 }
@@ -76,10 +76,10 @@ function ThemePreviewPanel({ colors }: { colors: ThemeDraft }) {
   const danger = HEX_RE.test(colors.dangerColor) ? colors.dangerColor : "#ef4444";
   const secondary = HEX_RE.test(colors.secondaryColor) ? colors.secondaryColor : "#64748b";
   return (
-    <div className="rounded-xl border border-slate-200 overflow-hidden bg-white" style={{ minHeight: 200 }}>
-      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-100">
+    <div className="rounded-xl border border-default-200 overflow-hidden bg-default-50 dark:bg-default-100" style={{ minHeight: 200 }}>
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-default-100">
         <div className="w-5 h-5 rounded-md" style={{ backgroundColor: primary }} />
-        <span className="text-sm font-semibold text-slate-800">ParkFlow</span>
+        <span className="text-sm font-semibold text-foreground">ParkFlow</span>
         <div className="ml-auto flex gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: danger }} />
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: warning }} />
@@ -87,7 +87,7 @@ function ThemePreviewPanel({ colors }: { colors: ThemeDraft }) {
         </div>
       </div>
       <div className="flex">
-        <div className="w-28 border-r border-slate-100 p-2.5 space-y-1">
+        <div className="w-28 border-r border-default-100 p-2.5 space-y-1">
           {["Inicio", "Ingresos", "Reportes", "Config"].map((item, i) => (
             <div key={item} className="text-xs px-2 py-1.5 rounded-md font-medium"
               style={i === 0 ? { backgroundColor: primary + "22", color: primary } : { color: "#94a3b8" }}>
@@ -98,7 +98,7 @@ function ThemePreviewPanel({ colors }: { colors: ThemeDraft }) {
         <div className="flex-1 p-4 space-y-3">
           <div className="flex gap-2 flex-wrap">
             {[{ label: "Primario", color: primary }, { label: "Secundario", color: secondary }, { label: "Éxito", color: success }, { label: "Error", color: danger }].map(({ label, color }) => (
-              <button key={label} className="text-xs px-3 py-1.5 rounded-lg text-white font-medium border-0" style={{ backgroundColor: color }}>{label}</button>
+              <button key={label} className="text-xs px-3 py-1.5 rounded-lg text-default-50 font-medium border-0" style={{ backgroundColor: color }}>{label}</button>
             ))}
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -121,8 +121,8 @@ export function ThemeConfigSection({ companyId, onNotify }: { companyId: string;
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-        <span className="ml-3 text-sm text-slate-500">Cargando configuración de tema…</span>
+        <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin dark:border-brand-400" />
+        <span className="ml-3 text-sm text-default-500">Cargando configuración de tema…</span>
       </div>
     );
   }
@@ -131,8 +131,8 @@ export function ThemeConfigSection({ companyId, onNotify }: { companyId: string;
     <div className="space-y-4">
       <Card>
         <Card.Header>
-          <h2 className="text-base font-semibold text-slate-900">Paleta de colores</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Haz clic en el color para abrir el selector. Los cambios se aplican en tiempo real.</p>
+          <h2 className="text-base font-semibold text-foreground">Paleta de colores</h2>
+          <p className="text-sm text-default-500 mt-0.5">Haz clic en el color para abrir el selector. Los cambios se aplican en tiempo real.</p>
         </Card.Header>
         <Card.Content className="space-y-5">
           {COLOR_SLOTS.map((slot) => (
@@ -142,12 +142,12 @@ export function ThemeConfigSection({ companyId, onNotify }: { companyId: string;
       </Card>
 
       <Card>
-        <Card.Header><h2 className="text-base font-semibold text-slate-900">Modo de tema</h2></Card.Header>
+        <Card.Header><h2 className="text-base font-semibold text-foreground">Modo de tema</h2></Card.Header>
         <Card.Content>
           <div className="flex gap-2 flex-wrap">
             {THEME_MODES.map((m) => (
               <button key={m.value} type="button" onClick={() => updateDraft("themeMode", m.value)}
-                className={["px-4 py-2 rounded-lg border text-sm font-medium transition-colors", draft.themeMode === m.value ? "bg-primary-500 text-white border-primary-500" : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"].join(" ")}>
+                className={["px-4 py-2 rounded-lg border text-sm font-medium transition-colors", draft.themeMode === m.value ? "bg-brand-500 text-default-50 border-brand-500" : "bg-default-50 dark:bg-default-100 text-default-700 border-default-200 hover:border-default-300"].join(" ")}>
                 {m.label}
               </button>
             ))}
@@ -159,8 +159,8 @@ export function ThemeConfigSection({ companyId, onNotify }: { companyId: string;
 
       <Card>
         <Card.Header>
-          <h2 className="text-base font-semibold text-slate-900">Vista previa en vivo</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Los cambios de color se reflejan instantáneamente.</p>
+          <h2 className="text-base font-semibold text-foreground">Vista previa en vivo</h2>
+          <p className="text-sm text-default-500 mt-0.5">Los cambios de color se reflejan instantáneamente.</p>
         </Card.Header>
         <Card.Content><ThemePreviewPanel colors={draft} /></Card.Content>
       </Card>

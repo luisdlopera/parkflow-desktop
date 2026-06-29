@@ -89,7 +89,7 @@ function OnboardingContent() {
 
   if (loading || !status)
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-white dark:bg-zinc-950">
+      <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-default-50 dark:bg-default-100 dark:bg-zinc-950">
         <Spinner size="lg" color="current" />
         <p className="text-default-500 font-medium">Cargando configuración...</p>
       </div>
@@ -160,7 +160,7 @@ function OnboardingContent() {
 
         <div className="mt-3 h-2 w-full rounded-full bg-default-200">
           <div
-            className="h-2 rounded-full bg-primary transition-all duration-300"
+            className="h-2 rounded-full bg-brand transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -168,7 +168,7 @@ function OnboardingContent() {
           Configura rápido lo esencial. Podrás editar todo luego en Configuración.
         </p>
 
-        <div className="mt-6 rounded-xl border border-default-200 bg-white dark:bg-zinc-900 p-5 space-y-4">
+        <div className="mt-6 rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 p-5 space-y-4">
           {renderStep()}
         </div>
 

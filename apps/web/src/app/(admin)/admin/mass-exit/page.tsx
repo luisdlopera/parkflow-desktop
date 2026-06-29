@@ -24,9 +24,9 @@ export default function MassExitPage() {
         <div className="mb-4 rounded-full bg-rose-50 p-4">
           <ShieldAlert className="w-12 h-12 text-rose-400" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-800">Sin acceso</h2>
-        <p className="text-slate-500 mt-2 max-w-sm">
-          Necesitas el permiso <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded">parking:salida_masiva</code> para usar esta función.
+        <h2 className="text-2xl font-bold text-foreground">Sin acceso</h2>
+        <p className="text-default-500 mt-2 max-w-sm">
+          Necesitas el permiso <code className="text-xs bg-default-100 px-1.5 py-0.5 rounded">parking:salida_masiva</code> para usar esta función.
         </p>
       </div>
     );
@@ -38,8 +38,8 @@ export default function MassExitPage() {
         <p className="text-xs uppercase tracking-widest text-violet-600 font-medium">
           Operación Administrativa
         </p>
-        <h1 className="text-3xl font-bold text-slate-900 mt-1">Salida Masiva de Vehículos</h1>
-        <p className="text-slate-500 mt-1 max-w-2xl">
+        <h1 className="text-3xl font-bold text-foreground mt-1">Salida Masiva de Vehículos</h1>
+        <p className="text-default-500 mt-1 max-w-2xl">
           Procesa la salida simultánea de múltiples vehículos activos con control de cobro, filtros avanzados y trazabilidad completa.
         </p>
       </div>

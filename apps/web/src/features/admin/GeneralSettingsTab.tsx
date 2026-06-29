@@ -12,7 +12,7 @@ export function GeneralSettingsTab({ settings, onUpdate }: { settings: SystemSet
     <Card>
       <Card.Header>
         <div className="flex items-center gap-2">
-          <Settings className="w-5 h-5 text-primary" />
+          <Settings className="w-5 h-5 text-brand" />
           <h3 className="text-lg font-semibold">Configuración General</h3>
         </div>
       </Card.Header>

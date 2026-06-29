@@ -12,7 +12,7 @@ export function LicensingSettingsTab({ settings, onUpdate }: { settings: SystemS
       <Card>
         <Card.Header>
           <div className="flex items-center gap-2">
-            <Lock className="w-5 h-5 text-primary" />
+            <Lock className="w-5 h-5 text-brand" />
             <h3 className="text-lg font-semibold">Configuración de Licencias</h3>
           </div>
         </Card.Header>

@@ -258,7 +258,7 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
         <ul className="text-sm text-default-600 grid grid-cols-2 gap-x-4 gap-y-1">
           {features.map((feature, i) => (
             <li key={i} className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              <span className="w-1.5 h-1.5 rounded-full bg-brand" />
               {feature}
             </li>
           ))}

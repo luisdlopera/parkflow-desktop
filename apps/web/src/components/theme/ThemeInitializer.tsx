@@ -7,7 +7,7 @@ import { useTheme } from "@/lib/theme/ThemeProvider";
 import { sanitizePrimaryColor } from "@/lib/theme/theme.types";
 
 export function ThemeInitializer() {
-  const { applyBrandColors, setTheme } = useTheme();
+  const { applyBrandColors, setTheme, userSetTheme } = useTheme();
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -27,7 +27,9 @@ export function ThemeInitializer() {
           warningColor: cfg.warningColor,
           dangerColor: cfg.dangerColor,
         });
-        setTheme(cfg.themeMode as "light" | "dark" | "auto");
+        if (!userSetTheme) {
+          setTheme(cfg.themeMode as "light" | "dark" | "auto");
+        }
       } catch {
         // silently fall back to CSS-variable defaults
       }

@@ -149,7 +149,7 @@ export default function CompaniesPage() {
 
   const renderStats = () => (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-      <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-primary/10 rounded-lg"><Building2 className="w-5 h-5 text-primary" /></div><div><p className="text-sm text-default-500">Total Empresas</p><div className="text-xl font-bold">{isLoading ? <Skeleton className="w-8 h-6 rounded-md" /> : <span>{companies?.length ?? 0}</span>}</div></div></Card.Content></Card>
+      <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-brand/10 rounded-lg"><Building2 className="w-5 h-5 text-brand" /></div><div><p className="text-sm text-default-500">Total Empresas</p><div className="text-xl font-bold">{isLoading ? <Skeleton className="w-8 h-6 rounded-md" /> : <span>{companies?.length ?? 0}</span>}</div></div></Card.Content></Card>
       <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-success/10 rounded-lg"><FileBadge className="w-5 h-5 text-success" /></div><div><p className="text-sm text-default-500">Activas</p><div className="text-xl font-bold">{isLoading ? <Skeleton className="w-8 h-6 rounded-md" /> : <span>{companies?.filter(c => c.status === "ACTIVE" || c.status === "TRIAL").length ?? 0}</span>}</div></div></Card.Content></Card>
       <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-warning/10 rounded-lg"><FileBadge className="w-5 h-5 text-warning" /></div><div><p className="text-sm text-default-500">Por Vencer</p><div className="text-xl font-bold">{isLoading ? <Skeleton className="w-8 h-6 rounded-md" /> : <span>{companies?.filter(c => c.expiresAt && Math.ceil((new Date(c.expiresAt).getTime() - Date.now()) / 86400000) <= 14 && Math.ceil((new Date(c.expiresAt).getTime() - Date.now()) / 86400000) > 0).length ?? 0}</span>}</div></div></Card.Content></Card>
       <Card><Card.Content className="flex items-center gap-3"><div className="p-2 bg-danger/10 rounded-lg"><FileBadge className="w-5 h-5 text-danger" /></div><div><p className="text-sm text-default-500">Problemas</p><div className="text-xl font-bold">{isLoading ? <Skeleton className="w-8 h-6 rounded-md" /> : <span>{companies?.filter(c => ["EXPIRED", "BLOCKED", "SUSPENDED"].includes(c.status)).length ?? 0}</span>}</div></div></Card.Content></Card>
@@ -206,7 +206,7 @@ export default function CompaniesPage() {
               </AlertDialog.Body>
               <AlertDialog.Footer>
                 <HeroButton variant="tertiary" onPress={() => setCompanyToDelete(null)}>Cancelar</HeroButton>
-                <Button className="bg-danger text-white hover:bg-danger/90" onPress={() => confirmDelete()} isLoading={isDeactivating}>Eliminar</Button>
+                <Button className="bg-danger text-default-50 hover:bg-danger/90" onPress={() => confirmDelete()} isLoading={isDeactivating}>Eliminar</Button>
               </AlertDialog.Footer>
             </AlertDialog.Dialog>
           </AlertDialog.Container>

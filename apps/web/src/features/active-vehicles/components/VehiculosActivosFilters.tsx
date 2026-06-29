@@ -63,7 +63,7 @@ export function VehiculosActivosFilters({
         <Popover.Dialog>
           <div className="p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900">Filtros</h3>
+              <h3 className="text-sm font-semibold text-foreground">Filtros</h3>
               {activeFilterCount > 0 && (
                 <button
                   onClick={handleClearFilters}
@@ -77,7 +77,7 @@ export function VehiculosActivosFilters({
             <div className="border-t border-default-200" />
 
             <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-600 block">
+              <label className="text-xs font-medium text-default-600 block">
                 Tipo de vehículo
               </label>
               <Select
@@ -96,8 +96,8 @@ export function VehiculosActivosFilters({
             </div>
 
             {activeFilterCount > 0 && (
-              <div className="text-xs text-slate-500 bg-slate-50 rounded-lg p-2">
-                Mostrando: <span className="font-medium text-slate-700">
+              <div className="text-xs text-default-500 bg-default-50 rounded-lg p-2">
+                Mostrando: <span className="font-medium text-default-700">
                   {vehicleTypeOptions.find((opt) => opt.value === filterValues.vehicleType)
                     ?.label || "Todos"}
                 </span>

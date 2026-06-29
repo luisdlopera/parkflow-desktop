@@ -30,8 +30,8 @@ export default function NuevoIngresoPage() {
         <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center mb-6">
           <ShieldAlert className="w-10 h-10 text-rose-600" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Acceso denegado</h1>
-        <p className="text-slate-600 max-w-md">
+        <h1 className="text-2xl font-bold text-foreground mb-2">Acceso denegado</h1>
+        <p className="text-default-600 max-w-md">
           No tienes permiso para registrar ingresos de vehículos. Contacta al administrador si crees que esto es un error.
         </p>
       </div>
@@ -53,12 +53,12 @@ export default function NuevoIngresoPage() {
                 <div className="w-20 h-20 rounded-full bg-brand-100 flex items-center justify-center">
                   <AlertTriangle className="w-10 h-10 text-brand-600" />
                 </div>
-                <Modal.Heading className="text-3xl font-bold text-slate-900">
+                <Modal.Heading className="text-3xl font-bold text-foreground">
                   Caja no abierta
                 </Modal.Heading>
               </Modal.Header>
               <Modal.Body className="max-w-md">
-                <p className="text-lg text-slate-600">
+                <p className="text-lg text-default-600">
                   No hay una sesión de caja abierta en este terminal. Debes abrir caja antes de
                   procesar entradas o salidas de vehículos.
                 </p>
@@ -87,12 +87,12 @@ export default function NuevoIngresoPage() {
                 <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center">
                   <AlertTriangle className="w-10 h-10 text-rose-600" />
                 </div>
-                <Modal.Heading className="text-3xl font-bold text-slate-900">
+                <Modal.Heading className="text-3xl font-bold text-foreground">
                   Error de conexión
                 </Modal.Heading>
               </Modal.Header>
               <Modal.Body className="max-w-md space-y-3">
-                <p className="text-lg text-slate-600">
+                <p className="text-lg text-default-600">
                   {caja.reason === "network"
                     ? "No se puede conectar con el servidor de caja (puerto 6011). Verifica que el backend esté corriendo."
                     : caja.reason === "auth"

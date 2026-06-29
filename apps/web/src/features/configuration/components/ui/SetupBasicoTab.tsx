@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Tabs, ListBox, Spinner } from '@heroui/react';
+import { Tabs, ListBox, Spinner, TimeField } from '@heroui/react';
+import { Time } from "@internationalized/date";
 import { Card } from '@/components/bridge/Card';
 import { Button } from '@/components/bridge/Button';
 import { Input } from '@/components/bridge/Input';
@@ -22,6 +23,22 @@ function safeParseInt(val: string, fallback: number): number {
 function toTimeInput(h: number, m: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
+
+const parseTimeString = (timeStr?: string | unknown) => {
+  if (typeof timeStr !== "string") return new Time(0, 0);
+  const [hours, minutes] = timeStr.split(":").map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return new Time(0, 0);
+  return new Time(hours, minutes);
+};
+
+const formatTime = (time: any) => {
+  if (!time) return "00:00";
+  if (time.target && typeof time.target.value === "string") return time.target.value;
+  if (time.hour !== undefined && time.minute !== undefined) {
+    return `${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}`;
+  }
+  return "00:00";
+};
 
 export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
   const api = useConfigurationApi();
@@ -177,7 +194,7 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
       <div className="flex items-center justify-center py-12">
         <div className="flex items-center gap-3">
           <Spinner size="lg" />
-          <span className="text-sm text-slate-500">Cargando configuración...</span>
+          <span className="text-sm text-default-500">Cargando configuración...</span>
         </div>
       </div>
     );
@@ -212,8 +229,8 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
         </Tabs.ListContainer>
 
         <Tabs.Panel className="pt-6" id="capacity">
-          <Card className="border border-slate-200 p-6 space-y-4 rounded-xl">
-            <h3 className="text-lg font-semibold text-slate-900">Capacidad del Parqueadero</h3>
+          <Card className="border border-default-200 p-6 space-y-4 rounded-xl">
+            <h3 className="text-lg font-semibold text-foreground">Capacidad del Parqueadero</h3>
             <Input
               label="Espacios totales"
               type="number"
@@ -222,7 +239,7 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
               onChange={(e) => setCapacityInput(e.target.value)}
               disabled={loading}
             />
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-default-500">
               {capacity} espacios configurados
             </p>
             <Button onPress={handleSaveCapacity} isDisabled={loading}>
@@ -232,8 +249,8 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
         </Tabs.Panel>
 
         <Tabs.Panel className="pt-6" id="shifts">
-          <Card className="border border-slate-200 p-6 space-y-4 rounded-xl">
-            <h3 className="text-lg font-semibold text-slate-900">Configuración de Turnos</h3>
+          <Card className="border border-default-200 p-6 space-y-4 rounded-xl">
+            <h3 className="text-lg font-semibold text-foreground">Configuración de Turnos</h3>
             <Checkbox
               isSelected={shiftsEnabled}
               onValueChange={setShiftsEnabled}
@@ -244,19 +261,19 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
 
             {shiftsEnabled && (
               <div className="grid grid-cols-2 gap-4">
-                <Input
+                <TimeField
                   label="Turno Día - Inicio"
-                  type="time"
-                  value={dayShiftStart}
-                  onChange={(e) => setDayShiftStart(e.target.value)}
-                  disabled={loading}
+                  // @ts-expect-error type version mismatch between HeroUI and app
+                  value={parseTimeString(dayShiftStart)}
+                  onChange={(v) => v && setDayShiftStart(formatTime(v))}
+                  isDisabled={loading}
                 />
-                <Input
+                <TimeField
                   label="Turno Día - Fin"
-                  type="time"
-                  value={dayShiftEnd}
-                  onChange={(e) => setDayShiftEnd(e.target.value)}
-                  disabled={loading}
+                  // @ts-expect-error type version mismatch between HeroUI and app
+                  value={parseTimeString(dayShiftEnd)}
+                  onChange={(v) => v && setDayShiftEnd(formatTime(v))}
+                  isDisabled={loading}
                 />
               </div>
             )}
@@ -268,8 +285,8 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
         </Tabs.Panel>
 
         <Tabs.Panel className="pt-6" id="region">
-          <Card className="border border-slate-200 p-6 space-y-4 rounded-xl">
-            <h3 className="text-lg font-semibold text-slate-900">Región y Localización</h3>
+          <Card className="border border-default-200 p-6 space-y-4 rounded-xl">
+            <h3 className="text-lg font-semibold text-foreground">Región y Localización</h3>
             <Select
               label="País"
               value={[countryCode]}
@@ -301,8 +318,8 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
         </Tabs.Panel>
 
         <Tabs.Panel className="pt-6" id="helmet">
-          <Card className="border border-slate-200 p-6 space-y-4 rounded-xl">
-            <h3 className="text-lg font-semibold text-slate-900">Manejo de Cascos</h3>
+          <Card className="border border-default-200 p-6 space-y-4 rounded-xl">
+            <h3 className="text-lg font-semibold text-foreground">Manejo de Cascos</h3>
             <Select
               label="Modo actual"
               value={[helmetMode]}

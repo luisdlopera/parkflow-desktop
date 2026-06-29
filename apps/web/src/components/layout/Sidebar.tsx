@@ -108,7 +108,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
 
   return (
     <aside data-testid="desktop-sidebar" className={`
-      hidden md:flex sticky top-0 z-20 h-screen border-r border-slate-200/70 bg-[var(--color-sidebar)] dark:bg-black/60 dark:border-gray-800/70 backdrop-blur
+      hidden md:flex sticky top-0 z-20 h-screen border-r border-default-200 bg-[var(--color-sidebar)] dark:bg-default-100 backdrop-blur
       flex-col transition-all duration-300 ease-in-out
       ${collapsed ? "w-[72px]" : "w-[260px]"}
     `} style={{ paddingLeft: 'env(safe-area-inset-left)' }}>
@@ -118,21 +118,21 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
           ${collapsed ? "py-6 justify-center" : "py-6"}
         `}>
           <div className={`
-            rounded-2xl bg-brand text-white grid place-content-center font-bold border border-default-200
+            rounded-2xl bg-brand text-default-50 grid place-content-center font-bold border border-default-200
             ${collapsed ? "h-10 w-10 text-lg" : "h-12 w-12 text-xl"}
           `}>
             P
           </div>
           {!collapsed && (
             <div className="flex-1 overflow-hidden">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Parkflow</p>
-              <p className="text-lg font-bold text-slate-900">Desktop</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-default-400">Parkflow</p>
+              <p className="text-lg font-bold text-foreground">Desktop</p>
             </div>
           )}
           <button
             onClick={onToggle}
             className={`
-              p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-gray-800 dark:hover:text-slate-300 transition-all
+              p-2 rounded-xl hover:bg-default-100 text-default-400 hover:text-default-600 dark:text-default-400 dark:hover:bg-default-200 dark:hover:text-default-500 transition-all
               ${collapsed ? "hidden" : "flex"}
             `}
             aria-label="Colapsar sidebar"
@@ -150,7 +150,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
           {collapsed && (
             <button
               onClick={onToggle}
-              className="w-full flex justify-center p-2 mb-4 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-gray-800 dark:hover:text-slate-300 transition-all"
+              className="w-full flex justify-center p-2 mb-4 rounded-xl hover:bg-default-100 text-default-400 hover:text-default-600 dark:text-default-400 dark:hover:bg-default-200 dark:hover:text-default-500 transition-all"
               aria-label="Expandir sidebar"
               title="Expandir sidebar"
             >
@@ -160,14 +160,13 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
             </button>
           )}
 
-          {!collapsed && (
-            <AnimatePresence mode="wait">
-              {configView === "ROOT" && (
-                <motion.div key="root-view" variants={slideVariants} initial="initial" animate="animate" exit="exit" className="space-y-3">
+          <AnimatePresence mode="wait">
+            {configView === "ROOT" && !collapsed && (
+              <motion.div key="root-view" variants={slideVariants} initial="initial" animate="animate" exit="exit" className="space-y-3">
                   <button
                     onClick={() => { setConfigView(false); router.push("/"); }}
                     aria-label="Volver al inicio"
-                    className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors px-1"
+                    className="flex items-center gap-2 text-xs font-semibold text-default-500 hover:text-default-800 transition-colors px-1"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -179,7 +178,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                     <svg className="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={navItems[6].icon} />
                     </svg>
-                    <span className="text-sm font-semibold text-slate-800">Configuración</span>
+                    <span className="text-sm font-semibold text-foreground">Configuración</span>
                   </div>
 
                   <nav className="space-y-1">
@@ -191,13 +190,13 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                           router.push(`/configuracion?group=${group.id}`);
                         }}
                         aria-label={`Ver opciones de ${group.label}`}
-                        className="w-full flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"
+                        className="w-full flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all text-default-600 dark:text-default-300 hover:bg-default-200 dark:hover:bg-default-300 hover:text-default-900 dark:hover:text-default-50"
                       >
                         <div className="flex items-center gap-3">
                           <group.icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                           <span>{group.label}</span>
                         </div>
-                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <svg className="w-4 h-4 text-default-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
@@ -206,12 +205,12 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                 </motion.div>
               )}
 
-              {activeCategory && (
-                <motion.div key="category-view" variants={slideVariants} initial="initial" animate="animate" exit="exit" className="space-y-3">
+            {activeCategory && !collapsed && (
+              <motion.div key="category-view" variants={slideVariants} initial="initial" animate="animate" exit="exit" className="space-y-3">
                   <button
                     onClick={() => { setConfigView("ROOT"); router.push("/configuracion"); }}
                     aria-label="Volver a categorías"
-                    className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors px-1"
+                    className="flex items-center gap-2 text-xs font-semibold text-default-500 hover:text-default-800 transition-colors px-1"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -221,7 +220,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
 
                   <div className="flex items-center gap-3 px-1">
                     <activeCategory.icon className="w-5 h-5 text-brand" />
-                    <span className="text-sm font-semibold text-slate-800">{activeCategory.label}</span>
+                    <span className="text-sm font-semibold text-foreground">{activeCategory.label}</span>
                   </div>
 
                   <nav className="space-y-1">
@@ -247,8 +246,8 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                           className={`
                             flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all
                             ${subActive
-                              ? "bg-brand text-white border border-default-200"
-                              : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
+                              ? "bg-brand text-default-50 border border-default-200"
+                              : "text-default-600 dark:text-default-300 hover:bg-default-200 dark:hover:bg-default-300 hover:text-default-900 dark:hover:text-default-50"}
                           `}
                         >
                           <Icon className="w-5 h-5 flex-shrink-0" />
@@ -260,8 +259,8 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                 </motion.div>
               )}
 
-              {!configView && (
-                <motion.div key="main-nav" variants={slideVariants} initial="initial" animate="animate" exit="exit">
+            {(!configView || collapsed) && (
+              <motion.div key="main-nav" variants={slideVariants} initial="initial" animate="animate" exit="exit">
                   <nav className="space-y-1">
                     {allNavItems.map((item) => {
                       const active = pathname === item.href;
@@ -278,15 +277,15 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                               className={`
                                 w-full flex items-center rounded-xl font-medium transition-all
                                 ${pathname?.startsWith("/configuracion")
-                                  ? "bg-brand text-white border border-default-200"
-                                  : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
+                                  ? "bg-brand text-default-50 border border-default-200"
+                                  : "text-default-600 dark:text-default-300 hover:bg-default-200 dark:hover:bg-default-300 hover:text-default-900 dark:hover:text-default-50"}
                                 ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
                               `}
                               title={collapsed ? item.label : undefined}
                               aria-label={item.label}
                             >
                               <div className="flex items-center gap-3">
-                                <svg className={`w-5 h-5 flex-shrink-0 ${collapsed ? "text-slate-700 dark:text-gray-100" : "text-slate-600 dark:text-gray-200"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <svg className={`w-5 h-5 flex-shrink-0 ${collapsed ? "text-default-700 dark:text-gray-100" : "text-default-600 dark:text-gray-200"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
                                 </svg>
                                 {!collapsed && <span className="truncate">{item.label}</span>}
@@ -308,15 +307,15 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                           className={`
                             flex items-center rounded-xl font-medium transition-all
                             ${active
-                              ? "bg-brand text-white border border-default-200"
-                              : "text-slate-600 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white"}
+                              ? "bg-brand text-default-50 border border-default-200"
+                              : "text-default-600 dark:text-default-300 hover:bg-default-200 dark:hover:bg-default-300 hover:text-default-900 dark:hover:text-default-50"}
                             ${collapsed ? "justify-center p-3" : "justify-between px-3 py-3 text-sm gap-3"}
                           `}
                           title={collapsed ? item.label : undefined}
                           aria-label={item.label}
                         >
                           <div className="flex items-center gap-3">
-                            <svg className={`w-5 h-5 flex-shrink-0 ${collapsed ? "text-slate-700 dark:text-gray-100" : "text-slate-600 dark:text-gray-200"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <svg className={`w-5 h-5 flex-shrink-0 ${collapsed ? "text-default-700 dark:text-gray-100" : "text-default-600 dark:text-gray-200"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
                             </svg>
                             {!collapsed && <span className="truncate">{item.label}</span>}
@@ -324,7 +323,7 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                           {!collapsed && item.shortcut && (
                             <kbd className={`
                               inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded flex-shrink-0
-                              ${active ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500 dark:bg-gray-700 dark:text-gray-200"}
+                              ${active ? "bg-default-50 dark:bg-default-100/20 text-default-50" : "bg-default-200 text-default-500 dark:bg-gray-700 dark:text-gray-200"}
                             `} aria-hidden="true">
                               {item.shortcut}
                             </kbd>
@@ -336,7 +335,6 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                 </motion.div>
               )}
             </AnimatePresence>
-          )}
         </div>
       </div>
     </aside>

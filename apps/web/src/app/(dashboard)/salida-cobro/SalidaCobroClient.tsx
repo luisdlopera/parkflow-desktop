@@ -60,10 +60,10 @@ export default function SalidaCobroClient() {
                 <div className="w-20 h-20 rounded-full bg-brand-100 flex items-center justify-center">
                   <AlertTriangle className="w-10 h-10 text-brand-600" />
                 </div>
-                <Modal.Heading className="text-3xl font-bold text-slate-900">Caja no abierta</Modal.Heading>
+                <Modal.Heading className="text-3xl font-bold text-foreground">Caja no abierta</Modal.Heading>
               </Modal.Header>
               <Modal.Body className="max-w-md">
-                <p className="text-lg text-slate-600">
+                <p className="text-lg text-default-600">
                   No hay una sesión de caja abierta en este terminal. Debes abrir caja antes de procesar entradas o salidas.
                 </p>
               </Modal.Body>
@@ -86,10 +86,10 @@ export default function SalidaCobroClient() {
                 <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center">
                   <AlertTriangle className="w-10 h-10 text-rose-600" />
                 </div>
-                <Modal.Heading className="text-3xl font-bold text-slate-900">Error de conexión</Modal.Heading>
+                <Modal.Heading className="text-3xl font-bold text-foreground">Error de conexión</Modal.Heading>
               </Modal.Header>
               <Modal.Body className="max-w-md space-y-3">
-                <p className="text-lg text-slate-600">
+                <p className="text-lg text-default-600">
                   {p.caja.reason === "network"
                     ? "No se puede conectar con el servidor de caja. Verifica que el backend esté corriendo."
                     : p.caja.reason === "auth"
@@ -139,10 +139,10 @@ export default function SalidaCobroClient() {
                 <Modal.Heading>Confirmar reimpresión</Modal.Heading>
               </Modal.Header>
               <Modal.Body>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-default-600">
                   ¿Estás seguro de que deseas reimprimir el ticket <strong>{p.active?.receipt.ticketNumber}</strong>?
                 </p>
-                <p className="text-xs text-slate-400 mt-2">
+                <p className="text-xs text-default-400 mt-2">
                   Motivo: {p.reprintReason}
                   {p.active && (
                     <> — Reimpresiones actuales: <strong>{p.active.receipt.reprintCount}</strong></>
@@ -165,13 +165,13 @@ export default function SalidaCobroClient() {
       {/* Header */}
       <div>
         <p className="text-sm uppercase tracking-[0.3em] text-amber-700/80">Salida y cobro</p>
-        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">Finalizar servicio</h1>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">Finalizar servicio</h1>
       </div>
 
       <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Left: Search + session info */}
         <div className="surface rounded-2xl p-4 sm:p-6 lg:col-span-2">
-          <h2 className="text-lg font-semibold text-slate-900">Busqueda</h2>
+          <h2 className="text-lg font-semibold text-foreground">Busqueda</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Input
               ref={p.ticketInputRef}
@@ -179,7 +179,7 @@ export default function SalidaCobroClient() {
               value={p.ticketNumber}
               onChange={(e) => p.setTicketNumber(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void p.lookup(); } }}
-              endContent={<span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">Enter</span>}
+              endContent={<span className="text-xs text-default-400 bg-default-100 px-2 py-1 rounded">Enter</span>}
             />
             <div className="space-y-1">
               <Input
@@ -187,7 +187,7 @@ export default function SalidaCobroClient() {
                 value={p.plate}
                 onChange={(val) => p.setPlate(val.target.value.toUpperCase())}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void p.lookup(); } }}
-                endContent={<span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">Placa</span>}
+                endContent={<span className="text-xs text-default-400 bg-default-100 px-2 py-1 rounded">Placa</span>}
               />
               {p.plate.startsWith("NP-") && (
                 <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
@@ -230,7 +230,7 @@ export default function SalidaCobroClient() {
               <div className="mt-6 bg-gradient-to-br from-brand-50 to-amber-50 border-2 border-brand-200 rounded-2xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 bg-brand-500 rounded-xl flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 text-default-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
@@ -239,18 +239,18 @@ export default function SalidaCobroClient() {
                     {p.active.receipt.plate?.startsWith("NP-") ? (
                       <div className="flex items-center gap-2 mt-1">
                         <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">SIN PLACA</span>
-                        <span className="text-sm text-slate-500">(Ingreso sin placa — busque por ticket)</span>
+                        <span className="text-sm text-default-500">(Ingreso sin placa — busque por ticket)</span>
                       </div>
                     ) : (
-                      <p className="text-sm text-slate-600 font-medium">Placa: {p.active.receipt.plate}</p>
+                      <p className="text-sm text-default-600 font-medium">Placa: {p.active.receipt.plate}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 mb-4 text-center border border-brand-100">
-                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total a pagar</p>
-                  <p className="text-4xl font-bold text-slate-900">${p.totalDue.toLocaleString("es-CO")}</p>
-                  <p className="text-sm text-slate-500 mt-1">
+                <div className="bg-default-50 dark:bg-default-100 rounded-xl p-4 mb-4 text-center border border-brand-100">
+                  <p className="text-xs text-default-500 uppercase tracking-wider mb-1">Total a pagar</p>
+                  <p className="text-4xl font-bold text-foreground">${p.totalDue.toLocaleString("es-CO")}</p>
+                  <p className="text-sm text-default-500 mt-1">
                     Tiempo: {p.active.receipt.duration} • {p.active.receipt.rateName ?? "Tarifa estándar"}
                   </p>
                   {(p.active.receipt.entryMode && p.active.receipt.entryMode !== "VISITOR") ? (
@@ -272,7 +272,7 @@ export default function SalidaCobroClient() {
                     const discount = Math.max(0, (sub + sur) - tot);
                     if ((sub + sur) <= 0 && discount <= 0) return null;
                     return (
-                      <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-1 text-left">
+                      <div className="mt-3 pt-3 border-t border-default-100 text-xs text-default-600 space-y-1 text-left">
                         {sub > 0 ? <p>Subtotal tarifa: ${sub.toLocaleString("es-CO")}</p> : null}
                         {sur > 0 ? <p>Recargos: ${sur.toLocaleString("es-CO")}</p> : null}
                         {discount > 0.009 ? (
@@ -281,7 +281,7 @@ export default function SalidaCobroClient() {
                           </p>
                         ) : null}
                         {p.active?.receipt.agreementCode ? (
-                          <p className="text-[10px] text-slate-400 mt-1 uppercase">Convenio aplicado: {p.active.receipt.agreementCode}</p>
+                          <p className="text-[10px] text-default-400 mt-1 uppercase">Convenio aplicado: {p.active.receipt.agreementCode}</p>
                         ) : null}
                       </div>
                     );
@@ -289,13 +289,13 @@ export default function SalidaCobroClient() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="bg-white/70 rounded-lg p-3">
-                    <span className="text-slate-500">Ticket:</span>
+                  <div className="bg-default-50 dark:bg-default-100/70 rounded-lg p-3">
+                    <span className="text-default-500">Ticket:</span>
                     <span className="font-mono font-medium ml-1">{p.active.receipt.ticketNumber}</span>
                   </div>
                   {p.allowTicketReprint && (
-                    <div className={`rounded-lg p-3 ${p.active.receipt.reprintCount > 2 ? "bg-amber-50 border border-amber-200" : "bg-white/70"}`}>
-                      <span className="text-slate-500">Reimpresiones:</span>
+                    <div className={`rounded-lg p-3 ${p.active.receipt.reprintCount > 2 ? "bg-amber-50 border border-amber-200" : "bg-default-50 dark:bg-default-100/70"}`}>
+                      <span className="text-default-500">Reimpresiones:</span>
                       <span className={`font-semibold ml-1 ${p.active.receipt.reprintCount > 2 ? "text-amber-700" : ""}`}>
                         {p.active.receipt.reprintCount}
                         {p.active.receipt.reprintCount > 2 && <span className="ml-1 text-xs font-normal">(⚠ inusual)</span>}
@@ -356,11 +356,11 @@ export default function SalidaCobroClient() {
 
         {/* Right: Payment actions */}
         <div className="surface rounded-2xl p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Acciones</h2>
-          <p className="mt-2 text-sm text-slate-600">
+          <h2 className="text-lg font-semibold text-foreground">Acciones</h2>
+          <p className="mt-2 text-sm text-default-600">
             {p.active ? "Seleccione el medio real de pago o use mixto para pago dividido." : "Busque una sesion activa para habilitar cobros."}
           </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-default-500">
             Salida rápida: F2 abre esta pantalla; {modifier}+Enter ejecuta la búsqueda
             {p.availablePaymentMethods.length > 0
               ? `; con sesión activa use 1 (${p.availablePaymentMethods[0].label.toLowerCase()})${p.availablePaymentMethods.length > 1 ? ` o 2 (${p.availablePaymentMethods[1].label.toLowerCase()})` : ""}.`
@@ -383,13 +383,13 @@ export default function SalidaCobroClient() {
                 key={method.code}
                 className={`min-h-14 justify-start text-left font-bold ${
                   p.active && !p.processing
-                    ? `${method.tone} text-white border border-default-200`
-                    : "bg-slate-200 text-slate-400"
+                    ? `${method.tone} text-default-50 border border-default-200`
+                    : "bg-default-200 text-default-400"
                 } ${p.selectedPaymentMethod === method.code ? "ring-2 ring-offset-2 ring-slate-900" : ""}`}
                 isDisabled={!p.active || p.searching || p.processing}
                 onPress={() => p.setSelectedPaymentMethod(method.code)}
               >
-                <div className={`w-8 h-8 rounded-lg flex shrink-0 items-center justify-center text-sm ${p.active && !p.processing ? "bg-white/20" : "bg-slate-300"}`}>
+                <div className={`w-8 h-8 rounded-lg flex shrink-0 items-center justify-center text-sm ${p.active && !p.processing ? "bg-default-50 dark:bg-default-100/20" : "bg-default-300"}`}>
                   {index < 9 ? index + 1 : "•"}
                 </div>
                 <div className="min-w-0">
@@ -411,12 +411,12 @@ export default function SalidaCobroClient() {
                 placeholder={String(p.totalDue)}
               />
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-lg bg-white p-3 border border-emerald-200/80">
-                  <p className="text-xs uppercase text-slate-500">Cambio</p>
+                <div className="rounded-lg bg-default-50 dark:bg-default-100 p-3 border border-emerald-200/80">
+                  <p className="text-xs uppercase text-default-500">Cambio</p>
                   <p className="text-lg font-bold text-emerald-700 tabular-nums">${p.changeDue.toLocaleString("es-CO")}</p>
                 </div>
-                <div className="rounded-lg bg-white p-3 border border-emerald-200/80">
-                  <p className="text-xs uppercase text-slate-500">Vuelto</p>
+                <div className="rounded-lg bg-default-50 dark:bg-default-100 p-3 border border-emerald-200/80">
+                  <p className="text-xs uppercase text-default-500">Vuelto</p>
                   <p className="text-lg font-bold text-emerald-700 tabular-nums">${p.changeDue.toLocaleString("es-CO")}</p>
                 </div>
               </div>
@@ -428,8 +428,8 @@ export default function SalidaCobroClient() {
             <div className="mt-5 rounded-xl border border-teal-100 bg-teal-50 p-3 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">Pago dividido</p>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-sm font-semibold text-foreground">Pago dividido</p>
+                  <p className="text-xs text-default-600">
                     Suma: ${p.splitTotal.toLocaleString("es-CO")} / ${p.totalDue.toLocaleString("es-CO")}
                   </p>
                 </div>
@@ -474,8 +474,8 @@ export default function SalidaCobroClient() {
 
               <div className={`rounded-lg p-3 text-sm font-semibold ${
                 Math.abs(p.splitTotal - p.totalDue) <= 0.009
-                  ? "bg-white text-emerald-700 border border-emerald-200"
-                  : "bg-white text-amber-700 border border-amber-200"
+                  ? "bg-default-50 dark:bg-default-100 text-emerald-700 border border-emerald-200"
+                  : "bg-default-50 dark:bg-default-100 text-amber-700 border border-amber-200"
               }`}>
                 {Math.abs(p.splitTotal - p.totalDue) <= 0.009
                   ? "Pago dividido completo"
@@ -483,12 +483,12 @@ export default function SalidaCobroClient() {
               </div>
               {p.splitCashReceived > p.totalDue ? (
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="rounded-lg bg-white p-3 border border-teal-200">
-                    <p className="text-xs uppercase text-slate-500">Cambio</p>
+                  <div className="rounded-lg bg-default-50 dark:bg-default-100 p-3 border border-teal-200">
+                    <p className="text-xs uppercase text-default-500">Cambio</p>
                     <p className="text-lg font-bold text-emerald-700 tabular-nums">${p.changeDue.toLocaleString("es-CO")}</p>
                   </div>
-                  <div className="rounded-lg bg-white p-3 border border-teal-200">
-                    <p className="text-xs uppercase text-slate-500">Vuelto</p>
+                  <div className="rounded-lg bg-default-50 dark:bg-default-100 p-3 border border-teal-200">
+                    <p className="text-xs uppercase text-default-500">Vuelto</p>
                     <p className="text-lg font-bold text-emerald-700 tabular-nums">${p.changeDue.toLocaleString("es-CO")}</p>
                   </div>
                 </div>
@@ -514,7 +514,7 @@ export default function SalidaCobroClient() {
           )}
 
           {/* Secondary actions */}
-          <div className="mt-6 pt-4 border-t border-slate-200 space-y-3">
+          <div className="mt-6 pt-4 border-t border-default-200 space-y-3">
             {p.allowTicketReprint && (
               <>
                 <Input

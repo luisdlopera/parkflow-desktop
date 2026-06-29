@@ -94,10 +94,10 @@ export default function DashboardPageClient() {
     <div className="space-y-10" data-testid="dashboard-root">
       {/* Loading Overlay */}
       {summaryLoading && (
-        <div className="fixed inset-0 flex items-center justify-center bg-slate-900/20 dark:bg-black/40 z-50 rounded-3xl">
-          <div className="flex flex-col items-center gap-3 bg-white dark:bg-slate-900 rounded-2xl p-8 border border-default-200">
+        <div className="fixed inset-0 flex items-center justify-center bg-default-900/20 dark:bg-default-100/40 z-50 rounded-3xl">
+          <div className="flex flex-col items-center gap-3 bg-default-50 dark:bg-default-100 dark:bg-default-100 rounded-2xl p-8 border border-default-200">
             <Spinner size="lg" color="current" />
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Actualizando datos...</p>
+            <p className="text-sm font-medium text-default-600 dark:text-default-300">Actualizando datos...</p>
           </div>
         </div>
       )}
@@ -106,13 +106,13 @@ export default function DashboardPageClient() {
       <section className="space-y-6" data-testid="summary-loaded">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-3 flex-1">
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 font-bold">Panel principal</p>
-            <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 leading-tight">Vision general del parqueadero</h1>
+            <p className="text-xs uppercase tracking-[0.3em] text-default-400 dark:text-default-500 font-bold">Panel principal</p>
+            <h1 className="text-2xl sm:text-4xl font-bold text-foreground dark:text-default-200 leading-tight">Vision general del parqueadero</h1>
             {summaryError ? (
               <p className="text-sm text-red-600 dark:text-red-400 font-medium">{summaryError}</p>
             ) : null}
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+          <div className="flex items-center gap-2 text-xs text-default-500 dark:text-default-400 whitespace-nowrap">
             <Spinner size="sm" color="current" />
             <span className="font-medium">{formatLastUpdated(lastUpdated)}</span>
           </div>
@@ -120,23 +120,23 @@ export default function DashboardPageClient() {
 
         {/* Status summary grid */}
         {summary ? (
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 p-4">
+          <div className="rounded-xl border border-default-200 dark:border-default-700 bg-default-50/50 dark:bg-default-100/30 p-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 font-semibold mb-1">Sync pendiente</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{summary.syncQueuePending}</p>
+                <p className="text-xs uppercase tracking-wide text-default-400 dark:text-default-500 font-semibold mb-1">Sync pendiente</p>
+                <p className="text-lg font-bold text-foreground dark:text-default-200">{summary.syncQueuePending}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 font-semibold mb-1">Impresión fallida</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{summary.printFailedSinceMidnight}</p>
+                <p className="text-xs uppercase tracking-wide text-default-400 dark:text-default-500 font-semibold mb-1">Impresión fallida</p>
+                <p className="text-lg font-bold text-foreground dark:text-default-200">{summary.printFailedSinceMidnight}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 font-semibold mb-1">Dead letter</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{summary.printDeadLetterSinceMidnight}</p>
+                <p className="text-xs uppercase tracking-wide text-default-400 dark:text-default-500 font-semibold mb-1">Dead letter</p>
+                <p className="text-lg font-bold text-foreground dark:text-default-200">{summary.printDeadLetterSinceMidnight}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 font-semibold mb-1">Tickets perdidos</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{summary.lostTicketSinceMidnight}</p>
+                <p className="text-xs uppercase tracking-wide text-default-400 dark:text-default-500 font-semibold mb-1">Tickets perdidos</p>
+                <p className="text-lg font-bold text-foreground dark:text-default-200">{summary.lostTicketSinceMidnight}</p>
               </div>
             </div>
           </div>
@@ -168,7 +168,7 @@ export default function DashboardPageClient() {
       {isSuperAdmin && (
         <section className="space-y-6">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Salud Operacional</h2>
+            <h2 className="text-xl font-bold text-foreground dark:text-default-200">Salud Operacional</h2>
             {opsMessage ? <Badge label={opsMessage} tone="warning" /> : null}
           </div>
 
@@ -185,11 +185,11 @@ export default function DashboardPageClient() {
               const isWarning = String(value) === "WARNING";
               const statusBg = isCritical ? "border-2 border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/40"
                 : isWarning ? "border-2 border-amber-400 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40"
-                : "border border-slate-200 dark:border-slate-700";
+                : "border border-default-200 dark:border-default-700";
 
               return (
-                <div key={label} className={`surface rounded-2xl p-5 border transition-all duration-300 hover:border-slate-300 dark:hover:border-slate-600 ${statusBg}`}>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">{label}</p>
+                <div key={label} className={`surface rounded-2xl p-5 border transition-all duration-300 hover:border-default-300 dark:hover:border-default-600 ${statusBg}`}>
+                  <p className="text-xs font-bold uppercase tracking-wider text-default-400 dark:text-default-500 mb-1">{label}</p>
                   <p className={`text-xl font-bold ${tone(String(value))}`}>{value ?? "—"}</p>
                 </div>
               );
@@ -197,23 +197,23 @@ export default function DashboardPageClient() {
           </div>
 
           {/* Operational details card */}
-          <div className="space-y-4 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-slate-50/50 dark:bg-slate-900/30 transition-all duration-300">
+          <div className="space-y-4 rounded-2xl border border-default-200 dark:border-default-700 p-6 bg-default-50/50 dark:bg-default-100/30 transition-all duration-300">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
               <div className="space-y-2">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Heartbeat</p>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{operational?.lastHeartbeat ? new Date(operational.lastHeartbeat).toLocaleString("es-CO") : "Sin datos"}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-default-400 dark:text-default-500">Heartbeat</p>
+                <p className="text-sm font-medium text-foreground dark:text-default-200">{operational?.lastHeartbeat ? new Date(operational.lastHeartbeat).toLocaleString("es-CO") : "Sin datos"}</p>
               </div>
               <div className="space-y-2">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Último Sync</p>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{operational?.lastSuccessfulSync ? new Date(operational.lastSuccessfulSync).toLocaleString("es-CO") : "Sin datos"}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-default-400 dark:text-default-500">Último Sync</p>
+                <p className="text-sm font-medium text-foreground dark:text-default-200">{operational?.lastSuccessfulSync ? new Date(operational.lastSuccessfulSync).toLocaleString("es-CO") : "Sin datos"}</p>
               </div>
               <div className="space-y-2">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Cajas Abiertas</p>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{operational?.openCashRegisters ?? "—"}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-default-400 dark:text-default-500">Cajas Abiertas</p>
+                <p className="text-sm font-medium text-foreground dark:text-default-200">{operational?.openCashRegisters ?? "—"}</p>
               </div>
               <div className="space-y-2">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Fallos Detectados</p>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{operational?.failedEvents ?? "—"}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-default-400 dark:text-default-500">Fallos Detectados</p>
+                <p className="text-sm font-medium text-foreground dark:text-default-200">{operational?.failedEvents ?? "—"}</p>
               </div>
             </div>
 
@@ -223,8 +223,8 @@ export default function DashboardPageClient() {
             </div>
 
             {(operational?.recentErrors?.length ?? 0) > 0 && (
-              <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Errores Recientes</h3>
+              <div className="pt-4 border-t border-default-200 dark:border-default-700">
+                <h3 className="text-sm font-semibold text-foreground dark:text-default-200 mb-3">Errores Recientes</h3>
                 <DataTable
                   columns={errorColumns}
                   rows={operational?.recentErrors ?? []}
@@ -240,8 +240,8 @@ export default function DashboardPageClient() {
       <section className="space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Vehículos en Patio</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{activeSessions.length} activos en este momento</p>
+            <h2 className="text-xl font-bold text-foreground dark:text-default-200">Vehículos en Patio</h2>
+            <p className="text-xs text-default-500 dark:text-default-400 mt-1">{activeSessions.length} activos en este momento</p>
           </div>
           <span className="inline-flex items-center px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-950/30 border border-brand-200 dark:border-brand-800 text-sm font-semibold text-brand-700 dark:text-brand-300">{activeSessions.length}</span>
         </div>

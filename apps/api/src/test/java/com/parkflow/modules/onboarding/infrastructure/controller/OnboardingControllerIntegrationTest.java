@@ -75,7 +75,6 @@ class OnboardingControllerIntegrationTest {
     );
 
     mockMvc.perform(put("/api/v1/onboarding/companies/{companyId}/steps", companyId)
-            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request)))
         .andDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print())

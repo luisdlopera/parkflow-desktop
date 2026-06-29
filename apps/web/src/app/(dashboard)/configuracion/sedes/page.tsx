@@ -36,7 +36,7 @@ const SITE_COLUMNS: ColumnDef<ParkingSiteRow>[] = [
     key: "isActive",
     label: "Activo",
     render: (row) => (
-      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${row.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${row.isActive ? "bg-emerald-100 text-emerald-700" : "bg-default-100 text-default-500"}`}>
         {row.isActive ? "Sí" : "No"}
       </span>
     ),
@@ -106,7 +106,7 @@ export default function SedesPage() {
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <ConfigPageHeader title="Sedes / Parqueaderos" groupLabel="Organización" groupId="organizacion" sectionLabel="Administrar sedes del parqueadero" />
 
-      <Card border border-default-200="sm" className="border border-slate-200 bg-slate-50/50">
+      <Card border border-default-200="sm" className="border border-default-200 bg-default-50/50">
         <Card.Content className="p-4 flex flex-col sm:flex-row sm:items-end gap-4">
           <div className="flex-1">
             <Select
@@ -131,7 +131,7 @@ export default function SedesPage() {
               </Select.Popover>
             </Select>
           </div>
-          <p className="text-xs text-slate-500 max-w-xs">
+          <p className="text-xs text-default-500 max-w-xs">
             La nueva sede quedará asociada a: <span className="font-bold text-amber-700">{selectedCompanyLabel}</span>.
             {companies.length <= 1 && " Se ha seleccionado automáticamente."}
           </p>

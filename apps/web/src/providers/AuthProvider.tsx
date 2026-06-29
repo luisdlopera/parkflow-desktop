@@ -8,10 +8,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <div className="flex h-screen w-screen items-center justify-center bg-default-50 dark:bg-default-900">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-600 border-t-transparent" />
-          <p className="text-sm font-medium text-slate-500">Restaurando sesión...</p>
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-default-600 border-t-transparent" />
+          <p className="text-sm font-medium text-default-500">Restaurando sesión...</p>
         </div>
       </div>
     );

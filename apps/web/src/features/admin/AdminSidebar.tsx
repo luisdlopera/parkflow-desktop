@@ -81,7 +81,7 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
   return (
     <aside
       className={`
-        hidden md:flex sticky top-0 z-20 h-screen border-r border-slate-200/70 bg-white/60 dark:bg-neutral-950/50 dark:border-neutral-800/70 backdrop-blur
+        hidden md:flex sticky top-0 z-20 h-screen border-r border-default-200/70 bg-default-50 dark:bg-default-100/60 dark:bg-neutral-950/50 dark:border-neutral-800/70 backdrop-blur
         flex-col transition-all duration-300 ease-in-out
         ${collapsed ? "w-[72px] px-2" : "w-[260px] px-4"}
       `}
@@ -95,7 +95,7 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
       >
         <div
           className={`
-            rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-white grid place-content-center font-bold border border-default-200 -500/30
+            rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-default-50 grid place-content-center font-bold border border-default-200 -500/30
             ${collapsed ? "h-10 w-10 text-lg" : "h-12 w-12 text-xl"}
           `}
         >
@@ -103,15 +103,15 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
         </div>
         {!collapsed && (
           <div className="flex-1 overflow-hidden">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">ParkFlow</p>
-            <p className="text-lg font-bold text-slate-900">Super Admin</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-default-400">ParkFlow</p>
+            <p className="text-lg font-bold text-foreground">Super Admin</p>
           </div>
         )}
         {/* Toggle button (visible when expanded) */}
         <button
           onClick={onToggle}
           className={`
-            p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-neutral-800/35 text-slate-400 hover:text-slate-600 dark:text-neutral-400 dark:hover:text-neutral-200 transition-all
+            p-2 rounded-xl hover:bg-default-100 dark:hover:bg-neutral-800/35 text-default-400 hover:text-default-600 dark:text-neutral-400 dark:hover:text-neutral-200 transition-all
             ${collapsed ? "hidden" : "flex"}
           `}
           aria-label="Colapsar sidebar"
@@ -125,7 +125,7 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
       {collapsed && (
         <button
           onClick={onToggle}
-          className="w-full flex justify-center p-2 mb-4 rounded-xl hover:bg-slate-100 dark:hover:bg-neutral-800/35 text-slate-400 hover:text-slate-600 dark:text-neutral-400 dark:hover:text-neutral-200 transition-all"
+          className="w-full flex justify-center p-2 mb-4 rounded-xl hover:bg-default-100 dark:hover:bg-neutral-800/35 text-default-400 hover:text-default-600 dark:text-neutral-400 dark:hover:text-neutral-200 transition-all"
           aria-label="Expandir sidebar"
           title="Expandir sidebar"
         >
@@ -171,8 +171,8 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
                 flex items-center rounded-xl font-medium transition-all
                 ${
                   isActive
-                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white border border-default-200 -500/20"
-                    : "text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800/35 hover:text-slate-900 dark:hover:text-white"
+                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-default-50 border border-default-200 -500/20"
+                    : "text-default-600 dark:text-neutral-300 hover:bg-default-100 dark:hover:bg-neutral-800/35 hover:text-foreground dark:hover:text-default-50"
                 }
                 ${
                   collapsed
@@ -195,7 +195,7 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
           href="/"
           className={`
             flex items-center rounded-xl font-medium text-sm transition-all
-            text-slate-500 dark:text-neutral-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400
+            text-default-500 dark:text-neutral-400 hover:bg-brand-100 dark:bg-brand-900/30 dark:hover:bg-brand-900/30 hover:text-brand-600 dark:text-brand-300 dark:hover:text-brand-400
             ${collapsed ? "justify-center p-3" : "px-3 py-3 gap-3"}
           `}
           title={collapsed ? "Volver a operación" : undefined}
@@ -220,14 +220,14 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
       {/* Footer */}
       <div
         className={`
-          py-4 border-t border-slate-200/70 dark:border-neutral-800/70 mt-2
+          py-4 border-t border-default-200/70 dark:border-neutral-800/70 mt-2
           ${collapsed ? "px-1 text-center" : "px-2"}
         `}
       >
         {collapsed ? (
-          <p className="text-[9px] text-slate-400 leading-tight">v1.0</p>
+          <p className="text-[9px] text-default-400 leading-tight">v1.0</p>
         ) : (
-          <p className="text-xs text-slate-400">ParkFlow Licensing System v1.0</p>
+          <p className="text-xs text-default-400">ParkFlow Licensing System v1.0</p>
         )}
       </div>
     </aside>

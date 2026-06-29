@@ -33,17 +33,17 @@ export function BrandingSection({ savedConfig, onLogoUpload, onFaviconUpload, on
   return (
     <Card>
       <Card.Header>
-        <h2 className="text-base font-semibold text-slate-900">Logotipo y favicon</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Formatos: PNG, JPG, SVG · Máximo 2 MB</p>
+        <h2 className="text-base font-semibold text-foreground">Logotipo y favicon</h2>
+        <p className="text-sm text-default-500 mt-0.5">Formatos: PNG, JPG, SVG · Máximo 2 MB</p>
       </Card.Header>
       <Card.Content className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div className="space-y-3">
-          <p className="text-sm font-medium text-slate-800">Logotipo</p>
-          <div className="h-24 rounded-xl border border-slate-200 flex items-center justify-center bg-slate-50">
+          <p className="text-sm font-medium text-foreground">Logotipo</p>
+          <div className="h-24 rounded-xl border border-default-200 flex items-center justify-center bg-default-50">
             {savedConfig?.logoUrl
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={savedConfig.logoUrl} alt="Logo actual" className="max-h-20 max-w-full object-contain" />
-              : <p className="text-xs text-slate-400">Sin logotipo</p>}
+              : <p className="text-xs text-default-400">Sin logotipo</p>}
           </div>
           <div className="flex gap-2">
             <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml" className="hidden" onChange={handleLogoChange} />
@@ -55,12 +55,12 @@ export function BrandingSection({ savedConfig, onLogoUpload, onFaviconUpload, on
         </div>
 
         <div className="space-y-3">
-          <p className="text-sm font-medium text-slate-800">Favicon</p>
-          <div className="h-24 rounded-xl border border-slate-200 flex items-center justify-center bg-slate-50">
+          <p className="text-sm font-medium text-foreground">Favicon</p>
+          <div className="h-24 rounded-xl border border-default-200 flex items-center justify-center bg-default-50">
             {savedConfig?.faviconUrl
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={savedConfig.faviconUrl} alt="Favicon actual" className="max-h-16 max-w-full object-contain" />
-              : <p className="text-xs text-slate-400">Sin favicon</p>}
+              : <p className="text-xs text-default-400">Sin favicon</p>}
           </div>
           <div className="flex gap-2">
             <input ref={faviconInputRef} type="file" accept="image/x-icon,image/png,image/svg+xml" className="hidden" onChange={handleFaviconChange} />

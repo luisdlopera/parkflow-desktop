@@ -30,7 +30,7 @@ export default function LocalPrintAgentStatus() {
   }
   if (s.tauri) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+      <span className="inline-flex items-center gap-1 rounded-full bg-default-100 px-2 py-0.5 text-xs text-default-600">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
         Impresion: app escritorio
       </span>
@@ -38,7 +38,7 @@ export default function LocalPrintAgentStatus() {
   }
   if (s.agent) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+      <span className="inline-flex items-center gap-1 rounded-full bg-default-100 px-2 py-0.5 text-xs text-default-600">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
         Agente de impresion conectado
       </span>

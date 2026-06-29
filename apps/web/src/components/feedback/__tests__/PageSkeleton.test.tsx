@@ -38,7 +38,7 @@ describe("PageSkeleton", () => {
     expect(tableSkeleton).toBeInTheDocument();
     expect(tableSkeleton?.className).toContain("rounded-xl");
     expect(tableSkeleton?.className).toContain("border");
-    expect(tableSkeleton?.className).toContain("border-slate-200");
+    expect(tableSkeleton?.className).toContain("border-default-200");
   });
 
   it("renders the correct number of skeleton rows", () => {

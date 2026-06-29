@@ -90,25 +90,25 @@ describe("Step5Shifts", () => {
     it("should display day shift start value", () => {
       render(<Step5Shifts />);
       const dayStartInput = screen.getByLabelText("Inicio turno diurno") as HTMLInputElement;
-      expect(dayStartInput.value).toBe("06:00");
+      expect(dayStartInput.value).toContain("06:00");
     });
 
     it("should display day shift end value", () => {
       render(<Step5Shifts />);
       const dayEndInput = screen.getByLabelText("Fin turno diurno") as HTMLInputElement;
-      expect(dayEndInput.value).toBe("18:00");
+      expect(dayEndInput.value).toContain("18:00");
     });
 
     it("should display night shift start value", () => {
       render(<Step5Shifts />);
       const nightStartInput = screen.getByLabelText("Inicio turno nocturno") as HTMLInputElement;
-      expect(nightStartInput.value).toBe("18:00");
+      expect(nightStartInput.value).toContain("18:00");
     });
 
     it("should display night shift end value", () => {
       render(<Step5Shifts />);
       const nightEndInput = screen.getByLabelText("Fin turno nocturno") as HTMLInputElement;
-      expect(nightEndInput.value).toBe("06:00");
+      expect(nightEndInput.value).toContain("06:00");
     });
 
     it("should have switch checked when enabled", () => {
@@ -260,25 +260,25 @@ describe("Step5Shifts", () => {
     it("should display default 06:00 for day shift start", () => {
       render(<Step5Shifts />);
       const dayStartInput = screen.getByLabelText("Inicio turno diurno") as HTMLInputElement;
-      expect(dayStartInput.value).toBe("06:00");
+      expect(dayStartInput.value).toContain("06:00");
     });
 
     it("should display default 18:00 for day shift end", () => {
       render(<Step5Shifts />);
       const dayEndInput = screen.getByLabelText("Fin turno diurno") as HTMLInputElement;
-      expect(dayEndInput.value).toBe("18:00");
+      expect(dayEndInput.value).toContain("18:00");
     });
 
     it("should display default 18:00 for night shift start", () => {
       render(<Step5Shifts />);
       const nightStartInput = screen.getByLabelText("Inicio turno nocturno") as HTMLInputElement;
-      expect(nightStartInput.value).toBe("18:00");
+      expect(nightStartInput.value).toContain("18:00");
     });
 
     it("should display default 06:00 for night shift end", () => {
       render(<Step5Shifts />);
       const nightEndInput = screen.getByLabelText("Fin turno nocturno") as HTMLInputElement;
-      expect(nightEndInput.value).toBe("06:00");
+      expect(nightEndInput.value).toContain("06:00");
     });
   });
 

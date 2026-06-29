@@ -22,17 +22,17 @@ export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, 
 
   return (
     <div className="relative group">
-      <div className="absolute -inset-0.5 bg-gradient-to-r from-primary-500 to-primary-500 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500" />
-      <div className="relative bg-white dark:bg-slate-900 rounded-2xl p-1">
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-brand-500 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500" />
+      <div className="relative bg-default-50 dark:bg-default-100 dark:bg-default-900 rounded-2xl p-1">
         <Controller
           name="plate"
           control={control}
           render={({ field, fieldState }) => (
             <TextField isInvalid={!!fieldState.error} className="flex flex-col">
               <label className="flex items-center justify-between w-full text-base font-semibold px-3 pt-2 pb-1">
-                <span className="text-slate-600 dark:text-slate-300">Placa del vehículo</span>
+                <span className="text-default-600 dark:text-default-300">Placa del vehículo</span>
                 {platePrefix && (
-                  <span className="text-xs font-bold text-primary-700 bg-primary-100 px-2.5 py-0.5 rounded-md">
+                  <span className="text-xs font-bold text-brand-700 dark:text-brand-200 bg-brand-200 dark:bg-brand-900/40 px-2.5 py-0.5 rounded-md">
                     {platePrefix}
                   </span>
                 )}
@@ -56,7 +56,7 @@ export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, 
                     onSubmit?.();
                   }
                 }}
-                className={`w-full text-5xl sm:text-6xl font-black uppercase tracking-[0.2em] text-center h-[200px] text-slate-800 dark:text-slate-100 placeholder:text-slate-200 dark:placeholder:text-slate-600 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 transition-all rounded-xl border-0 outline-none focus:outline-none focus:ring-0 ${
+                className={`w-full text-5xl sm:text-6xl font-black uppercase tracking-[0.2em] text-center h-[200px] text-foreground dark:text-default-200 placeholder:text-default-200 dark:placeholder:text-default-600 bg-default-50/50 dark:bg-default-800/50 hover:bg-default-50 dark:hover:bg-default-800 focus:bg-default-50 dark:bg-default-100 dark:focus:bg-default-800 transition-all rounded-xl border-0 outline-none focus:outline-none focus:ring-0 ${
                   fieldState.error ? "border-2 border-danger" : ""
                 }`}
                 autoComplete="off"
@@ -64,7 +64,7 @@ export default function PlateInput({ control, onSubmit, plateInputRef, noPlate, 
               {fieldState.error ? (
                 <p className="text-xs text-danger px-3 pt-1 pb-2">{fieldState.error.message}</p>
               ) : (
-                <p className="text-xs text-slate-400 dark:text-slate-500 px-3 pt-1 pb-2 text-center">
+                <p className="text-xs text-default-400 dark:text-default-500 px-3 pt-1 pb-2 text-center">
                   Formato esperado: {formatHint} · Ej: {placeholder}
                 </p>
               )}

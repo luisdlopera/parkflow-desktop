@@ -11,55 +11,55 @@ import { ConfigPageHeader } from "@/features/configuration/components/ui/ConfigP
 
 const SetupBasicoTab = dynamic(() => import("@/features/configuration/components/ui/SetupBasicoTab").then((m) => ({ default: m.SetupBasicoTab })), {
   ssr: false,
-  loading: () => <p className="text-sm text-slate-600">Cargando configuración...</p>,
+  loading: () => <p className="text-sm text-default-600">Cargando configuración...</p>,
 });
 const ModulesTab = dynamic(() => import("@/features/configuration/components/ui/ModulesTab").then((m) => ({ default: m.ModulesTab })), {
   ssr: false,
-  loading: () => <p className="text-sm text-slate-600">Cargando módulos...</p>,
+  loading: () => <p className="text-sm text-default-600">Cargando módulos...</p>,
 });
 const RatesSection = dynamic(() => import("@/features/configuration/components/RatesSection"), {
   ssr: false,
-  loading: () => <p className="text-sm text-slate-600">Cargando tarifas...</p>,
+  loading: () => <p className="text-sm text-default-600">Cargando tarifas...</p>,
 });
 const UsersSection = dynamic(() => import("@/features/configuration/components/UsersSection"), {
   ssr: false,
-  loading: () => <p className="text-sm text-slate-600">Cargando usuarios...</p>,
+  loading: () => <p className="text-sm text-default-600">Cargando usuarios...</p>,
 });
 const ParametersSection = dynamic(() => import("@/features/configuration/components/ParametersSection"), {
   ssr: false,
-  loading: () => <p className="text-sm text-slate-600">Cargando parámetros...</p>,
+  loading: () => <p className="text-sm text-default-600">Cargando parámetros...</p>,
 });
 const InterfaceSection = dynamic(() => import("@/features/configuration/components/InterfaceSection"), {
   ssr: false,
-  loading: () => <p className="text-sm text-slate-600">Cargando interfaz...</p>,
+  loading: () => <p className="text-sm text-default-600">Cargando interfaz...</p>,
 });
 const MastersSection = dynamic(() => import("@/features/configuration/components/MastersSection"), {
   ssr: false,
-  loading: () => <p className="text-sm text-slate-600">Cargando maestros...</p>,
+  loading: () => <p className="text-sm text-default-600">Cargando maestros...</p>,
 });
 const MonthlySection = dynamic(() => import("@/features/configuration/components/MonthlySection"), {
   ssr: false,
-  loading: () => <p className="text-sm text-slate-600">Cargando mensualidades...</p>,
+  loading: () => <p className="text-sm text-default-600">Cargando mensualidades...</p>,
 });
 const AgreementsSection = dynamic(() => import("@/features/configuration/components/AgreementsSection"), {
   ssr: false,
-  loading: () => <p className="text-sm text-slate-600">Cargando convenios...</p>,
+  loading: () => <p className="text-sm text-default-600">Cargando convenios...</p>,
 });
 const PrepaidSection = dynamic(() => import("@/features/configuration/components/PrepaidSection"), {
   ssr: false,
-  loading: () => <p className="text-sm text-slate-600">Cargando prepagados...</p>,
+  loading: () => <p className="text-sm text-default-600">Cargando prepagados...</p>,
 });
 const OnboardingSection = dynamic(() => import("@/features/configuration/components/OnboardingSection"), {
   ssr: false,
-  loading: () => <p className="text-sm text-slate-600">Cargando asistente...</p>,
+  loading: () => <p className="text-sm text-default-600">Cargando asistente...</p>,
 });
 const FeatureFlagsSection = dynamic(() => import("@/features/configuration/components/ui/FeatureFlagsSection").then((m) => ({ default: m.FeatureFlagsSection })), {
   ssr: false,
-  loading: () => <p className="text-sm text-slate-600">Cargando características...</p>,
+  loading: () => <p className="text-sm text-default-600">Cargando características...</p>,
 });
 
 function Notice({ kind, text }: { kind: "ok" | "err" | "info"; text: string }) {
-  let cls = "border-slate-200 bg-slate-50 text-slate-800";
+  let cls = "border-default-200 bg-default-50 text-foreground";
   if (kind === "ok") cls = "border-emerald-200 bg-emerald-50 text-emerald-900";
   else if (kind === "err") cls = "border-rose-200 bg-rose-50 text-rose-900";
   return (
@@ -146,50 +146,50 @@ export default function ConfiguracionPage() {
 
       {section === "setup" && (
         can.cfgRead
-          ? companyId ? <SetupBasicoTab companyId={companyId} /> : <p className="text-sm text-slate-600">Cargando...</p>
-          : <p className="text-sm text-slate-600">No tiene permiso para configurar operación.</p>
+          ? companyId ? <SetupBasicoTab companyId={companyId} /> : <p className="text-sm text-default-600">Cargando...</p>
+          : <p className="text-sm text-default-600">No tiene permiso para configurar operación.</p>
       )}
 
       {section === "modules" && (
         can.cfgRead
-          ? companyId ? <ModulesTab companyId={companyId} /> : <p className="text-sm text-slate-600">Cargando...</p>
-          : <p className="text-sm text-slate-600">No tiene permiso para configurar módulos.</p>
+          ? companyId ? <ModulesTab companyId={companyId} /> : <p className="text-sm text-default-600">Cargando...</p>
+          : <p className="text-sm text-default-600">No tiene permiso para configurar módulos.</p>
       )}
 
       {section === "rates" && (
         can.ratesRead
           ? <RatesSection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
-          : <p className="text-sm text-slate-600">No tiene permiso para ver tarifas.</p>
+          : <p className="text-sm text-default-600">No tiene permiso para ver tarifas.</p>
       )}
 
       {section === "monthly" && (
         can.ratesRead
           ? <MonthlySection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
-          : <p className="text-sm text-slate-600">No tiene permiso para ver mensualidades.</p>
+          : <p className="text-sm text-default-600">No tiene permiso para ver mensualidades.</p>
       )}
 
       {section === "agreements" && (
         can.ratesRead
           ? <AgreementsSection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
-          : <p className="text-sm text-slate-600">No tiene permiso para ver convenios.</p>
+          : <p className="text-sm text-default-600">No tiene permiso para ver convenios.</p>
       )}
 
       {section === "prepaid" && (
         can.ratesRead
           ? <PrepaidSection canEdit={can.ratesEdit} onNotify={setNotice} auditReason={auditReason} />
-          : <p className="text-sm text-slate-600">No tiene permiso para ver prepagados.</p>
+          : <p className="text-sm text-default-600">No tiene permiso para ver prepagados.</p>
       )}
 
       {section === "users" && (
         can.usersRead
           ? <UsersSection canEdit={can.usersEdit} onNotify={setNotice} auditReason={auditReason} />
-          : <p className="text-sm text-slate-600">No tiene permiso para ver usuarios.</p>
+          : <p className="text-sm text-default-600">No tiene permiso para ver usuarios.</p>
       )}
 
       {section === "parameters" && (
         can.cfgRead
           ? <ParametersSection canEdit={can.cfgEdit} onNotify={setNotice} auditReason={auditReason} />
-          : <p className="text-sm text-slate-600">No tiene permiso para ver parametros.</p>
+          : <p className="text-sm text-default-600">No tiene permiso para ver parametros.</p>
       )}
 
       {section === "interface" && (
@@ -199,7 +199,7 @@ export default function ConfiguracionPage() {
       {section === "onboarding" && (
         <>
           <OnboardingSection onNotify={setNotice} />
-          <hr className="border-slate-200" />
+          <hr className="border-default-200" />
           <FeatureFlagsSection onNotify={setNotice} />
         </>
       )}
@@ -207,7 +207,7 @@ export default function ConfiguracionPage() {
       {section === "masters" && (
         can.cfgRead
           ? <MastersSection onNotify={setNotice} canEdit={can.cfgEdit} />
-          : <p className="text-sm text-slate-600">No tienes permisos para ver esta sección. Contacta a un administrador.</p>
+          : <p className="text-sm text-default-600">No tienes permisos para ver esta sección. Contacta a un administrador.</p>
       )}
     </div>
   );

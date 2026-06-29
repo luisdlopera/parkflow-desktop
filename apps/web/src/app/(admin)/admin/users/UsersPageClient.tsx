@@ -88,7 +88,7 @@ function UserForm({ initialData, onSave }: { initialData?: AdminUser | null, onS
         </div>
       </div>
       <div className="mt-4 flex justify-end">
-         <button type="submit" className="bg-primary text-white px-4 py-2 rounded-lg">Guardar</button>
+         <button type="submit" className="bg-brand text-default-50 px-4 py-2 rounded-lg">Guardar</button>
       </div>
     </form>
   );
@@ -115,7 +115,7 @@ export function AdminUsersPageClient() {
       header: "Usuario",
       render: (user) => (
         <div className="flex items-center gap-3">
-          <Avatar name={user.name.charAt(0)} className="bg-primary text-white" />
+          <Avatar name={user.name.charAt(0)} className="bg-brand text-default-50" />
           <div>
             <p className="font-medium">{user.name}</p>
             <p className="text-sm text-default-500">{user.email}</p>
@@ -143,7 +143,7 @@ export function AdminUsersPageClient() {
 
   const renderStats = () => (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-      <Card><Card.Content className="flex items-center gap-3"><Users className="w-5 h-5 text-primary" /><div><p>Total</p><p className="font-bold">{users.length}</p></div></Card.Content></Card>
+      <Card><Card.Content className="flex items-center gap-3"><Users className="w-5 h-5 text-brand" /><div><p>Total</p><p className="font-bold">{users.length}</p></div></Card.Content></Card>
       <Card><Card.Content className="flex items-center gap-3"><Check className="w-5 h-5 text-success" /><div><p>Activos</p><p className="font-bold">{users.filter((u: AdminUser) => u.active).length}</p></div></Card.Content></Card>
     </div>
   );

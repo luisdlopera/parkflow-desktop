@@ -14,7 +14,7 @@ export default function SessionStatusCard({ p }: any) {
           label={p.session?.status === "OPEN" ? "Caja abierta" : "Caja cerrada"}
           tone={p.session?.status === "OPEN" ? "success" : "neutral"}
         />
-        <span className="text-slate-600">
+        <span className="text-default-600">
           {new Date(p.session!.openedAt).toLocaleString()}
           {p.session?.operatorName ? <> — {p.session.operatorName}</> : null}
         </span>
@@ -27,7 +27,7 @@ export default function SessionStatusCard({ p }: any) {
       ]} session={p.session} />}
       {p.summary && <CashSummaryTotals summary={p.summary} />}
       {p.session?.notes ? (
-        <p className="mt-2 rounded-lg bg-amber-50/50 px-3 py-2 text-slate-800 italic">&quot;{p.session.notes}&quot;</p>
+        <p className="mt-2 rounded-lg bg-amber-50/50 px-3 py-2 text-foreground italic">&quot;{p.session.notes}&quot;</p>
       ) : null}
       <CashAuditLog auditLog={p.auditLog} canAudit={p.perms.canAudit} />
     </div>

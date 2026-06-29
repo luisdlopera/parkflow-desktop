@@ -31,7 +31,7 @@ function SingleDatePicker({
       onChange={onChange as any}
       className="w-40"
     >
-      <Label className="text-xs font-medium text-slate-500 mb-1">{label}</Label>
+      <Label className="text-xs font-medium text-default-500 mb-1">{label}</Label>
       <DateField.Group fullWidth>
         <DateField.Input className="text-sm">
           {(segment) => <DateField.Segment segment={segment} />}
@@ -88,14 +88,14 @@ export default function ReportDateFilter({
 
   return (
     <div className="flex items-end gap-3 flex-wrap">
-      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide pb-1">{label}</span>
+      <span className="text-xs font-semibold text-default-500 uppercase tracking-wide pb-1">{label}</span>
       <SingleDatePicker
         name="dateFrom"
         label="Desde"
         value={fromValue}
         onChange={(v) => v && onFromChange(v.toString())}
       />
-      <span className="text-slate-300 pb-2">→</span>
+      <span className="text-default-300 pb-2">→</span>
       <SingleDatePicker
         name="dateTo"
         label="Hasta"

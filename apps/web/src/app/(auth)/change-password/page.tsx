@@ -89,11 +89,11 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-default-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md border border-default-200">
         <Card.Header className="flex flex-col items-center pb-0 pt-6">
-          <h1 className="text-2xl font-bold text-slate-800">Actualizar Contraseña</h1>
-          <p className="text-slate-500 text-sm mt-1 text-center">
+          <h1 className="text-2xl font-bold text-foreground">Actualizar Contraseña</h1>
+          <p className="text-default-500 text-sm mt-1 text-center">
             Por seguridad, debes cambiar la contraseña por defecto antes de continuar.
           </p>
         </Card.Header>

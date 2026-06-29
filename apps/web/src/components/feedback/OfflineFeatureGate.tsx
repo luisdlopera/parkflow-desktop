@@ -35,7 +35,7 @@ export default function OfflineFeatureGate({ children }: OfflineFeatureGateProps
     return (
       <div className="flex h-[50vh] w-full flex-col items-center justify-center gap-4">
         <Spinner color="warning" size="lg" />
-        <p className="text-sm font-medium text-slate-500 dark:text-neutral-400 animate-pulse">
+        <p className="text-sm font-medium text-default-500 dark:text-neutral-400 animate-pulse">
           Verificando disponibilidad de la función...
         </p>
       </div>
@@ -56,14 +56,14 @@ export default function OfflineFeatureGate({ children }: OfflineFeatureGateProps
         transition={{ duration: 0.4, ease: "easeOut" }}
         className="w-full max-w-lg"
       >
-        <Card className="border border-amber-200/50 bg-white/70 dark:bg-neutral-900/60 dark:border-neutral-800/50 backdrop-blur-md border border-default-200 rounded-3xl overflow-hidden">
+        <Card className="border border-amber-200/50 bg-default-50 dark:bg-default-100/70 dark:bg-neutral-900/60 dark:border-neutral-800/50 backdrop-blur-md border border-default-200 rounded-3xl overflow-hidden">
           <Card.Content className="p-8 sm:p-10 flex flex-col items-center text-center">
             {/* Animated Icon Container */}
             <motion.div
               initial={{ scale: 0.8, rotate: -10 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-              className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 text-white border border-default-200"
+              className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-300 dark:from-brand-500 to-brand-600 dark:to-brand-400 text-default-50 border border-default-200"
             >
               <CloudOff size={38} className="animate-pulse" />
             </motion.div>
@@ -80,7 +80,7 @@ export default function OfflineFeatureGate({ children }: OfflineFeatureGateProps
             </span>
 
             {/* Description */}
-            <p className="mb-8 text-sm sm:text-base leading-relaxed text-slate-500 dark:text-neutral-400 max-w-sm">
+            <p className="mb-8 text-sm sm:text-base leading-relaxed text-default-500 dark:text-neutral-400 max-w-sm">
               Para garantizar la integridad y sincronización de los datos, la edición de tarifas, creación de usuarios y demás configuraciones administrativas deben realizarse directamente en la plataforma en la nube (versión online).
             </p>
 
@@ -93,7 +93,7 @@ export default function OfflineFeatureGate({ children }: OfflineFeatureGateProps
                 size="lg"
                 startContent={<ArrowLeft size={18} />}
                 onPress={() => router.back()}
-                className="font-bold text-white border border-default-200 -500/20"
+                className="font-bold text-default-50 border border-default-200 -500/20"
               >
                 Volver
               </Button>
@@ -104,7 +104,7 @@ export default function OfflineFeatureGate({ children }: OfflineFeatureGateProps
                 size="lg"
                 startContent={<Home size={18} />}
                 onPress={() => router.push("/")}
-                className="font-semibold text-slate-700 dark:text-neutral-200"
+                className="font-semibold text-default-700 dark:text-neutral-200"
               >
                 Dashboard
               </Button>

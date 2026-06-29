@@ -21,7 +21,7 @@ export default function ConfiguracionError({
         <AlertCircle size={32} />
       </div>
       <h2 className="text-lg font-semibold text-foreground mb-2">Error al cargar la configuración</h2>
-      <p className="text-sm text-slate-500 mb-4 max-w-sm">
+      <p className="text-sm text-default-500 mb-4 max-w-sm">
         {error.message || "No se pudo cargar esta sección."}
       </p>
       <Button onClick={reset} size="sm" variant="outline">

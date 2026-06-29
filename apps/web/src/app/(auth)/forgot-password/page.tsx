@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
   if (success) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-        <div className="surface w-full space-y-4 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90 text-center">
+        <div className="surface w-full space-y-4 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-default-200/80 dark:border-default-200 bg-default-50 dark:bg-default-100/90 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -47,11 +47,11 @@ export default function ForgotPasswordPage() {
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           </div>
-          <h1 className="text-xl font-semibold text-slate-900">Solicitud enviada</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-xl font-semibold text-foreground">Solicitud enviada</h1>
+          <p className="text-sm text-default-600">
             Si el correo <strong>{email}</strong> está registrado, recibirás instrucciones para restablecer tu contraseña.
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-default-500">
             Revisa tu bandeja de entrada y carpetas de spam.
           </p>
           <Button
@@ -69,16 +69,16 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90">
+      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-default-200/80 dark:border-default-200 bg-default-50 dark:bg-default-100/90">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-amber-700/80">Parkflow</p>
-          <h1 className="text-2xl font-semibold text-slate-900">Recuperar contraseña</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className="text-2xl font-semibold text-foreground">Recuperar contraseña</h1>
+          <p className="mt-1 text-sm text-default-600">
             Ingresa tu correo electrónico y te enviaremos instrucciones.
           </p>
         </div>
 
-        <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 border border-default-200 space-y-4">
+        <div className="bg-default-50 dark:bg-default-100 dark:bg-default-100 p-5 rounded-2xl border border-default-200/60 dark:border-default-200 border border-default-200 space-y-4">
           <Input
             type="email"
             label="Email"
@@ -103,7 +103,7 @@ export default function ForgotPasswordPage() {
           {loading ? "Enviando..." : "Enviar instrucciones"}
         </Button>
 
-        <p className="text-center text-sm text-slate-600">
+        <p className="text-center text-sm text-default-600">
           ¿Recordaste tu contraseña?{" "}
           <Link href="/login" className="text-amber-700 hover:underline">
             Iniciar sesión

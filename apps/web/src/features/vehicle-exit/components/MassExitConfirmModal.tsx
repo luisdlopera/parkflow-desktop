@@ -51,29 +51,29 @@ export function MassExitConfirmModal({ preview, reason, chargeMode, isProcessing
       <Modal.Header>
         <div>
           <p className="text-xs uppercase tracking-widest text-violet-600 font-medium mb-0.5">Paso 2</p>
-          <h3 className="text-lg font-semibold text-slate-800">Confirmar Salida Masiva</h3>
+          <h3 className="text-lg font-semibold text-foreground">Confirmar Salida Masiva</h3>
         </div>
       </Modal.Header>
 
       <Modal.Body className="space-y-4">
         {/* Summary cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-            <p className="text-xs text-slate-500 uppercase font-semibold">Candidatos</p>
-            <p className="text-2xl font-bold text-slate-800">{preview.totalCandidates}</p>
+          <div className="p-3 bg-default-50 rounded-xl border border-default-200 text-center">
+            <p className="text-xs text-default-500 uppercase font-semibold">Candidatos</p>
+            <p className="text-2xl font-bold text-foreground">{preview.totalCandidates}</p>
           </div>
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-            <p className="text-xs text-slate-500 uppercase font-semibold">A procesar</p>
-            <p className="text-2xl font-bold text-slate-800">{eligibleCount}</p>
+          <div className="p-3 bg-default-50 rounded-xl border border-default-200 text-center">
+            <p className="text-xs text-default-500 uppercase font-semibold">A procesar</p>
+            <p className="text-2xl font-bold text-foreground">{eligibleCount}</p>
           </div>
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-            <p className="text-xs text-slate-500 uppercase font-semibold">Modo cobro</p>
-            <p className="text-sm font-semibold text-slate-700 mt-1">
+          <div className="p-3 bg-default-50 rounded-xl border border-default-200 text-center">
+            <p className="text-xs text-default-500 uppercase font-semibold">Modo cobro</p>
+            <p className="text-sm font-semibold text-default-700 mt-1">
               {chargeMode === "FREE" ? "Sin cobro" : chargeMode === "CUSTOM" ? "Personalizado" : "Normal"}
             </p>
           </div>
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-            <p className="text-xs text-slate-500 uppercase font-semibold">Total estimado</p>
+          <div className="p-3 bg-default-50 rounded-xl border border-default-200 text-center">
+            <p className="text-xs text-default-500 uppercase font-semibold">Total estimado</p>
             <p className="text-lg font-bold text-violet-700">
               {chargeMode === "FREE" ? "$0" : formatCurrency(preview.estimatedTotal)}
             </p>
@@ -93,31 +93,31 @@ export function MassExitConfirmModal({ preview, reason, chargeMode, isProcessing
         )}
 
         {/* Vehicle list */}
-        <div className="border border-slate-200 rounded-xl overflow-hidden">
+        <div className="border border-default-200 rounded-xl overflow-hidden">
           <div className="max-h-64 overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
+              <thead className="sticky top-0 bg-default-50 border-b border-default-200">
                 <tr>
-                  <th className="text-left px-3 py-2 font-semibold text-slate-600">Placa</th>
-                  <th className="text-left px-3 py-2 font-semibold text-slate-600">Ticket</th>
-                  <th className="text-left px-3 py-2 font-semibold text-slate-600 hidden sm:table-cell">Tipo</th>
-                  <th className="text-left px-3 py-2 font-semibold text-slate-600 hidden md:table-cell">Entrada</th>
-                  <th className="text-right px-3 py-2 font-semibold text-slate-600">Estimado</th>
+                  <th className="text-left px-3 py-2 font-semibold text-default-600">Placa</th>
+                  <th className="text-left px-3 py-2 font-semibold text-default-600">Ticket</th>
+                  <th className="text-left px-3 py-2 font-semibold text-default-600 hidden sm:table-cell">Tipo</th>
+                  <th className="text-left px-3 py-2 font-semibold text-default-600 hidden md:table-cell">Entrada</th>
+                  <th className="text-right px-3 py-2 font-semibold text-default-600">Estimado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {preview.items.map((item, idx) => (
                   <tr key={idx} className={item.status === "SKIPPED" ? "opacity-50" : ""}>
-                    <td className="px-3 py-2 font-mono text-slate-800">{item.plate ?? "—"}</td>
-                    <td className="px-3 py-2 text-slate-600">{item.ticketNumber}</td>
-                    <td className="px-3 py-2 text-slate-600 hidden sm:table-cell">
+                    <td className="px-3 py-2 font-mono text-foreground">{item.plate ?? "—"}</td>
+                    <td className="px-3 py-2 text-default-600">{item.ticketNumber}</td>
+                    <td className="px-3 py-2 text-default-600 hidden sm:table-cell">
                       {item.vehicleType ?? "—"}
                       <StatusBadge item={item} />
                     </td>
-                    <td className="px-3 py-2 text-slate-500 hidden md:table-cell">
+                    <td className="px-3 py-2 text-default-500 hidden md:table-cell">
                       {item.entryAt ? formatTime(item.entryAt) : "—"}
                     </td>
-                    <td className="px-3 py-2 text-right font-medium text-slate-800">
+                    <td className="px-3 py-2 text-right font-medium text-foreground">
                       {item.status === "SKIPPED"
                         ? "—"
                         : chargeMode === "FREE"

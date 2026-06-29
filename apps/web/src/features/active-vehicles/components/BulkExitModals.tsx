@@ -31,21 +31,21 @@ export function BulkExitConfirmModal({
             <Modal.Heading>Confirmar Salida Masiva</Modal.Heading>
           </Modal.Header>
           <Modal.Body className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-default-50 rounded-xl border border-default-200">
               <div>
-                <p className="text-xs text-slate-500 uppercase font-bold">Total Vehículos</p>
+                <p className="text-xs text-default-500 uppercase font-bold">Total Vehículos</p>
                 <p className="text-xl font-bold">{precalculation.totalVehicles}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500 uppercase font-bold">Subtotal</p>
-                <p className="text-xl font-bold text-slate-700">${precalculation.totalSubtotal.toLocaleString()}</p>
+                <p className="text-xs text-default-500 uppercase font-bold">Subtotal</p>
+                <p className="text-xl font-bold text-default-700">${precalculation.totalSubtotal.toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500 uppercase font-bold">Descuentos</p>
+                <p className="text-xs text-default-500 uppercase font-bold">Descuentos</p>
                 <p className="text-xl font-bold text-green-600">-${precalculation.totalDiscount.toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500 uppercase font-bold">Total a Cobrar</p>
+                <p className="text-xs text-default-500 uppercase font-bold">Total a Cobrar</p>
                 <p className="text-xl font-bold text-brand-600">${precalculation.finalTotal.toLocaleString()}</p>
               </div>
             </div>
@@ -59,21 +59,21 @@ export function BulkExitConfirmModal({
                 </ul>
               </div>
             )}
-            <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
+            <div className="max-h-64 overflow-y-auto border border-default-200 rounded-lg">
               <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 sticky top-0">
+                <thead className="bg-default-50 sticky top-0">
                   <tr>
-                    <th className="px-4 py-2 text-slate-500 font-semibold">Placa</th>
-                    <th className="px-4 py-2 text-slate-500 font-semibold">Ticket</th>
-                    <th className="px-4 py-2 text-slate-500 font-semibold text-right">Total</th>
-                    <th className="px-4 py-2 text-slate-500 font-semibold text-center">Estado</th>
+                    <th className="px-4 py-2 text-default-500 font-semibold">Placa</th>
+                    <th className="px-4 py-2 text-default-500 font-semibold">Ticket</th>
+                    <th className="px-4 py-2 text-default-500 font-semibold text-right">Total</th>
+                    <th className="px-4 py-2 text-default-500 font-semibold text-center">Estado</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {precalculation.items.map((item, idx) => (
                     <tr key={idx}>
                       <td className="px-4 py-2 font-medium">{item.plate}</td>
-                      <td className="px-4 py-2 text-slate-500">{item.ticketNumber}</td>
+                      <td className="px-4 py-2 text-default-500">{item.ticketNumber}</td>
                       <td className="px-4 py-2 text-right font-semibold">${item.total.toLocaleString()}</td>
                       <td className="px-4 py-2 text-center">
                         {item.errorMessage
@@ -133,8 +133,8 @@ export function BulkExitSuccessModal({ result, onClose }: { result: BulkExitResp
               : <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center"><AlertTriangle className="w-8 h-8" /></div>}
           </div>
           <div>
-            <h3 className="text-xl font-bold text-slate-900">{result.failedCount === 0 ? "Proceso Exitoso" : "Proceso Parcial"}</h3>
-            <p className="text-slate-500 mt-2">
+            <h3 className="text-xl font-bold text-foreground">{result.failedCount === 0 ? "Proceso Exitoso" : "Proceso Parcial"}</h3>
+            <p className="text-default-500 mt-2">
               Se procesaron <b>{result.successfulCount}</b> vehículos correctamente.
               {result.failedCount > 0 && <span className="text-rose-600 font-medium"> ({result.failedCount} fallaron)</span>}
             </p>

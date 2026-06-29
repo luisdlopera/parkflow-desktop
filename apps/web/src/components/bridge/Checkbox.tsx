@@ -21,7 +21,10 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     let mappedClassName = className || "";
     if (size === "sm") mappedClassName += " scale-90";
     if (size === "lg") mappedClassName += " scale-110";
-    mappedClassName += " focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-zinc-900";
+    // Add dark mode specific styles for checkbox visibility
+    mappedClassName += " focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-default-100";
+    // Ensure checkbox is visible in dark mode (add border to unchecked state)
+    mappedClassName += " [&_[role=checkbox]:not([aria-checked=true])]:border-default-400 dark:[&_[role=checkbox]:not([aria-checked=true])]:border-default-500";
 
     const handleChange = (checked: boolean) => {
       if (onValueChange) onValueChange(checked);

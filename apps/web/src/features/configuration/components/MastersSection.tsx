@@ -141,7 +141,7 @@ export default function MastersSection({
       key: "icon",
       header: "",
       render: (r) => (
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white border border-default-200" style={{ backgroundColor: r.color ?? "#64748B" }}>
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-default-50 border border-default-200" style={{ backgroundColor: r.color ?? "#64748B" }}>
           <VehicleTypeIcon code={r.code} className="w-5 h-5" />
         </span>
       )
@@ -152,7 +152,7 @@ export default function MastersSection({
       key: "isActive",
       header: "Activo",
       render: (r) => (
-        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.isActive ? "bg-emerald-100 text-emerald-700" : "bg-default-100 text-default-500"}`}>
           {r.isActive ? "Sí" : "No"}
         </span>
       )
@@ -165,8 +165,8 @@ export default function MastersSection({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Tipos de Vehículo</h2>
-          <p className="text-sm text-slate-500">Administra los tipos de vehículo disponibles en el sistema</p>
+          <h2 className="text-lg font-semibold text-foreground">Tipos de Vehículo</h2>
+          <p className="text-sm text-default-500">Administra los tipos de vehículo disponibles en el sistema</p>
         </div>
         {canEdit && (
           <Button
@@ -235,7 +235,7 @@ export default function MastersSection({
 
       {(creating || editing) && canEdit ? (
         <div className="surface rounded-2xl p-6">
-          <h3 className="text-lg font-semibold text-slate-900">{creating ? "Agregar tipo de vehículo" : "Editar tipo de vehículo"}</h3>
+          <h3 className="text-lg font-semibold text-foreground">{creating ? "Agregar tipo de vehículo" : "Editar tipo de vehículo"}</h3>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {creating ? (
               <Select
@@ -261,7 +261,7 @@ export default function MastersSection({
                           <span className="flex items-center gap-2">
                             <span>{t.icon}</span>
                             <span>{t.name}</span>
-                            <span className="text-xs text-slate-400">({t.code})</span>
+                            <span className="text-xs text-default-400">({t.code})</span>
                           </span>
                         </ListBox.Item>
                       ))}
@@ -269,13 +269,13 @@ export default function MastersSection({
                 </Select.Popover>
               </Select>
             ) : (
-              <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white" style={{ backgroundColor: form.color || "#64748B" }}>
+              <div className="flex items-center gap-3 rounded-xl bg-default-50 p-3">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-default-50" style={{ backgroundColor: form.color || "#64748B" }}>
                   <VehicleTypeIcon code={form.code || "CAR"} className="w-5 h-5" />
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">{form.name}</p>
-                  <p className="text-xs text-slate-500">{form.code}</p>
+                  <p className="text-sm font-semibold text-foreground">{form.name}</p>
+                  <p className="text-xs text-default-500">{form.code}</p>
                 </div>
               </div>
             )}
@@ -300,7 +300,7 @@ export default function MastersSection({
             <Button variant="ghost" color="primary" className="font-semibold" onPress={() => { setCreating(false); setEditing(null); setSelectedStdType(""); }}>Cancelar</Button>
             <Button
               color="success"
-              className="font-semibold text-white"
+              className="font-semibold text-default-50"
               onPress={async () => {
                 try {
                               await saveMasterVehicleType(form, editing?.id);

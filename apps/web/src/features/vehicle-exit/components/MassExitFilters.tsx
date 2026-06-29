@@ -61,8 +61,8 @@ export function MassExitFilters({
   return (
     <div className="space-y-6">
       {/* Filters section */}
-      <div className="border border-slate-200 rounded-xl p-5 space-y-4">
-        <h2 className="text-base font-semibold text-slate-700">Filtros de vehículos</h2>
+      <div className="border border-default-200 rounded-xl p-5 space-y-4">
+        <h2 className="text-base font-semibold text-default-700">Filtros de vehículos</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Select
             label="Tipo de vehículo"
@@ -111,8 +111,8 @@ export function MassExitFilters({
       </div>
 
       {/* Operation settings */}
-      <div className="border border-slate-200 rounded-xl p-5 space-y-4">
-        <h2 className="text-base font-semibold text-slate-700">Configuración de la operación</h2>
+      <div className="border border-default-200 rounded-xl p-5 space-y-4">
+        <h2 className="text-base font-semibold text-default-700">Configuración de la operación</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Select

@@ -15,9 +15,9 @@ export default function Error({
 
   return (
     <main className="mx-auto flex min-h-screen w-full items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md space-y-4 rounded-lg border border-slate-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-950">
+      <div className="w-full max-w-md space-y-4 rounded-lg border border-default-200 bg-default-50 dark:bg-default-100 p-6 dark:border-default-200 dark:bg-default-100">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground dark:text-default-50">
             Error al cargar
           </h1>
         </div>
@@ -30,7 +30,7 @@ export default function Error({
 
         <button
           onClick={reset}
-          className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+          className="w-full rounded-lg bg-brand px-4 py-2 font-medium text-default-50 hover:bg-brand-600"
         >
           Reintentar
         </button>

@@ -41,7 +41,7 @@ function UserCreatePanel({
 
   return (
     <div className="surface rounded-2xl p-6">
-      <h2 className="text-lg font-semibold text-slate-900">Nuevo usuario</h2>
+      <h2 className="text-lg font-semibold text-foreground">Nuevo usuario</h2>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <Input aria-label="Nombre" size="sm" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
         <Input aria-label="Correo" size="sm" placeholder="Correo" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -128,8 +128,8 @@ function UserEditPanel({
 
   return (
     <div className="surface rounded-2xl p-6">
-      <h2 className="text-lg font-semibold text-slate-900">Editar usuario</h2>
-      <p className="text-xs text-slate-500">{user.email}</p>
+      <h2 className="text-lg font-semibold text-foreground">Editar usuario</h2>
+      <p className="text-xs text-default-500">{user.email}</p>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <Input aria-label="Nombre" size="sm" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
         <Input aria-label="Correo" size="sm" placeholder="Correo" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -273,33 +273,33 @@ export default function UsersSection({
       </div>
 
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
-      {loading ? <p className="text-sm text-slate-500">Cargando...</p> : null}
+      {loading ? <p className="text-sm text-default-500">Cargando...</p> : null}
 
-      {userDetailLoading ? <p className="text-sm text-slate-500">Cargando detalle...</p> : null}
+      {userDetailLoading ? <p className="text-sm text-default-500">Cargando detalle...</p> : null}
       {userDetail ? (
-        <div className="surface rounded-2xl p-4 text-sm text-slate-800 space-y-1">
+        <div className="surface rounded-2xl p-4 text-sm text-foreground space-y-1">
           <div className="flex justify-between gap-2">
-            <h3 className="font-semibold text-slate-900">Detalle usuario</h3>
+            <h3 className="font-semibold text-foreground">Detalle usuario</h3>
             <Button size="sm" variant="ghost" color="primary" className="font-semibold" onPress={() => setUserDetail(null)}>
               Cerrar
             </Button>
           </div>
-          <p><span className="text-slate-500">Nombre:</span> {userDetail.name}</p>
-          <p><span className="text-slate-500">Correo:</span> {userDetail.email}</p>
+          <p><span className="text-default-500">Nombre:</span> {userDetail.name}</p>
+          <p><span className="text-default-500">Correo:</span> {userDetail.email}</p>
           <p>
-            <span className="text-slate-500">Rol:</span> {userDetail.role} ·{" "}
-            <span className="text-slate-500">Estado:</span> {userDetail.active ? "Activo" : "Inactivo"}
+            <span className="text-default-500">Rol:</span> {userDetail.role} ·{" "}
+            <span className="text-default-500">Estado:</span> {userDetail.active ? "Activo" : "Inactivo"}
           </p>
           <p>
-            <span className="text-slate-500">Documento:</span> {userDetail.document ?? "—"} ·{" "}
-            <span className="text-slate-500">Telefono:</span> {userDetail.phone ?? "—"}
+            <span className="text-default-500">Documento:</span> {userDetail.document ?? "—"} ·{" "}
+            <span className="text-default-500">Telefono:</span> {userDetail.phone ?? "—"}
           </p>
           <p>
-            <span className="text-slate-500">Sede / terminal:</span> {userDetail.site ?? "—"} /{" "}
+            <span className="text-default-500">Sede / terminal:</span> {userDetail.site ?? "—"} /{" "}
             {userDetail.terminal ?? "—"}
           </p>
-          <p><span className="text-slate-500">Ultimo acceso:</span> {userDetail.lastAccessAt ?? "—"}</p>
-          <p className="text-xs text-slate-500">Creado {userDetail.createdAt} · Actualizado {userDetail.updatedAt}</p>
+          <p><span className="text-default-500">Ultimo acceso:</span> {userDetail.lastAccessAt ?? "—"}</p>
+          <p className="text-xs text-default-500">Creado {userDetail.createdAt} · Actualizado {userDetail.updatedAt}</p>
         </div>
       ) : null}
 
@@ -386,7 +386,7 @@ export default function UsersSection({
         rows={rows}
       />
 
-      <div className="flex items-center gap-4 text-xs text-slate-600">
+      <div className="flex items-center gap-4 text-xs text-default-600">
         <Button size="sm" variant="tertiary" color="primary" isDisabled={page <= 0} className="font-semibold" onPress={() => setPage((p) => Math.max(0, p - 1))}>
           Anterior
         </Button>

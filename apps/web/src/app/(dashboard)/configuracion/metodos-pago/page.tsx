@@ -35,7 +35,7 @@ const COLS: ColumnDef<PaymentMethodRow>[] = [
     key: "isActive",
     label: "Activo",
     render: (r) => (
-      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.isActive ? "bg-emerald-100 text-emerald-700" : "bg-default-100 text-default-500"}`}>
         {r.isActive ? "Sí" : "No"}
       </span>
     ),
@@ -123,17 +123,17 @@ export default function MetodosPagoPage() {
         )}
       />
       {catalogueToAdd.length > 0 && (
-        <div className="rounded-xl border border-default-200 bg-white p-5">
-          <p className="mb-3 text-sm font-semibold text-slate-700">Agregar desde catálogo estándar</p>
+        <div className="rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 p-5">
+          <p className="mb-3 text-sm font-semibold text-default-700">Agregar desde catálogo estándar</p>
           <div className="flex flex-wrap gap-2">
             {catalogueToAdd.map((m) => (
               <button
                 key={m.code}
                 onClick={() => handleActivateFromCatalogue(m.code)}
                 disabled={activating === m.code}
-                className="flex items-center gap-1.5 rounded-lg border border-default-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg border border-default-200 bg-default-50 px-3 py-1.5 text-sm font-medium text-default-700 hover:bg-default-100 disabled:opacity-50"
               >
-                <span className="text-xs text-slate-400">+</span>
+                <span className="text-xs text-default-400">+</span>
                 {m.label}
               </button>
             ))}

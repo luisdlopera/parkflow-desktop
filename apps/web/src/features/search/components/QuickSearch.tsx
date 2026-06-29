@@ -55,22 +55,22 @@ function SearchResultRow({ result, selected, onSelect }: { result: SearchResult;
       onClick={() => onSelect(result)}
       className={cn(
         "flex w-full items-center gap-3 border-l-2 px-4 py-3 text-left transition-all",
-        selected ? "border-primary-500 bg-primary-50/80 dark:bg-primary-900/20" : "border-transparent hover:bg-slate-50 dark:hover:bg-neutral-800/40"
+        selected ? "border-brand-500 dark:border-brand-400 bg-brand-100 dark:bg-brand-900/30/80 dark:bg-brand-900/20" : "border-transparent hover:bg-default-50 dark:hover:bg-neutral-800/40"
       )}
     >
-      <div className={cn("rounded-xl p-2", selected ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-300")}>
+      <div className={cn("rounded-xl p-2", selected ? "bg-brand-200 dark:bg-brand-900/40 text-brand-700 dark:text-brand-200" : "bg-default-100 text-default-500 dark:bg-neutral-800 dark:text-neutral-300")}>
         <TypeIcon type={result.type} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{result.title}</p>
+          <p className="truncate text-sm font-semibold text-foreground dark:text-default-50">{result.title}</p>
           {String(result.metadata?.status ?? "").toUpperCase() === "ACTIVE" ? (
             <Chip size="sm" variant="soft" color="success">Activo</Chip>
           ) : null}
         </div>
-        <p className="truncate text-xs text-slate-500 dark:text-neutral-400">{result.subtitle}</p>
+        <p className="truncate text-xs text-default-500 dark:text-neutral-400">{result.subtitle}</p>
       </div>
-      {selected ? <ChevronRight className="h-4 w-4 text-primary-600" /> : null}
+      {selected ? <ChevronRight className="h-4 w-4 text-brand-600 dark:text-brand-300" /> : null}
     </button>
   );
 }
@@ -192,7 +192,7 @@ export function QuickSearch() {
   return (
     <>
       <Button
-        className="hidden h-10 min-w-0 flex-1 max-w-md items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/70 px-4 text-slate-500 border border-default-200 backdrop-blur transition-colors hover:bg-slate-50 dark:border-neutral-800/70 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:bg-neutral-900/70 sm:flex"
+        className="hidden h-10 min-w-0 flex-1 max-w-md items-center justify-between gap-3 rounded-2xl border border-default-200/80 bg-default-50 dark:bg-default-100/70 px-4 text-default-500 border border-default-200 backdrop-blur transition-colors hover:bg-default-50 dark:border-neutral-800/70 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:bg-neutral-900/70 sm:flex"
         variant="tertiary"
         onPress={openPalette}
       >
@@ -200,13 +200,13 @@ export function QuickSearch() {
           <Search className="h-4 w-4" />
           Buscar placa, ticket, usuario...
         </span>
-        <span className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500">
+        <span className="rounded-lg border border-default-200 bg-default-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-default-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500">
           {modifierSymbol}K
         </span>
       </Button>
 
       <Button
-        className="h-10 w-10 min-w-10 rounded-xl border border-slate-200/80 bg-white/70 text-slate-500 border border-default-200 backdrop-blur transition-colors hover:bg-slate-50 dark:border-neutral-800/70 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:bg-neutral-900/70 sm:hidden"
+        className="h-10 w-10 min-w-10 rounded-xl border border-default-200/80 bg-default-50 dark:bg-default-100/70 text-default-500 border border-default-200 backdrop-blur transition-colors hover:bg-default-50 dark:border-neutral-800/70 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:bg-neutral-900/70 sm:hidden"
         variant="tertiary"
         onPress={openPalette}
         aria-label="Buscar"
@@ -215,30 +215,30 @@ export function QuickSearch() {
       </Button>
 
       <Modal state={ { isOpen: isOpen, setOpen: (v: boolean) => { if(!v) setIsOpen(false); }, open: () => {}, close: () => setIsOpen(false), toggle: () => {} } } size="4xl" scrollBehavior="inside" placement="top" hideCloseButton>
-        <Modal.Content className="overflow-hidden border border-slate-200/70 bg-white/95 border border-default-200 dark:border-neutral-800/70 dark:bg-neutral-950/95">
+        <Modal.Content className="overflow-hidden border border-default-200/70 bg-default-50 dark:bg-default-100/95 border border-default-200 dark:border-neutral-800/70 dark:bg-neutral-950/95">
           <Modal.Body className="p-0">
-            <div className="border-b border-slate-200/70 px-4 py-4 dark:border-neutral-800/70">
+            <div className="border-b border-default-200/70 px-4 py-4 dark:border-neutral-800/70">
               <Input
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Busca placas, tickets, usuarios, sedes..."
-                startContent={isLoading ? <Loader2 className="h-4 w-4 animate-spin text-primary-500" /> : <Search className="h-4 w-4 text-slate-400" />}
-                classNames={{ inputWrapper: "h-12 rounded-2xl bg-slate-50 dark:bg-neutral-900/80" }} aria-label="Entrada de texto"
+                startContent={isLoading ? <Loader2 className="h-4 w-4 animate-spin text-brand-500 dark:text-brand-400" /> : <Search className="h-4 w-4 text-default-400" />}
+                classNames={{ inputWrapper: "h-12 rounded-2xl bg-default-50 dark:bg-neutral-900/80" }} aria-label="Entrada de texto"
               />
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-neutral-400">
-                <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 dark:bg-neutral-900"><Clock3 className="h-3.5 w-3.5" /> {modifier} + K</span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-neutral-900">Enter abre el mejor resultado</span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-neutral-900">Esc cierra</span>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-default-500 dark:text-neutral-400">
+                <span className="flex items-center gap-1 rounded-full bg-default-100 px-2.5 py-1 dark:bg-neutral-900"><Clock3 className="h-3.5 w-3.5" /> {modifier} + K</span>
+                <span className="rounded-full bg-default-100 px-2.5 py-1 dark:bg-neutral-900">Enter abre el mejor resultado</span>
+                <span className="rounded-full bg-default-100 px-2.5 py-1 dark:bg-neutral-900">Esc cierra</span>
               </div>
             </div>
 
             <div className="max-h-[70vh] overflow-y-auto p-2 sm:p-3">
               {query.trim().length < 2 ? (
                 <div className="grid gap-4 p-3 sm:grid-cols-[1.3fr_1fr]">
-                  <Card className="border border-slate-200/70 bg-slate-50/80 dark:border-neutral-800/70 dark:bg-neutral-900/40">
+                  <Card className="border border-default-200/70 bg-default-50/80 dark:border-neutral-800/70 dark:bg-neutral-900/40">
                     <Card.Content className="space-y-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Acceso rápido</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-default-400">Acceso rápido</p>
                       <div className="grid gap-2 sm:grid-cols-2">
                         {[
                           { label: "Nuevo ingreso", href: "/nuevo-ingreso" },
@@ -249,26 +249,26 @@ export function QuickSearch() {
                           <button
                             key={item.href}
                             type="button"
-                            className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:border-primary-200 hover:bg-primary-50 dark:border-neutral-800 dark:bg-neutral-950/60 dark:text-neutral-200 dark:hover:border-primary-900/60 dark:hover:bg-primary-900/20"
+                            className="flex items-center justify-between rounded-2xl border border-default-200 bg-default-50 dark:bg-default-100 px-3 py-3 text-left text-sm font-medium text-default-700 transition-colors hover:border-brand-300 dark:border-brand-900/50 hover:bg-brand-100 dark:bg-brand-900/30 dark:border-neutral-800 dark:bg-neutral-950/60 dark:text-neutral-200 dark:hover:border-brand-700 dark:hover:bg-brand-900/20"
                             onClick={() => router.push(item.href)}
                           >
                             <span>{item.label}</span>
-                            <ArrowRight className="h-4 w-4 text-slate-400" />
+                            <ArrowRight className="h-4 w-4 text-default-400" />
                           </button>
                         ))}
                       </div>
                     </Card.Content>
                   </Card>
 
-                  <Card className="border border-slate-200/70 bg-white dark:border-neutral-800/70 dark:bg-neutral-950/50">
+                  <Card className="border border-default-200/70 bg-default-50 dark:bg-default-100 dark:border-neutral-800/70 dark:bg-neutral-950/50">
                     <Card.Content className="space-y-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Recientes</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-default-400">Recientes</p>
                       <div className="space-y-2">
                         {recentSearches.length > 0 ? recentSearches.map((item) => (
                           <button
                             key={item}
                             type="button"
-                            className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-900"
+                            className="flex w-full items-center justify-between rounded-xl border border-default-200 px-3 py-2 text-left text-sm text-default-600 hover:bg-default-50 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-900"
                               onClick={() => {
                                 setQuery(item);
                                 router.push(`/search?q=${encodeURIComponent(item)}`);
@@ -276,9 +276,9 @@ export function QuickSearch() {
                               }}
                           >
                             <span className="truncate">{item}</span>
-                            <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
+                            <ArrowRight className="h-4 w-4 shrink-0 text-default-400" />
                           </button>
-                        )) : <p className="text-sm text-slate-500 dark:text-neutral-400">Todavía no hay búsquedas recientes.</p>}
+                        )) : <p className="text-sm text-default-500 dark:text-neutral-400">Todavía no hay búsquedas recientes.</p>}
                       </div>
                     </Card.Content>
                   </Card>
@@ -288,13 +288,13 @@ export function QuickSearch() {
                   {Object.entries(groups ?? {}).map(([type, items]: [string, SearchResult[]]) => (
                     <section key={type} className="space-y-2">
                       <div className="flex items-center justify-between px-3">
-                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-neutral-500">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-default-400 dark:text-neutral-500">
                           <TypeIcon type={type as SearchType} />
                           {TYPE_META[type as SearchType]?.label ?? type}
                         </div>
-                        <span className="text-xs text-slate-400">{items.length ?? 0} resultados</span>
+                        <span className="text-xs text-default-400">{items.length ?? 0} resultados</span>
                       </div>
-                      <Card className="overflow-hidden border border-slate-200/70 dark:border-neutral-800/70">
+                      <Card className="overflow-hidden border border-default-200/70 dark:border-neutral-800/70">
                         <Card.Content className="p-0">
                           {items.map((item: SearchResult) => {
                             const isSelected = flatResults[selectedIndex]?.id === item.id;
@@ -307,14 +307,14 @@ export function QuickSearch() {
                 </div>
               ) : (
                 <div className="space-y-4 p-8 text-center">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-500 dark:bg-primary-900/20">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100 dark:bg-brand-900/30 text-brand-500 dark:text-brand-400 dark:bg-brand-900/20">
                     <Search className="h-6 w-6" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-base font-semibold text-slate-900 dark:text-white">Sin resultados</p>
-                    <p className="text-sm text-slate-500 dark:text-neutral-400">No encontramos coincidencias para "{query}".</p>
+                    <p className="text-base font-semibold text-foreground dark:text-default-50">Sin resultados</p>
+                    <p className="text-sm text-default-500 dark:text-neutral-400">No encontramos coincidencias para "{query}".</p>
                   </div>
-                  <Button color="primary" className="rounded-xl bg-primary-500 font-semibold text-white" onPress={handleSearchPage}>
+                  <Button color="primary" className="rounded-xl bg-brand-500 font-semibold text-default-50" onPress={handleSearchPage}>
                     Ver búsqueda completa
                   </Button>
                   <Button color="secondary" variant="tertiary" className="rounded-xl font-semibold" onPress={handleQuickEntry}>

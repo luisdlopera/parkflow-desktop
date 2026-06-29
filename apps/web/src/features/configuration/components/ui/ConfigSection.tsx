@@ -70,7 +70,7 @@ export function ConfigSection<T extends { id: string }>({
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+      <h1 className="text-2xl font-bold text-foreground">{title}</h1>
       <DataTableSection
         title=""
         columns={columns}

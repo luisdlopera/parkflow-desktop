@@ -35,7 +35,7 @@ const Step6PaymentMethods = memo(function Step6PaymentMethods() {
       )}
 
       {options.length === 0 ? (
-        <p className="text-sm text-slate-500">No hay métodos de pago disponibles en el catálogo base.</p>
+        <p className="text-sm text-default-500">No hay métodos de pago disponibles en el catálogo base.</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {options.map((item) => (

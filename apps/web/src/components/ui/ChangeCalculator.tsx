@@ -133,17 +133,17 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 dark:border-neutral-700 dark:bg-neutral-900/60 overflow-hidden">
-      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200/80 dark:border-neutral-700 bg-white/60 dark:bg-neutral-900/80">
+    <div className="rounded-2xl border border-default-200/80 bg-default-50/80 dark:border-neutral-700 dark:bg-neutral-900/60 overflow-hidden">
+      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-default-200/80 dark:border-neutral-700 bg-default-50 dark:bg-default-100/60 dark:bg-neutral-900/80">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand/15 text-brand">
             <Calculator className="w-5 h-5" aria-hidden />
           </div>
           <div className="min-w-0">
-            <h4 className="font-semibold text-slate-900 dark:text-neutral-100 text-sm truncate">
+            <h4 className="font-semibold text-foreground dark:text-neutral-100 text-sm truncate">
               Calculadora de cambio
             </h4>
-            <p className="text-xs text-slate-500 dark:text-neutral-400 truncate">
+            <p className="text-xs text-default-500 dark:text-neutral-400 truncate">
               Cuente lo que recibe y vea el vuelto al instante
             </p>
           </div>
@@ -176,23 +176,23 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
       <div className="p-4 space-y-4">
         {/* Resumen */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-neutral-700 dark:bg-neutral-950">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
+          <div className="rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 p-3 text-center dark:border-neutral-700 dark:bg-neutral-950">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-default-500 dark:text-neutral-400">
               A cobrar
             </p>
-            <p className="mt-1 text-base sm:text-lg font-bold text-slate-900 dark:text-neutral-50 tabular-nums">
+            <p className="mt-1 text-base sm:text-lg font-bold text-foreground dark:text-neutral-50 tabular-nums">
               {formatCop(totalAmount)}
             </p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-neutral-700 dark:bg-neutral-950">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
+          <div className="rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 p-3 text-center dark:border-neutral-700 dark:bg-neutral-950">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-default-500 dark:text-neutral-400">
               Recibido
             </p>
             <p
               className={`mt-1 text-base sm:text-lg font-bold tabular-nums ${
                 receivedAmount > 0
-                  ? "text-primary dark:text-primary"
-                  : "text-slate-400 dark:text-neutral-500"
+                  ? "text-brand dark:text-brand"
+                  : "text-default-400 dark:text-neutral-500"
               }`}
             >
               {formatCop(receivedAmount)}
@@ -203,10 +203,10 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
               changeStatus === "change"
                 ? "border-emerald-500/50 bg-emerald-50 dark:bg-emerald-950/40 dark:border-emerald-500/40"
                 : changeStatus === "exact"
-                  ? "border-primary/40 bg-primary/10 dark:bg-primary/15"
+                  ? "border-primary/40 bg-brand/10 dark:bg-brand/15"
                   : changeStatus === "short"
                     ? "border-rose-500/50 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-500/40"
-                    : "border-slate-200 bg-slate-100 dark:border-neutral-700 dark:bg-neutral-800/50"
+                    : "border-default-200 bg-default-100 dark:border-neutral-700 dark:bg-neutral-800/50"
             }`}
           >
             <p
@@ -214,10 +214,10 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
                 changeStatus === "change"
                   ? "text-emerald-700 dark:text-emerald-300"
                   : changeStatus === "exact"
-                    ? "text-primary"
+                    ? "text-brand"
                     : changeStatus === "short"
                       ? "text-rose-700 dark:text-rose-300"
-                      : "text-slate-500 dark:text-neutral-400"
+                      : "text-default-500 dark:text-neutral-400"
               }`}
             >
               {changeStatus === "change"
@@ -233,10 +233,10 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
                 changeStatus === "change"
                   ? "text-emerald-700 dark:text-emerald-300"
                   : changeStatus === "exact"
-                    ? "text-primary"
+                    ? "text-brand"
                     : changeStatus === "short"
                       ? "text-rose-700 dark:text-rose-300"
-                      : "text-slate-500 dark:text-neutral-400"
+                      : "text-default-500 dark:text-neutral-400"
               }`}
             >
               {formatCop(Math.abs(change))}
@@ -262,7 +262,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
                 return (
                   <span
                     key={value}
-                    className="inline-flex items-center rounded-lg bg-white dark:bg-neutral-900 border border-emerald-200 dark:border-emerald-800/60 px-2 py-1 text-xs font-medium text-emerald-900 dark:text-emerald-100"
+                    className="inline-flex items-center rounded-lg bg-default-50 dark:bg-default-100 dark:bg-neutral-900 border border-emerald-200 dark:border-emerald-800/60 px-2 py-1 text-xs font-medium text-emerald-900 dark:text-emerald-100"
                   >
                     {count}× {denom?.fullLabel ?? formatCop(Number(value))}
                   </span>
@@ -283,7 +283,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
         </div>
 
         <div>
-          <p className="text-xs font-medium text-slate-600 dark:text-neutral-400 mb-2">
+          <p className="text-xs font-medium text-default-600 dark:text-neutral-400 mb-2">
             Recibido rápido
           </p>
           <div className="flex flex-wrap gap-2">
@@ -323,7 +323,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
 
         {/* Denominaciones */}
         <div>
-          <p className="text-xs font-medium text-slate-600 dark:text-neutral-400 mb-2">
+          <p className="text-xs font-medium text-default-600 dark:text-neutral-400 mb-2">
             Billetes y monedas recibidos
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -335,11 +335,11 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
                   key={denom.value}
                   className={`rounded-xl border p-2.5 transition-colors ${
                     active
-                      ? "border-primary/50 bg-primary/10 dark:bg-primary/15 dark:border-primary/40"
-                      : "border-slate-200 bg-white dark:border-neutral-700 dark:bg-neutral-950 hover:border-slate-300 dark:hover:border-neutral-600"
+                      ? "border-primary/50 bg-brand/10 dark:bg-brand/15 dark:border-primary/40"
+                      : "border-default-200 bg-default-50 dark:bg-default-100 dark:border-neutral-700 dark:bg-neutral-950 hover:border-default-300 dark:hover:border-neutral-600"
                   }`}
                 >
-                  <p className="text-center text-xs font-semibold text-slate-800 dark:text-neutral-200 mb-2">
+                  <p className="text-center text-xs font-semibold text-foreground dark:text-neutral-200 mb-2">
                     {denom.fullLabel}
                   </p>
                   <div className="flex items-center justify-center gap-2">
@@ -347,24 +347,24 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
                       type="button"
                       aria-label={`Menos ${denom.fullLabel}`}
                       onClick={() => decrement(denom.value)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700"
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-default-200 bg-default-100 text-default-700 font-bold hover:bg-default-200 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700"
                     >
                       −
                     </button>
-                    <span className="min-w-[1.5rem] text-center text-lg font-bold tabular-nums text-slate-900 dark:text-neutral-50">
+                    <span className="min-w-[1.5rem] text-center text-lg font-bold tabular-nums text-foreground dark:text-neutral-50">
                       {count}
                     </span>
                     <button
                       type="button"
                       aria-label={`Más ${denom.fullLabel}`}
                       onClick={() => increment(denom.value)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white font-bold hover:opacity-90"
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-default-50 font-bold hover:opacity-90"
                     >
                       +
                     </button>
                   </div>
                   {active ? (
-                    <p className="mt-2 text-center text-[11px] font-medium text-primary tabular-nums">
+                    <p className="mt-2 text-center text-[11px] font-medium text-brand tabular-nums">
                       = {formatCop(denom.value * count)}
                     </p>
                   ) : null}
@@ -375,8 +375,8 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
         </div>
 
         {receivedAmount > 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-950">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400 mb-2">
+          <div className="rounded-xl border border-default-200 bg-default-50 dark:bg-default-100 p-3 dark:border-neutral-700 dark:bg-neutral-950">
+            <p className="text-xs font-semibold uppercase tracking-wide text-default-500 dark:text-neutral-400 mb-2">
               Desglose recibido
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -385,7 +385,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
                 .map(([value, c]) => (
                   <span
                     key={value}
-                    className="inline-flex rounded-lg bg-slate-100 dark:bg-neutral-800 px-2 py-1 text-xs font-medium text-slate-800 dark:text-neutral-200 tabular-nums"
+                    className="inline-flex rounded-lg bg-default-100 dark:bg-neutral-800 px-2 py-1 text-xs font-medium text-foreground dark:text-neutral-200 tabular-nums"
                   >
                     {c}× {formatCop(Number(value))}
                   </span>

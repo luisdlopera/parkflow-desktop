@@ -11,6 +11,8 @@ import com.parkflow.modules.onboarding.domain.OnboardingProgress;
 import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.licensing.enums.OperationalProfile;
+import com.parkflow.modules.settings.application.port.in.ParkingParametersUseCase;
+import com.parkflow.modules.common.dto.ParkingParametersData;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,6 +50,7 @@ public class OnboardingService implements OnboardingUseCase {
   private final OnboardingMaterializationService materializationService;
   private final Step3DataValidator step3DataValidator;
   private final Step2DataValidator step2DataValidator;
+  private final ParkingParametersUseCase parkingParametersUseCase;
 
   @Deprecated(since = "2.1.0", forRemoval = false)
   @Transactional(readOnly = true)
@@ -156,6 +159,16 @@ public class OnboardingService implements OnboardingUseCase {
       materializationService.createDefaultRates(company);
     }
 
+    try {
+      ParkingParametersData params = parkingParametersUseCase.get("DEFAULT");
+      if (params != null) {
+        params.setCashRequireOpenForPayment(true);
+        parkingParametersUseCase.put("DEFAULT", params);
+      }
+    } catch (Exception e) {
+      log.warn("Failed to set default cashRequireOpenForPayment on parking parameters", e);
+    }
+
     progress.setSkipped(true);
     progress.setCompleted(true);
     progress.setCurrentStep(12);
@@ -200,6 +213,21 @@ public class OnboardingService implements OnboardingUseCase {
     materializationService.resizeCapacity(companyId, totalCapacity);
 
     materializationService.createRatesFromOnboarding(company, progress.getProgressData());
+
+    try {
+      Map<String, Object> step4 = settingsMapper.stepMap(progress.getProgressData(), 4);
+      Boolean requireOpenForPayment = (Boolean) step4.get("cashRequireOpenForPayment");
+      if (requireOpenForPayment == null) {
+        requireOpenForPayment = true;
+      }
+      ParkingParametersData params = parkingParametersUseCase.get("DEFAULT");
+      if (params != null) {
+        params.setCashRequireOpenForPayment(requireOpenForPayment);
+        parkingParametersUseCase.put("DEFAULT", params);
+      }
+    } catch (Exception e) {
+      log.warn("Failed to set cashRequireOpenForPayment on parking parameters from onboarding", e);
+    }
 
     progress.setCompleted(true);
     progress.setCurrentStep(12);

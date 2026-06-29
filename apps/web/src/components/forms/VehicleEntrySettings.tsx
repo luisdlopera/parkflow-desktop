@@ -19,15 +19,15 @@ export default function VehicleEntrySettings({
   const vehicleTypeView = (t: any) => ({ label: t.name || t.code, color: t.color || "" });
 
   return (
-    <Card className="bg-slate-50 dark:bg-slate-900">
+    <Card className="bg-default-50 dark:bg-default-900">
       <Card.Content className="p-4 space-y-3">
-        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Configuración de Operador</h4>
+        <h4 className="text-sm font-semibold text-default-700 dark:text-default-300">Configuración de Operador</h4>
         <div className="flex flex-wrap gap-4">
           <Checkbox isSelected={settings.rememberLocation} onChange={(checked: any) => updateSettings({ rememberLocation: checked })} size="sm">Recordar ubicación</Checkbox>
           <Checkbox isSelected={settings.skipConditionCheck} onChange={(checked: any) => updateSettings({ skipConditionCheck: checked })} size="sm">Omitir estado vehículo</Checkbox>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-slate-600 dark:text-slate-400">Tipo por defecto:</label>
+          <label className="text-sm text-default-600 dark:text-default-400">Tipo por defecto:</label>
           <Select
             aria-label="Tipo de vehículo por defecto"
             value={vehicleTypes.some((t: any) => t.code === settings.defaultVehicleType) ? [settings.defaultVehicleType] : []}

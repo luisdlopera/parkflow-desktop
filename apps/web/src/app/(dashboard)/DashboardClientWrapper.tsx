@@ -54,8 +54,8 @@ export default function DashboardClientWrapper({ children }: { children: ReactNo
         <div className="flex-1 flex flex-col h-full overflow-hidden">
           <Header onMenuClick={open} />
           {!isOnline && (
-            <div className="bg-rose-600 text-white text-xs font-semibold text-center py-1.5 px-4 flex items-center justify-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-white animate-pulse" />
+            <div className="bg-rose-600 text-default-50 text-xs font-semibold text-center py-1.5 px-4 flex items-center justify-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-default-50 dark:bg-default-100 animate-pulse" />
               Sin conexión — las operaciones se registrarán en cola y se sincronizarán al recuperar la red.
             </div>
           )}
@@ -81,7 +81,7 @@ export default function DashboardClientWrapper({ children }: { children: ReactNo
               <div className="mx-auto w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
                 <span className="text-2xl font-bold text-amber-700">{secondsLeft}</span>
               </div>
-              <p className="text-slate-600 dark:text-slate-300 text-sm">
+              <p className="text-default-600 dark:text-default-300 text-sm">
                 Tu sesión se cerrará en <strong>{secondsLeft} segundo{secondsLeft !== 1 ? "s" : ""}</strong> por inactividad.
                 Haz clic en "Continuar" para seguir trabajando.
               </p>

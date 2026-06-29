@@ -324,7 +324,7 @@ export default function AuditPage() {
         <Modal.Content>
           <Modal.Header>
             <div className="flex items-center gap-3">
-              <Receipt className="w-6 h-6 text-primary" />
+              <Receipt className="w-6 h-6 text-brand" />
               <div>
                 <h2 className="text-xl font-bold">Detalle de Auditoría</h2>
                 <p className="text-sm text-default-500 font-mono">{selectedLog?.id}</p>

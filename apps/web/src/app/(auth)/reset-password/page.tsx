@@ -73,7 +73,7 @@ function ResetPasswordForm() {
   if (success) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-        <div className="surface w-full space-y-4 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90 text-center">
+        <div className="surface w-full space-y-4 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-default-200/80 dark:border-default-200 bg-default-50 dark:bg-default-100/90 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -91,8 +91,8 @@ function ResetPasswordForm() {
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           </div>
-          <h1 className="text-xl font-semibold text-slate-900">Contraseña restablecida</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-xl font-semibold text-foreground">Contraseña restablecida</h1>
+          <p className="text-sm text-default-600">
             Tu contraseña ha sido actualizada exitosamente.
           </p>
           <Button
@@ -122,16 +122,16 @@ function ResetPasswordForm() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90">
+      <form onSubmit={onSubmit} className="surface w-full space-y-6 rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-default-200/80 dark:border-default-200 bg-default-50 dark:bg-default-100/90">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-amber-700/80">Parkflow</p>
-          <h1 className="text-2xl font-semibold text-slate-900">Nueva contraseña</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className="text-2xl font-semibold text-foreground">Nueva contraseña</h1>
+          <p className="mt-1 text-sm text-default-600">
             Ingresa tu código de recuperación y tu nueva contraseña.
           </p>
         </div>
 
-        <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 border border-default-200 space-y-4">
+        <div className="bg-default-50 dark:bg-default-100 dark:bg-default-100 p-5 rounded-2xl border border-default-200/60 dark:border-default-200 border border-default-200 space-y-4">
           <Input
             label="Código de recuperación"
             value={token}
@@ -142,7 +142,7 @@ function ResetPasswordForm() {
           />
         </div>
 
-        <div className="bg-white dark:bg-neutral-950 p-5 rounded-2xl border border-slate-200/60 dark:border-neutral-800 border border-default-200 space-y-4">
+        <div className="bg-default-50 dark:bg-default-100 dark:bg-default-100 p-5 rounded-2xl border border-default-200/60 dark:border-default-200 border border-default-200 space-y-4">
           <Input
             label="Nueva contraseña"
             type={showPassword ? "text" : "password"}
@@ -156,7 +156,7 @@ function ResetPasswordForm() {
                 type="button"
                 aria-label="Mostrar contraseña"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                className="text-xs font-semibold text-default-400 hover:text-default-600 dark:text-default-500 dark:hover:text-default-300"
                 tabIndex={-1}
               >
                 {showPassword ? "Ocultar" : "Mostrar"}
@@ -165,13 +165,13 @@ function ResetPasswordForm() {
           />
           {password && (
             <div className="mt-2 flex items-center gap-2">
-              <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
+              <div className="flex-1 h-2 rounded-full bg-default-200 overflow-hidden">
                 <div className={`h-full transition-all duration-300 ${getPasswordStrengthColor()} ${getPasswordStrengthWidth()}`} />
               </div>
-              <span className="text-xs text-slate-500 capitalize">{passwordStrength}</span>
+              <span className="text-xs text-default-500 capitalize">{passwordStrength}</span>
             </div>
           )}
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-default-500">
             Debe contener: mayúscula, minúscula, número y carácter especial (@#$%^&+=!.)
           </p>
 
@@ -190,7 +190,7 @@ function ResetPasswordForm() {
                 type="button"
                 aria-label="Mostrar confirmación de contraseña"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                className="text-xs font-semibold text-default-400 hover:text-default-600 dark:text-default-500 dark:hover:text-default-300"
                 tabIndex={-1}
               >
                 {showConfirmPassword ? "Ocultar" : "Mostrar"}
@@ -211,7 +211,7 @@ function ResetPasswordForm() {
           {loading ? "Restableciendo..." : "Restablecer contraseña"}
         </Button>
 
-        <p className="text-center text-sm text-slate-600">
+        <p className="text-center text-sm text-default-600">
           ¿No tienes código?{" "}
           <Link href="/forgot-password" className="text-amber-700 hover:underline">
             Solicitar uno nuevo
@@ -226,9 +226,9 @@ function ResetPasswordForm() {
 function LoadingFallback() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6">
-      <div className="surface w-full rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-slate-200/80 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/90 text-center">
-        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900"></div>
-        <p className="mt-4 text-sm text-slate-600">Cargando...</p>
+      <div className="surface w-full rounded-[2rem] p-8 sm:p-10 border border-default-200 dark:border border-default-200 border border-default-200/80 dark:border-default-200 bg-default-50 dark:bg-default-100/90 text-center">
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-default-300 border-t-slate-900"></div>
+        <p className="mt-4 text-sm text-default-600">Cargando...</p>
       </div>
     </main>
   );

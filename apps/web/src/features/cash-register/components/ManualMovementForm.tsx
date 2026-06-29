@@ -9,7 +9,7 @@ import { Input } from "@/components/bridge/Input";
 export default function ManualMovementForm({ p, contains }: any) {
   return (
     <>
-      <h3 className="mt-8 text-base font-semibold text-slate-900">Ingreso / egreso manual</h3>
+      <h3 className="mt-8 text-base font-semibold text-foreground">Ingreso / egreso manual</h3>
       <div className="mt-3 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 items-end">
         <Autocomplete placeholder="Seleccionar tipo" selectionMode="single"
           value={p.manualType}

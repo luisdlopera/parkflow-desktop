@@ -1,5 +1,6 @@
 import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import { toast } from "@heroui/react";
+import { withCsrfHeader } from "@/lib/api/csrf";
 
 const toastCooldownMs = 3000;
 const dedupe = new Map<string, number>();
@@ -46,7 +47,8 @@ export async function safeFetch<T = unknown>(input: RequestInfo | URL, init?: Re
 
     // @ts-ignore
     if (!response) {
-      response = await fetch(input, { credentials: 'include', ...init });
+      const csrfHeaders = withCsrfHeader(init, init?.headers as Record<string, string> | undefined);
+      response = await fetch(input, { credentials: 'include', ...init, headers: csrfHeaders });
     }
 
     const requestUrl = typeof input === "string" || input instanceof URL ? String(input) : input.url;

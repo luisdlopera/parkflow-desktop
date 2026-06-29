@@ -22,8 +22,8 @@ export default function SalidaCobroPage() {
         <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center mb-6">
           <ShieldAlert className="w-10 h-10 text-rose-600" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Acceso denegado</h1>
-        <p className="text-slate-600 dark:text-slate-400 max-w-md">
+        <h1 className="text-2xl font-bold text-foreground dark:text-default-50 mb-2">Acceso denegado</h1>
+        <p className="text-default-600 dark:text-default-400 max-w-md">
           No tienes permiso para registrar cobros de vehículos. Contacta al administrador si crees que esto es un error.
         </p>
       </div>

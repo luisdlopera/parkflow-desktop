@@ -32,14 +32,14 @@ export default function MovementsPanel({ p }: { p: any }) {
   return (
     <>
       <div className="surface rounded-2xl p-4 sm:p-6 mt-4">
-        <h2 className="text-lg font-semibold text-slate-900">Movimientos</h2>
+        <h2 className="text-lg font-semibold text-foreground">Movimientos</h2>
         <div className="mt-4 flex flex-wrap gap-4 mb-6">
           {/* Filters are handled at page level; keep placeholder area to preserve layout */}
         </div>
 
         <DataTable columns={movementColumns} rows={p.movements} />
         {p.movements.length === 0 && p.isOpen ? (
-          <p className="mt-3 text-xs text-slate-500 text-center">No hay movimientos registrados en esta sesión.</p>
+          <p className="mt-3 text-xs text-default-500 text-center">No hay movimientos registrados en esta sesión.</p>
         ) : null}
 
         {/* Manual movement form is rendered elsewhere */}

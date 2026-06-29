@@ -44,7 +44,7 @@ const COLS: ColumnDef<CashRegisterRow>[] = [
     key: "active",
     label: "Activo",
     render: (r) => (
-      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.active ? "bg-emerald-100 text-emerald-700" : "bg-default-100 text-default-500"}`}>
         {r.active ? "Sí" : "No"}
       </span>
     ),
@@ -173,7 +173,7 @@ export default function CajasPage() {
                 </ListBox>
               </Select.Popover>
             </Select>
-            <p className="px-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+            <p className="px-1 text-[10px] text-default-400 font-bold uppercase tracking-wider">
               Código operativo: {currentSite || "DEFAULT"}
             </p>
           </div>

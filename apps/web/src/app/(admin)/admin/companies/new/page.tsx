@@ -50,7 +50,7 @@ export default function NewCompanyPage() {
         </div>
       </div>
       
-      <div className="p-6 bg-white dark:bg-default-50 border border-default-200 rounded-xl">
+      <div className="p-6 bg-default-50 dark:bg-default-100 dark:bg-default-50 border border-default-200 rounded-xl">
         <CompanyForm onSubmit={handleCreateCompany} isLoading={isLoading} />
       </div>
 

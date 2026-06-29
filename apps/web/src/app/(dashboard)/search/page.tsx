@@ -38,19 +38,19 @@ function ResultCard({ result, onSelect }: { result: SearchResult; onSelect: (res
     <button
       type="button"
       onClick={() => onSelect(result)}
-      className="flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left border border-default-200 transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:border border-default-200 dark:border-neutral-800 dark:bg-neutral-950/50 dark:hover:border-primary-900/50"
+      className="flex w-full items-center gap-4 rounded-2xl border border-default-200 bg-default-50 dark:bg-default-100 px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-brand-300 dark:hover:border-brand-700"
     >
-      <div className="rounded-2xl bg-primary-50 p-3 text-primary-600 dark:bg-primary-900/20">
+      <div className="rounded-2xl bg-brand-100 p-3 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">
         {TYPE_META[result.type]?.icon ?? <Search className="h-4 w-4" />}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{result.title}</p>
+          <p className="truncate text-sm font-semibold text-foreground dark:text-default-50">{result.title}</p>
           {String(result.metadata?.status ?? "").toUpperCase() === "ACTIVE" ? <Chip size="sm" color="success" variant="soft">Activo</Chip> : null}
         </div>
-        <p className="truncate text-xs text-slate-500 dark:text-neutral-400">{result.subtitle}</p>
+        <p className="truncate text-xs text-default-500 dark:text-neutral-400">{result.subtitle}</p>
       </div>
-      <ArrowRight className="h-4 w-4 text-slate-400" />
+      <ArrowRight className="h-4 w-4 text-default-400" />
     </button>
   );
 }
@@ -88,11 +88,11 @@ export default function SearchPage() {
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <p className="text-xs uppercase tracking-[0.28em] text-primary-700/80">Búsqueda global</p>
+        <p className="text-xs uppercase tracking-[0.28em] text-brand-700 dark:text-brand-200/80">Búsqueda global</p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-1">
-            <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">Todo lo que necesita la persona operando</h1>
-            <p className="text-sm text-slate-500 dark:text-neutral-400">Busca placas, tickets, usuarios y cualquier entidad disponible en el sistema.</p>
+            <h1 className="text-3xl font-semibold text-foreground dark:text-default-50">Todo lo que necesita la persona operando</h1>
+            <p className="text-sm text-default-500 dark:text-neutral-400">Busca placas, tickets, usuarios y cualquier entidad disponible en el sistema.</p>
           </div>
           <div className="w-full sm:max-w-md">
             <Input
@@ -100,8 +100,8 @@ export default function SearchPage() {
               aria-label="Buscar"
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar..."
-              startContent={isLoading ? <Loader2 className="h-4 w-4 animate-spin text-primary-500" /> : <Search className="h-4 w-4 text-slate-400" />}
-              classNames={{ inputWrapper: "h-12 rounded-2xl bg-white dark:bg-neutral-950/70" }}
+              startContent={isLoading ? <Loader2 className="h-4 w-4 animate-spin text-brand-500 dark:text-brand-400" /> : <Search className="h-4 w-4 text-default-400" />}
+              classNames={{ inputWrapper: "h-12 rounded-2xl bg-default-50 dark:bg-default-100 dark:bg-neutral-950/70" }}
             />
           </div>
         </div>
@@ -114,7 +114,7 @@ export default function SearchPage() {
             size="sm"
             variant={scope === item || (!scope && item === "all") ? "solid" : "flat"}
             color={scope === item || (!scope && item === "all") ? "primary" : "default"}
-            className={scope === item || (!scope && item === "all") ? "bg-brand text-white" : ""}
+            className={scope === item || (!scope && item === "all") ? "bg-brand text-default-50" : ""}
             onPress={() => {
               const next = new URLSearchParams();
               if (query.trim()) next.set("q", query.trim());
@@ -128,7 +128,7 @@ export default function SearchPage() {
       </div>
 
       {!query.trim() ? (
-        <Card className="border border-slate-200/70 bg-white/70 dark:border-neutral-800/70 dark:bg-neutral-950/50">
+        <Card className="border border-default-200/70 bg-default-50 dark:bg-default-100/70 dark:border-neutral-800/70 dark:bg-neutral-950/50">
           <Card.Content className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { title: "Ingresos", desc: "Buscar ticket, placa o vehículo" },
@@ -136,22 +136,22 @@ export default function SearchPage() {
               { title: "Usuarios", desc: "Operadores, cajeros y admins" },
               { title: "Configuración", desc: "Sedes, cajas, tarifas y parámetros" },
             ].map((item) => (
-              <div key={item.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.title}</p>
-                <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">{item.desc}</p>
+              <div key={item.title} className="rounded-2xl border border-default-200 bg-default-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
+                <p className="text-sm font-semibold text-foreground dark:text-default-50">{item.title}</p>
+                <p className="mt-1 text-sm text-default-500 dark:text-neutral-400">{item.desc}</p>
               </div>
             ))}
           </Card.Content>
         </Card>
       ) : total > 0 ? (
         <div className="space-y-6">
-          <p className="text-sm text-slate-500 dark:text-neutral-400">{total} resultados para “{query}”.</p>
+          <p className="text-sm text-default-500 dark:text-neutral-400">{total} resultados para “{query}”.</p>
           {groupedEntries.map(([type, items]) => (
             <section key={type} className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-default-400">
                 {TYPE_META[type as SearchType]?.icon}
                 {TYPE_META[type as SearchType]?.label ?? type}
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-neutral-900">{items.length}</span>
+                <span className="rounded-full bg-default-100 px-2 py-0.5 dark:bg-neutral-900">{items.length}</span>
               </div>
               <div className="grid gap-3">
                 {items.map((result) => <ResultCard key={result.id} result={result} onSelect={handleSelect} />)}
@@ -160,13 +160,13 @@ export default function SearchPage() {
           ))}
         </div>
       ) : (
-        <Card className="border border-dashed border-slate-300 bg-white/70 dark:border-neutral-700 dark:bg-neutral-950/40">
+        <Card className="border border-dashed border-default-300 bg-default-50 dark:bg-default-100/70 dark:border-neutral-700 dark:bg-neutral-950/40">
           <Card.Content className="py-14 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-primary-50 text-primary-500 dark:bg-primary-900/20">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-100 dark:bg-brand-900/30 text-brand-500 dark:text-brand-400 dark:bg-brand-900/20">
               <Search className="h-7 w-7" />
             </div>
-            <p className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">No hay resultados</p>
-            <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">Prueba con otra placa, ticket, usuario o abre una búsqueda más amplia.</p>
+            <p className="mt-4 text-lg font-semibold text-foreground dark:text-default-50">No hay resultados</p>
+            <p className="mt-1 text-sm text-default-500 dark:text-neutral-400">Prueba con otra placa, ticket, usuario o abre una búsqueda más amplia.</p>
           </Card.Content>
         </Card>
       )}

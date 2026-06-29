@@ -111,7 +111,7 @@ export default function OperacionPage() {
     return (
       <div className="mx-auto max-w-5xl p-6">
         <ConfigPageHeader title="Parámetros Operativos" groupLabel="Operación" groupId="operacion" sectionLabel="Reglas y parámetros operativos" />
-        <p className="mt-4 text-sm text-slate-500 italic">Cargando configuración...</p>
+        <p className="mt-4 text-sm text-default-500 italic">Cargando configuración...</p>
       </div>
     );
   }
@@ -126,7 +126,7 @@ export default function OperacionPage() {
         sectionLabel="Reglas y parámetros operativos" 
       />
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div className="rounded-xl border border-default-200 bg-default-50 p-4">
         <Select
           label="Sede"
           placeholder="Selecciona una sede"
@@ -152,8 +152,8 @@ export default function OperacionPage() {
         </ListBox>
       </Select.Popover>
     </Select>
-        <p className="mt-1 text-xs text-slate-500">
-          Se editarán los parámetros de: <span className="font-medium text-slate-700">{selectedSiteLabel}</span>.
+        <p className="mt-1 text-xs text-default-500">
+          Se editarán los parámetros de: <span className="font-medium text-default-700">{selectedSiteLabel}</span>.
         </p>
       </div>
 
@@ -164,11 +164,11 @@ export default function OperacionPage() {
       )}
       
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Card border border-default-200="sm" className="border border-slate-200">
+        <Card border border-default-200="sm" className="border border-default-200">
           <Card.Content className="p-6 space-y-8">
             <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-6">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Permisos y Funciones</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-default-500">Permisos y Funciones</h3>
                 
                 <Controller
                   name="allowEntryWithoutPrinter"
@@ -176,8 +176,8 @@ export default function OperacionPage() {
                   render={({ field }) => (
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-slate-700">Entrada sin impresora</p>
-                        <p className="text-xs text-slate-500">Permitir ingreso si falla la impresión</p>
+                        <p className="text-sm font-semibold text-default-700">Entrada sin impresora</p>
+                        <p className="text-xs text-default-500">Permitir ingreso si falla la impresión</p>
                       </div>
                       <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
@@ -190,8 +190,8 @@ export default function OperacionPage() {
                   render={({ field }) => (
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-slate-700">Salida sin pago</p>
-                        <p className="text-xs text-slate-500">Para cortesías o convenios especiales</p>
+                        <p className="text-sm font-semibold text-default-700">Salida sin pago</p>
+                        <p className="text-xs text-default-500">Para cortesías o convenios especiales</p>
                       </div>
                       <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
@@ -204,8 +204,8 @@ export default function OperacionPage() {
                   render={({ field }) => (
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-slate-700">Permitir reimpresión</p>
-                        <p className="text-xs text-slate-500">Habilitar botón de copia de ticket</p>
+                        <p className="text-sm font-semibold text-default-700">Permitir reimpresión</p>
+                        <p className="text-xs text-default-500">Habilitar botón de copia de ticket</p>
                       </div>
                       <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
@@ -218,8 +218,8 @@ export default function OperacionPage() {
                   render={({ field }) => (
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-slate-700">Permitir anulación</p>
-                        <p className="text-xs text-slate-500">Anular servicios ya registrados</p>
+                        <p className="text-sm font-semibold text-default-700">Permitir anulación</p>
+                        <p className="text-xs text-default-500">Anular servicios ya registrados</p>
                       </div>
                       <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
@@ -228,7 +228,7 @@ export default function OperacionPage() {
               </div>
 
               <div className="space-y-6">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Validaciones y Fotos</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-default-500">Validaciones y Fotos</h3>
                 
                 <Controller
                   name="requirePhotoEntry"
@@ -236,8 +236,8 @@ export default function OperacionPage() {
                   render={({ field }) => (
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-slate-700">Foto en entrada</p>
-                        <p className="text-xs text-slate-500">Obligatorio capturar imagen al ingresar</p>
+                        <p className="text-sm font-semibold text-default-700">Foto en entrada</p>
+                        <p className="text-xs text-default-500">Obligatorio capturar imagen al ingresar</p>
                       </div>
                       <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
@@ -250,8 +250,8 @@ export default function OperacionPage() {
                   render={({ field }) => (
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-slate-700">Foto en salida</p>
-                        <p className="text-xs text-slate-500">Obligatorio capturar imagen al salir</p>
+                        <p className="text-sm font-semibold text-default-700">Foto en salida</p>
+                        <p className="text-xs text-default-500">Obligatorio capturar imagen al salir</p>
                       </div>
                       <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
@@ -264,8 +264,8 @@ export default function OperacionPage() {
                   render={({ field }) => (
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-slate-700">Modo offline</p>
-                        <p className="text-xs text-slate-500">Habilitar operación sin internet</p>
+                        <p className="text-sm font-semibold text-default-700">Modo offline</p>
+                        <p className="text-xs text-default-500">Habilitar operación sin internet</p>
                       </div>
                       <Switch isSelected={field.value} onChange={field.onChange} aria-label="Alternar opción" />
                     </div>
@@ -307,7 +307,7 @@ export default function OperacionPage() {
                 type="submit"
                 color="success"
                 size="lg"
-                className="font-bold text-white"
+                className="font-bold text-default-50"
                 isLoading={isSaveOpLoading}
               >
                 Guardar parámetros

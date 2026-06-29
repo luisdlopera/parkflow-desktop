@@ -26,9 +26,7 @@ public class FeatureAccessService {
     boolean agreementAndMonthly = plan != PlanType.LOCAL;
     boolean advancedAudit = plan == PlanType.PRO || plan == PlanType.ENTERPRISE;
     boolean multiVehicle = true;
-    List<String> allowedPayments = plan == PlanType.LOCAL
-        ? List.of("CASH")
-        : List.of("CASH", "DEBIT_CARD", "CREDIT_CARD", "NEQUI", "DAVIPLATA", "TRANSFER", "QR", "AGREEMENT", "MIXED");
+    List<String> allowedPayments = List.of("CASH", "DEBIT_CARD", "CREDIT_CARD", "NEQUI", "DAVIPLATA", "TRANSFER", "QR", "AGREEMENT", "MIXED");
     return Map.of(
         "vehicleTypes", List.of("MOTO", "CARRO", "BICICLETA", "CAMIONETA", "CAMION", "BUS", "OTRO"),
         "paymentMethods", allowedPayments,

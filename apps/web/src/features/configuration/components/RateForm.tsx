@@ -69,7 +69,7 @@ export function RateForm({
 
   return (
     <div className="surface rounded-2xl p-6">
-      <h2 className="text-lg font-semibold text-slate-900">{isEdit ? "Editar tarifa" : "Nueva tarifa"}</h2>
+      <h2 className="text-lg font-semibold text-foreground">{isEdit ? "Editar tarifa" : "Nueva tarifa"}</h2>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <Input label="Nombre" size="sm" value={name} onChange={(e) => setName(e.target.value)} />
         <Input label="Sede" size="sm" value={site} onChange={(e) => setSite(e.target.value)} />
@@ -91,7 +91,7 @@ export function RateForm({
         </Select>
         <Input label="Valor" size="sm" type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold text-slate-600">Minutos gracia / tolerancia / fraccion</p>
+          <p className="text-xs font-semibold text-default-600">Minutos gracia / tolerancia / fraccion</p>
           <div className="flex gap-2">
             <Input aria-label="Gracia" size="sm" type="number" min="0" placeholder="Gracia" value={grace} onChange={(e) => setGrace(e.target.value)} />
             <Input aria-label="Tolerancia" size="sm" type="number" min="0" placeholder="Tolerancia" value={tolerance} onChange={(e) => setTolerance(e.target.value)} />
@@ -105,30 +105,30 @@ export function RateForm({
         <Input label="Recargo ticket perdido" size="sm" type="number" step="0.01" min="0" value={lost} onChange={(e) => setLost(e.target.value)} />
         <Checkbox isSelected={active} onChange={setActive}>Activa</Checkbox>
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Franja (opcional) HH:MM</span>
+          <span className="text-xs font-bold text-default-400 uppercase tracking-wider">Franja (opcional) HH:MM</span>
           <div className="flex gap-3">
             <Input aria-label="Inicio de jornada" size="sm" placeholder="08:00" value={wStart} onChange={(e) => setWStart(e.target.value)} />
             <Input aria-label="Fin de jornada" size="sm" placeholder="18:00" value={wEnd} onChange={(e) => setWEnd(e.target.value)} />
           </div>
         </div>
         <div className="md:col-span-2 flex flex-col gap-2">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Días de la semana (vacío = todos)</span>
+          <span className="text-xs font-bold text-default-400 uppercase tracking-wider">Días de la semana (vacío = todos)</span>
           <div className="flex gap-2 flex-wrap">
             {DAYS_OF_WEEK.map(({ label, bit }) => (
               <button key={bit} type="button" onClick={() => toggleDay(bit)}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-colors ${isDayActive(bit) ? "bg-primary text-white border-primary" : "bg-transparent text-slate-600 border-slate-300 hover:border-primary dark:text-slate-400 dark:border-slate-600 dark:hover:border-primary"}`}>
+                className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-colors ${isDayActive(bit) ? "bg-brand text-default-50 border-primary" : "bg-transparent text-default-600 border-default-300 hover:border-primary dark:text-default-400 dark:border-default-600 dark:hover:border-primary"}`}>
                 {label}
               </button>
             ))}
             {daysBitmap !== null && (
-              <button type="button" onClick={() => setDaysBitmap(null)} className="px-3 py-1 rounded-lg text-xs font-semibold border border-slate-300 text-slate-500 hover:border-rose-400 hover:text-rose-500 dark:border-slate-600 dark:text-slate-400 dark:hover:border-rose-400 dark:hover:text-rose-400 transition-colors">
+              <button type="button" onClick={() => setDaysBitmap(null)} className="px-3 py-1 rounded-lg text-xs font-semibold border border-default-300 text-default-500 hover:border-rose-400 hover:text-rose-500 dark:border-default-600 dark:text-default-400 dark:hover:border-rose-400 dark:hover:text-rose-400 transition-colors">
                 Todos
               </button>
             )}
           </div>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Topes de sesión (opcional)</span>
+          <span className="text-xs font-bold text-default-400 uppercase tracking-wider">Topes de sesión (opcional)</span>
           <div className="flex gap-2">
             <Input aria-label="Tope mínimo" size="sm" type="number" step="0.01" min="0" placeholder="Mínimo" value={minSession} onChange={(e) => setMinSession(e.target.value)} />
             <Input aria-label="Tope máximo" size="sm" type="number" step="0.01" min="0" placeholder="Máximo" value={maxSession} onChange={(e) => setMaxSession(e.target.value)} />
@@ -144,7 +144,7 @@ export function RateForm({
           {appliesHoliday && <Input label="Recargo festivo (%)" size="sm" type="number" step="0.01" min="0" max="100" value={holidayPct} onChange={(e) => setHolidayPct(e.target.value)} />}
         </div>
         <div className="md:col-span-2 space-y-1">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Vigencia programada (opcional, local)</span>
+          <span className="text-xs font-bold text-default-400 uppercase tracking-wider">Vigencia programada (opcional, local)</span>
           <div className="flex flex-wrap gap-3">
             <Input type="datetime-local" aria-label="Vigencia desde" size="sm" value={schedFrom} onChange={(e) => setSchedFrom(e.target.value)} className="min-w-[200px] flex-1" />
             <Input type="datetime-local" aria-label="Vigencia hasta" size="sm" value={schedTo} onChange={(e) => setSchedTo(e.target.value)} className="min-w-[200px] flex-1" />

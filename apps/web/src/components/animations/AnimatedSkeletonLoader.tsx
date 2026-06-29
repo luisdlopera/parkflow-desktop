@@ -30,7 +30,7 @@ export function AnimatedSkeletonLoader({
         {[...Array(count)].map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+            className="rounded-xl border border-default-200 dark:border-default-700 overflow-hidden"
           >
             <div className="h-32 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700 animate-shimmer" />
             <div className="p-4 space-y-3">

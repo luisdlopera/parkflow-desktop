@@ -31,7 +31,7 @@ const Step2Capacity = memo(function Step2Capacity() {
       )}
 
       <div className="space-y-3">
-        <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
           <div className="flex items-center gap-2">
             <Hash className="w-4 h-4 text-default-400" />
             <span className="text-sm font-medium">Capacidad total</span>
@@ -62,7 +62,7 @@ const Step2Capacity = memo(function Step2Capacity() {
                 const vehicle = VEHICLE_OPTIONS.find(v => v.code === typeCode);
                 const capacity = getCapacityByType()[typeCode] ?? 0;
                 return (
-                  <div key={typeCode} className="flex items-center justify-between p-2 bg-white dark:bg-zinc-900 border border-default-200 rounded-lg">
+                  <div key={typeCode} className="flex items-center justify-between p-2 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
                     <span className="text-sm">{vehicle?.label}</span>
                     <Input
                       type="number"
