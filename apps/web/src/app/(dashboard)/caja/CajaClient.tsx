@@ -203,16 +203,15 @@ export default function CajaClient() {
                 </Autocomplete.Popover>
               </Autocomplete>
             )}
-            <Input
-              placeholder="Terminal manual"
-              label="Terminal manual"
-              size="sm"
-              value={p.terminal}
-              onChange={(e) => p.setTerminal(e.target.value)}
-              isDisabled={p.closed}
-            />
           </div>
-          <Button variant="outline" color="primary" className="font-semibold h-[48px]"
+          {p.terminal && (
+            <div className="text-sm space-y-1">
+              <p className="text-default-500">Terminal configurada</p>
+              <p className="font-semibold text-foreground">{p.terminal}</p>
+              <p className="text-xs text-default-400">Editar desde Configuración › Cajas</p>
+            </div>
+          )}
+          <Button variant="solid" color="primary" className="font-semibold h-[48px] w-full"
             onPress={() => { p.reload().catch(() => {}); }} isLoading={p.busy}>
             Actualizar
           </Button>
