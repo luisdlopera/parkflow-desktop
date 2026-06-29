@@ -2,7 +2,8 @@
 
 import { useMemo } from "react";
 import { Controller } from "react-hook-form";
-import { ListBox, SearchField, useFilter, Tabs, Label, type Key } from "@heroui/react";
+import { ListBox, SearchField, useFilter, Tabs, Label, toast, type Key } from "@heroui/react";
+import { Tooltip } from "@/components/bridge/Tooltip";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/bridge/Modal";
 import { Autocomplete } from "@/components/bridge/Autocomplete";
 import { Button } from "@/components/bridge/Button";
@@ -166,7 +167,7 @@ export default function CajaClient() {
 
       {/* Terminal selector — hide when only 1 register */}
       {p.registerRows.length !== 1 ? (
-        <div className={`grid gap-4 grid-cols-1 items-end ${p.siteCount > 1 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+        <div className={`grid gap-3 grid-cols-1 items-end ${p.siteCount > 1 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           {p.siteCount > 1 && (
             <Input label="Sede" size="sm" value={p.site} onChange={(e) => p.setSite(e.target.value)} isDisabled={p.closed} />
           )}
@@ -206,15 +207,15 @@ export default function CajaClient() {
           </div>
           {p.terminal && (
             <div className="text-sm space-y-1">
-              <p className="text-default-500">Terminal configurada</p>
+              <div className="flex items-center gap-1">
+                <p className="text-default-500">Terminal configurada</p>
+                <Tooltip content="Editar desde Configuración › Cajas">
+                  <span className="text-default-400 text-sm font-semibold">?</span>
+                </Tooltip>
+              </div>
               <p className="font-semibold text-foreground">{p.terminal}</p>
-              <p className="text-xs text-default-400">Editar desde Configuración › Cajas</p>
             </div>
           )}
-          <Button variant="solid" color="primary" className="font-semibold h-[48px] w-full"
-            onPress={() => { p.reload().catch(() => {}); }} isLoading={p.busy}>
-            Actualizar
-          </Button>
         </div>
       ) : null}
 
@@ -245,7 +246,7 @@ export default function CajaClient() {
                 label="Monto inicial"
                 data-testid="initial-amount"
                 aria-label="Monto inicial"
-                className="mt-1 w-full"
+                className="w-full"
                 value={p.openAmount}
                 onValueChange={(val) => p.setOpenAmount(val)}
                 isDisabled={p.busy || !!p.session}
@@ -253,9 +254,15 @@ export default function CajaClient() {
             </div>
             <div className="mt-4">
               <Button className="w-full font-bold" color="primary" size="lg"
-                isDisabled={p.busy || !!p.session || !p.perms.canOpen}
+                isDisabled={p.busy || !!p.session || !p.perms.canOpen || !p.openAmount}
                 isLoading={p.busy}
-                onPress={() => { p.onOpen().catch(() => {}); }}>
+                onPress={() => {
+                  if (!p.openAmount || p.openAmount.trim() === '') {
+                    toast.danger('Ingresa el monto inicial para abrir caja');
+                    return;
+                  }
+                  p.onOpen().catch(() => {});
+                }}>
                 Abrir caja
               </Button>
             </div>
