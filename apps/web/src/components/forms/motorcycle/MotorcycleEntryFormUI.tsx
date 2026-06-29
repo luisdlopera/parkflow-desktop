@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User, CheckCircle2, AlertCircle } from "lucide-react";
 import { MotorRacingHelmet } from "@/features/vehicle-entry/components/MotorRacingHelmet";
 import { Autocomplete, ListBox, SearchField, useFilter, Label, FieldError, toast } from "@heroui/react";
+import { Checkbox } from "@/components/bridge/Checkbox";
 import { fetchAvailableLockers } from "@/lib/api/lockers-api";
 import { useFeatureFlags } from "@/providers/FeatureFlagProvider";
 
@@ -123,36 +124,26 @@ export function MotorcycleEntryFormUI({
           name="foreignPlate"
           control={form.control}
           render={({ field }) => (
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input
-                {...field}
-                type="checkbox"
-                checked={field.value || false}
-                onChange={(e) => field.onChange(e.target.checked)}
-                className="w-4 h-4 cursor-pointer accent-brand-500"
-              />
-              <span className="text-sm font-medium text-default-600 dark:text-default-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-                Placa extranjera
-              </span>
-            </label>
+            <Checkbox
+              isSelected={field.value || false}
+              onChange={field.onChange}
+              className="cursor-pointer"
+            >
+              Placa extranjera
+            </Checkbox>
           )}
         />
         <Controller
           name="noPlate"
           control={form.control}
           render={({ field }) => (
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input
-                {...field}
-                type="checkbox"
-                checked={field.value || false}
-                onChange={(e) => field.onChange(e.target.checked)}
-                className="w-4 h-4 cursor-pointer accent-brand-500"
-              />
-              <span className="text-sm font-medium text-default-600 dark:text-default-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-                No tiene placa
-              </span>
-            </label>
+            <Checkbox
+              isSelected={field.value || false}
+              onChange={field.onChange}
+              className="cursor-pointer"
+            >
+              No tiene placa
+            </Checkbox>
           )}
         />
       </div>
