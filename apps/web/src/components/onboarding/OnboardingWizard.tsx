@@ -9,7 +9,7 @@ import { ApiError } from "@/lib/errors/api-error";
 import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/services/auth-storage.service";
 import { useState } from "react";
-import { Spinner } from "@heroui/react";
+import { Spinner, toast } from "@heroui/react";
 import {
   OnboardingProvider,
   useOnboarding,
@@ -56,11 +56,27 @@ function OnboardingContent() {
   } = useOnboarding();
 
   const currentValidation = validateStep(step, stepData, vehicleTypes);
-  const canAdvance = currentValidation.isValid;
+  const isSaving = saveState === "saving";
 
   const [isSkipping, setIsSkipping] = useState(false);
   const { confirm } = useDialog();
   const router = useRouter();
+
+  const handleNextStep = () => {
+    const validation = validateStep(step, stepData, vehicleTypes);
+
+    if (!validation.isValid) {
+      const firstError = Object.values(validation.errors)[0];
+      toast.danger("Completa los campos requeridos", {
+        description: firstError,
+        timeout: 5000,
+      });
+      return;
+    }
+
+    clearStepErrors();
+    persistStep(getNextEnabledStep(step, enabledSteps));
+  };
 
   const handleSkip = async () => {
     const ok = await confirm(
@@ -150,7 +166,7 @@ function OnboardingContent() {
                 <span>Guardado</span>
               </div>
             )}
-            {saveState === "error" && (
+            {saveState === "error" && step !== 2 && (
               <div className="flex items-center gap-1 text-xs text-danger">
                 <span>Error al guardar</span>
               </div>
@@ -212,12 +228,8 @@ function OnboardingContent() {
           {step !== enabledSteps[enabledSteps.length - 1] && (
             <Button
               color="primary"
-              onPress={() => {
-                if (!validateCurrentStep()) return;
-                clearStepErrors();
-                persistStep(getNextEnabledStep(step, enabledSteps));
-              }}
-              isDisabled={!canAdvance}
+              onPress={handleNextStep}
+              isDisabled={isSaving}
             >
               Siguiente
             </Button>
