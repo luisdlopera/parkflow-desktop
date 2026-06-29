@@ -222,25 +222,26 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
         </div>
       )}
 
-      {/* Integrated Search and Filters Toolbar */}
-      <SearchAndFiltersToolbar
-        searchValue={params.search || ""}
-        onSearchChange={(search) => setParams((p) => ({ ...p, search, page: 1 }))}
-        filterValues={filterValues}
-        onFilterChange={handleFilterChange}
-        onClearFilters={() => {
-          setFilterValues({});
-          setParams((p) => ({ ...p, vehicleType: "all", page: 1 }));
-        }}
-        vehicleTypeOptions={vehicleTypeOptions}
-        hasActiveFilters={filterValues.vehicleType && filterValues.vehicleType !== "all" ? true : false}
-      />
-
       <div className="rounded-2xl border border-default-200 overflow-hidden bg-default-50 dark:bg-default-100">
-        <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-2 border-b border-default-100">
+        <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2 border-b border-default-100">
+          {/* Search and Filters moved inside datagrid */}
+          <SearchAndFiltersToolbar
+            searchValue={params.search || ""}
+            onSearchChange={(search) => setParams((p) => ({ ...p, search, page: 1 }))}
+            filterValues={filterValues}
+            onFilterChange={handleFilterChange}
+            onClearFilters={() => {
+              setFilterValues({});
+              setParams((p) => ({ ...p, vehicleType: "all", page: 1 }));
+            }}
+            vehicleTypeOptions={vehicleTypeOptions}
+            hasActiveFilters={filterValues.vehicleType && filterValues.vehicleType !== "all" ? true : false}
+          />
+
+          {/* Columns button */}
           <div className="flex items-center gap-2">
             <Dropdown>
-            <Button size="sm" variant="ghost" color="default" isIconOnly aria-label="Columnas visibles">
+            <Button size="sm" variant="flat" color="default" isIconOnly aria-label="Columnas visibles" className="bg-default-100 dark:bg-default-200">
               <Columns className="h-4 w-4 text-default-500" />
             </Button>
             <Dropdown.Popover>

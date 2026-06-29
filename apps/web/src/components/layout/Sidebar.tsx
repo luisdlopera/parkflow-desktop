@@ -193,13 +193,13 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
                           router.push(`/configuracion?group=${group.id}`);
                         }}
                         aria-label={`Ver opciones de ${group.label}`}
-                        className="w-full flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all text-default-600 dark:text-default-300 hover:bg-default-200 dark:hover:bg-default-300 hover:text-default-900 dark:hover:text-default-50"
+                        className="w-full flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all group hover:bg-default-200 dark:hover:bg-default-300 hover:text-default-900 dark:hover:text-default-50 text-default-600 dark:text-default-300"
                       >
                         <div className="flex items-center gap-3">
-                          <group.icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                          <group.icon className="w-5 h-5 flex-shrink-0 transition-colors group-hover:text-brand-600" aria-hidden="true" />
                           <span>{group.label}</span>
                         </div>
-                        <svg className="w-4 h-4 text-default-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <svg className="w-4 h-4 text-default-400 transition-colors group-hover:text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
