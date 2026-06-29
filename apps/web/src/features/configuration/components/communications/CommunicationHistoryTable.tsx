@@ -1,13 +1,12 @@
 import React from 'react';
-import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip } from "@heroui/react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip } from "@heroui/react";
 import { useCommunicationHistory } from '../../hooks/useCommunication';
 
 export const CommunicationHistoryTable: React.FC<{ companyId: string }> = ({ companyId }) => {
   const { data: history = [], isLoading } = useCommunicationHistory(companyId);
 
   return (
-    <Card className="w-full">
-      <CardBody>
+    <div className="w-full">
         <Table aria-label="Historial de Comunicaciones">
           <TableHeader>
             <TableColumn>FECHA</TableColumn>
@@ -32,7 +31,6 @@ export const CommunicationHistoryTable: React.FC<{ companyId: string }> = ({ com
             )}
           </TableBody>
         </Table>
-      </CardBody>
-    </Card>
+    </div>
   );
 };

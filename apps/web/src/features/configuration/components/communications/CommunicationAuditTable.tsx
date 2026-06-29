@@ -1,13 +1,12 @@
 import React from 'react';
-import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
+import { Card, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
 import { useCommunicationAudit } from '../../hooks/useCommunication';
 
 export const CommunicationAuditTable: React.FC<{ companyId: string }> = ({ companyId }) => {
   const { data: audit = [], isLoading } = useCommunicationAudit(companyId);
 
   return (
-    <Card className="w-full">
-      <CardBody>
+    <div className="w-full">
         <Table aria-label="Auditoría de Comunicaciones">
           <TableHeader>
             <TableColumn>FECHA</TableColumn>
@@ -17,7 +16,7 @@ export const CommunicationAuditTable: React.FC<{ companyId: string }> = ({ compa
             <TableColumn>VALOR ANTERIOR</TableColumn>
             <TableColumn>VALOR NUEVO</TableColumn>
           </TableHeader>
-          <TableBody emptyContent={isLoading ? "Cargando..." : "No hay registros de auditoría."} items={audit}>
+          <Card.Content emptyContent={isLoading ? "Cargando..." : "No hay registros de auditoría."} items={audit}>
             {(item: any) => (
               <TableRow key={item.id}>
                 <TableCell>{new Date(item.createdAt).toLocaleString()}</TableCell>
@@ -28,9 +27,8 @@ export const CommunicationAuditTable: React.FC<{ companyId: string }> = ({ compa
                 <TableCell>{item.newValueMasked || '-'}</TableCell>
               </TableRow>
             )}
-          </TableBody>
+          </Card.Content>
         </Table>
-      </CardBody>
-    </Card>
+    </div>
   );
 };
