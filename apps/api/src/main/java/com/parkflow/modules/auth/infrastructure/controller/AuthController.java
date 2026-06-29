@@ -92,6 +92,27 @@ public class AuthController {
     return result.response();
   }
 
+  @PostMapping("/refresh-token")
+  @ResponseStatus(HttpStatus.OK)
+  public Map<String, Object> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    // Used for session keep-alive - silently extends session while user is active
+    String refreshToken = authCookieFactory.extractRefreshToken(request);
+    if (refreshToken == null) {
+      throw new com.parkflow.modules.common.exception.OperationException(
+          org.springframework.http.HttpStatus.UNAUTHORIZED,
+          "AUTH_UNAUTHORIZED",
+          "Tu sesion expiro. Inicia sesion nuevamente.");
+    }
+    LoginResult result = tokenRefreshUseCase.refreshFromCookie(refreshToken);
+    authCookieFactory.setAuthCookies(response, result.accessToken(), result.refreshToken(), true);
+    // Return minimal response for keep-alive
+    return Map.of(
+        "token", result.accessToken(),
+        "expiresIn", 3600,
+        "refreshAfter", 300
+    );
+  }
+
   @PostMapping("/logout")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void logout(@Valid @RequestBody LogoutRequest request, HttpServletResponse response) {
