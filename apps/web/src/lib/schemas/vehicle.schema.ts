@@ -2,7 +2,7 @@ import { z } from "zod";
 import { inferVehicleType, translateVehicleType, validatePlate } from "@/lib/validation/plate-validator";
 
 export const vehicleEntrySchema = z.object({
-  plate: z.string().optional().default(""),
+  plate: z.string().max(17, "Placa no puede superar los 17 caracteres").optional().default(""),
   type: z.string().min(1, "Tipo de vehículo obligatorio"),
   countryCode: z.string().length(2).default("CO"),
   entryMode: z.enum(["VISITOR", "AGREEMENT", "SUBSCRIBER", "EMPLOYEE"]).default("VISITOR"),

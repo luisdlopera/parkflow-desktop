@@ -150,21 +150,23 @@ export function MotorcycleEntryFormUI({
 
       {/* Placa — Input nativo gigante */}
       <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-brand-500 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-brand-500 rounded-2xl opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
         <div className="relative bg-default-50 dark:bg-default-100 dark:bg-default-900 rounded-2xl p-1">
           <Controller
             name="plate"
             control={form.control}
             render={({ field, fieldState }) => (
               <div className="flex flex-col">
-                <label className="flex items-center justify-between w-full text-base font-semibold px-3 pt-2 pb-1">
-                  <span className="text-brand-600 dark:text-brand-400">Placa de la moto</span>
-                  {platePrefix && (
-                    <span className="text-xs font-bold text-brand-700 dark:text-brand-200 bg-brand-200 dark:bg-brand-900/40 px-2.5 py-0.5 rounded-md">
-                      {platePrefix}
-                    </span>
-                  )}
-                </label>
+                {!noPlate && (
+                  <label className="flex items-center justify-between w-full text-base font-semibold px-3 pt-2 pb-1">
+                    <span className="text-brand-600 dark:text-brand-400">Placa de la moto</span>
+                    {platePrefix && (
+                      <span className="text-xs font-bold text-brand-700 dark:text-brand-200 bg-brand-200 dark:bg-brand-900/40 px-2.5 py-0.5 rounded-md">
+                        {platePrefix}
+                      </span>
+                    )}
+                  </label>
+                )}
                 <input
                   {...field}
                   ref={(e) => {
@@ -176,6 +178,7 @@ export function MotorcycleEntryFormUI({
                   placeholder="ABC12D"
                   disabled={noPlate}
                   autoFocus
+                  maxLength={17}
                   value={field.value || ""}
                   onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                   onKeyDown={(e) => {
