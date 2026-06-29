@@ -150,7 +150,7 @@ export function MotorcycleEntryFormUI({
 
       {/* Placa — Input nativo gigante */}
       <div className="relative group">
-        <div className="absolute -inset-1 bg-brand-500 rounded-2xl group-focus-within:block hidden"></div>
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-brand-500 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
         <div className="relative bg-default-50 dark:bg-default-100 dark:bg-default-900 rounded-2xl p-1">
           <Controller
             name="plate"
