@@ -179,6 +179,13 @@ export default function VehicleEntryFormV2({
     form.setValue("vehicleCondition", "Sin novedades al ingreso", { shouldValidate: true, shouldDirty: false });
   }, [settings.skipConditionCheck, form]);
 
+  // Show toast when error occurs
+  useEffect(() => {
+    if (error) {
+      toastError(error);
+    }
+  }, [error, toastError]);
+
   // Persistent Auto-focus plate
   useEffect(() => {
     const focusFn = () => {

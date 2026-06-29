@@ -1032,7 +1032,7 @@ textarea:focus-within,
 [data-slot="select-trigger"],
 .autocomplete__trigger,
 [data-slot="autocomplete-trigger"] {
-  background-color: var(--field-background, #FFFFFF) !important;
+  background-color: #f4f4f5 !important;
 }
 
 .dark .select__trigger,
