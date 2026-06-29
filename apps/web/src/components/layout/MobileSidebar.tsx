@@ -210,17 +210,6 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                   Volver a categorías
                 </button>
 
-                {/* Breadcrumb */}
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-default-400 mb-2 px-1">
-                  <a href="/configuracion" className="hover:text-amber-700/80 transition-colors cursor-pointer">Configuración</a>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                  <span className="text-amber-700/80">
-                    {CONFIG_NAVIGATION.find(g => g.id === configView)?.label}
-                  </span>
-                </div>
-
                 {CONFIG_NAVIGATION.map((group) => {
                   if (group.id !== configView) return null;
 
