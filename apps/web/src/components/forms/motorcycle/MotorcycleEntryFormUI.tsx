@@ -119,6 +119,7 @@ export function MotorcycleEntryFormUI({
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Placa — Input nativo gigante */}
       <div className="relative group">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-brand-500 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
         <div className="relative bg-default-50 dark:bg-default-100 dark:bg-default-900 rounded-2xl p-1">
           <Controller
             name="plate"
@@ -126,9 +127,9 @@ export function MotorcycleEntryFormUI({
             render={({ field, fieldState }) => (
               <div className="flex flex-col">
                 <label className="flex items-center justify-between w-full text-base font-semibold px-3 pt-2 pb-1">
-                  <span className="text-default-600 dark:text-default-300">Placa de la moto</span>
+                  <span className="text-brand-600 dark:text-brand-400">Placa de la moto</span>
                   {platePrefix && (
-                    <span className="text-xs font-bold text-brand-700 bg-brand-100 px-2.5 py-0.5 rounded-md">
+                    <span className="text-xs font-bold text-brand-700 dark:text-brand-200 bg-brand-200 dark:bg-brand-900/40 px-2.5 py-0.5 rounded-md">
                       {platePrefix}
                     </span>
                   )}
@@ -153,12 +154,12 @@ export function MotorcycleEntryFormUI({
                     }
                   }}
                   className={`w-full text-5xl sm:text-6xl font-black uppercase tracking-[0.2em] text-center h-[200px] text-foreground dark:text-default-200 placeholder:text-default-200 dark:placeholder:text-default-600 bg-default-50/50 dark:bg-default-800/50 hover:bg-default-50 dark:hover:bg-default-800 focus:bg-default-50 dark:bg-default-100 dark:focus:bg-default-800 transition-all rounded-xl border-0 outline-none focus:outline-none focus:ring-0 ${
-                    fieldState.error ? "border-2 border-danger" : ""
+                    fieldState.error ? "border-2 border-red-600 dark:border-red-500" : ""
                   }`}
                   autoComplete="off"
                 />
                 {fieldState.error ? (
-                  <p className="text-xs text-danger px-3 pt-1 pb-2">{fieldState.error.message}</p>
+                  <p className="text-xs text-red-600 dark:text-red-400 font-semibold bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg mt-1">{fieldState.error.message}</p>
                 ) : (
                   <p className="text-xs text-default-400 dark:text-default-500 px-3 pt-1 pb-2 text-center">
                     Formato esperado: 3 letras + 2 números + 1 letra · Ej: ABC12D
