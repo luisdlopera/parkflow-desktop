@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { Controller } from "react-hook-form";
 import { ListBox, SearchField, useFilter, Tabs, Label, toast, type Key } from "@heroui/react";
+import { HelpCircle } from "lucide-react";
 import { Tooltip } from "@/components/bridge/Tooltip";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/bridge/Modal";
 import { Autocomplete } from "@/components/bridge/Autocomplete";
@@ -207,10 +208,10 @@ export default function CajaClient() {
           </div>
           {p.terminal && (
             <div className="text-sm space-y-1">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <p className="text-default-500">Terminal configurada</p>
                 <Tooltip content="Editar desde Configuración › Cajas">
-                  <span className="text-default-400 text-sm font-semibold">?</span>
+                  <HelpCircle className="w-4 h-4 text-default-400 hover:text-default-600 cursor-help transition-colors" />
                 </Tooltip>
               </div>
               <p className="font-semibold text-foreground">{p.terminal}</p>

@@ -342,6 +342,7 @@ export default function ProfilePage() {
         selectedKey={activeTab}
         onSelectionChange={(key) => setActiveTab(String(key))}
         aria-label="Secciones del perfil"
+        defaultSelectedKey="datos"
       >
         {/* ───────────── TAB 1: Datos personales ───────────── */}
         <Tab key="datos" title="Datos personales">

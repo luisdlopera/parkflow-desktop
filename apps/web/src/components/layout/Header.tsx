@@ -14,12 +14,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
   return (
     <header className="flex shrink-0 items-center justify-between border-b border-border dark:border-default-200/70 bg-[var(--color-sidebar)] px-4 lg:px-8 py-4 transition-all duration-300">
       {/* Left side: Hamburger + Title */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
         {/* Mobile menu button */}
         <button
           onClick={onMenuClick}
           data-testid="mobile-menu"
-          className="md:hidden p-2 rounded-lg hover:bg-default-200 text-default-600 dark:text-default-400 dark:hover:bg-default-300 transition-colors"
+          className="md:hidden p-2 rounded-lg hover:bg-default-200 text-default-600 dark:text-default-400 dark:hover:bg-default-300 transition-colors flex-shrink-0"
           aria-label="Abrir menú"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,9 +27,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </svg>
         </button>
 
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.15em] text-default-300/60 dark:text-default-500/40 hidden sm:block font-normal">Parkflow Desktop</p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground dark:text-default-200">Operación Diaria</h2>
+        <div className="min-w-0">
+          <p className="text-[10px] xs:text-[11px] uppercase tracking-[0.15em] text-default-300/60 dark:text-default-500/40 hidden sm:block font-normal truncate">Parkflow Desktop</p>
+          <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold text-foreground dark:text-default-200 truncate">Operación Diaria</h2>
         </div>
       </div>
 

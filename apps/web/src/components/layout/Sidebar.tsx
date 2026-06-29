@@ -114,12 +114,12 @@ export default function Sidebar({ collapsed = false, onToggle }: { collapsed?: b
     `} style={{ paddingLeft: 'env(safe-area-inset-left)' }}>
       <div className={`flex-shrink-0 ${sidePad}`}>
         <div className={`
-          flex items-center gap-3 transition-all duration-300
-          ${collapsed ? "py-6 justify-center" : "py-6"}
+          flex items-center transition-all duration-300
+          ${collapsed ? "py-6 justify-center gap-0" : "py-6 gap-3"}
         `}>
-          <Link href="/" className="flex items-center gap-3 flex-1 overflow-hidden hover:opacity-80 transition-opacity">
+          <Link href="/" className={`flex items-center hover:opacity-80 transition-opacity ${collapsed ? "" : "gap-3 flex-1 overflow-hidden"}`}>
             <div className={`
-              rounded-2xl bg-brand text-default-50 grid place-content-center font-bold border border-default-200
+              rounded-2xl bg-brand text-default-50 grid place-content-center font-bold border border-default-200 flex-shrink-0
               ${collapsed ? "h-10 w-10 text-lg" : "h-12 w-12 text-xl"}
             `}>
               P
