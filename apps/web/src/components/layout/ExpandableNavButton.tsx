@@ -28,7 +28,7 @@ export function ExpandableNavButton({
       aria-label={`Ver opciones de ${label}`}
       title={collapsed ? label : undefined}
       className={`
-        w-full flex items-center rounded-xl font-medium transition-all border group
+        w-full flex items-center rounded-xl font-medium transition-all border group cursor-pointer
         ${
           isActive
             ? "bg-brand text-default-50 border-brand-400"
