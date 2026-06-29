@@ -3,7 +3,7 @@ import { Tabs as HeroTabs, TabsProps as HeroTabsProps } from "@heroui/react";
 
 export interface TabProps {
   id?: string;
-  key?: string;
+  tabKey?: string;
   title?: React.ReactNode;
   children?: React.ReactNode;
   href?: string;
@@ -45,7 +45,7 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
         <HeroTabs.ListContainer>
           <HeroTabs.List aria-label="Tabs">
             {tabs.map((t, i) => (
-              <HeroTabs.Tab key={t.key || t.id || i} id={t.key || t.id || String(i)}>
+              <HeroTabs.Tab key={t.tabKey || t.id || i} id={t.tabKey || t.id || String(i)}>
                 {t.title}
                 <HeroTabs.Indicator />
               </HeroTabs.Tab>
@@ -54,7 +54,7 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
         </HeroTabs.ListContainer>
         {tabs.map((t, i) => (
           t.children ? (
-            <HeroTabs.Panel key={t.key || t.id || i} id={t.key || t.id || String(i)}>
+            <HeroTabs.Panel key={t.tabKey || t.id || i} id={t.tabKey || t.id || String(i)}>
               {t.children}
             </HeroTabs.Panel>
           ) : null

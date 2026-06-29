@@ -345,7 +345,7 @@ export default function ProfilePage() {
         defaultSelectedKey="datos"
       >
         {/* ───────────── TAB 1: Datos personales ───────────── */}
-        <Tab key="datos" title="Datos personales">
+        <Tab tabKey="datos" title="Datos personales">
           <div className="space-y-4 pt-4">
             {/* Error / Success inline */}
             {(profileMessage || saveProfile.error) && (
