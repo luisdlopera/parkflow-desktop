@@ -1202,4 +1202,16 @@ textarea:active {
     background-color: var(--default-100, #1c1c22);
     border-color: var(--default-200, #27272a);
   }
+
+  /* Remove outline from dropdown menu items */
+  [role="menuitem"],
+  [data-slot="menu-item"] {
+    outline: none !important;
+    outline-width: 0 !important;
+  }
+
+  [role="menuitem"]:focus-visible,
+  [data-slot="menu-item"]:focus-visible {
+    outline: none !important;
+  }
 }

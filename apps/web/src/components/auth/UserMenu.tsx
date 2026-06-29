@@ -126,7 +126,7 @@ export function UserMenu() {
           <DropdownItem
             key="edit-profile"
             textValue="Editar perfil"
-            className="data-[hover]:bg-default-50 dark:data-[hover]:bg-default-900/20 data-[hover]:text-default-foreground"
+            className="!outline-none !focus-visible:outline-none data-[hover]:bg-default-50 dark:data-[hover]:bg-default-900/20 data-[hover]:text-default-foreground"
             startContent={
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -148,7 +148,7 @@ export function UserMenu() {
             <DropdownItem
               key="admin"
               textValue="Panel Super Admin"
-              className="data-[hover]:bg-default-50 dark:data-[hover]:bg-default-900/20 data-[hover]:text-default-foreground"
+              className="!outline-none !focus-visible:outline-none data-[hover]:bg-default-50 dark:data-[hover]:bg-default-900/20 data-[hover]:text-default-foreground"
               startContent={<Shield className="w-4 h-4 shrink-0" aria-hidden />}
               onPress={() => router.push("/admin")}
             >
@@ -169,7 +169,7 @@ export function UserMenu() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
             }
-            className="text-danger data-[hover]:bg-danger-50 data-[hover]:text-danger-700"
+            className="outline-none focus-visible:outline-none text-danger data-[hover]:bg-danger-50 data-[hover]:text-danger-700"
             onPress={() => {
               setLogoutType("single");
               setShowConfirmLogout(true);
@@ -189,7 +189,7 @@ export function UserMenu() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             }
-            className="text-danger data-[hover]:bg-danger-50 data-[hover]:text-danger-700"
+            className="outline-none focus-visible:outline-none text-danger data-[hover]:bg-danger-50 data-[hover]:text-danger-700"
             onPress={() => {
               setLogoutType("all");
               setShowConfirmLogout(true);
