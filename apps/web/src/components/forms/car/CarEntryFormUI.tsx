@@ -124,6 +124,7 @@ export const CarEntryFormUI = memo(function CarEntryFormUI({
             )}
           />
         </div>
+      </div>
       )}
 
       {/* Estado del formulario */}
