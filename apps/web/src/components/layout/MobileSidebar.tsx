@@ -200,6 +200,16 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
             {/* Category items (shown when a specific category is expanded) */}
             {configView && configView !== "ROOT" && (
               <div className="space-y-3">
+                <button
+                  onClick={() => setConfigView("ROOT")}
+                  className="flex items-center gap-2 text-xs font-semibold text-default-500 hover:text-default-800 dark:hover:text-default-200 transition-colors px-1 mb-3 cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Volver a categorías
+                </button>
+
                 {/* Breadcrumb */}
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-default-400 mb-2 px-1">
                   <a href="/configuracion" className="hover:text-amber-700/80 transition-colors cursor-pointer">Configuración</a>
@@ -210,16 +220,6 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                     {CONFIG_NAVIGATION.find(g => g.id === configView)?.label}
                   </span>
                 </div>
-
-                <button
-                  onClick={() => setConfigView("ROOT")}
-                  className="flex items-center gap-2 text-xs font-semibold text-default-500 hover:text-default-800 dark:hover:text-default-200 transition-colors px-1 mb-3 cursor-pointer"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Volver a categorías
-                </button>
 
                 {CONFIG_NAVIGATION.map((group) => {
                   if (group.id !== configView) return null;
