@@ -6,8 +6,7 @@ import { Toast, toast } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { SWRConfig } from "swr";
-import { loadSession, clearSession } from "@/lib/services/auth-storage.service";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 
 import { DialogProvider } from "@/providers/DialogProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
@@ -30,10 +29,12 @@ export function Providers({ children }: ProvidersProps) {
       value={{
         revalidateOnFocus: false,
         dedupingInterval: 2000,
+        shouldRetryOnError: (error) => {
+          return error?.status !== 401;
+        },
         onError: (error) => {
-          // Don't show toast for auth/permission errors — let components handle redirects
           if (error?.status === 401 || error?.status === 403) return;
-          toast.danger(getUserFriendlyErrorMessage(error, FrontendActionError.LOAD_DATA));
+          errorService.toast.error(error);
         },
       }}
     >
@@ -48,4 +49,3 @@ export function Providers({ children }: ProvidersProps) {
     </SWRConfig>
   );
 }
-
