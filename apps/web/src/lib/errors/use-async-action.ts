@@ -2,13 +2,13 @@
 
 import { useState, useCallback } from "react";
 import { toast } from "@heroui/react";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "./error-messages";
+import { errorService } from "@/lib/errors/error-service";
 
 interface UseAsyncActionOptions<T> {
   /** Mensaje de toast en éxito. Si se omite no muestra toast de éxito. */
   successMsg?: string;
-  /** Contexto para el mensaje de error amigable. Default: UNKNOWN. */
-  errorContext?: FrontendActionError;
+  /** Contexto para el mensaje de error amigable (legacy, ya no se usa). */
+  errorContext?: string;
   /** Callback adicional tras éxito. */
   onSuccess?: (result: T) => void;
   /** Si false, no muestra toast de error (útil para mostrar el error inline). Default: true. */
@@ -35,7 +35,7 @@ export function useAsyncAction<T = void>(
 ): UseAsyncActionReturn<T> {
   const {
     successMsg,
-    errorContext = FrontendActionError.UNKNOWN,
+    errorContext,
     onSuccess,
     showErrorToast = true,
   } = opts;
@@ -53,9 +53,9 @@ export function useAsyncAction<T = void>(
         onSuccess?.(result);
         return result;
       } catch (e) {
-        const msg = getUserFriendlyErrorMessage(e, errorContext);
+        const msg = errorService.normalize(e).message;
         setError(msg);
-        if (showErrorToast) toast.danger(msg);
+        if (showErrorToast) errorService.toast.error(e);
         return undefined;
       } finally {
         setIsLoading(false);

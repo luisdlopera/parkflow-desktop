@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from "react";
-import { showAnimatedToast } from "@/lib/toast/animated-toast";
+import { toast } from "@heroui/react";
 
 interface UseAnimatedActionOptions {
   successMessage?: string;
@@ -57,7 +57,7 @@ export function useAnimatedAction<T>(
       try {
         const result = await action();
         if (showToast && successMessage) {
-          showAnimatedToast(successMessage, "success");
+          toast.success(successMessage);
         }
         onSuccess?.();
         return result;
@@ -65,7 +65,7 @@ export function useAnimatedAction<T>(
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);
         if (showToast && errorMessage) {
-          showAnimatedToast(errorMessage, "error");
+          toast.danger(errorMessage);
         }
         onError?.(error);
         return null;

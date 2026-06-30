@@ -5,7 +5,24 @@
 
 import { useMemo } from "react";
 import { UseFormReturn, FieldValues, FieldPath } from "react-hook-form";
-import { zodErrorToFriendlyMap, getFieldName } from "@/lib/errors/error-translator";
+
+const FIELD_NAMES: Record<string, string> = {
+  plate: "Placa",
+  email: "Correo electrónico",
+  password: "Contraseña",
+  site: "Sede",
+  lane: "Carril",
+  booth: "Cabina",
+  terminal: "Terminal",
+  amount: "Monto",
+  reason: "Motivo",
+  name: "Nombre",
+  type: "Tipo de vehículo",
+};
+
+function getFieldName(key: string): string {
+  return FIELD_NAMES[key] || key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase());
+}
 
 interface UseFormErrorHandlingReturn<T extends FieldValues> {
   translatedErrors: Record<string, string>;
@@ -42,12 +59,12 @@ export function useFormErrorHandling<T extends FieldValues>(
 
     // Recorre cada campo que tiene error
     Object.entries(formErrors).forEach(([fieldName, fieldError]) => {
-      if (fieldError?.message) {
+      if (fieldError && typeof (fieldError as any).message === 'string') {
         const friendlyFieldName = getFieldName(fieldName);
-        translated[fieldName] = fieldError.message;
-      } else if (fieldError?.root?.message) {
+        translated[fieldName] = (fieldError as any).message as string;
+      } else if (fieldError && (fieldError as any).root && typeof (fieldError as any).root.message === 'string') {
         // Para errores a nivel de formulario
-        translated.form = fieldError.root.message;
+        translated.form = (fieldError as any).root.message as string;
       }
     });
 
