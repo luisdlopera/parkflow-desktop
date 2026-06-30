@@ -26,4 +26,10 @@ public class CapacityResponse {
 
   @Schema(description = "Capacity distribution by vehicle type")
   private java.util.Map<String, Integer> capacityByType;
+
+  @Schema(description = "Enable capacity control by vehicle type", example = "true")
+  private Boolean controlSlots;
+
+  @Schema(description = "Allow the sum of capacityByType to be less than totalCapacity", example = "false")
+  private Boolean allowLowerCapacity;
 }

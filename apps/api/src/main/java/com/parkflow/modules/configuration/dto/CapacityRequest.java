@@ -19,6 +19,12 @@ public class CapacityRequest {
   @Schema(description = "Total parking spaces", example = "50")
   private Integer totalCapacity;
 
-  @Schema(description = "Optional: Distribute capacity by vehicle type percentages", example = "{\"MOTORCYCLE\": 30, \"CAR\": 70}")
+  @Schema(description = "Enable capacity control by vehicle type", example = "true")
+  private Boolean controlSlots;
+
+  @Schema(description = "Optional: Distribute capacity by vehicle type exactly", example = "{\"MOTORCYCLE\": 30, \"CAR\": 20}")
   private java.util.Map<String, Integer> capacityByType;
+
+  @Schema(description = "Allow the sum of capacityByType to be less than totalCapacity", example = "false")
+  private Boolean allowLowerCapacity;
 }

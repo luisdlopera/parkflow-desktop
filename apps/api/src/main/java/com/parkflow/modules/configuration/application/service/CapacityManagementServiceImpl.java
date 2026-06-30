@@ -52,9 +52,22 @@ public class CapacityManagementServiceImpl implements CapacityManagementUseCase 
         totalCapacity = (Integer) totalObj;
       }
     }
-    @SuppressWarnings("unchecked")
-    Map<String, Integer> capacityByType =
-        (Map<String, Integer>) settings.getOrDefault("capacityByType", new HashMap<>());
+    Boolean controlSlots = false;
+    Boolean allowLowerCapacity = false;
+    Map<String, Integer> capacityByType = new HashMap<>();
+    if (capacityObj instanceof Map<?, ?> capMap) {
+      Object controlSlotsObj = capMap.get("controlSlots");
+      if (controlSlotsObj instanceof Boolean) controlSlots = (Boolean) controlSlotsObj;
+      Object allowLowerObj = capMap.get("allowLowerCapacity");
+      if (allowLowerObj instanceof Boolean) allowLowerCapacity = (Boolean) allowLowerObj;
+      
+      Object byTypeObj = capMap.get("byType");
+      if (byTypeObj instanceof Map<?, ?>) {
+        @SuppressWarnings("unchecked")
+        Map<String, Integer> byTypeMap = (Map<String, Integer>) byTypeObj;
+        capacityByType = byTypeMap;
+      }
+    }
 
     return CapacityResponse.builder()
         .companyId(companyId.toString())
@@ -62,6 +75,8 @@ public class CapacityManagementServiceImpl implements CapacityManagementUseCase 
         .activeSpaces(totalCapacity)
         .inactiveSpaces(0)
         .capacityByType(capacityByType)
+        .controlSlots(controlSlots)
+        .allowLowerCapacity(allowLowerCapacity)
         .build();
   }
 
@@ -80,7 +95,12 @@ public class CapacityManagementServiceImpl implements CapacityManagementUseCase 
             : new LinkedHashMap<>());
 
     capacity.put("total", request.getTotalCapacity());
-    capacity.put("controlSlots", capacity.getOrDefault("controlSlots", false));
+    if (request.getControlSlots() != null) {
+      capacity.put("controlSlots", request.getControlSlots());
+    }
+    if (request.getAllowLowerCapacity() != null) {
+      capacity.put("allowLowerCapacity", request.getAllowLowerCapacity());
+    }
     if (request.getCapacityByType() != null) {
       capacity.put("byType", request.getCapacityByType());
     }
