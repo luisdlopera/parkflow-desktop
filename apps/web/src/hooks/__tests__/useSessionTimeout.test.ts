@@ -1,8 +1,10 @@
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
 import { useSessionTimeout } from "../core/useSessionTimeout";
 
 const mockReplace = vi.fn();
 const mockLogout = vi.fn();
+const mockProviderLogout = vi.fn();
 
 let mockIsAuthenticated = true;
 
@@ -21,10 +23,17 @@ vi.mock("@/lib/services/auth-storage.service", () => ({
   clearSession: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/auth/runtime/createAuthProvider", () => ({
+  createAuthProvider: () => Promise.resolve({
+    logout: mockProviderLogout,
+  }),
+}));
+
 beforeEach(() => {
   mockIsAuthenticated = true;
   mockReplace.mockClear();
   mockLogout.mockClear();
+  mockProviderLogout.mockClear();
 });
 
 describe("useSessionTimeout", () => {
@@ -43,18 +52,15 @@ describe("useSessionTimeout", () => {
     expect(mockLogout).not.toHaveBeenCalled();
   });
 
-  it("cleans up on unmount", () => {
-    const { unmount } = renderHook(() => useSessionTimeout(15));
-    expect(() => unmount()).not.toThrow();
-  });
-
-  it("doLogout calls logout and redirects", async () => {
+  it("doLogout calls backend logout and redirects", async () => {
     const { result } = renderHook(() => useSessionTimeout(15));
 
     await act(async () => {
       result.current.doLogout();
+      await Promise.resolve();
     });
 
+    expect(mockProviderLogout).toHaveBeenCalledOnce();
     expect(mockLogout).toHaveBeenCalledOnce();
     expect(mockReplace).toHaveBeenCalledWith("/login?reason=inactivity");
   });

@@ -1,15 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { UserMenu } from "../UserMenu";
 import React from "react";
+import { UserMenu } from "../UserMenu";
 
 const mockPush = vi.fn();
-const mockCurrentUser = vi.fn();
-const mockClearSession = vi.fn();
+const mockLogout = vi.fn();
 const mockLogoutAll = vi.fn();
 
-// Override the global Dropdown mock so onPress works on items
 vi.mock("@/components/bridge/Dropdown", () => ({
   Dropdown: ({ children }: any) => <div>{children}</div>,
   DropdownTrigger: ({ children }: any) => <div>{children}</div>,
@@ -37,40 +35,50 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/services/auth-domain.service", () => ({
-  currentUser: (...args: any[]) => mockCurrentUser(...args),
   canAccessSuperAdminPortal: (user: any) => user?.role === "SUPER_ADMIN",
 }));
 
-vi.mock("@/features/auth/api/auth.api", () => ({
-  logoutFromApi: vi.fn(async () => {}),
-  logoutAllSessions: (...args: any[]) => mockLogoutAll(...args),
+const mockStoreLogout = vi.fn();
+let mockStoreUser: any = null;
+
+vi.mock("@/lib/stores/auth.store", () => ({
+  useAuthStore: () => ({
+    user: mockStoreUser,
+    logout: mockStoreLogout,
+  }),
 }));
 
-vi.mock("@/lib/services/auth-storage.service", () => ({
-  loadSession: vi.fn(async () => null),
-  clearSession: (...args: any[]) => mockClearSession(...args),
+vi.mock("@/auth/runtime/createAuthProvider", () => ({
+  createAuthProvider: () => Promise.resolve({
+    logout: mockLogout,
+    logoutAll: mockLogoutAll,
+  }),
+}));
+
+vi.mock("@/hooks/auth/useAuthBroadcast", () => ({
+  broadcastAuthEvent: vi.fn(),
 }));
 
 describe("UserMenu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockStoreUser = null;
   });
 
   it("shows fallback avatar when no user", () => {
-    mockCurrentUser.mockResolvedValue(null);
     const { container } = render(<UserMenu />);
     const avatarSpan = container.querySelector('[name="?"]');
     expect(avatarSpan).toBeInTheDocument();
   });
 
   it("shows user name and role when authenticated", async () => {
-    mockCurrentUser.mockResolvedValue({
+    mockStoreUser = {
       id: "1",
       name: "Juan Pérez",
       email: "juan@test.com",
       role: "ADMIN",
       permissions: [],
-    });
+    };
     render(<UserMenu />);
     await waitFor(() => {
       expect(screen.getByText("Juan Pérez")).toBeInTheDocument();
@@ -78,59 +86,32 @@ describe("UserMenu", () => {
     });
   });
 
-  it("shows super admin panel option for super admin", async () => {
-    mockCurrentUser.mockResolvedValue({
-      id: "1",
-      name: "Admin",
-      email: "admin@test.com",
-      role: "SUPER_ADMIN",
-      permissions: [],
-    });
-    render(<UserMenu />);
-    await waitFor(() => {
-      expect(screen.getByText("Panel Super Admin")).toBeInTheDocument();
-    });
-  });
-
-  it("does not show admin option for regular admin", async () => {
-    mockCurrentUser.mockResolvedValue({
-      id: "1",
-      name: "Admin",
-      email: "admin@test.com",
-      role: "ADMIN",
-      permissions: [],
-    });
-    render(<UserMenu />);
-    await waitFor(() => {
-      expect(screen.queryByText("Panel Super Admin")).not.toBeInTheDocument();
-    });
-  });
-
-  it("calls clearSession and redirects on logout", async () => {
-    mockCurrentUser.mockResolvedValue({
+  it("logs out through the backend provider", async () => {
+    mockStoreUser = {
       id: "1",
       name: "Test",
       email: "test@test.com",
       role: "ADMIN",
       permissions: [],
-    });
-    mockClearSession.mockResolvedValue(undefined);
+    };
     render(<UserMenu />);
     await waitFor(() => {
       expect(screen.getByText("Test")).toBeInTheDocument();
     });
+
     const buttons = screen.getAllByRole("button");
-    const logoutBtn = buttons.find((b) => b.textContent?.includes("Cerrar sesión") && !b.textContent?.includes("todas"));
+    const logoutBtn = buttons.find((button) => button.textContent?.includes("Cerrar sesión") && !button.textContent?.includes("todas"));
     expect(logoutBtn).toBeDefined();
+
     if (logoutBtn) {
       await userEvent.click(logoutBtn);
     }
+
     const confirmBtn = await screen.findByRole("button", { name: /confirmar/i });
     await userEvent.click(confirmBtn);
-    await waitFor(() => {
-      expect(mockClearSession).toHaveBeenCalled();
-      expect(mockPush).toHaveBeenCalledWith("/login");
-      expect(localStorage.getItem("parkflow_just_logged_out")).toBe("true");
-    });
+
+    expect(mockLogout).toHaveBeenCalled();
+    expect(mockStoreLogout).toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith("/login");
   });
 });

@@ -3,21 +3,16 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/auth.store";
+import { createAuthProvider } from "@/auth/runtime/createAuthProvider";
 import { clearSession } from "@/lib/services/auth-storage.service";
 
 const IDLE_EVENTS = ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "click"] as const;
 
-/**
- * Tracks inactivity and triggers auto-logout after idleMinutes of no user activity.
- * Returns { warningVisible, secondsLeft, extend, dismiss } for UI integration.
- *
- * Warning appears 60 seconds before the hard logout deadline.
- */
 export function useSessionTimeout(idleMinutes = 15) {
   const router = useRouter();
   const { isAuthenticated, logout } = useAuthStore();
   const idleMs = idleMinutes * 60 * 1000;
-  const warnMs = 60 * 1000; // warn 60s before logout
+  const warnMs = 60 * 1000;
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -28,9 +23,15 @@ export function useSessionTimeout(idleMinutes = 15) {
 
   const doLogout = useCallback(() => {
     setWarningVisible(false);
-    logout();
-    void clearSession();
-    router.replace("/login?reason=inactivity");
+    void (async () => {
+      try {
+        await (await createAuthProvider()).logout();
+      } finally {
+        logout();
+        await clearSession();
+        router.replace("/login?reason=inactivity");
+      }
+    })();
   }, [logout, router]);
 
   const resetTimers = useCallback(() => {

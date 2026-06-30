@@ -5,48 +5,36 @@ import { Dropdown } from "@/components/bridge/Dropdown";
 import { Avatar } from "@/components/bridge/Avatar";
 import { DropdownMenu } from "@/components/bridge/Dropdown";
 import { DropdownItem } from "@/components/bridge/Dropdown";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { logoutFromApi, logoutAllSessions } from "@/features/auth/api/auth.api";
-import { loadSession, clearSession } from "@/lib/services/auth-storage.service";
+import { createAuthProvider } from "@/auth/runtime/createAuthProvider";
 import { broadcastAuthEvent } from "@/hooks/auth/useAuthBroadcast";
-import { currentUser, canAccessSuperAdminPortal } from "@/lib/services/auth-domain.service";
-import type { AuthUser } from "@parkflow/types";
+import { canAccessSuperAdminPortal } from "@/lib/services/auth-domain.service";
 import { Shield } from "lucide-react";
 import { Modal } from "@/components/bridge/Modal";
 import { Button } from "@/components/bridge/Button";
+import { useAuthStore } from "@/lib/stores/auth.store";
 
 export function UserMenu() {
   const router = useRouter();
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const { user: storeUser, logout: storeLogout } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmLogout, setShowConfirmLogout] = useState(false);
   const [logoutType, setLogoutType] = useState<"single" | "all" | null>(null);
-
-  useEffect(() => {
-    void (async () => {
-      const u = await currentUser();
-      setUser(u);
-    })();
-  }, []);
+  const user = storeUser;
 
   const handleLogout = async () => {
     setIsLoading(true);
     try {
-      const session = await loadSession();
-      if (session) {
-        try {
-          await logoutFromApi(session);
-        } catch (error) {
-          console.error("Advertencia: No se pudo contactar al servidor para logout, pero se limpiará la sesión local", error);
-        }
-      }
-      await clearSession();
+      await (await createAuthProvider()).logout();
+      storeLogout();
       broadcastAuthEvent({ type: "auth:logout" });
       setShowConfirmLogout(false);
-      // Mark that we just logged out so useSessionLoader doesn't try to restore the session
       if (typeof window !== "undefined") {
-        window.localStorage?.setItem("parkflow_just_logged_out", "true");
+        const setItem = window.localStorage?.setItem;
+        if (typeof setItem === "function") {
+          setItem.call(window.localStorage, "parkflow_just_logged_out", "true");
+        }
       }
       router.push("/login");
     } catch (error) {
@@ -58,16 +46,15 @@ export function UserMenu() {
   const handleLogoutAll = async () => {
     setIsLoading(true);
     try {
-      try {
-        await logoutAllSessions();
-      } catch (error) {
-        console.error("Advertencia: No se pudo contactar al servidor para logout all, pero se limpiará la sesión local", error);
-        await clearSession();
-      }
+      await (await createAuthProvider()).logoutAll();
+      storeLogout();
+      broadcastAuthEvent({ type: "auth:logout" });
       setShowConfirmLogout(false);
-      // Mark that we just logged out so useSessionLoader doesn't try to restore the session
       if (typeof window !== "undefined") {
-        window.localStorage?.setItem("parkflow_just_logged_out", "true");
+        const setItem = window.localStorage?.setItem;
+        if (typeof setItem === "function") {
+          setItem.call(window.localStorage, "parkflow_just_logged_out", "true");
+        }
       }
       router.push("/login");
     } catch (error) {
@@ -144,7 +131,7 @@ export function UserMenu() {
               <span className="text-xs text-default-400">Datos personales y contraseña</span>
             </div>
           </DropdownItem>
-          {user && canAccessSuperAdminPortal(user) ? (
+          {user && canAccessSuperAdminPortal(user as any) ? (
             <DropdownItem
               key="admin"
               textValue="Panel Super Admin"

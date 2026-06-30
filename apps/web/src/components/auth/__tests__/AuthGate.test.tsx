@@ -1,44 +1,66 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 
 const mockReplace = vi.fn();
-const mockCurrentUser = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
   usePathname: () => "/dashboard",
 }));
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Mocks de auth.store — Estado controlado desde test
+// ──────────────────────────────────────────────────────────────────────────────
+let mockState = {
+  user: null,
+  isLoading: false,
+  isAuthenticated: false,
+  logout: vi.fn(),
+};
+
 vi.mock("@/lib/stores/auth.store", () => ({
-  useAuthStore: vi.fn(),
+  useAuthStore: (selector?: any) => {
+    return selector ? selector(mockState) : mockState;
+  },
 }));
 
-vi.mock("@/lib/services/auth-domain.service", () => ({
-  currentUser: (...args: any[]) => mockCurrentUser(...args),
+vi.mock("@/auth/runtime/detectRuntime", () => ({
+  isTauri: () => false,
 }));
 
-import { useAuthStore } from "@/lib/stores/auth.store";
+vi.mock("@/auth/runtime/createAuthProvider", () => ({
+  createAuthProvider: () => Promise.resolve({
+    restoreSession: vi.fn(async () => null),
+  }),
+}));
+
 import AuthGate from "../AuthGate";
 
 describe("AuthGate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCurrentUser.mockResolvedValue({
-      id: "1",
-      name: "Test",
-      email: "test@test.com",
-      role: "ADMIN",
-      requirePasswordChange: false,
-      onboardingCompleted: true,
-      permissions: [],
-    });
+    mockState = {
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+      logout: vi.fn(),
+    };
   });
 
   it("renders children when authenticated", () => {
-    (useAuthStore as any).mockReturnValue({
-      isLoading: false,
+    mockState = {
+      ...mockState,
+      user: {
+        id: "1",
+        name: "Test",
+        email: "test@test.com",
+        role: "ADMIN",
+        requirePasswordChange: false,
+        onboardingCompleted: true,
+        permissions: [],
+      },
       isAuthenticated: true,
-    });
+    };
     render(
       <AuthGate>
         <div>protected content</div>
@@ -47,33 +69,72 @@ describe("AuthGate", () => {
     expect(screen.getByText("protected content")).toBeInTheDocument();
   });
 
-  it("redirects to login when not authenticated", () => {
-    (useAuthStore as any).mockReturnValue({
-      isLoading: false,
-      isAuthenticated: false,
-    });
+  it("redirects to change-password when requirePasswordChange is true", async () => {
+    mockState = {
+      ...mockState,
+      user: {
+        id: "1",
+        name: "Test",
+        email: "test@test.com",
+        role: "ADMIN",
+        requirePasswordChange: true,
+        onboardingCompleted: true,
+        permissions: [],
+      },
+      isAuthenticated: true,
+    };
     render(
       <AuthGate>
         <div>protected content</div>
       </AuthGate>
     );
-    expect(mockReplace).toHaveBeenCalledWith(
-      "/login?next=%2Fdashboard"
-    );
-    expect(screen.queryByText("protected content")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith("/change-password");
+    });
   });
 
-  it("shows loading state when loading", () => {
-    (useAuthStore as any).mockReturnValue({
-      isLoading: true,
-      isAuthenticated: false,
+  it("redirects to onboarding when onboardingCompleted is false", async () => {
+    mockState = {
+      ...mockState,
+      user: {
+        id: "1",
+        name: "Test",
+        email: "test@test.com",
+        role: "ADMIN",
+        requirePasswordChange: false,
+        onboardingCompleted: false,
+        permissions: [],
+      },
+      isAuthenticated: true,
+    };
+    render(
+      <AuthGate>
+        <div>protected content</div>
+      </AuthGate>
+    );
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith("/onboarding");
     });
+  });
+
+  it("returns null when not authenticated (web)", () => {
+    mockState = { ...mockState, isLoading: false, isAuthenticated: false };
     const { container } = render(
       <AuthGate>
         <div>protected content</div>
       </AuthGate>
     );
-    const skeletons = container.querySelectorAll(".skeleton");
+    expect(container.textContent).not.toContain("protected content");
+  });
+
+  it("shows loading state when loading", () => {
+    mockState = { ...mockState, isLoading: true, isAuthenticated: false, user: null };
+    const { container } = render(
+      <AuthGate>
+        <div>protected content</div>
+      </AuthGate>
+    );
+    const skeletons = container.querySelectorAll('[class*="rounded-xl"]');
     expect(skeletons.length).toBeGreaterThan(0);
     expect(container.textContent).not.toContain("protected content");
   });
