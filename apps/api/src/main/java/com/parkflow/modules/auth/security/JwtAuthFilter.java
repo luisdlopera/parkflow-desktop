@@ -57,6 +57,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   protected void doFilterInternal(
       @NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
       throws ServletException, IOException {
+    // Only read from httpOnly cookie - no Authorization header accepted for web auth
     String token = null;
     if (request.getCookies() != null) {
       for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
@@ -91,13 +92,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     try {
       userId = UUID.fromString(claims.getSubject());
     } catch (Exception ex) {
-      writeUnauthorized(response, request.getRequestURI());
+      filterChain.doFilter(request, response);
       return;
     }
 
     String sessionIdClaim = claims.get("sid", String.class);
     if (sessionIdClaim == null || sessionIdClaim.isBlank()) {
-      writeUnauthorized(response, request.getRequestURI());
+      filterChain.doFilter(request, response);
       return;
     }
 
@@ -105,13 +106,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     try {
       sessionId = UUID.fromString(sessionIdClaim);
     } catch (Exception ex) {
-      writeUnauthorized(response, request.getRequestURI());
+      filterChain.doFilter(request, response);
       return;
     }
 
     var session = authSessionRepository.findByIdAndActiveTrue(sessionId).orElse(null);
     if (session == null || !session.getUser().getId().equals(userId)) {
-      writeUnauthorized(response, request.getRequestURI());
+      filterChain.doFilter(request, response);
       return;
     }
 
@@ -122,13 +123,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     });
     
     if (userStatus == null || !userStatus.active() || userStatus.blocked()) {
-      writeUnauthorized(response, request.getRequestURI());
+      filterChain.doFilter(request, response);
       return;
     }
 
     String companyIdClaim = claims.get("cid", String.class);
     if (companyIdClaim == null || companyIdClaim.isBlank()) {
-      writeUnauthorized(response, request.getRequestURI());
+      filterChain.doFilter(request, response);
       return;
     }
 
@@ -136,7 +137,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     try {
       companyId = UUID.fromString(companyIdClaim);
     } catch (Exception ex) {
-      writeUnauthorized(response, request.getRequestURI());
+      filterChain.doFilter(request, response);
       return;
     }
 

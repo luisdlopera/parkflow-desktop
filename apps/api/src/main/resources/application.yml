@@ -74,6 +74,8 @@ springdoc:
     disabled: true
 
 app:
+  oauth2:
+    redirect-base-url: ${PARKFLOW_OAUTH2_REDIRECT_BASE_URL:http://localhost:6011}
   uploads:
     dir: ${PARKFLOW_UPLOADS_DIR:uploads}
     base-url: ${PARKFLOW_UPLOADS_BASE_URL:/uploads}
@@ -110,6 +112,14 @@ app:
   mail:
     from: ${MAIL_FROM:noreply@parkflow.local}
     from-name: ${MAIL_FROM_NAME:ParkFlow}
+
+oauth2:
+  google:
+    client-id: ${OAUTH_GOOGLE_CLIENT_ID:}
+    client-secret: ${OAUTH_GOOGLE_CLIENT_SECRET:}
+  microsoft:
+    client-id: ${OAUTH_MICROSOFT_CLIENT_ID:}
+    client-secret: ${OAUTH_MICROSOFT_CLIENT_SECRET:}
 
 parkflow:
   licensing:
