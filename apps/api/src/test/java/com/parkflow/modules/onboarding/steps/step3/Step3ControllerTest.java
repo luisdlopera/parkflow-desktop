@@ -1,6 +1,7 @@
 package com.parkflow.modules.onboarding.steps.step3;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -180,6 +181,7 @@ class Step3ControllerTest {
       );
       // Test passes if no exception is thrown
     }
+
   }
 
   @Nested

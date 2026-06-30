@@ -52,26 +52,38 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
 
   @Transactional
   public OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data, Integer targetStep) {
-    Company company = getCompany(companyId);
-    OnboardingProgress progress = findOrCreateProgress(company);
+    try {
+      Company company = getCompany(companyId);
+      OnboardingProgress progress = findOrCreateProgress(company);
 
-    // E-05: Guard — completed onboarding cannot be mutated without explicit reset
-    OnboardingDomainInvariants.assertNotCompleted(Boolean.TRUE.equals(company.getOnboardingCompleted()));
+      // E-05: Guard — completed onboarding cannot be mutated without explicit reset
+      OnboardingDomainInvariants.assertNotCompleted(Boolean.TRUE.equals(company.getOnboardingCompleted()));
 
-    // C-06: isPlanStepAllowed is enforced inside sanitizeStepDataByPlan() — throws FORBIDDEN
-    validateStepData(step, data, progress.getProgressData());
-    Map<String, Object> sanitized = settingsMapper.sanitizeStepDataByPlan(company, step, data);
-    Map<String, Object> merged = new LinkedHashMap<>(progress.getProgressData());
-    merged.put("step_" + step, sanitized);
-    progress.setProgressData(merged);
-    
-    // I-02, I-03: Use state machine to determine the next valid step
-    int nextStep = onboardingStateMachine.determineNextStep(company, progress.getCurrentStep(), targetStep);
-    progress.setCurrentStep(nextStep);
+      // C-06: isPlanStepAllowed is enforced inside sanitizeStepDataByPlan() — throws FORBIDDEN
+      validateStepData(step, data, progress.getProgressData());
+      Map<String, Object> sanitized = settingsMapper.sanitizeStepDataByPlan(company, step, data);
+      Map<String, Object> merged = new LinkedHashMap<>(progress.getProgressData());
+      merged.put("step_" + step, sanitized);
+      progress.setProgressData(merged);
 
-    progress.setUpdatedAt(OffsetDateTime.now());
-    onboardingProgressPort.save(progress);
-    return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+      // I-02, I-03: Use state machine to determine the next valid step
+      int nextStep = onboardingStateMachine.determineNextStep(company, progress.getCurrentStep(), targetStep);
+      progress.setCurrentStep(nextStep);
+
+      progress.setUpdatedAt(OffsetDateTime.now());
+      onboardingProgressPort.save(progress);
+      return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+    } catch (OperationException ex) {
+      throw ex;
+    } catch (RuntimeException ex) {
+      if (step == 3) {
+        log.warn("Step 3 save failed for company {}: {}", companyId, ex.getMessage(), ex);
+        throw new OperationException(
+            HttpStatus.BAD_REQUEST,
+            "No pudimos validar las tarifas. Revisa los campos marcados en rojo e inténtalo de nuevo.");
+      }
+      throw ex;
+    }
   }
 
   @Transactional
