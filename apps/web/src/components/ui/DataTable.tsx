@@ -23,6 +23,8 @@ import { Input } from "@/components/bridge/Input";
 import { Autocomplete } from "@/components/bridge/Autocomplete";
 import { ChevronUp, Inbox, Search, ChevronDown, FileSpreadsheet, FileText } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { DataTableCellRenderer } from "@/components/data-table/DataTableCellRenderer";
+import type { DataTableColumn as SolvyColumn } from "@/components/data-table/types";
 
 export type DataTableColumn<T> = {
   key: keyof T | (string & {});
@@ -31,7 +33,12 @@ export type DataTableColumn<T> = {
   priority?: "high" | "medium" | "low";
   sortable?: boolean;
   sortType?: "string" | "number" | "date" | "boolean";
+  /** @deprecated Use `type` instead. Legacy format for backward compatibility. */
   format?: "currency" | "datetime" | "date" | "boolean" | "badge";
+  /** Column type for the new cell renderer system. Falls back to `format` if not set. */
+  type?: SolvyColumn["type"];
+  /** Options for the new cell renderer system. */
+  options?: SolvyColumn["options"];
   render?: (row: T) => React.ReactNode;
   align?: "left" | "center" | "right";
   resizable?: boolean;
@@ -46,6 +53,17 @@ type FilterConfig = {
   options?: { label: string; value: string }[];
 };
 
+export type SearchConfig = {
+  enabled?: boolean;
+  placeholder?: string;
+  variant?: "primary" | "secondary";
+  size?: "sm" | "md" | "lg";
+  isClearable?: boolean;
+  startIcon?: React.ReactNode;
+  className?: string;
+  onChange?: (query: string) => void;
+};
+
 export type DataTableProps<T> = {
   title?: string;
   description?: string;
@@ -57,8 +75,12 @@ export type DataTableProps<T> = {
   error?: string | null;
   emptyMessage?: string;
   rowKey?: (row: T, index: number) => string | number;
+  searchConfig?: SearchConfig;
+  /** @deprecated Use searchConfig instead */
   searchable?: boolean;
+  /** @deprecated Use searchConfig instead */
   searchPlaceholder?: string;
+  /** @deprecated Use searchConfig instead */
   onSearchChange?: (query: string) => void;
   filters?: FilterConfig[];
   onFilterChange?: (values: Record<string, string>) => void;
@@ -146,6 +168,7 @@ function DataTableInner<T extends object>({
   actions,
   pagination: paginationConfig,
   onPaginationChange,
+  searchConfig,
   searchable,
   searchPlaceholder = "Buscar...",
   onSearchChange,
@@ -286,6 +309,7 @@ function DataTableInner<T extends object>({
   }), []);
 
   const renderCell = (col: DataTableColumn<T>, row: T, index: number) => {
+    // Selection column
     if (col.key === "_selection") {
       return (
         <HeroCheckbox
@@ -299,39 +323,21 @@ function DataTableInner<T extends object>({
         </HeroCheckbox>
       );
     }
+    // Actions column
     if (col.key === "_actions" && actions) return actions(row);
+    // Custom render function (legacy API)
     if (col.render) return col.render(row);
 
     const rawValue = row[col.key as keyof T];
 
-    if (rawValue === undefined || rawValue === null) {
-      return <span className="text-default-400">-</span>;
-    }
-
-    if (col.format) {
-      switch (col.format) {
-        case "currency":
-          return <span className="text-primary font-medium">{numberFormatter.format(Number(rawValue))}</span>;
-        case "date":
-          return dateFormatter.format(new Date(String(rawValue)));
-        case "datetime":
-          return dateTimeFormatter.format(new Date(String(rawValue)));
-        case "boolean":
-          return (
-            <Chip color={rawValue ? "success" : "default"} size="sm" variant="flat">
-              {rawValue ? "Sí" : "No"}
-            </Chip>
-          );
-        case "badge":
-          return (
-            <Chip color="primary" size="sm" variant="flat">
-              {String(rawValue)}
-            </Chip>
-          );
-      }
-    }
-
-    return String(rawValue);
+    // Delegate to the new Solvy-style cell renderer system
+    return (
+      <DataTableCellRenderer
+        column={col}
+        value={rawValue}
+        row={row}
+      />
+    );
   };
 
   const skeletonRow = (skKey: string) => (
@@ -345,7 +351,8 @@ function DataTableInner<T extends object>({
   );
 
   const handleSearchChange = useCallback((query: string) => {
-    onSearchChange?.(query);
+    const searchCallback = searchConfig?.onChange || onSearchChange;
+    searchCallback?.(query);
     if (syncWithUrl) {
       const params = new URLSearchParams(searchParams.toString());
       if (query) {
@@ -356,7 +363,7 @@ function DataTableInner<T extends object>({
       params.delete("page"); // reset to page 1
       router.push(`${pathname}?${params.toString()}`);
     }
-  }, [syncWithUrl, pathname, router, searchParams, onSearchChange]);
+  }, [syncWithUrl, pathname, router, searchParams, searchConfig?.onChange, onSearchChange]);
 
   const handlePaginationChange = useCallback((page: number, pageSize: number) => {
     onPaginationChange?.(page, pageSize);
@@ -369,22 +376,34 @@ function DataTableInner<T extends object>({
   }, [syncWithUrl, pathname, router, searchParams, onPaginationChange]);
 
   const topContent = useMemo(() => {
-    const hasSearch = searchable && onSearchChange;
+    const isSearchEnabled = searchConfig?.enabled ?? searchable ?? false;
+    const hasSearch = isSearchEnabled && (searchConfig?.onChange || onSearchChange);
     const hasFilters = filters && filters.length > 0 && onFilterChange;
-    
+
     if (!hasSearch && !hasFilters && hideColumnsToggle && !exportOptions) return null;
+
+    const finalSearchConfig: SearchConfig = {
+      enabled: isSearchEnabled,
+      placeholder: searchConfig?.placeholder ?? searchPlaceholder ?? "Buscar...",
+      variant: searchConfig?.variant ?? "primary",
+      size: searchConfig?.size ?? "sm",
+      isClearable: searchConfig?.isClearable ?? true,
+      startIcon: searchConfig?.startIcon ?? <Search className="text-default-300 size-4" />,
+      className: searchConfig?.className,
+    };
 
     return (
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4">
         {hasSearch && (
           <Input
-            isClearable
-            className="w-full sm:max-w-md"
-            placeholder={searchPlaceholder}
+            variant={finalSearchConfig.variant}
+            size={finalSearchConfig.size}
+            isClearable={finalSearchConfig.isClearable}
+            className={`w-full sm:max-w-md ${finalSearchConfig.className || ""}`}
+            placeholder={finalSearchConfig.placeholder}
             aria-label="Buscar en la tabla"
-            startContent={<Search className="text-default-300 size-4" />}
+            startContent={finalSearchConfig.startIcon}
             onChange={(e) => handleSearchChange(e.target.value)}
-            size="sm"
           />
         )}
         <div className="flex w-full sm:w-auto items-center gap-3 flex-wrap sm:flex-nowrap">
@@ -439,8 +458,7 @@ function DataTableInner<T extends object>({
             <Button
               aria-label="Exportar a CSV"
               onPress={() => exportOptions.onExport?.("csv")}
-              color="warning"
-              variant="flat"
+              variant="ghost"
               isIconOnly
               size="sm"
             >
@@ -451,8 +469,7 @@ function DataTableInner<T extends object>({
             <Button
               aria-label="Exportar a Excel"
               onPress={() => exportOptions.onExport?.("excel")}
-              color="success"
-              variant="flat"
+              variant="ghost"
               isIconOnly
               size="sm"
             >
@@ -463,13 +480,13 @@ function DataTableInner<T extends object>({
           {!hideColumnsToggle && (
             <Dropdown>
               <Button
-                variant="flat"
+                variant="ghost"
                 size="sm"
-                endContent={<ChevronDown className="size-4" />}
                 data-columns-selection={visibleColumns !== "all" ? "active" : ""}
                 className={visibleColumns !== "all" && visibleColumns.size > 0 ? "data-columns-selected" : ""}
               >
                 Columnas
+                <ChevronDown className="size-4 ml-1" />
               </Button>
               <Dropdown.Popover>
                 <Dropdown.Menu
@@ -493,7 +510,7 @@ function DataTableInner<T extends object>({
       </div>
     );
   }, [
-    searchable, searchPlaceholder, handleSearchChange, filters, onFilterChange,
+    searchConfig, searchable, searchPlaceholder, handleSearchChange, filters, onFilterChange,
     exportOptions, hideColumnsToggle, columns, visibleColumns
   ]);
 
