@@ -1,6 +1,6 @@
 "use client";
 
-export default function Error({ error, reset }: { error: Error; reset: () => void }) {
+export default function RouteError({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex h-64 flex-col items-center justify-center gap-4">
       <p className="text-sm text-danger">{error.message || "Error al cargar facturación"}</p>
