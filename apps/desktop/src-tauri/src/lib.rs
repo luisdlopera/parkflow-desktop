@@ -3,6 +3,7 @@ mod printer;
 mod printer_profile;
 pub mod licensing;
 pub mod local_first;
+pub mod auth;
 
 use licensing::LicenseState;
 #[cfg(not(debug_assertions))]
@@ -959,81 +960,6 @@ fn get_connectivity_state(state: tauri::State<'_, AppState>) -> Result<Connectiv
       },
     )
     .map_err(|error| format!("sqlite connectivity query failed: {}", error))
-}
-
-#[tauri::command]
-fn auth_store_session(payload_json: String) -> Result<(), String> {
-  #[cfg(debug_assertions)]
-  {
-    let dev_session_path = dirs::data_dir()
-      .unwrap_or_else(|| std::env::temp_dir())
-      .join("parkflow-dev-session.json");
-    std::fs::write(dev_session_path, payload_json).map_err(|error| error.to_string())?;
-    return Ok(());
-  }
-  #[cfg(not(debug_assertions))]
-  {
-    let entry =
-      KeyringEntry::new("com.parkflow.desktop", "auth-session").map_err(|error| error.to_string())?;
-    entry
-      .set_password(&payload_json)
-      .map_err(|error| format!("keyring set failed: {}", error))
-  }
-}
-
-#[tauri::command]
-fn auth_load_session() -> Result<Option<serde_json::Value>, String> {
-  #[cfg(debug_assertions)]
-  {
-    let dev_session_path = dirs::data_dir()
-      .unwrap_or_else(|| std::env::temp_dir())
-      .join("parkflow-dev-session.json");
-    if dev_session_path.exists() {
-      let raw = std::fs::read_to_string(dev_session_path).map_err(|error| error.to_string())?;
-      let parsed: serde_json::Value =
-        serde_json::from_str(&raw).map_err(|error| format!("invalid session payload: {}", error))?;
-      return Ok(Some(parsed));
-    } else {
-      return Ok(None);
-    }
-  }
-  #[cfg(not(debug_assertions))]
-  {
-    let entry =
-      KeyringEntry::new("com.parkflow.desktop", "auth-session").map_err(|error| error.to_string())?;
-    match entry.get_password() {
-      Ok(raw) => {
-        let parsed: serde_json::Value =
-          serde_json::from_str(&raw).map_err(|error| format!("invalid session payload: {}", error))?;
-        Ok(Some(parsed))
-      }
-      Err(keyring::Error::NoEntry) => Ok(None),
-      Err(error) => Err(format!("keyring get failed: {}", error)),
-    }
-  }
-}
-
-#[tauri::command]
-fn auth_clear_session() -> Result<(), String> {
-  #[cfg(debug_assertions)]
-  {
-    let dev_session_path = dirs::data_dir()
-      .unwrap_or_else(|| std::env::temp_dir())
-      .join("parkflow-dev-session.json");
-    if dev_session_path.exists() {
-      let _ = std::fs::remove_file(dev_session_path);
-    }
-    return Ok(());
-  }
-  #[cfg(not(debug_assertions))]
-  {
-    let entry =
-      KeyringEntry::new("com.parkflow.desktop", "auth-session").map_err(|error| error.to_string())?;
-    match entry.delete_credential() {
-      Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-      Err(error) => Err(format!("keyring clear failed: {}", error)),
-    }
-  }
 }
 
 #[tauri::command]
@@ -2087,7 +2013,7 @@ mod tests {
   }
 
   #[test]
-  fn auth_store_session_persists_and_loads() {
+  fn auth_local_settings_persist_session_metadata() {
     let conn = Connection::open_in_memory().unwrap();
     setup_schema(&conn);
     let now = now_unix_ms_i64();
@@ -2224,12 +2150,15 @@ pub fn run() {
       check_backend_heartbeat,
       get_connectivity_state,
       get_outbox_stats,  // OBSERVABILITY: Expose outbox stats for dead letter monitoring
-      auth_store_session,
-      auth_load_session,
-      auth_clear_session,
       auth_get_or_create_device_id,
       auth_upsert_offline_lease,
       auth_get_offline_lease,
+      auth::auth_login,
+      auth::auth_logout,
+      auth::auth_logout_all,
+      auth::auth_restore_session,
+      auth::auth_refresh_token,
+      auth::authenticated_request,
       print_escpos_ticket,
       printer_health_esc_pos,
       // Licensing commands
@@ -2243,8 +2172,6 @@ pub fn run() {
       licensing::get_license_status,
       // Local first commands
       local_first::get_parkflow_config,
-      local_first::local_login,
-      local_first::local_refresh,
       local_first::local_get_profile,
       local_first::get_local_me,
       local_first::local_update_profile,
