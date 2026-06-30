@@ -3,6 +3,7 @@ import { TimeField as HeroTimeField, Label, Description, FieldError } from '@her
 import type { TimeValue } from '@heroui/react';
 
 export interface TimeInputProps {
+  id?: string;
   label?: React.ReactNode;
   description?: React.ReactNode;
   errorMessage?: React.ReactNode;
@@ -33,6 +34,7 @@ export const TimeInput = forwardRef<HTMLDivElement, TimeInputProps>(function Tim
     onChange,
     name,
     className,
+    id,
     "aria-label": ariaLabel,
     hourCycle = 24,
     ...props
@@ -52,6 +54,7 @@ export const TimeInput = forwardRef<HTMLDivElement, TimeInputProps>(function Tim
       onChange={onChange}
       name={name}
       hourCycle={hourCycle}
+      id={id}
       aria-label={ariaLabel ?? (typeof label === 'string' ? label : undefined)}
       {...props as any}
     >

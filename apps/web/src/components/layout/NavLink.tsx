@@ -34,16 +34,8 @@ export function NavLink({
     ? "bg-brand text-default-50 border-brand-400"
     : "text-default-600 dark:text-default-400 border-transparent hover:border-brand-400 dark:hover:border-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40 hover:text-foreground dark:hover:text-default-50";
 
-  const Element = isConfigButton ? "button" : Link;
-
-  return (
-    <Element
-      {...(isConfigButton
-        ? { onClick, type: "button" }
-        : { href, onClick })}
-      className={`${baseStyles} ${activeStyles} justify-between`}
-      aria-label={`Ver opciones de ${label}`}
-    >
+  const contentElement = (
+    <>
       <div className="flex items-center gap-3">
         {icon}
         <span>{label}</span>
@@ -62,6 +54,26 @@ export function NavLink({
           {shortcut}
         </kbd>
       )}
-    </Element>
+    </>
+  );
+
+  return isConfigButton ? (
+    <button
+      onClick={onClick}
+      type="button"
+      className={`${baseStyles} ${activeStyles} justify-between`}
+      aria-label={`Ver opciones de ${label}`}
+    >
+      {contentElement}
+    </button>
+  ) : (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={`${baseStyles} ${activeStyles} justify-between`}
+      aria-label={`Ver opciones de ${label}`}
+    >
+      {contentElement}
+    </Link>
   );
 }

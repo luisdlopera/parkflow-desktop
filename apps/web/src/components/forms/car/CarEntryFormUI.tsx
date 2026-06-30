@@ -127,27 +127,6 @@ export const CarEntryFormUI = memo(function CarEntryFormUI({
       </div>
       )}
 
-      {/* Estado del formulario */}
-      <div
-        className={`flex items-center gap-2 text-sm rounded-xl px-4 py-3 ${
-          isSubmitDisabled
-            ? "bg-amber-50 text-amber-800 border border-amber-100"
-            : "bg-emerald-50 text-emerald-700 border border-emerald-100"
-        }`}
-        data-testid="entry-status-banner"
-      >
-        {isSubmitDisabled ? (
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-        ) : (
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-        )}
-        <span>
-          {isSubmitDisabled
-            ? submitDisabledReason || "Completa los datos requeridos"
-            : "Listo para registrar el ingreso"}
-        </span>
-      </div>
-
       {/* Botón de ingreso — Masivo */}
       <div className="pt-2">
         <Tooltip

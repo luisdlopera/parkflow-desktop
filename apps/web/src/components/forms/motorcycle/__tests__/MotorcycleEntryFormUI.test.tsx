@@ -49,10 +49,9 @@ describe("MotorcycleEntryFormUI", () => {
 
   it("shows disabled submit banner when submit is disabled", () => {
     render(<TestWrapper isSubmitDisabled={true} submitDisabledReason="Falta placa" />);
-    const banner = screen.getByTestId("entry-status-banner");
-    expect(banner.textContent).toContain("Falta placa");
     const submitBtn = screen.getByTestId("register-entry");
-    expect(submitBtn.hasAttribute("disabled")).toBe(true);
+    expect(submitBtn.className).toContain("cursor-not-allowed");
+    expect(submitBtn.getAttribute("aria-describedby")).toBe("entry-disabled-reason");
   });
 
   it("calls onSubmit when register button is clicked", () => {

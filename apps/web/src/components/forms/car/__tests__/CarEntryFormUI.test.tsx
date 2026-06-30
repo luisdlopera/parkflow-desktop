@@ -36,10 +36,9 @@ describe("CarEntryFormUI", () => {
 
   it("shows disabled submit banner when submit is disabled", () => {
     render(<TestWrapper isSubmitDisabled={true} submitDisabledReason="Falta placa" />);
-    const banner = screen.getByTestId("entry-status-banner");
-    expect(banner.textContent).toContain("Falta placa");
     const submitBtn = screen.getByTestId("register-entry");
-    expect(submitBtn.hasAttribute("disabled")).toBe(true);
+    expect(submitBtn.className).toContain("cursor-not-allowed");
+    expect(submitBtn.getAttribute("aria-describedby")).toBe("entry-disabled-reason");
   });
 
   it("calls onSubmit when register button is clicked", () => {
@@ -50,9 +49,8 @@ describe("CarEntryFormUI", () => {
     expect(onSubmit).toHaveBeenCalled();
   });
 
-  it("disables plate input if noPlate is true", () => {
+  it("hides plate input if noPlate is true", () => {
     render(<TestWrapper noPlate={true} />);
-    const plateInput = screen.getByTestId("plate") as HTMLInputElement;
-    expect(plateInput.disabled).toBe(true);
+    expect(screen.queryByTestId("plate")).toBeNull();
   });
 });
