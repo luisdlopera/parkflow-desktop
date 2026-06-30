@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/bridge/Button";
 import DataTable from "@/components/ui/DataTable";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import { fetchPrepaidPackages, type PrepaidPackageRow } from "@/lib/api/prepaid-api";
 
 export default function PrepaidSection({
@@ -23,7 +23,7 @@ export default function PrepaidSection({
       const res = await fetchPrepaidPackages({ size: 50 });
       setRows(res.content);
     } catch (e) {
-      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA) });
+      onNotify({ kind: "err", text: errorService.normalize(e).message });
     } finally {
       setLoading(false);
     }

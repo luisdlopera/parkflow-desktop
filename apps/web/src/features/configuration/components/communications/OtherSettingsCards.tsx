@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, Switch } from "@heroui/react";
+import { Card, Switch, Separator } from "@heroui/react";
+import { Input } from "@/components/bridge/Input";
+import { Button } from "@/components/bridge/Button";
 import { SmsSettingsDto, BulkEmailSettingsDto } from '../../types/communication';
 import { useUpdateSmsSettings, useUpdateBulkEmailSettings, useTestConnection } from '../../hooks/useCommunication';
 import { SecretInput } from './SecretInput';
@@ -27,7 +29,7 @@ export const SmsSettingsCard: React.FC<any> = ({ companyId, initialData }) => {
     }
   }, [initialData]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<any>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -39,17 +41,18 @@ export const SmsSettingsCard: React.FC<any> = ({ companyId, initialData }) => {
   };
 
   return (
-    <div className="w-full rounded-xl border border-default-200 overflow-hidden">
-      <div className="flex justify-between items-start p-6 border-b border-default-200">
+    <Card className="w-full">
+      <Card.Header className="flex justify-between p-6">
         <div className="flex flex-col">
           <p className="text-md font-bold">SMS Transaccional</p>
           <p className="text-small text-default-500">Configura el envío de mensajes SMS.</p>
         </div>
-        <Switch isSelected={formData.enabled} onValueChange={(val) => setFormData(p => ({ ...p, enabled: val }))}>Habilitado</Switch>
-      </div>
-      <div className="p-6 gap-4 flex flex-col">
+        <Switch isSelected={formData.enabled} onChange={(val: any) => setFormData(p => ({ ...p, enabled: typeof val === 'boolean' ? val : val?.target?.checked }))}>Habilitado</Switch>
+      </Card.Header>
+      <Separator />
+      <Card.Content className="p-6 gap-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <select name="provider" value={formData.provider} onChange={handleChange} className="rounded-lg border border-default-300 px-3 py-2 text-sm">
+          <select name="provider" value={formData.provider} onChange={handleChange} className="rounded-lg border border-default-300 px-3 py-2 text-sm bg-default-100">
             {['TWILIO', 'AWS_SNS', 'INFOBIP', 'MESSAGEBIRD', 'CENTRALSMS'].map(p => <option key={p} value={p}>{p}</option>)}
           </select>
           <Input label="Indicativo País" name="countryCode" value={formData.countryCode} onChange={handleChange} />
@@ -58,12 +61,13 @@ export const SmsSettingsCard: React.FC<any> = ({ companyId, initialData }) => {
           <Input label="Sender ID" name="senderName" value={formData.senderName} onChange={handleChange} />
           <Input type="number" label="Límite Diario" name="dailyLimit" value={formData.dailyLimit?.toString()} onChange={handleChange} />
         </div>
-      </div>
-      <div className="flex justify-between gap-2 p-6 border-t border-default-200">
+      </Card.Content>
+      <Separator />
+      <Card.Footer className="flex justify-between gap-2 p-6">
         <Button variant="flat" color="warning" onPress={() => testMutation.mutate()} isLoading={testMutation.isPending}>Probar Conexión</Button>
         <Button color="primary" onPress={handleSave} isLoading={isPending}>Guardar Configuración</Button>
-      </div>
-    </div>
+      </Card.Footer>
+    </Card>
   );
 };
 
@@ -89,7 +93,7 @@ export const BulkEmailSettingsCard: React.FC<any> = ({ companyId, initialData })
     }
   }, [initialData]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<any>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -101,17 +105,18 @@ export const BulkEmailSettingsCard: React.FC<any> = ({ companyId, initialData })
   };
 
   return (
-    <div className="w-full rounded-xl border border-default-200 overflow-hidden">
-      <div className="flex justify-between items-start p-6 border-b border-default-200">
+    <Card className="w-full">
+      <Card.Header className="flex justify-between p-6">
         <div className="flex flex-col">
           <p className="text-md font-bold">Emails Masivos</p>
           <p className="text-small text-default-500">Configura el envío masivo.</p>
         </div>
-        <Switch isSelected={formData.enabled} onValueChange={(val) => setFormData(p => ({ ...p, enabled: val }))}>Habilitado</Switch>
-      </div>
-      <div className="p-6 gap-4 flex flex-col">
+        <Switch isSelected={formData.enabled} onChange={(val: any) => setFormData(p => ({ ...p, enabled: typeof val === 'boolean' ? val : val?.target?.checked }))}>Habilitado</Switch>
+      </Card.Header>
+      <Separator />
+      <Card.Content className="p-6 gap-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <select name="provider" value={formData.provider} onChange={handleChange} className="rounded-lg border border-default-300 px-3 py-2 text-sm">
+          <select name="provider" value={formData.provider} onChange={handleChange} className="rounded-lg border border-default-300 px-3 py-2 text-sm bg-default-100">
             {['SENDGRID', 'MAILGUN', 'AMAZON_SES', 'OTHER'].map(p => <option key={p} value={p}>{p}</option>)}
           </select>
           <SecretInput label="API Key" name="apiKey" value={formData.apiKey} maskedValue={initialData?.apiKeyMasked} onChange={handleChange} />
@@ -120,11 +125,12 @@ export const BulkEmailSettingsCard: React.FC<any> = ({ companyId, initialData })
           <Input label="Email Reply-To" name="replyToEmail" value={formData.replyToEmail} onChange={handleChange} />
           <Input type="number" label="Límite Diario" name="dailyLimit" value={formData.dailyLimit?.toString()} onChange={handleChange} />
         </div>
-      </div>
-      <div className="flex justify-between gap-2 p-6 border-t border-default-200">
+      </Card.Content>
+      <Separator />
+      <Card.Footer className="flex justify-between gap-2 p-6">
         <Button variant="flat" color="warning" onPress={() => testMutation.mutate()} isLoading={testMutation.isPending}>Probar Conexión</Button>
         <Button color="primary" onPress={handleSave} isLoading={isPending}>Guardar Configuración</Button>
-      </div>
-    </div>
+      </Card.Footer>
+    </Card>
   );
 };

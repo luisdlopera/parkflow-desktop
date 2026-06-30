@@ -4,7 +4,7 @@ import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
 import { Modal } from "@/components/bridge/Modal";
 import DataTable from "@/components/ui/DataTable";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import {
   fetchMonthlyContracts,
   saveMonthlyContract,
@@ -60,7 +60,7 @@ export default function MonthlySection({
         setFormData(prev => ({ ...prev, rateId: ratesRes.content[0].id }));
       }
     } catch (e) {
-      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA) });
+      onNotify({ kind: "err", text: errorService.normalize(e).message });
     } finally {
       setLoading(false);
     }
@@ -74,7 +74,7 @@ export default function MonthlySection({
       onClose();
       load();
     } catch (e) {
-      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA) });
+      onNotify({ kind: "err", text: errorService.normalize(e).message });
     } finally {
       setSaving(false);
     }

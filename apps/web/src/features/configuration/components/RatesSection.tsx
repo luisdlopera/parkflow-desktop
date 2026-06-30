@@ -15,7 +15,7 @@ import {
 } from "@/lib/api/rates-api";
 import type { RateType } from "@/lib/types/parking.types";
 import type { DataTableColumn } from "@/components/ui/DataTable";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import { RATE_CATEGORIES, RATE_CATEGORY_LABELS } from "@/features/configuration/constants";
 import { RateForm } from "./RateForm";
 
@@ -51,7 +51,7 @@ export default function RatesSection({
       setRows(res.content);
       setTotalPages(res.totalPages);
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
+      setError(errorService.normalize(e).message);
       setRows([]);
     } finally {
       setLoading(false);
@@ -109,7 +109,7 @@ export default function RatesSection({
                     try {
                       setRateDetail(await fetchRateById(r.id));
                     } catch (e) {
-                      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA) });
+                      onNotify({ kind: "err", text: errorService.normalize(e).message });
                     } finally {
                       setRateDetailLoading(false);
                     }
@@ -133,7 +133,7 @@ export default function RatesSection({
                       onNotify({ kind: "ok", text: r.active ? "Tarifa desactivada." : "Tarifa activada." });
                       await load();
                     } catch (e) {
-                      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS) });
+                      onNotify({ kind: "err", text: errorService.normalize(e).message });
                     }
                   })()
                 }
@@ -152,7 +152,7 @@ export default function RatesSection({
                     onNotify({ kind: "ok", text: "Tarifa eliminada." });
                     await load();
                   } catch (e) {
-                    onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA) });
+                    onNotify({ kind: "err", text: errorService.normalize(e).message });
                   }
                 }}
               >

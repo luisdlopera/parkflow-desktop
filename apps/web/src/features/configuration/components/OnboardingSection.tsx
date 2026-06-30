@@ -4,11 +4,9 @@ import { Card } from "@/components/bridge/Card";
 import { Button } from "@/components/bridge/Button";
 import { useDialog } from "@/providers/DialogProvider";
 import { resetOnboarding } from "@/lib/api/onboarding.api";
-import { refreshIfNeeded } from "@/features/auth/api/auth.api";
-import { loadSession, saveSession } from "@/lib/services/auth-storage.service";
-import { currentUser } from "@/lib/services/auth-domain.service";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import { backupOnboardingConfig, restoreOnboardingConfig } from "@/lib/config/config-merge";
+import { useAuthStore } from "@/lib/stores/auth.store";
 
 export default function OnboardingSection({
   onNotify
@@ -17,6 +15,7 @@ export default function OnboardingSection({
 }) {
   const [loading, setLoading] = useState(false);
   const { confirm } = useDialog();
+  const { user } = useAuthStore();
 
   return (
     <div className="space-y-6">
@@ -40,7 +39,6 @@ export default function OnboardingSection({
                 if (!(await confirm("¿Seguro que deseas re-ejecutar la parametrización inicial? Las configuraciones manuales se preservarán."))) return;
                 setLoading(true);
                 try {
-                  const user = await currentUser();
                   const compId = user?.companyId;
                   if (!compId) {
                     setLoading(false);
@@ -50,19 +48,16 @@ export default function OnboardingSection({
                   backupOnboardingConfig();
                   await resetOnboarding(compId, "Reinicio desde configuración");
                   restoreOnboardingConfig();
-                  const session = await loadSession();
-                  if (session) {
-                    const refreshed = await refreshIfNeeded(session);
-                    await saveSession({
-                      ...refreshed,
-                      user: { ...refreshed.user, onboardingCompleted: false }
-                    });
-                  }
+                  
+                  // Forzar la actualización de la sesión
+                  const { createAuthProvider } = await import("@/auth/runtime/createAuthProvider");
+                  await (await createAuthProvider()).refresh();
+                  
                   window.dispatchEvent(new CustomEvent("parkflow-refresh-runtime-config"));
                   window.location.reload();
                 } catch (e) {
                   setLoading(false);
-                  onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA) });
+                  onNotify({ kind: "err", text: errorService.normalize(e).message });
                 }
               }}
             >

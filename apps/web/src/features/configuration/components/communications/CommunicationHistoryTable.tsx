@@ -15,7 +15,7 @@ export const CommunicationHistoryTable: React.FC<{ companyId: string }> = ({ com
             <TableColumn>DESTINATARIO</TableColumn>
             <TableColumn>ESTADO</TableColumn>
           </TableHeader>
-          <TableBody emptyContent={isLoading ? "Cargando..." : "No hay historial disponible."} items={history}>
+          <TableBody items={history}>
             {(item: any) => (
               <TableRow key={item.id}>
                 <TableCell>{new Date(item.sentAt).toLocaleString()}</TableCell>
@@ -23,7 +23,7 @@ export const CommunicationHistoryTable: React.FC<{ companyId: string }> = ({ com
                 <TableCell>{item.provider}</TableCell>
                 <TableCell>{item.recipient}</TableCell>
                 <TableCell>
-                  <Chip color={item.status === 'SENT' ? 'success' : item.status === 'FAILED' ? 'danger' : 'warning'} variant="flat">
+                  <Chip color={item.status === 'SENT' ? 'success' : item.status === 'FAILED' ? 'danger' : 'warning'} variant="soft">
                     {item.status}
                   </Chip>
                 </TableCell>

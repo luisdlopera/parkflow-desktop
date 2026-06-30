@@ -10,7 +10,7 @@ import { Dropdown, DropdownMenu, DropdownItem } from "@/components/bridge/Dropdo
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { VehicleTypeIcon } from "@/components/vehicles/VehicleTypeIcon";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import type { DataTableColumn } from "@/components/ui/DataTable";
 import {
   fetchMasterVehicleTypes,
@@ -93,7 +93,7 @@ export default function MastersSection({
     try {
       setRows(await fetchMasterVehicleTypes());
     } catch (e) {
-      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA) });
+      onNotify({ kind: "err", text: errorService.normalize(e).message });
     } finally {
       setLoading(false);
     }
@@ -107,7 +107,7 @@ export default function MastersSection({
       setRows((prev) => prev.map((r) => r.id === id ? { ...r, isActive: !current } : r));
       onNotify({ kind: "ok", text: current ? "Tipo desactivado" : "Tipo activado" });
     } catch (e) {
-      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS) });
+      onNotify({ kind: "err", text: errorService.normalize(e).message });
     }
   }, [onNotify]);
 
@@ -118,7 +118,7 @@ export default function MastersSection({
       setRows((prev) => prev.filter((r) => r.id !== id));
       onNotify({ kind: "ok", text: "Tipo eliminado" });
     } catch (e) {
-      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA) });
+      onNotify({ kind: "err", text: errorService.normalize(e).message });
     }
   }, [onNotify, confirm]);
 
@@ -310,7 +310,7 @@ export default function MastersSection({
                   setSelectedStdType("");
                   load();
                 } catch (e) {
-                  onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA) });
+                  onNotify({ kind: "err", text: errorService.normalize(e).message });
                 }
               }}
             >

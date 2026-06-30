@@ -13,7 +13,7 @@ import {
   validateParameters,
   type ParkingParametersPayload
 } from "@/lib/api/parameters-api";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import { useDialog } from "@/providers/DialogProvider";
 import { LOST_TICKET_POLICIES } from "@/features/configuration/constants";
 
@@ -55,7 +55,7 @@ export default function ParametersSection({
     try {
       setData(await fetchParameters(paramSite.trim() || "DEFAULT"));
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
+      setError(errorService.normalize(e).message);
       setData(null);
     } finally {
       setLoading(false);
@@ -332,7 +332,7 @@ export default function ParametersSection({
                     setData(saved);
                     onNotify({ kind: "ok", text: "Parametros guardados." });
                   } catch (e) {
-                    onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA) });
+                    onNotify({ kind: "err", text: errorService.normalize(e).message });
                   }
                 })()
               }
@@ -350,7 +350,7 @@ export default function ParametersSection({
                   setData(saved);
                   onNotify({ kind: "ok", text: "Parametros restaurados." });
                 } catch (e) {
-                  onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA) });
+                  onNotify({ kind: "err", text: errorService.normalize(e).message });
                 }
               }}
             >

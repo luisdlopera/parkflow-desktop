@@ -15,7 +15,7 @@ import {
   resetUserPassword,
   type UserAdminRow
 } from "@/lib/api/users-api";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import type { UserRole } from "@/lib/types/settings.types";
 import { ROLES } from "@/features/configuration/constants";
 
@@ -87,7 +87,7 @@ function UserCreatePanel({
                   );
                   await onCreated();
                 } catch (e) {
-                  onError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
+                  onError(errorService.normalize(e).message);
                 }
               })()
             }
@@ -173,7 +173,7 @@ function UserEditPanel({
                   );
                   await onSaved();
                 } catch (e) {
-                  onError(getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA));
+                  onError(errorService.normalize(e).message);
                 }
               })()
             }
@@ -221,7 +221,7 @@ export default function UsersSection({
       setRows(res.content);
       setTotalPages(res.totalPages);
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
+      setError(errorService.normalize(e).message);
       setRows([]);
     } finally {
       setLoading(false);
@@ -326,7 +326,7 @@ export default function UsersSection({
                       try {
                         setUserDetail(await fetchUserById(r.id));
                       } catch (e) {
-                        onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA) });
+                        onNotify({ kind: "err", text: errorService.normalize(e).message });
                       } finally {
                         setUserDetailLoading(false);
                       }
@@ -352,7 +352,7 @@ export default function UsersSection({
                             onNotify({ kind: "ok", text: "Estado actualizado." });
                             await load();
                           } catch (e) {
-                            onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA) });
+                            onNotify({ kind: "err", text: errorService.normalize(e).message });
                           }
                         })()
                       }
@@ -371,7 +371,7 @@ export default function UsersSection({
                           await resetUserPassword(r.id, p, auditReason);
                           onNotify({ kind: "ok", text: "Contrasena restablecida." });
                         } catch (e) {
-                          onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA) });
+                          onNotify({ kind: "err", text: errorService.normalize(e).message });
                         }
                       }}
                     >

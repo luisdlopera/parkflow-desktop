@@ -11,7 +11,7 @@ import {
   CATEGORY_LABELS,
   type FeatureConfig,
 } from "@/lib/api/features-api";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 
 interface FeatureFlagsSectionProps {
   onNotify: (n: { kind: "ok" | "err" | "info"; text: string } | null) => void;
@@ -33,7 +33,7 @@ export function FeatureFlagsSection({ onNotify }: FeatureFlagsSectionProps) {
         if (!cancelled) {
           onNotify({
             kind: "err",
-            text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA),
+            text: errorService.normalize(e).message,
           });
         }
       })
@@ -57,7 +57,7 @@ export function FeatureFlagsSection({ onNotify }: FeatureFlagsSectionProps) {
       } catch (e) {
         onNotify({
           kind: "err",
-          text: getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA),
+          text: errorService.normalize(e).message,
         });
       } finally {
         setSaving(null);

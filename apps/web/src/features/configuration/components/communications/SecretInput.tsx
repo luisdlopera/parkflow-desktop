@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Input, Button } from "@heroui/react";
+import { Input } from "@/components/bridge/Input";
+import { Button } from "@/components/bridge/Button";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
 
 interface SecretInputProps {
@@ -22,7 +23,7 @@ export const SecretInput: React.FC<SecretInputProps> = ({ label, name, value, ma
       <div className="flex gap-2 items-end">
         <Input 
           label={label}
-          value="••••••••••••••••"
+          value={maskedValue || "••••••••••••••••"}
           isDisabled
           startContent={<KeyRound className="w-4 h-4 text-default-400" />}
           className="flex-1"

@@ -16,7 +16,7 @@ export const CommunicationAuditTable: React.FC<{ companyId: string }> = ({ compa
             <TableColumn>VALOR ANTERIOR</TableColumn>
             <TableColumn>VALOR NUEVO</TableColumn>
           </TableHeader>
-          <Card.Content emptyContent={isLoading ? "Cargando..." : "No hay registros de auditoría."} items={audit}>
+          <TableBody items={audit}>
             {(item: any) => (
               <TableRow key={item.id}>
                 <TableCell>{new Date(item.createdAt).toLocaleString()}</TableCell>
@@ -27,7 +27,7 @@ export const CommunicationAuditTable: React.FC<{ companyId: string }> = ({ compa
                 <TableCell>{item.newValueMasked || '-'}</TableCell>
               </TableRow>
             )}
-          </Card.Content>
+          </TableBody>
         </Table>
     </div>
   );

@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
 import DataTable from "@/components/ui/DataTable";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import { fetchAgreements, type AgreementRow } from "@/lib/api/agreements-api";
 
 export default function AgreementsSection({
@@ -28,7 +28,7 @@ export default function AgreementsSection({
       setRows(res.content);
       setTotalPages(res.totalPages);
     } catch (e) {
-      onNotify({ kind: "err", text: getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA) });
+      onNotify({ kind: "err", text: errorService.normalize(e).message });
     } finally {
       setLoading(false);
     }

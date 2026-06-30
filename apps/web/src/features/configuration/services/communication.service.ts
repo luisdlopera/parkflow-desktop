@@ -8,32 +8,56 @@ import {
 
 export const communicationService = {
   getSettings: (companyId: string) => 
-    httpRequest.get<CommunicationSettingsResponseDto[]>(`/api/v1/companies/${companyId}/communication-settings`),
+    httpRequest<CommunicationSettingsResponseDto[]>(`/api/v1/companies/${companyId}/communication-settings`, { method: 'GET' }),
     
   updateEmailSettings: (companyId: string, data: EmailSettingsDto) =>
-    httpRequest.put<CommunicationSettingsResponseDto>(`/api/v1/companies/${companyId}/communication-settings/email`, data),
+    httpRequest<CommunicationSettingsResponseDto>(`/api/v1/companies/${companyId}/communication-settings/email`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
     
   updateSmsSettings: (companyId: string, data: SmsSettingsDto) =>
-    httpRequest.put<CommunicationSettingsResponseDto>(`/api/v1/companies/${companyId}/communication-settings/sms`, data),
+    httpRequest<CommunicationSettingsResponseDto>(`/api/v1/companies/${companyId}/communication-settings/sms`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
     
   updateBulkEmailSettings: (companyId: string, data: BulkEmailSettingsDto) =>
-    httpRequest.put<CommunicationSettingsResponseDto>(`/api/v1/companies/${companyId}/communication-settings/bulk-email`, data),
+    httpRequest<CommunicationSettingsResponseDto>(`/api/v1/companies/${companyId}/communication-settings/bulk-email`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
     
   testEmailConnection: (companyId: string) =>
-    httpRequest.post<void>(`/api/v1/companies/${companyId}/communication-settings/email/test-connection`, {}),
+    httpRequest<void>(`/api/v1/companies/${companyId}/communication-settings/email/test-connection`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    }),
     
   testSmsConnection: (companyId: string) =>
-    httpRequest.post<void>(`/api/v1/companies/${companyId}/communication-settings/sms/test-connection`, {}),
+    httpRequest<void>(`/api/v1/companies/${companyId}/communication-settings/sms/test-connection`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    }),
     
   testBulkEmailConnection: (companyId: string) =>
-    httpRequest.post<void>(`/api/v1/companies/${companyId}/communication-settings/bulk-email/test-connection`, {}),
+    httpRequest<void>(`/api/v1/companies/${companyId}/communication-settings/bulk-email/test-connection`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    }),
 
   getStats: (companyId: string) =>
-    httpRequest.get<any>(`/api/v1/companies/${companyId}/communication-settings/stats`),
+    httpRequest<any>(`/api/v1/companies/${companyId}/communication-settings/stats`, { method: 'GET' }),
     
   getHistory: (companyId: string) =>
-    httpRequest.get<any[]>(`/api/v1/companies/${companyId}/communication-settings/history`),
+    httpRequest<any[]>(`/api/v1/companies/${companyId}/communication-settings/history`, { method: 'GET' }),
     
   getAudit: (companyId: string) =>
-    httpRequest.get<any[]>(`/api/v1/companies/${companyId}/communication-settings/audit`),
+    httpRequest<any[]>(`/api/v1/companies/${companyId}/communication-settings/audit`, { method: 'GET' }),
 };

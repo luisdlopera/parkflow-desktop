@@ -10,7 +10,7 @@ import { Input } from '@/components/bridge/Input';
 import { Select } from '@/components/bridge/Select';
 import { Checkbox } from '@/components/bridge/Checkbox';
 import { useConfigurationApi } from '@/features/configuration/hooks/useConfigurationApi';
-import { getUserFriendlyErrorMessage, FrontendActionError } from '@/lib/errors/error-messages';
+import { errorService } from '@/lib/errors/error-service';
 
 interface SetupBasicoTabProps {
   companyId: string;
@@ -48,6 +48,8 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
   // Capacity state
   const [capacity, setCapacity] = useState(20);
   const [capacityInput, setCapacityInput] = useState('20');
+  const [controlSlots, setControlSlots] = useState(false);
+  const [allowLowerCapacity, setAllowLowerCapacity] = useState(false);
 
   // Shifts state
   const [shiftsEnabled, setShiftsEnabled] = useState(false);
@@ -59,6 +61,7 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
 
   // Helmet state
   const [helmetMode, setHelmetMode] = useState('NONE');
+  const [lockerCount, setLockerCount] = useState('0');
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -92,6 +95,8 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
           const cap = capacityData.totalCapacity;
           setCapacity(cap);
           setCapacityInput(String(cap));
+          setControlSlots(capacityData.controlSlots || false);
+          setAllowLowerCapacity(capacityData.allowLowerCapacity || false);
         }
         if (shiftsData) {
           setShiftsEnabled(shiftsData.shiftsEnabled || false);
@@ -103,6 +108,7 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
         }
         if (helmetData) {
           setHelmetMode(helmetData.currentMode || 'NONE');
+          setLockerCount(String(helmetData.activeLockerCount || helmetData.inactiveLockerCount || 0));
         }
       } catch (err) {
         showError('Error al cargar configuración inicial');
@@ -122,11 +128,11 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
     }
     setLoading(true);
     try {
-      await api.updateCapacity(companyId, { totalCapacity: total });
+      await api.updateCapacity(companyId, { totalCapacity: total, controlSlots, allowLowerCapacity });
       setCapacity(total);
       showSuccess('Capacidad guardada exitosamente');
     } catch (err) {
-      showError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
+      showError(errorService.normalize(err).message);
     } finally {
       setLoading(false);
     }
@@ -144,7 +150,7 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
       });
       showSuccess('Turnos guardados exitosamente');
     } catch (err) {
-      showError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
+      showError(errorService.normalize(err).message);
     } finally {
       setLoading(false);
     }
@@ -172,7 +178,7 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
       });
       showSuccess('Región guardada exitosamente');
     } catch (err) {
-      showError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
+      showError(errorService.normalize(err).message);
     } finally {
       setLoading(false);
     }
@@ -181,10 +187,13 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
   const handleSaveHelmet = async () => {
     setLoading(true);
     try {
-      await api.updateHelmetHandling(companyId, { mode: helmetMode });
+      await api.updateHelmetHandling(companyId, { 
+        mode: helmetMode,
+        lockerCount: helmetMode === 'LOCKERS' ? safeParseInt(lockerCount, 0) : undefined 
+      });
       showSuccess('Configuración de cascos guardada exitosamente');
     } catch (err) {
-      showError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
+      showError(errorService.normalize(err).message);
     } finally {
       setLoading(false);
     }
@@ -243,6 +252,14 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
             <p className="text-sm text-default-500">
               {capacity} espacios configurados
             </p>
+            <div className="flex flex-col gap-3 py-2">
+              <Checkbox isSelected={controlSlots} onValueChange={setControlSlots} isDisabled={loading}>
+                Habilitar control de cupos por tipo de vehículo
+              </Checkbox>
+              <Checkbox isSelected={allowLowerCapacity} onValueChange={setAllowLowerCapacity} isDisabled={loading || !controlSlots}>
+                Permitir que la suma de cupos sea menor a la capacidad total
+              </Checkbox>
+            </div>
             <Button onPress={handleSaveCapacity} isDisabled={loading}>
               Guardar Capacidad
             </Button>
@@ -343,6 +360,18 @@ export function SetupBasicoTab({ companyId }: SetupBasicoTabProps) {
                 </ListBox>
               </Select.Popover>
             </Select>
+
+            {helmetMode === 'LOCKERS' && (
+              <Input
+                label="Cantidad de casilleros / tokens"
+                type="number"
+                min={1}
+                max={9999}
+                value={lockerCount}
+                onChange={(e) => setLockerCount(e.target.value)}
+                isDisabled={loading}
+              />
+            )}
 
             <Button onPress={handleSaveHelmet} isDisabled={loading}>
               Guardar Configuración
