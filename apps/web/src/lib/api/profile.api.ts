@@ -1,19 +1,6 @@
-/**
- * User Profile API
- *
- * Manages user profile information and password changes.
- *
- * ⚠️ DEPRECATION: Import directly from this file, not via the barrel re-export `/lib/profile-api.ts`.
- *    For new code, prefer:
- *    import { fetchProfile } from "@/lib/api/profile.api"
- */
-/* global RequestInit */
-import { authHeaders } from "@/lib/services/auth-domain.service";
-import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import { authBase } from "@/lib/api/config";
 import type { UserRole } from "@/lib/types/auth.types";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
-
 
 function authBaseUrl(): string {
   if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
@@ -22,21 +9,39 @@ function authBaseUrl(): string {
   return authBase();
 }
 
+const statusMessages: Record<number, string> = {
+  400: "Datos inválidos o incompletos. Por favor, revisa la información ingresada.",
+  401: "Tu sesión ha expirado o credenciales incorrectas.",
+  403: "No tienes permisos para realizar esta acción.",
+  404: "El recurso solicitado no existe o fue eliminado.",
+  409: "Conflicto con los datos actuales. Es posible que el registro ya exista o haya sido modificado.",
+  500: "Ocurrió un error interno en el servidor.",
+};
+
 async function authFetch<T>(path: string, options?: RequestInit): Promise<T> {
   try {
     const res = await fetchWithCredentials(`${authBaseUrl()}${path}`, {
       ...options,
       headers: {
-        ...(await authHeaders()),
+        "Content-Type": "application/json",
         ...(options?.headers ?? {})
       }
     });
-    if (!res.ok) throw await normalizeApiError(res);
+    if (!res.ok) {
+      const rawText = await res.text();
+      let body: Record<string, unknown> = {};
+      try { body = rawText ? JSON.parse(rawText) as Record<string, unknown> : {}; } catch { /* ignore */ }
+      const status = res.status;
+      const userMsg = typeof body.userMessage === "string" ? body.userMessage
+        : typeof body.message === "string" ? body.message
+        : undefined;
+      throw new Error(userMsg || statusMessages[status] || `No pudimos completar tu solicitud (${status}).`);
+    }
     if (res.status === 204) return {} as T;
     return (await res.json()) as T;
   } catch (error) {
-    if (error instanceof Error && error.name === "ApiError") throw error;
-    throw handleNetworkError(error);
+    if (error instanceof Error) throw error;
+    throw new Error("Sin conexión. Verifica internet o la red local e intenta nuevamente.");
   }
 }
 
@@ -83,10 +88,19 @@ export async function updateProfile(payload: UpdateProfilePayload): Promise<User
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   const res = await fetchWithCredentials(`${authBaseUrl()}/change-password`, {
     method: "POST",
-    headers: await authHeaders(),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ currentPassword, newPassword }),
   });
-  if (!res.ok) throw await normalizeApiError(res);
+  if (!res.ok) {
+    const rawText = await res.text();
+    let body: Record<string, unknown> = {};
+    try { body = rawText ? JSON.parse(rawText) as Record<string, unknown> : {}; } catch { /* ignore */ }
+    const status = res.status;
+    const userMsg = typeof body.userMessage === "string" ? body.userMessage
+      : typeof body.message === "string" ? body.message
+      : undefined;
+    throw new Error(userMsg || statusMessages[status] || `No pudimos completar tu solicitud (${status}).`);
+  }
 }
 
 export interface DeviceInfo {

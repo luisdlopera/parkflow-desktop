@@ -9,13 +9,20 @@
  */
 /* global RequestInit */
 import { authHeaders } from "@/lib/services/auth-domain.service";
-import { normalizeApiError } from "@/lib/errors/normalize-api-error";
-import { ApiError } from "@/lib/errors/api-error";
 import { apiBase } from "@/lib/api/config";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 
 
 const API_BASE = apiBase();
+
+const statusMessages: Record<number, string> = {
+  400: "Datos inválidos o incompletos.",
+  401: "Tu sesión ha expirado o credenciales incorrectas.",
+  403: "No tienes permisos para realizar esta acción.",
+  404: "El recurso solicitado no existe o fue eliminado.",
+  409: "Conflicto con los datos actuales.",
+  500: "Ocurrió un error interno en el servidor.",
+};
 
 export type OnboardingStatus = {
   companyId: string;
@@ -39,8 +46,14 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
     }
   });
   if (!response.ok) {
-    const apiError = await normalizeApiError(response);
-    throw apiError;
+    const rawText = await response.text();
+    let body: Record<string, unknown> = {};
+    try { body = rawText ? JSON.parse(rawText) as Record<string, unknown> : {}; } catch { /* ignore */ }
+    const status = response.status;
+    const userMsg = typeof body.userMessage === "string" ? body.userMessage
+      : typeof body.message === "string" ? body.message
+      : undefined;
+    throw new Error(userMsg || statusMessages[status] || `No pudimos completar tu solicitud (${status}).`);
   }
   return (await response.json()) as T;
 }

@@ -39,6 +39,7 @@ export interface SessionInfo {
   sessionId: string;
   userId: string;
   deviceId: string;
+  tokenFamilyId?: string | null;
   issuedAtIso: string;
   accessTokenExpiresAtIso: string;
   refreshTokenExpiresAtIso: string;
@@ -49,10 +50,17 @@ export interface DeviceInfo {
   id: string;
   displayName: string;
   platform: string;
-  fingerprint: string;
+  fingerprint: string | null;
   authorized: boolean;
   revokedAtIso: string | null;
   lastSeenAtIso: string | null;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  onboardingCompleted?: boolean;
+  plan?: string;
 }
 
 export interface OfflineLease {
@@ -77,17 +85,25 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: "Bearer";
   user: AuthUser;
   session: SessionInfo;
   device: DeviceInfo;
   offlineLease: OfflineLease | null;
 }
 
+export type RefreshResponse = LoginResponse;
+
+export interface StoredSession {
+  user: AuthUser;
+  session: SessionInfo;
+  offlineLease: OfflineLease | null;
+  rememberMe?: boolean;
+}
+
+export type WebSession = LoginResponse;
+export type DesktopSession = StoredSession;
+
 export interface RefreshRequest {
-  refreshToken: string;
   deviceId: string;
 }
 

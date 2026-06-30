@@ -17,6 +17,7 @@ export const API_CONFIG = {
     process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:6011/api/v1",
   authBaseUrl: process.env.NEXT_PUBLIC_AUTH_BASE_URL || "http://localhost:6011/api/v1/auth",
   tauriPrintPort: process.env.NEXT_PUBLIC_TAURI_PRINT_PORT || "1420",
+  // Deprecated: prefer cookie/session auth. Only used for legacy API-key bootstrap flows.
   apiKey: process.env.NEXT_PUBLIC_API_KEY || "",
 };
 
