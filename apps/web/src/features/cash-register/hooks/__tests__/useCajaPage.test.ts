@@ -17,9 +17,7 @@ const mockLoadMovements = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const mockAddMovement = vi.hoisted(() => vi.fn().mockResolvedValue({}));
 const mockVoidMovement = vi.hoisted(() => vi.fn().mockResolvedValue({}));
 
-const mockUseCajaSession = vi.hoisted(() => vi.fn());
-const mockUseCajaMovements = vi.hoisted(() => vi.fn());
-const mockUseCajaForms = vi.hoisted(() => vi.fn());
+const mockUseCashRegister = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/cash/cash-api", () => ({
   cashRegisters: vi.fn(),
@@ -68,8 +66,8 @@ vi.mock("@/lib/errors/error-messages", () => ({
   FrontendActionError: { CASH_OPERATION: "CASH_OPERATION", PRINT_ACTION: "PRINT_ACTION" },
 }));
 
-vi.mock("../useCajaSession", () => ({ useCajaSession: mockUseCajaSession }));
-vi.mock("../useCajaMovements", () => ({ useCajaMovements: mockUseCajaMovements }));
+const mockUseCajaForms = vi.hoisted(() => vi.fn());
+vi.mock("../useCashRegister", () => ({ useCashRegister: mockUseCashRegister }));
 vi.mock("../useCajaForms", () => ({ useCajaForms: mockUseCajaForms }));
 
 const mockSessionOpen = {
@@ -140,32 +138,31 @@ const mockPolicy = {
 
 const mockUser = { id: "user-1", name: "Operator", email: "op@test.com" };
 
-function defaultCajaSessionMock(overrides?: Record<string, unknown>) {
+function defaultCashRegisterMock(overrides?: Record<string, unknown>) {
   return {
     session: mockSessionOpen,
     policy: mockPolicy,
     loading: false,
     error: null,
     isOpen: true,
-    reload: mockReloadSession,
+    isClosed: false,
+    isBusy: false,
+    movements: mockMovements,
+    summary: mockSummary,
+    perms: { canOpen: true, canClose: true, canMove: true, canVoid: true, canAudit: true },
+    outboxCount: 0,
+    setSite: vi.fn(),
+    setTerminal: vi.fn(),
     openSession: mockOpenSession,
     countSession: mockCountSession,
     closeSession: mockCloseSession,
     clearSession: vi.fn(),
-    setError: vi.fn(),
-    ...overrides,
-  };
-}
-
-function defaultCajaMovementsMock(overrides?: Record<string, unknown>) {
-  return {
-    movements: mockMovements,
-    summary: mockSummary,
-    loading: false,
-    error: null,
-    load: mockLoadMovements,
     addMovement: mockAddMovement,
     voidMovement: mockVoidMovement,
+    refreshAll: mockReloadSession,
+    loadOutboxCount: vi.fn().mockResolvedValue(undefined),
+    flushOutbox: vi.fn().mockResolvedValue({ synced: 0, failed: 0 }),
+    setError: vi.fn(),
     ...overrides,
   };
 }
@@ -232,8 +229,7 @@ describe("useCajaPage", () => {
     process.env.NEXT_PUBLIC_TERMINAL_ID = "T1";
     process.env.NEXT_PUBLIC_PARKING_SITE = "Principal";
 
-    mockUseCajaSession.mockReturnValue(defaultCajaSessionMock());
-    mockUseCajaMovements.mockReturnValue(defaultCajaMovementsMock());
+    mockUseCashRegister.mockReturnValue(defaultCashRegisterMock());
     mockUseCajaForms.mockReturnValue(defaultCajaFormsMock());
   });
 
@@ -281,12 +277,7 @@ describe("useCajaPage", () => {
       await result.current.onOpen();
     });
 
-    expect(mockOpenSession).toHaveBeenCalledWith(
-      expect.objectContaining({
-        openingAmount: 0,
-        operatorUserId: mockUser.id,
-      }),
-    );
+    expect(mockOpenSession).toHaveBeenCalledWith(0, null);
     expect(mockReloadSession).toHaveBeenCalled();
   });
 
@@ -307,8 +298,8 @@ describe("useCajaPage", () => {
 
   it("closes session via onClose", async () => {
     // Mock session with countedAt set so count is not required
-    mockUseCajaSession.mockReturnValue(
-      defaultCajaSessionMock({ session: { ...mockSessionOpen, countedAt: "2025-06-01T17:00:00Z" } }),
+    mockUseCashRegister.mockReturnValue(
+      defaultCashRegisterMock({ session: { ...mockSessionOpen, countedAt: "2025-06-01T17:00:00Z" } }),
     );
 
     const confirmFn = vi.fn().mockResolvedValue(true);
@@ -324,8 +315,8 @@ describe("useCajaPage", () => {
 
   it("requires count before closing", async () => {
     const confirmFn = vi.fn().mockResolvedValue(true);
-    mockUseCajaSession.mockReturnValue(
-      defaultCajaSessionMock({ session: { ...mockSessionOpen, countedAt: null } }),
+    mockUseCashRegister.mockReturnValue(
+      defaultCashRegisterMock({ session: { ...mockSessionOpen, countedAt: null } }),
     );
 
     const { result } = renderHook(() => useCajaPage());
@@ -384,8 +375,8 @@ describe("useCajaPage", () => {
   });
 
   it("requires observations when count differs from expected", async () => {
-    mockUseCajaMovements.mockReturnValue(
-      defaultCajaMovementsMock({
+    mockUseCashRegister.mockReturnValue(
+      defaultCashRegisterMock({
         summary: { ...mockSummary, expectedLedgerTotal: 150000 },
       }),
     );
@@ -453,8 +444,8 @@ describe("useCajaPage", () => {
   });
 
   it("shifts change by closing session and resetting open amount", async () => {
-    mockUseCajaSession.mockReturnValue(
-      defaultCajaSessionMock({
+    mockUseCashRegister.mockReturnValue(
+      defaultCashRegisterMock({
         closeSession: mockCloseSession,
         reload: mockReloadSession,
         clearSession: vi.fn(),

@@ -11,14 +11,13 @@ import {
 import type { ManualFormValues, CountFormValues } from "@/lib/validation/cash-session.schema";
 import { useCajaForms } from "./useCajaForms";
 import { fetchConfigurationSites } from "@/lib/api/sites-api";
-import { listCashOutboxPending } from "@/lib/cash/cash-outbox-idb";
-import { flushCashMovementOutbox } from "@/lib/cash/cash-sync";
-import { currentUser, hasPermission } from "@/lib/services/auth-domain.service";
-import { printCashThermalReceipt, startLocalPrintQueueWorker } from "@/lib/print/print-service";
-import { buildCashCountTicket, buildCashMovementTicket } from "@/lib/cash/cash-print";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
-import { useCajaSession } from "./useCajaSession";
-import { useCajaMovements } from "./useCajaMovements";
+import { printCashThermalReceipt } from "@/lib/print/print-service";
+import {
+  buildCashCountTicket,
+  buildCashMovementTicket,
+} from "@/lib/cash/cash-print";
+import { errorService } from "@/lib/errors/error-service";
+import { useCashRegister } from "./useCashRegister";
 import type { TicketDocument } from "@parkflow/types";
 import type { Key } from "@heroui/react";
 
@@ -67,27 +66,16 @@ export function useCajaPage() {
   const [filterType, setFilterType] = useState("");
   const [filterMethod, setFilterMethod] = useState("");
   const [voidTarget, setVoidTarget] = useState<string | null>(null);
-  const [outboxCount, setOutboxCount] = useState(0);
   const [registerRows, setRegisterRows] = useState<CashRegisterRow[]>([]);
   const [auditLog, setAuditLog] = useState<CashAuditEntryDto[]>([]);
   const [closingWitness, setClosingWitness] = useState("");
   const [showShiftChangeModal, setShowShiftChangeModal] = useState(false);
   const [siteCount, setSiteCount] = useState(1);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [perms, setPerms] = useState({
-    canOpen: false,
-    canClose: false,
-    canMove: false,
-    canVoid: false,
-    canAudit: false,
-  });
+  const [outboxCount, setOutboxCount] = useState(0);
 
-  const sessionHook = useCajaSession(site, terminal);
-  const { session, policy, loading, reload: reloadSession } = sessionHook;
-
-  const movementsHook = useCajaMovements(session?.id ?? null);
-  const { movements, summary, load: loadMovements } = movementsHook;
+  const cr = useCashRegister();
+  const store = cr;
 
   const {
     manualForm, countForm, openForm, closeForm, voidForm, shiftForm,
@@ -97,21 +85,20 @@ export function useCajaPage() {
 
   const parkingName = process.env.NEXT_PUBLIC_PARKING_NAME ?? "Parkflow";
 
-  const refreshOutbox = useCallback(async () => {
-    const rows = await listCashOutboxPending();
-    setOutboxCount(rows.length);
-  }, []);
+  // Sync site/terminal to store when they change
+  useEffect(() => {
+    cr.setSite(site);
+  }, [site]);
 
-  const reload = useCallback(async () => {
-    await reloadSession();
-    if (session?.id) await loadMovements();
-  }, [reloadSession, session?.id, loadMovements]);
-
-  // ─── Setup effects ───
   useEffect(() => {
     setTerminal(defaultTerminal());
   }, []);
 
+  useEffect(() => {
+    if (terminal) cr.setTerminal(terminal);
+  }, [terminal]);
+
+  // Load registers, sites, outbox on mount
   useEffect(() => {
     cashRegisters(site || defaultSite())
       .then(setRegisterRows)
@@ -125,293 +112,192 @@ export function useCajaPage() {
   }, []);
 
   useEffect(() => {
-    startLocalPrintQueueWorker();
-    refreshOutbox().catch(() => {});
-    flushCashMovementOutbox()
-      .then(() => refreshOutbox().catch(() => {}))
-      .catch(() => {});
-  }, [refreshOutbox]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const [canOpenP, canCloseP, canMoveP, canVoidP, reportsP] = await Promise.all([
-          hasPermission("cierres_caja:abrir"),
-          hasPermission("cierres_caja:cerrar"),
-          hasPermission("cobros:registrar"),
-          hasPermission("anulaciones:crear"),
-          hasPermission("reportes:leer"),
-        ]);
-        setPerms({
-          canOpen: canOpenP,
-          canClose: canCloseP,
-          canMove: canMoveP,
-          canVoid: canVoidP,
-          canAudit: reportsP || canCloseP,
-        });
-      } catch {
-        // Permissions default to false on error
-      }
-    })();
+    cr.loadOutboxCount().catch(() => {});
+    cr.flushOutbox().catch(() => {});
   }, []);
 
+  // Sync store error to local state
   useEffect(() => {
-    if (!session?.id || !perms.canAudit) {
+    if (store.error) setError(store.error);
+  }, [store.error]);
+
+  // Load audit log
+  useEffect(() => {
+    if (!cr.session?.id || !cr.perms.canAudit) {
       setAuditLog([]);
       return;
     }
-    cashAudit(session.id)
+    cashAudit(cr.session.id)
       .then(setAuditLog)
       .catch(() => setAuditLog([]));
-  }, [session?.id, perms.canAudit]);
+  }, [cr.session?.id, cr.perms.canAudit]);
 
-  useEffect(() => {
-    if (session?.id) loadMovements().catch(() => {});
-  }, [session?.id, loadMovements]);
+  // Local loading state
+  const loading = store.loading;
+  const isOpen = store.isOpen;
+  const isClosed = store.isClosed;
+  const busy = store.isBusy;
+
+  const reload = useCallback(async () => {
+    await cr.refreshAll();
+  }, [cr]);
+
+  const refreshOutbox = useCallback(async () => {
+    const count = await import("@/lib/cash/cash-outbox-idb").then((m) => m.listCashOutboxPending());
+    setOutboxCount(count.length);
+  }, []);
 
   // ─── Action handlers ───
   const onOpen = useCallback(async () => {
-    const u = await currentUser();
-    if (!u) { setError("Sesion requerida"); return; }
-    const term = terminal || defaultTerminal();
-    if (!term) { setError("Terminal obligatorio"); return; }
-    setBusy(true);
-    setError(null);
+    const amt = Number(openAmount.replace(",", ".")) || 0;
+    const notes = openForm.getValues("openNotes").trim() || null;
     try {
-      await sessionHook.openSession({
-        openingAmount: Number(openAmount.replace(",", ".")) || 0,
-        operatorUserId: u.id,
-        notes: openForm.getValues("openNotes").trim() || null,
-      });
+      await cr.openSession(amt, notes);
       openForm.reset({ openNotes: "" });
-      await reloadSession();
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
-    } finally {
-      setBusy(false);
+      setError(errorService.normalize(e).message);
     }
-  }, [terminal, openAmount, openForm, sessionHook, reloadSession]);
+  }, [openAmount, openForm, cr]);
 
   const onAddManual = useCallback(async (data: ManualFormValues) => {
-    if (!session || session.status !== "OPEN") return;
+    if (!cr.session || cr.session.status !== "OPEN") return;
     const amt = Number(data.manualAmount.replace(",", ".")) || 0;
-    if (
-      typeof navigator !== "undefined" &&
-      !navigator.onLine &&
-      policy &&
-      amt > policy.offlineMaxManualMovement
-    ) {
-      setError(
-        `Sin conexion: el tope para movimientos manuales offline es ${policy.offlineMaxManualMovement.toLocaleString("es-CO")}.`
-      );
-      return;
-    }
-    setBusy(true);
-    setError(null);
+    const offline = typeof navigator !== "undefined" && !navigator.onLine;
     try {
-      const offline = typeof navigator !== "undefined" && !navigator.onLine;
-      await movementsHook.addMovement(
-        {
-          type: data.manualType,
-          paymentMethod: data.manualMethod,
-          amount: amt,
-          reason: data.manualReason || null,
-          idempotencyKey: `mov:${session.id}:${Date.now()}`,
-        },
-        { offline }
-      );
+      await cr.addMovement({
+        type: data.manualType,
+        paymentMethod: data.manualMethod,
+        amount: amt,
+        reason: data.manualReason || null,
+      }, { offline });
       manualForm.setValue("manualAmount", "");
       manualForm.setValue("manualReason", "");
       refreshOutbox().catch(() => {});
     } catch (e) {
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        const { enqueueCashMovementOffline } = await import("@/lib/cash/cash-outbox-idb");
-        await enqueueCashMovementOffline(session.id, {
-          type: data.manualType,
-          paymentMethod: data.manualMethod,
-          amount: Number(data.manualAmount.replace(",", ".")) || 0,
-          reason: data.manualReason,
-          idempotencyKey: `offline:${session.id}:${Date.now()}`,
-        });
-        setError("Sin conexion: movimiento guardado en cola local para sincronizar.");
-        refreshOutbox().catch(() => {});
-      } else {
-        setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
-      }
-    } finally {
-      setBusy(false);
+      setError(errorService.normalize(e).message);
     }
-  }, [session, policy, movementsHook, manualForm, refreshOutbox]);
+  }, [cr, manualForm, refreshOutbox]);
 
   const onCount = useCallback(async (data: CountFormValues) => {
-    if (!session) return;
-    const vals = {
-      cash: Number(data.countCash.replace(",", ".")) || 0,
-      card: Number(data.countCard.replace(",", ".")) || 0,
-      transfer: Number(data.countTransfer.replace(",", ".")) || 0,
-      other: Number(data.countOther.replace(",", ".")) || 0,
-    };
-    const counted = vals.cash + vals.card + vals.transfer + vals.other;
-    if (summary && summary.expectedLedgerTotal != null && counted !== summary.expectedLedgerTotal && !data.countNotes.trim()) {
-      setError(
-        `Hay diferencia de $${Math.abs(counted - summary.expectedLedgerTotal).toLocaleString()} respecto al esperado. Las observaciones son obligatorias cuando hay diferencia.`
-      );
-      return;
-    }
-    setBusy(true);
-    setError(null);
     try {
-      await sessionHook.countSession({
-        countCash: vals.cash,
-        countCard: vals.card,
-        countTransfer: vals.transfer,
-        countOther: vals.other,
+      await cr.countSession({
+        countCash: Number(data.countCash.replace(",", ".")) || 0,
+        countCard: Number(data.countCard.replace(",", ".")) || 0,
+        countTransfer: Number(data.countTransfer.replace(",", ".")) || 0,
+        countOther: Number(data.countOther.replace(",", ".")) || 0,
         observations: data.countNotes || null,
       });
-      await loadMovements();
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
-    } finally {
-      setBusy(false);
+      setError(errorService.normalize(e).message);
     }
-  }, [session, summary, sessionHook, loadMovements]);
+  }, [cr]);
 
   const onClose = useCallback(async (confirmFn: () => Promise<boolean>) => {
-    if (!session) return;
-    if (!session.countedAt) {
+    if (!cr.session) return;
+    if (!cr.session.countedAt) {
       setError("Debe realizar el arqueo antes de cerrar la caja.");
       return;
     }
-    if (typeof navigator !== "undefined" && !navigator.onLine && policy && !policy.offlineCloseAllowed) {
-      setError("Sin conexion: el cierre definitivo no esta permitido offline con la politica actual.");
-      return;
-    }
-    if (outboxCount > 0) {
+    if (cr.outboxCount > 0) {
       setError("NO PUEDE CERRAR LA CAJA. Tiene movimientos locales pendientes de sincronización.");
       return;
     }
     if (!(await confirmFn())) return;
-    setBusy(true);
-    setError(null);
     try {
-      await sessionHook.closeSession({
-        closingNotes: closeForm.getValues("closeNotes") || null,
-        closingWitnessName: closingWitness.trim() || null,
-      });
+      await cr.closeSession(
+        closeForm.getValues("closeNotes") || null,
+        closingWitness.trim() || null,
+      );
       closeForm.reset({ closeNotes: "" });
       setClosingWitness("");
-      await loadMovements();
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
-    } finally {
-      setBusy(false);
+      setError(errorService.normalize(e).message);
     }
-  }, [session, policy, outboxCount, sessionHook, closeForm, closingWitness, loadMovements]);
+  }, [cr, closeForm, closingWitness]);
 
   const onShiftChange = useCallback(async () => {
-    if (!session) return;
-    if (session.status === "OPEN" && !session.countedAt) {
+    if (!cr.session) return;
+    if (cr.session.status === "OPEN" && !cr.session.countedAt) {
       setError("Debe realizar el arqueo antes del cambio de turno.");
       return;
     }
-    setBusy(true);
-    setError(null);
     try {
-      await sessionHook.closeSession({
-        closingNotes: "Cierre por cambio de turno.",
-      });
-      sessionHook.clearSession();
+      await cr.closeSession("Cierre por cambio de turno.", null);
+      cr.clearSession();
       setOpenAmount(shiftForm.getValues("nextOpenAmount"));
       setShowShiftChangeModal(false);
-      setError("Turno cerrado con éxito. Indique base para el nuevo turno.");
-      await reloadSession();
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
-    } finally {
-      setBusy(false);
+      setError(errorService.normalize(e).message);
     }
-  }, [session, sessionHook, shiftForm, reloadSession]);
+  }, [cr, shiftForm]);
 
   const onVoid = useCallback(async () => {
     const voidReason = voidForm.getValues("voidReason");
-    if (!session || !voidTarget || !voidReason.trim()) return;
-    setBusy(true);
-    setError(null);
+    if (!cr.session || !voidTarget || !voidReason.trim()) return;
     try {
-      await movementsHook.voidMovement(voidTarget, voidReason.trim());
+      await cr.voidMovement(voidTarget, voidReason.trim());
       setVoidTarget(null);
       voidForm.reset({ voidReason: "" });
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.CASH_OPERATION));
-    } finally {
-      setBusy(false);
+      setError(errorService.normalize(e).message);
     }
-  }, [session, voidTarget, voidForm, movementsHook]);
+  }, [cr, voidTarget, voidForm]);
 
   const onPrintClosing = useCallback(async () => {
-    if (!session) return;
-    setBusy(true);
-    setError(null);
+    if (!cr.session) return;
     try {
-      const p = await cashPrintClosing(session.id);
+      const p = await cashPrintClosing(cr.session.id);
       await printCashThermalReceipt(closingDocToTicket(p.ticketDocument), "CASH_CLOSING");
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.PRINT_ACTION));
-    } finally {
-      setBusy(false);
+      setError(errorService.normalize(e).message);
     }
-  }, [session]);
+  }, [cr.session]);
 
   const onPrintLastMovement = useCallback(async () => {
-    if (!session || movements.length === 0) {
+    if (!cr.session || cr.movements.length === 0) {
       setError("No hay movimientos para imprimir");
       return;
     }
-    setBusy(true);
-    setError(null);
     try {
       await printCashThermalReceipt(
-        buildCashMovementTicket(session, movements[0], parkingName),
+        buildCashMovementTicket(cr.session, cr.movements[0], parkingName),
         "CASH_MOVEMENT"
       );
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.PRINT_ACTION));
-    } finally {
-      setBusy(false);
+      setError(errorService.normalize(e).message);
     }
-  }, [session, movements, parkingName]);
+  }, [cr.session, cr.movements, parkingName]);
 
   const onPrintCount = useCallback(async () => {
-    if (!session || !summary) {
+    if (!cr.session || !cr.summary) {
       setError("Guarde arqueo antes de imprimir");
       return;
     }
-    setBusy(true);
-    setError(null);
     try {
       await printCashThermalReceipt(
-        buildCashCountTicket(session, summary, parkingName),
+        buildCashCountTicket(cr.session, cr.summary, parkingName),
         "CASH_COUNT"
       );
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.PRINT_ACTION));
-    } finally {
-      setBusy(false);
+      setError(errorService.normalize(e).message);
     }
-  }, [session, summary, parkingName]);
+  }, [cr.session, cr.summary, parkingName]);
 
   const filteredMovements = useMemo(() => {
-    return movements.filter((m) => {
+    return cr.movements.filter((m) => {
       if (filterType && m.movementType !== filterType) return false;
       if (filterMethod && m.paymentMethod !== filterMethod) return false;
       return true;
     });
-  }, [movements, filterType, filterMethod]);
+  }, [cr.movements, filterType, filterMethod]);
 
-  const onTerminalChange = useCallback((key: Key | null) => setTerminal(key as string), []);
+  const onTerminalChange = useCallback((key: Key | null) => {
+    const t = key as string;
+    setTerminal(t);
+    cr.setTerminal(t);
+  }, [cr]);
 
   return {
-    // State
     site, setSite,
     terminal, setTerminal, onTerminalChange,
     openAmount, setOpenAmount,
@@ -426,21 +312,18 @@ export function useCajaPage() {
     siteCount,
     busy,
     error, setError,
-    perms,
-    // From session hook
-    session, policy, loading,
-    isOpen: session?.status === "OPEN",
-    closed: session?.status === "CLOSED",
-    // From movements hook
+    perms: cr.perms,
+    session: cr.session,
+    policy: cr.policy,
     movements: filteredMovements,
-    allMovements: movements,
-    summary,
-    // Forms
+    allMovements: cr.movements,
+    summary: cr.summary,
+    loading,
+    isOpen,
+    closed: isClosed,
     manualForm, countForm, openForm, closeForm, voidForm, shiftForm,
-    // Watched values
     manualType, manualMethod,
     countCash, countCard, countTransfer, countOther, countNotes,
-    // Actions
     reload,
     onOpen,
     onAddManual,

@@ -12,7 +12,7 @@ const mockCashClose = vi.hoisted(() => vi.fn());
 const mockCashCount = vi.hoisted(() => vi.fn());
 const mockGetAndCacheCashPolicy = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/stores/cash-register.store", () => ({
+vi.mock("@/lib/stores/cash-register", () => ({
   useCashRegisterStore: vi.fn((selector) =>
     selector({
       setSession: mockSetSession,

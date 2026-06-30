@@ -141,8 +141,6 @@ export default function CajaClient() {
     if (values.filterMethod !== undefined) p.setFilterMethod(values.filterMethod);
   };
 
-  // stepsState replaced by StepProgress component
-
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}

@@ -8,7 +8,7 @@ import {
   type CashSessionDto,
   type CashPolicyDto,
 } from "@/lib/cash/cash-api";
-import { useCashRegisterStore } from "@/lib/stores/cash-register.store";
+import { useCashRegisterStore } from "@/lib/stores/cash-register";
 import { getAndCacheCashPolicy } from "@/features/cash-register/services/cash-policy.service";
 
 export function useCajaSession(site: string, terminal: string) {
