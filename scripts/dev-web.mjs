@@ -179,7 +179,7 @@ async function main() {
 
     // Start Next.js
     // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
-    const nextDev = spawn('pnpm', ['next', 'dev', '-p', port.toString()], {
+    const nextDev = spawn('pnpm', ['next', 'dev', '--turbo', '-p', port.toString()], {
       cwd: webDir,
       env,
       stdio: 'inherit',

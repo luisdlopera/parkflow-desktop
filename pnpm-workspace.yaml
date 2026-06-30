@@ -3,6 +3,7 @@ packages:
   - "packages/*"
 allowBuilds:
   '@heroui/shared-utils': true
+  '@sentry/cli': set this to true or false
   '@serialport/bindings-cpp': true
   esbuild: true
   msw: true
