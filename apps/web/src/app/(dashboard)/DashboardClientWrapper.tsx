@@ -13,7 +13,7 @@ import { PageTransition } from "@/components/animations";
 import { ScrollToTopButton } from "@/components/animations";
 import { useSessionTimeout } from "@/hooks/core/useSessionTimeout";
 import { useAuthBroadcast } from "@/hooks/auth/useAuthBroadcast";
-import { useSessionMonitor } from "@/hooks/auth/useSessionMonitor";
+import { useSessionMonitor, useAuthErrorCheck } from "@/hooks/auth/useSessionMonitor";
 import { useSessionKeepAlive } from "@/hooks/auth/useSessionKeepAlive";
 import { SessionExpiredModal } from "@/components/auth/SessionExpiredModal";
 
@@ -41,6 +41,7 @@ export default function DashboardClientWrapper({ children }: { children: ReactNo
   const { isExpired, renewSession, forceLogout } = useSessionMonitor();
   useAuthBroadcast();
   useSessionKeepAlive(); // Keep session alive while user is active
+  useAuthErrorCheck(); // Redirect immediately if token refresh fails
   const isOnline = useOnlineStatus();
 
   const handleToggle = useCallback(() => {
@@ -73,7 +74,7 @@ export default function DashboardClientWrapper({ children }: { children: ReactNo
       <ScrollToTopButton />
 
       {/* Session inactivity warning */}
-      <Modal.Backdrop isOpen={warningVisible} onOpenChange={() => {}} isDismissable={false} isKeyboardDismissDisabled>
+      <Modal.Backdrop isOpen={warningVisible && !isExpired} onOpenChange={() => {}} isDismissable={false} isKeyboardDismissDisabled>
         <Modal.Container size="sm">
           <Modal.Dialog>
             <Modal.Header>

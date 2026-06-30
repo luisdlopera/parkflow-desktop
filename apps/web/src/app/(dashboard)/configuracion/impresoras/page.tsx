@@ -25,7 +25,7 @@ import { printerSchema, type PrinterSchema } from "@/lib/schemas/config.schemas"
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { FormDrawer } from "@/components/ui/FormDrawer";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import { useConfigCrud } from "@/hooks/core/useConfigCrud";
 
 const COLS: ColumnDef<PrinterRow>[] = [

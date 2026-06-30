@@ -20,8 +20,8 @@ import {
   type ParkingSiteRow,
 } from "@/lib/api/sites-api";
 import { operationalParameterSchema, type OperationalParameterSchema } from "@/lib/schemas/config.schemas";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
+import { errorService } from "@/lib/errors/error-service";
 
 export default function OperacionPage() {
   const [loading, setLoading] = useState(false);
@@ -30,7 +30,6 @@ export default function OperacionPage() {
 
   const { run: runSaveOp, isLoading: isSaveOpLoading } = useAsyncAction<unknown>({
     successMsg: "Parámetros guardados correctamente",
-    errorContext: FrontendActionError.SAVE_DATA,
   });
   const [siteId, setSiteId] = useState("");
   const [catalogLoading, setCatalogLoading] = useState(false);
@@ -58,7 +57,7 @@ export default function OperacionPage() {
           setSiteId(activeSites[0].id);
         }
       } catch (e) {
-        setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
+        setError(errorService.normalize(e).message);
       } finally {
         setCatalogLoading(false);
       }
@@ -88,7 +87,7 @@ export default function OperacionPage() {
           offlineModeEnabled: row.offlineModeEnabled,
         });
       } catch (e) {
-        setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
+        setError(errorService.normalize(e).message);
       } finally {
         setLoading(false);
       }

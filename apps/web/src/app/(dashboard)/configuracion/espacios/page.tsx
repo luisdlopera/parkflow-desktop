@@ -1,6 +1,5 @@
 "use client";
 
-import { FrontendActionError } from "@/lib/errors/error-messages";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
 import { ConfigPageHeader } from "@/features/configuration/components/ui/ConfigPageHeader";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -25,8 +24,8 @@ export default function EspaciosPage() {
   const [filter, setFilter] = useState("ACTIVE");
   const [error, setError] = useState<string | null>(null);
   const { confirm } = useDialog();
-  const { run: runLoad, isLoading: isLoadLoading } = useAsyncAction({ errorContext: FrontendActionError.LOAD_DATA, showErrorToast: true });
-  const { run: runSave, isLoading: isSaveLoading } = useAsyncAction({ errorContext: FrontendActionError.SAVE_DATA, showErrorToast: true });
+  const { run: runLoad, isLoading: isLoadLoading } = useAsyncAction({ showErrorToast: true });
+  const { run: runSave, isLoading: isSaveLoading } = useAsyncAction({ showErrorToast: true });
 
   const load = useCallback(async () => {
     await runLoad(async () => {

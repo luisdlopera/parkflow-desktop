@@ -16,11 +16,8 @@ import {
   updateProfile,
   type UserProfile,
 } from "@/lib/api/profile.api";
-import {
-  getUserFriendlyErrorMessage,
-  FrontendActionError,
-} from "@/lib/errors/error-messages";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
+import { errorService } from "@/lib/errors/error-service";
 import { clearSession } from "@/lib/services/auth-storage.service";
 import { patchSessionUser } from "@/lib/services/auth-domain.service";
 import type { UserRole } from "@/lib/types/settings.types";
@@ -178,7 +175,6 @@ export default function ProfilePage() {
 
   const saveProfile = useAsyncAction<UserProfile>({
     showErrorToast: false,
-    errorContext: FrontendActionError.SAVE_DATA,
     onSuccess: (updated) => {
       applyProfile(updated);
       void patchSessionUser({ name: updated.name, email: updated.email });
@@ -188,7 +184,6 @@ export default function ProfilePage() {
 
   const changePass = useAsyncAction<void>({
     showErrorToast: false,
-    errorContext: FrontendActionError.SAVE_DATA,
     onSuccess: async () => {
       await clearSession();
       router.push("/login?reason=password-changed");
@@ -212,9 +207,7 @@ export default function ProfilePage() {
       try {
         applyProfile(await fetchProfile());
       } catch (e) {
-        setLoadError(
-          getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA)
-        );
+        setLoadError(errorService.normalize(e).message);
       } finally {
         setLoading(false);
       }

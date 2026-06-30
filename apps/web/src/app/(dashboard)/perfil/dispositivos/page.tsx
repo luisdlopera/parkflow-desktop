@@ -5,8 +5,8 @@ import { Card } from "@/components/bridge/Card";
 import { Button } from "@/components/bridge/Button";
 import { PageBackButton } from "@/components/layout/PageBackButton";
 import { fetchDevices, revokeDevice, type DeviceInfo } from "@/lib/api/profile.api";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
+import { errorService } from "@/lib/errors/error-service";
 import { Smartphone, Laptop, ShieldAlert, CheckCircle2, XCircle } from "lucide-react";
 
 function formatDate(iso: string | null): string {
@@ -34,7 +34,7 @@ export default function DispositivosPage() {
       const data = await fetchDevices();
       setDevices(data);
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
+      setError(errorService.normalize(e).message);
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,6 @@ export default function DispositivosPage() {
 
   const revoke = useAsyncAction<DeviceInfo>({
     showErrorToast: true,
-    errorContext: FrontendActionError.SAVE_DATA,
     onSuccess: () => {
       void loadDevices();
     }

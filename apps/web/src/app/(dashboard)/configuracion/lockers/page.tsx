@@ -6,7 +6,6 @@ import { Input } from "@/components/bridge/Input";
 import { Switch } from "@/components/bridge/Switch";
 import DataTable from "@/components/ui/DataTable";
 import { useDialog } from "@/providers/DialogProvider";
-import { FrontendActionError } from "@/lib/errors/error-messages";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
 import {
   fetchLockers,
@@ -32,7 +31,6 @@ export default function LockersPage() {
 
   const { run: runOp, isLoading: isOpLoading, error: opError } = useAsyncAction<unknown>({
     showErrorToast: false,
-    errorContext: FrontendActionError.LOAD_DATA,
   });
 
   const [showCreateSingle, setShowCreateSingle] = useState(false);
