@@ -31,7 +31,8 @@ public class Step3DataValidator {
       "hasFractions", "minFractionMinutes", "fractionValue",
       "hasCourtesy", "graceMinutes",
       "rounding",
-      "enableRateByType", "ratesByType"
+      "enableRateByType", "ratesByType",
+      "pricingConfiguration"
   );
 
   private static final int MAX_RATE_VALUE = OnboardingDomainInvariants.MAX_RATE_VALUE;
@@ -140,6 +141,13 @@ public class Step3DataValidator {
             }
           } else {
             errors.put(field, "Must be a map of vehicle types to rates.");
+          }
+        }
+        case "pricingConfiguration" -> {
+          if (value instanceof Map<?, ?>) {
+            sanitized.put(field, value);
+          } else {
+            errors.put(field, "Must be a pricing configuration object.");
           }
         }
         default -> sanitized.put(field, value); // Pass through if already whitelisted

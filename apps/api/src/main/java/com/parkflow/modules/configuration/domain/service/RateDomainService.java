@@ -76,10 +76,7 @@ public class RateDomainService {
     }
     int s = r.getWindowStart().getHour() * 60 + r.getWindowStart().getMinute();
     int e = r.getWindowEnd().getHour() * 60 + r.getWindowEnd().getMinute();
-    if (e <= s) {
-      throw new OperationException(
-          HttpStatus.BAD_REQUEST, "La hora fin debe ser mayor que la hora inicio (mismo dia)");
-    }
+    if (e <= s) e += 24 * 60;
     return new Win(s, e);
   }
 

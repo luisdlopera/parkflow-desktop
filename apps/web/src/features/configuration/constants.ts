@@ -3,12 +3,13 @@ import type { UserRole } from "@/lib/types/auth.types";
 import type { RateCategory } from "@/lib/api/rates-api";
 
 export const VEHICLE_TYPES: VehicleType[] = ["CAR", "MOTORCYCLE", "BICYCLE", "TRUCK", "BUS", "VAN", "ELECTRIC", "OTHER"];
-export const RATE_TYPES: RateType[] = ["PER_MINUTE", "HOURLY", "DAILY", "FLAT"];
+export const RATE_TYPES: RateType[] = ["PER_MINUTE", "HOURLY", "DAILY", "FLAT", "FRACTIONAL"];
 export const RATE_TYPE_LABELS: Record<string, string> = {
   PER_MINUTE: "Por minuto",
   HOURLY: "Por hora",
   DAILY: "Diaria",
-  FLAT: "Fija"
+  FLAT: "Fija",
+  FRACTIONAL: "Por fracción"
 };
 export const RATE_CATEGORIES: RateCategory[] = ["STANDARD", "MONTHLY", "AGREEMENT", "PREPAID"];
 export const RATE_CATEGORY_LABELS: Record<string, string> = {

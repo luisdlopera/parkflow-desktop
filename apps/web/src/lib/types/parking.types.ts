@@ -2,4 +2,4 @@ export type VehicleType = "CAR" | "MOTORCYCLE" | "BICYCLE" | "TRUCK" | "BUS" | "
 
 export type ParkingSessionStatus = "ACTIVE" | "CLOSED" | "CANCELED";
 
-export type RateType = "PER_MINUTE" | "HOURLY" | "DAILY" | "FLAT";
+export type RateType = "PER_MINUTE" | "HOURLY" | "DAILY" | "FLAT" | "FRACTIONAL";
