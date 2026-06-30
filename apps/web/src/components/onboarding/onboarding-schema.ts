@@ -2,6 +2,27 @@ import { z } from "zod";
 
 const timePattern = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
 
+const REQUIRED_FIELD_MESSAGES: Record<string, string> = {
+  vehicleTypes: "Selecciona al menos un tipo de vehículo.",
+  billingModel: "Selecciona un modelo de cobro.",
+  totalCapacity: "Ingresa la capacidad total del parqueadero.",
+  countryCode: "Selecciona el país de operación.",
+  paymentMethods: "Selecciona al menos un método de pago.",
+};
+
+function messageForIssue(issue: z.ZodIssue) {
+  const path = issue.path.join(".");
+  const fallback = path
+    ? REQUIRED_FIELD_MESSAGES[path] ?? "Debes completar este campo para continuar."
+    : "Debes completar los campos obligatorios para continuar.";
+
+  if (issue.message === "Required" || issue.code === z.ZodIssueCode.invalid_type && "received" in issue && issue.received === "undefined") {
+    return fallback;
+  }
+
+  return issue.message;
+}
+
 export const Step1Schema = z.object({
   vehicleTypes: z.array(z.string()).min(1, "Selecciona al menos un tipo de vehículo."),
   helmetHandling: z.string().optional(),
@@ -138,9 +159,14 @@ export const getStep3Schema = (vehicleTypes: string[]) => z.object({
   graceMinutes: z.coerce.number().optional(),
   
   enableRateByType: z.coerce.boolean().optional(),
-  ratesByType: z.record(z.coerce.number()).optional(),
+  ratesByType: z.record(z.any()).optional(),
 }).superRefine((data, ctx) => {
   const model = data.billingModel;
+  const parsePositiveNumber = (value: unknown) => {
+    if (value === "" || value === undefined || value === null) return null;
+    const parsed = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
   
   if (model === "HOURLY" || model === "MIXED" || model === "FRACTION") {
     if (typeof data.baseValue !== "number" || !Number.isFinite(data.baseValue) || data.baseValue <= 0) {
@@ -172,7 +198,7 @@ export const getStep3Schema = (vehicleTypes: string[]) => z.object({
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Formato de hora inválido. Se esperaba HH:MM (ej: 06:00).", path: ["nightEndTime"] });
     }
     if (data.nightStartTime && data.nightEndTime && data.nightStartTime === data.nightEndTime) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "La hora de inicio y fin no pueden ser iguales.", path: ["nightStartTime"] });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "La hora de inicio y fin no pueden ser iguales.", path: ["nightEndTime"] });
     }
   }
   
@@ -209,6 +235,24 @@ export const getStep3Schema = (vehicleTypes: string[]) => z.object({
     if (invalidRateTypes.length > 0) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Las tarifas contienen tipos de vehículo no configurados en el paso 1: ${invalidRateTypes.join(", ")}.`, path: ["ratesByType"] });
     }
+
+    for (const type of vehicleTypes) {
+      const rawRate = rates[type];
+      const parsedRate = parsePositiveNumber(rawRate);
+      if (parsedRate === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Ingresa una tarifa válida.",
+          path: ["ratesByType", type],
+        });
+      } else if (parsedRate <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "La tarifa por vehículo debe ser mayor a 0.",
+          path: ["ratesByType", type],
+        });
+      }
+    }
   }
 });
 
@@ -225,7 +269,7 @@ export function formatZodErrors(error: z.ZodError): Record<string, string> {
   for (const issue of error.issues) {
     const path = issue.path.join(".");
     if (path && !errors[path]) {
-      errors[path] = issue.message;
+      errors[path] = messageForIssue(issue);
     }
   }
   return errors;

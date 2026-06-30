@@ -31,7 +31,7 @@ const Step6PaymentMethods = memo(function Step6PaymentMethods() {
       </div>
 
       {stepErrors.paymentMethods && (
-        <p className="text-xs text-danger" role="alert">{stepErrors.paymentMethods}</p>
+        <p id="paymentMethods" className="text-xs text-danger" role="alert">{stepErrors.paymentMethods}</p>
       )}
 
       {options.length === 0 ? (

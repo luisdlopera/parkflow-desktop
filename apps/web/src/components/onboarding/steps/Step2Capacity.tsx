@@ -32,11 +32,11 @@ const Step2Capacity = memo(function Step2Capacity() {
       </div>
 
       {stepErrors.capacityByType && (
-        <p className="text-sm text-danger" role="alert">{stepErrors.capacityByType}</p>
+        <p id="capacityByType" className="text-sm text-danger" role="alert">{stepErrors.capacityByType}</p>
       )}
 
       <div className="space-y-3">
-        <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
+        <div id="totalCapacity" className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
           <div className="flex items-center gap-2">
             <Hash className="w-4 h-4 text-default-400" />
             <span className="text-sm font-medium">Capacidad total</span>
@@ -46,7 +46,7 @@ const Step2Capacity = memo(function Step2Capacity() {
             className="w-32"
             aria-label="Capacidad total"
             label="Total"
-            isRequired
+            aria-required
             isInvalid={Boolean(stepErrors.totalCapacity)}
             errorMessage={stepErrors.totalCapacity}
             value={stepData.totalCapacity !== undefined ? String(stepData.totalCapacity) : ""}
@@ -68,7 +68,7 @@ const Step2Capacity = memo(function Step2Capacity() {
                   const capacity = byType[typeCode] !== undefined ? String(byType[typeCode]) : "";
                   const inputError = stepErrors[`capacityByType.${typeCode}`];
                   return (
-                    <div key={typeCode} className="flex flex-col gap-1 p-2 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
+                      <div key={typeCode} id={`capacityByType.${typeCode}`} className="flex flex-col gap-1 p-2 bg-default-50 dark:bg-default-100 dark:bg-zinc-900 border border-default-200 rounded-lg">
                       <div className="flex items-center justify-between">
                         <span className="text-sm">{vehicle?.label}</span>
                         <Input
@@ -108,7 +108,7 @@ const Step2Capacity = memo(function Step2Capacity() {
                 <span className="text-xs">Acepto que la capacidad por tipo sea menor a la total (quedarán cupos libres para uso general)</span>
               </Switch>
               {stepErrors.allowLowerCapacity && (
-                <p className="text-xs text-danger" role="alert">{stepErrors.allowLowerCapacity}</p>
+                <p id="allowLowerCapacity" className="text-xs text-danger" role="alert">{stepErrors.allowLowerCapacity}</p>
               )}
             </div>
           )}

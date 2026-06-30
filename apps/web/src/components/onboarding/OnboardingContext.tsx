@@ -13,7 +13,7 @@ import { useOnboardingStore } from "@/lib/stores/onboarding.store";
 import { useOnboardingStatus } from "@/hooks/auth/useOnboardingStatus";
 import { saveOnboardingStep, type OnboardingStatus } from "@/lib/api/onboarding.api";
 import { toast } from "@heroui/react";
-import { getApiErrorMessage } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import {
   REQUIRED_STEPS,
   VEHICLE_OPTIONS,
@@ -22,6 +22,8 @@ import {
   inferOperationalProfile,
   getNextEnabledStep,
   getPrevEnabledStep,
+  sortEnabledSteps,
+  ONBOARDING_STEP_ORDER,
 } from "./onboarding-logic";
 
 // Re-export all pure logic (constants, validators, navigation helpers, types)
@@ -29,7 +31,18 @@ import {
 // working without touching the 12 step components or the wizard.
 export * from "./onboarding-logic";
 
-const DEFAULT_ENABLED_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const DEFAULT_ENABLED_STEPS = ONBOARDING_STEP_ORDER;
+
+// ─── Helper: show a user‑friendly toast for any onboarding API error ────────
+function showOnboardingError(err: unknown) {
+  const pfError = errorService.normalize(err);
+  const description = pfError.message || "Revisa los datos e intenta nuevamente.";
+
+  toast.danger("No se pudo guardar la configuración", {
+    description,
+    timeout: 8000,
+  });
+}
 
 // ─── Internal context for server state ───────────────────────────────────────
 // Holds the SWR-managed OnboardingStatus and the actions that touch the server.
@@ -84,21 +97,13 @@ export function OnboardingProvider({
       loadedStepRef.current = status.currentStep;
       const fresh =
         (status.progressData?.[`step_${status.currentStep}`] as Record<string, unknown>) ?? {};
-
-      // Only load from server if we haven't made local changes to this step
-      const { stepData: currentStepData } = useOnboardingStore.getState();
-      const currentStepJson = JSON.stringify(currentStepData);
-
-      // If local data differs from what was saved, keep the local data (avoid overwriting unsaved changes)
-      if (currentStepJson === lastSavedDataRef.current) {
-        loadStepFromStatus(status, status.currentStep);
-      }
-
+      loadStepFromStatus(status, status.currentStep);
       lastSavedDataRef.current = JSON.stringify(fresh);
     }
   }, [status, isLoading, onDone, loadStepFromStatus]);
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const autosaveErrorCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Saves current step and navigates to targetStep. Updates SWR cache directly
   // via mutate(next, false) to avoid a redundant re-fetch.
@@ -114,7 +119,7 @@ export function OnboardingProvider({
       const signal = abortControllerRef.current.signal;
 
       const step = status.currentStep ?? 1;
-      const enabledSteps = status.enabledSteps ?? DEFAULT_ENABLED_STEPS;
+      const enabledSteps = sortEnabledSteps(status.enabledSteps ?? DEFAULT_ENABLED_STEPS);
       const safeTarget = enabledSteps.includes(targetStep)
         ? targetStep
         : targetStep > step
@@ -123,17 +128,6 @@ export function OnboardingProvider({
 
       setSaveState("saving");
       try {
-        const optimisticNext = {
-          ...status,
-          currentStep: safeTarget,
-          progressData: {
-            ...(status.progressData || {}),
-            [`step_${step}`]: stepData,
-          },
-        };
-        await mutate(optimisticNext, false);
-        loadStepFromStatus(optimisticNext as OnboardingStatus, safeTarget);
-
         const next = await saveOnboardingStep(companyId, step, stepData, safeTarget, { signal });
         await mutate(next, false);
         loadStepFromStatus(next, safeTarget);
@@ -147,12 +141,7 @@ export function OnboardingProvider({
         setSaveState("error");
         setTimeout(() => setSaveState("idle"), 3000);
 
-        if (step === 2) {
-          toast.danger("No se pudo guardar", {
-            description: getApiErrorMessage(err),
-            timeout: 10000,
-          });
-        }
+        showOnboardingError(err);
 
         // If 403 Forbidden, the admin likely changed the plan constraints.
         // Force a strict re-fetch of the status to get the updated allowed steps.
@@ -197,6 +186,12 @@ export function OnboardingProvider({
           if (err.name === "AbortError") return;
           setSaveState("error");
           setTimeout(() => setSaveState("idle"), 3000);
+          if (!autosaveErrorCooldownRef.current) {
+            showOnboardingError(err);
+            autosaveErrorCooldownRef.current = setTimeout(() => {
+              autosaveErrorCooldownRef.current = null;
+            }, 30_000);
+          }
           if (err?.response?.status === 403 || err?.status === 403) {
             mutate();
           }
@@ -230,7 +225,7 @@ export function useOnboardingNavigation() {
 
   const step = status?.currentStep ?? 1;
   const enabledSteps = useMemo(
-    () => status?.enabledSteps ?? DEFAULT_ENABLED_STEPS,
+    () => sortEnabledSteps(status?.enabledSteps ?? DEFAULT_ENABLED_STEPS),
     [status?.enabledSteps]
   );
   const totalEnabledSteps = enabledSteps.length;

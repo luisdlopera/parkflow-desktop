@@ -58,7 +58,7 @@ export default function QuestionHelp({ children, title = "Explicación", id }: Q
             exit={{ opacity: 0, y: -5, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             id={panelId}
-            className="z-50 absolute left-0 top-full mt-2 w-[260px] max-w-[calc(100vw-32px)] bg-white dark:bg-neutral-900 border border-default-200 dark:border-neutral-800 shadow-lg rounded-md p-3 text-sm text-default-700 dark:text-neutral-200"
+            className="z-50 absolute left-0 top-full mt-2 w-[260px] max-w-[calc(100vw-32px)] bg-white dark:bg-neutral-900 border border-default-200 dark:border-neutral-800 rounded-md p-3 text-sm text-default-700 dark:text-neutral-200"
             aria-hidden={!open}
           >
             <strong className="block text-xs text-default-500 mb-1">{title}</strong>

@@ -5,11 +5,11 @@ import { useDialog } from "@/providers/DialogProvider";
 import { Check, Save, AlertTriangle } from "lucide-react";
 import { skipOnboarding, completeOnboarding } from "@/lib/api/onboarding.api";
 import { patchSessionUser } from "@/lib/services/auth-domain.service";
-import { ApiError } from "@/lib/errors/api-error";
 import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/services/auth-storage.service";
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Spinner, toast } from "@heroui/react";
+import { useOnboardingStore } from "@/lib/stores/onboarding.store";
 import {
   OnboardingProvider,
   useOnboarding,
@@ -18,7 +18,6 @@ import {
   isStepCompleted,
   getPrevEnabledStep,
   getNextEnabledStep,
-  validateStep,
 } from "./OnboardingContext";
 
 import Step1VehicleTypes from "./steps/Step1VehicleTypes";
@@ -46,36 +45,57 @@ function OnboardingContent() {
     totalEnabledSteps,
     persistStep,
     requiredCompleted,
-    vehicleTypes,
-    stepData,
     progress,
     stepErrors,
     validateCurrentStep,
     clearStepErrors,
-    allProgressData,
   } = useOnboarding();
 
-  const currentValidation = validateStep(step, stepData, vehicleTypes);
   const isSaving = saveState === "saving";
 
   const [isSkipping, setIsSkipping] = useState(false);
+  const [focusErrorPath, setFocusErrorPath] = useState<string | null>(null);
+  const validationToastRef = useRef<string | null>(null);
   const { confirm } = useDialog();
   const router = useRouter();
 
   const handleNextStep = () => {
-    const validation = validateStep(step, stepData, vehicleTypes);
+    const isValid = validateCurrentStep();
 
-    if (!validation.isValid) {
-      const firstError = Object.values(validation.errors)[0];
-      toast.danger("Completa los campos requeridos", {
-        description: firstError,
+    if (!isValid) {
+      if (validationToastRef.current) {
+        toast.close(validationToastRef.current);
+      }
+      const firstError = Object.values(useOnboardingStore.getState().stepErrors)[0];
+      validationToastRef.current = toast.danger("Completa los campos requeridos", {
+        description: firstError ?? "Revisa los campos marcados en rojo.",
         timeout: 8000,
-      });
+        onClose: () => {
+          validationToastRef.current = null;
+        },
+      }) as string;
       return;
     }
 
+    if (validationToastRef.current) {
+      toast.close(validationToastRef.current);
+      validationToastRef.current = null;
+    }
     clearStepErrors();
     persistStep(getNextEnabledStep(step, enabledSteps));
+  };
+
+  const stepErrorEntries = useMemo(() => Object.entries(stepErrors), [stepErrors]);
+
+  const handleErrorNavigation = (errorPath: string) => {
+    setFocusErrorPath(errorPath);
+    window.requestAnimationFrame(() => {
+      const element = document.getElementById(errorPath);
+      if (!element) return;
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      const focusable = element.querySelector<HTMLElement>("input, button, textarea, select, [tabindex]");
+      focusable?.focus?.();
+    });
   };
 
   const handleSkip = async () => {
@@ -92,7 +112,12 @@ function OnboardingContent() {
       // Navegación dura: recarga limpia, sin overlay del wizard colgado.
       window.location.assign("/");
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
+      const isAuthError = err instanceof Error && (
+        err.message.toLowerCase().includes("401") ||
+        err.message.toLowerCase().includes("sesión ha expirado") ||
+        err.message.toLowerCase().includes("sesion expirada")
+      );
+      if (isAuthError) {
         await clearSession();
         router.push("/login?reason=expired");
       } else {
@@ -118,7 +143,7 @@ function OnboardingContent() {
       case 2:
         return <Step2Capacity />;
       case 3:
-        return <Step3Rates />;
+        return <Step3Rates focusErrorPath={focusErrorPath} onFocusErrorHandled={() => setFocusErrorPath(null)} />;
       case 4:
         return <Step4BoxAndRegion />;
       case 5:
@@ -166,7 +191,7 @@ function OnboardingContent() {
                 <span>Guardado</span>
               </div>
             )}
-            {saveState === "error" && step !== 2 && (
+            {saveState === "error" && (
               <div className="flex items-center gap-1 text-xs text-danger">
                 <span>Error al guardar</span>
               </div>
@@ -194,8 +219,16 @@ function OnboardingContent() {
               Corrige los siguientes errores para continuar:
             </p>
             <ul className="list-disc list-inside text-sm text-danger-700">
-              {Object.entries(stepErrors).map(([key, message]) => (
-                <li key={key}>{message}</li>
+              {stepErrorEntries.map(([key, message]) => (
+                <li key={key}>
+                  <button
+                    type="button"
+                    className="text-left underline decoration-danger/40 underline-offset-2 hover:decoration-danger"
+                    onClick={() => handleErrorNavigation(key)}
+                  >
+                    {message}
+                  </button>
+                </li>
               ))}
             </ul>
           </div>

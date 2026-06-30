@@ -8,8 +8,9 @@ import { PAYMENT_OPTIONS_FOR_ONBOARDING } from "@/lib/payment-method-catalog";
 
 export type OperationalProfile = "MOTORCYCLE_ONLY" | "CAR_ONLY" | "MIXED";
 
-export const REQUIRED_STEPS = [1, 2, 3, 4, 6];
-export const BASE_ENABLED_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 12];
+export const ONBOARDING_STEP_ORDER = [1, 2, 4, 3, 5, 6, 7, 8, 9, 10, 11, 12];
+export const REQUIRED_STEPS = [1, 2, 4, 3, 6];
+export const BASE_ENABLED_STEPS = ONBOARDING_STEP_ORDER;
 export const STEP_TITLES = [
   "Tipos de vehículo",
   "Capacidad",
@@ -46,6 +47,29 @@ export const COUNTRY_OPTIONS = [
   { code: "US", label: "Estados Unidos", platePattern: "ABC1234", plateExample: "ABC1234" },
   { code: "OTHER", label: "Otro", platePattern: "Libre", plateExample: "Libre" },
 ];
+
+export const COUNTRY_CURRENCY_CODES: Record<string, string> = {
+  CO: "COP",
+  MX: "MXN",
+  AR: "ARS",
+  CL: "CLP",
+  PE: "PEN",
+  US: "USD",
+  ES: "EUR",
+  BR: "BRL",
+  OTHER: "COP",
+};
+
+export function getCurrencyCodeFromCountryCode(countryCode?: string) {
+  return COUNTRY_CURRENCY_CODES[countryCode ?? "CO"] ?? "COP";
+}
+
+export function sortEnabledSteps(steps: number[]) {
+  const allowed = new Set(steps);
+  const ordered = ONBOARDING_STEP_ORDER.filter((step) => allowed.has(step));
+  const extras = steps.filter((step) => !ONBOARDING_STEP_ORDER.includes(step));
+  return [...ordered, ...extras];
+}
 
 export const PRINTER_OPTIONS = [
   { code: "THERMAL", label: "Impresora térmica", description: "Tiquetes pequeños y rápidos" },

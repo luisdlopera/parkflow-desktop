@@ -79,7 +79,7 @@ const Step1VehicleTypes = memo(function Step1VehicleTypes() {
           </QuestionHelp>
         </div>
         {stepErrors.vehicleTypes && (
-          <p className="text-xs text-danger" role="alert">
+          <p id="vehicleTypes" className="text-xs text-danger" role="alert">
             {stepErrors.vehicleTypes}
           </p>
         )}
@@ -150,7 +150,7 @@ const Step1VehicleTypes = memo(function Step1VehicleTypes() {
             </QuestionHelp>
           </div>
           {stepErrors.helmetHandling && (
-            <p className="text-xs text-danger" role="alert">
+            <p id="helmetHandling" className="text-xs text-danger" role="alert">
               {stepErrors.helmetHandling}
             </p>
           )}
@@ -175,7 +175,7 @@ const Step1VehicleTypes = memo(function Step1VehicleTypes() {
           </div>
 
           {helmetHandling === "LOCKERS" && (
-            <div className="p-4 bg-default-50 dark:bg-zinc-800/60 border border-default-200 dark:border-default-700 rounded-xl space-y-3">
+            <div id="helmetTokenCount" className="p-4 bg-default-50 dark:bg-zinc-800/60 border border-default-200 dark:border-default-700 rounded-xl space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <label className="text-sm font-medium text-default-900">
@@ -192,7 +192,7 @@ const Step1VehicleTypes = memo(function Step1VehicleTypes() {
                   className="w-28"
                   variant="bordered"
                   aria-label="Cantidad de lockers"
-                  isRequired={helmetHandling === "LOCKERS"}
+                  aria-required={helmetHandling === "LOCKERS"}
                   isInvalid={Boolean(stepErrors.helmetTokenCount)}
                   errorMessage={stepErrors.helmetTokenCount}
                   value={helmetTokenCount === undefined ? "" : String(helmetTokenCount)}

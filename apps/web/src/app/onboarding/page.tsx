@@ -13,9 +13,7 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Wait for AuthProvider to restore session
     if (authStoreIsLoading) {
-      console.log("[OnboardingPage] Waiting for session restoration...");
       return;
     }
 
@@ -29,13 +27,7 @@ export default function OnboardingPage() {
           router.replace("/login");
           return;
         }
-        console.log("[OnboardingPage] User loaded:", {
-          email: user.email,
-          companyId: user.companyId,
-          onboardingCompleted: user.onboardingCompleted,
-        });
         if (user.onboardingCompleted) {
-          console.log("[OnboardingPage] Onboarding already completed, redirecting to dashboard");
           router.replace("/");
           return;
         }

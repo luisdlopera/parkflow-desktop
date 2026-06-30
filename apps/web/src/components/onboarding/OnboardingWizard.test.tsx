@@ -77,7 +77,7 @@ vi.mock("@/lib/api/onboarding.api", () => ({
     onboardingCompleted: false,
     currentStep: 1,
     skipped: false,
-    enabledSteps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    enabledSteps: [1, 2, 4, 3, 5, 6, 7, 8, 9, 10, 11, 12],
     progressData: {
       step_1: { vehicleTypes: ["CAR"], helmetHandling: "NONE" },
       step_2: { totalCapacity: 10 },
@@ -93,7 +93,7 @@ vi.mock("@/lib/api/onboarding.api", () => ({
     onboardingCompleted: false,
     currentStep: nextStep,
     skipped: false,
-    enabledSteps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    enabledSteps: [1, 2, 4, 3, 5, 6, 7, 8, 9, 10, 11, 12],
     progressData: {
       step_1: { vehicleTypes: ["CAR"], helmetHandling: "NONE" },
       step_2: { totalCapacity: 10 },
@@ -138,7 +138,7 @@ function buildStatus(overrides = {}) {
     onboardingCompleted: false,
     currentStep: 1,
     skipped: false,
-    enabledSteps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    enabledSteps: [1, 2, 4, 3, 5, 6, 7, 8, 9, 10, 11, 12],
     progressData: {
       step_1: { vehicleTypes: ["CAR"], helmetHandling: "NONE" },
       step_2: { totalCapacity: 10 },

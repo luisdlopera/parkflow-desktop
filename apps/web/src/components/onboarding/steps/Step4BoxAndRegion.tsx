@@ -24,7 +24,7 @@ const Step4BoxAndRegion = memo(function Step4BoxAndRegion() {
         </div>
 
         {stepErrors.countryCode && (
-          <p className="text-xs text-danger" role="alert">{stepErrors.countryCode}</p>
+          <p id="countryCode" className="text-xs text-danger" role="alert">{stepErrors.countryCode}</p>
         )}
 
         <div className="grid gap-3 sm:grid-cols-2">
