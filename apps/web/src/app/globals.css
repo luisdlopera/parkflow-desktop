@@ -1226,3 +1226,20 @@ textarea:active {
     color: #f4a17b !important;
   }
 }
+
+  /* Remove shadows from all HeroUI elements as requested */
+  [data-slot="input-wrapper"],
+  [data-slot="base"],
+  [data-slot="trigger"],
+  [data-slot="content"],
+  [data-slot="listbox-wrapper"],
+  [data-slot="menu"],
+  [data-slot="dropdown"],
+  [data-slot="popover-content"],
+  [data-slot="modal"],
+  [data-slot="avatar"],
+  [data-slot="chip"],
+  button[data-slot="base"] {
+    box-shadow: none !important;
+  }
+

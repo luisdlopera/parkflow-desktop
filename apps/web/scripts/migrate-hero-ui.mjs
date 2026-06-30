@@ -2,9 +2,9 @@
  * HeroUI v2 -> v3 migration script
  * Applies batch fixes across ALL .tsx files under apps/web/src/
  */
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.resolve(__dirname);

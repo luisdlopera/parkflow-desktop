@@ -12,8 +12,8 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
 }
 
 // Mock window.matchMedia for useMediaQuery hook
-if (typeof window !== 'undefined') {
-  Object.defineProperty(window, 'matchMedia', {
+if (typeof globalThis.window !== 'undefined') {
+  Object.defineProperty(globalThis.window, 'matchMedia', {
     writable: true,
     value: vi.fn().mockImplementation(query => ({
       matches: false,
@@ -87,3 +87,5 @@ vi.mock('@/components/bridge/Modal', () => ({
   ModalBody: ({ children }: any) => React.createElement('div', null, children),
   ModalFooter: ({ children }: any) => React.createElement('div', null, children),
 }));
+
+
