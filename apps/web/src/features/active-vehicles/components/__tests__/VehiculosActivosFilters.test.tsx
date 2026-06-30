@@ -82,7 +82,7 @@ describe("VehiculosActivosFilters", () => {
     expect(screen.getByTestId("badge")).toHaveTextContent("1");
   });
 
-  it("clears filters when Limpiar is clicked", async () => {
+  it("clears filters when Limpiar todo is clicked", async () => {
     const user = userEvent.setup();
     render(
       <VehiculosActivosFilters
@@ -92,7 +92,7 @@ describe("VehiculosActivosFilters", () => {
       />,
     );
 
-    const clearBtn = screen.getByText("Limpiar");
+    const clearBtn = screen.getByText("Limpiar todo");
     expect(clearBtn).toBeInTheDocument();
 
     await user.click(clearBtn);

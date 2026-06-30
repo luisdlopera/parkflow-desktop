@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { toast } from "@heroui/react";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import type { SettingsPage } from "@/lib/api/_shared";
 
 type CrudData<T> = SettingsPage<T> | T[];
@@ -95,7 +95,7 @@ export function useConfigCrud<T extends { id: string }>(
           setRows((result as SettingsPage<T>).content ?? []);
         }
       } catch (e) {
-        setError(getUserFriendlyErrorMessage(e, FrontendActionError.LOAD_DATA));
+        setError(errorService.normalize(e).message);
       } finally {
         setLoading(false);
       }
@@ -139,7 +139,7 @@ export function useConfigCrud<T extends { id: string }>(
         toast.success(editing ? "Cambios guardados" : "Registro creado");
         return true;
       } catch (e) {
-        const msg = getUserFriendlyErrorMessage(e, FrontendActionError.SAVE_DATA);
+        const msg = errorService.normalize(e).message;
         setError(msg);
         return false;
       }
@@ -155,7 +155,7 @@ export function useConfigCrud<T extends { id: string }>(
         toast.success("Registro eliminado");
         await load();
       } catch (e) {
-        toast.danger(getUserFriendlyErrorMessage(e, FrontendActionError.DELETE_DATA));
+        errorService.toast.error(e);
       }
     },
     [deleteFn, load]
@@ -168,7 +168,7 @@ export function useConfigCrud<T extends { id: string }>(
         await toggleStatusFn?.(row.id, !current);
         await load();
       } catch (e) {
-        toast.danger(getUserFriendlyErrorMessage(e, FrontendActionError.CHANGE_STATUS));
+        errorService.toast.error(e);
       }
     },
     [toggleStatusFn, load]

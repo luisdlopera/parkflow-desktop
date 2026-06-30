@@ -21,7 +21,7 @@ import { fetchConfigurationPaymentMethods } from "@/lib/api/payment-methods-api"
 import { useTerminalCaja } from "@/features/cash-register/hooks/useTerminalCaja";
 import { useOperationSounds } from "@/hooks/ui/useOperationSounds";
 import { PAYMENT_METHOD_CATALOG, type PaymentMethodCode } from "@/lib/payment-method-catalog";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import { toUserMessageFromClientValidation } from "@/lib/validation/request-guard";
 import { toast } from "@heroui/react";
 import type { VehicleType } from "@parkflow/types";
@@ -276,12 +276,12 @@ export function useVehicleExit() {
       }
 } catch (err) {
       const validationMessage = toUserMessageFromClientValidation(err);
-      if (validationMessage) { lookupHook.setError(validationMessage); toast.danger(validationMessage); playError(); return; }
+      if (validationMessage) { lookupHook.setError(validationMessage); errorService.toast.error(validationMessage); playError(); return; }
 
       if (!isNetworkError(err)) {
-        const errMsg = getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA);
+        const errMsg = errorService.normalize(err).message;
         lookupHook.setError(errMsg);
-        toast.danger(errMsg);
+        errorService.toast.error(err);
         playError();
         return;
       }
@@ -302,7 +302,7 @@ export function useVehicleExit() {
       } else {
         const errMsg = "Error de red procesando salida";
         lookupHook.setError(errMsg);
-        toast.danger(errMsg);
+        errorService.toast.error(errMsg);
         playError();
       }
     } finally {
@@ -345,10 +345,10 @@ export function useVehicleExit() {
       const queued = await queueOfflineOperation("TICKET_REPRINTED", { ticketNumber: active.receipt.ticketNumber, reason: reprintReason, occurredAtIso: new Date().toISOString(), origin: "OFFLINE_PENDING_SYNC" });
       if (queued) {
         clearIdempotencyKey("reprint", idempotencyFingerprint);
-        toast.danger("Recibo guardado offline, pero no se pudo contactar a la impresora.");
+        errorService.toast.error("Recibo guardado offline, pero no se pudo contactar a la impresora.");
         playSuccess();
       } else {
-        lookupHook.setError(getUserFriendlyErrorMessage(err, FrontendActionError.PRINT_ACTION));
+        lookupHook.setError(errorService.normalize(err).message);
         playError();
       }
     } finally {
@@ -394,7 +394,7 @@ export function useVehicleExit() {
         setMessage("Sin internet: operacion de ticket perdido en cola offline.");
         playSuccess();
       } else {
-        lookupHook.setError(getUserFriendlyErrorMessage(err, FrontendActionError.SAVE_DATA));
+        lookupHook.setError(errorService.normalize(err).message);
         playError();
       }
     } finally {

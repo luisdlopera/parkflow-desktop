@@ -22,9 +22,10 @@ vi.mock("@/hooks/ui/useOperationSounds", () => ({
   useOperationSounds: () => ({ playSuccess: mockPlaySuccess, playError: mockPlayError }),
 }));
 
-vi.mock("@/lib/errors/error-messages", () => ({
-  getUserFriendlyErrorMessage: mockGetUserFriendlyErrorMessage,
-  FrontendActionError: { LOAD_DATA: "LOAD_DATA" },
+const mockNormalize = vi.hoisted(() => vi.fn((err: unknown) => ({ message: err instanceof Error ? err.message : "Error" })));
+
+vi.mock("@/lib/errors/error-service", () => ({
+  errorService: { normalize: mockNormalize },
 }));
 
 const availableMethods = [
@@ -188,7 +189,8 @@ describe("useExitLookup", () => {
     });
 
     expect(result.current.active).toBeNull();
-    expect(mockGetUserFriendlyErrorMessage).toHaveBeenCalledWith(expect.any(Error), "LOAD_DATA");
+    expect(result.current.error).toBe("Network failure");
+    expect(mockNormalize).toHaveBeenCalledWith(expect.any(Error));
     expect(mockPlayError).toHaveBeenCalled();
   });
 

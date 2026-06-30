@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useState } from "react";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import {
   fetchDailyOperations,
   fetchCashSessionHistory,
@@ -171,7 +171,7 @@ export function useReports() {
           break;
       }
     } catch (e) {
-      setError(getUserFriendlyErrorMessage(e, FrontendActionError.REPORT_ACTION));
+      setError(errorService.normalize(e).message);
     } finally {
       setLoading(false);
     }

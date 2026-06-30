@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { lookupActiveSession } from "../services/vehicle-exit.service";
 import { useOperationSounds } from "@/hooks/ui/useOperationSounds";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import type { ActiveLookup, CustodiedItemInfo } from "./useVehicleExit";
 import type { PaymentMethodCode } from "@/lib/payment-method-catalog";
 
@@ -73,7 +73,7 @@ export function useExitLookup(availablePaymentMethods: Array<{ code: PaymentMeth
       setReturnConfirmedIds(pending.map((item) => item.id));
       playSuccess();
     } catch (err) {
-      setError(getUserFriendlyErrorMessage(err, FrontendActionError.LOAD_DATA));
+      setError(errorService.normalize(err).message);
       playError();
     } finally {
       setSearching(false);

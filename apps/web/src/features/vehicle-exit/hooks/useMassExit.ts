@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { currentUser } from "@/lib/services/auth-domain.service";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
-import { FrontendActionError } from "@/lib/errors/error-messages";
 import {
   previewMassExit,
   processMassExit,
@@ -43,7 +42,6 @@ export function useMassExit() {
     isLoading: isPreviewing,
     error: previewError,
   } = useAsyncAction<MassExitPreviewResponseDto>({
-    errorContext: FrontendActionError.LOAD_DATA,
     showErrorToast: true,
     onSuccess: (data) => {
       setPreview(data);
@@ -56,7 +54,6 @@ export function useMassExit() {
     isLoading: isProcessing,
     error: processError,
   } = useAsyncAction<MassExitResponseDto>({
-    errorContext: FrontendActionError.SAVE_DATA,
     showErrorToast: true,
     onSuccess: (data) => {
       setResult(data);

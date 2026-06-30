@@ -11,8 +11,7 @@ import {
   buildTicketPreviewForOperation,
   printReceiptIfTauri,
 } from "@/lib/tauri-print";
-import { normalizeApiError } from "@/lib/errors/normalize-api-error";
-import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
+import { errorService } from "@/lib/errors/error-service";
 import { normalizePlate, inferVehicleType } from "@/lib/validation/plate-validator";
 import { toUserMessageFromClientValidation } from "@/lib/validation/request-guard";
 import { currentUser } from "@/lib/services/auth-domain.service";
@@ -62,16 +61,11 @@ function isNetworkError(error: unknown): boolean {
   return false;
 }
 
-function extractValidationError(apiError: any, defaultMsg: string): string {
-  if (apiError.code === "VALIDATION_ERROR" && apiError.details) {
-    if (Array.isArray(apiError.details) && apiError.details.length > 0) {
-      const detail = apiError.details[0] as { message?: string };
-      return detail.message || defaultMsg;
-    }
-    if (typeof apiError.details === "object") {
-      const details = apiError.details as Record<string, unknown>;
-      const firstKey = Object.keys(details)[0];
-      if (firstKey) return `${firstKey}: ${details[firstKey]}`;
+function extractValidationError(pfError: any, defaultMsg: string): string {
+  if (pfError.code === "VALIDATION_ERROR") {
+    if (pfError.fieldErrors && Object.keys(pfError.fieldErrors).length > 0) {
+      const firstKey = Object.keys(pfError.fieldErrors)[0];
+      return `${firstKey}: ${pfError.fieldErrors[firstKey]}`;
     }
   }
   return defaultMsg;
@@ -198,13 +192,8 @@ export function useVehicleEntry({
             onError("Este vehículo ya tiene una entrada activa.");
             return;
           }
-          const fakeRes = new Response(JSON.stringify(payload), {
-            status: response.status,
-            statusText: response.statusText,
-          });
-          const apiError = await normalizeApiError(fakeRes);
-          const userError = getUserErrorMessage(apiError, "tickets.create");
-          onError(extractValidationError(apiError, userError.description));
+          const pfError = errorService.normalize({ ...payload, status: response.status });
+          onError(extractValidationError(pfError, pfError.message));
           return;
         }
 
