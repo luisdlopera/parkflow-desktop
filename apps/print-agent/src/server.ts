@@ -369,7 +369,7 @@ async function runLocalPrintJob(
 }
 
 if (!process.env.VITEST) {
-  const started = (async () => {
+  void (async () => {
     const app = await buildApp();
     try {
       await app.listen({ port: agentPort, host: "127.0.0.1" });

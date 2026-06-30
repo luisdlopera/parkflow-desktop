@@ -8,7 +8,9 @@
     "start": "node --enable-source-maps dist/server.js",
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "service:install": "node scripts/install-service.js",
+    "service:uninstall": "node scripts/uninstall-service.js"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
@@ -17,9 +19,11 @@
     "@parkflow/print-core": "workspace:*",
     "@parkflow/types": "workspace:*",
     "fastify": "^4.28.0",
-    "fastify-plugin": "^6.0.0"
+    "fastify-plugin": "^6.0.0",
+    "node-windows": "1.0.0-beta.8"
   },
   "devDependencies": {
+    "@parkflow/config": "workspace:*",
     "@types/node": "^20.14.10",
     "tsx": "^4.15.7",
     "typescript": "^5.5.3",
