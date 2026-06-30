@@ -21,7 +21,17 @@ export async function fetchWithCredentials(input: FetchInput, init?: FetchInit):
         useAuthStore.getState().logout();
       } catch (e) {}
 
-      window.location.href = `/login?next=${encodeURIComponent(nextUrl)}&reason=expired`;
+      // Dispatch event for components (AuthGate) to listen and do router.push
+      // Fallback to hard redirect if no listener (Tauri, offline, etc)
+      const event = new CustomEvent("parkflow-auth-expired", {
+        detail: { next: nextUrl },
+      });
+      window.dispatchEvent(event);
+
+      // Hard redirect as fallback if event not handled
+      setTimeout(() => {
+        window.location.href = `/login?next=${encodeURIComponent(nextUrl)}&reason=expired`;
+      }, 100);
     }
     // Devolver la respuesta para que el caller decida qué hacer (SWR lanzará error)
     return response;

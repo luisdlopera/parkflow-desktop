@@ -1,20 +1,52 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Skeleton } from "@heroui/react";
 import { useAuthStore } from "@/lib/stores/auth.store";
+import { isTauri } from "@/auth/runtime/detectRuntime";
+import { getSession, signOut, useSession } from "next-auth/react";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isLoading, isAuthenticated, user } = useAuthStore();
+  const storeAuth = useAuthStore();
+  const webSession = useSession();
+  const isDesktop = isTauri();
+  const [verifyingSession, setVerifyingSession] = useState(false);
+  const verifyingSessionRef = useRef(false);
+  const isLoading = isDesktop ? storeAuth.isLoading : webSession.status === "loading";
+  const isAuthenticated = isDesktop ? storeAuth.isAuthenticated : webSession.status === "authenticated";
+  const user = isDesktop ? storeAuth.user : webSession.data?.user;
+
+  // Listen for auth expiry event from fetch layer
+  useEffect(() => {
+    const handleAuthExpired = (event: Event) => {
+      const customEvent = event as CustomEvent<{ next: string }>;
+      const nextUrl = customEvent.detail?.next ?? "/";
+      router.push(`/login?next=${encodeURIComponent(nextUrl)}&reason=expired`);
+    };
+
+    if (!isDesktop && typeof window !== "undefined") {
+      window.addEventListener("parkflow-auth-expired", handleAuthExpired);
+      return () => window.removeEventListener("parkflow-auth-expired", handleAuthExpired);
+    }
+  }, [isDesktop, router]);
 
   useEffect(() => {
     if (isLoading) return;
 
     if (!isAuthenticated) {
-      router.replace(`/login?next=${encodeURIComponent(pathname ?? "/")}`);
+      if (isDesktop) {
+        router.replace(`/login?next=${encodeURIComponent(pathname ?? "/")}`);
+      }
+      return;
+    }
+
+    if (!isDesktop && webSession.data?.parkflow?.error) {
+      void signOut({ redirect: false }).then(() => {
+        router.replace(`/login?reason=session-expired&next=${encodeURIComponent(pathname ?? "/")}`);
+      });
       return;
     }
 
@@ -34,9 +66,9 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     } else if (user.onboardingCompleted && isOnboardingPage) {
       router.replace("/");
     }
-  }, [isLoading, isAuthenticated, user, pathname, router]);
+  }, [isLoading, isAuthenticated, user, pathname, router, isDesktop, webSession.data?.parkflow?.error]);
 
-  if (isLoading) {
+  if (isLoading || verifyingSession) {
     return (
       <div className="flex flex-col gap-4 p-6">
         <Skeleton className="h-10 w-48 rounded-xl" />
