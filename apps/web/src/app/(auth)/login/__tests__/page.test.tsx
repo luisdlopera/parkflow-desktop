@@ -3,34 +3,85 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LoginPage from '../page';
 import { useRouter } from 'next/navigation';
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Mocks de infraestructura
+// ──────────────────────────────────────────────────────────────────────────────
+
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(),
 }));
 
-vi.mock('@/lib/services/auth-storage.service', () => ({
-  loadSession: vi.fn(async () => null),
-  saveSession: vi.fn(),
-  clearSession: vi.fn(),
+vi.mock('@/auth/runtime/detectRuntime', () => ({
+  isTauri: () => false,
 }));
 
-vi.mock('@/lib/services/auth-domain.service', () => ({
-  currentUser: vi.fn(async () => null),
+vi.mock('@/lib/services/remember-me.service', () => ({
+  loadRememberMeEmail: vi.fn(() => null),
+  saveRememberMeEmail: vi.fn(),
+  clearRememberMeEmail: vi.fn(),
 }));
 
 vi.mock('@/lib/api/auth-api', () => ({
   checkSetupRequired: vi.fn(async () => ({ setupRequired: false })),
-  postInitialSetup: vi.fn(),
 }));
 
-const mockLogin = vi.hoisted(() => vi.fn());
-vi.mock('@/features/auth/api/auth.api', () => ({
-  login: mockLogin,
+vi.mock('@/hooks/auth/useAuthBroadcast', () => ({
+  broadcastAuthEvent: vi.fn(),
 }));
 
-vi.mock('@/lib/errors/get-user-error-message', () => ({
-  getUserErrorMessage: vi.fn(() => ({ title: 'Error de autenticación', description: 'Credenciales inválidas' })),
+// ──────────────────────────────────────────────────────────────────────────────
+// Mocks del nuevo flujo: createAuthProvider + AuthSession
+// ──────────────────────────────────────────────────────────────────────────────
+const mockLogin = vi.fn();
+
+vi.mock('@/auth/runtime/createAuthProvider', () => ({
+  createAuthProvider: () => Promise.resolve({
+    login: (...args: unknown[]) => mockLogin(...args),
+    restoreSession: vi.fn(async () => null),
+    logout: vi.fn(),
+  }),
 }));
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Mocks auxiliares
+// ──────────────────────────────────────────────────────────────────────────────
+vi.mock('@/lib/stores/auth.store', () => ({
+  useAuthStore: Object.assign(
+    (selector?: any) => {
+      const state = { user: null, isAuthenticated: false };
+      return selector ? selector(state) : state;
+    },
+    { getState: () => ({ setUser: vi.fn(), setPermissions: vi.fn(), setSessionExpiresAt: vi.fn() }) },
+  ),
+}));
+
+vi.mock('@/lib/api/config', () => ({ authBase: () => 'http://localhost:6011/api/v1/auth' }));
+vi.mock('@/lib/api/fetch-with-credentials', () => ({ fetchWithCredentials: vi.fn() }));
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────────────────────────────────────
+function buildSession(overrides: Record<string, unknown> = {}) {
+  return {
+    user: {
+      id: '1',
+      email: 'admin@test.com',
+      name: 'Admin',
+      role: 'ADMIN',
+      onboardingCompleted: true,
+      permissions: [],
+      ...overrides,
+    },
+    session: { sessionId: 'sess-1', accessTokenExpiresAtIso: new Date(Date.now() + 3_600_000).toISOString() },
+    offlineLease: null,
+    expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+    permissions: [],
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Tests
+// ──────────────────────────────────────────────────────────────────────────────
 describe('LoginPage', () => {
   const mockReplace = vi.fn();
   const mockPush = vi.fn();
@@ -41,8 +92,12 @@ describe('LoginPage', () => {
       replace: mockReplace,
       push: mockPush,
     } as any);
+    mockLogin.mockResolvedValue(buildSession());
   });
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // Renderizado
+  // ──────────────────────────────────────────────────────────────────────────
   describe('rendering', () => {
     it('renders login form with correct structure', () => {
       render(<LoginPage />);
@@ -63,40 +118,46 @@ describe('LoginPage', () => {
     });
   });
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // Envío del formulario
+  // ──────────────────────────────────────────────────────────────────────────
   describe('form submission', () => {
-    it('calls login and redirects to dashboard on successful login', async () => {
-      mockLogin.mockResolvedValueOnce({
-        user: { id: '1', email: 'admin@test.com', onboardingCompleted: true },
-        session: { accessTokenExpiresAtIso: new Date().toISOString() },
-      });
-      render(<LoginPage />);
-      const emailInput = screen.getByLabelText(/correo electrónico/i);
-      const passwordInput = screen.getByTestId('password');
-      const submitButton = screen.getByTestId('login-button');
+    it('calls auth provider login and redirects to dashboard', async () => {
+      mockLogin.mockResolvedValue(buildSession({ onboardingCompleted: true }));
 
-      fireEvent.change(emailInput, { target: { value: 'admin@parkflow.local' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-      fireEvent.click(submitButton);
+      render(<LoginPage />);
+      fireEvent.change(screen.getByLabelText(/correo electrónico/i), {
+        target: { value: 'admin@parkflow.local' },
+      });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'Qwert.12345' },
+      });
+      fireEvent.click(screen.getByTestId('login-button'));
 
       await waitFor(() => {
-        expect(mockLogin).toHaveBeenCalled();
+        expect(mockLogin).toHaveBeenCalledWith({
+          email: 'admin@parkflow.local',
+          password: 'Qwert.12345',
+          rememberMe: false,
+        });
       });
-      expect(mockReplace).toHaveBeenCalledWith('/');
+
+      await waitFor(() => {
+        expect(mockReplace).toHaveBeenCalledWith('/');
+      });
     });
 
-    it('redirects to onboarding if user has not completed onboarding', async () => {
-      mockLogin.mockResolvedValueOnce({
-        user: { id: '1', email: 'admin@test.com', onboardingCompleted: false },
-        session: { accessTokenExpiresAtIso: new Date().toISOString() },
-      });
-      render(<LoginPage />);
-      const emailInput = screen.getByLabelText(/correo electrónico/i);
-      const passwordInput = screen.getByTestId('password');
-      const submitButton = screen.getByTestId('login-button');
+    it('redirects to /onboarding when onboardingCompleted is false', async () => {
+      mockLogin.mockResolvedValue(buildSession({ onboardingCompleted: false }));
 
-      fireEvent.change(emailInput, { target: { value: 'admin@parkflow.local' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-      fireEvent.click(submitButton);
+      render(<LoginPage />);
+      fireEvent.change(screen.getByLabelText(/correo electrónico/i), {
+        target: { value: 'nuevo@parkflow.local' },
+      });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'Qwert.12345' },
+      });
+      fireEvent.click(screen.getByTestId('login-button'));
 
       await waitFor(() => {
         expect(mockReplace).toHaveBeenCalledWith('/onboarding');
@@ -104,43 +165,70 @@ describe('LoginPage', () => {
     });
   });
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // Manejo de errores
+  // ──────────────────────────────────────────────────────────────────────────
   describe('error handling', () => {
-    it('displays error message on failed login', async () => {
-      mockLogin.mockRejectedValueOnce(new Error('Invalid credentials'));
-      render(<LoginPage />);
-      const emailInput = screen.getByLabelText(/correo electrónico/i);
-      const passwordInput = screen.getByTestId('password');
-      const submitButton = screen.getByTestId('login-button');
+    it('displays error when login fails', async () => {
+      mockLogin.mockRejectedValue(new Error('AUTH_INVALID_CREDENTIALS'));
 
-      fireEvent.change(emailInput, { target: { value: 'wrong@test.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'badpassword' } });
-      fireEvent.click(submitButton);
+      render(<LoginPage />);
+      fireEvent.change(screen.getByLabelText(/correo electrónico/i), {
+        target: { value: 'wrong@test.com' },
+      });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'badpassword' },
+      });
+      fireEvent.click(screen.getByTestId('login-button'));
 
       await waitFor(() => {
-        expect(screen.getByText(/Error de autenticación/)).toBeInTheDocument();
+        expect(screen.getByText(/error inesperado/i)).toBeInTheDocument();
+      });
+    });
+
+    it('displays network error message', async () => {
+      mockLogin.mockRejectedValue(new TypeError('Failed to fetch'));
+
+      render(<LoginPage />);
+      fireEvent.change(screen.getByLabelText(/correo electrónico/i), {
+        target: { value: 'admin@test.com' },
+      });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'password123' },
+      });
+      fireEvent.click(screen.getByTestId('login-button'));
+
+      await waitFor(() => {
+        expect(screen.getByText(/sin conexión/i)).toBeInTheDocument();
       });
     });
   });
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // Estado de carga
+  // ──────────────────────────────────────────────────────────────────────────
   describe('loading state', () => {
-    it('shows loading indicator on submit button while logging in', async () => {
-      let resolveLogin: (value: any) => void;
-      const loginPromise = new Promise((resolve) => { resolveLogin = resolve; });
-      mockLogin.mockReturnValueOnce(loginPromise);
+    it('disables submit button while login is in progress', async () => {
+      let resolveLogin!: (value: unknown) => void;
+      const pendingLogin = new Promise((resolve) => { resolveLogin = resolve; });
+      mockLogin.mockReturnValueOnce(pendingLogin);
 
       render(<LoginPage />);
-      const emailInput = screen.getByLabelText(/correo electrónico/i);
-      const passwordInput = screen.getByTestId('password');
       const submitButton = screen.getByTestId('login-button');
 
-      fireEvent.change(emailInput, { target: { value: 'admin@parkflow.local' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
+      fireEvent.change(screen.getByLabelText(/correo electrónico/i), {
+        target: { value: 'admin@parkflow.local' },
+      });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'Qwert.12345' },
+      });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
         expect(submitButton).toBeDisabled();
       });
-      resolveLogin!({ user: { id: '1', email: 'admin@test.com', onboardingCompleted: true } });
+
+      resolveLogin(buildSession());
     });
   });
 });

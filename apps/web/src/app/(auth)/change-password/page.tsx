@@ -6,9 +6,8 @@ import { Separator } from "@heroui/react";
 import { Card } from "@/components/bridge/Card";
 import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
-import { loadSession, saveSession } from "@/lib/services/auth-storage.service";
-import { currentUser } from "@/lib/services/auth-domain.service";
 import { changePassword } from "@/lib/api/auth-api";
+import { useAuthStore } from "@/lib/stores/auth.store";
 import type { AuthUser } from "@parkflow/types";
 
 export default function ChangePasswordPage() {
@@ -24,19 +23,24 @@ export default function ChangePasswordPage() {
 
   useEffect(() => {
     let mounted = true;
-    currentUser().then((u) => {
+    void (async () => {
+      const { createAuthProvider } = await import("@/auth/runtime/createAuthProvider");
+      const authProvider = await createAuthProvider();
+      const session = await authProvider.restoreSession();
       if (!mounted) return;
-      if (!u) {
+      
+      const authUser = session?.user || null;
+      if (!authUser) {
         router.replace("/login");
         return;
       }
-      if (!u.requirePasswordChange) {
+      if (!authUser.requirePasswordChange) {
         router.replace("/");
         return;
       }
-      setUser(u);
+      setUser(authUser);
       setLoading(false);
-    });
+    })();
     return () => { mounted = false; };
   }, [router]);
 
@@ -57,13 +61,16 @@ export default function ChangePasswordPage() {
     try {
       setIsChangingPassword(true);
       await changePassword(currentPassword, newPassword);
-
-      const session = await loadSession();
-      if (session) {
-        await saveSession({
-          ...session,
-          user: { ...session.user, requirePasswordChange: false }
-        });
+      const { createAuthProvider } = await import("@/auth/runtime/createAuthProvider");
+      const refreshedSession = await (await createAuthProvider()).refresh();
+      if (refreshedSession?.user) {
+        useAuthStore.getState().setUser(refreshedSession.user);
+        if (refreshedSession.permissions) {
+          useAuthStore.getState().setPermissions(refreshedSession.permissions);
+        }
+        if (refreshedSession.expiresAt) {
+          useAuthStore.getState().setSessionExpiresAt(refreshedSession.expiresAt);
+        }
       }
       router.push("/");
     } catch (err) {
@@ -74,12 +81,16 @@ export default function ChangePasswordPage() {
   };
 
   const handleSkip = async () => {
-    const session = await loadSession();
-    if (session) {
-      await saveSession({
-        ...session,
-        user: { ...session.user, requirePasswordChange: false }
-      });
+    const { createAuthProvider } = await import("@/auth/runtime/createAuthProvider");
+    const refreshedSession = await (await createAuthProvider()).refresh();
+    if (refreshedSession?.user) {
+      useAuthStore.getState().setUser(refreshedSession.user);
+      if (refreshedSession.permissions) {
+        useAuthStore.getState().setPermissions(refreshedSession.permissions);
+      }
+      if (refreshedSession.expiresAt) {
+        useAuthStore.getState().setSessionExpiresAt(refreshedSession.expiresAt);
+      }
     }
     router.push("/");
   };
