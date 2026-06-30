@@ -1,18 +1,6 @@
-import { loadSession } from "@/lib/services/auth-storage.service";
+import { currentUser } from "@/lib/services/auth-domain.service";
 
 export async function resolveCurrentCompanyId(): Promise<string | null> {
-  const session = await loadSession();
-  if (!session) return null;
-
-  // 1. Intentar usar el companyId del usuario logueado (funciona para ADMIN, CAJERO, etc.)
-  const userCompanyId = session.user?.companyId;
-  if (userCompanyId) {
-    return userCompanyId;
-  }
-
-  // 2. Fallback removed (was JWT decoding)
-  
-  // 3. No hay más fallbacks por seguridad — si no se puede determinar el tenant,
-  //    se retorna null para que el componente decida cómo manejarlo
-  return null;
+  const user = await currentUser();
+  return user?.companyId ?? null;
 }

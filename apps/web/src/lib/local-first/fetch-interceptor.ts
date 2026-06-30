@@ -1,5 +1,4 @@
 import { isLocalFirstMode } from "./config";
-import { handleAuthRoutes } from "./local-auth-handlers";
 import { handleOperationsRoutes } from "./local-operations-handlers";
 import { handleCashRoutes } from "./local-cash-handlers";
 import { handleOnboardingRoutes } from "./local-onboarding-handlers";
@@ -34,7 +33,6 @@ export async function handleLocalFirstFetch(
   };
 
   const handlers = [
-    handleAuthRoutes,
     (path: string, meth: string, getBodyFn: () => Record<string, unknown>, inv: typeof invoke) => handleOperationsRoutes(path, meth, searchParams, getBodyFn, inv),
     (path: string, meth: string, getBodyFn: () => Record<string, unknown>, inv: typeof invoke) => handleCashRoutes(path, meth, searchParams, getBodyFn, inv),
     handleOnboardingRoutes

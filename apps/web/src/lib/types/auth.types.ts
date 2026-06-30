@@ -14,6 +14,8 @@ export type User = {
   active: boolean;
   createdAt: string;
   updatedAt: string;
+  onboardingCompleted?: boolean;
+  requirePasswordChange?: boolean;
 };
 
 export type Session = {

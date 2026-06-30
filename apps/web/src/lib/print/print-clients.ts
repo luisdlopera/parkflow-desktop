@@ -214,9 +214,9 @@ export async function createPrintContextWithUser(
   base: ReturnType<typeof createDefaultPrintContext>
 ): Promise<PrintContext> {
   try {
-    const { loadSession } = await import("@/lib/services/auth-storage.service");
-    const s = await loadSession();
-    const id = s?.user?.id != null ? String(s.user.id) : null;
+    const { currentUser } = await import("@/lib/services/auth-domain.service");
+    const user = await currentUser();
+    const id = user?.id != null ? String(user.id) : null;
     return { ...base, operatorUserId: id };
   } catch {
     return base;

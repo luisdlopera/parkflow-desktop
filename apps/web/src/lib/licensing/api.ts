@@ -1,5 +1,4 @@
 import { authHeaders } from "@/lib/services/auth-domain.service";
-import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 import {
   licensingCreateCompanyRequestSchema,
   licensingGenerateLicenseRequestSchema,
@@ -27,6 +26,15 @@ import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 
 const API_BASE = getApiBase();
 
+const statusMessages: Record<number, string> = {
+  400: "Datos inválidos o incompletos. Por favor, revisa la información ingresada.",
+  401: "Tu sesión ha expirado o credenciales incorrectas.",
+  403: "No tienes permisos para realizar esta acción.",
+  404: "El recurso solicitado no existe o fue eliminado.",
+  409: "Conflicto con los datos actuales. Es posible que el registro ya exista o haya sido modificado.",
+  500: "Ocurrió un error interno en el servidor.",
+};
+
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const headers = await authHeaders();
   
@@ -40,7 +48,15 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
     });
 
     if (!response.ok) {
-      throw await normalizeApiError(response);
+      const rawText = await response.text();
+      let body: Record<string, unknown> = {};
+      try { body = rawText ? JSON.parse(rawText) as Record<string, unknown> : {}; } catch { /* ignore */ }
+      const status = response.status;
+      const userMsg = typeof body.userMessage === "string" ? body.userMessage
+        : typeof body.message === "string" ? body.message
+        : undefined;
+      const msg = userMsg || statusMessages[status] || `No pudimos completar tu solicitud (${status}).`;
+      throw new Error(msg);
     }
 
     // Handle 204 No Content
@@ -50,10 +66,10 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
     return response.json();
   } catch (error) {
-    if (error instanceof Error && error.name === "ApiError") {
+    if (error instanceof Error) {
       throw error;
     }
-    throw handleNetworkError(error);
+    throw new Error("Sin conexión. Verifica internet o la red local e intenta nuevamente.");
   }
 }
 

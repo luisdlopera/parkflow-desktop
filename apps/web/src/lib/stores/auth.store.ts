@@ -5,7 +5,6 @@ export interface User {
   name: string;
   email: string;
   role: string;
-  // Optional fields present when user is set from AuthUser API response
   requirePasswordChange?: boolean;
   onboardingCompleted?: boolean;
   companyId?: string;
@@ -22,6 +21,7 @@ interface AuthState {
   setPermissions: (permissions: string[]) => void;
   setLoading: (isLoading: boolean) => void;
   setSessionExpiresAt: (expiresAt: string | null) => void;
+  setAuthState: (user: User | null, permissions?: string[], expiresAt?: string | null) => void;
   logout: () => void;
   hasPermission: (permission: string) => boolean;
 }
@@ -30,12 +30,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   permissions: [],
   isAuthenticated: false,
-  isLoading: true, // Empieza en true para esperar la verificación inicial
+  isLoading: true,
   sessionExpiresAt: null,
   setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
   setPermissions: (permissions) => set({ permissions }),
   setLoading: (isLoading) => set({ isLoading }),
   setSessionExpiresAt: (expiresAt) => set({ sessionExpiresAt: expiresAt }),
-  logout: () => set({ user: null, permissions: [], isAuthenticated: false, isLoading: false, sessionExpiresAt: null }),
+  setAuthState: (user, permissions, expiresAt) => set({
+    user,
+    permissions: permissions ?? user?.permissions ?? [],
+    isAuthenticated: !!user,
+    isLoading: false,
+    sessionExpiresAt: expiresAt ?? null,
+  }),
+  logout: () => set({
+    user: null,
+    permissions: [],
+    isAuthenticated: false,
+    isLoading: false,
+    sessionExpiresAt: null,
+  }),
   hasPermission: (permission) => get().permissions.includes(permission),
 }));

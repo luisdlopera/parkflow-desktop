@@ -1,67 +1,50 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { loadSession, saveSession, clearSession, tauriInvoke } from '../auth-storage.service';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { loadSession, saveSession, clearSession } from "../auth-storage.service";
 
-const mockInvoke = vi.fn();
-vi.mock('@tauri-apps/api/core', () => ({
-  invoke: (...args: any[]) => mockInvoke(...args)
+const mockProvider = {
+  restoreSession: vi.fn(),
+};
+
+vi.mock("@/auth/runtime/createAuthProvider", () => ({
+  createAuthProvider: () => Promise.resolve(mockProvider),
 }));
 
-describe('Auth Storage Service', () => {
-  beforeEach(() => {
+describe("Auth Storage Service", () => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    mockInvoke.mockReset();
-    mockInvoke.mockResolvedValue(null);
-    vi.stubGlobal('window', {
-      __TAURI_INTERNALS__: {
-        invoke: vi.fn(),
-      }
-    });
+    mockProvider.restoreSession.mockReset();
+    await clearSession();
   });
 
-  describe('tauriInvoke', () => {
-    it('should return null if not in browser', async () => {
-      vi.stubGlobal('window', undefined);
-      const result = await tauriInvoke('cmd');
-      expect(result).toBeNull();
-    });
+  it("restores session from backend when cache is empty", async () => {
+    const session = { user: { id: "u-1" }, session: { sessionId: "s-1" }, offlineLease: null };
+    mockProvider.restoreSession.mockResolvedValue(session);
 
-    it('should return null if tauri internals not present', async () => {
-      vi.stubGlobal('window', {});
-      const result = await tauriInvoke('cmd');
-      expect(result).toBeNull();
-    });
+    const restored = await loadSession();
+    const restoredAgain = await loadSession();
+
+    expect(mockProvider.restoreSession).toHaveBeenCalledTimes(1);
+    expect(restored).toEqual(session);
+    expect(restoredAgain).toEqual(session);
   });
 
-  describe('loadSession', () => {
-    it('should load from tauri if available', async () => {
-      mockInvoke.mockResolvedValue({ accessToken: 'tauri-token' });
-      const session = await loadSession();
-      const session2 = await loadSession();
-      
-      expect(session).toEqual({ accessToken: 'tauri-token' });
-      expect(session2).toEqual({ accessToken: 'tauri-token' });
-    });
+  it("returns cached session after saveSession", async () => {
+    const cachedSession = { user: { id: "u-2" }, session: { sessionId: "s-2" }, offlineLease: null };
+
+    await saveSession(cachedSession as any);
+    const session = await loadSession();
+
+    expect(mockProvider.restoreSession).not.toHaveBeenCalled();
+    expect(session).toEqual(cachedSession);
   });
 
-  describe('saveSession', () => {
-    it('should save to memory and tauri', async () => {
-      mockInvoke.mockResolvedValue(undefined);
-      
-      await saveSession({ accessToken: 'new-token' } as any);
-      const session = await loadSession();
-      expect(session).toEqual({ accessToken: 'new-token' });
-    });
-  });
+  it("clears cached session", async () => {
+    await saveSession({ user: { id: "u-3" }, session: { sessionId: "s-3" }, offlineLease: null } as any);
+    await clearSession();
+    mockProvider.restoreSession.mockResolvedValue(null);
 
-  describe('clearSession', () => {
-    it('should clear memory and tauri', async () => {
-      await saveSession({ accessToken: 'new-token' } as any);
-      await clearSession();
-      
-      mockInvoke.mockResolvedValue(null);
-      
-      const session = await loadSession();
-      expect(session).toBeNull();
-    });
+    const session = await loadSession();
+    expect(session).toBeNull();
+    expect(mockProvider.restoreSession).toHaveBeenCalledTimes(1);
   });
 });
