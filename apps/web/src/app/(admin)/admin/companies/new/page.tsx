@@ -16,12 +16,8 @@ export default function NewCompanyPage() {
 
   const handleCreateCompany = useCallback(
     async (data: CreateCompanyRequest) => {
-      try {
-        const company = await createCompany(data);
-        setCreatedCompany(company);
-      } catch (err) {
-        throw err;
-      }
+      const company = await createCompany(data);
+      setCreatedCompany(company);
     },
     [createCompany]
   );

@@ -80,13 +80,9 @@ export default function ClientPage() {
 
       <Card>
         <Card.Content className="p-6">
-          {loading ? (
-            <Skeleton className="h-64 rounded-xl" />
-          ) : company ? (
-             <CompanyForm onSubmit={handleUpdate} isLoading={saving} initialData={company} />
-          ) : (
-             <div className="text-danger">Empresa no encontrada o ID no proporcionado</div>
-          )}
+          {loading && <Skeleton className="h-64 rounded-xl" />}
+          {!loading && company && <CompanyForm onSubmit={handleUpdate} isLoading={saving} initialData={company} />}
+          {!loading && !company && <div className="text-danger">Empresa no encontrada o ID no proporcionado</div>}
         </Card.Content>
       </Card>
     </div>

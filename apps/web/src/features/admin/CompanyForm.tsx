@@ -15,7 +15,7 @@ import { getPlanFeatures } from "@/lib/licensing/hooks";
 import { requiredString, emailSchema, positiveNumber, nonNegativeNumber } from "@/lib/validation";
 import { InlineFieldError } from "@/components/feedback/InlineFieldError";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
-import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
+import { errorService } from "@/lib/errors/error-service";
 import { toast } from "@heroui/react";
 
 const plans: { value: PlanType; label: string }[] = [
@@ -88,16 +88,14 @@ export function CompanyForm({ onSubmit, isLoading, initialData }: CompanyFormPro
   const offlineModeAllowed = useWatch({ control, name: "offlineModeAllowed" });
   const features = getPlanFeatures(selectedPlan);
 
-  const toastError = toast.danger;
-
   const onFormSubmit = async (data: FormValues) => {
     try {
       setSubmitError(null);
       await onSubmit(data as CreateCompanyRequest);
     } catch (err) {
-      const userError = getUserErrorMessage(err, "companies.create");
-      setSubmitError(`${userError.title}: ${userError.description}`);
-      toastError(`${userError.title}: ${userError.description}`);
+      const pfError = errorService.normalize(err);
+      setSubmitError(`${pfError.title}: ${pfError.message}`);
+      errorService.toast.error(err);
     }
   };
 

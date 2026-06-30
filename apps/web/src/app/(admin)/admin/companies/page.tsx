@@ -12,8 +12,7 @@ import { useCompanies, translatePlan, translateStatus } from "@/lib/licensing/ho
 import type { Company } from "@/lib/licensing/types";
 import { GenerateLicenseDialog } from "@/features/admin/GenerateLicenseDialog";
 import { ErrorState } from "@/components/feedback/ErrorState";
-import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
-import { ApiError } from "@/lib/errors/api-error";
+import { errorService } from "@/lib/errors/error-service";
 import type { DataTableColumn } from "@/components/ui/DataTable";
 import { EntityManagementPage } from "@/features/admin/EntityManagementPage";
 
@@ -66,7 +65,7 @@ export default function CompaniesPage() {
       console.error("Error al eliminar empresa", err);
       const error = err as { status?: number };
       const isUnauthorized = error?.status === 401 || error?.status === 403;
-      toast.danger(isUnauthorized ? "No tienes permisos suficientes (SUPER_ADMIN) o tu sesión expiró" : "No se pudo eliminar la empresa. Intenta nuevamente.");
+      errorService.toast.error(isUnauthorized ? "No tienes permisos suficientes (SUPER_ADMIN) o tu sesión expiró" : "No se pudo eliminar la empresa. Intenta nuevamente.");
     } finally {
       setIsDeactivating(false);
     }
@@ -138,11 +137,10 @@ export default function CompaniesPage() {
   ];
 
   if (error) {
-    const userError = getUserErrorMessage(error, "companies.load");
-    const apiErr = error instanceof ApiError ? error : undefined;
+    const pfError = errorService.normalize(error);
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <ErrorState title={userError.title} description={userError.description} actionLabel={userError.actionLabel} onRetry={() => mutate()} errorCode={apiErr?.code as string} correlationId={apiErr?.correlationId} technicalDetails={apiErr?.message} />
+        <ErrorState title={pfError.title} description={pfError.message} actionLabel={pfError.retryable ? "Reintentar" : undefined} onRetry={() => mutate()} errorCode={pfError.code} correlationId={pfError.correlationId} technicalDetails={pfError.technical?.status ? String(pfError.technical.status) : undefined} />
       </div>
     );
   }

@@ -62,6 +62,6 @@ describe("AuditPage", () => {
   it("renders status chips with EXITOSA label", () => {
     render(<AuditPage />);
     const statuses = screen.getAllByText("EXITOSA");
-    expect(statuses.length).toBe(2);
+    expect(statuses).toHaveLength(2);
   });
 });

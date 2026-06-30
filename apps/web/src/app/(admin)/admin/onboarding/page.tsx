@@ -12,7 +12,7 @@ import {
   seedOnboardingQuestions,
   type OnboardingQuestionConfig,
 } from "@/lib/api/admin-onboarding.api";
-import { getUserFriendlyErrorMessage, FrontendActionError } from "@/lib/errors/error-messages";
+import { errorService } from "@/lib/errors/error-service";
 import { HelpCircle, Save, RefreshCw, AlertTriangle, CheckCircle } from "lucide-react";
 
 export default function AdminOnboardingPage() {
@@ -31,7 +31,7 @@ export default function AdminOnboardingPage() {
       setQuestions(data);
       setHasChanges(false);
     } catch (err: unknown) {
-      const msg = getUserFriendlyErrorMessage(err, FrontendActionError.LOAD_DATA);
+      const msg = errorService.normalize(err).message;
       setError(msg);
     } finally {
       setLoading(false);

@@ -21,8 +21,7 @@ import { usePlans } from "@/lib/plans/hooks";
 import { deletePlan, togglePlan, duplicatePlan } from "@/lib/plans/api";
 import type { Plan } from "@/lib/plans/types";
 import { ErrorState } from "@/components/feedback/ErrorState";
-import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
-import { ApiError } from "@/lib/errors/api-error";
+import { errorService } from "@/lib/errors/error-service";
 import type { DataTableColumn } from "@/components/ui/DataTable";
 import { EntityManagementPage } from "@/features/admin/EntityManagementPage";
 
@@ -39,6 +38,30 @@ function getFeatureSummary(features: import("@/lib/plans/types").PlanFeatures): 
   const enabled = Object.values(features).filter(Boolean).length;
   const total = Object.keys(features).length;
   return `${enabled}/${total}`;
+}
+
+function getPlanStatusElement(plan: import("@/lib/plans/types").Plan) {
+  if (plan.deletedAt) {
+    return (
+      <Chip color="default" variant="soft" size="sm">
+        Eliminado
+      </Chip>
+    );
+  }
+  if (plan.isActive) {
+    return (
+      <Chip color="success" variant="soft" size="sm">
+        <CheckCircle2 className="w-3 h-3" />
+        Activo
+      </Chip>
+    );
+  }
+  return (
+    <Chip color="danger" variant="soft" size="sm">
+      <XCircle className="w-3 h-3" />
+      Inactivo
+    </Chip>
+  );
 }
 
 export default function PlansPage() {
@@ -61,7 +84,7 @@ export default function PlansPage() {
     } catch (err: unknown) {
       const error = err as { status?: number; message?: string };
       const isUnauthorized = error?.status === 401 || error?.status === 403;
-      toast.danger(
+      errorService.toast.error(
         isUnauthorized
           ? "No tienes permisos suficientes (SUPER_ADMIN) o tu sesión expiró."
           : error?.message || "Ocurrió un error al eliminar el plan."
@@ -81,7 +104,7 @@ export default function PlansPage() {
         );
       } catch (err: unknown) {
         const error = err as { message?: string };
-        toast.danger(
+        errorService.toast.error(
           error?.message || "Error al cambiar estado del plan"
         );
       }
@@ -97,7 +120,7 @@ export default function PlansPage() {
         toast.success("Plan duplicado correctamente");
       } catch (err: unknown) {
         const error = err as { message?: string };
-        toast.danger(
+        errorService.toast.error(
           error?.message || "Error al duplicar el plan"
         );
       }
@@ -133,22 +156,7 @@ export default function PlansPage() {
       key: "isActive",
       header: "Estado",
       sortable: true,
-      render: (plan) =>
-        plan.deletedAt ? (
-          <Chip color="default" variant="soft" size="sm">
-            Eliminado
-          </Chip>
-        ) : plan.isActive ? (
-          <Chip color="success" variant="soft" size="sm">
-            <CheckCircle2 className="w-3 h-3" />
-            Activo
-          </Chip>
-        ) : (
-          <Chip color="danger" variant="soft" size="sm">
-            <XCircle className="w-3 h-3" />
-            Inactivo
-          </Chip>
-        ),
+      render: (plan) => getPlanStatusElement(plan),
     },
     {
       key: "features",
@@ -171,18 +179,17 @@ export default function PlansPage() {
   ];
 
   if (error) {
-    const userError = getUserErrorMessage(error, "plans.load");
-    const apiErr = error instanceof ApiError ? error : undefined;
+    const pfError = errorService.normalize(error);
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <ErrorState
-          title={userError.title}
-          description={userError.description}
-          actionLabel={userError.actionLabel}
+          title={pfError.title}
+          description={pfError.message}
+          actionLabel={pfError.retryable ? "Reintentar" : undefined}
           onRetry={() => mutate()}
-          errorCode={apiErr?.code as string}
-          correlationId={apiErr?.correlationId}
-          technicalDetails={apiErr?.message}
+          errorCode={pfError.code}
+          correlationId={pfError.correlationId}
+          technicalDetails={pfError.technical?.status ? String(pfError.technical.status) : undefined}
         />
       </div>
     );
