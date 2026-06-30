@@ -8,17 +8,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/bridge/Button";
 import { Checkbox } from "@/components/bridge/Checkbox";
 import { Input } from "@/components/bridge/Input";
-import { login } from "@/features/auth/api/auth.api";
-import { loadSession, saveSession } from "@/lib/services/auth-storage.service";
+import { createAuthProvider } from "@/auth/runtime/createAuthProvider";
+import { isTauri } from "@/auth/runtime/detectRuntime";
 import { loadRememberMeEmail, saveRememberMeEmail, clearRememberMeEmail } from "@/lib/services/remember-me.service";
 import { broadcastAuthEvent } from "@/hooks/auth/useAuthBroadcast";
-import { currentUser } from "@/lib/services/auth-domain.service";
 import { checkSetupRequired } from "@/lib/api/auth-api";
-import { getUserErrorMessage } from "@/lib/errors/get-user-error-message";
+import { errorService } from "@/lib/errors/error-service";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
 import { loginSchema, setupSchema, LoginInput, SetupInput } from "@/lib/validation/auth.schema";
 import { Lock, Mail, User, Building, Landmark, Zap } from "lucide-react";
+import { getSession, signIn, useSession } from "next-auth/react";
 
 const fallbackDeviceId = process.env.NEXT_PUBLIC_DEVICE_ID ?? "desktop-default";
 const deviceName = process.env.NEXT_PUBLIC_DEVICE_NAME ?? "Caja principal";
@@ -27,9 +27,9 @@ const fingerprint = process.env.NEXT_PUBLIC_DEVICE_FINGERPRINT ?? "local-dev";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: webSession, status: webSessionStatus } = useSession();
   const [nextPath, setNextPath] = useState("/");
   const [isSetupMode, setIsSetupMode] = useState(false);
-  const [deviceId, setDeviceId] = useState(fallbackDeviceId);
   const [showPassword, setShowPassword] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
@@ -78,23 +78,10 @@ export default function LoginPage() {
   const activeFormState = isSetupMode ? setupForm.formState : loginForm.formState;
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      setNextPath(params.get("next") ?? "/");
-    }
-
-    void (async () => {
-      if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
-        return;
-      }
-      try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        const value = await invoke<string>("auth_get_or_create_device_id");
-        setDeviceId(value);
-      } catch {
-        setDeviceId(fallbackDeviceId);
-      }
-    })();
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next") ?? "/";
+    setNextPath(next);
 
     // Check if initial admin setup is required (with timeout)
     void (async () => {
@@ -123,20 +110,32 @@ export default function LoginPage() {
   useEffect(() => {
     let mounted = true;
     void (async () => {
-      const session = await loadSession();
-      const user = await currentUser();
-      if (!mounted) return;
-      if (session && user) {
-        if (!user.onboardingCompleted) {
+      if (!isTauri()) {
+        if (webSessionStatus !== "authenticated" || !webSession?.user) return;
+        // CRITICAL: If token refresh failed, keep user on login page
+        if (webSession?.parkflow?.error) return;
+        if (!mounted) return;
+        if (!webSession.user.onboardingCompleted) {
           router.replace("/onboarding");
         } else {
-          const next = new URLSearchParams(window.location.search).get("next") ?? "/";
-          router.replace(next);
+          router.replace(nextPath);
+        }
+        return;
+      }
+
+      const authProvider = await createAuthProvider();
+      const session = await authProvider.restoreSession();
+      if (!mounted) return;
+      if (session && session.user) {
+        if (!session.user.onboardingCompleted) {
+          router.replace("/onboarding");
+        } else {
+          router.replace(nextPath);
         }
       }
     })();
     return () => { mounted = false; };
-  }, [router]);
+  }, [router, webSession, webSessionStatus, nextPath]);
 
   const loadDemoData = () => {
     setupForm.reset({
@@ -155,15 +154,52 @@ export default function LoginPage() {
       const emailValue = data.email.trim();
       const passwordValue = data.password;
 
-      const session = await login({
+      if (!isTauri()) {
+        const result = await signIn("credentials", {
+          redirect: false,
+          email: emailValue,
+          password: passwordValue,
+          rememberMe: String(Boolean(data.rememberMe)),
+          deviceId: fallbackDeviceId,
+          deviceName,
+          platform: "web",
+          fingerprint,
+        });
+
+        if (result?.error) {
+          throw new Error(result.error);
+        }
+
+        const session = await getSession();
+        if (!session?.user) {
+          throw new Error("AUTH_SESSION_MISSING");
+        }
+
+        if (data.rememberMe) {
+          saveRememberMeEmail(emailValue);
+        } else {
+          clearRememberMeEmail();
+        }
+
+        broadcastAuthEvent({ type: "auth:login" });
+        useAuthStore.getState().setUser(session.user);
+        if (session.parkflow?.accessTokenExpiresAtIso) {
+          useAuthStore.getState().setSessionExpiresAt(session.parkflow.accessTokenExpiresAtIso);
+        }
+
+        if (!session.user.onboardingCompleted) {
+          router.replace("/onboarding");
+        } else {
+          router.replace(nextPath);
+        }
+        return;
+      }
+
+      const authProvider = await createAuthProvider();
+      const session = await authProvider.login({
         email: emailValue,
         password: passwordValue,
-        deviceId,
-        deviceName,
-        platform,
-        fingerprint,
-        rememberMe: data.rememberMe,
-        offlineRequestedHours: 48
+        rememberMe: data.rememberMe
       });
 
       // Save email if user marked "Recordarme"
@@ -180,15 +216,17 @@ export default function LoginPage() {
         window.localStorage?.removeItem("parkflow_just_logged_out");
       }
       useAuthStore.getState().setUser(session.user);
-      useAuthStore.getState().setSessionExpiresAt(session.session.accessTokenExpiresAtIso);
+      if (session.expiresAt) {
+        useAuthStore.getState().setSessionExpiresAt(session.expiresAt);
+      }
       if (!session.user.onboardingCompleted) {
         router.replace("/onboarding");
       } else {
         router.replace(nextPath);
       }
     } catch (err) {
-      const userError = getUserErrorMessage(err, "auth.login");
-      setGlobalError(`${userError.title}: ${userError.description}`);
+      const pfError = errorService.normalize(err);
+      setGlobalError(`${pfError.title}: ${pfError.message}`);
     }
   };
 
