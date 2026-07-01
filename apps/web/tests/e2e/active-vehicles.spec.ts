@@ -158,7 +158,7 @@ test.describe('Active Vehicles Table (Vehículos Activos)', () => {
       await checkbox.click();
       await page.waitForTimeout(200);
 
-      const selectedCount = page.locator('text=/\d+\s+seleccionad/i, text=/\d+\s+selected/i').first();
+      const selectedCount = page.locator('text=/\\d+\\s+seleccionad/i, text=/\\d+\\s+selected/i').first();
       if (await selectedCount.isVisible({ timeout: 2000 })) {
         await expect(selectedCount).toBeVisible();
       }
@@ -184,7 +184,7 @@ test.describe('Active Vehicles Table (Vehículos Activos)', () => {
     await page.goto('/vehiculos-activos');
     await page.waitForLoadState('networkidle');
 
-    const spaceCell = page.locator('text=/[A-Z]-\d{2}/, text=/espacio/i').first();
+    const spaceCell = page.locator('text=/[A-Z]-\\d{2}/, text=/espacio/i').first();
     if (await spaceCell.isVisible({ timeout: 3000 })) {
       await expect(spaceCell).toBeVisible();
     }
@@ -273,7 +273,7 @@ test.describe('Active Vehicles Table (Vehículos Activos)', () => {
     await page.goto('/vehiculos-activos');
     await page.waitForLoadState('networkidle');
 
-    const summaryText = page.locator('text=/\d+\s+vehículos|\d+\s+active|\d+\s+espacios/i').first();
+    const summaryText = page.locator('text=/\\d+\\s+vehículos|\\d+\\s+active|\\d+\\s+espacios/i').first();
     if (await summaryText.isVisible({ timeout: 3000 })) {
       await expect(summaryText).toBeVisible();
     }
