@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,37 +24,42 @@ public class SupportController {
     private final TicketUseCase ticketService;
 
     @PostMapping
-  @Operation(summary = "POST endpoint")
-  @ApiResponse(responseCode = "200", description = "Success")
-  @ApiResponse(responseCode = "201", description = "Created")
-  @ApiResponse(responseCode = "400", description = "Bad Request")
-  @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Create support ticket")
+    @ApiResponse(responseCode = "201", description = "Ticket created")
+    @ApiResponse(responseCode = "400", description = "Bad Request")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     public Ticket createTicket(@RequestBody CreateTicketRequest request) {
         return ticketService.createTicket(request);
     }
 
     @PatchMapping("/{id}/assign")
-  @Operation(summary = "PATCH endpoint")
-  @ApiResponse(responseCode = "200", description = "Success")
-  @ApiResponse(responseCode = "400", description = "Bad Request")
-  @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','SUPPORT')")
+    @Operation(summary = "Assign ticket to agent")
+    @ApiResponse(responseCode = "200", description = "Ticket assigned")
+    @ApiResponse(responseCode = "400", description = "Bad Request")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "404", description = "Ticket not found")
     public Ticket assignTicket(@PathVariable UUID id, @RequestParam UUID agentId) {
         return ticketService.assignTicket(id, agentId);
     }
 
     @PatchMapping("/{id}/status")
-  @Operation(summary = "PATCH endpoint")
-  @ApiResponse(responseCode = "200", description = "Success")
-  @ApiResponse(responseCode = "400", description = "Bad Request")
-  @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','SUPPORT')")
+    @Operation(summary = "Update ticket status")
+    @ApiResponse(responseCode = "200", description = "Status updated")
+    @ApiResponse(responseCode = "400", description = "Bad Request")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "404", description = "Ticket not found")
     public Ticket updateStatus(@PathVariable UUID id, @RequestParam TicketStatus status) {
         return ticketService.updateStatus(id, status);
     }
 
     @GetMapping
-  @Operation(summary = "GET endpoint")
-  @ApiResponse(responseCode = "200", description = "Success")
-  @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "List support tickets")
+    @ApiResponse(responseCode = "200", description = "Tickets retrieved")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     public List<Ticket> getAllTickets(@RequestParam UUID tenantId) {
         return ticketService.findAllByTenantId(tenantId);
     }
