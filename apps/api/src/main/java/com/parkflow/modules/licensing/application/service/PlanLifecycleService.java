@@ -97,6 +97,7 @@ public class PlanLifecycleService {
     return toResponse(plan);
   }
 
+  @CacheEvict(value = PLANS_LIST, allEntries = true)
   @Transactional
   public PlanResponse duplicatePlan(UUID id) {
     Plan source = findById(id);

@@ -52,6 +52,7 @@ public class CashSessionManagementService implements CashSessionManagementUseCas
     private final ParkingSessionPort parkingSessionRepository;
     private final CashPolicyResolver cashPolicyResolver;
     private final ParkingSitePort parkingSitePort;
+    private final com.parkflow.modules.common.service.DistributedLockService distributedLockService;
 
     @Override
     @Transactional
@@ -255,22 +256,27 @@ public class CashSessionManagementService implements CashSessionManagementUseCas
     @Override
     @Transactional
     public CashSessionResponse close(UUID sessionId, CashCloseRequest request) {
-        if (StringUtils.hasText(request.closeIdempotencyKey())) {
-            Optional<CashSession> done =
-                cashSessionRepository.findByCloseIdempotencyKey(request.closeIdempotencyKey().trim());
-            if (done.isPresent() && done.get().getStatus() == CashSessionStatus.CLOSED) {
-                // Ensure same tenant on idempotency hit
-                UUID tenantId = TenantContext.getTenantIdOrThrow();
-                if (!done.get().getCompanyId().equals(tenantId)) {
-                    throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a esta sesión");
-                }
-                return toSessionResponse(done.get());
-            }
+        String lockKey = "parkflow:global:cash:lock_session:" + sessionId.toString();
+        if (!distributedLockService.acquireLock(lockKey, java.time.Duration.ofSeconds(30))) {
+            throw new OperationException(HttpStatus.CONFLICT, "Cierre de caja en proceso (Lock activo). Evitando doble ejecución.");
         }
+        try {
+            if (StringUtils.hasText(request.closeIdempotencyKey())) {
+                Optional<CashSession> done =
+                    cashSessionRepository.findByCloseIdempotencyKey(request.closeIdempotencyKey().trim());
+                if (done.isPresent() && done.get().getStatus() == CashSessionStatus.CLOSED) {
+                    // Ensure same tenant on idempotency hit
+                    UUID tenantId = TenantContext.getTenantIdOrThrow();
+                    if (!done.get().getCompanyId().equals(tenantId)) {
+                        throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a esta sesión");
+                    }
+                    return toSessionResponse(done.get());
+                }
+            }
 
-        CashSession session = requireOpenSessionWithLock(sessionId);
-        String siteCode = session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : null;
-        validateOperator(session.getOperator().getId(), siteCode);
+            CashSession session = requireOpenSessionWithLock(sessionId);
+            String siteCode = session.getCashRegister().getSiteRef() != null ? session.getCashRegister().getSiteRef().getCode() : null;
+            validateOperator(session.getOperator().getId(), siteCode);
         
         if (session.getCountedAt() == null) {
             throw new OperationException(HttpStatus.BAD_REQUEST, "Debe registrar arqueo antes de cerrar");
@@ -369,6 +375,9 @@ public class CashSessionManagementService implements CashSessionManagementUseCas
         cashClosingOutboundNotifier.scheduleAfterCashClose(session.getId(), groupingSite);
 
         return toSessionResponse(session);
+        } finally {
+            distributedLockService.releaseLock(lockKey);
+        }
     }
 
     // Helper methods ported from CashService

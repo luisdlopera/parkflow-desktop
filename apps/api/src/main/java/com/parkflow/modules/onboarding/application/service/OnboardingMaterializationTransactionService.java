@@ -9,8 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import com.parkflow.modules.common.transaction.UseCaseExecutor;
 
 /**
  * Transaction wrapper for onboarding materialization.
@@ -30,6 +29,7 @@ public class OnboardingMaterializationTransactionService {
 
   private final OnboardingService onboardingService;
   private final CompanyPort companyRepository;
+  private final UseCaseExecutor useCaseExecutor;
 
   /**
    * Wraps onboarding completion with transactional guarantees.
@@ -39,18 +39,19 @@ public class OnboardingMaterializationTransactionService {
    * @throws OperationException if any materialization step fails
    */
   @Deprecated
-  @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
   public void completeOnboardingAtomically(UUID companyId) {
     List<String> failures = new ArrayList<>();
 
     try {
       log.info("Starting atomic onboarding completion for company {}", companyId);
 
-      // Step 1: Validate all required data exists (fail fast)
-      validateOnboardingData(companyId);
+      useCaseExecutor.executeInTransaction(() -> {
+          // Step 1: Validate all required data exists (fail fast)
+          validateOnboardingData(companyId);
 
-      // Step 2: Complete onboarding (triggers all materializations)
-      onboardingService.completeOnboarding(companyId);
+          // Step 2: Complete onboarding (triggers all materializations)
+          onboardingService.completeOnboarding(companyId);
+      });
 
       log.info("Successfully completed onboarding for company {}", companyId);
 

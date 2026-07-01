@@ -16,6 +16,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+
+import static com.parkflow.config.CacheConfig.RATE_FRACTIONS;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +28,7 @@ public class RateFractionManagementService implements RateFractionUseCase {
   private final RateFractionPort rateFractionRepository;
   private final RatePort ratePort;
 
+  @Cacheable(value = RATE_FRACTIONS, key = "#rateId")
   @Override
   @Transactional(readOnly = true)
   public List<RateFractionResponse> listByRate(UUID rateId) {
@@ -39,6 +44,7 @@ public class RateFractionManagementService implements RateFractionUseCase {
     return toResponse(findById(id));
   }
 
+  @CacheEvict(value = RATE_FRACTIONS, key = "#rateId")
   @Override
   @Transactional
   public RateFractionResponse create(UUID rateId, RateFractionRequest req) {
@@ -59,6 +65,7 @@ public class RateFractionManagementService implements RateFractionUseCase {
     return toResponse(f);
   }
 
+  @CacheEvict(value = RATE_FRACTIONS, key = "#result.rateId")
   @Override
   @Transactional
   public RateFractionResponse update(UUID id, RateFractionRequest req) {
@@ -74,6 +81,7 @@ public class RateFractionManagementService implements RateFractionUseCase {
     return toResponse(f);
   }
 
+  @CacheEvict(value = RATE_FRACTIONS, allEntries = true) // Fallback for delete since we don't return response
   @Override
   @Transactional
   public void delete(UUID id) {

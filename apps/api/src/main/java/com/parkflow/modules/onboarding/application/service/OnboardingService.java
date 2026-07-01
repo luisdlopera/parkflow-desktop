@@ -9,7 +9,11 @@ import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;
 import com.parkflow.modules.onboarding.domain.OnboardingProgress;
 import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
+import com.parkflow.modules.common.exception.BusinessException;
+import com.parkflow.modules.common.exception.MessagesEnum;
 import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.onboarding.domain.OnboardingProgress;
+import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
 import com.parkflow.modules.licensing.enums.OperationalProfile;
 import com.parkflow.modules.settings.application.port.in.ParkingParametersUseCase;
 import com.parkflow.modules.common.dto.ParkingParametersData;
@@ -414,12 +418,12 @@ public class OnboardingService implements OnboardingUseCase {
       if (!vehicleTypes.contains("MOTORCYCLE")) return;
       String handling = String.valueOf(data.getOrDefault("helmetHandling", ""));
       if (!"LOCKERS".equals(handling) && !"MANUAL".equals(handling) && !"NONE".equals(handling)) {
-        throw new OperationException(HttpStatus.BAD_REQUEST, "Debes seleccionar una opción de custodia de cascos.");
+        throw new BusinessException(MessagesEnum.ONB_MUST_SELECT_OPTION);
       }
       if ("LOCKERS".equals(handling)) {
         int count = settingsMapper.extractNumber(data.get("helmetTokenCount"), 0);
-        if (count <= 0) throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de lockers debe ser mayor a 0.");
-        if (count > 9999) throw new OperationException(HttpStatus.BAD_REQUEST, "La cantidad de lockers no puede superar 9999.");
+        if (count <= 0) throw new BusinessException(MessagesEnum.ONB_MUST_SELECT_OPTION, 0);
+        if (count > 9999) throw new BusinessException(MessagesEnum.INTERNAL_ERROR, "La cantidad de lockers no puede superar 9999.");
       }
     }
     if (step == 2) {

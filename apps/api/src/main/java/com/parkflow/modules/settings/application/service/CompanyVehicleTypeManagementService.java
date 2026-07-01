@@ -9,6 +9,7 @@ import com.parkflow.modules.common.dto.VehicleTypeRequest;
 import com.parkflow.modules.common.dto.VehicleTypeResponse;
 import com.parkflow.modules.settings.domain.repository.CompanyVehicleTypePort;
 import com.parkflow.modules.settings.domain.repository.MasterVehicleTypePort;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
@@ -32,12 +33,15 @@ import java.util.UUID;
 public class CompanyVehicleTypeManagementService implements CompanyVehicleTypeManagementUseCase {
     private final MasterVehicleTypePort masterRepository;
     private final CompanyVehicleTypePort companyVehicleTypePort;
+    private final CacheManager cacheManager;
 
     @SuppressWarnings("null")
   public CompanyVehicleTypeManagementService(MasterVehicleTypePort masterRepository,
-                                               CompanyVehicleTypePort companyVehicleTypePort) {
+                                               CompanyVehicleTypePort companyVehicleTypePort,
+                                               CacheManager cacheManager) {
         this.masterRepository = Objects.requireNonNull(masterRepository, "masterRepository");
         this.companyVehicleTypePort = Objects.requireNonNull(companyVehicleTypePort, "companyVehicleTypePort");
+        this.cacheManager = Objects.requireNonNull(cacheManager, "cacheManager");
     }
 
     @Cacheable(value = VEHICLE_TYPES_COMPANY, key = "#companyId")
@@ -110,6 +114,7 @@ public class CompanyVehicleTypeManagementService implements CompanyVehicleTypeMa
         cvType.setUpdatedAt(OffsetDateTime.now());
         cvType = companyVehicleTypePort.save(cvType);
 
+        evictCache(cvType.getCompanyId());
         return toCompanyResponse(cvType);
     }
 
@@ -122,6 +127,8 @@ public class CompanyVehicleTypeManagementService implements CompanyVehicleTypeMa
         cvType.setActive(active);
         cvType.setUpdatedAt(OffsetDateTime.now());
         companyVehicleTypePort.save(cvType);
+        
+        evictCache(cvType.getCompanyId());
     }
 
     @Transactional
@@ -131,6 +138,7 @@ public class CompanyVehicleTypeManagementService implements CompanyVehicleTypeMa
         CompanyVehicleType cvType = companyVehicleTypePort.findById(id)
             .orElseThrow(() -> new OperationException(HttpStatus.NOT_FOUND, "Tipo de vehículo no encontrado para esta empresa"));
         companyVehicleTypePort.delete(cvType);
+        evictCache(cvType.getCompanyId());
     }
 
     // ───── Internal helpers ─────
@@ -171,5 +179,14 @@ public class CompanyVehicleTypeManagementService implements CompanyVehicleTypeMa
             cvType.getDisplayOrder(),
             master.getCreatedAt(),
             cvType.getUpdatedAt());
+    }
+
+    private void evictCache(UUID companyId) {
+        if (companyId != null) {
+            var cache = cacheManager.getCache(VEHICLE_TYPES_COMPANY);
+            if (cache != null) {
+                cache.evict(companyId);
+            }
+        }
     }
 }
