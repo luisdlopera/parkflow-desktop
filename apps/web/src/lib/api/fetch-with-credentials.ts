@@ -39,12 +39,16 @@ export async function fetchWithCredentials(input: FetchInput, init?: FetchInit):
       try {
         const { useAuthStore } = await import("@/lib/stores/auth.store");
         useAuthStore.getState().logout("expired");
-      } catch {}
+      } catch {
+        /* ignore */
+      }
 
       try {
         const { toast } = await import("sonner");
         toast.error("Tu sesión ha expirado, por favor inicia sesión nuevamente.");
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     }
     return response;
   }

@@ -11,6 +11,7 @@
 import { authHeaders } from "@/lib/services/auth-domain.service";
 import { apiBase } from "@/lib/api/config";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+import { ApiError } from "@/lib/errors/ApiError";
 
 
 const API_BASE = apiBase();
@@ -53,7 +54,14 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
     const userMsg = typeof body.userMessage === "string" ? body.userMessage
       : typeof body.message === "string" ? body.message
       : undefined;
-    throw new Error(userMsg || statusMessages[status] || `No pudimos completar tu solicitud (${status}).`);
+      
+    throw new ApiError(userMsg || statusMessages[status] || `No pudimos completar tu solicitud (${status}).`, {
+      status: response.status,
+      code: String(body.errorCode || body.code || ""),
+      correlationId: String(body.correlationId || ""),
+      details: body.details as Record<string, unknown> | undefined,
+      payload: body
+    });
   }
   return (await response.json()) as T;
 }

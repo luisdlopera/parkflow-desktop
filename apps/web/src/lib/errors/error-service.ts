@@ -1,5 +1,6 @@
 import { toast } from "@heroui/react";
 import { ZodError } from "zod";
+import { ApiError } from "./ApiError";
 import {
   type ParkFlowError,
   type ErrorSeverity,
@@ -200,7 +201,9 @@ function extractFieldErrors(body: Record<string, unknown>): Record<string, strin
       const fields = d.fields as Array<{ field?: string; message?: string }>;
       const result: Record<string, string> = {};
       for (const f of fields) {
-        if (f.field && f.message) result[f.field] = f.message;
+        if (f.field && f.message) {
+          result[f.field] = translateBackendMessage(f.message, f.field);
+        }
       }
       return Object.keys(result).length > 0 ? result : undefined;
     }
@@ -320,6 +323,21 @@ export const errorService: IErrorService = {
         stack: error.stack,
         endpoint: context?.endpoint,
         payload: context?.payload,
+        userId,
+      });
+    }
+
+    if (error instanceof ApiError) {
+      return buildError({
+        code: error.code || (error.status ? matchHttpToErrorCode(error.status) : ErrorCodes.UNKNOWN_ERROR),
+        status: error.status,
+        message: error.message,
+        correlationId: error.correlationId,
+        fieldErrors: error.details ? extractFieldErrors(error.details) : undefined,
+        originalType: "ApiError",
+        stack: error.stack,
+        endpoint: context?.endpoint,
+        payload: error.payload || context?.payload,
         userId,
       });
     }
@@ -498,7 +516,7 @@ export const errorService: IErrorService = {
 
 function logError(pfError: ParkFlowError): void {
   if (process.env.NODE_ENV === "development") {
-    console.error("[ParkFlow Error]", {
+    const errorObj = {
       code: pfError.code,
       title: pfError.title,
       message: pfError.message,
@@ -506,7 +524,14 @@ function logError(pfError: ParkFlowError): void {
       correlationId: pfError.correlationId,
       fieldErrors: pfError.fieldErrors,
       technical: pfError.technical,
-    });
+    };
+    
+    // In Node.js/SSR environments, use JSON.stringify to avoid '{}' truncations
+    if (typeof window === "undefined") {
+      console.error("[ParkFlow Error]", JSON.stringify(errorObj, null, 2));
+    } else {
+      console.error("[ParkFlow Error]", errorObj);
+    }
   }
 }
 
@@ -525,19 +550,25 @@ const FIELD_NAMES: Record<string, string> = {
   name: "Nombre",
 };
 
-const ZOD_TRANSLATIONS: Array<{
+const SHARED_TRANSLATIONS: Array<{
   pattern: RegExp;
   translate: (match: string, fieldName: string) => string;
 }> = [
   { pattern: /String must contain at most (\d+) character/, translate: (m, f) => `${f} no puede superar los ${m.match(/\d+/)?.[0]} caracteres.` },
   { pattern: /String must contain at least (\d+) character/, translate: (m, f) => `${f} debe tener al menos ${m.match(/\d+/)?.[0]} caracteres.` },
-  { pattern: /Required/, translate: (_, f) => `${f} es obligatorio.` },
+  { pattern: /Required/i, translate: (_, f) => `${f} es obligatorio.` },
+  { pattern: /must not be blank/i, translate: (_, f) => `${f} es obligatorio.` },
+  { pattern: /must not be null/i, translate: (_, f) => `${f} es obligatorio.` },
   { pattern: /Invalid email/i, translate: (_, f) => `${f} debe ser un correo válido.` },
   { pattern: /Invalid date/i, translate: (_, f) => `${f} debe ser una fecha válida.` },
   { pattern: /Expected number/i, translate: (_, f) => `${f} debe ser un número válido.` },
+  { pattern: /Expected string, received number/i, translate: (_, f) => `${f} debe ser texto.` },
   { pattern: /Invalid enum value/i, translate: (_, f) => `${f}: selecciona una opción válida.` },
   { pattern: /Input not allowed/i, translate: (_, f) => `${f}: valor no permitido.` },
-  { pattern: /String must contain at least 1/, translate: (_, f) => `${f} es obligatorio.` },
+  { pattern: /String must contain at least 1/i, translate: (_, f) => `${f} es obligatorio.` },
+  { pattern: /must be greater than or equal to ([\d.]+)/i, translate: (m, f) => { const v = m.match(/[\d.]+/)?.[0]; return `El valor mínimo para ${f.toLowerCase()} es ${v}.`; } },
+  { pattern: /must be less than or equal to ([\d.]+)/i, translate: (m, f) => { const v = m.match(/[\d.]+/)?.[0]; return `El valor máximo para ${f.toLowerCase()} es ${v}.`; } },
+  { pattern: /size must be between (\d+) and (\d+)/i, translate: (m, f) => { const v = m.match(/\d+/g); return `${f} debe tener entre ${v?.[0]} y ${v?.[1]} caracteres.`; } },
 ];
 
 function getFieldName(key: string): string {
@@ -546,8 +577,19 @@ function getFieldName(key: string): string {
 
 function translateZodMessage(message: string, fieldName: string): string {
   const friendlyName = getFieldName(fieldName);
-  for (const { pattern, translate } of ZOD_TRANSLATIONS) {
+  for (const { pattern, translate } of SHARED_TRANSLATIONS) {
     if (pattern.test(message)) return translate(message, friendlyName);
   }
   return `${friendlyName}: ${message}`;
+}
+
+function translateBackendMessage(message: string, fieldName: string): string {
+  const friendlyName = getFieldName(fieldName);
+  for (const { pattern, translate } of SHARED_TRANSLATIONS) {
+    if (pattern.test(message)) return translate(message, friendlyName);
+  }
+  // No prepends "FriendlyName: " for backend messages unless it matches nothing,
+  // but if it matches nothing, returning the backend message is better as backend
+  // messages sometimes are already fully descriptive.
+  return message;
 }

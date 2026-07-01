@@ -41,7 +41,7 @@ async function authFetch<T>(path: string, options?: RequestInit): Promise<T> {
     return (await res.json()) as T;
   } catch (error) {
     if (error instanceof Error) throw error;
-    throw new Error("Sin conexión. Verifica internet o la red local e intenta nuevamente.");
+    throw new Error("Sin conexión. Verifica internet o la red local e intenta nuevamente.", { cause: error });
   }
 }
 

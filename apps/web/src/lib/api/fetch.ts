@@ -1,5 +1,6 @@
 import { errorService } from "@/lib/errors/error-service";
 import { withCsrfHeader } from "@/lib/api/csrf";
+import { ApiError } from "@/lib/errors/ApiError";
 
 const toastCooldownMs = 3000;
 const dedupe = new Map<string, number>();
@@ -53,16 +54,39 @@ export async function safeFetch<T = unknown>(input: RequestInfo | URL, init?: Re
 
   if (!response.ok) throw await extractResponseError(response, requestUrl);
   if (response.status === 204) return {} as T;
-  return (await response.json()) as T;
+  
+  const json = await response.json();
+  // Backward compatibility: unwrap ApiResponse if it follows the new Enterprise pattern
+  if (json && typeof json === 'object' && 'success' in json && 'data' in json && json.success === true) {
+      return json.data as T;
+  }
+  return json as T;
 }
 
 async function extractResponseError(response: Response, url: string): Promise<unknown> {
   try {
     const text = await response.text();
     const body = text ? safeParse(text) : {};
-    return { ...body, status: response.status, url, endpoint: url };
+    
+    const errorObj = (body.error && typeof body.error === 'object')
+      ? (body.error as Record<string, unknown>)
+      : {} as Record<string, unknown>;
+
+    return new ApiError(
+      String(body.userMessage || errorObj.message || body.message || `HTTP Error ${response.status}`),
+      {
+        status: response.status,
+        code: String(errorObj.code || body.errorCode || body.code || ""),
+        correlationId: String(errorObj.traceId || body.correlationId || body.traceId || ""),
+        details: (errorObj.details || body.details || body.errors) as Record<string, unknown> | undefined,
+        payload: { ...body, url, endpoint: url }
+      }
+    );
   } catch {
-    return { status: response.status, url, endpoint: url, message: `HTTP ${response.status}` };
+    return new ApiError(`HTTP Error ${response.status}`, {
+      status: response.status,
+      payload: { url, endpoint: url }
+    });
   }
 }
 

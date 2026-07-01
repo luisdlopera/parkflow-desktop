@@ -69,7 +69,7 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error("Sin conexión. Verifica internet o la red local e intenta nuevamente.");
+    throw new Error("Sin conexión. Verifica internet o la red local e intenta nuevamente.", { cause: error });
   }
 }
 

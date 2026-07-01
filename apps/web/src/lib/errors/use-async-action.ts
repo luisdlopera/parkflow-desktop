@@ -61,7 +61,7 @@ export function useAsyncAction<T = void>(
         setIsLoading(false);
       }
     },
-    [successMsg, errorContext, onSuccess, showErrorToast]
+    [successMsg, onSuccess, showErrorToast]
   );
 
   const clearError = useCallback(() => setError(null), []);
