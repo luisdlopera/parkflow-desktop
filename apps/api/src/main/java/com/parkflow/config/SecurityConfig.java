@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.common.dto.ErrorResponse;
+import com.parkflow.modules.common.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpMethod;
@@ -210,7 +210,7 @@ public class SecurityConfig {
     String correlationId = org.slf4j.MDC.get(com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
     response.setStatus(status);
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-    ErrorResponse payload = new ErrorResponse(status, code, message, status == 401 ? "AuthenticationException" : "AccessDeniedException", path, correlationId);
+    ApiResponse<Void> payload = ApiResponse.error(message, code, path, correlationId, java.util.Map.of("developerMessage", status == 401 ? "AuthenticationException" : "AccessDeniedException"));
     objectMapper.writeValue(response.getWriter(), payload);
   }
 

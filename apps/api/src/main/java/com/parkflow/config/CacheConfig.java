@@ -13,6 +13,8 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 @EnableCaching
@@ -24,6 +26,7 @@ public class CacheConfig {
   public static final String VEHICLE_TYPES_COMPANY = "vehicle-types-company";
   public static final String PLANS_LIST = "plans-list";
   public static final String PAYMENT_METHODS = "payment-methods";
+  public static final String RATE_FRACTIONS = "rate-fractions";
 
   @Bean
   @ConditionalOnProperty(name = "spring.cache.type", havingValue = "caffeine", matchIfMissing = true)
@@ -41,12 +44,33 @@ public class CacheConfig {
   @Bean
   @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
   public CacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
-    RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+    RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
         .entryTtl(Duration.ofMinutes(5))
         .disableCachingNullValues();
+
+    Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
     
+    // Auth & Permissions
+    cacheConfigurations.put(COMPANY_SETTINGS, defaultConfig.entryTtl(Duration.ofHours(1)));
+    
+    // Plans
+    cacheConfigurations.put(PLAN_FEATURES, defaultConfig.entryTtl(Duration.ofHours(12)));
+    cacheConfigurations.put(PLANS_LIST, defaultConfig.entryTtl(Duration.ofHours(12)));
+    
+    // Vehicles
+    cacheConfigurations.put(VEHICLE_TYPES_ALL, defaultConfig.entryTtl(Duration.ofHours(24)));
+    cacheConfigurations.put(VEHICLE_TYPES_COMPANY, defaultConfig.entryTtl(Duration.ofMinutes(30)));
+    
+    // Rates
+    cacheConfigurations.put(RATE_FRACTIONS, defaultConfig.entryTtl(Duration.ofMinutes(30)));
+    
+    // Other
+    cacheConfigurations.put("onboarding-defaults", defaultConfig.entryTtl(Duration.ofHours(24)));
+    cacheConfigurations.put("companies", defaultConfig.entryTtl(Duration.ofHours(1)));
+
     return RedisCacheManager.builder(connectionFactory)
-        .cacheDefaults(config)
+        .cacheDefaults(defaultConfig)
+        .withInitialCacheConfigurations(cacheConfigurations)
         .build();
   }
 }
