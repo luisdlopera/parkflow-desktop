@@ -144,6 +144,26 @@ class AuthCookieFactoryTest {
     // ============================================================================
 
     @Test
+    void testSetAuthCookies_RememberMeFalse_IsSessionCookie() {
+        // Act
+        factory.setAuthCookies(response, "access_val", "refresh_val", false);
+
+        // Assert
+        ArgumentCaptor<String> headerValueCaptor = ArgumentCaptor.forClass(String.class);
+        verify(response, org.mockito.Mockito.times(2)).addHeader(eq("Set-Cookie"), headerValueCaptor.capture());
+
+        List<String> values = headerValueCaptor.getAllValues();
+        
+        // When rememberMe is false, the cookies should be Session cookies, meaning NO Max-Age attribute
+        assertThat(values.get(0)).doesNotContain("Max-Age");
+        assertThat(values.get(1)).doesNotContain("Max-Age");
+        
+        // Validate other attributes are still present
+        assertThat(values.get(0)).contains("HttpOnly");
+        assertThat(values.get(0)).contains("Secure");
+    }
+
+    @Test
     void testCookieAttributes_AllPresent() {
         // Act
         factory.setAuthCookies(response, "access_val", "refresh_val", true);

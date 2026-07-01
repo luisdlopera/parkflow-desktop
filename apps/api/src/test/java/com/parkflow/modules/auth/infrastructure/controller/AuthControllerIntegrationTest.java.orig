@@ -230,7 +230,7 @@ class AuthControllerIntegrationTest {
               .cookie(new Cookie("parkflow_access", accessCookieHeader))
               .cookie(new Cookie("parkflow_refresh", refreshCookieHeader)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.data.email").value("integration@parkflow.com"));
+          .andExpect(jsonPath("$.email").value("integration@parkflow.com"));
     }
 
 
@@ -263,7 +263,7 @@ class AuthControllerIntegrationTest {
               .cookie(new Cookie("parkflow_access", accessToken))
               .cookie(new Cookie("parkflow_refresh", refreshToken)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.data.email").value("integration@parkflow.com"));
+          .andExpect(jsonPath("$.email").value("integration@parkflow.com"));
 
       // 3. Acceder a GET /auth/profile (protegido)
       mockMvc.perform(get("/api/v1/auth/profile")
@@ -292,7 +292,7 @@ class AuthControllerIntegrationTest {
     void testProtectedEndpoint_WithoutToken() throws Exception {
       mockMvc.perform(get("/api/v1/auth/me"))
           .andExpect(status().isUnauthorized())
-          .andExpect(jsonPath("$.error.code").exists());
+          .andExpect(jsonPath("$.errorCode").exists());
     }
 
     @Test
@@ -315,7 +315,7 @@ class AuthControllerIntegrationTest {
       mockMvc.perform(get("/api/v1/auth/me")
               .cookie(new Cookie("parkflow_access", "not-a-valid-jwt-at-all!!!")))
           .andExpect(status().isUnauthorized())
-          .andExpect(jsonPath("$.error.code").exists());
+          .andExpect(jsonPath("$.errorCode").exists());
     }
 
     @Test
@@ -348,9 +348,8 @@ class AuthControllerIntegrationTest {
       mockMvc.perform(post("/api/v1/auth/login")
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(loginRequest)))
-          .andDo(print())
           .andExpect(status().isUnauthorized())
-          .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_CREDENTIALS"));
+          .andExpect(jsonPath("$.errorCode").value("AUTH_INVALID_CREDENTIALS"));
     }
 
     @Test
@@ -425,15 +424,14 @@ class AuthControllerIntegrationTest {
       MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(loginRequest)))
-          .andDo(print())
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.data.user").exists())
-          .andExpect(jsonPath("$.data.user.id").exists())
-          .andExpect(jsonPath("$.data.user.email").value("integration@parkflow.com"))
-          .andExpect(jsonPath("$.data.user.companyId").exists())
-          .andExpect(jsonPath("$.data.user.companyId").isNotEmpty())
-          .andExpect(jsonPath("$.data.user.role").value("ADMIN"))
-          .andExpect(jsonPath("$.data.user.onboardingCompleted").exists())
+          .andExpect(jsonPath("$.user").exists())
+          .andExpect(jsonPath("$.user.id").exists())
+          .andExpect(jsonPath("$.user.email").value("integration@parkflow.com"))
+          .andExpect(jsonPath("$.user.companyId").exists())
+          .andExpect(jsonPath("$.user.companyId").isNotEmpty())
+          .andExpect(jsonPath("$.user.role").value("ADMIN"))
+          .andExpect(jsonPath("$.user.onboardingCompleted").exists())
           .andReturn();
 
       // Verify companyId is the correct UUID (not null, not empty)
@@ -459,14 +457,14 @@ class AuthControllerIntegrationTest {
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(loginRequest)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.data.user.id").isNotEmpty())
-          .andExpect(jsonPath("$.data.user.companyId").isNotEmpty())
-          .andExpect(jsonPath("$.data.user.name").value("Integration Test User"))
-          .andExpect(jsonPath("$.data.user.email").value("integration@parkflow.com"))
-          .andExpect(jsonPath("$.data.user.role").value("ADMIN"))
-          .andExpect(jsonPath("$.data.user.permissions").isArray())
-          .andExpect(jsonPath("$.data.user.active").value(true))
-          .andExpect(jsonPath("$.data.user.requirePasswordChange").value(false));
+          .andExpect(jsonPath("$.user.id").isNotEmpty())
+          .andExpect(jsonPath("$.user.companyId").isNotEmpty())
+          .andExpect(jsonPath("$.user.name").value("Integration Test User"))
+          .andExpect(jsonPath("$.user.email").value("integration@parkflow.com"))
+          .andExpect(jsonPath("$.user.role").value("ADMIN"))
+          .andExpect(jsonPath("$.user.permissions").isArray())
+          .andExpect(jsonPath("$.user.active").value(true))
+          .andExpect(jsonPath("$.user.requirePasswordChange").value(false));
     }
   }
 
@@ -506,11 +504,11 @@ class AuthControllerIntegrationTest {
       MvcResult restoreResult = mockMvc.perform(post("/api/v1/auth/restore-session")
               .cookie(new Cookie("parkflow_refresh", refreshToken)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.data.user").exists())
-          .andExpect(jsonPath("$.data.user.companyId").exists())
-          .andExpect(jsonPath("$.data.user.companyId").isNotEmpty())
-          .andExpect(jsonPath("$.data.user.email").value("integration@parkflow.com"))
-          .andExpect(jsonPath("$.data.session").exists())
+          .andExpect(jsonPath("$.user").exists())
+          .andExpect(jsonPath("$.user.companyId").exists())
+          .andExpect(jsonPath("$.user.companyId").isNotEmpty())
+          .andExpect(jsonPath("$.user.email").value("integration@parkflow.com"))
+          .andExpect(jsonPath("$.session").exists())
           .andReturn();
 
       // Verify the companyId matches the test user's companyId
@@ -523,7 +521,7 @@ class AuthControllerIntegrationTest {
     void testRestoreSession_WithoutRefreshToken_Returns401() throws Exception {
       mockMvc.perform(post("/api/v1/auth/restore-session"))
           .andExpect(status().isUnauthorized())
-          .andExpect(jsonPath("$.error.code").value("AUTH_UNAUTHORIZED"));
+          .andExpect(jsonPath("$.errorCode").value("AUTH_UNAUTHORIZED"));
     }
   }
 

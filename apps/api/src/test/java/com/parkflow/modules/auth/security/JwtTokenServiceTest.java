@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
+import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,6 +75,38 @@ class JwtTokenServiceTest {
     }
 
     @Test
+    void testClockSkew_AllowsSlightlyExpiredToken() {
+        // Arrange
+        // Clock skew is 30 seconds by default in the test setup
+        javax.crypto.SecretKey secretKey = (javax.crypto.SecretKey) org.springframework.test.util.ReflectionTestUtils.getField(jwtTokenService, "key");
+        String token = io.jsonwebtoken.Jwts.builder()
+            .subject(userId.toString())
+            .expiration(new Date(System.currentTimeMillis() - 10000)) // Expired 10 seconds ago
+            .signWith(secretKey)
+            .compact();
+
+        // Act & Assert
+        // Should NOT throw ExpiredJwtException because 10s is within the 30s skew
+        Claims claims = jwtTokenService.parse(token);
+        assertThat(claims.getSubject()).isEqualTo(userId.toString());
+    }
+
+    @Test
+    void testClockSkew_RejectsTokenBeyondSkew() {
+        // Arrange
+        javax.crypto.SecretKey secretKey = (javax.crypto.SecretKey) org.springframework.test.util.ReflectionTestUtils.getField(jwtTokenService, "key");
+        String token = io.jsonwebtoken.Jwts.builder()
+            .subject(userId.toString())
+            .expiration(new Date(System.currentTimeMillis() - 40000)) // Expired 40 seconds ago
+            .signWith(secretKey)
+            .compact();
+
+        // Act & Assert
+        ExpiredJwtException ex = catchThrowableOfType(() -> jwtTokenService.parse(token), ExpiredJwtException.class);
+        assertThat(ex).isNotNull();
+    }
+
+    @Test
     void testInitialization_ShortKeyProd_ThrowsException() {
         // Arrange
         when(environment.getActiveProfiles()).thenReturn(new String[]{"prod"});
@@ -84,5 +117,24 @@ class JwtTokenServiceTest {
         // Assert
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).contains("must be a 256-bit");
+    }
+
+    @Test
+    void testKeyRotation_NotSupported_FailsWhenKeyChanges() {
+        // Arrange
+        String token = jwtTokenService.createAccessToken(
+            userId, companyId, sessionId, "test@example.com", Map.of());
+
+        // Simulate key rotation by creating a new service with a different key
+        JwtTokenService rotatedService = new JwtTokenService(
+            "new_dummy_secret_for_testing_purposes_must_be_32_chars", 15, 7, 30, environment);
+
+        // Act & Assert
+        // The rotated service should fail to parse the token signed with the old key
+        io.jsonwebtoken.security.SignatureException ex = catchThrowableOfType(
+            () -> rotatedService.parse(token), 
+            io.jsonwebtoken.security.SignatureException.class);
+        
+        assertThat(ex).isNotNull();
     }
 }

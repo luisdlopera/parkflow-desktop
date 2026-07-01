@@ -95,7 +95,7 @@ class AuthTokenValidationIntegrationTest {
     assertThat(responseBody).contains("\"sessionId\"");
 
     String familyId = objectMapper.readTree(responseBody)
-        .get("session").get("tokenFamilyId").asText();
+        .get("data").get("session").get("tokenFamilyId").asText();
 
     var familyOpt = refreshTokenFamilyRepository.findById(UUID.fromString(familyId));
     assertThat(familyOpt).isPresent();
@@ -138,7 +138,7 @@ class AuthTokenValidationIntegrationTest {
         .andReturn();
 
     String familyId1 = objectMapper.readTree(result1.getResponse().getContentAsString())
-        .get("session").get("tokenFamilyId").asText();
+        .get("data").get("session").get("tokenFamilyId").asText();
 
     // Login 2 (different device)
     LoginRequest login2 = new LoginRequest(
@@ -151,7 +151,7 @@ class AuthTokenValidationIntegrationTest {
         .andReturn();
 
     String familyId2 = objectMapper.readTree(result2.getResponse().getContentAsString())
-        .get("session").get("tokenFamilyId").asText();
+        .get("data").get("session").get("tokenFamilyId").asText();
 
     // Verify different families
     assertThat(familyId1).isNotEqualTo(familyId2);

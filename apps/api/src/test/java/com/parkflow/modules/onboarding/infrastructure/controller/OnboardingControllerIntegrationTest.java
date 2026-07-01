@@ -79,8 +79,8 @@ class OnboardingControllerIntegrationTest {
             .content(objectMapper.writeValueAsString(request)))
         .andDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print())
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.currentStep").value(2))
-        .andExpect(jsonPath("$.onboardingCompleted").value(false));
+        .andExpect(jsonPath("$.data.currentStep").value(2))
+        .andExpect(jsonPath("$.data.onboardingCompleted").value(false));
   }
 
   @Test

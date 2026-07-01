@@ -30,6 +30,11 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -379,5 +384,84 @@ class TokenRefreshUseCaseImplTest {
         // Assert: Family remains revoked
         assertThat(family.isRevoked()).isTrue();
         assertThat(family.getRevokeReason()).isEqualTo("THEFT_DETECTED");
+    }
+
+    @Test
+    void testRefresh_ConcurrentRaceCondition_OnlyOneSucceedsOrBothHandled() throws InterruptedException {
+        // Arrange
+        UUID familyId = UUID.randomUUID();
+        RefreshTokenFamily family = new RefreshTokenFamily();
+        family.setFamilyId(familyId);
+        family.setGenerationNumber(2);
+
+        mockSession.setTokenFamilyId(familyId);
+        mockSession.setTokenGeneration(2);
+
+        when(mockClaims.get("typ", String.class)).thenReturn("refresh");
+        when(mockClaims.get("jti", String.class)).thenReturn("jti123");
+        when(jwtTokenService.parse(anyString())).thenReturn(mockClaims);
+        
+        // Simular que el repositorio devuelve la sesión activa solo para la primera lectura
+        AtomicInteger findCallCount = new AtomicInteger(0);
+        when(authSessionRepository.findByRefreshJtiAndActiveTrue("jti123")).thenAnswer(inv -> {
+            if (findCallCount.incrementAndGet() == 1) {
+                return Optional.of(mockSession);
+            }
+            // En la vida real, una BD con bloqueo pesimista o transacciones seriables no devolvería activo la segunda vez
+            // o lanzaría una excepción de concurrencia. Simulamos que ya no está activo.
+            return Optional.empty(); 
+        });
+
+        when(passwordHashService.sha256(anyString())).thenReturn("hashed_token");
+        lenient().when(jwtTokenService.extractFamilyId(anyString())).thenReturn(familyId);
+        lenient().when(jwtTokenService.extractGeneration(anyString())).thenReturn(2);
+        lenient().when(refreshTokenFamilyRepository.findById(familyId)).thenReturn(Optional.of(family));
+        lenient().when(refreshTokenFamilyRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(authSessionRepository.save(any())).thenAnswer(inv -> {
+            AuthSession s = inv.getArgument(0);
+            if (s.getId() == null) s.setId(UUID.randomUUID());
+            return s;
+        });
+        lenient().when(jwtTokenService.accessTtl()).thenReturn(Duration.ofMinutes(15));
+        lenient().when(jwtTokenService.refreshTtl()).thenReturn(Duration.ofDays(7));
+        lenient().when(jwtTokenService.createRefreshToken(any(), any(), any(), any(), eq(3))).thenReturn("new_token");
+        lenient().when(jwtTokenService.createAccessToken(any(), any(), any(), any(), any())).thenReturn("access_token");
+
+        RefreshRequest req = new RefreshRequest("device123");
+
+        int threadCount = 2;
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threadCount);
+        
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failureCount = new AtomicInteger(0);
+
+        // Act
+        for (int i = 0; i < threadCount; i++) {
+            executor.submit(() -> {
+                try {
+                    latch.await(); // wait for all threads to be ready
+                    tokenRefreshUseCase.refresh(req, "valid_token");
+                    successCount.incrementAndGet();
+                } catch (OperationException e) {
+                    failureCount.incrementAndGet();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
+
+        latch.countDown(); // start all threads
+        doneLatch.await(5, TimeUnit.SECONDS);
+        executor.shutdown();
+
+        // Assert
+        // Solo uno debería tener éxito asumiendo protección contra race condition a nivel repositorio
+        // (En el mock simulamos que la sesión ya no se encuentra la segunda vez)
+        assertThat(successCount.get()).isEqualTo(1);
+        assertThat(failureCount.get()).isEqualTo(1);
     }
 }
