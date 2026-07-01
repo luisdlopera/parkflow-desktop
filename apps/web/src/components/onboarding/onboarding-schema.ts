@@ -260,6 +260,67 @@ export const Step4Schema = z.object({
   countryCode: z.string().min(1, "Selecciona un país."),
 });
 
+export const Step5Schema = z.object({
+  enabled: z.coerce.boolean().optional(),
+  dayShiftStart: z.string().optional(),
+  dayShiftEnd: z.string().optional(),
+  nightShiftStart: z.string().optional(),
+  nightShiftEnd: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.enabled) {
+    const parseTime = (timeStr?: string) => {
+      if (!timeStr) return null;
+      if (!timePattern.test(timeStr)) return null;
+      const [h, m] = timeStr.split(":").map(Number);
+      return h * 60 + m;
+    };
+
+    const dStart = parseTime(data.dayShiftStart);
+    const dEnd = parseTime(data.dayShiftEnd);
+    const nStart = parseTime(data.nightShiftStart);
+    const nEnd = parseTime(data.nightShiftEnd);
+
+    if (dStart === null) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Hora de inicio diurna inválida.", path: ["dayShiftStart"] });
+    if (dEnd === null) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Hora de fin diurna inválida.", path: ["dayShiftEnd"] });
+    if (nStart === null) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Hora de inicio nocturna inválida.", path: ["nightShiftStart"] });
+    if (nEnd === null) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Hora de fin nocturna inválida.", path: ["nightShiftEnd"] });
+
+    if (dStart !== null && dEnd !== null) {
+      if (dStart >= dEnd) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "La hora de fin debe ser posterior a la de inicio.", path: ["dayShiftEnd"] });
+      }
+    }
+
+    if (nStart !== null && nEnd !== null) {
+      // Night shift can wrap around midnight, so nStart > nEnd is valid (e.g. 18:00 to 06:00)
+      if (nStart === nEnd) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "La hora de inicio y fin no pueden ser iguales.", path: ["nightShiftEnd"] });
+      }
+    }
+
+    // Check for overlap
+    if (dStart !== null && dEnd !== null && nStart !== null && nEnd !== null) {
+      // Day shift: [dStart, dEnd]
+      // Night shift: [nStart, nEnd] (might wrap)
+      
+      const isNightWraps = nStart > nEnd;
+      
+      const isOverlapping = (start1: number, end1: number, start2: number, end2: number, wraps2: boolean) => {
+        if (!wraps2) {
+            return (start1 < end2 && end1 > start2);
+        } else {
+            // wraps2 means interval 2 is [start2, 24:00] U [00:00, end2]
+            return (start1 < end2) || (end1 > start2);
+        }
+      };
+
+      if (isOverlapping(dStart, dEnd, nStart, nEnd, isNightWraps)) {
+         ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Los turnos diurno y nocturno no pueden solaparse.", path: ["dayShiftEnd"] });
+      }
+    }
+  }
+});
+
 export const Step6Schema = z.object({
   paymentMethods: z.array(z.string()).min(1, "Selecciona al menos un método de pago."),
 });

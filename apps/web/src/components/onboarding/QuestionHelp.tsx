@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useId } from "react";
 import { HelpCircle } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -33,7 +33,8 @@ export default function QuestionHelp({ children, title = "Explicación", id }: Q
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
-  const panelId = id ?? `help-${Math.random().toString(36).slice(2, 9)}`;
+  const defaultId = useId();
+  const panelId = id ?? defaultId;
 
   return (
     <div ref={ref} className="relative inline-block">

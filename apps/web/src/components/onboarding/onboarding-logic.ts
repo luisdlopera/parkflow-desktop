@@ -8,7 +8,7 @@ import { PAYMENT_OPTIONS_FOR_ONBOARDING } from "@/lib/payment-method-catalog";
 
 export type OperationalProfile = "MOTORCYCLE_ONLY" | "CAR_ONLY" | "MIXED";
 
-export const ONBOARDING_STEP_ORDER = [1, 2, 4, 3, 5, 6, 7, 8, 9, 10, 11, 12];
+export const ONBOARDING_STEP_ORDER = [1, 2, 4, 3, 5, 6, 7, 8, 9, 10, 12];
 export const REQUIRED_STEPS = [1, 2, 4, 3, 6];
 export const BASE_ENABLED_STEPS = ONBOARDING_STEP_ORDER;
 export const STEP_TITLES = [
@@ -22,7 +22,6 @@ export const STEP_TITLES = [
   "Clientes y mensualidades",
   "Convenios",
   "Sedes",
-  "Roles y permisos",
   "Revisión final",
 ];
 
@@ -91,7 +90,7 @@ export function isStepCompleted(progressData: Record<string, unknown>, step: num
   ).isValid;
 }
 
-import { Step1Schema, getStep2Schema, getStep3Schema, Step4Schema, Step6Schema, formatZodErrors } from "./onboarding-schema";
+import { Step1Schema, getStep2Schema, getStep3Schema, Step4Schema, Step5Schema, Step6Schema, formatZodErrors } from "./onboarding-schema";
 
 export function validateStep(
   step: number,
@@ -112,6 +111,9 @@ export function validateStep(
       break;
     case 4:
       result = Step4Schema.safeParse(data);
+      break;
+    case 5:
+      result = Step5Schema.safeParse(data);
       break;
     case 6:
       result = Step6Schema.safeParse(data);

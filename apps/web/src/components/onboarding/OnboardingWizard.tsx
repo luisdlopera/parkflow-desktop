@@ -30,7 +30,6 @@ import Step7Tickets from "./steps/Step7Tickets";
 import Step8Clients from "./steps/Step8Clients";
 import Step9Agreements from "./steps/Step9Agreements";
 import Step10Sites from "./steps/Step10Sites";
-import Step11Permissions from "./steps/Step11Permissions";
 import Step12Audit from "./steps/Step12Audit";
 
 function OnboardingContent() {
@@ -158,8 +157,6 @@ function OnboardingContent() {
         return <Step9Agreements />;
       case 10:
         return <Step10Sites />;
-      case 11:
-        return <Step11Permissions />;
       case 12:
         return <Step12Audit />;
       default:
@@ -180,14 +177,14 @@ function OnboardingContent() {
           </div>
           <div className="flex items-center gap-2">
             {saveState === "saving" && (
-              <div className="flex items-center gap-1 text-xs text-default-400">
-                <Save className="w-3 h-3 animate-pulse" />
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-default-100 rounded-full text-sm font-medium text-default-600 transition-all">
+                <Save className="w-4 h-4 animate-pulse text-primary" />
                 <span>Guardando...</span>
               </div>
             )}
             {saveState === "saved" && (
-              <div className="flex items-center gap-1 text-xs text-success">
-                <Check className="w-3 h-3" />
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-success-50 text-success-600 rounded-full text-sm font-medium transition-all animate-appearance-in">
+                <Check className="w-4 h-4" />
                 <span>Guardado</span>
               </div>
             )}
