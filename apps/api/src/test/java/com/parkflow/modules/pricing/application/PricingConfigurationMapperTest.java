@@ -65,6 +65,7 @@ class PricingConfigurationMapperTest {
         null,
         new PricingStrategyDto(type, type.name()),
         new PricingRulesDto(
+            java.util.List.of("GRACE_PERIOD", "MINIMUM_CHARGE", "ROUNDING", "STRATEGY_PRICE", "DAILY_CAP"),
             15,
             0,
             new PricingRulesDto.RoundingDto(PricingRulesDto.RoundingDto.RoundingMode.UP, 60),

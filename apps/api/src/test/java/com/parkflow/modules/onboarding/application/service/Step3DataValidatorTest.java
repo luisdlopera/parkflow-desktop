@@ -31,7 +31,13 @@ class Step3DataValidatorTest {
 
   @BeforeEach
   void setUp() {
-    validator = new Step3DataValidator();
+    com.parkflow.modules.pricing.validation.PricingValidationEngine engine = 
+        new com.parkflow.modules.pricing.validation.PricingValidationEngine(List.of(
+            new com.parkflow.modules.pricing.validation.NightTimeRangeRule(),
+            new com.parkflow.modules.pricing.validation.FullDayNightOverlapRule(),
+            new com.parkflow.modules.pricing.validation.NightPriceRule()
+        ));
+    validator = new Step3DataValidator(engine);
   }
 
   // ─────────────────────────────────────────────────────────────────────────

@@ -107,15 +107,21 @@ class AuthControllerIntegrationTest {
           .andReturn();
 
       // Validar atributos de Set-Cookie
-      String setCookieHeaders = result.getResponse().getHeader("Set-Cookie");
-      assertThat(setCookieHeaders).isNotNull();
+      List<String> setCookieHeaders = result.getResponse().getHeaders("Set-Cookie");
+      assertThat(setCookieHeaders).isNotEmpty();
+
+      // Encontrar el header del access token
+      String accessCookie = setCookieHeaders.stream()
+          .filter(h -> h.startsWith("parkflow_access"))
+          .findFirst()
+          .orElse("");
 
       // Verificar access token cookie
-      assertThat(setCookieHeaders).contains("parkflow_access");
-      assertThat(setCookieHeaders).contains("HttpOnly");
-      assertThat(setCookieHeaders).contains("SameSite=Strict");
-      assertThat(setCookieHeaders).contains("Max-Age=900"); // 15 minutos
-      assertThat(setCookieHeaders).contains("Path=/");
+      assertThat(accessCookie).contains("parkflow_access");
+      assertThat(accessCookie).contains("HttpOnly");
+      assertThat(accessCookie).contains("SameSite=Strict");
+      assertThat(accessCookie).contains("Max-Age=900"); // 15 minutos
+      assertThat(accessCookie).contains("Path=/");
     }
 
     @Test
@@ -138,9 +144,14 @@ class AuthControllerIntegrationTest {
           .andExpect(status().isOk())
           .andReturn();
 
-      String setCookieHeaders = result.getResponse().getHeader("Set-Cookie");
+      List<String> setCookieHeaders = result.getResponse().getHeaders("Set-Cookie");
+      String accessCookie = setCookieHeaders.stream()
+          .filter(h -> h.startsWith("parkflow_access"))
+          .findFirst()
+          .orElse("");
+      
       Pattern accessTokenPattern = Pattern.compile("parkflow_access=([^;]+)");
-      Matcher matcher = accessTokenPattern.matcher(setCookieHeaders);
+      Matcher matcher = accessTokenPattern.matcher(accessCookie);
 
       assertThat(matcher.find()).isTrue();
       String accessTokenValue = matcher.group(1);

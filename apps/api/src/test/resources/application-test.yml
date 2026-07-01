@@ -1,6 +1,8 @@
 spring:
   application:
     name: parkflow-api
+  cache:
+    type: caffeine
   datasource:
     url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
@@ -21,6 +23,8 @@ spring:
     enabled: false
 
 app:
+  rate-limit:
+    enabled: false
   jwt:
     access-ttl-minutes: 15
     refresh-ttl-days: 7
@@ -73,3 +77,7 @@ logging:
     com.parkflow: DEBUG
     org.springframework.web: DEBUG
     org.springframework.security: DEBUG
+
+parkflow:
+  redis:
+    enabled: false
