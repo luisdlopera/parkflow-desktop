@@ -5,7 +5,11 @@ import io.github.bucket4j.Bucket;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
+import java.util.function.Supplier;
 import org.springframework.context.annotation.Configuration;
+import io.github.bucket4j.BucketConfiguration;
+import io.github.bucket4j.distributed.proxy.ProxyManager;
 
 /**
  * SECURITY: Rate limiting configuration to prevent brute force attacks and DoS.
@@ -17,18 +21,32 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RateLimitConfig {
 
-  // In-memory buckets per IP address (for stateless rate limiting)
+  // Optional distributed proxy manager
+  private final Optional<ProxyManager<byte[]>> proxyManager;
+
+  // In-memory buckets fallback per IP address
   private final Map<String, Bucket> loginBuckets = new ConcurrentHashMap<>();
   private final Map<String, Bucket> operationBuckets = new ConcurrentHashMap<>();
   private final Map<String, Bucket> reprintBuckets = new ConcurrentHashMap<>();
   private final Map<String, Bucket> generalBuckets = new ConcurrentHashMap<>();
+
+  public RateLimitConfig(Optional<ProxyManager<byte[]>> proxyManager) {
+    this.proxyManager = proxyManager;
+  }
+
+  private Bucket getBucket(String key, Map<String, Bucket> localMap, Supplier<BucketConfiguration> configSupplier) {
+    if (proxyManager.isPresent()) {
+      return proxyManager.get().builder().build(key.getBytes(java.nio.charset.StandardCharsets.UTF_8), configSupplier);
+    }
+    return localMap.computeIfAbsent(key, k -> Bucket.builder().addLimit(configSupplier.get().getBandwidths()[0]).build());
+  }
 
   /**
    * Login endpoint: 10 requests per minute.
    * Strict limit to prevent brute force password attacks.
    */
   public Bucket resolveLoginBucket(String key) {
-    return loginBuckets.computeIfAbsent(key, k -> Bucket.builder()
+    return getBucket("login_" + key, loginBuckets, () -> BucketConfiguration.builder()
         .addLimit(Bandwidth.builder().capacity(10).refillIntervally(10, Duration.ofMinutes(1)).build())
         .build());
   }
@@ -38,7 +56,7 @@ public class RateLimitConfig {
    * Prevents accidental flooding while allowing normal operations.
    */
   public Bucket resolveOperationBucket(String key) {
-    return operationBuckets.computeIfAbsent(key, k -> Bucket.builder()
+    return getBucket("op_" + key, operationBuckets, () -> BucketConfiguration.builder()
         .addLimit(Bandwidth.builder().capacity(100).refillIntervally(100, Duration.ofMinutes(1)).build())
         .build());
   }
@@ -48,7 +66,7 @@ public class RateLimitConfig {
    * Stricter limit to prevent mass reprinting abuse.
    */
   public Bucket resolveReprintBucket(String key) {
-    return reprintBuckets.computeIfAbsent(key, k -> Bucket.builder()
+    return getBucket("repr_" + key, reprintBuckets, () -> BucketConfiguration.builder()
         .addLimit(Bandwidth.builder().capacity(30).refillIntervally(30, Duration.ofMinutes(1)).build())
         .build());
   }
@@ -58,7 +76,7 @@ public class RateLimitConfig {
    * Standard limit for read operations.
    */
   public Bucket resolveGeneralBucket(String key) {
-    return generalBuckets.computeIfAbsent(key, k -> Bucket.builder()
+    return getBucket("gen_" + key, generalBuckets, () -> BucketConfiguration.builder()
         .addLimit(Bandwidth.builder().capacity(200).refillIntervally(200, Duration.ofMinutes(1)).build())
         .build());
   }

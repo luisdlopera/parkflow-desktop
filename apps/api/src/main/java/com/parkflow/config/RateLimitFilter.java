@@ -14,6 +14,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+
 /**
  * SECURITY: Rate limiting filter to prevent brute force attacks and DoS.
  * Applied before authentication to protect against unauthenticated attacks.
@@ -21,6 +23,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 @Component
 @Order(2)
+@ConditionalOnProperty(name = "app.rate-limit.enabled", havingValue = "true", matchIfMissing = true)
 public class RateLimitFilter extends OncePerRequestFilter {
 
   private static final Logger log = LoggerFactory.getLogger(RateLimitFilter.class);

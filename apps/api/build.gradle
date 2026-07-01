@@ -66,6 +66,9 @@ dependencies {
   flywayMigration 'org.postgresql:postgresql'
   flywayMigration 'org.flywaydb:flyway-database-postgresql'
 
+  // AWS RDS Read-Write Splitting (CQRS)
+  implementation 'software.amazon.jdbc:aws-advanced-jdbc-wrapper:2.3.7'
+
   implementation 'org.mapstruct:mapstruct:1.5.5.Final'
   annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 
@@ -82,7 +85,8 @@ dependencies {
   implementation 'com.bucket4j:bucket4j_jdk17-jcache:8.17.0'
   implementation 'javax.cache:cache-api:1.1.1'
 
-  // SECURITY: Distributed rate limiting + token blacklist (optional, requires Redis)
+  // SECURITY: Distributed rate limiting + token blacklist
+  implementation 'com.bucket4j:bucket4j_jdk17-lettuce:8.17.0'
   implementation 'org.springframework.boot:spring-boot-starter-data-redis'
   implementation 'io.lettuce:lettuce-core'
 

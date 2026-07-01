@@ -7,6 +7,12 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import java.time.Duration;
 
 @Configuration
 @EnableCaching
@@ -20,7 +26,8 @@ public class CacheConfig {
   public static final String PAYMENT_METHODS = "payment-methods";
 
   @Bean
-  public CacheManager cacheManager() {
+  @ConditionalOnProperty(name = "spring.cache.type", havingValue = "caffeine", matchIfMissing = true)
+  public CacheManager caffeineCacheManager() {
     CaffeineCacheManager manager = new CaffeineCacheManager();
     manager.setCaffeine(
         Caffeine.newBuilder()
@@ -29,6 +36,18 @@ public class CacheConfig {
             .recordStats()
     );
     return manager;
+  }
+
+  @Bean
+  @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
+  public CacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
+    RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+        .entryTtl(Duration.ofMinutes(5))
+        .disableCachingNullValues();
+    
+    return RedisCacheManager.builder(connectionFactory)
+        .cacheDefaults(config)
+        .build();
   }
 }
 
