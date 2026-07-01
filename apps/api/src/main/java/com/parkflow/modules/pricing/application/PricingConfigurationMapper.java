@@ -60,6 +60,7 @@ public class PricingConfigurationMapper {
     PricingStrategyDto.PricingStrategyType type = strategyTypeFor(rate);
     PricingRulesDto rules =
         new PricingRulesDto(
+            java.util.List.of("GRACE_PERIOD", "MINIMUM_CHARGE", "ROUNDING", "STRATEGY_PRICE", "DAILY_CAP"),
             rate.graceMinutes(),
             0,
             new PricingRulesDto.RoundingDto(

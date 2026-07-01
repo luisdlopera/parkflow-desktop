@@ -66,6 +66,7 @@ public class Step3DataValidator {
     if (rawData == null || rawData.isEmpty()) {
       return new Step3ValidationResult(true, errors, sanitized);
     }
+    boolean canonicalPricing = rawData.get("pricingConfiguration") instanceof Map<?, ?>;
 
     // Filter to whitelisted fields only (S-03: prevents mass assignment)
     for (Map.Entry<String, Object> entry : rawData.entrySet()) {
@@ -77,48 +78,52 @@ public class Step3DataValidator {
       String field = entry.getKey();
       Object value = entry.getValue();
 
+      if (canonicalPricing && !"pricingConfiguration".equals(field)) {
+        continue;
+      }
+
       // Field-specific validation
       switch (field) {
         case "billingModel" -> {
           if (validateBillingModel(value)) {
             sanitized.put(field, value);
           } else {
-            errors.put(field, "Invalid billing model.");
+            errors.put(field, "Selecciona un modelo de cobro válido.");
           }
         }
         case "baseValue", "flatRate", "fullDayRate", "nightRate", "weekendRate", "fractionValue" -> {
           if (validateMonetaryValue(value, field)) {
             sanitized.put(field, value);
           } else {
-            errors.put(field, "Invalid monetary value (must be positive, max " + MAX_RATE_VALUE + ").");
+            errors.put(field, "Ingresa un valor monetario mayor a 0 y menor o igual a " + MAX_RATE_VALUE + ".");
           }
         }
         case "minFractionMinutes", "graceMinutes" -> {
           if (validatePositiveInteger(value)) {
             sanitized.put(field, value);
           } else {
-            errors.put(field, "Must be a positive integer.");
+            errors.put(field, "Ingresa un número entero mayor a 0.");
           }
         }
         case "nightStartTime", "nightEndTime" -> {
           if (validateTimeFormat(value)) {
             sanitized.put(field, value);
           } else {
-            errors.put(field, "Invalid time format (expected HH:MM).");
+            errors.put(field, "Usa formato de 24 horas HH:MM, por ejemplo 20:00.");
           }
         }
         case "hasNightRate", "hasFullDayRate", "hasWeekendRate", "hasFractions", "hasCourtesy", "enableRateByType" -> {
           if (value instanceof Boolean) {
             sanitized.put(field, value);
           } else {
-            errors.put(field, "Must be a boolean.");
+            errors.put(field, "Elige sí o no para continuar.");
           }
         }
         case "rounding" -> {
           if (validateRounding(value)) {
             sanitized.put(field, value);
           } else {
-            errors.put(field, "Invalid rounding mode.");
+            errors.put(field, "Selecciona una opción de redondeo válida.");
           }
         }
         case "ratesByType" -> {
@@ -140,14 +145,14 @@ public class Step3DataValidator {
               sanitized.put(field, value);
             }
           } else {
-            errors.put(field, "Must be a map of vehicle types to rates.");
+            errors.put(field, "Las tarifas por tipo de vehículo deben tener un formato válido.");
           }
         }
         case "pricingConfiguration" -> {
           if (value instanceof Map<?, ?>) {
             sanitized.put(field, value);
           } else {
-            errors.put(field, "Must be a pricing configuration object.");
+            errors.put(field, "La configuración de tarifas debe tener un formato válido.");
           }
         }
         default -> sanitized.put(field, value); // Pass through if already whitelisted

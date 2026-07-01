@@ -5,6 +5,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 public record PricingSimulationRequest(
-    @NotNull @Valid PricingConfigurationRequest configuration,
+    @NotNull @Valid PricingEngineV1Request configuration,
     @Min(0) long stayMinutes,
     String vehicleType) {}

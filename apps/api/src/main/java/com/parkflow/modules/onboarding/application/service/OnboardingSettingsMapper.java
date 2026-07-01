@@ -124,34 +124,66 @@ public class OnboardingSettingsMapper implements PlanStepValidationPort {
     capacity.put("byType", extractMap(step2.get("capacityByType")));
 
     Map<String, Object> rates = new LinkedHashMap<>();
-    rates.put("type", String.valueOf(step3.getOrDefault("billingModel", "HOURLY")));
-    rates.put("baseValue", extractNumber(step3.get("baseValue"), 0));
-    rates.put("flatRate", extractNumber(step3.get("flatRate"), 0));
-    rates.put("fullDayRate", extractNumber(step3.get("fullDayRate"), 0));
-    
-    // Night Rate Config
-    rates.put("hasNightRate", Boolean.TRUE.equals(step3.get("hasNightRate")));
-    rates.put("nightStartTime", String.valueOf(step3.getOrDefault("nightStartTime", "20:00")));
-    rates.put("nightEndTime", String.valueOf(step3.getOrDefault("nightEndTime", "06:00")));
-    rates.put("nightRate", extractNumber(step3.get("nightRate"), 0));
-    
-    // Fractions
-    rates.put("hasFractions", Boolean.TRUE.equals(step3.get("hasFractions")));
-    rates.put("minFractionMinutes", extractNumber(step3.get("minFractionMinutes"), 0));
-    rates.put("fractionValue", extractNumber(step3.get("fractionValue"), 0));
-    
-    // Rounding & Courtesy
-    rates.put("rounding", String.valueOf(step3.getOrDefault("rounding", "EXACT")));
-    rates.put("hasCourtesy", Boolean.TRUE.equals(step3.get("hasCourtesy")));
-    rates.put("graceMinutes", extractNumber(step3.get("graceMinutes"), 0));
-    
-    // Weekend/Holidays
-    rates.put("hasWeekendRate", Boolean.TRUE.equals(step3.get("hasWeekendRate")));
-    rates.put("weekendRate", extractNumber(step3.get("weekendRate"), 0));
-    
-    // Rates by Vehicle Type
-    rates.put("enableRateByType", Boolean.TRUE.equals(step3.get("enableRateByType")));
-    rates.put("byType", extractMap(step3.get("ratesByType")));
+    if (step3.get("pricingConfiguration") instanceof Map<?, ?> pricingConfiguration) {
+      Map<String, Object> pricing = new LinkedHashMap<>();
+      pricingConfiguration.forEach((k, v) -> pricing.put(String.valueOf(k), v));
+      Map<String, Object> strategy = extractMap(pricing.get("strategy"));
+      Map<String, Object> pricingRates = extractMap(pricing.get("rates"));
+      Map<String, Object> pricingRules = extractMap(pricing.get("rules"));
+
+      rates.put("pricingConfiguration", pricing);
+      rates.put("type", String.valueOf(strategy.getOrDefault("type", "HOURLY")));
+      rates.put("baseValue", extractDecimal(pricingRates.get("pricePerHour"), java.math.BigDecimal.ZERO));
+      rates.put("flatRate", extractDecimal(pricingRates.get("dailyPrice"), java.math.BigDecimal.ZERO));
+      rates.put("fullDayRate", extractDecimal(pricingRates.get("dailyPrice"), java.math.BigDecimal.ZERO));
+      rates.put("hasNightRate", Boolean.TRUE.equals(extractMap(pricingRules.get("specialHours")).get("enabled"))
+          || "NIGHT".equals(String.valueOf(strategy.get("type")))
+          || "MIXED".equals(String.valueOf(strategy.get("type")))
+          || pricingRates.get("nightPrice") != null);
+      rates.put("nightStartTime", String.valueOf(extractMap(pricingRules.get("specialHours")).getOrDefault("startTime", "20:00")));
+      rates.put("nightEndTime", String.valueOf(extractMap(pricingRules.get("specialHours")).getOrDefault("endTime", "06:00")));
+      rates.put("nightRate", extractDecimal(pricingRates.get("nightPrice"), java.math.BigDecimal.ZERO));
+      rates.put("hasFractions", "FRACTIONAL".equals(String.valueOf(strategy.get("type"))));
+      rates.put("minFractionMinutes", extractNumber(pricingRates.get("fractionMinutes"), 0));
+      rates.put("fractionValue", extractDecimal(pricingRates.get("fractionPrice"), java.math.BigDecimal.ZERO));
+      rates.put("rounding", canonicalRoundingToLegacy(extractMap(pricingRules.get("rounding"))));
+      rates.put("hasCourtesy", extractNumber(pricingRules.get("graceMinutes"), 0) > 0);
+      rates.put("graceMinutes", extractNumber(pricingRules.get("graceMinutes"), 0));
+      Map<String, Object> weekends = extractMap(pricingRules.get("weekends"));
+      rates.put("hasWeekendRate", Boolean.TRUE.equals(weekends.get("enabled")));
+      rates.put("weekendRate", extractDecimal(weekends.get("fixedPrice"), java.math.BigDecimal.ZERO));
+      rates.put("enableRateByType", !extractMap(pricingRules.get("vehicleOverrides")).isEmpty());
+      rates.put("byType", extractMap(pricingRules.get("vehicleOverrides")));
+    } else {
+      rates.put("type", String.valueOf(step3.getOrDefault("billingModel", "HOURLY")));
+      rates.put("baseValue", extractNumber(step3.get("baseValue"), 0));
+      rates.put("flatRate", extractNumber(step3.get("flatRate"), 0));
+      rates.put("fullDayRate", extractNumber(step3.get("fullDayRate"), 0));
+
+      // Night Rate Config
+      rates.put("hasNightRate", Boolean.TRUE.equals(step3.get("hasNightRate")));
+      rates.put("nightStartTime", String.valueOf(step3.getOrDefault("nightStartTime", "20:00")));
+      rates.put("nightEndTime", String.valueOf(step3.getOrDefault("nightEndTime", "06:00")));
+      rates.put("nightRate", extractNumber(step3.get("nightRate"), 0));
+
+      // Fractions
+      rates.put("hasFractions", Boolean.TRUE.equals(step3.get("hasFractions")));
+      rates.put("minFractionMinutes", extractNumber(step3.get("minFractionMinutes"), 0));
+      rates.put("fractionValue", extractNumber(step3.get("fractionValue"), 0));
+
+      // Rounding & Courtesy
+      rates.put("rounding", String.valueOf(step3.getOrDefault("rounding", "EXACT")));
+      rates.put("hasCourtesy", Boolean.TRUE.equals(step3.get("hasCourtesy")));
+      rates.put("graceMinutes", extractNumber(step3.get("graceMinutes"), 0));
+
+      // Weekend/Holidays
+      rates.put("hasWeekendRate", Boolean.TRUE.equals(step3.get("hasWeekendRate")));
+      rates.put("weekendRate", extractNumber(step3.get("weekendRate"), 0));
+
+      // Rates by Vehicle Type
+      rates.put("enableRateByType", Boolean.TRUE.equals(step3.get("enableRateByType")));
+      rates.put("byType", extractMap(step3.get("ratesByType")));
+    }
 
     Map<String, Object> region = new LinkedHashMap<>();
     region.put("countryCode", String.valueOf(step4.getOrDefault("countryCode", "CO")));
@@ -454,6 +486,22 @@ public class OnboardingSettingsMapper implements PlanStepValidationPort {
       }
     }
     return fallback;
+  }
+
+  private String canonicalRoundingToLegacy(Map<String, Object> rounding) {
+    if (rounding == null || rounding.isEmpty()) {
+      return "EXACT";
+    }
+    String mode = String.valueOf(rounding.getOrDefault("mode", "NONE"));
+    Integer increment = rounding.get("incrementMinutes") instanceof Number n ? n.intValue() : null;
+    if ("NONE".equals(mode)) return "EXACT";
+    if (increment == null) {
+      return "EXACT";
+    }
+    if (increment == 15) return "15_MIN";
+    if (increment == 30) return "30_MIN";
+    if (increment == 60) return "1_HOUR";
+    return "EXACT";
   }
 
   // I-06: extractDecimal for monetary/precise values using BigDecimal

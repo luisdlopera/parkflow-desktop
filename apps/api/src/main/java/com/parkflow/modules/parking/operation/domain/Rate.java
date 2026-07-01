@@ -1,6 +1,8 @@
 package com.parkflow.modules.parking.operation.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.domain.RateFraction;
 import com.parkflow.modules.configuration.domain.RoundingMode;
@@ -9,6 +11,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -178,6 +181,13 @@ public class Rate {
 
   @Column(nullable = false)
   private boolean isActive = true;
+
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "pricing_configuration", columnDefinition = "jsonb")
+  private Map<String, Object> pricingConfiguration;
+
+  @Column(name = "pricing_engine_version", length = 32)
+  private String pricingEngineVersion;
 
   @Column(nullable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();
