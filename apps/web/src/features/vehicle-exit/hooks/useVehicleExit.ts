@@ -139,7 +139,7 @@ export function useVehicleExit() {
           availableInOnboarding: true,
         };
       });
-  }, [dbMethodsData, methodsLoading, hasPaymentMethod]);
+  }, [dbMethodsData, methodsLoading]);
 
   const isPaymentConfigMissing = !methodsLoading && dbMethodsData && availablePaymentMethods.length === 0;
   const firstMethod = availablePaymentMethods[0]?.code ?? ("CASH" as PaymentMethodCode);
@@ -167,10 +167,10 @@ export function useVehicleExit() {
     }
   }, [active, availablePaymentMethods]);
 
-  function resetForm() {
+  const resetForm = useCallback(() => {
     setPrintWarning(null);
     resetLookup();
-  }
+  }, [resetLookup]);
 
   const processExitAction = useCallback(async (paymentMethod: PaymentMethodCode = selectedPaymentMethod) => {
     if (!active) { lookupHook.setError("Primero busca una sesión activa"); return; }
@@ -309,7 +309,7 @@ export function useVehicleExit() {
       setProcessing(false);
       operationLock.current = false;
     }
-  }, [active, selectedPaymentMethod, splitPaymentHook, splitPayments, splitTotal, singleCashReceived, changeDue, totalDue, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, pendingCustodiedItems, returnConfirmedIds, playSuccess, playError, lookupHook]);
+  }, [active, selectedPaymentMethod, splitPaymentHook, splitPayments, splitTotal, singleCashReceived, changeDue, totalDue, vehicleCondition, conditionChecklist, conditionPhotoUrls, agreementCode, pendingCustodiedItems, returnConfirmedIds, playSuccess, playError, lookupHook, availablePaymentMethods, resetForm]);
 
   const reprintTicket = useCallback(async () => {
     if (!active || reprintLock.current) return;

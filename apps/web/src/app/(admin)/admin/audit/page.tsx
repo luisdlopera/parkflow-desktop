@@ -57,6 +57,26 @@ const ACTION_TYPES = [
 
 const API_BASE = apiBase();
 
+function generateMockLogs(): AuditLogEntry[] {
+  const actions = ["COMPANY_CREATED", "LICENSE_GENERATED", "DEVICE_REGISTERED", "HEARTBEAT_RECEIVED", "COMPANY_UPDATED"];
+  const companies = ["Parqueadero Central", "Estacionamiento Norte", "Parking Sur", "ParkEasy"];
+  const users = ["admin@parkflow.local", "superadmin@parkflow.local", "support@parkflow.local"];
+
+  return Array.from({ length: 20 }, (_, i) => ({
+    id: `audit-${i}`,
+    companyId: `company-${i % 4}`,
+    companyName: companies[i % 4],
+    action: actions[i % 5],
+    description: `Acción ${actions[i % 5]} realizada correctamente`,
+    oldValue: i % 2 === 0 ? JSON.stringify({ status: "PENDING" }) : undefined,
+    newValue: i % 2 === 0 ? JSON.stringify({ status: "ACTIVE" }) : undefined,
+    performedBy: users[i % 3],
+    ipAddress: `192.168.1.${i + 10}`,
+    sessionId: `session-${i}`,
+    createdAt: new Date(Date.now() - i * 3600000).toISOString(),
+  }));
+}
+
 export default function AuditPage() {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -106,25 +126,7 @@ export default function AuditPage() {
     fetchLogs();
   }, [fetchLogs]);
 
-  const generateMockLogs = (): AuditLogEntry[] => {
-    const actions = ["COMPANY_CREATED", "LICENSE_GENERATED", "DEVICE_REGISTERED", "HEARTBEAT_RECEIVED", "COMPANY_UPDATED"];
-    const companies = ["Parqueadero Central", "Estacionamiento Norte", "Parking Sur", "ParkEasy"];
-    const users = ["admin@parkflow.local", "superadmin@parkflow.local", "support@parkflow.local"];
 
-    return Array.from({ length: 20 }, (_, i) => ({
-      id: `audit-${i}`,
-      companyId: `company-${i % 4}`,
-      companyName: companies[i % 4],
-      action: actions[i % 5],
-      description: `Acción ${actions[i % 5]} realizada correctamente`,
-      oldValue: i % 2 === 0 ? JSON.stringify({ status: "PENDING" }) : undefined,
-      newValue: i % 2 === 0 ? JSON.stringify({ status: "ACTIVE" }) : undefined,
-      performedBy: users[i % 3],
-      ipAddress: `192.168.1.${i + 10}`,
-      sessionId: `session-${i}`,
-      createdAt: new Date(Date.now() - i * 3600000).toISOString(),
-    }));
-  };
 
   const handleViewDetail = (log: AuditLogEntry) => {
     setSelectedLog(log);

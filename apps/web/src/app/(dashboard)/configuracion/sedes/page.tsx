@@ -82,7 +82,7 @@ export default function SedesPage() {
     };
     void loadCatalog();
     void crud.load();
-  }, []);
+  }, [crud]);
 
   const handleOpenCreate = () => {
     reset(DEFAULTS);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ConfigPageHeader } from "@/features/configuration/components/ui/ConfigPageHeader";
@@ -13,6 +13,9 @@ import {
   updateConfigurationRateFraction,
   deleteConfigurationRateFraction,
 } from "@/lib/api/rate-fractions-api";
+import { fetchRates, type RateRow } from "@/lib/api/rates-api";
+import { Select } from "@/components/bridge/Select";
+import { ListBox } from "@heroui/react";
 import { rateFractionSchema, type RateFractionSchema } from "@/lib/schemas/config.schemas";
 import type { RateFractionRow } from "@/lib/types/settings.types";
 import { DataTableSection, type ColumnDef } from "@/components/settings/DataTableSection";
@@ -40,7 +43,16 @@ const DEFAULTS: RateFractionSchema = { fromMinute: 0, toMinute: 0, value: 0, rou
 
 export default function FraccionesPage() {
   const [rateId, setRateId] = useState("");
+  const [rates, setRates] = useState<RateRow[]>([]);
+  const [loadingRates, setLoadingRates] = useState(true);
   const { confirm } = useDialog();
+
+  useEffect(() => {
+    fetchRates({ size: 100 })
+      .then((res) => setRates(res.content))
+      .catch((err) => console.error("Error fetching rates", err))
+      .finally(() => setLoadingRates(false));
+  }, []);
 
   const crud = useConfigCrud<RateFractionRow>({
     loadFn: (id) => fetchConfigurationRateFractions(id as string),
@@ -78,14 +90,37 @@ export default function FraccionesPage() {
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <ConfigPageHeader title="Fracciones de Tarifa" groupLabel="Cobro" groupId="cobro" sectionLabel="Fracciones de tiempo y cobro" />
       <div className="flex flex-col sm:flex-row items-center gap-4 bg-default-50 dark:bg-default-100 p-4 rounded-2xl border border-default-200">
-        <Input
-          type="text"
-          placeholder="ID de tarifa"
-          size="sm"
+        <Select
           className="max-w-xs"
-          value={rateId}
-          onChange={(e) => setRateId(e.target.value)} aria-label="Entrada de texto"
-        />
+          placeholder="Selecciona una tarifa"
+          aria-label="Selecciona una tarifa"
+          selectedKeys={rateId ? [rateId] : []}
+          onSelectionChange={(keys: any) => {
+            let id = "";
+            if (keys && typeof keys === "object" && Symbol.iterator in keys) {
+              id = Array.from(keys as Iterable<any>)[0] as string;
+            } else if (keys) {
+              id = String(keys);
+            }
+            setRateId(id || "");
+            if (id) void crud.load(id);
+          }}
+          isDisabled={loadingRates}
+        >
+          <Select.Trigger aria-label="Seleccionar tarifa">
+            <Select.Value aria-label="Seleccionar tarifa" />
+            <Select.Indicator aria-label="Seleccionar tarifa" />
+          </Select.Trigger>
+          <Select.Popover aria-label="Seleccionar tarifa">
+            <ListBox>
+              {rates.map(r => (
+                <ListBox.Item key={r.id} textValue={r.name}>
+                  {r.name}
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
         <Button
           size="sm"
           color="primary"

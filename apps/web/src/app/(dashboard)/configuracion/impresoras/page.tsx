@@ -85,7 +85,7 @@ export default function ImpresorasPage() {
     };
     void loadCatalog();
     void crud.load();
-  }, []);
+  }, [crud]);
 
   const handleOpenCreate = () => {
     reset(DEFAULTS);

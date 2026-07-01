@@ -88,7 +88,7 @@ export function useCajaPage() {
   // Sync site/terminal to store when they change
   useEffect(() => {
     cr.setSite(site);
-  }, [site]);
+  }, [site, cr]);
 
   useEffect(() => {
     setTerminal(defaultTerminal());
@@ -96,7 +96,7 @@ export function useCajaPage() {
 
   useEffect(() => {
     if (terminal) cr.setTerminal(terminal);
-  }, [terminal]);
+  }, [terminal, cr]);
 
   // Load registers, sites, outbox on mount
   useEffect(() => {
@@ -114,7 +114,7 @@ export function useCajaPage() {
   useEffect(() => {
     cr.loadOutboxCount().catch(() => {});
     cr.flushOutbox().catch(() => {});
-  }, []);
+  }, [cr]);
 
   // Sync store error to local state
   useEffect(() => {

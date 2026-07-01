@@ -124,31 +124,7 @@ export function QuickSearch() {
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if (!isOpen) return;
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        setSelectedIndex((prev) => (flatResults.length === 0 ? 0 : (prev + 1) % flatResults.length));
-      }
-      if (event.key === "ArrowUp") {
-        event.preventDefault();
-        setSelectedIndex((prev) => (flatResults.length === 0 ? 0 : (prev - 1 + flatResults.length) % flatResults.length));
-      }
-      if (event.key === "Enter") {
-        event.preventDefault();
-        if (flatResults[selectedIndex]) {
-          handleSelect(flatResults[selectedIndex]);
-          return;
-        }
-        handleSearchPage();
-      }
-    };
 
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flatResults, isOpen, selectedIndex]);
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -184,6 +160,32 @@ export function QuickSearch() {
     router.push(`/nuevo-ingreso?plate=${encodeURIComponent(next)}`);
     setQuery("");
   };
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setSelectedIndex((prev) => (flatResults.length === 0 ? 0 : (prev + 1) % flatResults.length));
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setSelectedIndex((prev) => (flatResults.length === 0 ? 0 : (prev - 1 + flatResults.length) % flatResults.length));
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (flatResults[selectedIndex]) {
+          handleSelect(flatResults[selectedIndex]);
+          return;
+        }
+        handleSearchPage();
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flatResults, isOpen, selectedIndex]);
 
   const openPalette = () => {
     setIsOpen(true);

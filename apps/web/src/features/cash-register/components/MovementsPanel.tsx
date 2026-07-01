@@ -27,7 +27,7 @@ export default function MovementsPanel({ p }: { p: any }) {
       },
     ];
     return cols;
-  }, [p.perms.canVoid, p.setVoidTarget]);
+  }, [p]);
 
   return (
     <>

@@ -42,7 +42,7 @@ export default function VehiculosActivosClient({ fallbackData }: { fallbackData?
   const { selectedKeys, setSelectedKeys, precalculation, finalResult, isCalculating, isProcessing, hasSelection, selectionCount, availablePaymentMethods, selectedPaymentMethod, setSelectedPaymentMethod, handleCalculate, handleConfirm, closeModal } = useBulkExit(rows, reload);
 
   const enableCustodiedItem = (runtimeConfig?.operationConfiguration?.enableCustodiedItem as boolean) ?? true;
-  const vehicleTypes = (runtimeConfig?.vehicleTypes ?? []) as string[];
+  const vehicleTypes = useMemo(() => (runtimeConfig?.vehicleTypes ?? []) as string[], [runtimeConfig?.vehicleTypes]);
   const hasMotorcycles = vehicleTypes.includes("MOTORCYCLE");
   const showHelmetAlert = !lockersLoading && enableCustodiedItem && hasMotorcycles && lockers.length === 0;
 

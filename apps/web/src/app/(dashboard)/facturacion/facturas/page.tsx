@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   fetchInvoices,
@@ -50,7 +50,7 @@ export default function FacturasPage() {
   const [showCancelModal, setShowCancelModal] = useState<{ id: string; number: string } | null>(null);
   const [cancelReason, setCancelReason] = useState("");
 
-  const load = (p = 0) => {
+  const load = useCallback((p = 0) => {
     setLoading(true);
     fetchInvoices({ status: statusFilter || undefined, page: p, size: 20 })
       .then((resp) => {
@@ -60,9 +60,9 @@ export default function FacturasPage() {
       })
       .catch(() => toast.danger("No se pudo cargar las facturas"))
       .finally(() => setLoading(false));
-  };
+  }, [statusFilter]);
 
-  useEffect(() => { load(0); }, [statusFilter]);
+  useEffect(() => { load(0); }, [load]);
 
   const handleCancel = async () => {
     if (!showCancelModal || !cancelReason.trim()) return;

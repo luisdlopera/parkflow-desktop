@@ -49,7 +49,7 @@ export function ConfigSection<T extends { id: string }>({
   const form = useForm({ resolver: zodResolver(schemaProp), defaultValues });
   const { handleSubmit, reset, formState: { isSubmitting } } = form;
 
-  useEffect(() => { void crud.load(); }, []);
+  useEffect(() => { void crud.load(); }, [crud]);
 
   const handleOpenCreate = () => {
     reset(defaultValues);

@@ -59,7 +59,7 @@ export default function MetodosPagoPage() {
     defaultValues: DEFAULTS,
   });
 
-  useEffect(() => { void crud.load(); }, []);
+  useEffect(() => { void crud.load(); }, [crud]);
 
   const enabledCodes = new Set(crud.rows.map((r) => r.code));
   const catalogueToAdd = PAYMENT_METHOD_CATALOG.filter(

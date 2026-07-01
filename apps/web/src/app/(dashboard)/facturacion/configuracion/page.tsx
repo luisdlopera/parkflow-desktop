@@ -201,7 +201,7 @@ export default function FacturacionConfiguracionPage() {
       {/* Drawer for new provider */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50 flex">
-          <button className="flex-1 bg-default-100/30" onClick={() => setDrawerOpen(false)} />
+          <button className="flex-1 bg-default-100/30" onClick={() => setDrawerOpen(false)} aria-label="Cerrar cajón" />
           <div className="flex w-full max-w-md flex-col border-l border-default-200 bg-default-50 dark:bg-default-100 shadow-none">
             <div className="flex items-center justify-between border-b border-default-200 px-6 py-4">
               <h2 className="font-semibold text-foreground">Configurar proveedor</h2>

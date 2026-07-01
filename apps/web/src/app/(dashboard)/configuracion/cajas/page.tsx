@@ -100,7 +100,7 @@ export default function CajasPage() {
     };
     void loadCatalogs();
     void crud.load();
-  }, []);
+  }, [crud]);
 
   const handleOpenCreate = () => {
     reset(DEFAULTS);

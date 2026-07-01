@@ -34,7 +34,7 @@ export function SearchAndFiltersToolbar({
   };
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap lg:flex-nowrap">
+    <div data-testid="active-vehicles-filters" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap lg:flex-nowrap">
       {/* Search Input */}
       <div className="flex-1 min-w-[250px]">
         <div className="relative">
@@ -46,6 +46,7 @@ export function SearchAndFiltersToolbar({
             className="pl-10"
             size="sm"
             isClearable
+            aria-label="Buscar vehículos"
             onClear={() => onSearchChange("")}
           />
         </div>
