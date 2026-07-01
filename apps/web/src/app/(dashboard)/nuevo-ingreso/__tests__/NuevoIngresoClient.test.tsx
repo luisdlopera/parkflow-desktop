@@ -6,7 +6,9 @@ vi.mock("next/navigation", () => ({
   useSearchParams: vi.fn().mockReturnValue({
     get: vi.fn().mockReturnValue(null),
   }),
+  usePathname: () => "",
   useRouter: vi.fn().mockReturnValue({ push: vi.fn(), replace: vi.fn() }),
+
 }));
 
 vi.mock("@/lib/services/auth-domain.service", () => ({

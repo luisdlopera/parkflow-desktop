@@ -3,6 +3,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import OnboardingPage from "../page";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "",
+  useSearchParams: () => new URLSearchParams(),
   useRouter: vi.fn().mockReturnValue({ push: vi.fn(), replace: vi.fn() }),
 }));
 

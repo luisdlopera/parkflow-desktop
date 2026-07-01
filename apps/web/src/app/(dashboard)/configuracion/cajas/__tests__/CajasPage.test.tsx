@@ -3,34 +3,45 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import CajasPage from "../page";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "",
+  useSearchParams: () => new URLSearchParams(),
   useRouter: vi.fn(),
 }));
 
-vi.mock("@/lib/settings-api", () => ({
+vi.mock("@/lib/api/cash-registers-api", () => ({
   fetchConfigurationCashRegisters: vi.fn().mockResolvedValue({
     content: [
       { id: "cr-1", code: "CAJA-01", name: "Caja Principal", site: "SJ", terminal: "TERM-01", printerName: "EPSON-01", active: true },
       { id: "cr-2", code: "CAJA-02", name: "Caja Secundaria", site: "CC", terminal: "TERM-02", printerName: "EPSON-02", active: false },
     ],
   }),
+  createConfigurationCashRegister: vi.fn().mockResolvedValue({ id: "cr-new" }),
+  updateConfigurationCashRegister: vi.fn().mockResolvedValue({ id: "cr-1" }),
+  patchConfigurationCashRegisterStatus: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/lib/api/sites-api", () => ({
   fetchConfigurationSites: vi.fn().mockResolvedValue({
     content: [
       { id: "site-1", code: "SJ", name: "San José" },
     ],
   }),
+}));
+
+vi.mock("@/lib/api/printers-api", () => ({
   fetchConfigurationPrinters: vi.fn().mockResolvedValue({
     content: [
       { id: "pr-1", name: "EPSON-01", isDefault: true },
     ],
   }),
+}));
+
+vi.mock("@/lib/api/users-api", () => ({
   fetchUsers: vi.fn().mockResolvedValue({
     content: [
       { id: "user-1", name: "Admin User" },
     ],
   }),
-  createConfigurationCashRegister: vi.fn().mockResolvedValue({ id: "cr-new" }),
-  updateConfigurationCashRegister: vi.fn().mockResolvedValue({ id: "cr-1" }),
-  patchConfigurationCashRegisterStatus: vi.fn().mockResolvedValue(undefined),
 }));
 
 const defaultCrud = {

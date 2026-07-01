@@ -27,11 +27,12 @@ function formatDate(date: Date, format: string = "YYYY-MM-DD"): string {
       return `${day}/${month}/${year}`;
     case "MM/DD/YYYY":
       return `${month}/${day}/${year}`;
-    case "YYYY-MM-DD HH:mm:ss":
+    case "YYYY-MM-DD HH:mm:ss": {
       const hours = String(date.getHours()).padStart(2, "0");
       const minutes = String(date.getMinutes()).padStart(2, "0");
       const seconds = String(date.getSeconds()).padStart(2, "0");
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
     default:
       return `${year}-${month}-${day}`;
   }

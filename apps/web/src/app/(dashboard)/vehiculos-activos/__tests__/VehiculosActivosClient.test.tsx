@@ -3,6 +3,8 @@ import { render, screen } from "@testing-library/react";
 import VehiculosActivosClient from "../VehiculosActivosClient";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "",
+  useSearchParams: () => new URLSearchParams(),
   useRouter: vi.fn().mockReturnValue({ push: vi.fn() }),
 }));
 
@@ -70,8 +72,8 @@ vi.mock("@/features/active-vehicles/hooks/useColumnVisibility", () => ({
   }),
 }));
 
-vi.mock("@/features/active-vehicles/components/VehiculosActivosFilters", () => ({
-  VehiculosActivosFilters: () => <div data-testid="active-vehicles-filters" />,
+vi.mock("@/features/active-vehicles/components/SearchAndFiltersToolbar", () => ({
+  SearchAndFiltersToolbar: () => <div data-testid="active-vehicles-filters" />,
 }));
 
 vi.mock("@/features/active-vehicles/components/TicketPreviewModal", () => ({

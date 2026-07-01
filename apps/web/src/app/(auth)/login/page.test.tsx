@@ -8,6 +8,8 @@ import { server } from "../../../mocks/server";
 const replace = vi.fn();
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "",
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ replace }),
 }));
 

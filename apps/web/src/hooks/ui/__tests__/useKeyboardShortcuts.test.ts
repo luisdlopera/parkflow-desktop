@@ -9,6 +9,8 @@ import {
 const mockPush = vi.fn();
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "",
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: mockPush }),
 }));
 

@@ -3,8 +3,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 import SearchPage from "../page";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "",
   useRouter: vi.fn().mockReturnValue({ push: vi.fn(), replace: vi.fn() }),
   useSearchParams: vi.fn().mockReturnValue(new URLSearchParams("")),
+
 }));
 
 vi.mock("@/features/search/hooks/useSearch", () => ({

@@ -9,6 +9,8 @@ const mockProviderLogout = vi.fn();
 let mockIsAuthenticated = true;
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "",
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ replace: mockReplace }),
 }));
 

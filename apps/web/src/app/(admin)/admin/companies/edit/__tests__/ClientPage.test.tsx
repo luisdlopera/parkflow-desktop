@@ -9,6 +9,8 @@ const mockGetCompany = vi.fn<(id: string) => Promise<Company>>();
 const mockUpdateCompany = vi.fn<(id: string, data: any) => Promise<Company>>();
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "",
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: mockPush }),
   useSearchParams: () => new URLSearchParams({ id: "c1" }),
 }));

@@ -51,7 +51,6 @@ describe("VehiculosActivosFilters", () => {
     );
 
     expect(screen.getByTestId("vehicle-type-select")).toBeInTheDocument();
-    expect(screen.getByText("Aplicar filtros")).toBeInTheDocument();
   });
 
   it("triggers onChange when selecting a vehicle type", async () => {

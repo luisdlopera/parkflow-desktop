@@ -75,7 +75,7 @@ describe("idempotency", () => {
 
     it("should generate keys with consistent format", () => {
       const key = newIdempotencyKey();
-      expect(/^[a-f0-9\-]+$/i.test(key) || key.startsWith("pf-")).toBe(true);
+      expect(/^[a-f0-9-]+$/i.test(key) || key.startsWith("pf-")).toBe(true);
     });
 
     it("should be deterministic in format but not value", () => {

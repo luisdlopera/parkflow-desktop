@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation';
 // ──────────────────────────────────────────────────────────────────────────────
 
 vi.mock('next/navigation', () => ({
+  usePathname: () => "",
+  useSearchParams: () => new URLSearchParams(),
   useRouter: vi.fn(),
 }));
 
