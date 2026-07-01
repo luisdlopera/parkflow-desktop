@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,34 +27,35 @@ public class InvoiceProviderConfigController {
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   @Operation(summary = "List configured invoice providers for the current tenant")
-  public ResponseEntity<List<InvoiceProviderConfigResponse>> list() {
+  public List<InvoiceProviderConfigResponse> list() {
     UUID companyId = TenantContext.getTenantId();
-    return ResponseEntity.ok(configService.listForCompany(companyId));
+    return configService.listForCompany(companyId);
   }
 
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   @Operation(summary = "Create or update an invoice provider configuration")
-  public ResponseEntity<InvoiceProviderConfigResponse> createOrUpdate(
+  @ResponseStatus(HttpStatus.CREATED)
+  public InvoiceProviderConfigResponse createOrUpdate(
       @Valid @RequestBody InvoiceProviderConfigRequest request) {
     UUID companyId = TenantContext.getTenantId();
-    return ResponseEntity.status(HttpStatus.CREATED).body(configService.createOrUpdate(companyId, request));
+    return configService.createOrUpdate(companyId, request);
   }
 
   @PostMapping("/{id}/test")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   @Operation(summary = "Test the connection to the configured invoice provider")
-  public ResponseEntity<ProviderHealthResult> testConnection(@PathVariable UUID id) {
+  public ProviderHealthResult testConnection(@PathVariable UUID id) {
     UUID companyId = TenantContext.getTenantId();
-    return ResponseEntity.ok(configService.testConnection(id, companyId));
+    return configService.testConnection(id, companyId);
   }
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   @Operation(summary = "Deactivate an invoice provider configuration")
-  public ResponseEntity<Void> deactivate(@PathVariable UUID id) {
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deactivate(@PathVariable UUID id) {
     UUID companyId = TenantContext.getTenantId();
     configService.deactivate(id, companyId);
-    return ResponseEntity.noContent().build();
   }
 }

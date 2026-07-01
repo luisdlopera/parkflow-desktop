@@ -1,6 +1,7 @@
 package com.parkflow.modules.licensing.infrastructure.controller;
 
-import com.parkflow.modules.licensing.application.service.PlanService;
+import com.parkflow.modules.licensing.application.service.PlanLifecycleService;
+import com.parkflow.modules.licensing.application.service.PlanQueryService;
 import com.parkflow.modules.licensing.dto.PlanRequest;
 import com.parkflow.modules.licensing.dto.PlanResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,19 +25,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @deprecated Use PlanManagementUseCase and PlanQueryUseCase ports instead.
- * This controller wraps the deprecated {@link PlanService}.
+ * Plan management endpoints using decomposed services.
+ * Refactored from deprecated PlanService to PlanQueryService + PlanLifecycleService.
  */
-@Deprecated(since = "2.1.0", forRemoval = false)
 @RestController
 @RequestMapping("/api/v1/admin/plans")
 @RequiredArgsConstructor
 @Tag(name = "Admin - Plans", description = "SuperAdmin plan management with feature flags")
 public class PlanController {
 
-  private final PlanService planService;
+  private final PlanQueryService planQueryService;
+  private final PlanLifecycleService planLifecycleService;
 
-  @Deprecated
   @GetMapping
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "List all plans")
@@ -44,30 +44,27 @@ public class PlanController {
   public ResponseEntity<List<PlanResponse>> listPlans(
       @RequestParam(defaultValue = "false") boolean includeDeleted,
       @RequestParam(required = false) Boolean active) {
-    return ResponseEntity.ok(planService.listPlans(includeDeleted, active));
+    return ResponseEntity.ok(planQueryService.listPlans(includeDeleted, active));
   }
 
-  @Deprecated
   @GetMapping("/{id}")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Get plan detail")
   @ApiResponse(responseCode = "200", description = "Plan retrieved successfully")
   @ApiResponse(responseCode = "404", description = "Plan not found")
   public ResponseEntity<PlanResponse> getPlan(@PathVariable UUID id) {
-    return ResponseEntity.ok(planService.getPlan(id));
+    return ResponseEntity.ok(planQueryService.getPlan(id));
   }
 
-  @Deprecated
   @PostMapping
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Create a new plan")
   @ApiResponse(responseCode = "201", description = "Plan created successfully")
   @ApiResponse(responseCode = "409", description = "Plan code already exists")
   public ResponseEntity<PlanResponse> createPlan(@Valid @RequestBody PlanRequest request) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(planService.createPlan(request));
+    return ResponseEntity.status(HttpStatus.CREATED).body(planLifecycleService.createPlan(request));
   }
 
-  @Deprecated
   @PatchMapping("/{id}")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Update an existing plan")
@@ -76,10 +73,9 @@ public class PlanController {
   public ResponseEntity<PlanResponse> updatePlan(
       @PathVariable UUID id,
       @Valid @RequestBody PlanRequest request) {
-    return ResponseEntity.ok(planService.updatePlan(id, request));
+    return ResponseEntity.ok(planLifecycleService.updatePlan(id, request));
   }
 
-  @Deprecated
   @DeleteMapping("/{id}")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Soft delete a plan")
@@ -87,26 +83,24 @@ public class PlanController {
   @ApiResponse(responseCode = "400", description = "Cannot delete last active plan")
   @ApiResponse(responseCode = "404", description = "Plan not found")
   public ResponseEntity<Void> deletePlan(@PathVariable UUID id) {
-    planService.deletePlan(id);
+    planLifecycleService.deletePlan(id);
     return ResponseEntity.noContent().build();
   }
 
-  @Deprecated
   @PatchMapping("/{id}/toggle")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Toggle plan active/inactive status")
   @ApiResponse(responseCode = "200", description = "Plan status toggled successfully")
   @ApiResponse(responseCode = "400", description = "Cannot deactivate last active plan")
   public ResponseEntity<PlanResponse> togglePlan(@PathVariable UUID id) {
-    return ResponseEntity.ok(planService.togglePlan(id));
+    return ResponseEntity.ok(planLifecycleService.togglePlan(id));
   }
 
-  @Deprecated
   @PostMapping("/{id}/duplicate")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Duplicate a plan with all its features")
   @ApiResponse(responseCode = "201", description = "Plan duplicated successfully")
   public ResponseEntity<PlanResponse> duplicatePlan(@PathVariable UUID id) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(planService.duplicatePlan(id));
+    return ResponseEntity.status(HttpStatus.CREATED).body(planLifecycleService.duplicatePlan(id));
   }
 }

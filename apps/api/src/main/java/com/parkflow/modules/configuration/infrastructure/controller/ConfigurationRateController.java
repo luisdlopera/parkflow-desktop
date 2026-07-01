@@ -14,7 +14,6 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,41 +30,42 @@ public class ConfigurationRateController {
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
-  public ResponseEntity<PageResponse<RateResponse>> list(
+  public PageResponse<RateResponse> list(
       @RequestParam(required = false) String site,
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,
       @RequestParam(required = false) String category,
       Pageable pageable) {
     java.util.UUID companyId = com.parkflow.modules.auth.security.TenantContext.getTenantId();
-    return ResponseEntity.ok(listRatesUseCase.list(site, q, active, category, companyId, pageable));
+    return listRatesUseCase.list(site, q, active, category, companyId, pageable);
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
-  public ResponseEntity<RateResponse> get(@PathVariable UUID id) {
-    return ResponseEntity.ok(getRateUseCase.get(id));
+  public RateResponse get(@PathVariable UUID id) {
+    return getRateUseCase.get(id);
   }
 
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<RateResponse> create(@Valid @RequestBody RateUpsertRequest req) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(createRateUseCase.create(req));
+  @org.springframework.web.bind.annotation.ResponseStatus(HttpStatus.CREATED)
+  public RateResponse create(@Valid @RequestBody RateUpsertRequest req) {
+    return createRateUseCase.create(req);
   }
 
   @PutMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<RateResponse> update(
+  public RateResponse update(
       @PathVariable UUID id,
       @Valid @RequestBody RateUpsertRequest req) {
-    return ResponseEntity.ok(updateRateUseCase.update(id, req));
+    return updateRateUseCase.update(id, req);
   }
 
   @PatchMapping("/{id}/status")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<RateResponse> patchStatus(
+  public RateResponse patchStatus(
       @PathVariable UUID id,
       @Valid @RequestBody RateStatusRequest req) {
-    return ResponseEntity.ok(patchRateStatusUseCase.patchStatus(id, req));
+    return patchRateStatusUseCase.patchStatus(id, req);
   }
 }

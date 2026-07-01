@@ -13,7 +13,6 @@ import com.parkflow.modules.common.security.ApiKeyManager;
 
 import com.parkflow.modules.common.security.ApiKeyRepository;
 import com.parkflow.modules.common.security.ApiKey;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,17 +49,16 @@ public class ApiKeyController {
           @Content(
               mediaType = "application/json",
               schema = @Schema(implementation = GenerateApiKeyResponse.class)))
-  public ResponseEntity<GenerateApiKeyResponse> generateApiKey(
+  @ResponseStatus(HttpStatus.CREATED)
+  public GenerateApiKeyResponse generateApiKey(
       @Valid @RequestBody GenerateApiKeyRequest request) {
     String plainKey =
         apiKeyManager.generateApiKey(
             request.getCompanyId(), request.getName(), request.getDescription(),
             request.getExpirationDays());
 
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(
-            new GenerateApiKeyResponse(
-                plainKey, "Store this key securely. It will only be shown once."));
+    return new GenerateApiKeyResponse(
+        plainKey, "Store this key securely. It will only be shown once.");
   }
 
   /**
@@ -77,7 +75,7 @@ public class ApiKeyController {
           @Content(
               mediaType = "application/json",
               schema = @Schema(implementation = ApiKeyListResponse.class)))
-  public ResponseEntity<List<ApiKeyListResponse>> listApiKeys(@PathVariable UUID companyId) {
+  public List<ApiKeyListResponse> listApiKeys(@PathVariable UUID companyId) {
     List<ApiKey> keys = apiKeyRepository.findByCompanyId(companyId);
     List<ApiKeyListResponse> responses =
         keys.stream()
@@ -94,7 +92,7 @@ public class ApiKeyController {
                         key.getExpiresAt().toString()))
             .toList();
 
-    return ResponseEntity.ok(responses);
+    return responses;
   }
 
   /**
@@ -111,14 +109,13 @@ public class ApiKeyController {
           @Content(
               mediaType = "application/json",
               schema = @Schema(implementation = GenerateApiKeyResponse.class)))
-  public ResponseEntity<GenerateApiKeyResponse> rotateApiKey(
+  public GenerateApiKeyResponse rotateApiKey(
       @PathVariable UUID keyId, @Valid @RequestBody RotateApiKeyRequest request) {
     String newKey =
         apiKeyManager.rotateApiKey(keyId, request.getNewKeyName(), request.getExpirationDays());
 
-    return ResponseEntity.ok(
-        new GenerateApiKeyResponse(
-            newKey, "Old key has been deactivated. Store this new key securely."));
+    return new GenerateApiKeyResponse(
+        newKey, "Old key has been deactivated. Store this new key securely.");
   }
 
   /**
@@ -129,9 +126,9 @@ public class ApiKeyController {
       summary = "Deactivate API Key",
       description = "Deactivate an API key (cannot be reactivated)")
   @ApiResponse(responseCode = "204", description = "API key deactivated successfully")
-  public ResponseEntity<Void> deactivateApiKey(@PathVariable UUID keyId) {
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deactivateApiKey(@PathVariable UUID keyId) {
     apiKeyManager.deactivateApiKey(keyId);
-    return ResponseEntity.noContent().build();
   }
 
   /**

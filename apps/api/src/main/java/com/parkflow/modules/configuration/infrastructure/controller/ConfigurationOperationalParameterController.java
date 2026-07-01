@@ -6,7 +6,6 @@ import com.parkflow.modules.configuration.dto.OperationalParameterResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,15 +18,15 @@ public class ConfigurationOperationalParameterController {
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
-  public ResponseEntity<OperationalParameterResponse> getBySite(@RequestParam UUID siteId) {
-    return ResponseEntity.ok(operationalParameterUseCase.getBySite(siteId));
+  public OperationalParameterResponse getBySite(@RequestParam UUID siteId) {
+    return operationalParameterUseCase.getBySite(siteId);
   }
 
   @PutMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<OperationalParameterResponse> createOrUpdate(
+  public OperationalParameterResponse createOrUpdate(
       @RequestParam UUID siteId,
       @Valid @RequestBody OperationalParameterRequest req) {
-    return ResponseEntity.ok(operationalParameterUseCase.createOrUpdate(siteId, req));
+    return operationalParameterUseCase.createOrUpdate(siteId, req);
   }
 }

@@ -1,10 +1,11 @@
 package com.parkflow.modules.pricing.infrastructure.controller;
 
 import com.parkflow.modules.pricing.dto.PricingRulesetSyncResponse;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import java.util.Map;
 import java.time.OffsetDateTime;
 
@@ -20,8 +21,9 @@ public class PricingRulesController {
     // and map them into the JSON AST expected by the Rust engine.
 
     @GetMapping("/sync")
-    public ResponseEntity<PricingRulesetSyncResponse> getRulesetForDesktopSync() {
-        return ResponseEntity.ok(new PricingRulesetSyncResponse(
+    @ResponseStatus(HttpStatus.OK)
+    public PricingRulesetSyncResponse getRulesetForDesktopSync() {
+        return new PricingRulesetSyncResponse(
             "1.0",
             "DefaultPricingEngine",
             new PricingRulesetSyncResponse.PricingRulesDetail(
@@ -33,6 +35,6 @@ public class PricingRulesController {
                 )
             ),
             OffsetDateTime.now()
-        ));
+        );
     }
 }
