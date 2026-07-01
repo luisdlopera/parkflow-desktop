@@ -4,6 +4,8 @@ import { authBase } from "@/lib/api/config";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 
 export class WebAuthProvider implements AuthProvider {
+  private refreshPromise: Promise<AuthSession | null> | null = null;
+
   async login(credentials: LoginInput): Promise<AuthSession> {
     const response = await fetchWithCredentials(`${authBase()}/login`, {
       method: "POST",
@@ -95,20 +97,30 @@ export class WebAuthProvider implements AuthProvider {
   }
 
   async refresh(): Promise<AuthSession | null> {
-    try {
-      const response = await fetchWithCredentials(`${authBase()}/refresh-token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!response.ok) {
-        return null;
-      }
-
-      return this.restoreSession();
-    } catch {
-      return null;
+    if (this.refreshPromise) {
+      return this.refreshPromise;
     }
+
+    this.refreshPromise = (async () => {
+      try {
+        const response = await fetchWithCredentials(`${authBase()}/refresh-token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          return null;
+        }
+
+        return await this.restoreSession();
+      } catch {
+        return null;
+      } finally {
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
   }
 
   async getCurrentUser(): Promise<import("@parkflow/types").AuthUser | null> {

@@ -81,23 +81,19 @@ export function useSessionMonitor() {
   }, []);
 
   const renewSession = useCallback(async () => {
-    try {
-      const authProvider = await createAuthProvider();
-      const session = await authProvider.refresh();
-      if (!session) {
-        throw new Error("No hay sesión activa");
-      }
-      useAuthStore.getState().setUser(session.user);
-      if (session.permissions) {
-        useAuthStore.getState().setPermissions(session.permissions);
-      }
-      if (session.expiresAt) {
-        useAuthStore.getState().setSessionExpiresAt(session.expiresAt);
-      }
-      await checkSession();
-    } catch (error) {
-      throw error;
+    const authProvider = await createAuthProvider();
+    const session = await authProvider.refresh();
+    if (!session) {
+      throw new Error("No hay sesión activa");
     }
+    useAuthStore.getState().setUser(session.user);
+    if (session.permissions) {
+      useAuthStore.getState().setPermissions(session.permissions);
+    }
+    if (session.expiresAt) {
+      useAuthStore.getState().setSessionExpiresAt(session.expiresAt);
+    }
+    await checkSession();
   }, [checkSession]);
 
   const forceLogout = useCallback(async () => {

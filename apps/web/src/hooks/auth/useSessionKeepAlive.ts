@@ -9,10 +9,15 @@ const IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
 export function useSessionKeepAlive() {
   const { isAuthenticated } = useAuthStore();
-  const lastActivityRef = useRef<number>(Date.now());
+  const lastActivityRef = useRef<number>(0);
+  if (lastActivityRef.current === 0) {
+    lastActivityRef.current = Date.now();
+  }
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const activityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isRefreshingRef = useRef(false);
+
+  const scheduleNextRefreshRef = useRef<() => void>(() => {});
 
   const refreshSession = useCallback(async () => {
     if (!isAuthenticated || isRefreshingRef.current) return;
@@ -28,7 +33,7 @@ export function useSessionKeepAlive() {
         window.location.href = '/login?reason=expired';
         return;
       }
-      scheduleNextRefresh();
+      scheduleNextRefreshRef.current();
     } catch {
       // Silently fail - don't interrupt user experience
     } finally {
@@ -45,6 +50,8 @@ export function useSessionKeepAlive() {
       refreshSession();
     }, REFRESH_INTERVAL);
   }, [refreshSession]);
+
+  scheduleNextRefreshRef.current = scheduleNextRefresh;
 
   const handleActivity = useCallback(() => {
     lastActivityRef.current = Date.now();

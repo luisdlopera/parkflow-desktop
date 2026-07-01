@@ -33,7 +33,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     } else if (user.onboardingCompleted && isOnboardingPage) {
       router.replace("/");
     }
-  }, [isLoading, isAuthenticated, user, pathname, router]);
+  }, [isLoading, isAuthenticated, user, pathname, router, logoutReason]);
 
   if (isLoading) {
     return (
