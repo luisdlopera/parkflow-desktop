@@ -170,4 +170,36 @@ mod tests {
 
     assert!(!valid);
   }
+
+  #[test]
+  fn verifies_rsa_signature() {
+    use super::generate_key_pair;
+    use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+    use rsa::{RsaPrivateKey, pkcs8::DecodePrivateKey, signature::{Signer, SignatureEncoding}, pkcs1v15::SigningKey};
+    use sha2::Sha256;
+
+    let (private_pem, public_pem) = generate_key_pair().expect("keys generated");
+    
+    let data = "company-rsa:fp-rsa:license-rsa:2026-05-12T00:00:00Z";
+    let priv_bytes = BASE64.decode(&private_pem).expect("decode");
+    let priv_key = RsaPrivateKey::from_pkcs8_der(&priv_bytes).expect("private key");
+    let signing_key = SigningKey::<Sha256>::new_unprefixed(priv_key);
+    
+    let sig = signing_key.sign(data.as_bytes());
+    let sig_base64 = BASE64.encode(sig.to_bytes());
+
+    let validator = LicenseValidator::new();
+    let valid = validator
+        .verify_signature(
+            "company-rsa",
+            "fp-rsa",
+            "license-rsa",
+            "2026-05-12T00:00:00Z",
+            &sig_base64,
+            &public_pem,
+        )
+        .expect("signature check should succeed");
+
+    assert!(valid);
+  }
 }

@@ -493,4 +493,54 @@ mod tests {
     let error = validate_http_method("TRACE").expect_err("TRACE must be rejected");
     assert!(error.contains("Metodo HTTP no permitido"));
   }
+
+  #[test]
+  #[serial]
+  fn auth_logout_offline_is_best_effort() {
+    // Write a dummy session
+    let dummy_session = SecureDesktopSession {
+      access_token: "access".to_string(),
+      refresh_token: "refresh".to_string(),
+      user: Value::Null,
+      session: Value::Null,
+      device: Value::Null,
+      offline_lease: None,
+      remember_me: false,
+    };
+    write_secure_session(&dummy_session).unwrap();
+
+    // Set a fake backend URL to simulate offline/failure
+    std::env::set_var("PARKFLOW_API_URL", "http://localhost:1/offline-mock");
+
+    // Call logout. It should fail to reach the backend but still clear the session.
+    let result = auth_logout();
+    assert!(result.is_ok(), "Logout should succeed even if offline");
+
+    // Verify session is cleared
+    let cleared_session = read_secure_session().unwrap();
+    assert!(cleared_session.is_none(), "Session should be cleared locally");
+  }
+
+  #[test]
+  fn sql_injection_parametrization_prevents_vulnerabilities() {
+    use rusqlite::Connection;
+    let conn = Connection::open_in_memory().unwrap();
+    conn.execute(
+      "CREATE TABLE local_settings (setting_key TEXT, setting_value TEXT, updated_at_unix_ms INTEGER)",
+      [],
+    ).unwrap();
+
+    let malicious_input = "device_id'; DROP TABLE local_settings; --";
+    conn.execute(
+      "INSERT INTO local_settings (setting_key, setting_value, updated_at_unix_ms) VALUES ('device_id', ?1, ?2)",
+      params![malicious_input, 12345],
+    ).unwrap();
+
+    // Verify the table still exists and data was inserted literally
+    let count: i64 = conn.query_row("SELECT COUNT(*) FROM local_settings", [], |row| row.get(0)).unwrap();
+    assert_eq!(count, 1);
+
+    let inserted_val: String = conn.query_row("SELECT setting_value FROM local_settings", [], |row| row.get(0)).unwrap();
+    assert_eq!(inserted_val, malicious_input, "Malicious input should be treated as literal value, not executed");
+  }
 }
