@@ -5,6 +5,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.math.BigDecimal;
+import com.parkflow.modules.pricing.validation.PricingValidationEngine;
+import com.parkflow.modules.pricing.validation.PricingValidationContext;
+import com.parkflow.modules.pricing.validation.ValidationError;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +26,12 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class Step3DataValidator {
+
+  private final PricingValidationEngine validationEngine;
+
+  public Step3DataValidator(PricingValidationEngine validationEngine) {
+      this.validationEngine = validationEngine;
+  }
 
   // S-03: Whitelist of permitted fields for Step 3
   private static final Set<String> PERMITTED_FIELDS = Set.of(
@@ -159,58 +169,31 @@ public class Step3DataValidator {
       }
     }
 
-    // C-04: Cross-field time range validation for night rates
-    validateNightRateTimeRange(sanitized, errors);
+    PricingValidationContext context = new PricingValidationContext(
+        sanitized.get("billingModel") instanceof String s ? s : "HOURLY",
+        Boolean.TRUE.equals(sanitized.get("hasNightRate")),
+        sanitized.get("nightStartTime") instanceof String s ? s : null,
+        sanitized.get("nightEndTime") instanceof String e ? e : null,
+        toBigDecimal(sanitized.get("nightRate")),
+        toBigDecimal(sanitized.get("baseValue"))
+    );
 
-    // C-04: Full-day + night rate overlap check
-    validateFullDayNightOverlap(sanitized, errors);
+    List<ValidationError> engineErrors = validationEngine.validate(context);
+    for (ValidationError error : engineErrors) {
+        errors.put(error.field(), error.message());
+    }
 
     boolean isValid = errors.isEmpty();
     return new Step3ValidationResult(isValid, errors, sanitized);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // C-04: Cross-field time range validation helpers
-  // ─────────────────────────────────────────────────────────────────────────
-
-  private void validateNightRateTimeRange(
-      Map<String, Object> sanitized, Map<String, String> errors) {
-    boolean hasNightRate = Boolean.TRUE.equals(sanitized.get("hasNightRate"));
-    if (!hasNightRate) return;
-
-    String start = sanitized.get("nightStartTime") instanceof String s ? s : null;
-    String end = sanitized.get("nightEndTime") instanceof String e ? e : null;
-
-    if (start == null || start.isBlank()) {
-      errors.put("nightStartTime", "Ingresa la hora de inicio de la tarifa nocturna.");
-    } else if (!OnboardingDomainInvariants.isValidTimeFormat(start)) {
-      errors.put("nightStartTime", "Formato de hora inválido. Se esperaba HH:MM.");
-    }
-
-    if (end == null || end.isBlank()) {
-      errors.put("nightEndTime", "Ingresa la hora de fin de la tarifa nocturna.");
-    } else if (!OnboardingDomainInvariants.isValidTimeFormat(end)) {
-      errors.put("nightEndTime", "Formato de hora inválido. Se esperaba HH:MM.");
-    }
-
-    if (start != null && end != null
-        && OnboardingDomainInvariants.isValidTimeFormat(start)
-        && OnboardingDomainInvariants.isValidTimeFormat(end)
-        && start.equals(end)) {
-      errors.put("nightStartTime", "La hora de inicio y fin de la tarifa nocturna no pueden ser iguales.");
-    }
-  }
-
-  private void validateFullDayNightOverlap(
-      Map<String, Object> sanitized, Map<String, String> errors) {
-    String billingModel =
-        sanitized.get("billingModel") instanceof String s ? s : null;
-    boolean hasNightRate = Boolean.TRUE.equals(sanitized.get("hasNightRate"));
-    if ("FULL_DAY".equals(billingModel) && hasNightRate) {
-      errors.put(
-          "hasNightRate",
-          "Un modelo de cobro 'Día Completo' no puede tener tarifa nocturna simultánea.");
-    }
+  private BigDecimal toBigDecimal(Object value) {
+      if (value == null) return null;
+      if (value instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+      if (value instanceof String s) {
+          try { return new BigDecimal(s); } catch (Exception e) { return null; }
+      }
+      return null;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
