@@ -21,19 +21,27 @@ export default [
     rules: {
       "import/no-anonymous-default-export": "off",
       "react/no-unescaped-entities": "off",
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/purity": "warn",
-      "react-hooks/immutability": "warn",
       "react-hooks/refs": "warn",
       "react-hooks/incompatible-library": "warn",
       // Enforce React Hooks rules strictly
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "error",
+      "react-hooks/set-state-in-effect": "off",
       "@typescript-eslint/no-explicit-any": "warn",
+      "no-undef": "off",
+      "no-useless-escape": "error",
+      "no-useless-assignment": "error",
+      "react/display-name": "error",
+      "no-case-declarations": "error",
+      "no-empty": "error",
+      "no-useless-catch": "error",
+      "no-redeclare": "error",
+      "no-cond-assign": "error",
+      "preserve-caught-error": "error",
 
       // Accessibility rules specific to our HeroUI components
       "jsx-a11y/control-has-associated-label": [
-        "warn",
+        "error",
         {
           labelAttributes: ["label"],
           controlComponents: ["Button", "Input", "Select", "Textarea", "Autocomplete", "DatePicker", "TimeInput", "Switch", "RadioGroup", "CheckboxGroup"],
