@@ -2,6 +2,9 @@ package com.parkflow.modules.auth.infrastructure.controller;
 
 import com.parkflow.modules.auth.application.port.in.AuthAuditQueryUseCase;
 import com.parkflow.modules.auth.domain.AuthAuditAction;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -21,6 +24,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/admin/auth-events")
 @RequiredArgsConstructor
+@Tag(name = "Authentication Audit", description = "Authentication and authorization event logs")
 public class AuthAuditController {
 
   private final AuthAuditQueryUseCase authAuditQueryUseCase;
@@ -43,6 +47,9 @@ public class AuthAuditController {
    */
   @GetMapping
   @PreAuthorize("hasAuthority('usuarios:leer')")
+  @Operation(summary = "List authentication audit events", description = "Retrieve login/logout events filtered by user, action, outcome, or date range")
+  @ApiResponse(responseCode = "200", description = "Events retrieved")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   public com.parkflow.modules.common.dto.PageResponse<AuthAuditQueryUseCase.AuthAuditEventDto> getEvents(
       @RequestParam(required = false) UUID userId,
       @RequestParam(required = false) AuthAuditAction action,
