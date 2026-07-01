@@ -35,7 +35,7 @@ export function usePermissions() {
   return { perms, refresh, setPerms } as const;
 }
 
-export function useHasPermission(permission: string): boolean {
+export function useHasPermission(permission: Permission | string): boolean {
   const { user } = useAuthStore();
-  return user?.permissions?.includes(permission) ?? false;
+  return user?.permissions?.includes(permission as Permission) ?? false;
 }

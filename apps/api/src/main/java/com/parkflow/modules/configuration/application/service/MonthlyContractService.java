@@ -14,7 +14,7 @@ import com.parkflow.modules.parking.operation.domain.Vehicle;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.repository.RatePort;
 import com.parkflow.modules.parking.operation.domain.repository.VehiclePort;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -43,10 +43,10 @@ public class MonthlyContractService implements MonthlyContractUseCase {
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   @Transactional(readOnly = true)
-  public SettingsPageResponse<MonthlyContractResponse> list(
+  public PageResponse<MonthlyContractResponse> list(
       String site, String plate, Boolean active, Pageable pageable) {
     Page<MonthlyContract> page = repo.search(site, plate, active, pageable);
-    return SettingsPageResponse.of(page.map(this::toResponse));
+    return PageResponse.of(page.map(this::toResponse));
   }
 
   @Transactional(readOnly = true)

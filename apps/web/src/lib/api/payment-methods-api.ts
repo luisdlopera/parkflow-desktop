@@ -1,4 +1,5 @@
-import { apiFetch, cfgBase, buildApiHeaders, hdr, type SettingsPage } from "./_shared";
+import { apiFetch, cfgBase, buildApiHeaders, hdr } from "./_shared";
+import type { PaginatedResponse } from "@/lib/types/api.types";
 import { paymentMethodSchema } from "@/lib/schemas/config.schemas";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type { PaymentMethodRow } from "@/lib/types/settings.types";
@@ -10,14 +11,14 @@ export async function fetchConfigurationPaymentMethods(params: {
   active?: boolean | null;
   page?: number;
   size?: number;
-}): Promise<SettingsPage<PaymentMethodRow>> {
+}): Promise<PaginatedResponse<PaymentMethodRow>> {
   const u = new URL(`${cfgBase()}/payment-methods`);
   if (params.q) u.searchParams.set("q", params.q);
   if (params.active !== undefined && params.active !== null)
     u.searchParams.set("active", String(params.active));
   u.searchParams.set("page", String(params.page ?? 0));
   u.searchParams.set("size", String(params.size ?? 20));
-  return apiFetch<SettingsPage<PaymentMethodRow>>(u.toString(), {
+  return apiFetch<PaginatedResponse<PaymentMethodRow>>(u.toString(), {
     cache: "no-store",
     headers: await buildApiHeaders(),
   });

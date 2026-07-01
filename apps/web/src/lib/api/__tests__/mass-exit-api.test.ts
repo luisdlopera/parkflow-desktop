@@ -1,24 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { apiFetch } from "../_shared";
 
-vi.mock("@/lib/api", () => ({
-  buildApiHeaders: () => Promise.resolve({ "Content-Type": "application/json" }),
+vi.mock("../_shared", () => ({
+  apiFetch: vi.fn(),
 }));
 
 vi.mock("@/lib/api/config", () => ({
   opsBase: () => "http://localhost:6011/api/v1/operations",
 }));
 
-vi.mock("@/lib/api/fetch-with-credentials", () => ({
-  fetchWithCredentials: vi.fn(),
+vi.mock("@/lib/api", () => ({
+  buildApiHeaders: () => Promise.resolve({ "Content-Type": "application/json" }),
 }));
-
-function okResponse(data: unknown): Response {
-  return new Response(JSON.stringify(data), { status: 200, statusText: "OK" });
-}
-
-function errorResponse(body?: Record<string, string>): Response {
-  return new Response(JSON.stringify(body ?? {}), { status: 400, statusText: "Bad Request" });
-}
 
 const MOCK_PREVIEW = {
   totalCandidates: 2,
@@ -62,13 +55,12 @@ describe("mass-exit-api", () => {
 
   describe("previewMassExit", () => {
     it("should POST to calculate endpoint", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(okResponse(MOCK_PREVIEW));
+      vi.mocked(apiFetch).mockResolvedValue(MOCK_PREVIEW as never);
 
       const { previewMassExit } = await import("../mass-exit-api");
       const result = await previewMassExit(MOCK_REQUEST);
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/mass-exit/calculate"),
         expect.objectContaining({
           method: "POST",
@@ -80,10 +72,7 @@ describe("mass-exit-api", () => {
     });
 
     it("should throw with userMessage on error", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(
-        errorResponse({ userMessage: "No hay vehículos activos" }),
-      );
+      vi.mocked(apiFetch).mockRejectedValue(new Error("No hay vehículos activos"));
 
       const { previewMassExit } = await import("../mass-exit-api");
       await expect(previewMassExit(MOCK_REQUEST)).rejects.toThrow(
@@ -92,19 +81,15 @@ describe("mass-exit-api", () => {
     });
 
     it("should throw default error with status code", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(
-        new Response("not found", { status: 404, statusText: "Not Found" }),
-      );
+      vi.mocked(apiFetch).mockRejectedValue(new Error("El recurso solicitado no existe o fue eliminado."));
 
       const { previewMassExit } = await import("../mass-exit-api");
-      await expect(previewMassExit(MOCK_REQUEST)).rejects.toThrow("Error 404");
+      await expect(previewMassExit(MOCK_REQUEST)).rejects.toThrow("El recurso solicitado no existe o fue eliminado.");
     });
   });
 
   describe("processMassExit", () => {
     it("should POST to process endpoint", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
       const mockProcessResult = {
         totalCandidates: 2,
         successCount: 2,
@@ -116,12 +101,12 @@ describe("mass-exit-api", () => {
         batchId: "batch-1",
         items: MOCK_PREVIEW.items,
       };
-      vi.mocked(fetchWithCredentials).mockResolvedValue(okResponse(mockProcessResult));
+      vi.mocked(apiFetch).mockResolvedValue(mockProcessResult as never);
 
       const { processMassExit } = await import("../mass-exit-api");
       const result = await processMassExit(MOCK_REQUEST);
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/mass-exit"),
         expect.objectContaining({
           method: "POST",
@@ -133,10 +118,7 @@ describe("mass-exit-api", () => {
     });
 
     it("should throw with userMessage on error", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(
-        errorResponse({ userMessage: "Error al procesar salidas" }),
-      );
+      vi.mocked(apiFetch).mockRejectedValue(new Error("Error al procesar salidas"));
 
       const { processMassExit } = await import("../mass-exit-api");
       await expect(processMassExit(MOCK_REQUEST)).rejects.toThrow(
@@ -145,10 +127,7 @@ describe("mass-exit-api", () => {
     });
 
     it("should throw with error field on error", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(
-        errorResponse({ error: "Conflict" }),
-      );
+      vi.mocked(apiFetch).mockRejectedValue(new Error("Conflict"));
 
       const { processMassExit } = await import("../mass-exit-api");
       await expect(processMassExit(MOCK_REQUEST)).rejects.toThrow("Conflict");

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/bridge/Button";
 import { Input } from "@/components/bridge/Input";
 import { Calculator, ChevronDown, ChevronUp, RotateCcw, Banknote } from "lucide-react";
+import { safeStorage } from "@/lib/utils/storage";
 
 interface ChangeCalculatorProps {
   totalAmount: number;
@@ -48,12 +49,12 @@ function breakdownFromAmount(amount: number): Record<number, number> {
 export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps) {
   const [counts, setCounts] = useState<Record<number, number>>(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("parkflow_change_counts");
+      const saved = safeStorage.getItem("parkflow_change_counts");
       if (saved) {
         try {
           return JSON.parse(saved) as Record<number, number>;
         } catch {
-          localStorage.removeItem("parkflow_change_counts");
+          safeStorage.removeItem("parkflow_change_counts");
         }
       }
     }
@@ -76,7 +77,7 @@ export function ChangeCalculator({ totalAmount, onClose }: ChangeCalculatorProps
   );
 
   useEffect(() => {
-    localStorage.setItem("parkflow_change_counts", JSON.stringify(counts));
+    safeStorage.setItem("parkflow_change_counts", JSON.stringify(counts));
   }, [counts]);
 
   useEffect(() => {

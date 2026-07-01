@@ -8,12 +8,12 @@ import com.parkflow.modules.cash.application.port.in.GetCashMovementsUseCase;
 import com.parkflow.modules.cash.application.port.in.RegisterCashMovementUseCase;
 import com.parkflow.modules.cash.application.port.in.VoidCashMovementUseCase;
 import com.parkflow.modules.cash.dto.*;
+import com.parkflow.modules.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -100,7 +100,7 @@ public class CashController {
   @ApiResponse(responseCode = "200", description = "Sessions retrieved successfully")
   @ApiResponse(responseCode = "401", description = "Unauthorized")
   @ApiResponse(responseCode = "403", description = "Insufficient permissions")
-  public Page<CashSessionResponse> sessions(@PageableDefault(size = 20) Pageable pageable) {
+  public PageResponse<CashSessionResponse> sessions(@PageableDefault(size = 20) Pageable pageable) {
     return cashSessionQueryUseCase.listSessions(pageable);
   }
 

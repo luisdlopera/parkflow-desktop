@@ -6,6 +6,7 @@
  */
 
 import { apiBase } from './config';
+import { safeFetch } from "./fetch";
 
 export interface PaymentConfig {
   apiKey: string;
@@ -30,19 +31,12 @@ export async function getPaymentConfig(): Promise<PaymentConfig> {
   }
 
   try {
-    const response = await fetch(`${apiBase}/keys/payment-config`, {
+    const config = await safeFetch<PaymentConfig>(`${apiBase}/keys/payment-config`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      credentials: 'include', // Include session cookies
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch payment config: ${response.statusText}`);
-    }
-
-    const config = await response.json();
 
     // Cache the config
     cachedConfig = config;

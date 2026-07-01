@@ -57,6 +57,9 @@ export function proxy(request: NextRequest) {
     if (payload.email) {
       response.headers.set('X-Auth-Email', payload.email);
     }
+    if (payload.tenantId || payload.companyId) {
+      response.headers.set('X-Tenant-Id', payload.tenantId || payload.companyId);
+    }
     return response;
   } catch {
     return redirectToLogin(request, 'invalid_token');

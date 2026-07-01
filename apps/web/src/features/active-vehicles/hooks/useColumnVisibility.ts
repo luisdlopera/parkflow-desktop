@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
+import { safeStorage } from "@/lib/utils/storage";
 
 const STORAGE_KEY = "parkflow-vehicles-columns";
 
@@ -24,16 +25,16 @@ export function useColumnVisibility() {
   const [visible, setVisible] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set(DEFAULT_COLUMNS.filter((c) => c.defaultVisible).map((c) => c.key));
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = safeStorage.getItem(STORAGE_KEY);
       if (saved) return new Set(JSON.parse(saved));
     } catch {
-      localStorage.removeItem(STORAGE_KEY);
+      safeStorage.removeItem(STORAGE_KEY);
     }
     return new Set(DEFAULT_COLUMNS.filter((c) => c.defaultVisible).map((c) => c.key));
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...visible]));
+    safeStorage.setItem(STORAGE_KEY, JSON.stringify([...visible]));
   }, [visible]);
 
   const toggleColumn = useCallback((key: string) => {

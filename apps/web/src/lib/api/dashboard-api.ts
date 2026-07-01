@@ -1,6 +1,6 @@
 import { buildApiHeaders } from "@/lib/api";
 import { opsBase, apiBase } from "@/lib/api/config";
-import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+import { apiFetch } from "./_shared";
 
 
 const OPS_BASE = opsBase();
@@ -44,29 +44,28 @@ export interface ActiveSessionRow {
 }
 
 export async function fetchDashboardSummary(): Promise<DashboardSummary> {
-  const res = await fetchWithCredentials(`${OPS_BASE}/supervisor/summary`, { headers: await buildApiHeaders() });
-  if (!res.ok) throw new Error("No se pudo cargar resumen de supervisor");
-  return res.json();
+  return apiFetch<DashboardSummary>(`${OPS_BASE}/supervisor/summary`, { headers: await buildApiHeaders() });
 }
 
 export async function fetchOperationalHealth(): Promise<OperationalHealth | null> {
   try {
-    const res = await fetchWithCredentials(`${API_BASE}/health/operational`, { headers: await buildApiHeaders() });
-    return res.ok ? res.json() : null;
+    return await apiFetch<OperationalHealth>(`${API_BASE}/health/operational`, { headers: await buildApiHeaders() });
   } catch {
     return null;
   }
 }
 
 export async function fetchActiveSessions(): Promise<ActiveSessionRow[]> {
-  const res = await fetchWithCredentials(`${OPS_BASE}/sessions/active-list`, { headers: await buildApiHeaders() });
-  if (!res.ok) throw new Error("No se pudo listar sesiones activas");
-  const payload = await res.json();
+  const payload = await apiFetch<ActiveSessionRow[] | { data?: ActiveSessionRow[] }>(`${OPS_BASE}/sessions/active-list`, {
+    headers: await buildApiHeaders()
+  });
   return Array.isArray(payload) ? payload : (payload.data ?? []);
 }
 
 export async function postOperationalAction(path: "retry-sync" | "test-printer"): Promise<string> {
-  const res = await fetchWithCredentials(`${API_BASE}/health/operational/${path}`, { method: "POST", headers: await buildApiHeaders() });
-  const payload = await res.json();
+  const payload = await apiFetch<{ message?: string }>(`${API_BASE}/health/operational/${path}`, {
+    method: "POST",
+    headers: await buildApiHeaders()
+  });
   return payload.message ?? "Acción ejecutada";
 }

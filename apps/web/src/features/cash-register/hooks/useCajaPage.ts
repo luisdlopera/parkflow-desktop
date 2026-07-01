@@ -20,6 +20,7 @@ import { errorService } from "@/lib/errors/error-service";
 import { useCashRegister } from "./useCashRegister";
 import type { TicketDocument } from "@parkflow/types";
 import type { Key } from "@heroui/react";
+import { safeStorage } from "@/lib/utils/storage";
 
 function defaultSite(): string {
   return (process.env.NEXT_PUBLIC_PARKING_SITE ?? "default").trim() || "default";
@@ -29,7 +30,7 @@ function defaultTerminal(): string {
   if (typeof window === "undefined") return "";
   return (
     process.env.NEXT_PUBLIC_TERMINAL_ID?.trim() ||
-    window.localStorage.getItem("parkflow_terminal_id")?.trim() ||
+    safeStorage.getItem("parkflow_terminal_id")?.trim() ||
     ""
   );
 }

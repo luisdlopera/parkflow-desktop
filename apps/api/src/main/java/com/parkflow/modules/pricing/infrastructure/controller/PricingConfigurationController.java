@@ -1,7 +1,7 @@
 package com.parkflow.modules.pricing.infrastructure.controller;
 
 import com.parkflow.modules.common.dto.RateStatusRequest;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import com.parkflow.modules.pricing.application.PricingConfigurationFacadeService;
 import com.parkflow.modules.pricing.dto.PricingEngineV1Request;
 import com.parkflow.modules.pricing.dto.PricingEngineV1Response;
@@ -24,7 +24,7 @@ public class PricingConfigurationController {
 
   @GetMapping
   @PreAuthorize("hasAuthority('tarifas:leer')")
-  public SettingsPageResponse<PricingEngineV1Response> list(
+  public PageResponse<PricingEngineV1Response> list(
       @RequestParam(required = false) String site,
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,

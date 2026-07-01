@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,45 +23,44 @@ public class ConfigurationVehicleTypeController {
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR','CAJERO')")
-  public ResponseEntity<List<VehicleTypeResponse>> listAll() {
+  public List<VehicleTypeResponse> listAll() {
     UUID companyId = resolveCompanyId();
-    return ResponseEntity.ok(companyVehicleTypeManagement.listByCompany(companyId));
+    return companyVehicleTypeManagement.listByCompany(companyId);
   }
 
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<VehicleTypeResponse> create(@RequestBody Map<String, String> body) {
+  @org.springframework.web.bind.annotation.ResponseStatus(HttpStatus.CREATED)
+  public VehicleTypeResponse create(@RequestBody Map<String, String> body) {
     String code = body != null ? body.get("code") : null;
     if (code == null || code.isBlank()) {
       throw new OperationException(HttpStatus.BAD_REQUEST, "El código del tipo de vehículo es requerido");
     }
     UUID companyId = resolveCompanyId();
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(companyVehicleTypeManagement.addTypeToCompany(companyId, code));
+    return companyVehicleTypeManagement.addTypeToCompany(companyId, code);
   }
 
   @PutMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<VehicleTypeResponse> update(
+  public VehicleTypeResponse update(
       @PathVariable UUID id,
       @Valid @RequestBody VehicleTypeRequest req) {
-    return ResponseEntity.ok(companyVehicleTypeManagement.updateCompanyType(id, req));
+    return companyVehicleTypeManagement.updateCompanyType(id, req);
   }
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<Void> delete(@PathVariable UUID id) {
+  @org.springframework.web.bind.annotation.ResponseStatus(HttpStatus.NO_CONTENT)
+  public void delete(@PathVariable UUID id) {
     companyVehicleTypeManagement.removeCompanyType(id);
-    return ResponseEntity.noContent().build();
   }
 
   @PatchMapping("/{id}/status")
   @PreAuthorize("hasAuthority('configuracion:editar')")
-  public ResponseEntity<Void> patchStatus(
+  public void patchStatus(
       @PathVariable UUID id,
       @RequestParam boolean active) {
     companyVehicleTypeManagement.patchCompanyTypeStatus(id, active);
-    return ResponseEntity.ok().build();
   }
 
   private UUID resolveCompanyId() {

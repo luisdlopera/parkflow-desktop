@@ -1,6 +1,6 @@
 import { authHeaders } from "@/lib/services/auth-domain.service";
 import { apiBase as getApiBase } from "./config";
-import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+import { apiFetch } from "./_shared";
 
 const API_BASE = getApiBase();
 
@@ -38,41 +38,48 @@ export interface BlockStatistics {
 }
 
 export async function fetchPriorityCases(): Promise<PriorityCase[]> {
-  const headers = await authHeaders();
-  const res = await fetchWithCredentials(`${API_BASE}/licensing/support/cases/priority`, { headers });
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    return await apiFetch<PriorityCase[]>(`${API_BASE}/licensing/support/cases/priority`, {
+      headers: await authHeaders(),
+    });
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchUnresolvedBlocks(): Promise<BlockEvent[]> {
-  const headers = await authHeaders();
-  const res = await fetchWithCredentials(`${API_BASE}/licensing/support/blocks/unresolved`, { headers });
-  if (!res.ok) return [];
-  const blocks: (BlockEvent & { companyName?: string })[] = await res.json();
-  return blocks.map((b) => ({ ...b, companyName: b.companyName || "Empresa desconocida" }));
+  try {
+    const blocks = await apiFetch<(BlockEvent & { companyName?: string })[]>(`${API_BASE}/licensing/support/blocks/unresolved`, {
+      headers: await authHeaders(),
+    });
+    return blocks.map((b) => ({ ...b, companyName: b.companyName || "Empresa desconocida" }));
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchBlockStatistics(days = 7): Promise<BlockStatistics | null> {
-  const headers = await authHeaders();
-  const res = await fetchWithCredentials(`${API_BASE}/licensing/support/statistics?days=${days}`, { headers });
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    return await apiFetch<BlockStatistics>(`${API_BASE}/licensing/support/statistics?days=${days}`, {
+      headers: await authHeaders(),
+    });
+  } catch {
+    return null;
+  }
 }
 
 export async function resolveBlock(id: string, notes: string): Promise<void> {
-  const headers = await authHeaders();
-  await fetchWithCredentials(`${API_BASE}/licensing/support/blocks/${id}/resolve`, {
+  await apiFetch<void>(`${API_BASE}/licensing/support/blocks/${id}/resolve`, {
     method: "POST",
-    headers: { ...headers, "Content-Type": "application/json" },
+    headers: { ...(await authHeaders()), "Content-Type": "application/json" },
     body: JSON.stringify({ notes, correctiveAction: "MANUAL_RESOLUTION" }),
   });
 }
 
 export async function markBlockFalsePositive(id: string, notes: string): Promise<void> {
-  const headers = await authHeaders();
-  await fetchWithCredentials(`${API_BASE}/licensing/support/blocks/${id}/false-positive`, {
+  await apiFetch<void>(`${API_BASE}/licensing/support/blocks/${id}/false-positive`, {
     method: "POST",
-    headers: { ...headers, "Content-Type": "application/json" },
+    headers: { ...(await authHeaders()), "Content-Type": "application/json" },
     body: JSON.stringify({ notes }),
   });
 }

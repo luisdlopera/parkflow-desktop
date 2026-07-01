@@ -8,7 +8,7 @@ import com.parkflow.modules.configuration.domain.Printer;
 import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
 import com.parkflow.modules.configuration.domain.repository.PrinterPort;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +28,10 @@ public class PrinterManagementService implements PrinterUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public SettingsPageResponse<PrinterResponse> list(
+  public PageResponse<PrinterResponse> list(
       UUID siteId, String q, Boolean active, Pageable pageable) {
     Page<Printer> page = printerRepository.search(siteId, normalizeQuery(q), active, pageable);
-    return SettingsPageResponse.of(page.map(this::toResponse));
+    return PageResponse.of(page.map(this::toResponse));
   }
 
   @Override

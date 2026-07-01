@@ -9,12 +9,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.UUID;
 import com.parkflow.modules.auth.security.TenantContext;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,12 +32,12 @@ public class CapacityManagementController {
       responseCode = "200",
       description = "Capacity configuration retrieved successfully",
       content = @Content(schema = @Schema(implementation = CapacityResponse.class)))
-  public ResponseEntity<CapacityResponse> getCapacity() {
+  public CapacityResponse getCapacity() {
     UUID companyId = TenantContext.getTenantId();
     if (companyId == null) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
     }
-    return ResponseEntity.ok(capacityManagementUseCase.getCapacity(companyId));
+    return capacityManagementUseCase.getCapacity(companyId);
   }
 
   @PatchMapping
@@ -50,12 +49,12 @@ public class CapacityManagementController {
       content = @Content(schema = @Schema(implementation = CapacityResponse.class)))
   @ApiResponse(responseCode = "400", description = "Invalid capacity value")
   @ApiResponse(responseCode = "404", description = "Company not found")
-  public ResponseEntity<CapacityResponse> updateCapacity(
+  public CapacityResponse updateCapacity(
       @Valid @RequestBody CapacityRequest request) {
     UUID companyId = TenantContext.getTenantId();
     if (companyId == null) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
     }
-    return ResponseEntity.ok(capacityManagementUseCase.updateCapacity(companyId, request));
+    return capacityManagementUseCase.updateCapacity(companyId, request);
   }
 }

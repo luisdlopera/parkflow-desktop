@@ -1,4 +1,5 @@
-import { apiFetch, cfgBase, apiV1Base, buildApiHeaders, hdr, type SettingsPage } from "./_shared";
+import { apiFetch, cfgBase, apiV1Base, buildApiHeaders, hdr } from "./_shared";
+import type { PaginatedResponse } from "@/lib/types/api.types";
 import { parkingSiteSchema } from "@/lib/schemas/config.schemas";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type { ParkingSiteRow } from "@/lib/types/settings.types";
@@ -11,7 +12,7 @@ export async function fetchConfigurationSites(params: {
   active?: boolean | null;
   page?: number;
   size?: number;
-}): Promise<SettingsPage<ParkingSiteRow>> {
+}): Promise<PaginatedResponse<ParkingSiteRow>> {
   const u = new URL(`${cfgBase()}/parking-sites`);
   if (params.companyId) u.searchParams.set("companyId", params.companyId);
   if (params.q) u.searchParams.set("q", params.q);
@@ -19,7 +20,7 @@ export async function fetchConfigurationSites(params: {
     u.searchParams.set("active", String(params.active));
   u.searchParams.set("page", String(params.page ?? 0));
   u.searchParams.set("size", String(params.size ?? 20));
-  return apiFetch<SettingsPage<ParkingSiteRow>>(u.toString(), {
+  return apiFetch<PaginatedResponse<ParkingSiteRow>>(u.toString(), {
     cache: "no-store",
     headers: await buildApiHeaders(),
   });

@@ -1,6 +1,7 @@
 import { errorService } from "@/lib/errors/error-service";
 import { withCsrfHeader } from "@/lib/api/csrf";
 import { ApiError } from "@/lib/errors/ApiError";
+import { normalizeApiError, handleNetworkError } from "@/lib/errors/normalize-api-error";
 
 const toastCooldownMs = 3000;
 const dedupe = new Map<string, number>();
@@ -35,9 +36,23 @@ export async function safeFetch<T = unknown>(input: RequestInfo | URL, init?: Re
 
   const csrfHeaders = withCsrfHeader(init, init?.headers as Record<string, string> | undefined);
   const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-  const response = await fetchWithCredentials(input, { ...init, headers: csrfHeaders });
+  
+  let response: Response;
+  try {
+    response = await fetchWithCredentials(input, { ...init, headers: csrfHeaders });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw handleNetworkError(error);
+  }
 
-  const requestPath = new URL(response.url).pathname;
+  let requestPath = "";
+  try {
+    requestPath = new URL(response.url || requestUrl).pathname;
+  } catch {
+    requestPath = requestUrl.startsWith("http") ? new URL(requestUrl).pathname : (requestUrl.startsWith("/") ? requestUrl : "/" + requestUrl);
+  }
 
   const isLoginRequest = requestUrl.includes("/api/v1/auth/login");
   const isLogoutRequest = requestPath.includes("/api/v1/auth/logout");
@@ -52,50 +67,62 @@ export async function safeFetch<T = unknown>(input: RequestInfo | URL, init?: Re
     }
   }
 
-  if (!response.ok) throw await extractResponseError(response, requestUrl);
+  if (!response.ok) throw await normalizeApiError(response);
   if (response.status === 204) return {} as T;
-  
-  const json = await response.json();
-  // Backward compatibility: unwrap ApiResponse if it follows the new Enterprise pattern
-  if (json && typeof json === 'object' && 'success' in json && 'data' in json && json.success === true) {
-      return json.data as T;
+
+  let json: any = {};
+  if (typeof response.json === "function") {
+    try {
+      json = await response.json();
+    } catch {
+      // ignore JSON parsing errors for empty/non-JSON success responses
+    }
+  } else if ((response as any).body !== undefined) {
+    json = (response as any).body;
   }
-  return json as T;
+
+  return adaptResponsePayload(json) as T;
 }
 
-async function extractResponseError(response: Response, url: string): Promise<unknown> {
-  try {
-    const text = await response.text();
-    const body = text ? safeParse(text) : {};
-    
-    const errorObj = (body.error && typeof body.error === 'object')
-      ? (body.error as Record<string, unknown>)
-      : {} as Record<string, unknown>;
-
-    return new ApiError(
-      String(body.userMessage || errorObj.message || body.message || `HTTP Error ${response.status}`),
-      {
-        status: response.status,
-        code: String(errorObj.code || body.errorCode || body.code || ""),
-        correlationId: String(errorObj.traceId || body.correlationId || body.traceId || ""),
-        details: (errorObj.details || body.details || body.errors) as Record<string, unknown> | undefined,
-        payload: { ...body, url, endpoint: url }
-      }
-    );
-  } catch {
-    return new ApiError(`HTTP Error ${response.status}`, {
-      status: response.status,
-      payload: { url, endpoint: url }
-    });
+function adaptResponsePayload(json: unknown): unknown {
+  // If response doesn't match canonical envelope shape, return as-is
+  if (!json || typeof json !== "object" || !("success" in json) || !("data" in json)) {
+    return json;
   }
-}
 
-function safeParse(text: string): Record<string, unknown> {
-  try {
-    return JSON.parse(text) as Record<string, unknown>;
-  } catch {
-    return { message: text };
+  const envelope = json as Record<string, unknown>;
+  const data = envelope.data;
+
+  // Check if caller expects full envelope (with X-Expect-Envelope header)
+  // Note: header check happens at call site; if envelope is needed, caller handles it
+
+  // For paginated responses: return data with pagination meta attached
+  const meta = envelope.meta as Record<string, unknown> | undefined;
+  if (meta?.pagination) {
+    const pag = meta.pagination as Record<string, unknown>;
+    if (Array.isArray(data)) {
+      // Array with pagination meta
+      return {
+        data,
+        ...pag  // Spread pagination meta (page, size, totalElements, totalPages, hasNext, hasPrev, type, etc.)
+      };
+    } else if (data && typeof data === "object") {
+      // Object with pagination meta
+      return {
+        ...data,
+        ...pag
+      };
+    }
   }
+
+  // For non-paginated responses: unwrap to data only (standard behavior)
+  // If data is already an object, return it directly
+  if (data && typeof data === "object") {
+    return data;
+  }
+
+  // If data is a scalar or null, return wrapped in object for consistency
+  return { data };
 }
 
 export default safeFetch;

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import type { VehicleType } from "@parkflow/types";
+import { safeStorage } from "@/lib/utils/storage";
 
 export type OperatorMode = "beginner" | "expert" | "speed";
 
@@ -25,10 +26,10 @@ const defaultSettings: OperatorSettings = {
 function readFromStorage(): OperatorSettings {
   if (typeof window === "undefined") return defaultSettings;
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = safeStorage.getItem(STORAGE_KEY);
     if (saved) return JSON.parse(saved) as OperatorSettings;
   } catch {
-    localStorage.removeItem(STORAGE_KEY);
+    safeStorage.removeItem(STORAGE_KEY);
   }
   return defaultSettings;
 }
@@ -37,7 +38,7 @@ export function useOperatorSettings() {
   const [settings, setSettings] = useState<OperatorSettings>(readFromStorage);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    safeStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   }, [settings]);
 
   const update = (patch: Partial<OperatorSettings>) =>

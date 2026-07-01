@@ -50,10 +50,11 @@ describe("Constants exports", () => {
       expect(RATE_TYPES).toContain("HOURLY");
       expect(RATE_TYPES).toContain("DAILY");
       expect(RATE_TYPES).toContain("FLAT");
+      expect(RATE_TYPES).toContain("FRACTIONAL");
     });
 
-    it("has exactly 4 rate types", () => {
-      expect(RATE_TYPES.length).toBe(4);
+    it("has exactly 5 rate types", () => {
+      expect(RATE_TYPES.length).toBe(5);
     });
   });
 
@@ -74,6 +75,7 @@ describe("Constants exports", () => {
       ["HOURLY", "Por hora"],
       ["DAILY", "Diaria"],
       ["FLAT", "Fija"],
+      ["FRACTIONAL", "Por fracción"],
     ])("maps %s to %s", (type, label) => {
       expect(RATE_TYPE_LABELS[type]).toBe(label);
     });
@@ -407,7 +409,7 @@ describe("Configuration constants integration", () => {
       label: RATE_TYPE_LABELS[type],
     }));
 
-    expect(options.length).toBe(4);
+    expect(options.length).toBe(5);
     options.forEach((opt) => {
       expect(opt.value).toBeTruthy();
       expect(opt.label).toBeTruthy();

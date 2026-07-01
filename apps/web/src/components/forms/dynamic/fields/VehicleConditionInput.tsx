@@ -4,7 +4,7 @@ import React from "react";
 import { Controller, Control } from "react-hook-form";
 
 import { Input } from "@/components/bridge/Input";
-import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
+import { useRuntimeConfig } from "@/features/configuration/hooks/useRuntimeConfig";
 
 interface VehicleConditionInputProps {
   control: Control<any>;

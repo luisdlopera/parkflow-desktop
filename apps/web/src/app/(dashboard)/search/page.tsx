@@ -9,6 +9,7 @@ import { Input } from "@/components/bridge/Input";
 import { ArrowRight, Car, Search, Ticket, User, Building2, Loader2 } from "lucide-react";
 import { useSearch } from "@/features/search/hooks/useSearch";
 import type { SearchResult, SearchType } from "@/features/search/types/search.types";
+import { safeStorage } from "@/lib/utils/storage";
 
 const RECENT_KEY = "parkflow.search.recent";
 
@@ -28,9 +29,9 @@ function saveRecentSearch(query: string) {
   if (typeof window === "undefined") return;
   const clean = query.trim();
   if (!clean) return;
-  const stored = JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? "[]") as string[];
+  const stored = JSON.parse(safeStorage.getItem(RECENT_KEY) ?? "[]") as string[];
   const next = [clean, ...stored.filter((item) => item.toLowerCase() !== clean.toLowerCase())].slice(0, 6);
-  window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  safeStorage.setItem(RECENT_KEY, JSON.stringify(next));
 }
 
 function ResultCard({ result, onSelect }: { result: SearchResult; onSelect: (result: SearchResult) => void }) {

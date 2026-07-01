@@ -10,14 +10,6 @@ export function hdr(auditReason?: string): AuthHeaderOptions | undefined {
   return t ? { auditReason: t } : undefined;
 }
 
-export type SettingsPage<T> = {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  page: number;
-  size: number;
-};
-
 export function apiV1Base(): string {
   return apiBase();
 }

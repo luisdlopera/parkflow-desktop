@@ -71,7 +71,7 @@ describe("rates-api", () => {
       const result = await fetchRateById("rate-1");
 
       expect(apiFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/settings/rates/rate-1"),
+        expect.stringContaining("/configuration/rates/rate-1"),
         expect.objectContaining({ cache: "no-store" }),
       );
       expect(result).toEqual(MOCK_RATE);
@@ -86,7 +86,7 @@ describe("rates-api", () => {
       const result = await fetchRates({});
 
       expect(apiFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/settings/rates?page=0&size=20"),
+        expect.stringContaining("/configuration/rates?page=0&size=20"),
         expect.any(Object),
       );
       expect(result.content).toHaveLength(1);
@@ -137,7 +137,7 @@ describe("rates-api", () => {
       const result = await saveRate({ name: "Nueva Tarifa" });
 
       expect(apiFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/settings/rates"),
+        expect.stringContaining("/configuration/rates"),
         expect.objectContaining({ method: "POST" }),
       );
       expect(result).toEqual(MOCK_RATE);
@@ -150,7 +150,7 @@ describe("rates-api", () => {
       const result = await saveRate({ name: "Actualizada" }, "rate-1", "updated name");
 
       expect(apiFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/settings/rates/rate-1"),
+        expect.stringContaining("/configuration/rates/rate-1"),
         expect.objectContaining({ method: "PATCH" }),
       );
       expect(result.name).toBe("Actualizada");
@@ -165,7 +165,7 @@ describe("rates-api", () => {
       const result = await patchRateStatus("rate-1", false, "disabled");
 
       expect(apiFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/settings/rates/rate-1/status"),
+        expect.stringContaining("/configuration/rates/rate-1/status"),
         expect.objectContaining({ method: "PATCH" }),
       );
       expect(result.active).toBe(false);
@@ -196,7 +196,7 @@ describe("rates-api", () => {
       await deleteRate("rate-1", "cleanup");
 
       expect(apiFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/settings/rates/rate-1"),
+        expect.stringContaining("/configuration/rates/rate-1"),
         expect.objectContaining({ method: "DELETE" }),
       );
     });

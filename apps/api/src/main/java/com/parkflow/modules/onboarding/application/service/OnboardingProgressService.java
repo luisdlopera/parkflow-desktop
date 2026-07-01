@@ -2,6 +2,7 @@ package com.parkflow.modules.onboarding.application.service;
 
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
+import com.parkflow.modules.onboarding.application.port.in.OnboardingQueryUseCase;
 import com.parkflow.modules.onboarding.application.port.in.OnboardingProgressUseCase;
 import com.parkflow.modules.onboarding.application.port.out.OperationalConfigurationPort;
 import com.parkflow.modules.onboarding.domain.OnboardingDomainInvariants;
@@ -46,6 +47,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
   private final OnboardingMaterializationService materializationService;
   private final Step2DataValidator step2DataValidator;
   private final Step3DataValidator step3DataValidator;
+  private final OnboardingQueryUseCase onboardingQueryUseCase;
   private final com.parkflow.modules.onboarding.domain.OnboardingStateMachine onboardingStateMachine;
   private final org.springframework.context.ApplicationEventPublisher eventPublisher;
   private final com.parkflow.modules.onboarding.infrastructure.persistence.OnboardingRuleSnapshotRepository ruleSnapshotRepository;
@@ -72,7 +74,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
 
       progress.setUpdatedAt(OffsetDateTime.now());
       onboardingProgressPort.save(progress);
-      return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+      return onboardingQueryUseCase.status(companyId);
     } catch (OperationException ex) {
       throw ex;
     } catch (RuntimeException ex) {
@@ -94,7 +96,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     // C-03: Idempotency guard — if already completed, return current state without re-materializing
     if (Boolean.TRUE.equals(company.getOnboardingCompleted())) {
       log.info("skipAndApplyDefaults called for already-completed company {}. Returning current state.", companyId);
-      return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+      return onboardingQueryUseCase.status(companyId);
     }
 
     Map<String, Object> progressData = progress.getProgressData();
@@ -128,7 +130,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     onboardingProgressPort.save(progress);
     company.setOnboardingCompleted(true);
     companyRepository.save(company);
-    return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+    return onboardingQueryUseCase.status(companyId);
   }
 
   @Transactional
@@ -138,7 +140,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
 
     // C-03: Idempotency — already completed returns current state
     if (Boolean.TRUE.equals(company.getOnboardingCompleted())) {
-      return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+      return onboardingQueryUseCase.status(companyId);
     }
 
     Map<String, Object> progressData = progress.getProgressData();
@@ -191,7 +193,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
     onboardingProgressPort.save(progress);
     company.setOnboardingCompleted(true);
     companyRepository.save(company);
-    return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+    return onboardingQueryUseCase.status(companyId);
   }
 
   @Transactional
@@ -258,7 +260,7 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
         "onboardingCompleted=true, currentStep=" + progress.getCurrentStep(),
         "onboardingCompleted=false, currentStep=1",
         "Reinicio de onboarding multi-tenant. Snapshot v" + nextVersion + " guardado. " + auditContext);
-    return new OnboardingQueryService(companyRepository, onboardingProgressPort, companySettingsService, featureAccessService, operationalConfigurationPort, onboardingQuestionConfigService, settingsMapper).status(companyId);
+    return onboardingQueryUseCase.status(companyId);
   }
 
   private void applyOperationalProfile(Company company, Map<String, Object> step1) {

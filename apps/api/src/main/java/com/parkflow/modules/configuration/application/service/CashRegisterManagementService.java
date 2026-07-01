@@ -12,7 +12,7 @@ import com.parkflow.modules.configuration.domain.repository.PrinterPort;
 import com.parkflow.modules.auth.domain.AppUser;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,10 +34,10 @@ public class CashRegisterManagementService implements CashRegisterUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public SettingsPageResponse<CashRegisterResponse> list(
+  public PageResponse<CashRegisterResponse> list(
       UUID siteId, String q, Boolean active, Pageable pageable) {
     Page<CashRegister> page = cashRegisterRepository.search(siteId, normalizeQuery(q), active, pageable);
-    return SettingsPageResponse.of(page.map(this::toResponse));
+    return PageResponse.of(page.map(this::toResponse));
   }
 
   @Override

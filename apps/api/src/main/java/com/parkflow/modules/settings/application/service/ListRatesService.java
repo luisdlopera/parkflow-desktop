@@ -8,7 +8,7 @@ import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.settings.application.mapper.RateMapper;
 import com.parkflow.modules.settings.application.port.in.ListRatesUseCase;
 import com.parkflow.modules.common.dto.RateResponse;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,7 +25,7 @@ public class ListRatesService implements ListRatesUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public SettingsPageResponse<RateResponse> list(
+  public PageResponse<RateResponse> list(
       String site, String q, Boolean active, String category, UUID companyId, Pageable pageable) {
     String s = site == null || site.isBlank() ? "DEFAULT" : site.trim();
     RateCategory parsedCategory = parseCategory(category);
@@ -34,7 +34,7 @@ public class ListRatesService implements ListRatesUseCase {
       companyId = SecurityUtils.requireCompanyId();
     }
     Page<Rate> page = ratePort.search(s, normalizeQuery(q), active, parsedCategory, companyId, pageable);
-    return SettingsPageResponse.of(page.map(rateMapper::toResponse));
+    return PageResponse.of(page.map(rateMapper::toResponse));
   }
 
   private RateCategory parseCategory(String category) {

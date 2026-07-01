@@ -19,7 +19,7 @@ public class SettingsRatesController {
 
   @GetMapping
   @PreAuthorize("hasAuthority('tarifas:leer')")
-  public SettingsPageResponse<RateResponse> list(
+  public PageResponse<RateResponse> list(
       @RequestParam(required = false) String site,
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,

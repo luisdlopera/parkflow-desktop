@@ -1,3 +1,5 @@
+import { safeStorage } from "@/lib/utils/storage";
+
 /**
  * Remember Me service
  * Handles persistent storage of user email when "Recordarme" checkbox is marked.
@@ -23,7 +25,7 @@ export function saveRememberMeEmail(email: string): void {
   if (typeof window === "undefined") return;
   try {
     const data: RememberMeData = { email: email.trim(), rememberMe: true };
-    localStorage.setItem(REMEMBER_ME_STORAGE_KEY, JSON.stringify(data));
+    safeStorage.setItem(REMEMBER_ME_STORAGE_KEY, JSON.stringify(data));
   } catch (err) {
     // Silently fail if localStorage is unavailable (private mode, storage full, etc.)
     console.warn("Failed to save remember me email:", err);
@@ -37,7 +39,7 @@ export function saveRememberMeEmail(email: string): void {
 export function loadRememberMeEmail(): RememberMeData | null {
   if (typeof window === "undefined") return null;
   try {
-    const data = localStorage.getItem(REMEMBER_ME_STORAGE_KEY);
+    const data = safeStorage.getItem(REMEMBER_ME_STORAGE_KEY);
     if (!data) return null;
     const parsed = JSON.parse(data) as unknown;
     // Validate structure
@@ -64,7 +66,7 @@ export function loadRememberMeEmail(): RememberMeData | null {
 export function clearRememberMeEmail(): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.removeItem(REMEMBER_ME_STORAGE_KEY);
+    safeStorage.removeItem(REMEMBER_ME_STORAGE_KEY);
   } catch (err) {
     console.warn("Failed to clear remember me email:", err);
   }

@@ -9,7 +9,7 @@ import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.repository.RatePort;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -36,11 +36,11 @@ public class AgreementService implements AgreementUseCase {
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   @Transactional(readOnly = true)
-  public SettingsPageResponse<AgreementResponse> list(
+  public PageResponse<AgreementResponse> list(
       String site, String q, Boolean active, Pageable pageable) {
     UUID companyId = com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId();
     Page<Agreement> page = repo.search(site, q, active, companyId, pageable);
-    return SettingsPageResponse.of(page.map(this::toResponse));
+    return PageResponse.of(page.map(this::toResponse));
   }
 
   @Transactional(readOnly = true)

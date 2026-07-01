@@ -4,6 +4,7 @@ import {
   fetchParkingSummary,
   fetchParkingSpaces,
 } from "../sessions-api";
+import { apiFetch } from "../_shared";
 
 vi.mock("@/lib/api", () => ({
   buildApiHeaders: () => Promise.resolve({ "Content-Type": "application/json" }),
@@ -14,22 +15,9 @@ vi.mock("@/lib/api/config", () => ({
   apiBase: () => "http://localhost:6011/api/v1",
 }));
 
-vi.mock("@/lib/api/fetch-with-credentials", () => ({
-  fetchWithCredentials: vi.fn(),
+vi.mock("../_shared", () => ({
+  apiFetch: vi.fn(),
 }));
-
-function okResponse(data: unknown): Response {
-  return new Response(JSON.stringify(data), { status: 200, statusText: "OK" });
-}
-
-function errorResponse(body?: Record<string, string>): Response {
-  const payload = body ?? {};
-  return new Response(JSON.stringify(payload), { status: 400, statusText: "Bad Request" });
-}
-
-function errorResponseNonJson(): Response {
-  return new Response("not found", { status: 404, statusText: "Not Found" });
-}
 
 describe("sessions-api", () => {
   beforeEach(() => {
@@ -38,13 +26,12 @@ describe("sessions-api", () => {
 
   describe("fetchActiveSessions", () => {
     it("should fetch active sessions without params", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
       const dto = [{ ticketNumber: "T001", plate: "ABC123", vehicleType: "CAR", duration: "01:30", rateName: "Estándar" }];
-      vi.mocked(fetchWithCredentials).mockResolvedValue(okResponse(dto));
+      vi.mocked(apiFetch).mockResolvedValue(dto as never);
 
       const result = await fetchActiveSessions();
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/operations/sessions/active-list"),
         expect.any(Object),
       );
@@ -52,12 +39,11 @@ describe("sessions-api", () => {
     });
 
     it("should pass query params", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(okResponse({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } }));
+      vi.mocked(apiFetch).mockResolvedValue({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } } as never);
 
       await fetchActiveSessions({ page: 2, limit: 10, search: "ABC", sortBy: "plate", sortDir: "asc" });
 
-      const url = vi.mocked(fetchWithCredentials).mock.calls[0][0] as string;
+      const url = vi.mocked(apiFetch).mock.calls[0][0] as string;
       expect(url).toContain("page=2");
       expect(url).toContain("limit=10");
       expect(url).toContain("search=ABC");
@@ -66,29 +52,26 @@ describe("sessions-api", () => {
     });
 
     it("should throw on error with userMessage", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(errorResponse({ userMessage: "Error personalizado" }));
+      vi.mocked(apiFetch).mockRejectedValue(new Error("Error personalizado"));
 
       await expect(fetchActiveSessions()).rejects.toThrow("Error personalizado");
     });
 
     it("should throw on error without userMessage", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(errorResponseNonJson());
+      vi.mocked(apiFetch).mockRejectedValue(new Error("El recurso solicitado no existe o fue eliminado."));
 
-      await expect(fetchActiveSessions()).rejects.toThrow("No se pudo cargar el listado de vehículos activos");
+      await expect(fetchActiveSessions()).rejects.toThrow("El recurso solicitado no existe o fue eliminado.");
     });
   });
 
   describe("fetchParkingSummary", () => {
     it("should fetch summary", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
       const summary = { availableSpaces: 20, activeSpaces: 80 };
-      vi.mocked(fetchWithCredentials).mockResolvedValue(okResponse(summary));
+      vi.mocked(apiFetch).mockResolvedValue(summary as never);
 
       const result = await fetchParkingSummary();
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/api/v1/parking-spaces/summary"),
         expect.any(Object),
       );
@@ -96,22 +79,20 @@ describe("sessions-api", () => {
     });
 
     it("should throw on error", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(errorResponseNonJson());
+      vi.mocked(apiFetch).mockRejectedValue(new Error("El recurso solicitado no existe o fue eliminado."));
 
-      await expect(fetchParkingSummary()).rejects.toThrow("No se pudo cargar el resumen de celdas");
+      await expect(fetchParkingSummary()).rejects.toThrow("El recurso solicitado no existe o fue eliminado.");
     });
   });
 
   describe("fetchParkingSpaces", () => {
     it("should fetch parking spaces", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
       const spaces = [{ id: "s1", code: "A1", type: "CAR", status: "ACTIVE", occupied: false }];
-      vi.mocked(fetchWithCredentials).mockResolvedValue(okResponse(spaces));
+      vi.mocked(apiFetch).mockResolvedValue(spaces as never);
 
       const result = await fetchParkingSpaces();
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/api/v1/parking-spaces"),
         expect.any(Object),
       );
@@ -119,10 +100,9 @@ describe("sessions-api", () => {
     });
 
     it("should throw on error", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(errorResponseNonJson());
+      vi.mocked(apiFetch).mockRejectedValue(new Error("El recurso solicitado no existe o fue eliminado."));
 
-      await expect(fetchParkingSpaces()).rejects.toThrow("No se pudieron cargar las celdas de parqueo");
+      await expect(fetchParkingSpaces()).rejects.toThrow("El recurso solicitado no existe o fue eliminado.");
     });
   });
 });

@@ -11,6 +11,7 @@ import { cn } from "@heroui/theme";
 import { useSearch } from "../hooks/useSearch";
 import { SearchResult, SearchType } from "../types/search.types";
 import { useOsShortcut } from "@/hooks/core/useOsShortcut";
+import { safeStorage } from "@/lib/utils/storage";
 
 const RECENT_KEY = "parkflow.search.recent";
 const MAX_RECENT = 6;
@@ -30,7 +31,7 @@ const TYPE_META: Record<SearchType, { label: string; icon: React.ReactNode }> = 
 function readRecentSearches(): string[] {
   if (typeof window === "undefined") return [];
   try {
-    return JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? "[]") as string[];
+    return JSON.parse(safeStorage.getItem(RECENT_KEY) ?? "[]") as string[];
   } catch {
     return [];
   }
@@ -41,7 +42,7 @@ function saveRecentSearch(query: string) {
   const clean = query.trim();
   if (!clean) return;
   const next = [clean, ...readRecentSearches().filter((item) => item.toLowerCase() !== clean.toLowerCase())].slice(0, MAX_RECENT);
-  window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  safeStorage.setItem(RECENT_KEY, JSON.stringify(next));
 }
 
 function TypeIcon({ type }: { type: SearchType }) {

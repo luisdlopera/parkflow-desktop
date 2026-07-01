@@ -82,12 +82,17 @@ vi.mock("@/components/feedback/ErrorState", () => ({
   ),
 }));
 
-vi.mock("@/lib/errors/get-user-error-message", () => ({
-  getUserErrorMessage: () => ({
-    title: "Error al cargar empresas",
-    description: "No se pudieron cargar las empresas. Intente nuevamente.",
-    actionLabel: "Reintentar",
-  }),
+vi.mock("@/lib/errors/error-service", () => ({
+  errorService: {
+    normalize: () => ({
+      title: "Error al cargar empresas",
+      message: "No se pudieron cargar las empresas. Intente nuevamente.",
+      code: "MOCK_ERROR",
+      retryable: true,
+      technical: { status: 500 }
+    }),
+    toast: { error: vi.fn() }
+  }
 }));
 
 vi.mock("@/lib/errors/api-error", () => ({

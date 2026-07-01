@@ -2,6 +2,7 @@ import { AuthProvider, AuthSession } from "../../core/AuthProvider";
 import { LoginInput } from "../../../lib/validation/auth.schema";
 import { authBase } from "@/lib/api/config";
 import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+import { refreshAuthTokens } from "@/lib/api/auth-refresh";
 
 export class WebAuthProvider implements AuthProvider {
   private refreshPromise: Promise<AuthSession | null> | null = null;
@@ -25,10 +26,16 @@ export class WebAuthProvider implements AuthProvider {
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
-      throw new Error((body as Record<string, string>).code || "AUTH_INVALID_CREDENTIALS");
+      const code = body?.error?.code || body?.code || "AUTH_INVALID_CREDENTIALS";
+      const message = body?.error?.message || body?.message || "Invalid credentials";
+      
+      const error = new Error(message);
+      (error as any).code = code;
+      throw error;
     }
 
-    const data = (await response.json()) as {
+    const rawData = await response.json();
+    const data = (rawData && 'data' in rawData ? rawData.data : rawData) as {
       user: AuthSession["user"];
       session: AuthSession["session"];
       device: { id: string };
@@ -39,7 +46,7 @@ export class WebAuthProvider implements AuthProvider {
       user: data.user,
       session: data.session,
       offlineLease: data.offlineLease,
-      expiresAt: data.session.accessTokenExpiresAtIso,
+      expiresAt: (data.session as any).accessTokenExpiresAtIso || (data.session as any).accessTokenExpiresAt,
       permissions: data.user.permissions,
     };
   }
@@ -77,7 +84,8 @@ export class WebAuthProvider implements AuthProvider {
         return null;
       }
 
-      const data = await response.json() as {
+      const rawData = await response.json();
+      const data = (rawData && 'data' in rawData ? rawData.data : rawData) as {
         user: AuthSession["user"];
         session: AuthSession["session"];
         device: { id: string };
@@ -88,7 +96,7 @@ export class WebAuthProvider implements AuthProvider {
         user: data.user,
         session: data.session,
         offlineLease: data.offlineLease,
-        expiresAt: data.session.accessTokenExpiresAtIso,
+        expiresAt: (data.session as any).accessTokenExpiresAtIso || (data.session as any).accessTokenExpiresAt,
         permissions: data.user.permissions,
       };
     } catch {
@@ -103,12 +111,8 @@ export class WebAuthProvider implements AuthProvider {
 
     this.refreshPromise = (async () => {
       try {
-        const response = await fetchWithCredentials(`${authBase()}/refresh-token`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-
-        if (!response.ok) {
+        const refreshed = await refreshAuthTokens();
+        if (!refreshed) {
           return null;
         }
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { apiFetch } from "../_shared";
 
 vi.mock("@/lib/services/auth-domain.service", () => ({
   authHeaders: () => Promise.resolve({ "Content-Type": "application/json", "X-API-Key": "test-api-key" }),
@@ -8,17 +9,9 @@ vi.mock("@/lib/api/config", () => ({
   apiBase: () => "http://localhost:6011/api/v1",
 }));
 
-vi.mock("@/lib/api/fetch-with-credentials", () => ({
-  fetchWithCredentials: vi.fn(),
+vi.mock("../_shared", () => ({
+  apiFetch: vi.fn(),
 }));
-
-function okResponse(data: unknown): Response {
-  return new Response(JSON.stringify(data), { status: 200, statusText: "OK" });
-}
-
-function errorResponse(): Response {
-  return new Response(JSON.stringify({ error: "fail" }), { status: 400, statusText: "Bad Request" });
-}
 
 const MOCK_PRIORITY_CASE = {
   companyId: "company-1",
@@ -60,13 +53,12 @@ describe("licensing-support-api", () => {
 
   describe("fetchPriorityCases", () => {
     it("should fetch priority cases", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(okResponse([MOCK_PRIORITY_CASE]));
+      vi.mocked(apiFetch).mockResolvedValue([MOCK_PRIORITY_CASE] as never);
 
       const { fetchPriorityCases } = await import("../licensing-support-api");
       const result = await fetchPriorityCases();
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/licensing/support/cases/priority"),
         expect.objectContaining({
           headers: expect.objectContaining({ "Content-Type": "application/json", "X-API-Key": "test-api-key" }),
@@ -76,8 +68,7 @@ describe("licensing-support-api", () => {
     });
 
     it("should return empty array on error", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(errorResponse());
+      vi.mocked(apiFetch).mockRejectedValue(new Error("fail"));
 
       const { fetchPriorityCases } = await import("../licensing-support-api");
       const result = await fetchPriorityCases();
@@ -88,13 +79,12 @@ describe("licensing-support-api", () => {
 
   describe("fetchUnresolvedBlocks", () => {
     it("should fetch unresolved blocks", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(okResponse([MOCK_BLOCK_EVENT]));
+      vi.mocked(apiFetch).mockResolvedValue([MOCK_BLOCK_EVENT] as never);
 
       const { fetchUnresolvedBlocks } = await import("../licensing-support-api");
       const result = await fetchUnresolvedBlocks();
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/licensing/support/blocks/unresolved"),
         expect.any(Object),
       );
@@ -102,10 +92,7 @@ describe("licensing-support-api", () => {
     });
 
     it("should fill unknown company name", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(
-        okResponse([{ ...MOCK_BLOCK_EVENT, companyName: undefined }]),
-      );
+      vi.mocked(apiFetch).mockResolvedValue([{ ...MOCK_BLOCK_EVENT, companyName: undefined }] as never);
 
       const { fetchUnresolvedBlocks } = await import("../licensing-support-api");
       const result = await fetchUnresolvedBlocks();
@@ -114,8 +101,7 @@ describe("licensing-support-api", () => {
     });
 
     it("should return empty array on error", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(errorResponse());
+      vi.mocked(apiFetch).mockRejectedValue(new Error("fail"));
 
       const { fetchUnresolvedBlocks } = await import("../licensing-support-api");
       const result = await fetchUnresolvedBlocks();
@@ -126,13 +112,12 @@ describe("licensing-support-api", () => {
 
   describe("fetchBlockStatistics", () => {
     it("should fetch statistics with default days", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(okResponse(MOCK_STATISTICS));
+      vi.mocked(apiFetch).mockResolvedValue(MOCK_STATISTICS as never);
 
       const { fetchBlockStatistics } = await import("../licensing-support-api");
       const result = await fetchBlockStatistics();
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("days=7"),
         expect.any(Object),
       );
@@ -140,21 +125,19 @@ describe("licensing-support-api", () => {
     });
 
     it("should pass custom days param", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(okResponse(MOCK_STATISTICS));
+      vi.mocked(apiFetch).mockResolvedValue(MOCK_STATISTICS as never);
 
       const { fetchBlockStatistics } = await import("../licensing-support-api");
       await fetchBlockStatistics(30);
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("days=30"),
         expect.any(Object),
       );
     });
 
     it("should return null on error", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(errorResponse());
+      vi.mocked(apiFetch).mockRejectedValue(new Error("fail"));
 
       const { fetchBlockStatistics } = await import("../licensing-support-api");
       const result = await fetchBlockStatistics();
@@ -165,13 +148,12 @@ describe("licensing-support-api", () => {
 
   describe("resolveBlock", () => {
     it("should POST resolve with notes and corrective action", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(okResponse(undefined));
+      vi.mocked(apiFetch).mockResolvedValue(undefined as never);
 
       const { resolveBlock } = await import("../licensing-support-api");
       await resolveBlock("block-1", "Pago verificado");
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/licensing/support/blocks/block-1/resolve"),
         expect.objectContaining({
           method: "POST",
@@ -187,13 +169,12 @@ describe("licensing-support-api", () => {
 
   describe("markBlockFalsePositive", () => {
     it("should POST false positive with notes", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue(okResponse(undefined));
+      vi.mocked(apiFetch).mockResolvedValue(undefined as never);
 
       const { markBlockFalsePositive } = await import("../licensing-support-api");
       await markBlockFalsePositive("block-1", "Falso positivo - cliente no manipuló fecha");
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/licensing/support/blocks/block-1/false-positive"),
         expect.objectContaining({
           method: "POST",

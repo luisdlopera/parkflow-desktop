@@ -4,13 +4,12 @@ import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.configuration.application.port.in.PaymentMethodUseCase;
 import com.parkflow.modules.configuration.dto.PaymentMethodRequest;
 import com.parkflow.modules.configuration.dto.PaymentMethodResponse;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,42 +22,43 @@ public class ConfigurationPaymentMethodController {
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
-  public ResponseEntity<SettingsPageResponse<PaymentMethodResponse>> list(
+  public PageResponse<PaymentMethodResponse> list(
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,
       Pageable pageable) {
     UUID companyId = TenantContext.getTenantId();
-    return ResponseEntity.ok(paymentMethodUseCase.list(q, active, companyId, pageable));
+    return paymentMethodUseCase.list(q, active, companyId, pageable);
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
-  public ResponseEntity<PaymentMethodResponse> get(@PathVariable UUID id) {
-    return ResponseEntity.ok(paymentMethodUseCase.get(id));
+  public PaymentMethodResponse get(@PathVariable UUID id) {
+    return paymentMethodUseCase.get(id);
   }
 
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<PaymentMethodResponse> create(@Valid @RequestBody PaymentMethodRequest req) {
+  @org.springframework.web.bind.annotation.ResponseStatus(HttpStatus.CREATED)
+  public PaymentMethodResponse create(@Valid @RequestBody PaymentMethodRequest req) {
     UUID companyId = TenantContext.getTenantId();
-    return ResponseEntity.status(HttpStatus.CREATED).body(paymentMethodUseCase.create(req, companyId));
+    return paymentMethodUseCase.create(req, companyId);
   }
 
   @PutMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<PaymentMethodResponse> update(
+  public PaymentMethodResponse update(
       @PathVariable UUID id,
       @Valid @RequestBody PaymentMethodRequest req) {
     UUID companyId = TenantContext.getTenantId();
-    return ResponseEntity.ok(paymentMethodUseCase.update(id, req, companyId));
+    return paymentMethodUseCase.update(id, req, companyId);
   }
 
   @PatchMapping("/{id}/status")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<PaymentMethodResponse> patchStatus(
+  public PaymentMethodResponse patchStatus(
       @PathVariable UUID id,
       @RequestParam boolean active) {
     UUID companyId = TenantContext.getTenantId();
-    return ResponseEntity.ok(paymentMethodUseCase.patchStatus(id, active, companyId));
+    return paymentMethodUseCase.patchStatus(id, active, companyId);
   }
 }

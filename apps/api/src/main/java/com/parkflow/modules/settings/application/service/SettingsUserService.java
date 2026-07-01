@@ -40,10 +40,10 @@ public class SettingsUserService implements UserManagementUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public SettingsPageResponse<UserAdminResponse> list(String q, Boolean active, UserRole role, Pageable pageable) {
+  public PageResponse<UserAdminResponse> list(String q, Boolean active, UserRole role, Pageable pageable) {
     UUID companyId = SecurityUtils.requireCompanyId();
     Page<AppUser> page = appUserRepository.search(q, active, companyId, pageable);
-    return SettingsPageResponse.of(page.map(this::toResponse));
+    return PageResponse.of(page.map(this::toResponse));
   }
 
   @Override

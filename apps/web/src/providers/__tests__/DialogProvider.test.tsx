@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DialogProvider, useDialog } from "../DialogProvider";
-import { useDialogStore } from "../dialog-store";
+import { useDialogStore } from "@/components/ui/dialog-store";
 import React from "react";
 
 function TestConsumer() {

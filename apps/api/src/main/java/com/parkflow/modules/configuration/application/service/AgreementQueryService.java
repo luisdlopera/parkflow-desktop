@@ -4,7 +4,7 @@ import com.parkflow.modules.configuration.dto.AgreementResponse;
 import com.parkflow.modules.configuration.domain.Agreement;
 import com.parkflow.modules.configuration.domain.repository.AgreementPort;
 import com.parkflow.modules.auth.security.SecurityUtils;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import com.parkflow.modules.common.exception.OperationException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -25,11 +25,11 @@ public class AgreementQueryService {
   private final AgreementPort repo;
 
   @Transactional(readOnly = true)
-  public SettingsPageResponse<AgreementResponse> list(
+  public PageResponse<AgreementResponse> list(
       String site, String q, Boolean active, Pageable pageable) {
     UUID companyId = SecurityUtils.requireCompanyId();
     Page<Agreement> page = repo.search(site, q, active, companyId, pageable);
-    return SettingsPageResponse.of(page.map(this::toResponse));
+    return PageResponse.of(page.map(this::toResponse));
   }
 
   @Transactional(readOnly = true)

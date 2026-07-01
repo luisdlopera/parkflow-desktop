@@ -112,7 +112,7 @@ export async function handleCashRoutes(
   }
 
   // Rates
-  if ((pathname.endsWith("/rates") || pathname.endsWith("/settings/rates")) && method === "GET") {
+  if ((pathname.endsWith("/rates") || pathname.endsWith("/configuration/rates")) && method === "GET") {
     return json(await invoke("local_get_rates"));
   }
 

@@ -22,7 +22,7 @@ import java.util.Set;
 /**
  * Alegra implementation of InvoiceProviderPort.
  *
- * This is the only class that knows about Alegra. InvoiceService never imports this class.
+ * This is the only class that knows about Alegra. The billing services never import this class.
  * To add Siigo/Xero: implement InvoiceProviderPort in a new class. This class stays untouched.
  */
 @Slf4j

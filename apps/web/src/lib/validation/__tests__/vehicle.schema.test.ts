@@ -152,6 +152,35 @@ describe("vehicleEntrySchema - Motorcycle Validation", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts a valid WhatsApp phone number when provided", () => {
+    const result = vehicleEntrySchema.safeParse({
+      plate: "ABC12D",
+      type: "MOTORCYCLE",
+      countryCode: "CO",
+      vehicleCondition: "Buen estado",
+      customerPhoneNumber: "+573001234567",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.customerPhoneNumber).toBe("+573001234567");
+    }
+  });
+
+  it("rejects an invalid WhatsApp phone number format", () => {
+    const result = vehicleEntrySchema.safeParse({
+      plate: "ABC12D",
+      type: "MOTORCYCLE",
+      countryCode: "CO",
+      vehicleCondition: "Buen estado",
+      customerPhoneNumber: "abc-123",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const phoneIssues = result.error.issues.filter((i) => i.path.includes("customerPhoneNumber"));
+      expect(phoneIssues.length).toBeGreaterThan(0);
+    }
+  });
+
   it("rejects invalid plate format with special characters for motorcycle", () => {
     const result = vehicleEntrySchema.safeParse({
       plate: "AB@12D",

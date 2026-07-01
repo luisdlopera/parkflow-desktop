@@ -20,6 +20,7 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 import { FormErrorSummary } from "@/components/feedback/FormErrorSummary";
 import { loginSchema, setupSchema, LoginInput, SetupInput } from "@/lib/validation/auth.schema";
 import { Lock, Mail, User, Building, Landmark, Zap } from "lucide-react";
+import { safeStorage } from "@/lib/utils/storage";
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   oauth_denied: "Inicio de sesión cancelado en el proveedor externo.",
@@ -190,9 +191,7 @@ export default function LoginPage() {
       }
 
       broadcastAuthEvent({ type: "auth:login" });
-      if (typeof window !== "undefined") {
-        window.localStorage?.removeItem("parkflow_just_logged_out");
-      }
+      safeStorage.removeItem("parkflow_just_logged_out");
 
       useAuthStore.getState().setUser(session.user);
       if (session.permissions) {

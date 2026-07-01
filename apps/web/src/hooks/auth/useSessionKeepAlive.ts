@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '@/lib/stores/auth.store';
-import { clearSession } from '@/lib/services/auth-storage.service';
-import { createAuthProvider } from '@/auth/runtime/createAuthProvider';
+import { refreshSessionState, logoutSessionState } from './session-refresh';
 
 const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'scroll', 'touchstart'];
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -24,12 +23,8 @@ export function useSessionKeepAlive() {
 
     isRefreshingRef.current = true;
     try {
-      const authProvider = await createAuthProvider();
-      const refreshed = await authProvider.refresh();
+      const refreshed = await refreshSessionState();
       if (!refreshed) {
-        await authProvider.logout();
-        await clearSession();
-        useAuthStore.getState().logout();
         window.location.href = '/login?reason=expired';
         return;
       }
@@ -62,12 +57,9 @@ export function useSessionKeepAlive() {
 
     activityTimeoutRef.current = setTimeout(async () => {
       console.log('Session idle timeout - logging out');
-      const authProvider = await createAuthProvider();
-      await authProvider.logout();
-      await clearSession();
-      useAuthStore.getState().logout();
-      window.location.href = '/login?reason=expired';
-    }, IDLE_TIMEOUT);
+        await logoutSessionState();
+        window.location.href = '/login?reason=expired';
+      }, IDLE_TIMEOUT);
 
     if (!refreshTimeoutRef.current) {
       scheduleNextRefresh();

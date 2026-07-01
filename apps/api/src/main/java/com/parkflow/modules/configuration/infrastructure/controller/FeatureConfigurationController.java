@@ -13,7 +13,6 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -37,12 +36,12 @@ public class FeatureConfigurationController {
       responseCode = "200",
       description = "Feature configuration retrieved successfully",
       content = @Content(schema = @Schema(implementation = FeatureConfigurationResponse.class)))
-  public ResponseEntity<FeatureConfigurationResponse> getFeatureConfiguration() {
+  public FeatureConfigurationResponse getFeatureConfiguration() {
     UUID companyId = TenantContext.getTenantId();
     if (companyId == null) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
     }
-    return ResponseEntity.ok(featureConfigurationUseCase.getFeatureConfiguration(companyId));
+    return featureConfigurationUseCase.getFeatureConfiguration(companyId);
   }
 
   @PatchMapping
@@ -54,13 +53,12 @@ public class FeatureConfigurationController {
       content = @Content(schema = @Schema(implementation = FeatureConfigurationResponse.class)))
   @ApiResponse(responseCode = "400", description = "Invalid feature configuration")
   @ApiResponse(responseCode = "404", description = "Company not found")
-  public ResponseEntity<FeatureConfigurationResponse> updateFeatureConfiguration(
+  public FeatureConfigurationResponse updateFeatureConfiguration(
       @Valid @RequestBody FeatureConfigurationRequest request) {
     UUID companyId = TenantContext.getTenantId();
     if (companyId == null) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
     }
-    return ResponseEntity.ok(
-        featureConfigurationUseCase.updateFeatureConfiguration(companyId, request));
+    return featureConfigurationUseCase.updateFeatureConfiguration(companyId, request);
   }
 }

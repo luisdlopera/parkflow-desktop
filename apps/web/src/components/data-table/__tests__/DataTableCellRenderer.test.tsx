@@ -33,7 +33,7 @@ describe("DataTableCellRenderer", () => {
   it("renders currency with COP symbol", () => {
     const column: DataTableColumn = { key: "price", label: "Precio", type: "currency" };
     render(<DataTableCellRenderer column={column} value={50000} row={mockRow} />);
-    expect(screen.getByText(/\$50,?000/)).toBeInTheDocument();
+    expect(screen.getByText(/\$\s*50[.,]000/)).toBeInTheDocument();
   });
 
   it("renders datetime in Spanish format", () => {
@@ -136,6 +136,6 @@ describe("DataTableCellRenderer", () => {
       format: "currency",
     };
     render(<DataTableCellRenderer column={column} value={100000} row={mockRow} />);
-    expect(screen.getByText(/\$100,?000/)).toBeInTheDocument();
+    expect(screen.getByText(/\$\s*100[.,]000/)).toBeInTheDocument();
   });
 });

@@ -135,7 +135,7 @@ export function useReports() {
           const result = await fetchCashSessionHistory(dateFrom, dateTo, page);
           setCashSessions(result.content);
           setCashSessionsTotal(result.totalElements);
-          setCashSessionPage(result.number);
+          setCashSessionPage(result.number ?? result.page);
           if (result.content.length > 0) {
             try { setCashSummary(await fetchCashSessionSummary(result.content[0].id)); }
             catch { setCashSummary(null); }
@@ -151,7 +151,7 @@ export function useReports() {
           const result = await fetchPaidTickets(dateFrom, dateTo, page);
           setPaidTickets(result.content);
           setPaidTicketsTotal(result.totalElements);
-          setPaidTicketsPage(result.number);
+          setPaidTicketsPage(result.number ?? result.page);
           break;
         }
         case "voided-tickets":

@@ -8,7 +8,7 @@ import com.parkflow.modules.configuration.domain.repository.ParkingSitePort;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -29,10 +29,10 @@ public class ParkingSiteManagementService implements ParkingSiteUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public SettingsPageResponse<ParkingSiteResponse> list(
+  public PageResponse<ParkingSiteResponse> list(
       UUID companyId, String q, Boolean active, Pageable pageable) {
     Page<ParkingSite> page = parkingSiteRepository.search(companyId, normalizeQuery(q), active, pageable);
-    return SettingsPageResponse.of(page.map(this::toResponse));
+    return PageResponse.of(page.map(this::toResponse));
   }
 
   @Override

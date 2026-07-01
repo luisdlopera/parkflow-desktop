@@ -2,7 +2,7 @@ package com.parkflow.modules.audit.application.service;
 
 import com.parkflow.modules.audit.domain.AuditEvent;
 import com.parkflow.modules.audit.infrastructure.persistence.AuditEventRepository;
-import org.springframework.data.domain.Page;
+import com.parkflow.modules.common.dto.PageResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ public class AuditQueryService implements AuditQueryUseCase {
         this.repository = repository;
     }
 
-    public Page<AuditEvent> getAuditEvents(
+    public PageResponse<AuditEvent> getAuditEvents(
             String module,
             String action,
             UUID userId,
@@ -57,7 +57,7 @@ public class AuditQueryService implements AuditQueryUseCase {
             spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("timestampUtc"), endDate));
         }
 
-        return repository.findAll(spec, pageable);
+        return PageResponse.of(repository.findAll(spec, pageable));
     }
 
     public AuditEvent getAuditEventDetails(UUID id) {

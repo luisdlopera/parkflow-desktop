@@ -7,10 +7,10 @@ import com.parkflow.modules.billing.domain.enums.InvoiceStatus;
 import com.parkflow.modules.billing.domain.repository.InvoicePort;
 import com.parkflow.modules.billing.dto.InvoiceDashboardResponse;
 import com.parkflow.modules.billing.dto.InvoiceResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import com.parkflow.modules.billing.infrastructure.security.EncryptionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,8 +33,8 @@ public class InvoiceQueryService {
   private final EncryptionService encryptionService;
 
   @Transactional(readOnly = true)
-  public Page<InvoiceResponse> listInvoices(UUID companyId, InvoiceStatus status, String clientName, Pageable pageable) {
-    return invoicePort.search(companyId, status, clientName, pageable).map(this::toResponse);
+  public PageResponse<InvoiceResponse> listInvoices(UUID companyId, InvoiceStatus status, String clientName, Pageable pageable) {
+    return PageResponse.of(invoicePort.search(companyId, status, clientName, pageable).map(this::toResponse));
   }
 
   @Transactional(readOnly = true)

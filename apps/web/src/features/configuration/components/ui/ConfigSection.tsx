@@ -9,14 +9,14 @@ import { DataTableSection, type ColumnDef } from "@/components/settings/DataTabl
 import { FormDrawer } from "@/components/ui/FormDrawer";
 import { StatusToggle } from "@/components/settings/StatusToggle";
 import { useConfigCrud } from "@/hooks/core/useConfigCrud";
-import type { SettingsPage } from "@/lib/api/_shared";
+import type { PaginatedResponse } from "@/lib/types/api.types";
 
 interface ConfigSectionProps<T extends { id: string }> {
   title: string;
   columns: ColumnDef<T>[];
   schema: z.ZodObject<z.ZodRawShape>;
   defaultValues: Record<string, unknown>;
-  loadFn: (...args: unknown[]) => Promise<SettingsPage<T> | T[]>;
+  loadFn: (...args: unknown[]) => Promise<PaginatedResponse<T> | T[]>;
   createFn?: (data: Record<string, unknown>) => Promise<unknown>;
   updateFn?: (id: string, data: Record<string, unknown>) => Promise<unknown>;
   deleteFn?: (id: string) => Promise<unknown>;
@@ -49,7 +49,7 @@ export function ConfigSection<T extends { id: string }>({
   const form = useForm({ resolver: zodResolver(schemaProp), defaultValues });
   const { handleSubmit, reset, formState: { isSubmitting } } = form;
 
-  useEffect(() => { void crud.load(); }, [crud]);
+  useEffect(() => { void crud.load(); }, [crud.load]);
 
   const handleOpenCreate = () => {
     reset(defaultValues);
@@ -62,7 +62,7 @@ export function ConfigSection<T extends { id: string }>({
   };
 
   const onSubmit = async (values: Record<string, unknown>) => {
-    const ok = await crud.save(values);
+    const ok = await crud.save(values, form.setError);
     if (ok) void crud.load();
   };
 

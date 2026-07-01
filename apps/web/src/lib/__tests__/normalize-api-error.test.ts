@@ -124,8 +124,9 @@ describe("normalize-api-error", () => {
     it("should extract path from body", async () => {
       const response = new Response(
         JSON.stringify({ path: "/api/endpoint" }),
-        { status: 400, url: "http://localhost/other" }
+        { status: 400 }
       );
+      Object.defineProperty(response, "url", { value: "http://localhost/other" });
 
       const result = await normalizeApiError(response);
 
@@ -135,14 +136,15 @@ describe("normalize-api-error", () => {
     it("should fallback to response URL for path", async () => {
       const response = new Response(JSON.stringify({}), {
         status: 400,
-        url: "http://localhost/api/endpoint",
       });
+      Object.defineProperty(response, "url", { value: "http://localhost/api/endpoint" });
 
       const result = await normalizeApiError(response);
 
       // path defaults to response.url when not provided in body
       expect(result.path).toBeDefined();
       expect(typeof result.path).toBe("string");
+      expect(result.path).toBe("/api/endpoint");
     });
 
     it("should extract correlationId", async () => {
@@ -259,8 +261,8 @@ describe("normalize-api-error", () => {
       [400, ErrorCode.UNKNOWN_ERROR],
       [401, ErrorCode.AUTH_SESSION_EXPIRED],
       [403, ErrorCode.ACCESS_DENIED],
-      [404, ErrorCode.UNKNOWN_ERROR],
-      [409, ErrorCode.UNKNOWN_ERROR],
+      [404, ErrorCode.RESOURCE_NOT_FOUND],
+      [409, ErrorCode.RESOURCE_CONFLICT],
       [500, ErrorCode.UNKNOWN_ERROR],
     ])(
       "should handle status code %d appropriately",
@@ -352,8 +354,8 @@ describe("normalize-api-error", () => {
       const url = "https://api.example.com/v1/users";
       const response = new Response(JSON.stringify({}), {
         status: 404,
-        url,
       });
+      Object.defineProperty(response, "url", { value: url });
 
       const result = await normalizeApiError(response);
 
@@ -365,8 +367,9 @@ describe("normalize-api-error", () => {
     it("should prefer path from body over URL", async () => {
       const response = new Response(
         JSON.stringify({ path: "/api/from-body" }),
-        { status: 400, url: "https://api.example.com/url-path" }
+        { status: 400 }
       );
+      Object.defineProperty(response, "url", { value: "https://api.example.com/url-path" });
 
       const result = await normalizeApiError(response);
 

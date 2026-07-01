@@ -235,7 +235,7 @@ describe("CompanyForm", () => {
     await waitFor(() => {
       expect(screen.getByTestId("form-error-summary")).toHaveTextContent("Error de servidor");
     });
-    expect(mockToastDanger).toHaveBeenCalledWith("Error: Error de servidor");
+    expect(mockToastDanger).toHaveBeenCalledWith("Error inesperado: Error de servidor");
   });
 
   it("does not call onSubmit when isLoading is true", async () => {

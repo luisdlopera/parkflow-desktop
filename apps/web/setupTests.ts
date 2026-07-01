@@ -71,7 +71,29 @@ vi.mock('@heroui/react', async (importOriginal) => {
     ),
     ListBox: Object.assign(({ children }: any) => React.createElement('div', null, children), {
       Item: ({ children }: any) => React.createElement('div', null, children)
-    })
+    }),
+    Switch: Object.assign(
+      ({ isSelected, onValueChange, children, size, className, isDisabled, isReadOnly, isRequired, ...props }: any) => {
+        return React.createElement('label', null,
+          React.createElement('input', {
+            type: 'checkbox',
+            role: 'switch',
+            checked: isSelected,
+            disabled: isDisabled,
+            required: isRequired,
+            readOnly: isReadOnly,
+            onChange: (e: any) => onValueChange?.(e.target.checked),
+            ...props
+          }),
+          children
+        );
+      },
+      {
+        Control: ({ children }: any) => React.createElement('span', null, children),
+        Thumb: () => React.createElement('span', null),
+        Content: ({ children }: any) => React.createElement('span', null, children),
+      }
+    )
   };
 });
 

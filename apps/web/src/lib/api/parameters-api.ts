@@ -1,6 +1,7 @@
 import { apiFetch, apiV1Base, buildApiHeaders, hdr } from "./_shared";
 import { settingsParametersSchema } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
+import { apiEndpoints } from "./endpoints";
 
 export type ParkingParametersPayload = {
   parkingName?: string;
@@ -57,7 +58,7 @@ export type ParkingParametersPayload = {
 export type ParametersValidateResult = { ok: boolean; errors: string[] };
 
 export async function fetchParameters(site?: string): Promise<ParkingParametersPayload> {
-  const u = new URL(`${apiV1Base()}/settings/parameters`);
+  const u = new URL(`${apiV1Base()}${apiEndpoints.configuration.parameters}`);
   if (site) u.searchParams.set("site", site);
   return apiFetch<ParkingParametersPayload>(u.toString(), {
     cache: "no-store",
@@ -70,7 +71,7 @@ export async function validateParameters(
 ): Promise<ParametersValidateResult> {
   const validatedBody = validatePayloadOrThrow(settingsParametersSchema, body);
   return apiFetch<ParametersValidateResult>(
-    `${apiV1Base()}/settings/parameters/validate`,
+    `${apiV1Base()}${apiEndpoints.configuration.parametersValidate}`,
     {
       method: "POST",
       headers: await buildApiHeaders(),
@@ -85,7 +86,7 @@ export async function putParameters(
   auditReason?: string,
 ): Promise<ParkingParametersPayload> {
   const validatedBody = validatePayloadOrThrow(settingsParametersSchema, body);
-  const u = new URL(`${apiV1Base()}/settings/parameters`);
+  const u = new URL(`${apiV1Base()}${apiEndpoints.configuration.parameters}`);
   if (site) u.searchParams.set("site", site);
   return apiFetch<ParkingParametersPayload>(u.toString(), {
     method: "PUT",
@@ -98,7 +99,7 @@ export async function resetParameters(
   site?: string,
   auditReason?: string,
 ): Promise<ParkingParametersPayload> {
-  const u = new URL(`${apiV1Base()}/settings/parameters/reset`);
+  const u = new URL(`${apiV1Base()}${apiEndpoints.configuration.parametersReset}`);
   if (site) u.searchParams.set("site", site);
   return apiFetch<ParkingParametersPayload>(u.toString(), {
     method: "POST",

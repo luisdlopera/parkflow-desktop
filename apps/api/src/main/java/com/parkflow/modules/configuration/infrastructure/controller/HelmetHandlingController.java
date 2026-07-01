@@ -9,12 +9,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.UUID;
 import com.parkflow.modules.auth.security.TenantContext;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,12 +32,12 @@ public class HelmetHandlingController {
       responseCode = "200",
       description = "Helmet handling configuration retrieved successfully",
       content = @Content(schema = @Schema(implementation = HelmetHandlingResponse.class)))
-  public ResponseEntity<HelmetHandlingResponse> getHelmetHandling() {
+  public HelmetHandlingResponse getHelmetHandling() {
     UUID companyId = TenantContext.getTenantId();
     if (companyId == null) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
     }
-    return ResponseEntity.ok(helmetHandlingUseCase.getHelmetHandling(companyId));
+    return helmetHandlingUseCase.getHelmetHandling(companyId);
   }
 
   @PatchMapping
@@ -52,12 +51,12 @@ public class HelmetHandlingController {
       responseCode = "409",
       description = "Cannot change helmet mode: lockers have usage history")
   @ApiResponse(responseCode = "404", description = "Company not found")
-  public ResponseEntity<HelmetHandlingResponse> updateHelmetHandling(
+  public HelmetHandlingResponse updateHelmetHandling(
       @Valid @RequestBody HelmetHandlingRequest request) {
     UUID companyId = TenantContext.getTenantId();
     if (companyId == null) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
     }
-    return ResponseEntity.ok(helmetHandlingUseCase.updateHelmetHandling(companyId, request));
+    return helmetHandlingUseCase.updateHelmetHandling(companyId, request);
   }
 }

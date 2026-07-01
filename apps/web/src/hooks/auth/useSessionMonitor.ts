@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createAuthProvider } from "@/auth/runtime/createAuthProvider";
 import { useAuthStore } from "@/lib/stores/auth.store";
+import { refreshSessionState, logoutSessionState } from "./session-refresh";
 
 interface SessionMonitorState {
   isExpired: boolean;
@@ -45,23 +45,15 @@ export function useSessionMonitor() {
       const remaining = Number.isFinite(exp) ? exp - Date.now() : Number.POSITIVE_INFINITY;
 
       if (remaining < 5 * 60 * 1000) {
-        const authProvider = await createAuthProvider();
-        const newSession = await authProvider.refresh();
-        if (newSession?.expiresAt) {
-          const newExp = Date.parse(newSession.expiresAt);
+        const newSession = await refreshSessionState();
+        if (newSession?.sessionExpiresAt) {
+          const newExp = Date.parse(newSession.sessionExpiresAt);
           const newRemaining = newExp - Date.now();
           if (newRemaining > 0) {
-            useAuthStore.getState().setUser(newSession.user);
-            if (newSession.permissions) {
-              useAuthStore.getState().setPermissions(newSession.permissions);
-            }
-            useAuthStore.getState().setSessionExpiresAt(newSession.expiresAt);
             setState({ isExpired: false, timeRemaining: newRemaining, isChecking: false });
             return;
           }
         }
-
-        useAuthStore.getState().logout();
         setState({ isExpired: true, timeRemaining: 0, isChecking: false });
         return;
       }
@@ -81,24 +73,15 @@ export function useSessionMonitor() {
   }, []);
 
   const renewSession = useCallback(async () => {
-    const authProvider = await createAuthProvider();
-    const session = await authProvider.refresh();
+    const session = await refreshSessionState();
     if (!session) {
       throw new Error("No hay sesión activa");
-    }
-    useAuthStore.getState().setUser(session.user);
-    if (session.permissions) {
-      useAuthStore.getState().setPermissions(session.permissions);
-    }
-    if (session.expiresAt) {
-      useAuthStore.getState().setSessionExpiresAt(session.expiresAt);
     }
     await checkSession();
   }, [checkSession]);
 
   const forceLogout = useCallback(async () => {
-    await (await createAuthProvider()).logout();
-    useAuthStore.getState().logout();
+    await logoutSessionState();
     setState({ isExpired: true, timeRemaining: 0, isChecking: false });
     router.push(`/login?reason=expired&next=${encodeURIComponent(window.location.pathname)}`);
   }, [router]);

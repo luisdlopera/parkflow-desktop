@@ -16,7 +16,7 @@ import java.util.Set;
 /**
  * Siigo provider stub — Fase 2.
  * Implement this class when Siigo integration is required.
- * Zero changes to InvoiceService or any other class needed.
+ * Zero changes to the billing services or controllers are needed.
  */
 @Component
 public class SiigoInvoiceProvider implements InvoiceProviderPort {

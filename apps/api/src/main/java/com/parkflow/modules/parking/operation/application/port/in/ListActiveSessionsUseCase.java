@@ -1,6 +1,6 @@
 package com.parkflow.modules.parking.operation.application.port.in;
 
-import com.parkflow.modules.parking.operation.dto.PaginatedResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 
 /**
@@ -12,5 +12,5 @@ public interface ListActiveSessionsUseCase {
    *
    * @return paginated active sessions
    */
-  PaginatedResponse<ReceiptResponse> execute(int page, int limit, String search, String sortBy, String sortDir);
+  PageResponse<ReceiptResponse> execute(int page, int limit, String search, String sortBy, String sortDir);
 }

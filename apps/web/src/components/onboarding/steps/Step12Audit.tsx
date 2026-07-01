@@ -1,11 +1,11 @@
 import { memo, useMemo } from "react";
 import { useOnboarding, profileLabel } from "../OnboardingContext";
 import { Button } from "@/components/bridge/Button";
-import { AlertTriangle, Car, Banknote, Monitor, Ticket, ArrowRight, LucideIcon } from "lucide-react";
+import { AlertTriangle, Car, Banknote, Monitor, Ticket, ArrowRight, LucideIcon, Clock3, Building2, Settings2, ListChecks } from "lucide-react";
 import { PAYMENT_METHOD_CATALOG } from "@/lib/payment-method-catalog";
 
 const Step12Audit = memo(function Step12Audit() {
-  const { allProgressData, vehicleTypes, detectedProfile, persistStep } = useOnboarding();
+  const { allProgressData, vehicleTypes, detectedProfile, persistStep, status } = useOnboarding();
 
   const step1Data = allProgressData?.step_1 as Record<string, unknown> | undefined;
   const step2Data = allProgressData?.step_2 as Record<string, unknown> | undefined;
@@ -14,6 +14,9 @@ const Step12Audit = memo(function Step12Audit() {
   const step5Data = allProgressData?.step_5 as Record<string, unknown> | undefined;
   const step6Data = allProgressData?.step_6 as Record<string, unknown> | undefined;
   const step7Data = allProgressData?.step_7 as Record<string, unknown> | undefined;
+  const step8Data = allProgressData?.step_8 as Record<string, unknown> | undefined;
+  const step9Data = allProgressData?.step_9 as Record<string, unknown> | undefined;
+  const step10Data = allProgressData?.step_10 as Record<string, unknown> | undefined;
 
   // Validation logic
   const warnings = useMemo(() => {
@@ -30,8 +33,11 @@ const Step12Audit = memo(function Step12Audit() {
     if (!step3Data?.baseValue || Number(step3Data.baseValue) <= 0) {
       warns.push("La tarifa base está en 0. Asegúrate de configurar correctamente los valores de cobro.");
     }
+    if (!step7Data?.printerType || String(step7Data.printerType) === "NONE") {
+      warns.push("No seleccionaste una impresora para tickets. El sistema funcionará en modo digital.");
+    }
     return warns;
-  }, [step1Data, step4Data, step2Data, step3Data, vehicleTypes]);
+  }, [step1Data, step4Data, step2Data, step3Data, step7Data, vehicleTypes]);
 
   // UI mapping
   const vehicleLabels: Record<string, string> = {
@@ -57,6 +63,22 @@ const Step12Audit = memo(function Step12Audit() {
         })
         .join(", ")
     : "Efectivo";
+
+  const shiftSummary = step5Data?.enabled
+    ? `${String(step5Data?.dayShiftStart ?? "06:00")} - ${String(step5Data?.dayShiftEnd ?? "18:00")} y ${String(step5Data?.nightShiftStart ?? "18:00")} - ${String(step5Data?.nightShiftEnd ?? "06:00")}`
+    : "Deshabilitados";
+
+  const siteSummary = Boolean(step10Data?.multiSite)
+    ? `${String(step10Data?.siteName1 ?? "Sede principal")} / ${String(step10Data?.siteName2 ?? "Sede secundaria")}`
+    : String(step10Data?.siteName1 ?? "Sede principal");
+
+  const externalItems = [
+    { label: "Empresa", value: status?.plan ? `Plan ${status.plan}` : "Se completa en Administración" },
+    { label: "Usuarios y roles", value: "Se completa en Configuración > Usuarios" },
+    { label: "Impuestos", value: "Se gestiona fuera del asistente" },
+    { label: "Integraciones", value: "Se gestiona en Parámetros y Facturación" },
+    { label: "Licencia", value: "Se valida desde el panel de administración" },
+  ];
 
   return (
     <div className="space-y-6 pb-2">
@@ -107,7 +129,53 @@ const Step12Audit = memo(function Step12Audit() {
         <Item label="Modelo" value={billingModel} />
         <Item label="Tarifa Base" value={`$${step3Data?.baseValue ?? 0}`} />
         <Item label="Turnos" value={step5Data?.enabled ? "Habilitados" : "Deshabilitados"} />
-        <Item label="Tiempo de gracia" value={step3Data?.gracePeriodMinutes ? `${step3Data.gracePeriodMinutes} min` : "No configurado"} />
+        <Item label="Tiempo de gracia" value={step3Data?.graceMinutes ? `${step3Data.graceMinutes} min` : "No configurado"} />
+      </SectionCard>
+
+      {/* Horarios */}
+      <SectionCard
+        title="Horarios"
+        icon={Clock3}
+        onEdit={() => persistStep(5)}
+      >
+        <Item label="Estado" value={step5Data?.enabled ? "Habilitados" : "Deshabilitados"} />
+        <Item label="Resumen" value={shiftSummary} />
+        <Item label="Cobertura" value={step5Data?.enabled ? "Diurno + nocturno" : "No aplica"} />
+        <Item label="Región" value={String(step4Data?.countryCode ?? "CO")} />
+      </SectionCard>
+
+      {/* Métodos de Pago */}
+      <SectionCard
+        title="Métodos de Pago"
+        icon={ListChecks}
+        onEdit={() => persistStep(6)}
+      >
+        <Item label="Activos" value={paymentMethods} />
+        <Item label="Cantidad" value={Array.isArray(step6Data?.paymentMethods) ? String(step6Data.paymentMethods.length) : "1"} />
+        <Item label="Cobro mixto" value={Array.isArray(step6Data?.paymentMethods) && step6Data.paymentMethods.length > 1 ? "Sí" : "No"} />
+        <Item label="Disponible" value={Array.isArray(step6Data?.paymentMethods) && step6Data.paymentMethods.length > 0 ? "Listo" : "Pendiente"} />
+      </SectionCard>
+
+      {/* Clientes, Convenios y Sedes */}
+      <SectionCard
+        title="Clientes, Convenios y Sedes"
+        icon={Building2}
+        onEdit={() => persistStep(10)}
+      >
+        <Item label="Clientes frecuentes" value={step8Data?.enabled ? "Activos" : "No configurados"} />
+        <Item label="Convenios" value={step9Data?.enabled ? `Sí (${step9Data.agreementDiscount ?? 0}%)` : "No configurados"} />
+        <Item label="Modo multi-sede" value={step10Data?.multiSite ? "Habilitado" : "No"} />
+        <Item label="Sedes" value={siteSummary} />
+      </SectionCard>
+
+      {/* Configuraciones externas */}
+      <SectionCard
+        title="Configuraciones externas"
+        icon={Settings2}
+      >
+        {externalItems.map((item) => (
+          <Item key={item.label} label={item.label} value={item.value} />
+        ))}
       </SectionCard>
 
       {/* Terminales y Caja */}
@@ -143,7 +211,7 @@ const Step12Audit = memo(function Step12Audit() {
   );
 });
 
-function SectionCard({ title, icon: Icon, onEdit, children }: { title: string, icon: LucideIcon, onEdit: () => void, children: React.ReactNode }) {
+function SectionCard({ title, icon: Icon, onEdit, children }: { title: string, icon: LucideIcon, onEdit?: () => void, children: React.ReactNode }) {
   return (
     <div className="bg-default-50 dark:bg-default-100/50 dark:bg-zinc-900 border border-default-200 dark:border-default-800 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between p-3 bg-default-100/50 dark:bg-zinc-800/50 border-b border-default-200 dark:border-default-800">
@@ -151,9 +219,11 @@ function SectionCard({ title, icon: Icon, onEdit, children }: { title: string, i
           <Icon className="w-4 h-4 text-default-500" />
           <h4 className="font-semibold text-sm text-default-700">{title}</h4>
         </div>
-        <Button size="sm" variant="light" className="text-primary h-7 px-2" endContent={<ArrowRight className="w-3 h-3" />} onPress={onEdit}>
-          Editar
-        </Button>
+        {onEdit ? (
+          <Button size="sm" variant="light" className="text-primary h-7 px-2" endContent={<ArrowRight className="w-3 h-3" />} onPress={onEdit}>
+            Editar
+          </Button>
+        ) : null}
       </div>
       <div className="p-4 grid gap-4 sm:grid-cols-2">
         {children}

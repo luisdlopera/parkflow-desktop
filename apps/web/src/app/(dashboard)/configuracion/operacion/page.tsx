@@ -22,25 +22,34 @@ import {
 import { operationalParameterSchema, type OperationalParameterSchema } from "@/lib/schemas/config.schemas";
 import { useAsyncAction } from "@/lib/errors/use-async-action";
 import { errorService } from "@/lib/errors/error-service";
+import { applyApiErrorToForm } from "@/hooks/useFormErrorHandling";
 
 export default function OperacionPage() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
   const [sites, setSites] = useState<ParkingSiteRow[]>([]);
 
-  const { run: runSaveOp, isLoading: isSaveOpLoading } = useAsyncAction<unknown>({
-    successMsg: "Parámetros guardados correctamente",
-  });
   const [siteId, setSiteId] = useState("");
   const [catalogLoading, setCatalogLoading] = useState(false);
 
+  const form = useForm<OperationalParameterSchema>({ resolver: zodResolver(operationalParameterSchema) });
   const {
     register,
     handleSubmit,
     reset,
     control,
     formState: { errors },
-  } = useForm<OperationalParameterSchema>({ resolver: zodResolver(operationalParameterSchema) });
+  } = form;
+
+  const { run: runSaveOp, isLoading: isSaveOpLoading } = useAsyncAction<unknown>({
+    successMsg: "Parámetros guardados correctamente",
+    showErrorToast: false,
+    onError: (err) => {
+      if (!applyApiErrorToForm(form, err)) {
+        setPageError(errorService.normalize(err).message);
+      }
+    },
+  });
   const selectedSiteLabel = useMemo(
     () => sites.find((site) => site.id === siteId)?.name ?? "Sin sede seleccionada",
     [sites, siteId]
@@ -57,7 +66,7 @@ export default function OperacionPage() {
           setSiteId(activeSites[0].id);
         }
       } catch (e) {
-        setError(errorService.normalize(e).message);
+        setPageError(errorService.normalize(e).message);
       } finally {
         setCatalogLoading(false);
       }
@@ -87,7 +96,7 @@ export default function OperacionPage() {
           offlineModeEnabled: row.offlineModeEnabled,
         });
       } catch (e) {
-        setError(errorService.normalize(e).message);
+        setPageError(errorService.normalize(e).message);
       } finally {
         setLoading(false);
       }
@@ -97,10 +106,10 @@ export default function OperacionPage() {
 
   const onSubmit = async (values: OperationalParameterSchema) => {
     if (!siteId) {
-      setError("Selecciona una sede para guardar los parámetros operativos");
+      setPageError("Selecciona una sede para guardar los parámetros operativos");
       return;
     }
-    setError(null);
+    setPageError(null);
     await runSaveOp(() =>
       putConfigurationOperationalParameters(siteId, { ...values } as Record<string, unknown>)
     );
@@ -156,9 +165,9 @@ export default function OperacionPage() {
         </p>
       </div>
 
-      {error && (
+      {pageError && (
         <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 border border-red-100">
-          {error}
+          {pageError}
         </div>
       )}
       

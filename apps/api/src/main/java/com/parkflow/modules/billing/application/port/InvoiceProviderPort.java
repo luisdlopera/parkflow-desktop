@@ -15,7 +15,7 @@ import java.util.Set;
  * Core abstraction for electronic invoice providers.
  *
  * To add a new provider (Siigo, Xero, SAP, etc.) implement this interface
- * and annotate with @Component. Zero changes to InvoiceService are required.
+ * and annotate with @Component. Zero changes to the billing services are required.
  */
 public interface InvoiceProviderPort {
 

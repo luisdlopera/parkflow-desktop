@@ -1,7 +1,6 @@
 import { buildApiHeaders } from "@/lib/api";
 import { opsBase } from "@/lib/api/config";
-import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
-
+import { apiFetch } from "./_shared";
 
 export type BulkExitRequestDto = {
   locators: string[];
@@ -41,27 +40,23 @@ export type BulkExitResponseDto = {
 };
 
 export async function precalculateBulkExit(request: BulkExitRequestDto): Promise<BulkExitCalculateResponseDto> {
-  const res = await fetchWithCredentials(`${opsBase().replace(/\/$/, "")}/bulk-exits/calculate`, {
+  return apiFetch<BulkExitCalculateResponseDto>(`${opsBase().replace(/\/$/, "")}/bulk-exits/calculate`, {
     method: "POST",
-    headers: await buildApiHeaders(),
-    body: JSON.stringify(request)
+    headers: {
+      ...(await buildApiHeaders()),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(request),
   });
-  if (!res.ok) {
-    const payload = await res.json().catch(() => ({}));
-    throw new Error(payload?.userMessage ?? payload?.error ?? "Error al pre-liquidar las salidas masivas");
-  }
-  return res.json();
 }
 
 export async function processBulkExit(request: BulkExitRequestDto): Promise<BulkExitResponseDto> {
-  const res = await fetchWithCredentials(`${opsBase().replace(/\/$/, "")}/bulk-exits`, {
+  return apiFetch<BulkExitResponseDto>(`${opsBase().replace(/\/$/, "")}/bulk-exits`, {
     method: "POST",
-    headers: await buildApiHeaders(),
-    body: JSON.stringify(request)
+    headers: {
+      ...(await buildApiHeaders()),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(request),
   });
-  if (!res.ok) {
-    const payload = await res.json().catch(() => ({}));
-    throw new Error(payload?.userMessage ?? payload?.error ?? "Error al procesar las salidas masivas");
-  }
-  return res.json();
 }

@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { lookupActiveSession } from "../services/vehicle-exit.service";
 import { useOperationSounds } from "@/hooks/ui/useOperationSounds";
 import { errorService } from "@/lib/errors/error-service";
-import type { ActiveLookup, CustodiedItemInfo } from "./useVehicleExit";
+import type { ActiveLookup, CustodiedItemInfo } from "../types";
 import type { PaymentMethodCode } from "@/lib/payment-method-catalog";
 
 export function useExitLookup(availablePaymentMethods: Array<{ code: PaymentMethodCode; label: string; hint: string; tone: string }>, resetSplitPayment: (first: Exclude<PaymentMethodCode, "MIXED">, second: Exclude<PaymentMethodCode, "MIXED">) => void) {

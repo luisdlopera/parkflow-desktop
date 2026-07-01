@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import { fetchRuntimeConfig, type RuntimeConfig } from "./runtime-config";
+import { fetchRuntimeConfig, type RuntimeConfig } from "@/lib/runtime-config";
 
 export function useRuntimeConfig() {
   const { data, error, isLoading, mutate } = useSWR<RuntimeConfig | null>(

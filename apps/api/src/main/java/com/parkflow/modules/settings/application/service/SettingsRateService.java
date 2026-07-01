@@ -12,7 +12,7 @@ import com.parkflow.modules.parking.operation.infrastructure.persistence.RateRep
 import com.parkflow.modules.common.dto.RateResponse;
 import com.parkflow.modules.common.dto.RateStatusRequest;
 import com.parkflow.modules.common.dto.RateUpsertRequest;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -50,11 +50,11 @@ public class SettingsRateService implements com.parkflow.modules.settings.applic
   // =========================================================================
 
   @Transactional(readOnly = true)
-  public SettingsPageResponse<RateResponse> list(
+  public PageResponse<RateResponse> list(
       String site, String q, Boolean active, String category, Pageable pageable) {
     String s = site == null || site.isBlank() ? "DEFAULT" : site.trim();
     Page<Rate> page = rateRepository.search(s, normalizeQuery(q), active, category, pageable);
-    return SettingsPageResponse.of(page.map(this::toResponse));
+    return PageResponse.of(page.map(this::toResponse));
   }
 
 

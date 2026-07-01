@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { apiFetch } from "../_shared";
 
-vi.mock("@/lib/api/fetch-with-credentials", () => ({
-  fetchWithCredentials: vi.fn(),
+vi.mock("../_shared", () => ({
+  apiFetch: vi.fn(),
 }));
 
 vi.mock("@/lib/api/config", () => ({
@@ -25,7 +26,6 @@ describe("bulk-exit-api", () => {
 
   describe("precalculateBulkExit", () => {
     it("POSTs to /bulk-exits/calculate and returns response", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
       const mockResponse = {
         totalSubtotal: 15000,
         totalSurcharge: 0,
@@ -54,15 +54,12 @@ describe("bulk-exit-api", () => {
         ],
         errors: [],
       };
-      vi.mocked(fetchWithCredentials).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockResponse),
-      } as any);
+      vi.mocked(apiFetch).mockResolvedValue(mockResponse as never);
 
-      const { precalculateBulkExit } = await import("@/lib/api/bulk-exit-api");
+      const { precalculateBulkExit } = await import("../bulk-exit-api");
       const result = await precalculateBulkExit(MOCK_REQUEST);
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/bulk-exits/calculate"),
         expect.objectContaining({ method: "POST" }),
       );
@@ -71,48 +68,36 @@ describe("bulk-exit-api", () => {
     });
 
     it("throws user-friendly error on non-ok response", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue({
-        ok: false,
-        json: () => Promise.resolve({ error: "Calculation failed" }),
-      } as any);
+      vi.mocked(apiFetch).mockRejectedValue(new Error("Calculation failed"));
 
-      const { precalculateBulkExit } = await import("@/lib/api/bulk-exit-api");
+      const { precalculateBulkExit } = await import("../bulk-exit-api");
       await expect(precalculateBulkExit(MOCK_REQUEST)).rejects.toThrow("Calculation failed");
     });
 
     it("throws default error when no error message in response", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue({
-        ok: false,
-        json: () => Promise.resolve({}),
-      } as any);
+      vi.mocked(apiFetch).mockRejectedValue(new Error("Revisa la información ingresada."));
 
-      const { precalculateBulkExit } = await import("@/lib/api/bulk-exit-api");
+      const { precalculateBulkExit } = await import("../bulk-exit-api");
       await expect(precalculateBulkExit(MOCK_REQUEST)).rejects.toThrow(
-        "Error al pre-liquidar las salidas masivas",
+        "Revisa la información ingresada.",
       );
     });
   });
 
   describe("processBulkExit", () => {
     it("POSTs to /bulk-exits with request body", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
-          totalCharged: 14000,
-          successfulCount: 2,
-          failedCount: 0,
-          successfulReceipts: [{ ticketNumber: "T1" }],
-          errors: [],
-        }),
-      } as any);
+      vi.mocked(apiFetch).mockResolvedValue({
+        totalCharged: 14000,
+        successfulCount: 2,
+        failedCount: 0,
+        successfulReceipts: [{ ticketNumber: "T1" }],
+        errors: [],
+      } as never);
 
-      const { processBulkExit } = await import("@/lib/api/bulk-exit-api");
+      const { processBulkExit } = await import("../bulk-exit-api");
       const result = await processBulkExit(MOCK_REQUEST);
 
-      expect(fetchWithCredentials).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/bulk-exits"),
         expect.objectContaining({ method: "POST", body: JSON.stringify(MOCK_REQUEST) }),
       );
@@ -120,30 +105,24 @@ describe("bulk-exit-api", () => {
     });
 
     it("throws with userMessage on error", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue({
-        ok: false,
-        json: () => Promise.resolve({
-          userMessage: "No se encontraron vehículos para los localizadores proporcionados",
-        }),
-      } as any);
+      vi.mocked(apiFetch).mockRejectedValue(
+        new Error("No se encontraron vehículos para los localizadores proporcionados"),
+      );
 
-      const { processBulkExit } = await import("@/lib/api/bulk-exit-api");
+      const { processBulkExit } = await import("../bulk-exit-api");
       await expect(processBulkExit(MOCK_REQUEST)).rejects.toThrow(
         "No se encontraron vehículos para los localizadores proporcionados",
       );
     });
 
     it("throws default error when no userMessage", async () => {
-      const { fetchWithCredentials } = await import("@/lib/api/fetch-with-credentials");
-      vi.mocked(fetchWithCredentials).mockResolvedValue({
-        ok: false,
-        json: () => Promise.reject(new Error("parse error")),
-      } as any);
+      vi.mocked(apiFetch).mockRejectedValue(
+        new Error("El recurso solicitado no existe o fue eliminado."),
+      );
 
-      const { processBulkExit } = await import("@/lib/api/bulk-exit-api");
+      const { processBulkExit } = await import("../bulk-exit-api");
       await expect(processBulkExit(MOCK_REQUEST)).rejects.toThrow(
-        "Error al procesar las salidas masivas",
+        "El recurso solicitado no existe o fue eliminado.",
       );
     });
   });

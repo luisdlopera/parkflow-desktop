@@ -13,10 +13,10 @@ import { useExitLookup } from "./useExitLookup";
 import { queueOfflineOperation } from "@/lib/offline-outbox";
 import { cashCurrent, cashPolicy } from "@/lib/cash/cash-api";
 import { getOrCreateIdempotencyKey, clearIdempotencyKey } from "@/lib/idempotency";
-import { buildTicketPreviewForOperation, printReceiptIfTauri, type OperationPayload } from "@/lib/tauri-print";
+import { buildTicketPreviewForOperation, printReceiptIfTauri } from "@/lib/tauri-print";
 import { downloadTicketAsHtml } from "@/lib/print/ticket-download";
 import { currentUser } from "@/lib/services/auth-domain.service";
-import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
+import { useRuntimeConfig } from "@/features/configuration/hooks/useRuntimeConfig";
 import { fetchConfigurationPaymentMethods } from "@/lib/api/payment-methods-api";
 import { useTerminalCaja } from "@/features/cash-register/hooks/useTerminalCaja";
 import { useOperationSounds } from "@/hooks/ui/useOperationSounds";
@@ -24,71 +24,9 @@ import { PAYMENT_METHOD_CATALOG, type PaymentMethodCode } from "@/lib/payment-me
 import { errorService } from "@/lib/errors/error-service";
 import { toUserMessageFromClientValidation } from "@/lib/validation/request-guard";
 import { toast } from "@heroui/react";
-import type { VehicleType } from "@parkflow/types";
-
-export type CustodiedItemInfo = {
-  id: string;
-  itemType: string;
-  identifier?: string | null;
-  status: string;
-  observations?: string | null;
-  receivedByName?: string | null;
-  receivedAt?: string | null;
-  returnedByName?: string | null;
-  returnedAt?: string | null;
-};
-
-export type ActiveLookup = {
-  sessionId: string;
-  subtotal?: number | string | null;
-  surcharge?: number | string | null;
-  discount?: number | string | null;
-  deductedMinutes?: number | null;
-  total?: number | string | null;
-  receipt: {
-    ticketNumber: string;
-    plate: string;
-    vehicleType: string;
-    site?: string | null;
-    lane?: string | null;
-    booth?: string | null;
-    terminal?: string | null;
-    entryAt?: string | null;
-    duration: string;
-    totalAmount: number | null;
-    rateName: string | null;
-    status: string;
-    lostTicket: boolean;
-    reprintCount: number;
-    entryMode?: string | null;
-    monthlySession?: boolean;
-    agreementCode?: string | null;
-    prepaidMinutes?: number | null;
-    custodiedItems?: CustodiedItemInfo[];
-  };
-};
-
-function operationPrintPayload(
-  payload: { sessionId: string; receipt: ActiveLookup["receipt"] }
-): OperationPayload {
-  return {
-    sessionId: payload.sessionId,
-    receipt: {
-      ticketNumber: payload.receipt.ticketNumber,
-      plate: payload.receipt.plate,
-      vehicleType: payload.receipt.vehicleType as VehicleType,
-      site: payload.receipt.site ?? null,
-      lane: payload.receipt.lane ?? null,
-      booth: payload.receipt.booth ?? null,
-      terminal: payload.receipt.terminal ?? null,
-      entryAt: payload.receipt.entryAt ?? null,
-    },
-  };
-}
-
-function isNetworkError(err: unknown): boolean {
-  return err instanceof TypeError && err.message.includes("fetch");
-}
+import { safeStorage } from "@/lib/utils/storage";
+import { isNetworkError, operationPrintPayload } from "../lib/vehicle-exit-utils";
+import type { ActiveLookup } from "../types";
 
 export function useVehicleExit() {
   const { caja, requireOpenForPayment } = useTerminalCaja();
@@ -195,7 +133,7 @@ export function useVehicleExit() {
       const user = await currentUser();
       if (!user?.id) { lookupHook.setError("Sesión requerida para registrar salida"); return; }
 
-      const term = process.env.NEXT_PUBLIC_TERMINAL_ID?.trim() || window.localStorage.getItem("parkflow_terminal_id")?.trim() || "";
+      const term = process.env.NEXT_PUBLIC_TERMINAL_ID?.trim() || safeStorage.getItem("parkflow_terminal_id")?.trim() || "";
       const site = process.env.NEXT_PUBLIC_PARKING_SITE?.trim() || "default";
       let cashSessionId: string | null = null;
       try {

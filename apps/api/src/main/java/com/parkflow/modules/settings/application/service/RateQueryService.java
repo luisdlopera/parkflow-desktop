@@ -4,7 +4,7 @@ import com.parkflow.modules.parking.operation.domain.Rate;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.infrastructure.persistence.RateRepository;
 import com.parkflow.modules.common.dto.RateResponse;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,11 +25,11 @@ public class RateQueryService {
   private final RateRepository rateRepository;
 
   @Transactional(readOnly = true)
-  public SettingsPageResponse<RateResponse> list(
+  public PageResponse<RateResponse> list(
       String site, String q, Boolean active, String category, Pageable pageable) {
     String s = site == null || site.isBlank() ? "DEFAULT" : site.trim();
     Page<Rate> page = rateRepository.search(s, normalizeQuery(q), active, category, pageable);
-    return SettingsPageResponse.of(page.map(this::toResponse));
+    return PageResponse.of(page.map(this::toResponse));
   }
 
   @Transactional(readOnly = true)

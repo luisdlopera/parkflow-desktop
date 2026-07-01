@@ -5,6 +5,7 @@ import { Select } from "@/components/bridge/Select";
 import { Switch } from "@/components/bridge/Switch";
 import { useEffect, useState } from "react";
 import { PageBackButton } from "@/components/layout/PageBackButton";
+import { safeStorage } from "@/lib/utils/storage";
 
 const UI_SETTINGS_KEY = "parkflow_ui_settings";
 const UI_SETTINGS_EVENT = "parkflow-ui-settings-changed";
@@ -17,12 +18,12 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem(UI_SETTINGS_KEY);
+    const saved = safeStorage.getItem(UI_SETTINGS_KEY);
     if (saved) {
       try {
         setUiSettings(JSON.parse(saved));
       } catch {
-        localStorage.removeItem(UI_SETTINGS_KEY);
+        safeStorage.removeItem(UI_SETTINGS_KEY);
       }
     }
   }, []);
@@ -30,7 +31,7 @@ export default function SettingsPage() {
   const updateUiSetting = (key: keyof typeof uiSettings, value: boolean) => {
     const updated = { ...uiSettings, [key]: value };
     setUiSettings(updated);
-    localStorage.setItem(UI_SETTINGS_KEY, JSON.stringify(updated));
+    safeStorage.setItem(UI_SETTINGS_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent(UI_SETTINGS_EVENT, { detail: updated }));
   };
 

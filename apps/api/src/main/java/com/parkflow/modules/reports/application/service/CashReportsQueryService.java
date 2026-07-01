@@ -9,6 +9,7 @@ import com.parkflow.modules.cash.infrastructure.persistence.CashMovementReposito
 import com.parkflow.modules.cash.infrastructure.persistence.CashMovementSummaryProjection;
 import com.parkflow.modules.cash.infrastructure.persistence.CashSessionRepository;
 import com.parkflow.modules.cash.infrastructure.persistence.MovementTypeSummaryProjection;
+import com.parkflow.modules.common.dto.PageResponse;
 import com.parkflow.modules.reports.application.port.in.CashReportsQueryUseCase;
 import com.parkflow.modules.reports.dto.*;
 import java.math.BigDecimal;
@@ -19,6 +20,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,13 +43,15 @@ public class CashReportsQueryService implements CashReportsQueryUseCase {
   private final CashLedgerSummaryCalculator ledgerCalculator;
 
   @Override
-  public Page<CashSessionRow> cashSessionHistory(LocalDate from, LocalDate to, Pageable pageable) {
+  public PageResponse<CashSessionRow> cashSessionHistory(LocalDate from, LocalDate to, int page, int size) {
     UUID cid = TenantContext.getTenantId();
     OffsetDateTime start = from.atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
     OffsetDateTime end   = to.plusDays(1).atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
-    return cashSessionRepo
+    Pageable pageable = PageRequest.of(page, Math.min(size, 100));
+    Page<CashSessionRow> result = cashSessionRepo
         .findByCompanyIdAndOpenedAtBetweenOrderByOpenedAtDesc(cid, start, end, pageable)
         .map(this::toCashSessionRow);
+    return PageResponse.of(result);
   }
 
   @Override
@@ -62,11 +66,12 @@ public class CashReportsQueryService implements CashReportsQueryUseCase {
   }
 
   @Override
-  public Page<PaidTicketRow> paidTickets(LocalDate from, LocalDate to, Pageable pageable) {
+  public PageResponse<PaidTicketRow> paidTickets(LocalDate from, LocalDate to, int page, int size) {
     UUID cid = TenantContext.getTenantId();
     OffsetDateTime start = from.atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
     OffsetDateTime end   = to.plusDays(1).atStartOfDay(TZ_COLOMBIA).toOffsetDateTime();
-    return cashMovementRepo
+    Pageable pageable = PageRequest.of(page, Math.min(size, 200));
+    Page<PaidTicketRow> result = cashMovementRepo
         .findPaidTicketsInPeriod(cid, start, end, pageable)
         .map(m -> new PaidTicketRow(
             m.getParkingSession() != null ? m.getParkingSession().getTicketNumber() : null,
@@ -76,6 +81,7 @@ public class CashReportsQueryService implements CashReportsQueryUseCase {
             m.getPaymentMethod().name(),
             m.getCreatedAt(),
             m.getParkingSession() != null ? m.getParkingSession().getEntryAt() : null));
+    return PageResponse.of(result);
   }
 
   @Override

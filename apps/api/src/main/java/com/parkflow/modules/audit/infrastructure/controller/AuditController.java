@@ -3,7 +3,7 @@ package com.parkflow.modules.audit.infrastructure.controller;
 import com.parkflow.modules.audit.application.port.in.AuditQueryUseCase;
 import com.parkflow.modules.audit.application.port.in.AuditExportUseCase;
 import com.parkflow.modules.audit.domain.AuditEvent;
-import org.springframework.data.domain.Page;
+import com.parkflow.modules.common.dto.PageResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -31,7 +31,7 @@ public class AuditController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('AUDITOR')")
-    public ResponseEntity<Page<AuditEvent>> getAuditEvents(
+    public PageResponse<AuditEvent> getAuditEvents(
             @RequestParam(required = false) String module,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) UUID userId,
@@ -39,22 +39,19 @@ public class AuditController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime endDate,
             @PageableDefault(size = 20, sort = "timestampUtc", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
         
-        Page<AuditEvent> events = auditQueryService.getAuditEvents(module, action, userId, startDate, endDate, pageable);
-        return ResponseEntity.ok(events);
+        return auditQueryService.getAuditEvents(module, action, userId, startDate, endDate, pageable);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('AUDITOR')")
-    public ResponseEntity<AuditEvent> getAuditEventDetails(@PathVariable UUID id) {
-        AuditEvent event = auditQueryService.getAuditEventDetails(id);
-        return ResponseEntity.ok(event);
+    public AuditEvent getAuditEventDetails(@PathVariable UUID id) {
+        return auditQueryService.getAuditEventDetails(id);
     }
 
     @GetMapping("/{id}/validate")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('AUDITOR')")
-    public ResponseEntity<Boolean> validateIntegrity(@PathVariable UUID id) {
-        boolean isValid = auditQueryService.validateIntegrity(id);
-        return ResponseEntity.ok(isValid);
+    public Boolean validateIntegrity(@PathVariable UUID id) {
+        return auditQueryService.validateIntegrity(id);
     }
 
     @GetMapping("/export")
@@ -69,8 +66,8 @@ public class AuditController {
         
         // Use an unpaged request or large page to export. Let's fetch top 10000.
         Pageable exportPageable = org.springframework.data.domain.PageRequest.of(0, 10000, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "timestampUtc"));
-        Page<AuditEvent> eventsPage = auditQueryService.getAuditEvents(module, action, userId, startDate, endDate, exportPageable);
-        java.util.List<AuditEvent> events = eventsPage.getContent();
+        PageResponse<AuditEvent> eventsPage = auditQueryService.getAuditEvents(module, action, userId, startDate, endDate, exportPageable);
+        java.util.List<AuditEvent> events = eventsPage.content();
 
         byte[] fileData;
         String contentType;

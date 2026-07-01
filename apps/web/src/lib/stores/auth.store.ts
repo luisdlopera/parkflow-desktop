@@ -1,15 +1,5 @@
 import { create } from "zustand";
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  requirePasswordChange?: boolean;
-  onboardingCompleted?: boolean;
-  companyId?: string;
-  permissions?: string[];
-}
+import type { User } from "@/lib/types/auth.types";
 
 interface AuthState {
   user: User | null;

@@ -4,7 +4,9 @@
  */
 
 import { useMemo } from "react";
-import { UseFormReturn, FieldValues, FieldPath } from "react-hook-form";
+import { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
+import { ApiError } from "@/lib/errors/ApiError";
+import { errorService } from "@/lib/errors/error-service";
 
 const FIELD_NAMES: Record<string, string> = {
   plate: "Placa",
@@ -29,6 +31,32 @@ interface UseFormErrorHandlingReturn<T extends FieldValues> {
   hasErrors: boolean;
   getFieldError: (fieldName: FieldPath<T>) => string | undefined;
   clearError: (fieldName: FieldPath<T>) => void;
+}
+
+export function applyApiErrorToForm<T extends FieldValues>(
+  form: UseFormReturn<T>,
+  error: unknown,
+): boolean {
+  if (!(error instanceof ApiError) && !(error && typeof error === "object" && "details" in error)) {
+    return false;
+  }
+
+  const normalized = errorService.normalize(error);
+  if (normalized.fieldErrors && Object.keys(normalized.fieldErrors).length > 0) {
+    let applied = false;
+    Object.entries(normalized.fieldErrors).forEach(([field, message]) => {
+      form.setError(field as FieldPath<T>, { type: "server", message });
+      applied = true;
+    });
+    return applied;
+  }
+
+  if (normalized.message) {
+    form.setError("root" as FieldPath<T>, { type: "server", message: normalized.message });
+    return true;
+  }
+
+  return false;
 }
 
 /**

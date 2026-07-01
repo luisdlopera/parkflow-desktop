@@ -6,7 +6,7 @@ import { Controller, useFieldArray, Control } from "react-hook-form";
 import { Input } from "@/components/bridge/Input";
 import { Select } from "@/components/bridge/Select";
 import { Button } from "@/components/bridge/Button";
-import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
+import { useRuntimeConfig } from "@/features/configuration/hooks/useRuntimeConfig";
 import { ListBox } from "@heroui/react";
 import { fetchAvailableLockers } from "@/lib/api/lockers-api";
 import { useFeatureFlags } from "@/providers/FeatureFlagProvider";

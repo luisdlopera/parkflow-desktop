@@ -1,15 +1,15 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useAnimatedAction } from "../ui/useAnimatedAction";
-
-const mockShowAnimatedToast = vi.fn();
-
-vi.mock("@/lib/toast/animated-toast", () => ({
-  showAnimatedToast: (...args: unknown[]) => mockShowAnimatedToast(...args),
-}));
+import { toast } from "@heroui/react";
 
 describe("useAnimatedAction", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.spyOn(toast, "success").mockImplementation(() => "mock-id" as any);
+    vi.spyOn(toast, "danger").mockImplementation(() => "mock-id" as any);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("starts in idle state with isLoading false and error null", () => {
@@ -62,7 +62,7 @@ describe("useAnimatedAction", () => {
       await result.current.execute(() => Promise.resolve("result"));
     });
 
-    expect(mockShowAnimatedToast).toHaveBeenCalledWith("Success!", "success");
+    expect(toast.success).toHaveBeenCalledWith("Success!");
   });
 
   it("does not show toast when showToast is false", async () => {
@@ -74,7 +74,7 @@ describe("useAnimatedAction", () => {
       await result.current.execute(() => Promise.resolve("result"));
     });
 
-    expect(mockShowAnimatedToast).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it("calls onSuccess callback on success", async () => {
@@ -107,7 +107,7 @@ describe("useAnimatedAction", () => {
       await result.current.execute(() => Promise.reject(new Error("fail")));
     });
 
-    expect(mockShowAnimatedToast).toHaveBeenCalledWith("Failed!", "error");
+    expect(toast.danger).toHaveBeenCalledWith("Failed!");
   });
 
   it("calls onError callback on failure", async () => {

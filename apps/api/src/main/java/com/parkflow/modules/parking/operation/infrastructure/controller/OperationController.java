@@ -1,6 +1,6 @@
 package com.parkflow.modules.parking.operation.infrastructure.controller;
 
-import com.parkflow.modules.common.debug.AgentDebugNdjson;
+
 import com.parkflow.modules.parking.operation.domain.SessionEvent;
 import com.parkflow.modules.parking.operation.domain.repository.SessionEventPort;
 import com.parkflow.modules.parking.operation.dto.*;
@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -98,21 +97,6 @@ public class OperationController {
   @ApiResponse(responseCode = "403", description = "Forbidden: missing tickets:emitir permission or company not active")
   @ApiResponse(responseCode = "409", description = "Conflict: duplicate active plate or parking full")
   public OperationResultResponse registerEntry(@Valid @RequestBody EntryRequest request) {
-    // #region agent log
-    AgentDebugNdjson.line(
-        "H1",
-        "OperationController.java:registerEntry",
-        "entry HTTP body accepted (validated)",
-        Map.ofEntries(
-            Map.entry("type", request.type() != null ? request.type() : "null"),
-            Map.entry(
-                "sitePresent", request.site() != null && !request.site().isBlank()),
-            Map.entry("plateLen", request.plate() != null ? request.plate().length() : 0),
-            Map.entry("rateIdPresent", request.rateId() != null),
-            Map.entry(
-                "idempotencyPresent",
-                request.idempotencyKey() != null && !request.idempotencyKey().isBlank())));
-    // #endregion
     return registerEntryUseCase.execute(request);
   }
 
@@ -216,7 +200,7 @@ public class OperationController {
   @PreAuthorize("hasAuthority('reportes:leer') or hasAuthority('tickets:emitir')")
   @Operation(summary = "List active sessions", description = "Returns a paginated list of active parking sessions")
   @ApiResponse(responseCode = "200", description = "List of active sessions")
-  public com.parkflow.modules.parking.operation.dto.PaginatedResponse<ReceiptResponse> activeList(
+  public com.parkflow.modules.common.dto.PageResponse<ReceiptResponse> activeList(
       @RequestParam(defaultValue = "1") @Parameter(description = "Page number") int page,
       @RequestParam(defaultValue = "25") @Parameter(description = "Page size") int limit,
       @RequestParam(required = false) @Parameter(description = "Search term") String search,
@@ -232,8 +216,9 @@ public class OperationController {
   @ApiResponse(responseCode = "200", description = "Plate updated")
   @ApiResponse(responseCode = "400", description = "Invalid plate")
   @ApiResponse(responseCode = "404", description = "Session not found")
-  public void updatePlate(@PathVariable @Parameter(description = "Session UUID") java.util.UUID id, @Valid @RequestBody UpdatePlateRequest request) {
+  public com.parkflow.modules.parking.operation.dto.UpdatePlateResponse updatePlate(@PathVariable @Parameter(description = "Session UUID") java.util.UUID id, @Valid @RequestBody UpdatePlateRequest request) {
     updatePlateUseCase.execute(id, request);
+    return new com.parkflow.modules.parking.operation.dto.UpdatePlateResponse(id, request.newPlate(), "Placa actualizada correctamente");
   }
 
   @PostMapping("/bulk-exits/calculate")

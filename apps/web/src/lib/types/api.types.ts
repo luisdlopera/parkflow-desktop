@@ -15,6 +15,17 @@ export type PaginatedResponse<T> = {
   totalPages: number;
   page: number;
   size: number;
+  number?: number;
+};
+
+export type CursorPaginatedResponse<T> = {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 };
 
 export type ApiErrorDetail = {

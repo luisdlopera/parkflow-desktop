@@ -43,7 +43,7 @@ public class AuthAuditController {
    */
   @GetMapping
   @PreAuthorize("hasAuthority('usuarios:leer')")
-  public AuthAuditQueryUseCase.AuthAuditPageResponse getEvents(
+  public com.parkflow.modules.common.dto.PageResponse<AuthAuditQueryUseCase.AuthAuditEventDto> getEvents(
       @RequestParam(required = false) UUID userId,
       @RequestParam(required = false) AuthAuditAction action,
       @RequestParam(required = false) String outcome,

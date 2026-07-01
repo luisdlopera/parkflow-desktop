@@ -6,7 +6,7 @@ import com.parkflow.modules.configuration.domain.PrepaidBalance;
 import com.parkflow.modules.configuration.domain.PrepaidPackage;
 import com.parkflow.modules.configuration.domain.repository.PrepaidBalancePort;
 import com.parkflow.modules.configuration.domain.repository.PrepaidPackagePort;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +27,10 @@ public class PrepaidQueryService {
   private final PrepaidBalancePort balanceRepo;
 
   @Transactional(readOnly = true)
-  public SettingsPageResponse<PrepaidPackageResponse> listPackages(
+  public PageResponse<PrepaidPackageResponse> listPackages(
       String site, String q, Boolean active, Pageable pageable) {
     Page<PrepaidPackage> page = packageRepo.search(site, q, active, pageable);
-    return SettingsPageResponse.of(page.map(this::toPackageResponse));
+    return PageResponse.of(page.map(this::toPackageResponse));
   }
 
   @Transactional(readOnly = true)

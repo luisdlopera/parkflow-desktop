@@ -19,7 +19,7 @@ public class SettingsUsersController {
 
   @GetMapping
   @PreAuthorize("hasAuthority('usuarios:leer')")
-  public SettingsPageResponse<UserAdminResponse> list(
+  public PageResponse<UserAdminResponse> list(
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,
       @PageableDefault(size = 20) Pageable pageable) {

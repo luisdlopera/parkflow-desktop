@@ -25,6 +25,8 @@ public enum MessagesEnum {
     COMPANY_NOT_FOUND("COMPANY_NOT_FOUND", "La compañia no existe", HttpStatus.NOT_FOUND, "BUSINESS"),
     COMPANY_ALREADY_EXISTS("COMPANY_ALREADY_EXISTS", "La compañia ya existe", HttpStatus.CONFLICT, "BUSINESS"),
     ONB_MUST_SELECT_OPTION("ONB_MUST_SELECT_OPTION", "Debes seleccionar una opcion para continuar", HttpStatus.BAD_REQUEST, "BUSINESS"),
+    WHATSAPP_PHONE_REQUIRED("WHATSAPP_PHONE_REQUIRED", "El numero de WhatsApp es requerido cuando la opcion esta habilitada", HttpStatus.BAD_REQUEST, "BUSINESS"),
+    WHATSAPP_PHONE_INVALID("WHATSAPP_PHONE_INVALID", "El numero de WhatsApp no tiene un formato valido", HttpStatus.BAD_REQUEST, "BUSINESS"),
 
     // System
     INTERNAL_ERROR("INTERNAL_ERROR", "Ocurrio un error inesperado", HttpStatus.INTERNAL_SERVER_ERROR, "SYSTEM");

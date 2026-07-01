@@ -1,6 +1,7 @@
 package com.parkflow.modules.reports.infrastructure.controller;
 
 import com.parkflow.modules.cash.dto.CashSummaryResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import com.parkflow.modules.reports.application.port.in.DailyReportsQueryUseCase;
 import com.parkflow.modules.reports.application.port.in.CashReportsQueryUseCase;
 import com.parkflow.modules.reports.dto.*;
@@ -10,9 +11,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -38,14 +36,13 @@ public class ReportController {
 
   @GetMapping("/cash-session-history")
   @Operation(summary = "Paginated list of cash sessions in a date range")
-  public Page<CashSessionRow> cashSessionHistory(
+  public PageResponse<CashSessionRow> cashSessionHistory(
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
     validateDateRange(dateFrom, dateTo);
-    return cashReportsQuery.cashSessionHistory(dateFrom, dateTo,
-        PageRequest.of(page, Math.min(size, 100), Sort.by("openedAt").descending()));
+    return cashReportsQuery.cashSessionHistory(dateFrom, dateTo, page, size);
   }
 
   @GetMapping("/cash-session-summary")
@@ -62,14 +59,13 @@ public class ReportController {
 
   @GetMapping("/paid-tickets")
   @Operation(summary = "Paid parking tickets in a date range (paginated)")
-  public Page<PaidTicketRow> paidTickets(
+  public PageResponse<PaidTicketRow> paidTickets(
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "50") int size) {
     validateDateRange(dateFrom, dateTo);
-    return cashReportsQuery.paidTickets(dateFrom, dateTo,
-        PageRequest.of(page, Math.min(size, 200)));
+    return cashReportsQuery.paidTickets(dateFrom, dateTo, page, size);
   }
 
   @GetMapping("/voided-tickets")

@@ -1,6 +1,7 @@
 import { toast } from "@heroui/react";
 import { ZodError } from "zod";
 import { ApiError } from "./ApiError";
+import { safeStorage } from "@/lib/utils/storage";
 import {
   type ParkFlowError,
   type ErrorSeverity,
@@ -193,19 +194,54 @@ const knownErrorCodes: Record<string, { title: string; message: string; severity
   },
 };
 
-function extractFieldErrors(body: Record<string, unknown>): Record<string, string> | undefined {
-  const details = body.details;
-  if (typeof details === "object" && details !== null) {
-    const d = details as Record<string, unknown>;
-    if (Array.isArray(d.fields)) {
-      const fields = d.fields as Array<{ field?: string; message?: string }>;
+function extractFieldErrors(body: any): Record<string, string> | undefined {
+  if (!body) return undefined;
+
+  if (Array.isArray(body)) {
+    const result: Record<string, string> = {};
+    for (const f of body) {
+      if (f && typeof f === "object" && f.field && f.message) {
+        result[f.field] = translateBackendMessage(f.message, f.field);
+      }
+    }
+    return Object.keys(result).length > 0 ? result : undefined;
+  }
+
+  if (typeof body === "object") {
+    const directIssues = body.issues || body.validationIssues;
+    if (Array.isArray(directIssues)) {
       const result: Record<string, string> = {};
-      for (const f of fields) {
-        if (f.field && f.message) {
+      for (const f of directIssues) {
+        if (f && f.field && f.message) {
           result[f.field] = translateBackendMessage(f.message, f.field);
         }
       }
       return Object.keys(result).length > 0 ? result : undefined;
+    }
+
+    const details = body.details;
+    if (typeof details === "object" && details !== null) {
+      const d = details as Record<string, unknown>;
+      if (Array.isArray(d.fields)) {
+        const fields = d.fields as Array<{ field?: string; message?: string }>;
+        const result: Record<string, string> = {};
+        for (const f of fields) {
+          if (f.field && f.message) {
+            result[f.field] = translateBackendMessage(f.message, f.field);
+          }
+        }
+        return Object.keys(result).length > 0 ? result : undefined;
+      }
+      if (Array.isArray(details)) {
+        const fields = details as Array<{ field?: string; message?: string }>;
+        const result: Record<string, string> = {};
+        for (const f of fields) {
+          if (f.field && f.message) {
+            result[f.field] = translateBackendMessage(f.message, f.field);
+          }
+        }
+        return Object.keys(result).length > 0 ? result : undefined;
+      }
     }
   }
   return undefined;
@@ -251,7 +287,8 @@ function buildError(params: {
   userId?: string;
 }): ParkFlowError {
   const known = knownErrorCodes[params.code];
-  const httpMsg = !known && params.status ? knownHttpMessages[params.status] : undefined;
+  const isUnknown = params.code === ErrorCodes.UNKNOWN_ERROR || params.code === "UNKNOWN_ERROR";
+  const httpMsg = (!known || isUnknown) && params.status ? knownHttpMessages[params.status] : undefined;
   const now = new Date().toISOString();
 
   return {
@@ -301,7 +338,7 @@ export const errorService: IErrorService = {
     payload?: Record<string, unknown>;
   }): ParkFlowError {
     const userId = typeof window !== "undefined"
-      ? window.localStorage.getItem("parkflow_user_id") || undefined
+      ? safeStorage.getItem("parkflow_user_id") || undefined
       : undefined;
 
     if (typeof error === "object" && error !== null && "code" in error && "technical" in error) {
@@ -328,12 +365,15 @@ export const errorService: IErrorService = {
     }
 
     if (error instanceof ApiError) {
+      const fieldErrors = error.details && typeof error.details === "object"
+        ? extractFieldErrors(error.details as Record<string, unknown>)
+        : undefined;
       return buildError({
         code: error.code || (error.status ? matchHttpToErrorCode(error.status) : ErrorCodes.UNKNOWN_ERROR),
         status: error.status,
         message: error.message,
         correlationId: error.correlationId,
-        fieldErrors: error.details ? extractFieldErrors(error.details) : undefined,
+        fieldErrors,
         originalType: "ApiError",
         stack: error.stack,
         endpoint: context?.endpoint,
@@ -421,7 +461,12 @@ export const errorService: IErrorService = {
       const obj = error as Record<string, unknown>;
       const status = typeof obj.status === "number" ? obj.status : undefined;
       const code = typeof obj.code === "string" ? obj.code : (status ? matchHttpToErrorCode(status) : ErrorCodes.UNKNOWN_ERROR);
-      const message = (typeof obj.userMessage === "string" ? obj.userMessage : typeof obj.message === "string" ? obj.message : undefined) as string | undefined;
+      const message = (
+        typeof obj.userMessage === "string" ? obj.userMessage :
+        typeof obj.message === "string" ? obj.message :
+        typeof obj.error === "string" ? obj.error :
+        undefined
+      ) as string | undefined;
       const correlationId = typeof obj.correlationId === "string" ? obj.correlationId : undefined;
       const fieldErrors = extractFieldErrors(obj);
 
@@ -525,6 +570,10 @@ function logError(pfError: ParkFlowError): void {
       fieldErrors: pfError.fieldErrors,
       technical: pfError.technical,
     };
+    
+    // Explicit raw error logs for debugging
+    console.error("[RAW ERROR OBJECT]", pfError);
+    console.error("[STRINGIFIED]", JSON.stringify(pfError, Object.getOwnPropertyNames(pfError)));
     
     // In Node.js/SSR environments, use JSON.stringify to avoid '{}' truncations
     if (typeof window === "undefined") {

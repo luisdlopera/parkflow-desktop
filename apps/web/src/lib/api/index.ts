@@ -12,4 +12,5 @@ export * from "./monthly-contracts-api";
 export * from "./agreements-api";
 export * from "./prepaid-api";
 export * from "./theme-api";
-export { apiV1Base, cfgBase, apiFetch, hdr, type SettingsPage } from "./_shared";
+export { apiV1Base, cfgBase, apiFetch, hdr } from "./_shared";
+export type { PaginatedResponse } from "@/lib/types/api.types";

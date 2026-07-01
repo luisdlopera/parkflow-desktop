@@ -1,6 +1,7 @@
 package com.parkflow.modules.auth.application.port.in;
 
 import com.parkflow.modules.auth.domain.AuthAuditAction;
+import com.parkflow.modules.common.dto.PageResponse;
 import org.springframework.data.domain.Pageable;
 
 import java.time.OffsetDateTime;
@@ -23,7 +24,7 @@ public interface AuthAuditQueryUseCase {
      * @param pageable pagination and sort configuration
      * @return DTO page ready for serialization
      */
-    AuthAuditPageResponse findEvents(
+    PageResponse<AuthAuditEventDto> findEvents(
         UUID userId,
         AuthAuditAction action,
         String outcome,
@@ -43,14 +44,5 @@ public interface AuthAuditQueryUseCase {
         String deviceId,
         String metadataJson,
         String createdAt
-    ) {}
-
-    /** Paginated response wrapper. */
-    record AuthAuditPageResponse(
-        java.util.List<AuthAuditEventDto> content,
-        int page,
-        int size,
-        long totalElements,
-        int totalPages
     ) {}
 }

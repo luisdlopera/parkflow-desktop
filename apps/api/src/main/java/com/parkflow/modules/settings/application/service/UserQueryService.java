@@ -6,7 +6,7 @@ import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository;
 import com.parkflow.modules.common.dto.UserAdminResponse;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,10 +27,10 @@ public class UserQueryService {
   private final AppUserRepository appUserRepository;
 
   @Transactional(readOnly = true)
-  public SettingsPageResponse<UserAdminResponse> list(String q, Boolean active, UserRole role, Pageable pageable) {
+  public PageResponse<UserAdminResponse> list(String q, Boolean active, UserRole role, Pageable pageable) {
     UUID companyId = SecurityUtils.requireCompanyId();
     Page<AppUser> page = appUserRepository.search(q, active, companyId, pageable);
-    return SettingsPageResponse.of(page.map(this::toResponse));
+    return PageResponse.of(page.map(this::toResponse));
   }
 
   @Transactional(readOnly = true)

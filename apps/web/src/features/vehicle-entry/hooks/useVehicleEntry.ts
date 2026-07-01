@@ -1,6 +1,5 @@
 "use client";
 import { useRef, useCallback } from "react";
-import type { UseFormReturn } from "react-hook-form";
 import {
   newIdempotencyKey,
   getOrCreateIdempotencyKey,
@@ -12,54 +11,14 @@ import {
   printReceiptIfTauri,
 } from "@/lib/tauri-print";
 import { errorService } from "@/lib/errors/error-service";
-import { normalizePlate, inferVehicleType } from "@/lib/validation/plate-validator";
+import { normalizePlate } from "@/lib/validation/plate-validator";
 import { toUserMessageFromClientValidation } from "@/lib/validation/request-guard";
 import { currentUser } from "@/lib/services/auth-domain.service";
-import type { VehicleEntryFormValues } from "@/lib/schemas/vehicle.schema";
 import type { VehicleType } from "@parkflow/types";
 import { createParkingEntry } from "@/features/vehicle-entry/services/vehicle-entry.service";
-import type { OperatorSettings } from "./useOperatorSettings";
-
-interface UseVehicleEntryOptions {
-  form: UseFormReturn<VehicleEntryFormValues>;
-  settings: OperatorSettings;
-  occupancy: { availableSpaces: number; activeSpaces: number } | null;
-  isMotorcycleOnly: boolean;
-  onSuccess: (result: {
-    ticketNumber: string;
-    plate: string;
-    previewLines: string[];
-    printWarning: string | null;
-    spaceCode?: string;
-  }) => void;
-  onError: (msg: string) => void;
-  onOfflineQueued: () => void;
-  onIncrementStats: () => void;
-  onReloadOccupancy: () => void;
-  clearAutoSave: () => void;
-}
-
-function resolveVehicleType(type: string, countryCode: string, plate: string): VehicleType {
-  if (!type || type === "CAR" || type === "OTHER") {
-    const inferred = inferVehicleType(countryCode, plate);
-    if (inferred) return inferred as VehicleType;
-  }
-  return type as VehicleType;
-}
-
-function isNetworkError(error: unknown): boolean {
-  if (error instanceof TypeError) return true;
-  if (error instanceof Error) {
-    const msg = error.message.toLowerCase();
-    return (
-      msg.includes("network") ||
-      msg.includes("fetch") ||
-      msg.includes("connection") ||
-      msg.includes("offline")
-    );
-  }
-  return false;
-}
+import { buildFormResetValues, isNetworkError, resolveVehicleType } from "../lib/vehicle-entry-utils";
+import type { VehicleEntryFormValues } from "@/lib/schemas/vehicle.schema";
+import type { UseVehicleEntryOptions } from "../types";
 
 function extractValidationError(pfError: any, defaultMsg: string): string {
   if (pfError.code === "VALIDATION_ERROR") {
@@ -69,31 +28,6 @@ function extractValidationError(pfError: any, defaultMsg: string): string {
     }
   }
   return defaultMsg;
-}
-
-function buildFormResetValues(
-  values: VehicleEntryFormValues,
-  settings: OperatorSettings,
-  isMotorcycleOnly: boolean,
-): Partial<VehicleEntryFormValues> {
-  return {
-    plate: "",
-    type: isMotorcycleOnly ? "MOTORCYCLE" : settings.defaultVehicleType,
-    countryCode: values.countryCode || "CO",
-    entryMode: "VISITOR",
-    noPlate: false,
-    noPlateReason: "",
-    rateId: "",
-    site: settings.rememberLocation ? values.site : "Principal",
-    lane: settings.rememberLocation ? values.lane : "",
-    booth: settings.rememberLocation ? values.booth : "",
-    terminal: settings.rememberLocation ? values.terminal : "",
-    observations: "",
-    vehicleCondition: settings.skipConditionCheck ? "" : "Sin novedades al ingreso",
-    conditionChecklist: "",
-    conditionPhotoUrls: "",
-    custodiedItems: [],
-  };
 }
 
 export function useVehicleEntry({

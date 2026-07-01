@@ -34,6 +34,10 @@ describe("Step12Audit (Revisión Final)", () => {
     expect(screen.getByText("Resumen Ejecutivo")).toBeInTheDocument();
     expect(screen.getByText("Vehículos y Capacidad")).toBeInTheDocument();
     expect(screen.getByText("Tarifas y Operación")).toBeInTheDocument();
+    expect(screen.getByText("Horarios")).toBeInTheDocument();
+    expect(screen.getByText("Métodos de Pago")).toBeInTheDocument();
+    expect(screen.getByText("Clientes, Convenios y Sedes")).toBeInTheDocument();
+    expect(screen.getByText("Configuraciones externas")).toBeInTheDocument();
     expect(screen.getByText("Terminales y Caja")).toBeInTheDocument();
     expect(screen.getByText("Tickets y Placas")).toBeInTheDocument();
   });

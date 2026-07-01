@@ -57,7 +57,7 @@ describe("auth-api", () => {
         new Error("Network error")
       );
 
-      await expect(checkSetupRequired()).rejects.toThrow("Network error");
+      await expect(checkSetupRequired()).rejects.toThrow("Sin conexion");
     });
   });
 
@@ -101,7 +101,7 @@ describe("auth-api", () => {
       vi.mocked(fetchWithCredentials).mockResolvedValue({
         ok: false,
         status: 400,
-        json: () => Promise.resolve({ error: "Invalid setup" })
+        json: () => Promise.resolve({ error: "No se pudo registrar" })
       } as any);
 
       await expect(postInitialSetup(payload)).rejects.toThrow(
@@ -206,11 +206,11 @@ describe("auth-api", () => {
       await requestPasswordReset("user@example.com");
 
       const call = vi.mocked(fetchWithCredentials).mock.calls[0];
+      expect(call[0]).toContain("/password-reset/request");
       expect(call[1]).toEqual(
         expect.objectContaining({
-          headers: expect.objectContaining({
-            "X-API-Key": expect.any(String)
-          })
+          method: "POST",
+          body: JSON.stringify({ email: "user@example.com", deviceId: "web" })
         })
       );
     });
@@ -266,7 +266,7 @@ describe("auth-api", () => {
       vi.mocked(fetchWithCredentials).mockResolvedValue({
         ok: false,
         status: 400,
-        json: () => Promise.resolve({})
+        json: () => Promise.resolve({ error: "Token inválido o expirado" })
       } as any);
 
       await expect(
@@ -336,7 +336,7 @@ describe("auth-api", () => {
       vi.mocked(fetchWithCredentials).mockResolvedValue({
         ok: false,
         status: 400,
-        text: () => Promise.resolve("Current password is incorrect")
+        text: () => Promise.resolve("contraseña actual no es correcta")
       } as any);
 
       await expect(
@@ -360,7 +360,7 @@ describe("auth-api", () => {
       vi.mocked(fetchWithCredentials).mockResolvedValue({
         ok: false,
         status: 403,
-        text: () => Promise.resolve("")
+        json: () => Promise.resolve({ error: "Error al cambiar" })
       } as any);
 
       await expect(

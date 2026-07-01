@@ -27,6 +27,7 @@ import {
   markCashOutboxError,
 } from "@/lib/cash/cash-outbox-idb";
 import { currentUser } from "@/lib/services/auth-domain.service";
+import { safeStorage } from "@/lib/utils/storage";
 
 type CashRegisterAction = "OPEN" | "CLOSE" | "COUNT" | "MOVEMENT" | "VOID" | "LOAD" | "SYNC";
 
@@ -119,7 +120,7 @@ function defaultTerminal(): string {
   if (typeof window === "undefined") return "";
   return (
     process.env.NEXT_PUBLIC_TERMINAL_ID?.trim() ||
-    window.localStorage.getItem("parkflow_terminal_id")?.trim() ||
+    safeStorage.getItem("parkflow_terminal_id")?.trim() ||
     ""
   );
 }

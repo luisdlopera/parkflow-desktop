@@ -1,6 +1,8 @@
 /**
  * Per-operation idempotency key (send on each distinct user action, not per session lifetime).
  */
+import { safeStorage } from "@/lib/utils/storage";
+
 export function newIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -24,22 +26,22 @@ function storageKey(operation: string, fingerprint: string): string {
 }
 
 export function getOrCreateIdempotencyKey(operation: string, fingerprint: string): string {
-  if (typeof window === "undefined" || !window.localStorage) {
+  if (typeof window === "undefined") {
     return newIdempotencyKey();
   }
   const key = storageKey(operation, fingerprint);
-  const existing = window.localStorage.getItem(key);
+  const existing = safeStorage.getItem(key);
   if (existing) {
     return existing;
   }
   const next = newIdempotencyKey();
-  window.localStorage.setItem(key, next);
+  safeStorage.setItem(key, next);
   return next;
 }
 
 export function clearIdempotencyKey(operation: string, fingerprint: string): void {
-  if (typeof window === "undefined" || !window.localStorage) {
+  if (typeof window === "undefined") {
     return;
   }
-  window.localStorage.removeItem(storageKey(operation, fingerprint));
+  safeStorage.removeItem(storageKey(operation, fingerprint));
 }

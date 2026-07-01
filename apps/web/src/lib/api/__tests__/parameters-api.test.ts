@@ -84,7 +84,7 @@ describe("parameters-api", () => {
       const result = await fetchParameters();
 
       expect(apiFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/settings/parameters"),
+        expect.stringContaining("/configuration/parameters"),
         expect.objectContaining({ cache: "no-store" }),
       );
       expect(result.parkingName).toBe("Parqueadero Central");
@@ -111,7 +111,7 @@ describe("parameters-api", () => {
       const result = await validateParameters({ parkingName: "Test" });
 
       expect(apiFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/settings/parameters/validate"),
+        expect.stringContaining("/configuration/parameters/validate"),
         expect.objectContaining({ method: "POST" }),
       );
       expect(result.ok).toBe(true);
@@ -139,7 +139,7 @@ describe("parameters-api", () => {
       const result = await putParameters({ parkingName: "Actualizado" });
 
       expect(apiFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/settings/parameters"),
+        expect.stringContaining("/configuration/parameters"),
         expect.objectContaining({
           method: "PUT",
           body: JSON.stringify({ parkingName: "Actualizado" }),
@@ -181,7 +181,7 @@ describe("parameters-api", () => {
       const result = await resetParameters();
 
       expect(apiFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/settings/parameters/reset"),
+        expect.stringContaining("/configuration/parameters/reset"),
         expect.objectContaining({ method: "POST" }),
       );
       expect(result.parkingName).toBe("Parqueadero Central");

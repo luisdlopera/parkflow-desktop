@@ -1,6 +1,6 @@
 package com.parkflow.modules.billing.infrastructure.events;
 
-import com.parkflow.modules.billing.application.service.InvoiceService;
+import com.parkflow.modules.billing.application.service.InvoiceGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -9,18 +9,13 @@ import org.springframework.stereotype.Component;
 /**
  * Listens to domain events and triggers async invoice generation.
  * Invoice generation never blocks the main parking/payment flow.
- *
- * @deprecated Use {@link com.parkflow.modules.billing.application.service.InvoiceGenerationService}
- * and hexagonal ports instead. This class depends on deprecated {@link InvoiceService}.
  */
-@Deprecated(since = "2.1.0", forRemoval = false)
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class InvoiceEventListener {
 
-  private final InvoiceService invoiceService;
+  private final InvoiceGenerationService invoiceGenerationService;
 
   /**
    * Trigger invoice when a parking payment is completed.
@@ -32,7 +27,7 @@ public class InvoiceEventListener {
         event.getSessionId(), event.getCompanyId(), event.getAmount());
 
     if (event.isRequestInvoice()) {
-      invoiceService.requestInvoiceFromPayment(
+      invoiceGenerationService.requestInvoiceFromPayment(
           event.getCompanyId(),
           event.getSessionId(),
           event.getAmount(),

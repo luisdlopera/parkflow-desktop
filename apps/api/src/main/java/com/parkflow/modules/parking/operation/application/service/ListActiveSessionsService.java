@@ -1,38 +1,45 @@
 package com.parkflow.modules.parking.operation.application.service;
 
 import com.parkflow.modules.auth.security.SecurityUtils;
+import com.parkflow.modules.common.dto.PageResponse;
 import com.parkflow.modules.parking.operation.application.port.in.ListActiveSessionsUseCase;
 import com.parkflow.modules.parking.operation.domain.*;
+import com.parkflow.modules.parking.operation.dto.CustodiedItemResponse;
 import com.parkflow.modules.parking.operation.dto.ReceiptResponse;
 import com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort;
 import com.parkflow.modules.parking.operation.domain.repository.CustodiedItemPort;
-import com.parkflow.modules.parking.spaces.application.service.ParkingSpaceService;
+import com.parkflow.modules.parking.spaces.application.port.in.SpaceQueryUseCase;
+import com.parkflow.modules.parking.spaces.domain.ParkingSpace;
+import com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
-@SuppressWarnings("deprecation")
+
 @Service
 @RequiredArgsConstructor
 public class ListActiveSessionsService implements ListActiveSessionsUseCase {
 
   private final ParkingSessionPort parkingSessionPort;
   private final CustodiedItemPort custodiedItemRepository;
-  private final ParkingSpaceService parkingSpaceService;
+  private final SpaceQueryUseCase spaceQueryUseCase;
 
   @Override
   @Transactional(readOnly = true)
-  public com.parkflow.modules.parking.operation.dto.PaginatedResponse<ReceiptResponse> execute(int page, int limit, String search, String sortBy, String sortDir) {
+  public PageResponse<ReceiptResponse> execute(int page, int limit, String search, String sortBy, String sortDir) {
     OffsetDateTime now = OffsetDateTime.now();
-    org.springframework.data.domain.Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? org.springframework.data.domain.Sort.Direction.ASC : org.springframework.data.domain.Sort.Direction.DESC;
-    org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort.by(direction, sortBy != null && !sortBy.isEmpty() ? sortBy : "entryAt");
-    Pageable pageable = org.springframework.data.domain.PageRequest.of(page > 0 ? page - 1 : 0, limit > 0 ? limit : 25, sort);
-    
-    org.springframework.data.domain.Page<ParkingSession> sessionPage;
+    Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+    Sort sort = Sort.by(direction, sortBy != null && !sortBy.isEmpty() ? sortBy : "entryAt");
+    Pageable pageable = PageRequest.of(page > 0 ? page - 1 : 0, limit > 0 ? limit : 25, sort);
+
+    Page<ParkingSession> sessionPage;
     if (search != null && !search.trim().isEmpty()) {
       sessionPage = parkingSessionPort.searchActiveByPlateOrTicket(search.trim(), SecurityUtils.requireCompanyId(), pageable);
     } else {
@@ -44,28 +51,25 @@ public class ListActiveSessionsService implements ListActiveSessionsUseCase {
           DurationCalculator.DurationBreakdown dur = DurationCalculator.calculate(
               session.getEntryAt(), now,
               session.getRate() != null ? session.getRate().getGraceMinutes() : 0);
-          
-          com.parkflow.modules.parking.spaces.domain.ParkingSpaceAssignment assignment =
-              parkingSpaceService.findAssignmentBySessionId(session.getId());
-          com.parkflow.modules.parking.spaces.domain.ParkingSpace space =
-              assignment != null ? assignment.getParkingSpace() : null;
+
+          ParkingSpaceAssignment assignment = spaceQueryUseCase.findAssignmentBySessionId(session.getId());
+          ParkingSpace space = assignment != null ? assignment.getParkingSpace() : null;
 
           return toReceipt(session, dur.totalMinutes(), dur.human(), space);
         }).toList();
 
-    com.parkflow.modules.parking.operation.dto.PaginatedResponse.Meta meta = new com.parkflow.modules.parking.operation.dto.PaginatedResponse.Meta(
+    return new PageResponse<>(
+        responses,
         sessionPage.getTotalElements(),
-        page > 0 ? page : 1,
-        limit > 0 ? limit : 25,
-        sessionPage.getTotalPages()
+        sessionPage.getTotalPages(),
+        sessionPage.getNumber(),
+        sessionPage.getSize()
     );
-
-    return new com.parkflow.modules.parking.operation.dto.PaginatedResponse<>(responses, meta);
   }
 
-  private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration, com.parkflow.modules.parking.spaces.domain.ParkingSpace space) {
-    java.util.List<com.parkflow.modules.parking.operation.dto.CustodiedItemResponse> items = custodiedItemRepository.findBySession(session).stream()
-        .map(item -> new com.parkflow.modules.parking.operation.dto.CustodiedItemResponse(
+  private ReceiptResponse toReceipt(ParkingSession session, long totalMinutes, String duration, ParkingSpace space) {
+    List<CustodiedItemResponse> items = custodiedItemRepository.findBySession(session).stream()
+        .map(item -> new CustodiedItemResponse(
             item.getId(), item.getSession().getId(), item.getItemType(), item.getIdentifier(),
             item.getStatus(), item.getObservations(), item.getPhotoUrl(),
             item.getReceivedBy() != null ? item.getReceivedBy().getName() : null,

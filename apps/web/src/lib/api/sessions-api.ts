@@ -1,6 +1,7 @@
 import { buildApiHeaders } from "@/lib/api";
 import { opsBase, apiBase } from "@/lib/api/config";
-import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+import { apiFetch } from "./_shared";
+import type { CursorPaginatedResponse } from "@/lib/types/api.types";
 
 
 export function getOperationsApiBase(): string {
@@ -36,16 +37,6 @@ export type ParkingSpaceDto = {
   occupied: boolean;
 };
 
-export type PaginatedResponse<T> = {
-  data: T[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-};
-
 export type GetActiveSessionsQuery = {
   page?: number;
   limit?: number;
@@ -55,7 +46,7 @@ export type GetActiveSessionsQuery = {
   vehicleType?: string;
 };
 
-export async function fetchActiveSessions(params?: GetActiveSessionsQuery): Promise<PaginatedResponse<ActiveSessionDto> | ActiveSessionDto[]> {
+export async function fetchActiveSessions(params?: GetActiveSessionsQuery): Promise<CursorPaginatedResponse<ActiveSessionDto> | ActiveSessionDto[]> {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.set("page", params.page.toString());
   if (params?.limit) queryParams.set("limit", params.limit.toString());
@@ -66,34 +57,23 @@ export async function fetchActiveSessions(params?: GetActiveSessionsQuery): Prom
 
   const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
 
-  const res = await fetchWithCredentials(`${getOperationsApiBase().replace(/\/$/, "")}/sessions/active-list${queryString}`, {
-    headers: await buildApiHeaders()
-  });
-  if (!res.ok) {
-    const payload = await res.json().catch(() => ({}));
-    throw new Error(payload?.userMessage ?? payload?.error ?? "No se pudo cargar el listado de vehículos activos");
-  }
-  return res.json();
+  const payload = await apiFetch<CursorPaginatedResponse<ActiveSessionDto> | ActiveSessionDto[]>(
+    `${getOperationsApiBase().replace(/\/$/, "")}/sessions/active-list${queryString}`,
+    {
+      headers: await buildApiHeaders()
+    }
+  );
+  return payload;
 }
 
 export async function fetchParkingSummary(): Promise<ParkingSummaryDto> {
-  const res = await fetchWithCredentials(`${getCoreApiBase().replace(/\/$/, "")}/parking-spaces/summary`, {
+  return apiFetch<ParkingSummaryDto>(`${getCoreApiBase().replace(/\/$/, "")}/parking-spaces/summary`, {
     headers: await buildApiHeaders()
   });
-  if (!res.ok) {
-    const payload = await res.json().catch(() => ({}));
-    throw new Error(payload?.userMessage ?? payload?.error ?? "No se pudo cargar el resumen de celdas");
-  }
-  return res.json();
 }
 
 export async function fetchParkingSpaces(): Promise<ParkingSpaceDto[]> {
-  const res = await fetchWithCredentials(`${getCoreApiBase().replace(/\/$/, "")}/parking-spaces`, {
+  return apiFetch<ParkingSpaceDto[]>(`${getCoreApiBase().replace(/\/$/, "")}/parking-spaces`, {
     headers: await buildApiHeaders()
   });
-  if (!res.ok) {
-    const payload = await res.json().catch(() => ({}));
-    throw new Error(payload?.userMessage ?? payload?.error ?? "No se pudieron cargar las celdas de parqueo");
-  }
-  return res.json();
 }

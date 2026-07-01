@@ -14,6 +14,7 @@ import { Shield } from "lucide-react";
 import { Modal } from "@/components/bridge/Modal";
 import { Button } from "@/components/bridge/Button";
 import { useAuthStore } from "@/lib/stores/auth.store";
+import { safeStorage } from "@/lib/utils/storage";
 
 export function UserMenu() {
   const router = useRouter();
@@ -30,12 +31,7 @@ export function UserMenu() {
       storeLogout();
       broadcastAuthEvent({ type: "auth:logout" });
       setShowConfirmLogout(false);
-      if (typeof window !== "undefined") {
-        const setItem = window.localStorage?.setItem;
-        if (typeof setItem === "function") {
-          setItem.call(window.localStorage, "parkflow_just_logged_out", "true");
-        }
-      }
+      safeStorage.setItem("parkflow_just_logged_out", "true");
       router.push("/login");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
@@ -50,12 +46,7 @@ export function UserMenu() {
       storeLogout();
       broadcastAuthEvent({ type: "auth:logout" });
       setShowConfirmLogout(false);
-      if (typeof window !== "undefined") {
-        const setItem = window.localStorage?.setItem;
-        if (typeof setItem === "function") {
-          setItem.call(window.localStorage, "parkflow_just_logged_out", "true");
-        }
-      }
+      safeStorage.setItem("parkflow_just_logged_out", "true");
       router.push("/login");
     } catch (error) {
       console.error("Error al cerrar todas las sesiones:", error);

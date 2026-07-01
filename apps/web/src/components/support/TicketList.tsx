@@ -2,16 +2,13 @@
 import React from "react";
 import { Card, Avatar, Chip, Spinner } from "@heroui/react";
 import useSWR from "swr";
-import axios from "axios";
+import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
 
-// Tenant ID is mocked for demo purposes. In a real app, this comes from an auth context.
-const CURRENT_TENANT_ID = "00000000-0000-0000-0000-000000000000";
-
-const fetcher = (url: string) => axios.get(url).then(res => res.data);
+const fetcher = (url: string) => fetchWithCredentials(url).then(res => res.json());
 
 export function TicketList() {
   const { data: tickets, error, isLoading } = useSWR(
-    `/api/v1/support/tickets?tenantId=${CURRENT_TENANT_ID}`, 
+    `/api/v1/support/tickets`, 
     fetcher,
     { fallbackData: [] }
   );

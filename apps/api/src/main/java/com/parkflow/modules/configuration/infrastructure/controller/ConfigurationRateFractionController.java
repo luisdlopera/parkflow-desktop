@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,36 +20,37 @@ public class ConfigurationRateFractionController {
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
-  public ResponseEntity<List<RateFractionResponse>> listByRate(@RequestParam UUID rateId) {
-    return ResponseEntity.ok(rateFractionUseCase.listByRate(rateId));
+  public List<RateFractionResponse> listByRate(@RequestParam UUID rateId) {
+    return rateFractionUseCase.listByRate(rateId);
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
-  public ResponseEntity<RateFractionResponse> get(@PathVariable UUID id) {
-    return ResponseEntity.ok(rateFractionUseCase.get(id));
+  public RateFractionResponse get(@PathVariable UUID id) {
+    return rateFractionUseCase.get(id);
   }
 
   @PostMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<RateFractionResponse> create(
+  @org.springframework.web.bind.annotation.ResponseStatus(HttpStatus.CREATED)
+  public RateFractionResponse create(
       @RequestParam UUID rateId,
       @Valid @RequestBody RateFractionRequest req) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(rateFractionUseCase.create(rateId, req));
+    return rateFractionUseCase.create(rateId, req);
   }
 
   @PutMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<RateFractionResponse> update(
+  public RateFractionResponse update(
       @PathVariable UUID id,
       @Valid @RequestBody RateFractionRequest req) {
-    return ResponseEntity.ok(rateFractionUseCase.update(id, req));
+    return rateFractionUseCase.update(id, req);
   }
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-  public ResponseEntity<Void> delete(@PathVariable UUID id) {
+  @org.springframework.web.bind.annotation.ResponseStatus(HttpStatus.NO_CONTENT)
+  public void delete(@PathVariable UUID id) {
     rateFractionUseCase.delete(id);
-    return ResponseEntity.noContent().build();
   }
 }

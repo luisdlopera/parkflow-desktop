@@ -1,7 +1,6 @@
 import { buildApiHeaders } from "@/lib/api";
 import { opsBase } from "@/lib/api/config";
-import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
-
+import { apiFetch } from "./_shared";
 
 export type ChargeMode = "NORMAL" | "FREE" | "CUSTOM";
 
@@ -51,31 +50,28 @@ export type MassExitResponseDto = {
   items: MassExitItemResultDto[];
 };
 
-async function parseError(res: Response): Promise<string> {
-  const payload = await res.json().catch(() => ({}));
-  return payload?.userMessage ?? payload?.error ?? `Error ${res.status}`;
-}
-
 export async function previewMassExit(
   request: MassExitFilterRequestDto,
 ): Promise<MassExitPreviewResponseDto> {
-  const res = await fetchWithCredentials(`${opsBase()}/mass-exit/calculate`, {
+  return apiFetch<MassExitPreviewResponseDto>(`${opsBase()}/mass-exit/calculate`, {
     method: "POST",
-    headers: await buildApiHeaders(),
+    headers: {
+      ...(await buildApiHeaders()),
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(request),
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return res.json();
 }
 
 export async function processMassExit(
   request: MassExitFilterRequestDto,
 ): Promise<MassExitResponseDto> {
-  const res = await fetchWithCredentials(`${opsBase()}/mass-exit`, {
+  return apiFetch<MassExitResponseDto>(`${opsBase()}/mass-exit`, {
     method: "POST",
-    headers: await buildApiHeaders(),
+    headers: {
+      ...(await buildApiHeaders()),
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(request),
   });
-  if (!res.ok) throw new Error(await parseError(res));
-  return res.json();
 }

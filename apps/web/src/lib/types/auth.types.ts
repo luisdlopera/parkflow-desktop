@@ -3,20 +3,11 @@
  * Centralized to avoid duplication across auth features.
  */
 
-export type UserRole = "SUPER_ADMIN" | "ADMIN" | "SUPPORT" | "CAJERO" | "OPERADOR" | "AUDITOR";
+import type { AuthRole, AuthUser } from "@parkflow/types";
 
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  companyId: string;
-  active: boolean;
-  createdAt: string;
-  updatedAt: string;
-  onboardingCompleted?: boolean;
-  requirePasswordChange?: boolean;
-};
+export type UserRole = AuthRole | "SUPPORT";
+
+export type User = AuthUser;
 
 export type Session = {
   token: string;

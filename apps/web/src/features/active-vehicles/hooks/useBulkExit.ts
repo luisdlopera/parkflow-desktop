@@ -6,7 +6,7 @@ import type { ActiveSessionDto } from "@/lib/api/sessions-api";
 import type { Selection } from "@heroui/react";
 import useSWR from "swr";
 import { fetchConfigurationPaymentMethods } from "@/lib/api/payment-methods-api";
-import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
+import { useRuntimeConfig } from "@/features/configuration/hooks/useRuntimeConfig";
 import { useMemo } from "react";
 
 export function useBulkExit(rows: ActiveSessionDto[], reload: () => void) {

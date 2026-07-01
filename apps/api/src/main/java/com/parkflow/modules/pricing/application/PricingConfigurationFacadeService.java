@@ -1,7 +1,7 @@
 package com.parkflow.modules.pricing.application;
 
 import com.parkflow.modules.common.dto.RateStatusRequest;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.configuration.domain.ParkingSite;
 import com.parkflow.modules.configuration.infrastructure.persistence.ParkingSiteRepository;
@@ -30,9 +30,9 @@ public class PricingConfigurationFacadeService {
   private final com.parkflow.modules.settings.application.service.RateValidationService rateValidationService;
 
   @Transactional(readOnly = true)
-  public SettingsPageResponse<PricingEngineV1Response> list(String site, String q, Boolean active, Pageable pageable) {
+  public PageResponse<PricingEngineV1Response> list(String site, String q, Boolean active, Pageable pageable) {
     var page = rateRepository.search(site, q, active, RateCategory.STANDARD, pageable);
-    return SettingsPageResponse.of(page.map(legacyPricingAdapter::toResponse));
+    return PageResponse.of(page.map(legacyPricingAdapter::toResponse));
   }
 
   @Transactional(readOnly = true)

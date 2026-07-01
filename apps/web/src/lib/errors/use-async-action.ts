@@ -11,6 +11,8 @@ interface UseAsyncActionOptions<T> {
   errorContext?: string;
   /** Callback adicional tras éxito. */
   onSuccess?: (result: T) => void;
+  /** Callback para manejar errores de forma específica antes de normalizarlos. */
+  onError?: (error: unknown) => void;
   /** Si false, no muestra toast de error (útil para mostrar el error inline). Default: true. */
   showErrorToast?: boolean;
 }
@@ -37,6 +39,7 @@ export function useAsyncAction<T = void>(
     successMsg,
     errorContext,
     onSuccess,
+    onError,
     showErrorToast = true,
   } = opts;
 
@@ -53,6 +56,7 @@ export function useAsyncAction<T = void>(
         onSuccess?.(result);
         return result;
       } catch (e) {
+        onError?.(e);
         const msg = errorService.normalize(e).message;
         setError(msg);
         if (showErrorToast) errorService.toast.error(e);
@@ -61,7 +65,7 @@ export function useAsyncAction<T = void>(
         setIsLoading(false);
       }
     },
-    [successMsg, onSuccess, showErrorToast]
+    [successMsg, onSuccess, onError, showErrorToast]
   );
 
   const clearError = useCallback(() => setError(null), []);

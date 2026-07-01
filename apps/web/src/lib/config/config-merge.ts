@@ -1,3 +1,5 @@
+import { safeStorage } from "@/lib/utils/storage";
+
 const BACKUP_KEY = "parkflow-onboarding-backup";
 
 export const ONBOARDING_PROTECTED_KEYS = [
@@ -9,28 +11,28 @@ export const ONBOARDING_PROTECTED_KEYS = [
 
 export function backupOnboardingConfig(): void {
   if (typeof window === "undefined") return;
-  const store = localStorage.getItem("parkflow-onboarding-store");
-  if (store) localStorage.setItem(BACKUP_KEY, store);
+  const store = safeStorage.getItem("parkflow-onboarding-store");
+  if (store) safeStorage.setItem(BACKUP_KEY, store);
 }
 
 export function restoreOnboardingConfig(): void {
   if (typeof window === "undefined") return;
-  const backup = localStorage.getItem(BACKUP_KEY);
+  const backup = safeStorage.getItem(BACKUP_KEY);
   if (!backup) return;
-  const current = localStorage.getItem("parkflow-onboarding-store");
+  const current = safeStorage.getItem("parkflow-onboarding-store");
   if (current) {
     try {
       const currentData = JSON.parse(current);
       const backupData = JSON.parse(backup);
       const merged = deepMergeProtected(currentData, backupData, ONBOARDING_PROTECTED_KEYS);
-      localStorage.setItem("parkflow-onboarding-store", JSON.stringify(merged));
+      safeStorage.setItem("parkflow-onboarding-store", JSON.stringify(merged));
     } catch {
-      localStorage.setItem("parkflow-onboarding-store", backup);
+      safeStorage.setItem("parkflow-onboarding-store", backup);
     }
   } else {
-    localStorage.setItem("parkflow-onboarding-store", backup);
+    safeStorage.setItem("parkflow-onboarding-store", backup);
   }
-  localStorage.removeItem(BACKUP_KEY);
+  safeStorage.removeItem(BACKUP_KEY);
 }
 
 function deepMergeProtected(

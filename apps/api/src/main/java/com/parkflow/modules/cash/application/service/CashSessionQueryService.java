@@ -11,10 +11,10 @@ import com.parkflow.modules.cash.infrastructure.persistence.CashRegisterReposito
 import com.parkflow.modules.cash.infrastructure.persistence.CashSessionRepository;
 import com.parkflow.modules.auth.security.TenantContext;
 import com.parkflow.modules.common.exception.OperationException;
+import com.parkflow.modules.common.dto.PageResponse;
 import com.parkflow.modules.cash.support.CashHttpContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -78,12 +78,12 @@ public class CashSessionQueryService implements CashSessionQueryUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CashSessionResponse> listSessions(Pageable pageable) {
+    public PageResponse<CashSessionResponse> listSessions(Pageable pageable) {
         UUID tenantId = TenantContext.getTenantId();
         if (tenantId == null) {
             throw new OperationException(HttpStatus.UNAUTHORIZED, "Contexto de compañía requerido");
         }
-        return cashSessionRepository.findByCompanyIdOrderByOpenedAtDesc(tenantId, pageable).map(this::toSessionResponse);
+        return PageResponse.of(cashSessionRepository.findByCompanyIdOrderByOpenedAtDesc(tenantId, pageable).map(this::toSessionResponse));
     }
 
     private CashSession requireSession(UUID id) {

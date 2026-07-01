@@ -6,7 +6,7 @@ import com.parkflow.modules.auth.domain.UserRole;
 import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.domain.repository.AppUserPort;
 import com.parkflow.modules.common.dto.UserAdminResponse;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface UserQueryUseCase {
-  SettingsPageResponse<UserAdminResponse> list(String q, Boolean active, UserRole role, Pageable pageable);
+  PageResponse<UserAdminResponse> list(String q, Boolean active, UserRole role, Pageable pageable);
   UserAdminResponse get(UUID id);
 }

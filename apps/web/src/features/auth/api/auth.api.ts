@@ -3,8 +3,9 @@ import type { LoginRequest } from "@parkflow/types";
 import type { StoredSession } from "../types";
 import { clearRememberMeEmail } from "@/lib/services/remember-me.service";
 import { clearSession, saveSession } from "@/lib/services/auth-storage.service";
-import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+import { safeFetch } from "@/lib/api/fetch";
 import { createAuthProvider } from "@/auth/runtime/createAuthProvider";
+import { safeStorage } from "@/lib/utils/storage";
 
 export async function login(request: LoginRequest): Promise<StoredSession> {
   const session = await (await createAuthProvider()).login({
@@ -23,21 +24,15 @@ export async function logoutFromApi(session: StoredSession): Promise<void> {
 }
 
 export async function logoutAllSessions(): Promise<void> {
-  if (typeof window !== "undefined") {
-    const setItem = window.localStorage?.setItem;
-    if (typeof setItem === "function") {
-      setItem.call(window.localStorage, "parkflow_just_logged_out", "true");
-    }
-  }
+  safeStorage.setItem("parkflow_just_logged_out", "true");
   await (await createAuthProvider()).logoutAll();
   await clearSession();
   clearRememberMeEmail();
 }
 
 export async function logoutDevice(deviceId: string): Promise<void> {
-  await fetchWithCredentials(`${authBase()}/logout/device/${encodeURIComponent(deviceId)}`, {
+  await safeFetch(`${authBase()}/logout/device/${encodeURIComponent(deviceId)}`, {
     method: "POST",
-    credentials: "include",
     headers: { "Content-Type": "application/json" }
   });
   clearRememberMeEmail();

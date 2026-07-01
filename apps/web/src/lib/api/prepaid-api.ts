@@ -1,4 +1,5 @@
-import { apiFetch, cfgBase, buildApiHeaders, hdr, type SettingsPage } from "./_shared";
+import { apiFetch, cfgBase, buildApiHeaders, hdr } from "./_shared";
+import type { PaginatedResponse } from "@/lib/types/api.types";
 
 export type PrepaidPackageRow = {
   id: string;
@@ -34,7 +35,7 @@ export async function fetchPrepaidPackages(params: {
   active?: boolean | null;
   page?: number;
   size?: number;
-}): Promise<SettingsPage<PrepaidPackageRow>> {
+}): Promise<PaginatedResponse<PrepaidPackageRow>> {
   const u = new URL(`${cfgBase()}/prepaid/packages`);
   if (params.site) u.searchParams.set("site", params.site);
   if (params.q) u.searchParams.set("q", params.q);
@@ -42,7 +43,7 @@ export async function fetchPrepaidPackages(params: {
     u.searchParams.set("active", String(params.active));
   u.searchParams.set("page", String(params.page ?? 0));
   u.searchParams.set("size", String(params.size ?? 20));
-  return apiFetch<SettingsPage<PrepaidPackageRow>>(u.toString(), {
+  return apiFetch<PaginatedResponse<PrepaidPackageRow>>(u.toString(), {
     cache: "no-store",
     headers: await buildApiHeaders(),
   });

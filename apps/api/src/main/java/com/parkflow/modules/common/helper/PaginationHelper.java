@@ -9,12 +9,13 @@ public final class PaginationHelper {
 
     public static PaginationMeta buildPaginationMeta(Page<?> page) {
         if (page == null) return null;
-        return new PaginationMeta(
+        return PaginationMeta.offset(
             page.getNumber(),
             page.getSize(),
             page.getTotalElements(),
             page.getTotalPages(),
-            page.hasNext()
+            page.hasNext(),
+            page.hasPrevious()
         );
     }
 }

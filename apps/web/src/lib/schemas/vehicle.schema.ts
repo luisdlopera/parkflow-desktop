@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { inferVehicleType, translateVehicleType, validatePlate } from "@/lib/validation/plate-validator";
 
+const whatsappPhonePattern = /^\+?[0-9\s()-]{7,20}$/;
+
 export const vehicleEntrySchema = z.object({
   plate: z.string().max(17, "Placa no puede superar los 17 caracteres").optional().default(""),
   type: z.string().min(1, "Tipo de vehículo obligatorio"),
@@ -14,6 +16,7 @@ export const vehicleEntrySchema = z.object({
   lane: z.string().optional().default(""),
   booth: z.string().optional().default(""),
   terminal: z.string().optional().default(""),
+  customerPhoneNumber: z.string().max(20, "El número de WhatsApp no puede superar los 20 caracteres").optional().default(""),
   parkingSpaceId: z.string().uuid("ID de celda inválido").optional(),
   observations: z.string().optional().default(""),
   vehicleCondition: z.string().min(3, "Describe el estado del vehiculo"),
@@ -77,6 +80,15 @@ export const vehicleEntrySchema = z.object({
     });
   }
 }).superRefine((data, ctx) => {
+  const phone = data.customerPhoneNumber?.trim() ?? "";
+  if (phone && !whatsappPhonePattern.test(phone)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Ingresa un número de WhatsApp válido.",
+      path: ["customerPhoneNumber"],
+    });
+  }
+
   if (data.type === "MOTORCYCLE" && data.custodiedItems && data.custodiedItems.length > 0) {
     const seen = new Map<string, number>();
     data.custodiedItems.forEach((item, index) => {

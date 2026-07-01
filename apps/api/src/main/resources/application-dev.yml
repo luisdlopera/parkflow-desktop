@@ -21,6 +21,11 @@ spring:
   flyway:
     enabled: false
 
+# Debug — expose developer messages in API responses (MUST be false in production)
+app:
+  debug:
+    expose-developer-messages: true
+
 # Logging
 logging:
   level:

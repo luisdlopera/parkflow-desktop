@@ -6,7 +6,7 @@ import { VehicleEntryFormValues } from "@/lib/schemas/vehicle.schema";
 import { Input } from "@/components/bridge/Input";
 import { Button } from "@/components/bridge/Button";
 import { Tooltip } from "@/components/bridge/Tooltip";
-import { useRuntimeConfig } from "@/lib/useRuntimeConfig";
+import { useRuntimeConfig } from "@/features/configuration/hooks/useRuntimeConfig";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, CheckCircle2, AlertCircle } from "lucide-react";
 import { MotorRacingHelmet } from "@/features/vehicle-entry/components/MotorRacingHelmet";

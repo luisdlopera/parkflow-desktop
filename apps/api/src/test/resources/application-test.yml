@@ -71,6 +71,10 @@ app:
     allow-manual-movements: true
     batch-audit-threshold: 100
     reconciliation-enabled: false
+  debug:
+    # Enable full developer messages in tests to allow assertion on error details.
+    # MUST remain false in production (application.yml default).
+    expose-developer-messages: true
 
 logging:
   level:
@@ -81,3 +85,4 @@ logging:
 parkflow:
   redis:
     enabled: false
+

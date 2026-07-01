@@ -5,6 +5,7 @@ import {
   fetchActiveSessions,
   postOperationalAction,
 } from "../dashboard-api";
+import { apiFetch } from "../_shared";
 
 vi.mock("@/lib/api", () => ({
   buildApiHeaders: () => Promise.resolve({ "Content-Type": "application/json" }),
@@ -15,26 +16,9 @@ vi.mock("@/lib/api/config", () => ({
   apiBase: () => "http://localhost:6011/api/v1",
 }));
 
-const mockFetch = vi.fn();
-vi.mock("@/lib/api/fetch-with-credentials", () => ({
-  fetchWithCredentials: (...args: unknown[]) => mockFetch(...args),
+vi.mock("../_shared", () => ({
+  apiFetch: vi.fn(),
 }));
-
-function okResponse(data: unknown): Response {
-  return {
-    ok: true,
-    json: () => Promise.resolve(data),
-    status: 200,
-  } as Response;
-}
-
-function errorResponse(): Response {
-  return {
-    ok: false,
-    json: () => Promise.resolve({ error: "fail" }),
-    status: 500,
-  } as Response;
-}
 
 const MOCK_SUMMARY = {
   activeVehicles: 45,
@@ -71,11 +55,11 @@ describe("dashboard-api", () => {
 
   describe("fetchDashboardSummary", () => {
     it("should fetch dashboard summary", async () => {
-      mockFetch.mockResolvedValue(okResponse(MOCK_SUMMARY));
+      vi.mocked(apiFetch).mockResolvedValue(MOCK_SUMMARY as never);
 
       const result = await fetchDashboardSummary();
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/operations/supervisor/summary"),
         expect.any(Object),
       );
@@ -83,35 +67,27 @@ describe("dashboard-api", () => {
     });
 
     it("should throw on error", async () => {
-      mockFetch.mockResolvedValue(errorResponse());
+      vi.mocked(apiFetch).mockRejectedValue(new Error("fail"));
 
-      await expect(fetchDashboardSummary()).rejects.toThrow("No se pudo cargar resumen de supervisor");
+      await expect(fetchDashboardSummary()).rejects.toThrow("fail");
     });
   });
 
   describe("fetchOperationalHealth", () => {
     it("should fetch operational health", async () => {
-      mockFetch.mockResolvedValue(okResponse(MOCK_HEALTH));
+      vi.mocked(apiFetch).mockResolvedValue(MOCK_HEALTH as never);
 
       const result = await fetchOperationalHealth();
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/api/v1/health/operational"),
         expect.any(Object),
       );
       expect(result?.overallStatus).toBe("OK");
     });
 
-    it("should return null when response is not ok", async () => {
-      mockFetch.mockResolvedValue(errorResponse());
-
-      const result = await fetchOperationalHealth();
-
-      expect(result).toBeNull();
-    });
-
     it("should return null on network error", async () => {
-      mockFetch.mockRejectedValue(new Error("Network"));
+      vi.mocked(apiFetch).mockRejectedValue(new Error("Network"));
 
       const result = await fetchOperationalHealth();
 
@@ -122,7 +98,7 @@ describe("dashboard-api", () => {
   describe("fetchActiveSessions", () => {
     it("should fetch and unwrap paginated sessions", async () => {
       const sessions = [{ ticketNumber: "T001", plate: "ABC123", vehicleType: "CAR", entryAt: "2025-06-01T10:00:00Z", status: "ACTIVE", totalAmount: null }];
-      mockFetch.mockResolvedValue(okResponse({ data: sessions }));
+      vi.mocked(apiFetch).mockResolvedValue({ data: sessions } as never);
 
       const result = await fetchActiveSessions();
 
@@ -131,7 +107,7 @@ describe("dashboard-api", () => {
 
     it("should return array directly when payload is array", async () => {
       const sessions = [{ ticketNumber: "T001", plate: "ABC123", vehicleType: "CAR", entryAt: "2025-06-01T10:00:00Z", status: "ACTIVE", totalAmount: null }];
-      mockFetch.mockResolvedValue(okResponse(sessions));
+      vi.mocked(apiFetch).mockResolvedValue(sessions as never);
 
       const result = await fetchActiveSessions();
 
@@ -139,19 +115,19 @@ describe("dashboard-api", () => {
     });
 
     it("should throw on error", async () => {
-      mockFetch.mockResolvedValue(errorResponse());
+      vi.mocked(apiFetch).mockRejectedValue(new Error("fail"));
 
-      await expect(fetchActiveSessions()).rejects.toThrow("No se pudo listar sesiones activas");
+      await expect(fetchActiveSessions()).rejects.toThrow("fail");
     });
   });
 
   describe("postOperationalAction", () => {
     it("should POST retry-sync action", async () => {
-      mockFetch.mockResolvedValue(okResponse({ message: "Sync iniciado" }));
+      vi.mocked(apiFetch).mockResolvedValue({ message: "Sync iniciado" } as never);
 
       const result = await postOperationalAction("retry-sync");
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/api/v1/health/operational/retry-sync"),
         expect.objectContaining({ method: "POST" }),
       );
@@ -159,11 +135,11 @@ describe("dashboard-api", () => {
     });
 
     it("should POST test-printer action", async () => {
-      mockFetch.mockResolvedValue(okResponse({ message: "Impresión de prueba enviada" }));
+      vi.mocked(apiFetch).mockResolvedValue({ message: "Impresión de prueba enviada" } as never);
 
       const result = await postOperationalAction("test-printer");
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(apiFetch).toHaveBeenCalledWith(
         expect.stringContaining("/api/v1/health/operational/test-printer"),
         expect.objectContaining({ method: "POST" }),
       );
@@ -171,7 +147,7 @@ describe("dashboard-api", () => {
     });
 
     it("should return default message when payload has no message", async () => {
-      mockFetch.mockResolvedValue(okResponse({}));
+      vi.mocked(apiFetch).mockResolvedValue({} as never);
 
       const result = await postOperationalAction("retry-sync");
 

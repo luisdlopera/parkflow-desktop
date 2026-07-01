@@ -2,8 +2,10 @@ package com.parkflow.modules.communication.infrastructure.controller;
 
 import com.parkflow.modules.communication.infrastructure.dto.BulkEmailSettingsDto;
 import com.parkflow.modules.communication.infrastructure.dto.CommunicationSettingsResponseDto;
+import com.parkflow.modules.communication.infrastructure.dto.CommunicationStatsResponse;
 import com.parkflow.modules.communication.infrastructure.dto.EmailSettingsDto;
 import com.parkflow.modules.communication.infrastructure.dto.SmsSettingsDto;
+import com.parkflow.modules.communication.infrastructure.dto.TestConnectionResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -52,26 +54,52 @@ public class CommunicationSettingsController {
 
     @PostMapping("/email/test-connection")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public void testEmailConnection(@PathVariable UUID companyId) {
+    public TestConnectionResponse testEmailConnection(@PathVariable UUID companyId) {
         connectionPort.testConnection(companyId, com.parkflow.modules.communication.domain.enums.ChannelType.EMAIL);
+        return TestConnectionResponse.builder()
+            .success(true)
+            .message("Conexión de email verificada correctamente")
+            .channelType("EMAIL")
+            .build();
     }
 
     @PostMapping("/sms/test-connection")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public void testSmsConnection(@PathVariable UUID companyId) {
+    public TestConnectionResponse testSmsConnection(@PathVariable UUID companyId) {
         connectionPort.testConnection(companyId, com.parkflow.modules.communication.domain.enums.ChannelType.SMS);
+        return TestConnectionResponse.builder()
+            .success(true)
+            .message("Conexión de SMS verificada correctamente")
+            .channelType("SMS")
+            .build();
     }
 
     @PostMapping("/bulk-email/test-connection")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public void testBulkEmailConnection(@PathVariable UUID companyId) {
+    public TestConnectionResponse testBulkEmailConnection(@PathVariable UUID companyId) {
         connectionPort.testConnection(companyId, com.parkflow.modules.communication.domain.enums.ChannelType.BULK_EMAIL);
+        return TestConnectionResponse.builder()
+            .success(true)
+            .message("Conexión de email masivo verificada correctamente")
+            .channelType("BULK_EMAIL")
+            .build();
     }
 
     @GetMapping("/stats")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public java.util.Map<String, Object> getStats(@PathVariable UUID companyId) {
-        return statsUseCase.getStats(companyId);
+    public CommunicationStatsResponse getStats(@PathVariable UUID companyId) {
+        var stats = statsUseCase.getStats(companyId);
+        return CommunicationStatsResponse.builder()
+            .emailsSent((Long) stats.getOrDefault("emailsSent", 0L))
+            .smsSent((Long) stats.getOrDefault("smsSent", 0L))
+            .bulkEmailsSent((Long) stats.getOrDefault("bulkEmailsSent", 0L))
+            .lastEmailSentAt((String) stats.getOrDefault("lastEmailSentAt", null))
+            .lastSmsSentAt((String) stats.getOrDefault("lastSmsSentAt", null))
+            .lastBulkEmailSentAt((String) stats.getOrDefault("lastBulkEmailSentAt", null))
+            .emailFailures((Long) stats.getOrDefault("emailFailures", 0L))
+            .smsFailures((Long) stats.getOrDefault("smsFailures", 0L))
+            .bulkEmailFailures((Long) stats.getOrDefault("bulkEmailFailures", 0L))
+            .build();
     }
 
     @GetMapping("/history")

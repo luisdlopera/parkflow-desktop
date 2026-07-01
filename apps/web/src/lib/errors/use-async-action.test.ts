@@ -1,11 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useAsyncAction } from "./use-async-action";
 import { FrontendActionError } from "./error-messages";
+import { toast } from "@heroui/react";
+import { errorService } from "@/lib/errors/error-service";
 
-vi.mock("@heroui/react", () => ({
-  toast: { success: vi.fn(), danger: vi.fn() },
+vi.mock("@/lib/errors/error-service", () => ({
+  errorService: {
+    normalize: vi.fn(),
+    toast: {
+      error: vi.fn(),
+    },
+  },
 }));
+
 vi.mock("./error-messages", () => ({
   getUserFriendlyErrorMessage: () => "Error simulado",
   FrontendActionError: {
@@ -18,6 +26,25 @@ vi.mock("./error-messages", () => ({
 describe("useAsyncAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(toast, "success").mockImplementation(() => "mock-id" as any);
+    vi.spyOn(toast, "danger").mockImplementation(() => "mock-id" as any);
+    vi.mocked(errorService.normalize).mockReturnValue({
+      message: "Error simulado",
+      title: "Error",
+      code: "UNKNOWN",
+      severity: "error",
+      retryable: true,
+      technical: {} as any,
+    });
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(errorService.toast.error).mockClear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("should return result on successful action", async () => {
@@ -37,13 +64,12 @@ describe("useAsyncAction", () => {
     const { result } = renderHook(() =>
       useAsyncAction({ successMsg: "Guardado" })
     );
-    const toast = await import("@heroui/react");
 
     await act(async () => {
       await result.current.run(() => Promise.resolve());
     });
 
-    expect(toast.toast.success).toHaveBeenCalledWith("Guardado");
+    expect(toast.success).toHaveBeenCalledWith("Guardado");
   });
 
   it("should call onSuccess callback", async () => {
@@ -63,7 +89,6 @@ describe("useAsyncAction", () => {
     const { result } = renderHook(() =>
       useAsyncAction({ errorContext: FrontendActionError.SAVE_DATA })
     );
-    const toast = await import("@heroui/react");
 
     await act(async () => {
       await result.current.run(() => Promise.reject(new Error("fail")));
@@ -71,21 +96,20 @@ describe("useAsyncAction", () => {
 
     expect(result.current.error).toBe("Error simulado");
     expect(result.current.isLoading).toBe(false);
-    expect(toast.toast.danger).toHaveBeenCalled();
+    expect(errorService.toast.error).toHaveBeenCalled();
   });
 
   it("should not show error toast when showErrorToast is false", async () => {
     const { result } = renderHook(() =>
       useAsyncAction({ showErrorToast: false })
     );
-    const toast = await import("@heroui/react");
 
     await act(async () => {
       await result.current.run(() => Promise.reject(new Error("silent")));
     });
 
     expect(result.current.error).toBe("Error simulado");
-    expect(toast.toast.danger).not.toHaveBeenCalled();
+    expect(errorService.toast.error).not.toHaveBeenCalled();
   });
 
   it("should manage loading state", async () => {

@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 
 public interface UserManagementUseCase {
-    SettingsPageResponse<UserAdminResponse> list(String q, Boolean active, UserRole role, Pageable pageable);
+    PageResponse<UserAdminResponse> list(String q, Boolean active, UserRole role, Pageable pageable);
     UserAdminResponse get(UUID id);
     UserAdminResponse create(UserCreateRequest req);
     UserAdminResponse patch(UUID id, UserPatchRequest req);

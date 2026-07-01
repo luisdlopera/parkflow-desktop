@@ -13,7 +13,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -50,9 +49,9 @@ public class AuthController {
   }
 
   @GetMapping("/setup-required")
-  public Map<String, Boolean> setupRequired() {
+  public SetupRequiredResponse setupRequired() {
     boolean required = appUserRepository.count() == 0;
-    return Map.of("setupRequired", required);
+    return new SetupRequiredResponse(required);
   }
 
   @PostMapping("/login")
@@ -94,7 +93,7 @@ public class AuthController {
 
   @PostMapping("/refresh-token")
   @ResponseStatus(HttpStatus.OK)
-  public Map<String, Object> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+  public RefreshTokenResponse refreshToken(HttpServletRequest request, HttpServletResponse response) {
     // Used for session keep-alive - silently extends session while user is active
     String refreshToken = authCookieFactory.extractRefreshToken(request);
     if (refreshToken == null) {
@@ -106,11 +105,7 @@ public class AuthController {
     LoginResult result = tokenRefreshUseCase.refreshFromCookie(refreshToken);
     authCookieFactory.setAuthCookies(response, result.accessToken(), result.refreshToken(), true);
     // Return minimal response for keep-alive
-    return Map.of(
-        "token", result.accessToken(),
-        "expiresIn", 3600,
-        "refreshAfter", 300
-    );
+    return new RefreshTokenResponse(result.accessToken(), 3600, 300);
   }
 
   @PostMapping("/logout")
@@ -136,8 +131,8 @@ public class AuthController {
 
   @PostMapping("/validate")
   @ResponseStatus(HttpStatus.OK)
-  public Map<String, Boolean> validateSession() {
-    return Map.of("valid", true);
+  public SessionValidationResponse validateSession() {
+    return new SessionValidationResponse(true);
   }
 
   @GetMapping("/me")

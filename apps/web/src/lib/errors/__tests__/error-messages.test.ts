@@ -8,12 +8,12 @@ describe("errorService.normalize", () => {
 
   it("returns HTTP-based message for 400 status", () => {
     const pfError = errorService.normalize({ status: 400 });
-    expect(pfError.message).toMatch(/Revisa la información/);
+    expect(pfError.message).toMatch(/no pudimos identificar/);
   });
 
   it("returns HTTP-based message for 401 status", () => {
     const pfError = errorService.normalize({ status: 401 });
-    expect(pfError.message).toMatch(/sesión ha expirado/);
+    expect(pfError.message).toMatch(/inicia sesión nuevamente/);
   });
 
   it("returns HTTP-based message for 403 status", () => {
@@ -28,12 +28,12 @@ describe("errorService.normalize", () => {
 
   it("returns HTTP-based message for 409 status", () => {
     const pfError = errorService.normalize({ status: 409 });
-    expect(pfError.message).toMatch(/Conflicto/);
+    expect(pfError.message).toMatch(/registro ya existe/);
   });
 
   it("returns HTTP-based message for 500 status", () => {
     const pfError = errorService.normalize({ status: 500 });
-    expect(pfError.message).toMatch(/error interno/);
+    expect(pfError.message).toMatch(/error inesperado/);
   });
 
   it("returns userMessage from object when provided", () => {
@@ -43,7 +43,7 @@ describe("errorService.normalize", () => {
 
   it("uses status-based message for unknown error codes", () => {
     const pfError = errorService.normalize({ status: 400 });
-    expect(pfError.message).toMatch(/Revisa la información/);
+    expect(pfError.message).toMatch(/no pudimos identificar/);
   });
 
   it("handles string errors", () => {
@@ -58,7 +58,8 @@ describe("errorService.normalize", () => {
 
   it("handles network errors", () => {
     const pfError = errorService.normalize(new TypeError("Failed to fetch"));
-    expect(pfError.message).toMatch(/Sin conexión/);
+    expect(pfError.title).toMatch(/Sin conexión/);
+    expect(pfError.message).toMatch(/conectar con el servidor/);
   });
 
   it("handles null gracefully", () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { login, logoutFromApi, logoutAllSessions, logoutDevice } from "../auth.api";
 import * as rememberMeService from "@/lib/services/remember-me.service";
-import * as fetchModule from "@/lib/api/fetch-with-credentials";
+import * as safeFetchModule from "@/lib/api/fetch";
 
 const mockProvider = {
   login: vi.fn(),
@@ -17,8 +17,8 @@ vi.mock("@/lib/services/remember-me.service", () => ({
   clearRememberMeEmail: vi.fn(),
 }));
 
-vi.mock("@/lib/api/fetch-with-credentials", () => ({
-  fetchWithCredentials: vi.fn(),
+vi.mock("@/lib/api/fetch", () => ({
+  safeFetch: vi.fn(),
 }));
 
 vi.mock("@/lib/api/config", () => ({
@@ -78,11 +78,11 @@ describe("Auth API compatibility shim", () => {
   });
 
   it("keeps device logout as backend API operation", async () => {
-    vi.mocked(fetchModule.fetchWithCredentials).mockResolvedValue({ ok: true } as any);
+    vi.mocked(safeFetchModule.safeFetch).mockResolvedValue({} as any);
 
     await logoutDevice("dev-1");
 
-    expect(fetchModule.fetchWithCredentials).toHaveBeenCalledWith(
+    expect(safeFetchModule.safeFetch).toHaveBeenCalledWith(
       "http://localhost/api/auth/logout/device/dev-1",
       expect.objectContaining({ method: "POST" }),
     );

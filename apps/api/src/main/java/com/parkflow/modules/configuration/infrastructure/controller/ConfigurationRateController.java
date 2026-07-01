@@ -3,7 +3,7 @@ package com.parkflow.modules.configuration.infrastructure.controller;
 import com.parkflow.modules.common.dto.RateResponse;
 import com.parkflow.modules.common.dto.RateStatusRequest;
 import com.parkflow.modules.common.dto.RateUpsertRequest;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import com.parkflow.modules.settings.application.port.in.ListRatesUseCase;
 import com.parkflow.modules.settings.application.port.in.GetRateUseCase;
 import com.parkflow.modules.settings.application.port.in.CreateRateUseCase;
@@ -31,7 +31,7 @@ public class ConfigurationRateController {
 
   @GetMapping
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERADOR','AUDITOR')")
-  public ResponseEntity<SettingsPageResponse<RateResponse>> list(
+  public ResponseEntity<PageResponse<RateResponse>> list(
       @RequestParam(required = false) String site,
       @RequestParam(required = false) String q,
       @RequestParam(required = false) Boolean active,

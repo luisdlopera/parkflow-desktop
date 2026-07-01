@@ -6,7 +6,7 @@ import com.parkflow.modules.configuration.dto.PaymentMethodResponse;
 import com.parkflow.modules.configuration.domain.PaymentMethod;
 import com.parkflow.modules.configuration.domain.repository.PaymentMethodPort;
 import com.parkflow.modules.common.exception.OperationException;
-import com.parkflow.modules.common.dto.SettingsPageResponse;
+import com.parkflow.modules.common.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -26,9 +26,9 @@ public class PaymentMethodManagementService implements PaymentMethodUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public SettingsPageResponse<PaymentMethodResponse> list(String q, Boolean active, UUID companyId, Pageable pageable) {
+  public PageResponse<PaymentMethodResponse> list(String q, Boolean active, UUID companyId, Pageable pageable) {
     Page<PaymentMethod> page = paymentMethodRepository.search(normalizeQuery(q), active, companyId, pageable);
-    return SettingsPageResponse.of(page.map(this::toResponse));
+    return PageResponse.of(page.map(this::toResponse));
   }
 
   @Override

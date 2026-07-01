@@ -99,6 +99,7 @@ export default function VehicleEntryFormV2({
       booth: "",
       terminal: "",
       observations: "",
+      customerPhoneNumber: "",
       vehicleCondition: "Sin novedades al ingreso",
       conditionChecklist: "",
       conditionPhotoUrls: "",
@@ -340,7 +341,7 @@ export default function VehicleEntryFormV2({
       />
 
       {/* Título dinámico */}
-      <div className="flex items-center justify-between gap-4">
+      <div data-testid="vehicle-entry-header" className="flex items-center justify-between gap-4">
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-brand-600/80 font-semibold">
             Nuevo ingreso

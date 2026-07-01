@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
+import { safeStorage } from "@/lib/utils/storage";
 
 const STORAGE_KEY = "parkflow-vehicles-filter-presets";
 
@@ -14,16 +15,16 @@ export function useFilterPresets() {
   const [presets, setPresets] = useState<FilterPreset[]>(() => {
     if (typeof window === "undefined") return [];
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = safeStorage.getItem(STORAGE_KEY);
       return saved ? JSON.parse(saved) : [];
     } catch {
-      localStorage.removeItem(STORAGE_KEY);
+      safeStorage.removeItem(STORAGE_KEY);
       return [];
     }
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
+    safeStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
   }, [presets]);
 
   const savePreset = useCallback((name: string, filters: Record<string, string>) => {

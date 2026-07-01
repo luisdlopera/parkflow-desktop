@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.parkflow.modules.common.dto.PageResponse;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -28,7 +29,7 @@ public class AuthAuditQueryService implements AuthAuditQueryUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public AuthAuditPageResponse findEvents(
+  public PageResponse<AuthAuditEventDto> findEvents(
       UUID userId,
       AuthAuditAction action,
       String outcome,
@@ -46,12 +47,12 @@ public class AuthAuditQueryService implements AuthAuditQueryUseCase {
         .map(this::toDto)
         .toList();
 
-    return new AuthAuditPageResponse(
+    return new PageResponse<>(
         content,
-        page.getNumber(),
-        page.getSize(),
         page.getTotalElements(),
-        page.getTotalPages()
+        page.getTotalPages(),
+        page.getNumber(),
+        page.getSize()
     );
   }
 

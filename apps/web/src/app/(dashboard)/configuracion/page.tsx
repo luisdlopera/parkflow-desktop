@@ -3,6 +3,7 @@ import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { currentUser } from "@/lib/services/auth-domain.service";
+import { safeStorage } from "@/lib/utils/storage";
 import { usePermissions } from "@/hooks/auth/usePermissions";
 import type { Permission } from "@parkflow/types";
 import ConfigSidebar from "@/features/configuration/components/ui/ConfigSidebar";
@@ -93,16 +94,16 @@ export default function ConfiguracionPage() {
   const [uiSettings, setUiSettings] = useState({ showSystemStatus: true, showKeyboardShortcuts: true });
 
   useEffect(() => {
-    const saved = localStorage.getItem("parkflow_ui_settings");
+    const saved = safeStorage.getItem("parkflow_ui_settings");
     if (saved) {
-      try { setUiSettings(JSON.parse(saved)); } catch { localStorage.removeItem("parkflow_ui_settings"); }
+      try { setUiSettings(JSON.parse(saved)); } catch { safeStorage.removeItem("parkflow_ui_settings"); }
     }
   }, []);
 
   const updateUiSetting = (key: keyof typeof uiSettings, value: boolean) => {
     const updated = { ...uiSettings, [key]: value };
     setUiSettings(updated);
-    localStorage.setItem("parkflow_ui_settings", JSON.stringify(updated));
+    safeStorage.setItem("parkflow_ui_settings", JSON.stringify(updated));
   };
 
   useEffect(() => { refreshPerms(["tarifas:leer", "tarifas:editar", "usuarios:leer", "usuarios:editar", "configuracion:leer", "configuracion:editar"]).catch(() => {}); }, [refreshPerms]);

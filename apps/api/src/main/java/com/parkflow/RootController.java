@@ -1,6 +1,7 @@
 package com.parkflow;
 
-import java.util.Map;
+import com.parkflow.dto.HealthResponse;
+import com.parkflow.dto.RootResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -8,22 +9,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class RootController {
 
   @GetMapping("/")
-  public Map<String, String> root() {
-    return Map.of(
-        "message",
-        "Parkflow API running",
-        "status",
-        "UP",
-        "apiVersion",
-        "v1",
-        "health",
-        "/actuator/health",
-        "metrics",
-        "/actuator/prometheus");
+  public RootResponse root() {
+    return RootResponse.builder()
+        .message("Parkflow API running")
+        .status("UP")
+        .apiVersion("v1")
+        .health("/actuator/health")
+        .metrics("/actuator/prometheus")
+        .build();
   }
 
   @GetMapping("/api/v1/health")
-  public Map<String, String> health() {
-    return Map.of("status", "UP");
+  public HealthResponse health() {
+    return new HealthResponse("UP");
   }
 }

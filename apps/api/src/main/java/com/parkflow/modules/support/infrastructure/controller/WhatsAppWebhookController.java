@@ -1,5 +1,6 @@
 package com.parkflow.modules.support.infrastructure.controller;
 
+import com.parkflow.config.RawResponse;
 import com.parkflow.modules.support.application.service.WhatsAppMessageProcessor;
 import com.parkflow.modules.support.domain.provider.MessagingProvider;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class WhatsAppWebhookController {
     private final MessagingProvider messagingProvider;
 
     @GetMapping
+    @RawResponse(reason = "Meta WhatsApp webhook verification requires a plain-text challenge string per the Graph API protocol")
     public ResponseEntity<String> verifyWebhook(
             @RequestParam("hub.mode") String mode,
             @RequestParam("hub.verify_token") String token,
@@ -30,6 +32,7 @@ public class WhatsAppWebhookController {
     }
 
     @PostMapping
+    @RawResponse(reason = "Meta WhatsApp webhook events require HTTP 200 without a body per the Graph API protocol")
     public ResponseEntity<Void> receiveMessage(
             @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
             @RequestBody String payload) {

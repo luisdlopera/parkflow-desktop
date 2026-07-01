@@ -2,6 +2,7 @@ package com.parkflow.modules.billing.infrastructure.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.parkflow.config.RawResponse;
 import com.parkflow.modules.billing.domain.enums.InvoiceProviderType;
 import com.parkflow.modules.billing.infrastructure.providers.alegra.AlegraWebhookHandler;
 import com.parkflow.modules.billing.infrastructure.security.WebhookSignatureValidator;
@@ -34,6 +35,7 @@ public class InvoiceWebhookController {
 
   @PostMapping("/{providerType}")
   @Operation(summary = "Receive webhook event from an invoice provider")
+  @RawResponse(reason = "External billing webhooks require raw JSON responses matching their specific protocols (e.g. Stripe, Alegra)")
   public ResponseEntity<Map<String, String>> receiveWebhook(
       @PathVariable InvoiceProviderType providerType,
       @RequestHeader(value = "X-Webhook-Signature", required = false) String signature,

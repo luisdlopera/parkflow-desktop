@@ -1,4 +1,5 @@
-import { apiFetch, cfgBase, buildApiHeaders, hdr, type SettingsPage } from "./_shared";
+import { apiFetch, cfgBase, buildApiHeaders, hdr } from "./_shared";
+import type { PaginatedResponse } from "@/lib/types/api.types";
 import { printerSchema } from "@/lib/schemas/config.schemas";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type { PrinterRow } from "@/lib/types/settings.types";
@@ -11,7 +12,7 @@ export async function fetchConfigurationPrinters(params: {
   active?: boolean | null;
   page?: number;
   size?: number;
-}): Promise<SettingsPage<PrinterRow>> {
+}): Promise<PaginatedResponse<PrinterRow>> {
   const u = new URL(`${cfgBase()}/printers`);
   if (params.siteId) u.searchParams.set("siteId", params.siteId);
   if (params.q) u.searchParams.set("q", params.q);
@@ -19,7 +20,7 @@ export async function fetchConfigurationPrinters(params: {
     u.searchParams.set("active", String(params.active));
   u.searchParams.set("page", String(params.page ?? 0));
   u.searchParams.set("size", String(params.size ?? 20));
-  return apiFetch<SettingsPage<PrinterRow>>(u.toString(), {
+  return apiFetch<PaginatedResponse<PrinterRow>>(u.toString(), {
     cache: "no-store",
     headers: await buildApiHeaders(),
   });

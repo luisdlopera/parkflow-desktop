@@ -1,4 +1,4 @@
-import { apiFetch, apiV1Base, buildApiHeaders, hdr, type SettingsPage } from "./_shared";
+import { apiFetch, apiV1Base, buildApiHeaders, hdr } from "./_shared";
 import {
   settingsPasswordResetSchema,
   settingsUserCreateSchema,
@@ -7,6 +7,8 @@ import {
 } from "@/lib/validation/contracts";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type { UserRole } from "@/lib/types/auth.types";
+import { apiEndpoints } from "./endpoints";
+import type { PaginatedResponse } from "@/lib/types/api.types";
 
 export type UserAdminRow = {
   id: string;
@@ -24,7 +26,7 @@ export type UserAdminRow = {
 };
 
 export async function fetchUserById(id: string): Promise<UserAdminRow> {
-  return apiFetch<UserAdminRow>(`${apiV1Base()}/settings/users/${id}`, {
+  return apiFetch<UserAdminRow>(`${apiV1Base()}${apiEndpoints.configuration.users}/${id}`, {
     cache: "no-store",
     headers: await buildApiHeaders(),
   });
@@ -35,14 +37,14 @@ export async function fetchUsers(params: {
   active?: boolean | null;
   page?: number;
   size?: number;
-}): Promise<SettingsPage<UserAdminRow>> {
-  const u = new URL(`${apiV1Base()}/settings/users`);
+}): Promise<PaginatedResponse<UserAdminRow>> {
+  const u = new URL(`${apiV1Base()}${apiEndpoints.configuration.users}`);
   if (params.q) u.searchParams.set("q", params.q);
   if (params.active !== undefined && params.active !== null)
     u.searchParams.set("active", String(params.active));
   u.searchParams.set("page", String(params.page ?? 0));
   u.searchParams.set("size", String(params.size ?? 20));
-  return apiFetch<SettingsPage<UserAdminRow>>(u.toString(), {
+  return apiFetch<PaginatedResponse<UserAdminRow>>(u.toString(), {
     cache: "no-store",
     headers: await buildApiHeaders(),
   });
@@ -53,7 +55,7 @@ export async function createUser(
   auditReason?: string,
 ): Promise<UserAdminRow> {
   const validatedBody = validatePayloadOrThrow(settingsUserCreateSchema, payload);
-  return apiFetch<UserAdminRow>(`${apiV1Base()}/settings/users`, {
+  return apiFetch<UserAdminRow>(`${apiV1Base()}${apiEndpoints.configuration.users}`, {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify(validatedBody),
@@ -66,7 +68,7 @@ export async function patchUser(
   auditReason?: string,
 ): Promise<UserAdminRow> {
   const validatedBody = validatePayloadOrThrow(settingsUserPatchSchema, payload);
-  return apiFetch<UserAdminRow>(`${apiV1Base()}/settings/users/${id}`, {
+  return apiFetch<UserAdminRow>(`${apiV1Base()}${apiEndpoints.configuration.users}/${id}`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify(validatedBody),
@@ -79,7 +81,7 @@ export async function patchUserStatus(
   auditReason?: string,
 ): Promise<UserAdminRow> {
   const validatedBody = validatePayloadOrThrow(settingsUserStatusSchema, { active });
-  return apiFetch<UserAdminRow>(`${apiV1Base()}/settings/users/${id}/status`, {
+  return apiFetch<UserAdminRow>(`${apiV1Base()}${apiEndpoints.configuration.users}/${id}/status`, {
     method: "PATCH",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify(validatedBody),
@@ -92,7 +94,7 @@ export async function resetUserPassword(
   auditReason?: string,
 ): Promise<void> {
   const validatedBody = validatePayloadOrThrow(settingsPasswordResetSchema, { newPassword });
-  return apiFetch<void>(`${apiV1Base()}/settings/users/${id}/reset-password`, {
+  return apiFetch<void>(`${apiV1Base()}${apiEndpoints.configuration.users}/${id}/reset-password`, {
     method: "POST",
     headers: await buildApiHeaders(hdr(auditReason)),
     body: JSON.stringify(validatedBody),

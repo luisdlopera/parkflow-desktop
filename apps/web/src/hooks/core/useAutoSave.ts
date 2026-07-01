@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
+import { safeStorage } from "@/lib/utils/storage";
 
 interface AutoSaveOptions<T> {
   key: string;
@@ -37,7 +38,7 @@ export function useAutoSave<T>({
         timestamp: now,
         url: window.location.href
       };
-      localStorage.setItem(keyRef.current, JSON.stringify(state));
+      safeStorage.setItem(keyRef.current, JSON.stringify(state));
       savedRef.current = true;
       setLastSavedAt(new Date(now));
     };
@@ -49,13 +50,13 @@ export function useAutoSave<T>({
   }, [data, interval, enabled]);
 
   const clearAutoSave = useCallback(() => {
-    localStorage.removeItem(keyRef.current);
+    safeStorage.removeItem(keyRef.current);
     savedRef.current = false;
   }, []);
 
   const restoreData = useCallback((): T | null => {
     try {
-      const saved = localStorage.getItem(keyRef.current);
+      const saved = safeStorage.getItem(keyRef.current);
       if (!saved) return null;
 
       const state: AutoSaveState<T> = JSON.parse(saved);
@@ -63,7 +64,7 @@ export function useAutoSave<T>({
 
       const hoursSinceSave = (Date.now() - state.timestamp) / (1000 * 60 * 60);
       if (hoursSinceSave > 24) {
-        localStorage.removeItem(keyRef.current);
+        safeStorage.removeItem(keyRef.current);
         return null;
       }
 
@@ -75,7 +76,7 @@ export function useAutoSave<T>({
 
   const hasRestorableData = useCallback((): boolean => {
     try {
-      const saved = localStorage.getItem(keyRef.current);
+      const saved = safeStorage.getItem(keyRef.current);
       if (!saved) return false;
 
       const state: AutoSaveState<T> = JSON.parse(saved);
@@ -101,7 +102,7 @@ export function useCrashRecovery() {
   const checkForRecovery = useCallback(<T,>(key: string): { recovered: boolean; data?: T; timestamp?: Date } => {
     try {
       const storageKey = `parkflow_autosave_${key}`;
-      const saved = localStorage.getItem(storageKey);
+      const saved = safeStorage.getItem(storageKey);
 
       if (!saved) {
         return { recovered: false };
@@ -111,7 +112,7 @@ export function useCrashRecovery() {
       const hoursSinceSave = (Date.now() - state.timestamp) / (1000 * 60 * 60);
 
       if (hoursSinceSave > 24) {
-        localStorage.removeItem(storageKey);
+        safeStorage.removeItem(storageKey);
         return { recovered: false };
       }
 
@@ -126,7 +127,7 @@ export function useCrashRecovery() {
   }, []);
 
   const clearRecovery = useCallback((key: string) => {
-    localStorage.removeItem(`parkflow_autosave_${key}`);
+    safeStorage.removeItem(`parkflow_autosave_${key}`);
   }, []);
 
   return { checkForRecovery, clearRecovery };

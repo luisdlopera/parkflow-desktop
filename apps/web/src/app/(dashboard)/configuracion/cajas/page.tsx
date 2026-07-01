@@ -76,11 +76,19 @@ export default function CajasPage() {
 
   const siteOptions = useMemo(() => sites.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}`, code: s.code })), [sites]);
   const printerOptions = useMemo(() => printers.map((p) => ({ value: p.id, label: `${p.name} (${p.isDefault ? "Default" : "Secundaria"})` })), [printers]);
+  const printerIdSet = useMemo(() => new Set(printers.map((p) => p.id)), [printers]);
   const userOptions = useMemo(() => users.map((u) => ({ value: u.id, label: u.name })), [users]);
   const currentSite = useWatch({ control, name: "site" });
   const watchSiteId = useWatch({ control, name: "siteId" });
   const watchPrinterId = useWatch({ control, name: "printerId" });
   const watchResponsibleUserId = useWatch({ control, name: "responsibleUserId" });
+
+  useEffect(() => {
+    if (!watchPrinterId) return;
+    if (!printerIdSet.has(watchPrinterId)) {
+      setValue("printerId", "");
+    }
+  }, [watchPrinterId, printerIdSet, setValue]);
 
   useEffect(() => {
     const loadCatalogs = async () => {
