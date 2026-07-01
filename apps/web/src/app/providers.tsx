@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { SWRConfig } from "swr";
 import { errorService } from "@/lib/errors/error-service";
+import { setupCrossTabSync } from "@/lib/services/auth-storage.service";
 
 import { DialogProvider } from "@/providers/DialogProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
@@ -21,8 +22,18 @@ export function Providers({ children }: ProvidersProps) {
   useEffect(() => {
     const onLogout = () => useAuthStore.getState().logout();
     window.addEventListener("parkflow-logout", onLogout);
-    return () => window.removeEventListener("parkflow-logout", onLogout);
-  }, []);
+
+    // Setup cross-tab session synchronization
+    const unsubscribeTabSync = setupCrossTabSync(() => {
+      useAuthStore.getState().logout("expired");
+      router.push("/auth/login");
+    });
+
+    return () => {
+      window.removeEventListener("parkflow-logout", onLogout);
+      unsubscribeTabSync();
+    };
+  }, [router]);
 
   return (
     <SWRConfig
