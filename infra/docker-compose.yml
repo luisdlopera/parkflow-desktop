@@ -24,7 +24,7 @@ services:
       - "${PARKFLOW_DB_PORT:-6021}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-parkflow}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-parkflow123}
       POSTGRES_DB: ${POSTGRES_DB:-parkflow_dev}
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -47,7 +47,7 @@ services:
         condition: service_healthy
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@parkflow.dev}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-parkflow123}
     ports:
       - "${PARKFLOW_PGADMIN_PORT:-5050}:80"
     volumes:
@@ -57,18 +57,18 @@ services:
       - "parkflow.port.host=${PARKFLOW_PGADMIN_PORT:-5050}"
       - "parkflow.port.container=80"
 
-  # Redis service (comentado hasta que sea necesario)
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: parkflow-redis
-  #   ports:
-  #     - "${PARKFLOW_REDIS_PORT:-6031}:6379"
-  #   volumes:
-  #     - redisdata:/data
-  #   labels:
-  #     - "parkflow.service=redis"
-  #     - "parkflow.port.host=${PARKFLOW_REDIS_PORT:-6031}"
-  #     - "parkflow.port.container=6379"
+  # Redis service
+  redis:
+    image: redis:7-alpine
+    container_name: parkflow-redis
+    ports:
+      - "${PARKFLOW_REDIS_PORT:-6031}:6379"
+    volumes:
+      - redisdata:/data
+    labels:
+      - "parkflow.service=redis"
+      - "parkflow.port.host=${PARKFLOW_REDIS_PORT:-6031}"
+      - "parkflow.port.container=6379"
 
 volumes:
   pgdata:
@@ -77,6 +77,6 @@ volumes:
   pgadmin-data:
     labels:
       - "parkflow.volume=pgadmin"
-  # redisdata:
-  #   labels:
-  #     - "parkflow.volume=redis"
+  redisdata:
+    labels:
+      - "parkflow.volume=redis"
