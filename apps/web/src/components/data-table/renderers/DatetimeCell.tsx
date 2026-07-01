@@ -11,15 +11,6 @@ const DatetimeCell: React.FC<CellRendererProps> = ({ value, column }) => {
     locale = "es-CO",
   } = (column.options as DatetimeOptions) ?? {};
 
-  if (value === null || value === undefined || value === "") {
-    return <span className="text-default-400 select-none">−</span>;
-  }
-
-  const date = new Date(String(value));
-  if (Number.isNaN(date.getTime())) {
-    return <span className="text-danger-500">Invalid Date</span>;
-  }
-
   const formatter = useMemo(() => {
     // Determinar el tipo real si el usuario lo omite
     const inferredType = (column.type === "date" || column.type === "time" || column.type === "datetime")
@@ -54,6 +45,16 @@ const DatetimeCell: React.FC<CellRendererProps> = ({ value, column }) => {
         });
     }
   }, [locale, formatStr, column.type]);
+
+  if (value === null || value === undefined || value === "") {
+    return <span className="text-default-400 select-none">−</span>;
+  }
+
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) {
+    return <span className="text-danger-500">Invalid Date</span>;
+  }
+
 
   return <span className="text-foreground whitespace-nowrap">{formatter.format(date)}</span>;
 };

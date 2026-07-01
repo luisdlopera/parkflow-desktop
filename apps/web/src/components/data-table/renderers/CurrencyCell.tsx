@@ -13,10 +13,6 @@ const CurrencyCell: React.FC<CellRendererProps> = ({ value, column }) => {
     showSymbol = true,
   } = (column.options as CurrencyOptions) ?? {};
 
-  if (value === null || value === undefined || value === "") {
-    return <span className="text-default-400 select-none">−</span>;
-  }
-
   const formatter = useMemo(() => {
     return new Intl.NumberFormat(locale, {
       style: "currency",
@@ -25,6 +21,11 @@ const CurrencyCell: React.FC<CellRendererProps> = ({ value, column }) => {
       maximumFractionDigits: 0,
     });
   }, [locale, currency]);
+
+  if (value === null || value === undefined || value === "") {
+    return <span className="text-default-400 select-none">−</span>;
+  }
+
 
   const num = Number(value);
   if (Number.isNaN(num)) {

@@ -17,7 +17,7 @@ export function useTableSort<T extends object>(
     return [...source].sort((a, b) => {
       const col = columns.find((c) => String(c.key) === sortDescriptor.column);
       const key = sortDescriptor.column as keyof T;
-      let cmp = 0;
+      let cmp: number;
       const aVal = a[key];
       const bVal = b[key];
 

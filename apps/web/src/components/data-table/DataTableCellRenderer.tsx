@@ -21,7 +21,7 @@ export const DataTableCellRenderer = <T extends object>({
   // Compatibilidad con columnas heredadas que usan `format`
   const effectiveType = column.type || (column.format ? mapFormatToType(column.format) : "text");
 
-  const Renderer = getCellRenderer(effectiveType);
+  const Renderer = React.useMemo(() => getCellRenderer(effectiveType), [effectiveType]);
 
   return <Renderer column={column as any} value={value} row={row as any} />;
 };

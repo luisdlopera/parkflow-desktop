@@ -26,6 +26,7 @@ const ProgressCell: React.FC<CellRendererProps> = ({ value }) => {
           aria-valuemin={0}
           aria-valuemax={100}
           role="progressbar"
+          aria-label="Progreso"
         />
       </div>
       <span className="text-xs text-default-500 w-8">{progress}%</span>

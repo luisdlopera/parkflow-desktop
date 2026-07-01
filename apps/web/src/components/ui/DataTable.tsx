@@ -207,7 +207,7 @@ function DataTableInner<T extends object>({
     const key = sortDescriptor.column as keyof T;
 
     return [...source].sort((a, b) => {
-      let cmp = 0;
+      let cmp: number;
 
       const aVal = a[key];
       const bVal = b[key];
@@ -511,7 +511,7 @@ function DataTableInner<T extends object>({
     );
   }, [
     searchConfig, searchable, searchPlaceholder, handleSearchChange, filters, onFilterChange,
-    exportOptions, hideColumnsToggle, columns, visibleColumns
+    exportOptions, hideColumnsToggle, columns, visibleColumns, contains, onSearchChange
   ]);
 
   const tableContent = (
