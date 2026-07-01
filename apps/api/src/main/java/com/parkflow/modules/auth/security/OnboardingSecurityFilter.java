@@ -1,7 +1,7 @@
 package com.parkflow.modules.auth.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.common.dto.ErrorResponse;
+import com.parkflow.modules.common.dto.ApiResponse;
 import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import jakarta.servlet.FilterChain;
@@ -82,15 +82,14 @@ public class OnboardingSecurityFilter extends OncePerRequestFilter {
         
         String correlationId = org.slf4j.MDC.get(com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
         
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.FORBIDDEN.value(),
-                "ONBOARDING_INCOMPLETE",
+        ApiResponse<Void> payload = ApiResponse.error(
                 "Debe completar el proceso de parametrización (onboarding) para acceder a esta función.",
-                "AccessDeniedException",
+                "ONBOARDING_INCOMPLETE",
                 path,
-                correlationId
+                correlationId,
+                java.util.Map.of("developerMessage", "Access denied because user onboarding is incomplete")
         );
         
-        objectMapper.writeValue(response.getWriter(), errorResponse);
+        objectMapper.writeValue(response.getWriter(), payload);
     }
 }

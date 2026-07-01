@@ -1,7 +1,7 @@
 package com.parkflow.modules.auth.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkflow.modules.common.dto.ErrorResponse;
+import com.parkflow.modules.common.dto.ApiResponse;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -32,6 +32,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   private final AuthSessionPort authSessionRepository;
   private final AppUserPort appUserRepository;
   private final ObjectMapper objectMapper;
+  private final RedisSessionCacheService redisSessionCacheService;
   
   // Short-lived cache to avoid DB hits on every request
   // TTL: 1 second (was 5 seconds, reduced for faster account state changes)
@@ -46,11 +47,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       JwtTokenService jwtTokenService,
       AuthSessionPort authSessionRepository,
       AppUserPort appUserRepository,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      RedisSessionCacheService redisSessionCacheService) {
     this.jwtTokenService = jwtTokenService;
     this.authSessionRepository = authSessionRepository;
     this.appUserRepository = appUserRepository;
     this.objectMapper = objectMapper;
+    this.redisSessionCacheService = redisSessionCacheService;
   }
 
   @Override
@@ -110,21 +113,37 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       return;
     }
 
-    var session = authSessionRepository.findByIdAndActiveTrue(sessionId).orElse(null);
-    if (session == null || !session.getUser().getId().equals(userId)) {
-      filterChain.doFilter(request, response);
-      return;
-    }
+    var cacheResult = redisSessionCacheService.checkSession(sessionId);
+    if (cacheResult != null) {
+      if (cacheResult.blacklisted()) {
+        filterChain.doFilter(request, response);
+        return;
+      }
+      if (!cacheResult.isValidAndNotBlocked() || !cacheResult.userId().equals(userId)) {
+        filterChain.doFilter(request, response);
+        return;
+      }
+    } else {
+      // Cache miss, fallback to DB
+      var session = authSessionRepository.findByIdAndActiveTrue(sessionId).orElse(null);
+      if (session == null || !session.getUser().getId().equals(userId)) {
+        filterChain.doFilter(request, response);
+        return;
+      }
 
-    AppUserCacheEntry userStatus = userStatusCache.get(userId, id -> {
-      var u = appUserRepository.findById(id).orElse(null);
-      if (u == null) return null;
-      return new AppUserCacheEntry(u.isActive(), u.isBlocked());
-    });
-    
-    if (userStatus == null || !userStatus.active() || userStatus.blocked()) {
-      filterChain.doFilter(request, response);
-      return;
+      AppUserCacheEntry userStatus = userStatusCache.get(userId, id -> {
+        var u = appUserRepository.findById(id).orElse(null);
+        if (u == null) return null;
+        return new AppUserCacheEntry(u.isActive(), u.isBlocked());
+      });
+      
+      if (userStatus == null || !userStatus.active() || userStatus.blocked()) {
+        filterChain.doFilter(request, response);
+        return;
+      }
+
+      // Populate Redis cache async or here
+      redisSessionCacheService.cacheSession(sessionId, userId, userStatus.active(), userStatus.blocked(), jwtTokenService.accessTtl());
     }
 
     String companyIdClaim = claims.get("cid", String.class);
@@ -182,13 +201,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     String correlationId = org.slf4j.MDC.get(com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-    ErrorResponse payload = new ErrorResponse(
-        HttpServletResponse.SC_UNAUTHORIZED,
-        "AUTH_UNAUTHORIZED",
-        "Tu sesion expiro. Inicia sesion nuevamente.",
-        "AuthenticationException",
-        path,
-        correlationId);
+    ApiResponse<Void> payload = ApiResponse.error("La sesion proporcionada es invalida o ha expirado.", "AUTH_SESSION_EXPIRED", path, correlationId, java.util.Map.of());
     objectMapper.writeValue(response.getWriter(), payload);
   }
 }

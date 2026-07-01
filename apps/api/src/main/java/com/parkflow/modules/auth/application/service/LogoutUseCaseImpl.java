@@ -10,6 +10,7 @@ import com.parkflow.modules.auth.domain.AuthSession;
 import com.parkflow.modules.auth.domain.AuthorizedDevice;
 import com.parkflow.modules.auth.domain.repository.AuthSessionPort;
 import com.parkflow.modules.auth.domain.repository.AuthorizedDevicePort;
+import com.parkflow.modules.auth.domain.repository.RefreshTokenFamilyPort;
 import com.parkflow.modules.auth.dto.LogoutRequest;
 import com.parkflow.modules.auth.security.SecurityUtils;
 import com.parkflow.modules.common.exception.OperationException;
@@ -35,6 +36,9 @@ public class LogoutUseCaseImpl implements LogoutUseCase {
   private final AppUserPort appUserRepository;
   private final AuthAuditService authAuditService;
   private final AuditPort globalAuditService;
+  private final com.parkflow.modules.auth.security.RedisSessionCacheService redisSessionCacheService;
+  private final com.parkflow.modules.auth.security.JwtTokenService jwtTokenService;
+  private final RefreshTokenFamilyPort refreshTokenFamilyPort;
 
   @Override
   @Transactional
@@ -49,6 +53,16 @@ public class LogoutUseCaseImpl implements LogoutUseCase {
     session.setActive(false);
     session.setRevokedAt(OffsetDateTime.now());
     authSessionRepository.save(session);
+
+    if (session.getTokenFamilyId() != null) {
+      refreshTokenFamilyPort.findById(session.getTokenFamilyId()).ifPresent(family -> {
+        family.setRevokedAt(OffsetDateTime.now());
+        family.setRevokeReason("USER_LOGOUT");
+        refreshTokenFamilyPort.save(family);
+      });
+    }
+
+    redisSessionCacheService.addToBlacklist(sessionId, jwtTokenService.accessTtl());
 
     authAuditService.log(
         AuthAuditAction.LOGOUT,
@@ -77,6 +91,7 @@ public class LogoutUseCaseImpl implements LogoutUseCase {
       session.setActive(false);
       session.setRevokedAt(now);
       authSessionRepository.save(session);
+      redisSessionCacheService.addToBlacklist(session.getId(), jwtTokenService.accessTtl());
       revoked++;
     }
     log.info("AUTH: Logout all sessions - userId={}, sessionsRevoked={}", currentUser.getId(), revoked);
@@ -105,6 +120,7 @@ public class LogoutUseCaseImpl implements LogoutUseCase {
       session.setActive(false);
       session.setRevokedAt(now);
       authSessionRepository.save(session);
+      redisSessionCacheService.addToBlacklist(session.getId(), jwtTokenService.accessTtl());
       revoked++;
     }
 
