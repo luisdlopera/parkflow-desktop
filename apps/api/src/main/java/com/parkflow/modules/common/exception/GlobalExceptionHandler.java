@@ -1,7 +1,7 @@
 package com.parkflow.modules.common.exception;
 
 import com.parkflow.modules.common.debug.AgentDebugNdjson;
-import com.parkflow.modules.common.dto.ErrorResponse;
+import com.parkflow.modules.common.dto.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
@@ -22,17 +22,12 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import jakarta.persistence.OptimisticLockException;
 import static com.parkflow.config.CorrelationIdFilter.CORRELATION_ID_MDC_KEY;
 
-/**
- * Global exception handler providing standardized error responses.
- * All exceptions are converted to a consistent ErrorResponse format
- * with correlation IDs for traceability.
- */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(com.parkflow.modules.common.exception.domain.DomainException.class)
-    public ResponseEntity<ErrorResponse> handleDomainException(
+    public ResponseEntity<ApiResponse<Void>> handleDomainException(
             com.parkflow.modules.common.exception.domain.DomainException ex, HttpServletRequest request) {
         
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
@@ -48,38 +43,53 @@ public class GlobalExceptionHandler {
             code = "OPERATION_ERROR";
         }
 
-        ErrorResponse error = new ErrorResponse(
-            status.value(),
-            code,
+        ApiResponse<Void> response = ApiResponse.error(
             ex.getMessage(),
-            ex.getClass().getSimpleName() + ": " + ex.getMessage(),
+            code,
             request.getRequestURI(),
-            correlationId
+            correlationId,
+            Map.of("developerMessage", ex.getClass().getSimpleName() + ": " + ex.getMessage())
         );
 
-        return ResponseEntity.status(status).body(error);
+        return ResponseEntity.status(status).body(response);
     }
 
     @ExceptionHandler(OperationException.class)
-    public ResponseEntity<ErrorResponse> handleOperationException(
+    public ResponseEntity<ApiResponse<Void>> handleOperationException(
             OperationException ex, HttpServletRequest request) {
         
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
         
-        ErrorResponse error = new ErrorResponse(
-            ex.getStatus().value(),
-            ex.getCode() != null ? ex.getCode() : "OPERATION_ERROR",
+        ApiResponse<Void> response = ApiResponse.error(
             ex.getMessage(),
-            ex.getClass().getSimpleName() + ": " + ex.getMessage(),
+            ex.getCode() != null ? ex.getCode() : "OPERATION_ERROR",
             request.getRequestURI(),
-            correlationId
+            correlationId,
+            Map.of("developerMessage", ex.getClass().getSimpleName() + ": " + ex.getMessage())
         );
 
-        return ResponseEntity.status(ex.getStatus()).body(error);
+        return ResponseEntity.status(ex.getStatus()).body(response);
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(
+            BusinessException ex, HttpServletRequest request) {
+        
+        String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
+        
+        ApiResponse<Void> response = ApiResponse.error(
+            ex.getMessage(),
+            ex.getCode() != null ? ex.getCode() : "OPERATION_ERROR",
+            request.getRequestURI(),
+            correlationId,
+            Map.of("developerMessage", ex.getClass().getSimpleName() + ": " + ex.getMessage())
+        );
+
+        return ResponseEntity.status(ex.getStatus()).body(response);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(
+    public ResponseEntity<ApiResponse<Void>> handleValidationException(
             MethodArgumentNotValidException ex, HttpServletRequest request) {
         
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
@@ -89,39 +99,36 @@ public class GlobalExceptionHandler {
             details.put(error.getField(), error.getDefaultMessage())
         );
 
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.BAD_REQUEST.value(),
-            "VALIDATION_ERROR",
+        ApiResponse<Void> response = ApiResponse.error(
             "Revisa los datos ingresados.",
-            ex.getMessage(),
+            "VALIDATION_ERROR",
             request.getRequestURI(),
             correlationId,
             details
         );
 
-        return ResponseEntity.badRequest().body(error);
+        return ResponseEntity.badRequest().body(response);
     }
 
     @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class})
-    public ResponseEntity<ErrorResponse> handleAccessDenied(
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(
             RuntimeException ex, HttpServletRequest request) {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
 
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.FORBIDDEN.value(),
-            ErrorCode.ACCESS_DENIED.getCode(),
+        ApiResponse<Void> response = ApiResponse.error(
             "No tienes permisos para realizar esta accion.",
-            ex.getClass().getSimpleName() + ": " + ex.getMessage(),
+            MessagesEnum.ACCESS_DENIED.getCode(),
             request.getRequestURI(),
-            correlationId
+            correlationId,
+            Map.of("developerMessage", ex.getClass().getSimpleName() + ": " + ex.getMessage())
         );
 
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleConstraintViolationException(
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolationException(
             ConstraintViolationException ex, HttpServletRequest request) {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
@@ -133,21 +140,19 @@ public class GlobalExceptionHandler {
             details.put(key, violation.getMessage());
         });
 
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.BAD_REQUEST.value(),
-            "VALIDATION_ERROR",
+        ApiResponse<Void> response = ApiResponse.error(
             "Revisa los datos ingresados.",
-            ex.getMessage(),
+            "VALIDATION_ERROR",
             request.getRequestURI(),
             correlationId,
             details
         );
 
-        return ResponseEntity.badRequest().body(error);
+        return ResponseEntity.badRequest().body(response);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
             DataIntegrityViolationException ex, HttpServletRequest request) {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
@@ -157,80 +162,76 @@ public class GlobalExceptionHandler {
 
         log.warn("Data integrity violation [correlationId={}]: {}", correlationId, message);
 
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.CONFLICT.value(),
-            "DATABASE_CONSTRAINT_ERROR",
+        ApiResponse<Void> response = ApiResponse.error(
             "La operacion no pudo completarse por un conflicto de datos. Verifique que el recurso no este duplicado.",
-            message,
+            "DATABASE_CONSTRAINT_ERROR",
             request.getRequestURI(),
-            correlationId
+            correlationId,
+            Map.of("developerMessage", message)
         );
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
     @ExceptionHandler({ObjectOptimisticLockingFailureException.class, OptimisticLockException.class})
-    public ResponseEntity<ErrorResponse> handleOptimisticLockingFailure(
+    public ResponseEntity<ApiResponse<Void>> handleOptimisticLockingFailure(
             Exception ex, HttpServletRequest request) {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
         
         log.warn("Optimistic locking failure [correlationId={}]: {}", correlationId, ex.getMessage());
 
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.CONFLICT.value(),
-            "CONCURRENT_MODIFICATION_ERROR",
+        ApiResponse<Void> response = ApiResponse.error(
             "La operacion no pudo completarse porque otro usuario modifico la informacion. Por favor recarga e intenta de nuevo.",
-            ex.getClass().getSimpleName() + ": " + ex.getMessage(),
+            "CONCURRENT_MODIFICATION_ERROR",
             request.getRequestURI(),
-            correlationId
+            correlationId,
+            Map.of("developerMessage", ex.getClass().getSimpleName() + ": " + ex.getMessage())
         );
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalState(
+    public ResponseEntity<ApiResponse<Void>> handleIllegalState(
             IllegalStateException ex, HttpServletRequest request) {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
 
         log.warn("Illegal state [correlationId={}]: {}", correlationId, ex.getMessage());
 
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.BAD_REQUEST.value(),
-            "INVALID_STATE",
+        ApiResponse<Void> response = ApiResponse.error(
             ex.getMessage(),
-            ex.getClass().getName() + ": " + ex.getMessage(),
+            "INVALID_STATE",
             request.getRequestURI(),
-            correlationId
+            correlationId,
+            Map.of("developerMessage", ex.getClass().getName() + ": " + ex.getMessage())
         );
 
-        return ResponseEntity.badRequest().body(error);
+        return ResponseEntity.badRequest().body(response);
     }
 
     @ExceptionHandler(InvalidDataAccessResourceUsageException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidDataAccess(
+    public ResponseEntity<ApiResponse<Void>> handleInvalidDataAccess(
             InvalidDataAccessResourceUsageException ex, HttpServletRequest request) {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
 
         log.error("Database query error [correlationId={}]: {}", correlationId, ex.getMessage());
 
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            "DATABASE_QUERY_ERROR",
+        ApiResponse<Void> response = ApiResponse.error(
             "Error interno de base de datos. Contacta al administrador.",
-            ex.getClass().getName() + ": " + ex.getMessage(),
+            "DATABASE_QUERY_ERROR",
             request.getRequestURI(),
-            correlationId
+            correlationId,
+            Map.of("developerMessage", ex.getClass().getName() + ": " + ex.getMessage())
         );
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(
+    public ResponseEntity<ApiResponse<Void>> handleGenericException(
             Exception ex, HttpServletRequest request) {
         
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
@@ -249,20 +250,19 @@ public class GlobalExceptionHandler {
                     ex.getClass().getSimpleName())));
         // #endregion
 
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            "INTERNAL_ERROR",
+        ApiResponse<Void> response = ApiResponse.error(
             "Ocurrio un error inesperado. Intenta nuevamente.",
-            ex.getClass().getName() + ": " + ex.getMessage(),
+            "INTERNAL_ERROR",
             request.getRequestURI(),
-            correlationId
+            correlationId,
+            Map.of("developerMessage", ex.getClass().getName() + ": " + ex.getMessage())
         );
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNoResourceFound(
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFound(
             NoResourceFoundException ex, HttpServletRequest request) {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
@@ -270,33 +270,31 @@ public class GlobalExceptionHandler {
 
         log.warn("No resource found [correlationId={}, path={}]", correlationId, path);
 
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.NOT_FOUND.value(),
-            "NOT_FOUND",
+        ApiResponse<Void> response = ApiResponse.error(
             "El recurso solicitado no existe o no esta disponible.",
-            ex.getClass().getName() + ": " + ex.getMessage(),
+            "NOT_FOUND",
             path,
-            correlationId
+            correlationId,
+            Map.of("developerMessage", ex.getClass().getName() + ": " + ex.getMessage())
         );
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgument(
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(
             IllegalArgumentException ex, HttpServletRequest request) {
         
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
         
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.BAD_REQUEST.value(),
-            "INVALID_ARGUMENT",
+        ApiResponse<Void> response = ApiResponse.error(
             "La solicitud no es valida.",
-            ex.getMessage(),
+            "INVALID_ARGUMENT",
             request.getRequestURI(),
-            correlationId
+            correlationId,
+            Map.of("developerMessage", ex.getMessage())
         );
 
-        return ResponseEntity.badRequest().body(error);
+        return ResponseEntity.badRequest().body(response);
     }
 }
