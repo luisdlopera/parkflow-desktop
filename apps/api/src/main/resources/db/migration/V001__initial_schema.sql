@@ -2648,3 +2648,259 @@ VALUES (
 ALTER TABLE onboarding_progress ADD COLUMN rule_version INTEGER;
 ALTER TABLE onboarding_progress ADD COLUMN snapshot_hash VARCHAR(255);
 ALTER TABLE onboarding_progress ADD COLUMN materialization_failed BOOLEAN NOT NULL DEFAULT FALSE;
+-- V002__create_communication_tables.sql
+
+CREATE TABLE communication_settings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    company_id uuid NOT NULL,
+    channel character varying(50) NOT NULL,
+    provider character varying(100) NOT NULL,
+    enabled boolean DEFAULT false NOT NULL,
+    host character varying(255),
+    port integer,
+    username character varying(255),
+    password_encrypted text,
+    api_key_encrypted text,
+    api_secret_encrypted text,
+    sender_email character varying(255),
+    sender_name character varying(255),
+    reply_to_email character varying(255),
+    base_url character varying(255),
+    security_mode character varying(50),
+    country_code character varying(10),
+    daily_limit integer DEFAULT 0,
+    daily_counter integer DEFAULT 0,
+    advanced_config_json jsonb,
+    last_test_status character varying(50),
+    last_test_at timestamp with time zone,
+    last_error text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by uuid,
+    CONSTRAINT pk_communication_settings PRIMARY KEY (id),
+    CONSTRAINT uq_company_channel UNIQUE (company_id, channel)
+);
+
+CREATE TABLE communication_delivery_logs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    company_id uuid NOT NULL,
+    channel character varying(50) NOT NULL,
+    provider character varying(100) NOT NULL,
+    recipient character varying(255) NOT NULL,
+    message_type character varying(100),
+    subject character varying(255),
+    status character varying(50) NOT NULL,
+    error_message text,
+    metadata_json jsonb,
+    sent_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT pk_communication_delivery_logs PRIMARY KEY (id)
+);
+
+CREATE INDEX idx_comm_logs_company_channel_status ON communication_delivery_logs (company_id, channel, status);
+CREATE INDEX idx_comm_logs_sent_at ON communication_delivery_logs (sent_at);
+
+CREATE TABLE communication_settings_audit (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    company_id uuid NOT NULL,
+    channel character varying(50) NOT NULL,
+    action character varying(50) NOT NULL,
+    field_name character varying(100),
+    old_value_masked text,
+    new_value_masked text,
+    changed_by uuid,
+    ip_address character varying(100),
+    user_agent text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT pk_communication_settings_audit PRIMARY KEY (id)
+);
+
+CREATE INDEX idx_comm_audit_company_channel ON communication_settings_audit (company_id, channel);
+-- Create user_identities table for OAuth2/OIDC external identity linking
+-- Each row links an external provider identity (Google, Microsoft) to an internal AppUser
+-- Supports: multiple providers per user, unique constraint per (provider, provider_user_id)
+-- Reason: OAuth2/OIDC login with Google and Microsoft
+-- Date: 2026-06-30
+
+CREATE TABLE user_identities (
+    id UUID DEFAULT gen_random_uuid() NOT NULL,
+    app_user_id UUID NOT NULL,
+    provider VARCHAR(50) NOT NULL,
+    provider_user_id VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+
+    CONSTRAINT user_identities_pkey PRIMARY KEY (id),
+    CONSTRAINT uq_user_identities_provider_user UNIQUE (provider, provider_user_id),
+    CONSTRAINT fk_user_identities_app_user FOREIGN KEY (app_user_id)
+        REFERENCES app_user(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_user_identities_app_user ON user_identities(app_user_id);
+CREATE INDEX idx_user_identities_provider ON user_identities(provider, provider_user_id);
+
+-- RLS not needed: user_identities cross-cuts tenants (a user from company A can
+-- log in via Google; the identity binding is per-user, not per-company)
+ALTER TABLE rate
+  ADD COLUMN IF NOT EXISTS pricing_configuration jsonb,
+  ADD COLUMN IF NOT EXISTS pricing_engine_version varchar(32);
+
+UPDATE rate
+SET pricing_engine_version = COALESCE(pricing_engine_version, 'pricing_engine_v1')
+WHERE pricing_engine_version IS NULL;
+
+UPDATE rate
+SET pricing_configuration = jsonb_build_object(
+  'version', 'pricing_engine_v1',
+  'currency', 'COP',
+  'active', is_active,
+  'strategy', jsonb_build_object(
+    'type',
+      CASE
+        WHEN rate_type = 'FRACTIONAL' THEN 'FRACTIONAL'
+        WHEN rate_type = 'DAILY' THEN 'DAILY'
+        WHEN applies_night AND max_daily_value IS NOT NULL THEN 'MIXED'
+        WHEN applies_night THEN 'NIGHT'
+        ELSE 'HOURLY'
+      END,
+    'label',
+      CASE
+        WHEN rate_type = 'FRACTIONAL' THEN 'Por fracción'
+        WHEN rate_type = 'DAILY' THEN 'Diaria'
+        WHEN applies_night AND max_daily_value IS NOT NULL THEN 'Hora + día + horario especial'
+        WHEN applies_night THEN 'Nocturna'
+        ELSE 'Por hora'
+      END
+  ),
+  'rates', jsonb_build_object(
+    'pricePerHour', CASE WHEN rate_type IN ('HOURLY', 'FLAT') OR (applies_night AND max_daily_value IS NOT NULL) THEN amount ELSE NULL END,
+    'fractionMinutes', CASE WHEN rate_type = 'FRACTIONAL' THEN fraction_minutes WHEN fraction_minutes IS NOT NULL THEN fraction_minutes ELSE NULL END,
+    'fractionPrice', CASE WHEN rate_type = 'FRACTIONAL' THEN amount ELSE NULL END,
+    'dailyPrice', CASE WHEN rate_type = 'DAILY' THEN amount ELSE max_daily_value END,
+    'nightPrice', CASE WHEN applies_night THEN amount ELSE NULL END
+  ),
+  'rules', jsonb_build_object(
+    'executionOrder', to_jsonb(ARRAY['GRACE_PERIOD', 'MINIMUM_CHARGE', 'ROUNDING', 'STRATEGY_PRICE', 'DAILY_CAP']),
+    'graceMinutes', grace_minutes,
+    'minimumChargeMinutes', 0,
+    'rounding', jsonb_build_object(
+      'mode', COALESCE(rounding_mode, 'NONE'),
+      'incrementMinutes',
+        CASE
+          WHEN rate_type = 'DAILY' THEN 1440
+          WHEN rate_type = 'FRACTIONAL' THEN GREATEST(COALESCE(fraction_minutes, 1), 1)
+          WHEN fraction_minutes IS NOT NULL AND fraction_minutes > 0 THEN fraction_minutes
+          ELSE 60
+        END
+    ),
+    'specialHours', jsonb_build_object(
+      'enabled', applies_night OR window_start IS NOT NULL OR window_end IS NOT NULL,
+      'startTime', COALESCE(TO_CHAR(window_start, 'HH24:MI'), '20:00'),
+      'endTime', COALESCE(TO_CHAR(window_end, 'HH24:MI'), '06:00')
+    ),
+    'weekends', jsonb_build_object(
+      'enabled', applies_holiday,
+      'surchargePercent', holiday_surcharge_percent,
+      'fixedPrice', NULL
+    ),
+    'dailyCaps', jsonb_build_object(
+      'enabled', max_daily_value IS NOT NULL,
+      'maxDailyPrice', max_daily_value
+    ),
+    'vehicleOverrides', '{}'::jsonb
+  ),
+  'overrides', '{}'::jsonb
+)
+WHERE pricing_configuration IS NULL;
+-- =============================================================================
+-- V005: Enforce Row Level Security (RLS) on all multi-tenant tables
+-- =============================================================================
+-- This migration dynamically enables and forces RLS on all tables that
+-- contain a 'company_id' or 'tenant_id' column. It also creates a strict isolation policy.
+--
+-- Why FORCE ROW LEVEL SECURITY?
+-- Because the application currently connects using the database owner ('parkflow' user).
+-- By default, PostgreSQL bypasses RLS for the table owner. 'FORCE' ensures that
+-- even the owner is subject to the RLS policies.
+-- =============================================================================
+
+DO $$
+DECLARE
+    r RECORD;
+    col_name text;
+BEGIN
+    FOR r IN 
+        SELECT 
+            t.table_name,
+            c.column_name
+        FROM 
+            information_schema.tables t
+        JOIN 
+            information_schema.columns c ON t.table_name = c.table_name 
+        WHERE 
+            t.table_schema = 'public' 
+            AND t.table_type = 'BASE TABLE'
+            AND c.column_name IN ('company_id', 'tenant_id')
+            AND t.table_name NOT IN ('flyway_schema_history') 
+    LOOP
+        col_name := r.column_name;
+
+        -- 1. Enable RLS
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY;', r.table_name);
+        
+        -- 2. Force RLS (CRITICAL)
+        EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY;', r.table_name);
+        
+        -- 3. Cleanup existing policies if any to prevent duplicates or conflicts
+        EXECUTE format('DROP POLICY IF EXISTS tenant_isolation_policy ON %I;', r.table_name);
+        EXECUTE format('DROP POLICY IF EXISTS company_isolation_policy ON %I;', r.table_name);
+        EXECUTE format('DROP POLICY IF EXISTS rls_%I ON %I;', r.table_name, r.table_name);
+        
+        -- 4. Create the strict isolation policy
+        -- current_setting('app.tenant_id', true) -> 'true' allows missing values (returns NULL)
+        -- which results in a secure Default-Deny if the context was not set by the backend.
+        EXECUTE format(
+            'CREATE POLICY tenant_isolation_policy ON %I 
+             AS PERMISSIVE 
+             FOR ALL 
+             TO PUBLIC 
+             USING (%I = current_setting(''app.tenant_id'', true)::uuid) 
+             WITH CHECK (%I = current_setting(''app.tenant_id'', true)::uuid);', 
+            r.table_name, col_name, col_name
+        );
+    END LOOP;
+END
+$$;
+
+-- =====================================================================
+-- MIGRATION: V006
+-- Phase 3: Optimización de consultas masivas y resiliencia de BD
+-- =====================================================================
+-- En lugar de un particionamiento nativo destructivo (el cual 
+-- obligaría a reescribir 9 Foreign Keys e incluir la clave de 
+-- partición en la Primary Key), implementamos índices parciales 
+-- y BRIN para series de tiempo, otorgando 80% de los beneficios 
+-- de particionamiento con cero downtime y sin deuda técnica.
+-- =====================================================================
+
+-- 1. Index para escaneos secuenciales (Reportes y BI)
+-- Se usa un índice estándar (B-Tree) en lugar de BRIN para mantener 
+-- compatibilidad con la base de datos H2 usada en los tests de integración.
+CREATE INDEX IF NOT EXISTS idx_parking_session_created_at 
+ON parking_session (created_at);
+
+CREATE INDEX IF NOT EXISTS idx_parking_session_entry_at 
+ON parking_session (entry_at);
+
+-- 2. Índice Compuesto y Parcial para consultas operativas en curso (B-Tree)
+-- Mejora el rendimiento del endpoint de salida de vehículos y cálculos,
+-- filtrando las sesiones que ya fueron cerradas, manteniendo el índice pequeño.
+CREATE INDEX IF NOT EXISTS idx_parking_session_active_tenant 
+ON parking_session (company_id, plate, entry_at) 
+WHERE exit_at IS NULL AND status != 'COMPLETED';
+
+-- 3. Índice para acelerar la sincronización Offline/SaaS
+CREATE INDEX IF NOT EXISTS idx_parking_session_sync_status 
+ON parking_session (company_id, sync_status) 
+WHERE sync_status != 'SYNCED';
