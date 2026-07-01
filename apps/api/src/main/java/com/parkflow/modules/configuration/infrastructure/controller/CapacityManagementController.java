@@ -10,10 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import com.parkflow.modules.auth.security.TenantContext;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,11 +30,7 @@ public class CapacityManagementController {
       description = "Capacity configuration retrieved successfully",
       content = @Content(schema = @Schema(implementation = CapacityResponse.class)))
   public CapacityResponse getCapacity() {
-    UUID companyId = TenantContext.getTenantId();
-    if (companyId == null) {
-      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
-    }
-    return capacityManagementUseCase.getCapacity(companyId);
+    return capacityManagementUseCase.getCapacity(TenantContext.getTenantIdOrThrow());
   }
 
   @PatchMapping
@@ -51,10 +44,6 @@ public class CapacityManagementController {
   @ApiResponse(responseCode = "404", description = "Company not found")
   public CapacityResponse updateCapacity(
       @Valid @RequestBody CapacityRequest request) {
-    UUID companyId = TenantContext.getTenantId();
-    if (companyId == null) {
-      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
-    }
-    return capacityManagementUseCase.updateCapacity(companyId, request);
+    return capacityManagementUseCase.updateCapacity(TenantContext.getTenantIdOrThrow(), request);
   }
 }

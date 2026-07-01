@@ -71,11 +71,11 @@ public class InvoiceController {
   @PostMapping("/{id}/cancel")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   @Operation(summary = "Cancel an invoice and notify the provider")
-  public ResponseEntity<InvoiceResponse> cancel(
+  public InvoiceResponse cancel(
       @PathVariable UUID id,
       @Valid @RequestBody CancelInvoiceRequest request) {
     UUID companyId = TenantContext.getTenantId();
-    return ResponseEntity.ok(invoiceGenerationService.cancelInvoice(id, companyId, request.getReason()));
+    return invoiceGenerationService.cancelInvoice(id, companyId, request.getReason());
   }
 
   @GetMapping("/{id}/pdf")

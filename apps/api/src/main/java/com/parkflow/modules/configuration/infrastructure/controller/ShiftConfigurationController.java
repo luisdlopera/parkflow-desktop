@@ -9,14 +9,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.UUID;
 import com.parkflow.modules.auth.security.TenantContext;
-import org.springframework.web.server.ResponseStatusException;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/v1/configuration/shifts")
@@ -33,12 +32,12 @@ public class ShiftConfigurationController {
       responseCode = "200",
       description = "Shift configuration retrieved successfully",
       content = @Content(schema = @Schema(implementation = ShiftConfigurationResponse.class)))
-  public ResponseEntity<ShiftConfigurationResponse> getShiftConfiguration() {
+  public ShiftConfigurationResponse getShiftConfiguration() {
     UUID companyId = TenantContext.getTenantId();
     if (companyId == null) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
     }
-    return ResponseEntity.ok(shiftConfigurationUseCase.getShiftConfiguration(companyId));
+    return shiftConfigurationUseCase.getShiftConfiguration(companyId);
   }
 
   @PatchMapping
@@ -50,13 +49,12 @@ public class ShiftConfigurationController {
       content = @Content(schema = @Schema(implementation = ShiftConfigurationResponse.class)))
   @ApiResponse(responseCode = "400", description = "Invalid shift times")
   @ApiResponse(responseCode = "404", description = "Company not found")
-  public ResponseEntity<ShiftConfigurationResponse> updateShiftConfiguration(
+  public ShiftConfigurationResponse updateShiftConfiguration(
       @Valid @RequestBody ShiftConfigurationRequest request) {
     UUID companyId = TenantContext.getTenantId();
     if (companyId == null) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
     }
-    return ResponseEntity.ok(
-        shiftConfigurationUseCase.updateShiftConfiguration(companyId, request));
+    return shiftConfigurationUseCase.updateShiftConfiguration(companyId, request);
   }
 }

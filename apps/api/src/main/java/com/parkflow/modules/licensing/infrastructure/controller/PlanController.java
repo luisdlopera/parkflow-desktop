@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * Plan management endpoints using decomposed services.
@@ -41,10 +41,10 @@ public class PlanController {
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "List all plans")
   @ApiResponse(responseCode = "200", description = "List of plans retrieved successfully")
-  public ResponseEntity<List<PlanResponse>> listPlans(
+  public List<PlanResponse> listPlans(
       @RequestParam(defaultValue = "false") boolean includeDeleted,
       @RequestParam(required = false) Boolean active) {
-    return ResponseEntity.ok(planQueryService.listPlans(includeDeleted, active));
+    return planQueryService.listPlans(includeDeleted, active);
   }
 
   @GetMapping("/{id}")
@@ -52,8 +52,8 @@ public class PlanController {
   @Operation(summary = "Get plan detail")
   @ApiResponse(responseCode = "200", description = "Plan retrieved successfully")
   @ApiResponse(responseCode = "404", description = "Plan not found")
-  public ResponseEntity<PlanResponse> getPlan(@PathVariable UUID id) {
-    return ResponseEntity.ok(planQueryService.getPlan(id));
+  public PlanResponse getPlan(@PathVariable UUID id) {
+    return planQueryService.getPlan(id);
   }
 
   @PostMapping
@@ -61,8 +61,9 @@ public class PlanController {
   @Operation(summary = "Create a new plan")
   @ApiResponse(responseCode = "201", description = "Plan created successfully")
   @ApiResponse(responseCode = "409", description = "Plan code already exists")
-  public ResponseEntity<PlanResponse> createPlan(@Valid @RequestBody PlanRequest request) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(planLifecycleService.createPlan(request));
+  @ResponseStatus(HttpStatus.CREATED)
+  public PlanResponse createPlan(@Valid @RequestBody PlanRequest request) {
+    return planLifecycleService.createPlan(request);
   }
 
   @PatchMapping("/{id}")
@@ -70,10 +71,10 @@ public class PlanController {
   @Operation(summary = "Update an existing plan")
   @ApiResponse(responseCode = "200", description = "Plan updated successfully")
   @ApiResponse(responseCode = "404", description = "Plan not found")
-  public ResponseEntity<PlanResponse> updatePlan(
+  public PlanResponse updatePlan(
       @PathVariable UUID id,
       @Valid @RequestBody PlanRequest request) {
-    return ResponseEntity.ok(planLifecycleService.updatePlan(id, request));
+    return planLifecycleService.updatePlan(id, request);
   }
 
   @DeleteMapping("/{id}")
@@ -82,9 +83,9 @@ public class PlanController {
   @ApiResponse(responseCode = "204", description = "Plan soft-deleted successfully")
   @ApiResponse(responseCode = "400", description = "Cannot delete last active plan")
   @ApiResponse(responseCode = "404", description = "Plan not found")
-  public ResponseEntity<Void> deletePlan(@PathVariable UUID id) {
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deletePlan(@PathVariable UUID id) {
     planLifecycleService.deletePlan(id);
-    return ResponseEntity.noContent().build();
   }
 
   @PatchMapping("/{id}/toggle")
@@ -92,15 +93,16 @@ public class PlanController {
   @Operation(summary = "Toggle plan active/inactive status")
   @ApiResponse(responseCode = "200", description = "Plan status toggled successfully")
   @ApiResponse(responseCode = "400", description = "Cannot deactivate last active plan")
-  public ResponseEntity<PlanResponse> togglePlan(@PathVariable UUID id) {
-    return ResponseEntity.ok(planLifecycleService.togglePlan(id));
+  public PlanResponse togglePlan(@PathVariable UUID id) {
+    return planLifecycleService.togglePlan(id);
   }
 
   @PostMapping("/{id}/duplicate")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Operation(summary = "Duplicate a plan with all its features")
   @ApiResponse(responseCode = "201", description = "Plan duplicated successfully")
-  public ResponseEntity<PlanResponse> duplicatePlan(@PathVariable UUID id) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(planLifecycleService.duplicatePlan(id));
+  @ResponseStatus(HttpStatus.CREATED)
+  public PlanResponse duplicatePlan(@PathVariable UUID id) {
+    return planLifecycleService.duplicatePlan(id);
   }
 }

@@ -9,10 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.UUID;
 import com.parkflow.modules.auth.security.TenantContext;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -33,11 +30,7 @@ public class ModuleConfigurationController {
       description = "Module configuration retrieved successfully",
       content = @Content(schema = @Schema(implementation = ModuleConfigurationResponse.class)))
   public ModuleConfigurationResponse getModuleConfiguration() {
-    UUID companyId = TenantContext.getTenantId();
-    if (companyId == null) {
-      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
-    }
-    return moduleConfigurationUseCase.getModuleConfiguration(companyId);
+    return moduleConfigurationUseCase.getModuleConfiguration(TenantContext.getTenantIdOrThrow());
   }
 
   @PatchMapping
@@ -51,10 +44,6 @@ public class ModuleConfigurationController {
   @ApiResponse(responseCode = "404", description = "Company not found")
   public ModuleConfigurationResponse updateModuleConfiguration(
       @Valid @RequestBody ModuleConfigurationRequest request) {
-    UUID companyId = TenantContext.getTenantId();
-    if (companyId == null) {
-      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Company context required");
-    }
-    return moduleConfigurationUseCase.updateModuleConfiguration(companyId, request);
+    return moduleConfigurationUseCase.updateModuleConfiguration(TenantContext.getTenantIdOrThrow(), request);
   }
 }

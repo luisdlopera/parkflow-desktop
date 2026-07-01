@@ -7,7 +7,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +32,7 @@ public class LicensingController {
    * Los dispositivos reportan cada 30 minutos para recibir comandos remotos.
    */
   @PostMapping("/heartbeat")
-  public ResponseEntity<HeartbeatResponse> heartbeat(
+  public HeartbeatResponse heartbeat(
       @Valid @RequestBody HeartbeatRequest request,
       HttpServletRequest servletRequest) {
 
@@ -42,7 +42,7 @@ public class LicensingController {
     }
 
     HeartbeatResponse response = heartbeatUseCase.processHeartbeat(request, clientIp);
-    return ResponseEntity.ok(response);
+    return response;
   }
 
   /**
@@ -50,11 +50,11 @@ public class LicensingController {
    * Usada por la app desktop para verificar licencia sin conexión.
    */
   @PostMapping("/validate")
-  public ResponseEntity<LicenseValidationResponse> validateLicense(
+  public LicenseValidationResponse validateLicense(
       @Valid @RequestBody LicenseValidationRequest request) {
 
     LicenseValidationResponse response = validateLicenseUseCase.validateLicense(request);
-    return ResponseEntity.ok(response);
+    return response;
   }
 
   // ==================== ADMIN: COMPANY MANAGEMENT ====================
@@ -64,12 +64,12 @@ public class LicensingController {
    */
   @PostMapping("/companies")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  public ResponseEntity<CompanyResponse> createCompany(
+  public CompanyResponse createCompany(
       @Valid @RequestBody CreateCompanyRequest request,
       @RequestAttribute("currentUserEmail") String performedBy) {
 
     CompanyResponse response = companyManagementUseCase.createCompany(request, performedBy);
-    return ResponseEntity.ok(response);
+    return response;
   }
 
   /**
@@ -77,8 +77,8 @@ public class LicensingController {
    */
   @GetMapping("/companies")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-  public ResponseEntity<List<CompanyResponse>> listCompanies() {
-    return ResponseEntity.ok(companyManagementUseCase.listAllCompanies());
+  public List<CompanyResponse> listCompanies() {
+    return companyManagementUseCase.listAllCompanies();
   }
 
   /**
@@ -86,8 +86,8 @@ public class LicensingController {
    */
   @GetMapping("/companies/{companyId}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN') or @securityService.isCurrentUserCompany(#companyId)")
-  public ResponseEntity<CompanyResponse> getCompany(@PathVariable UUID companyId) {
-    return ResponseEntity.ok(companyManagementUseCase.getCompany(companyId));
+  public CompanyResponse getCompany(@PathVariable UUID companyId) {
+    return companyManagementUseCase.getCompany(companyId);
   }
 
   /**
@@ -95,42 +95,42 @@ public class LicensingController {
    */
   @PutMapping("/companies/{companyId}")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  public ResponseEntity<CompanyResponse> updateCompany(
+  public CompanyResponse updateCompany(
       @PathVariable UUID companyId,
       @Valid @RequestBody UpdateCompanyRequest request,
       @RequestAttribute("currentUserEmail") String performedBy) {
 
-    return ResponseEntity.ok(companyManagementUseCase.updateCompany(companyId, request, performedBy));
+    return companyManagementUseCase.updateCompany(companyId, request, performedBy);
   }
 
   @DeleteMapping("/companies/{companyId}/deactivate")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  public ResponseEntity<Void> deactivateCompany(
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deactivateCompany(
       @PathVariable UUID companyId,
       @RequestAttribute("currentUserEmail") String performedBy) {
 
     companyManagementUseCase.deactivateCompany(companyId, performedBy);
-    return ResponseEntity.noContent().build();
   }
 
   @DeleteMapping("/companies/{companyId}")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  public ResponseEntity<Void> deleteCompany(
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteCompany(
       @PathVariable UUID companyId,
       @RequestAttribute("currentUserEmail") String performedBy) {
 
     companyManagementUseCase.deleteCompany(companyId, performedBy);
-    return ResponseEntity.noContent().build();
   }
 
   @DeleteMapping({"/companies/{companyId:[0-9a-fA-F\\-]+}/purge", "/companies/{companyId:[0-9a-fA-F\\-]+}/purge/"})
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  public ResponseEntity<Void> purgeCompany(
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void purgeCompany(
       @PathVariable UUID companyId,
       @RequestAttribute("currentUserEmail") String performedBy) {
 
     companyManagementUseCase.purgeCompany(companyId, performedBy);
-    return ResponseEntity.noContent().build();
   }
 
   // ==================== ADMIN: LICENSE MANAGEMENT ====================
@@ -140,11 +140,11 @@ public class LicensingController {
    */
   @PostMapping("/licenses/generate")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  public ResponseEntity<GenerateLicenseResponse> generateLicense(
+  public GenerateLicenseResponse generateLicense(
       @Valid @RequestBody GenerateLicenseRequest request,
       @RequestAttribute("currentUserEmail") String performedBy) {
 
-    return ResponseEntity.ok(generateLicenseUseCase.generateOfflineLicense(request, performedBy));
+    return generateLicenseUseCase.generateOfflineLicense(request, performedBy);
   }
 
   /**
@@ -152,7 +152,7 @@ public class LicensingController {
    */
   @PostMapping("/companies/{companyId}/renew")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  public ResponseEntity<CompanyResponse> renewLicense(
+  public CompanyResponse renewLicense(
       @PathVariable UUID companyId,
       @RequestParam int months,
       @RequestAttribute("currentUserEmail") String performedBy) {
@@ -160,7 +160,7 @@ public class LicensingController {
     UpdateCompanyRequest request = new UpdateCompanyRequest();
     request.setStatus(com.parkflow.modules.licensing.enums.CompanyStatus.ACTIVE);
 
-    return ResponseEntity.ok(companyManagementUseCase.updateCompany(companyId, request, performedBy));
+    return companyManagementUseCase.updateCompany(companyId, request, performedBy);
   }
 
   // ==================== ADMIN: REMOTE COMMANDS ====================
@@ -170,8 +170,8 @@ public class LicensingController {
    */
   @PostMapping("/commands/send")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  public ResponseEntity<Void> sendCommand(@Valid @RequestBody RemoteCommandRequest request) {
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void sendCommand(@Valid @RequestBody RemoteCommandRequest request) {
     // Implementación en servicio
-    return ResponseEntity.ok().build();
   }
 }

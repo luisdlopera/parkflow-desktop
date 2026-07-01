@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,45 +24,45 @@ public class LockerController {
 
   @GetMapping
   @PreAuthorize("hasAuthority('configuracion:editar') or hasAuthority('reportes:leer')")
-  public ResponseEntity<List<LockerResponse>> listLockers() {
+  public List<LockerResponse> listLockers() {
     UUID companyId = SecurityUtils.requireCompanyId();
-    return ResponseEntity.ok(lockerService.listLockers(companyId));
+    return lockerService.listLockers(companyId);
   }
 
   @GetMapping("/available")
   @PreAuthorize("isAuthenticated()")
-  public ResponseEntity<List<LockerResponse>> listAvailableLockers() {
+  public List<LockerResponse> listAvailableLockers() {
     UUID companyId = SecurityUtils.requireCompanyId();
-    return ResponseEntity.ok(lockerService.listAvailableLockers(companyId));
+    return lockerService.listAvailableLockers(companyId);
   }
 
   @PostMapping
   @PreAuthorize("hasAuthority('configuracion:editar')")
-  public ResponseEntity<LockerResponse> createLocker(
+  @ResponseStatus(HttpStatus.CREATED)
+  public LockerResponse createLocker(
       @Valid @RequestBody LockerRequest request) {
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(lockerService.createLocker(request.code(), request.label()));
+    return lockerService.createLocker(request.code(), request.label());
   }
 
   @PostMapping("/batch")
   @PreAuthorize("hasAuthority('configuracion:editar')")
-  public ResponseEntity<List<LockerResponse>> createBatch(
+  @ResponseStatus(HttpStatus.CREATED)
+  public List<LockerResponse> createBatch(
       @Valid @RequestBody BatchLockerRequest request) {
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(lockerService.createBatch(SecurityUtils.requireCompanyId(), request));
+    return lockerService.createBatch(SecurityUtils.requireCompanyId(), request);
   }
 
   @PatchMapping("/{id}")
   @PreAuthorize("hasAuthority('configuracion:editar')")
-  public ResponseEntity<LockerResponse> patchLocker(
+  public LockerResponse patchLocker(
       @PathVariable UUID id, @Valid @RequestBody PatchLockerRequest request) {
-    return ResponseEntity.ok(lockerService.patchLocker(id, request));
+    return lockerService.patchLocker(id, request);
   }
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority('configuracion:editar')")
-  public ResponseEntity<Void> deleteLocker(@PathVariable UUID id) {
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteLocker(@PathVariable UUID id) {
     lockerService.deleteLocker(id);
-    return ResponseEntity.noContent().build();
   }
 }

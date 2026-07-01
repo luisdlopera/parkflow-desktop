@@ -11,7 +11,6 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,32 +24,31 @@ public class ParkingSpaceController {
 
   @GetMapping
   @PreAuthorize("hasAuthority('configuracion:editar') or hasAuthority('reportes:leer')")
-  public ResponseEntity<List<ParkingSpaceDto>> listSpaces(@RequestParam(required = false, defaultValue = "ACTIVE") String filter) {
+  public List<ParkingSpaceDto> listSpaces(@RequestParam(required = false, defaultValue = "ACTIVE") String filter) {
     UUID companyId = SecurityUtils.requireCompanyId();
-    return ResponseEntity.ok(spaceQueryService.listSpaces(companyId, filter));
+    return spaceQueryService.listSpaces(companyId, filter);
   }
 
   @GetMapping("/summary")
   @PreAuthorize("hasAuthority('configuracion:editar') or hasAuthority('reportes:leer')")
-  public ResponseEntity<ParkingSpaceOccupancySummaryResponse> summary() {
+  public ParkingSpaceOccupancySummaryResponse summary() {
     UUID companyId = SecurityUtils.requireCompanyId();
-    return ResponseEntity.ok(spaceQueryService.getOccupancySummary(companyId));
+    return spaceQueryService.getOccupancySummary(companyId);
   }
 
   @PutMapping("/capacity")
   @PreAuthorize("hasAuthority('configuracion:editar')")
-  public ResponseEntity<ParkingSpaceOccupancySummaryResponse> resize(
+  public ParkingSpaceOccupancySummaryResponse resize(
       @Valid @RequestBody ResizeCapacityRequest request) {
     UUID companyId = SecurityUtils.requireCompanyId();
-    return ResponseEntity.ok(spaceManagementService.resizeCapacity(companyId, request.capacity()));
+    return spaceManagementService.resizeCapacity(companyId, request.capacity());
   }
 
   @PatchMapping("/{id}")
   @PreAuthorize("hasAuthority('configuracion:editar')")
-  public ResponseEntity<ParkingSpaceDto> patch(
+  public ParkingSpaceDto patch(
       @PathVariable UUID id, @Valid @RequestBody PatchParkingSpaceRequest request) {
     UUID companyId = SecurityUtils.requireCompanyId();
-    return ResponseEntity.ok(
-        spaceManagementService.patchSpace(companyId, id, request.status(), request.label(), request.type()));
+    return spaceManagementService.patchSpace(companyId, id, request.status(), request.label(), request.type());
   }
 }

@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,35 +23,36 @@ public class AdminOnboardingController {
   }
 
   @GetMapping
-  public ResponseEntity<List<OnboardingQuestionConfigDto>> list() {
-    return ResponseEntity.ok(service.findAll());
+  public List<OnboardingQuestionConfigDto> list() {
+    return service.findAll();
   }
 
   @GetMapping("/enabled")
-  public ResponseEntity<List<OnboardingQuestionConfigDto>> listEnabled() {
-    return ResponseEntity.ok(service.findAllEnabled());
+  public List<OnboardingQuestionConfigDto> listEnabled() {
+    return service.findAllEnabled();
   }
 
   @PostMapping
-  public ResponseEntity<OnboardingQuestionConfigDto> createOrUpdate(@RequestBody OnboardingQuestionConfigDto dto) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(service.createOrUpdate(dto));
+  @ResponseStatus(HttpStatus.CREATED)
+  public OnboardingQuestionConfigDto createOrUpdate(@RequestBody OnboardingQuestionConfigDto dto) {
+    return service.createOrUpdate(dto);
   }
 
   @PutMapping("/batch")
-  public ResponseEntity<List<OnboardingQuestionConfigDto>> batchUpdate(@RequestBody List<OnboardingQuestionConfigDto> dtos) {
+  public List<OnboardingQuestionConfigDto> batchUpdate(@RequestBody List<OnboardingQuestionConfigDto> dtos) {
     List<OnboardingQuestionConfigDto> updated = dtos.stream().map(service::createOrUpdate).toList();
-    return ResponseEntity.ok(updated);
+    return updated;
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable UUID id) {
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void delete(@PathVariable UUID id) {
     service.delete(id);
-    return ResponseEntity.noContent().build();
   }
 
   @PostMapping("/seed")
-  public ResponseEntity<Void> seed() {
+  @ResponseStatus(HttpStatus.OK)
+  public void seed() {
     service.seedDefaults();
-    return ResponseEntity.ok().build();
   }
 }
