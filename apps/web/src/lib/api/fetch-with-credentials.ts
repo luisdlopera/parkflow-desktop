@@ -5,6 +5,7 @@ import { refreshAuthTokens } from "./auth-refresh";
 
 type FetchInput = Parameters<typeof fetch>[0];
 type FetchInit = Parameters<typeof fetch>[1];
+const TOKEN_REFRESH_TIMEOUT_MS = 5000; // 5-second timeout for token refresh
 let authExpired = false;
 let refreshTokenPromise: Promise<Response> | null = null;
 
@@ -77,18 +78,29 @@ export async function fetchWithCredentials(input: FetchInput, init?: FetchInit):
     }
 
     if (!refreshTokenPromise) {
-      refreshTokenPromise = (async () => {
-        const refreshed = await refreshAuthTokens();
-        if (refreshed) {
-          try {
-            const { broadcastAuthEvent } = await import("@/hooks/auth/useAuthBroadcast");
-            broadcastAuthEvent({ type: "auth:token_refreshed" });
-          } catch {
-            /* ignore */
+      refreshTokenPromise = Promise.race([
+        (async () => {
+          const refreshed = await refreshAuthTokens();
+          if (refreshed) {
+            try {
+              const { broadcastAuthEvent } = await import("@/hooks/auth/useAuthBroadcast");
+              broadcastAuthEvent({ type: "auth:token_refreshed" });
+            } catch {
+              /* ignore */
+            }
           }
-        }
-        return new Response(null, { status: refreshed ? 200 : 401 });
-      })().finally(() => {
+          return new Response(null, { status: refreshed ? 200 : 401 });
+        })(),
+        new Promise<Response>((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`Token refresh timeout after ${TOKEN_REFRESH_TIMEOUT_MS}ms`)),
+            TOKEN_REFRESH_TIMEOUT_MS
+          )
+        )
+      ]).catch(error => {
+        console.error("[Token Refresh] Failed:", error.message);
+        return new Response(null, { status: 401 });
+      }).finally(() => {
         refreshTokenPromise = null;
       });
 

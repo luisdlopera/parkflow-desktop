@@ -31,7 +31,7 @@ export function PricingStrategySelector({
             onClick={() => onChange(type)}
             className={`min-h-[176px] rounded-lg border p-5 text-left transition-all ${
               selected
-                ? "border-brand-500 bg-brand-50 shadow-sm ring-2 ring-brand-200 dark:bg-brand-500/10 dark:ring-brand-500/25"
+                ? "border-brand-500 bg-brand-50 ring-2 ring-brand-200 dark:bg-brand-500/10 dark:ring-brand-500/25"
                 : "border-default-200 bg-content1 hover:border-brand-300 dark:border-zinc-700 dark:bg-zinc-900/40"
             }`}
           >

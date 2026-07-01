@@ -10,10 +10,11 @@ export interface CardProps extends Omit<HeroCardProps, "shadow"> {
 }
 
 export const CardBase = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ shadow, border, className, ...props }, ref) => {
-    const shadowClass = shadow === "none" ? "shadow-none" : shadow ? "border border-default-200" : "";
+  ({ shadow: _, border, className, ...props }, ref) => {
+    // Always use border-based elevation system, no shadows
+    const elevationClass = "border border-default-200";
     return (
-      <HeroCard ref={ref as any} className={`${shadowClass} ${className || ""}`} {...props as any} />
+      <HeroCard ref={ref as any} className={`${elevationClass} ${className || ""}`} {...props as any} />
     );
   }
 );

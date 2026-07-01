@@ -24,7 +24,7 @@ export function InlineHelp({ title, children }: { title?: string; children: stri
         <span
           id={id}
           role="status"
-          className="absolute left-0 top-8 z-30 w-72 rounded-lg border border-default-200 bg-white/95 p-3 text-left text-xs leading-5 text-default-700 shadow-2xl ring-1 ring-black/5 backdrop-blur-sm dark:bg-zinc-950/95 dark:text-default-200 dark:ring-white/10"
+          className="absolute left-0 top-8 z-30 w-72 rounded-lg border border-default-300 bg-white/95 p-3 text-left text-xs leading-5 text-default-700 ring-1 ring-black/5 backdrop-blur-sm dark:bg-zinc-950/95 dark:text-default-200 dark:ring-white/10"
         >
           {title ? <span className="mb-1 block font-semibold text-foreground">{title}</span> : null}
           {children}

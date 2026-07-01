@@ -30,7 +30,7 @@ export function PricingSimulator({ config }: { config: PricingConfiguration }) {
   );
 
   return (
-    <aside className="sticky top-4 space-y-4 rounded-lg border border-default-200 bg-content1 p-4 shadow-sm">
+    <aside className="sticky top-4 space-y-4 rounded-lg border border-default-200 bg-content1 p-4">
       <div className="flex items-center gap-2">
         <span className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-500 text-white">
           <Calculator className="h-4 w-4" />

@@ -34,4 +34,44 @@ describe("applyApiErrorToForm", () => {
     expect(applied).toBe(false);
     expect(setError).not.toHaveBeenCalled();
   });
+
+  it("handles multiple validation errors at once", () => {
+    const setError = vi.fn();
+    const form = { setError } as any;
+    const error = new ApiError(
+      422,
+      "VALIDATION_ERROR",
+      "Multiple validation errors",
+      "/api/v1/test",
+      "trace-2",
+      [
+        { field: "name", code: "NOT_BLANK", message: "Name is required", rejectedValue: "" },
+        { field: "age", code: "MIN", message: "Must be at least 18", rejectedValue: "10" },
+        { field: "email", code: "INVALID_FORMAT", message: "Invalid email format", rejectedValue: "test" },
+      ],
+    );
+
+    const applied = applyApiErrorToForm(form, error);
+
+    expect(applied).toBe(true);
+    expect(setError).toHaveBeenCalledTimes(3);
+  });
+
+  it("handles validation errors without field code info", () => {
+    const setError = vi.fn();
+    const form = { setError } as any;
+    const error = new ApiError(
+      422,
+      "VALIDATION_ERROR",
+      "Validation failed",
+      "/api/v1/test",
+      "trace-3",
+      [],
+    );
+
+    const applied = applyApiErrorToForm(form, error);
+
+    expect(applied).toBe(false);
+    expect(setError).not.toHaveBeenCalled();
+  });
 });
