@@ -2,6 +2,9 @@ package com.parkflow.modules.auth.infrastructure.controller;
 
 import com.parkflow.modules.auth.application.port.in.OAuth2PortIn;
 import com.parkflow.modules.auth.domain.OAuth2Exception;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
@@ -11,6 +14,7 @@ import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
 @RequestMapping("/api/v1/auth/oauth2")
+@Tag(name = "OAuth2", description = "OAuth2 authentication flows for Google and Microsoft")
 public class OAuth2Controller {
 
     private static final Set<String> SUPPORTED_PROVIDERS = Set.of("google", "microsoft");
@@ -28,6 +32,9 @@ public class OAuth2Controller {
     }
 
     @GetMapping("/authorization/{provider}")
+    @Operation(summary = "Initiate OAuth2 authorization flow", description = "Redirects to OAuth2 provider authorization endpoint")
+    @ApiResponse(responseCode = "302", description = "Redirect to OAuth2 provider")
+    @ApiResponse(responseCode = "400", description = "Invalid OAuth2 provider")
     public RedirectView authorize(@PathVariable String provider) {
         if (!SUPPORTED_PROVIDERS.contains(provider)) {
             return new RedirectView(frontendUrl + "/login?error=oauth_invalid_provider&provider=" + provider);
@@ -37,6 +44,9 @@ public class OAuth2Controller {
     }
 
     @GetMapping("/callback/{provider}")
+    @Operation(summary = "OAuth2 provider callback endpoint", description = "Handles authorization code from OAuth2 provider")
+    @ApiResponse(responseCode = "302", description = "Redirect to login or dashboard")
+    @ApiResponse(responseCode = "400", description = "Invalid authorization code or state")
     public void callback(
             @PathVariable String provider,
             @RequestParam(required = false) String code,

@@ -3,6 +3,7 @@ package com.parkflow.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkflow.modules.common.dto.ApiResponse;
 import com.parkflow.modules.common.interceptor.DeprecatedApiInterceptor;
+import com.parkflow.modules.common.security.TenantContextInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -35,10 +36,13 @@ import java.util.ListIterator;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final DeprecatedApiInterceptor deprecatedApiInterceptor;
+    private final TenantContextInterceptor tenantContextInterceptor;
     private final ObjectMapper objectMapper;
 
-    public WebMvcConfig(DeprecatedApiInterceptor deprecatedApiInterceptor, ObjectMapper objectMapper) {
+    public WebMvcConfig(DeprecatedApiInterceptor deprecatedApiInterceptor,
+        TenantContextInterceptor tenantContextInterceptor, ObjectMapper objectMapper) {
         this.deprecatedApiInterceptor = deprecatedApiInterceptor;
+        this.tenantContextInterceptor = tenantContextInterceptor;
         this.objectMapper = objectMapper;
     }
 
@@ -57,7 +61,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(deprecatedApiInterceptor);
+        // TenantContextInterceptor MUST run first to set tenant context for all downstream handlers
+        registry.addInterceptor(tenantContextInterceptor).addPathPatterns("/api/**");
+        // Deprecated API warnings
+        registry.addInterceptor(deprecatedApiInterceptor).addPathPatterns("/api/**");
     }
 
     /**

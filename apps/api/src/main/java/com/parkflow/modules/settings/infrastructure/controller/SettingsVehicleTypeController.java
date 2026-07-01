@@ -14,6 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/settings/vehicle-types")
+@Deprecated(since = "2.1.0", forRemoval = false)
 @RequiredArgsConstructor
 public class SettingsVehicleTypeController {
     private final VehicleTypeUseCase vehicleTypeUseCase;

@@ -1,0 +1,42 @@
+{
+  "audit_date": "2026-07-01",
+  "overall_score": 71,
+  "total_questions": 140,
+  "total_passing": 99.5,
+  "controllers": 53,
+  "endpoints": {
+    "total": 283,
+    "get": 122,
+    "post": 89,
+    "patch": 35,
+    "put": 22,
+    "delete": 15
+  },
+  "services": 145,
+  "response_classes": 198,
+  "categories": {
+    "response_contract": { "score": 85, "status": "GOOD" },
+    "endpoint_design": { "score": 75, "status": "GOOD" },
+    "error_handling": { "score": 90, "status": "EXCELLENT" },
+    "security_auth": { "score": 80, "status": "GOOD" },
+    "multi_tenant": { "score": 85, "status": "GOOD" },
+    "pagination": { "score": 65, "status": "NEEDS_WORK" },
+    "consistency": { "score": 70, "status": "NEEDS_WORK" },
+    "validations": { "score": 75, "status": "GOOD" },
+    "evolution": { "score": 60, "status": "AT_RISK" },
+    "observability": { "score": 80, "status": "GOOD" },
+    "frontend_friendly": { "score": 70, "status": "NEEDS_WORK" },
+    "performance": { "score": 65, "status": "AT_RISK" },
+    "documentation": { "score": 30, "status": "CRITICAL" },
+    "parkflow_domain": { "score": 75, "status": "GOOD" }
+  },
+  "critical_findings": {
+    "documentation_coverage": "30% (16/53 controllers have @Operation)",
+    "pagination_consistency": "Inconsistent (72 PageResponse<T>, 133 Page<T>, 78 no pagination)",
+    "soft_delete": "Only 2 entities implement soft delete",
+    "optimistic_locking": "Only 4 @Version annotations across 145+ entities",
+    "audit_inheritance": "46 @PrePersist but no BaseEntity consolidation"
+  },
+  "timeline_to_85_percent": "2 weeks",
+  "estimated_effort": "10 business days"
+}

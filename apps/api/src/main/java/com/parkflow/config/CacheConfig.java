@@ -20,6 +20,7 @@ import java.util.Map;
 @EnableCaching
 public class CacheConfig {
 
+  // Cache names for @Cacheable annotations
   public static final String PLAN_FEATURES = "plan-features";
   public static final String COMPANY_SETTINGS = "company-settings";
   public static final String VEHICLE_TYPES_ALL = "vehicle-types-all";
@@ -28,6 +29,13 @@ public class CacheConfig {
   public static final String PAYMENT_METHODS = "payment-methods";
   public static final String RATE_FRACTIONS = "rate-fractions";
 
+  // Performance optimization caches (v3)
+  public static final String RATES = "rates";
+  public static final String USERS = "users";
+  public static final String PARKING_SITES = "parking-sites";
+  public static final String PARKING_SPACES = "parking-spaces";
+  public static final String THEMES = "themes";
+
   @Bean
   @ConditionalOnProperty(name = "spring.cache.type", havingValue = "caffeine", matchIfMissing = true)
   public CacheManager caffeineCacheManager() {
@@ -35,7 +43,7 @@ public class CacheConfig {
     manager.setCaffeine(
         Caffeine.newBuilder()
             .expireAfterWrite(5, TimeUnit.MINUTES)
-            .maximumSize(1000)
+            .maximumSize(10000)  // Increased for performance optimization
             .recordStats()
     );
     return manager;

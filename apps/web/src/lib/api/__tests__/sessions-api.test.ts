@@ -35,13 +35,21 @@ describe("sessions-api", () => {
         expect.stringContaining("/operations/sessions/active-list"),
         expect.any(Object),
       );
-      expect(result).toEqual(dto);
+      expect(result).toEqual({
+        data: dto,
+        meta: {
+          total: 1,
+          page: 1,
+          limit: 1,
+          totalPages: 1,
+        },
+      });
     });
 
     it("should pass query params", async () => {
       vi.mocked(apiFetch).mockResolvedValue({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } } as never);
 
-      await fetchActiveSessions({ page: 2, limit: 10, search: "ABC", sortBy: "plate", sortDir: "asc" });
+      const result = await fetchActiveSessions({ page: 2, limit: 10, search: "ABC", sortBy: "plate", sortDir: "asc" });
 
       const url = vi.mocked(apiFetch).mock.calls[0][0] as string;
       expect(url).toContain("page=2");
@@ -49,6 +57,10 @@ describe("sessions-api", () => {
       expect(url).toContain("search=ABC");
       expect(url).toContain("sortBy=plate");
       expect(url).toContain("sortDir=asc");
+      expect(result).toEqual({
+        data: [],
+        meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
+      });
     });
 
     it("should throw on error with userMessage", async () => {

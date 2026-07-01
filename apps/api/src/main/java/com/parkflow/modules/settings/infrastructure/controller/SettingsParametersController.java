@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/settings/parameters")
+@Deprecated(since = "2.1.0", forRemoval = false)
 @RequiredArgsConstructor
 public class SettingsParametersController {
   private final ParkingParametersUseCase parkingParametersUseCase;

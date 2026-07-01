@@ -1,22 +1,54 @@
 import { useState, useCallback } from 'react';
 import { apiBase } from '@/lib/api/config';
-import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
-
+import safeFetch from '@/lib/api/fetch';
 
 const API_BASE = apiBase();
+
+type ModuleConfig = {
+  clientsEnabled: boolean;
+  agreementsEnabled: boolean;
+  monthlyEnabled: boolean;
+  shiftsEnabled: boolean;
+  cashEnabled: boolean;
+  advancedAuditEnabled: boolean;
+  licensePlan: string;
+};
+
+type CapacityConfig = {
+  totalCapacity?: number;
+  controlSlots?: boolean;
+  allowLowerCapacity?: boolean;
+};
+
+type ShiftsConfig = {
+  shiftsEnabled?: boolean;
+  dayShiftStart?: string;
+  dayShiftEnd?: string;
+};
+
+type RegionConfig = {
+  countryCode?: string;
+  platePattern?: string;
+  timezone?: string;
+};
+
+type HelmetHandlingConfig = {
+  currentMode?: string;
+  activeLockerCount?: number;
+  inactiveLockerCount?: number;
+};
 
 export function useConfigurationApi() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const apiCall = useCallback(
-    async (endpoint: string, method: 'GET' | 'PATCH' = 'GET', body?: any) => {
+    async <T,>(endpoint: string, method: 'GET' | 'PATCH' = 'GET', body?: any): Promise<T> => {
       setLoading(true);
       setError(null);
       try {
         const options: RequestInit = {
           method,
-          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -26,14 +58,8 @@ export function useConfigurationApi() {
           options.body = JSON.stringify(body);
         }
 
-        const url = new URL(`${API_BASE}${endpoint}`, window.location.origin);
-        const response = await fetchWithCredentials(url.toString(), options);
-
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-
-        return await response.json();
+        const url = `${API_BASE}${endpoint}`;
+        return await safeFetch<T>(url, options);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
         setError(message);
@@ -50,28 +76,28 @@ export function useConfigurationApi() {
     loading,
     error,
     getCapacity: (companyId: string) =>
-      apiCall(`/configuration/capacity?companyId=${companyId}`),
+      apiCall<CapacityConfig>(`/configuration/capacity?companyId=${companyId}`),
     updateCapacity: (companyId: string, data: any) =>
-      apiCall(`/configuration/capacity?companyId=${companyId}`, 'PATCH', data),
+      apiCall<CapacityConfig>(`/configuration/capacity?companyId=${companyId}`, 'PATCH', data),
 
     getShifts: (companyId: string) =>
-      apiCall(`/configuration/shifts?companyId=${companyId}`),
+      apiCall<ShiftsConfig>(`/configuration/shifts?companyId=${companyId}`),
     updateShifts: (companyId: string, data: any) =>
-      apiCall(`/configuration/shifts?companyId=${companyId}`, 'PATCH', data),
+      apiCall<ShiftsConfig>(`/configuration/shifts?companyId=${companyId}`, 'PATCH', data),
 
     getModules: (companyId: string) =>
-      apiCall(`/configuration/modules?companyId=${companyId}`),
+      apiCall<ModuleConfig>(`/configuration/modules?companyId=${companyId}`),
     updateModules: (companyId: string, data: any) =>
-      apiCall(`/configuration/modules?companyId=${companyId}`, 'PATCH', data),
+      apiCall<ModuleConfig>(`/configuration/modules?companyId=${companyId}`, 'PATCH', data),
 
     getRegion: (companyId: string) =>
-      apiCall(`/configuration/region?companyId=${companyId}`),
+      apiCall<RegionConfig>(`/configuration/region?companyId=${companyId}`),
     updateRegion: (companyId: string, data: any) =>
-      apiCall(`/configuration/region?companyId=${companyId}`, 'PATCH', data),
+      apiCall<RegionConfig>(`/configuration/region?companyId=${companyId}`, 'PATCH', data),
 
     getHelmetHandling: (companyId: string) =>
-      apiCall(`/configuration/helmet-handling?companyId=${companyId}`),
+      apiCall<HelmetHandlingConfig>(`/configuration/helmet-handling?companyId=${companyId}`),
     updateHelmetHandling: (companyId: string, data: any) =>
-      apiCall(`/configuration/helmet-handling?companyId=${companyId}`, 'PATCH', data),
+      apiCall<HelmetHandlingConfig>(`/configuration/helmet-handling?companyId=${companyId}`, 'PATCH', data),
   };
 }

@@ -180,21 +180,7 @@ export function useVehicleExit() {
         splitPayments: splitPayments as Parameters<typeof buildExitBody>[0]["splitPayments"],
       });
 
-      const response = await serviceProcessExit(requestBody);
-      const payload = await response.json();
-      if (!response.ok) {
-        let errMsg = payload?.userMessage ?? (typeof payload.error === "string" ? payload.error : null) ?? "No se pudo registrar la salida";
-        if (/caja/i.test(errMsg)) {
-          try {
-            const pol = await cashPolicy(active.receipt.site ?? null);
-            errMsg = `${errMsg} ${pol.operationsHint}`.trim();
-          } catch { /* keep base message */ }
-        }
-        lookupHook.setError(errMsg);
-        toast.danger(errMsg);
-        playError();
-        return;
-      }
+      const payload = await serviceProcessExit(requestBody);
 
       clearIdempotencyKey("exit", idempotencyFingerprint);
       const printPayload = operationPrintPayload(payload as ActiveLookup);
@@ -206,10 +192,10 @@ export function useVehicleExit() {
       catch (e) { printWarningMsg = e instanceof Error ? `No se pudo imprimir: ${e.message}` : "No se pudo imprimir."; }
 
       if (printWarningMsg) {
-        setPrintWarning({ ticketNumber: (payload as ActiveLookup).receipt.ticketNumber, plate: (payload as ActiveLookup).receipt.plate, previewLines: receiptPreview });
+        setPrintWarning({ ticketNumber: payload.receipt.ticketNumber, plate: payload.receipt.plate, previewLines: receiptPreview });
       } else {
         playSuccess();
-        toast.success(`Salida registrada. Total: $${Number((payload as ActiveLookup).total ?? 0).toLocaleString("es-CO")}`);
+        toast.success(`Salida registrada. Total: $${Number(payload.total ?? 0).toLocaleString("es-CO")}`);
         resetForm();
       }
 } catch (err) {
@@ -217,9 +203,15 @@ export function useVehicleExit() {
       if (validationMessage) { lookupHook.setError(validationMessage); errorService.toast.error(validationMessage); playError(); return; }
 
       if (!isNetworkError(err)) {
-        const errMsg = errorService.normalize(err).message;
+        let errMsg = errorService.normalize(err).message;
+        if (/caja/i.test(errMsg)) {
+          try {
+            const pol = await cashPolicy(active.receipt.site ?? null);
+            errMsg = `${errMsg} ${pol.operationsHint}`.trim();
+          } catch { /* keep base message */ }
+        }
         lookupHook.setError(errMsg);
-        errorService.toast.error(err);
+        errorService.toast.error(errMsg);
         playError();
         return;
       }

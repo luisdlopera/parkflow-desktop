@@ -11,6 +11,7 @@ import {
   printReceiptIfTauri,
 } from "@/lib/tauri-print";
 import { errorService } from "@/lib/errors/error-service";
+import { ApiError } from "@/lib/errors/ApiError";
 import { normalizePlate } from "@/lib/validation/plate-validator";
 import { toUserMessageFromClientValidation } from "@/lib/validation/request-guard";
 import { currentUser } from "@/lib/services/auth-domain.service";
@@ -86,7 +87,7 @@ export function useVehicleEntry({
           values.plate,
         );
 
-        const response = await createParkingEntry({
+        const payload = await createParkingEntry({
           idempotencyKey,
           operatorUserId: user.id,
           ...values,
@@ -118,18 +119,6 @@ export function useVehicleEntry({
               photoUrl: item.photoUrl?.trim() || null,
             })) || [],
         });
-
-        const payload = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          if (response.status === 409) {
-            onError("Este vehículo ya tiene una entrada activa.");
-            return;
-          }
-          const pfError = errorService.normalize({ ...payload, status: response.status });
-          onError(extractValidationError(pfError, pfError.message));
-          return;
-        }
 
         clearIdempotencyKey("entry", idempotencyFingerprint);
 
@@ -169,7 +158,7 @@ export function useVehicleEntry({
           plate: plateLabel,
           previewLines,
           printWarning,
-          spaceCode: payload?.receipt?.parkingSpaceCode,
+          spaceCode: payload?.receipt?.parkingSpaceCode ?? undefined,
         };
         onSuccess(successPayload);
 
@@ -179,6 +168,10 @@ export function useVehicleEntry({
         form.reset(buildFormResetValues(values, settings, isMotorcycleOnly));
       } catch (err) {
         console.error("USE_VEHICLE_ENTRY_ERROR", err);
+        if (err instanceof ApiError && err.status === 409) {
+          onError("Este vehículo ya tiene una entrada activa.");
+          return;
+        }
         const validationMessage = toUserMessageFromClientValidation(err);
         if (validationMessage) {
           onError(validationMessage);
@@ -204,7 +197,8 @@ export function useVehicleEntry({
             );
           }
         } else {
-          onError(err instanceof Error ? err.message : "Error inesperado");
+          const pfError = errorService.normalize(err);
+          onError(extractValidationError(pfError, pfError.message));
         }
       } finally {
         submitLock.current = false;

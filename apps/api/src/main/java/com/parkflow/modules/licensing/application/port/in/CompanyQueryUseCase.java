@@ -13,4 +13,5 @@ public interface CompanyQueryUseCase {
     CompanyResponse getCompany(UUID companyId);
     List<CompanyResponse> listAllCompanies();
     Page<CompanyResponse> listAllCompaniesPaginated(Pageable pageable);
+    List<CompanyResponse> searchCompanies(String query);
 }

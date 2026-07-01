@@ -20,6 +20,10 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "rate")
+@NamedEntityGraph(
+    name = "Rate.withFractions",
+    attributeNodes = @NamedAttributeNode("fractions")
+)
 public class Rate {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)

@@ -29,15 +29,8 @@ export function useActiveSessions(params: GetActiveSessionsQuery = {}, fallbackD
   );
 
   const sessionsData = data?.sessions;
-  const isArray = Array.isArray(sessionsData);
-  
-  const rows = isArray 
-    ? sessionsData 
-    : (sessionsData?.data ?? []);
-    
-  const meta = isArray
-    ? { total: sessionsData.length, page: 1, limit: sessionsData.length, totalPages: 1 }
-    : (sessionsData?.meta ?? null);
+  const rows = sessionsData?.data ?? [];
+  const meta = sessionsData?.meta ?? null;
 
   return {
     rows,

@@ -2,6 +2,7 @@ import { buildApiHeaders } from "@/lib/api";
 import { opsBase, apiBase } from "@/lib/api/config";
 import { apiFetch } from "./_shared";
 import type { CursorPaginatedResponse } from "@/lib/types/api.types";
+import { normalizeCursorPage } from "./pagination";
 
 
 export function getOperationsApiBase(): string {
@@ -46,7 +47,7 @@ export type GetActiveSessionsQuery = {
   vehicleType?: string;
 };
 
-export async function fetchActiveSessions(params?: GetActiveSessionsQuery): Promise<CursorPaginatedResponse<ActiveSessionDto> | ActiveSessionDto[]> {
+export async function fetchActiveSessions(params?: GetActiveSessionsQuery): Promise<CursorPaginatedResponse<ActiveSessionDto>> {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.set("page", params.page.toString());
   if (params?.limit) queryParams.set("limit", params.limit.toString());
@@ -63,7 +64,7 @@ export async function fetchActiveSessions(params?: GetActiveSessionsQuery): Prom
       headers: await buildApiHeaders()
     }
   );
-  return payload;
+  return normalizeCursorPage(payload);
 }
 
 export async function fetchParkingSummary(): Promise<ParkingSummaryDto> {

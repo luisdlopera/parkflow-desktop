@@ -52,19 +52,12 @@ export function useExitLookup(availablePaymentMethods: Array<{ code: PaymentMeth
 
     setSearching(true);
     try {
-      const response = await lookupActiveSession(
+      const payload = await lookupActiveSession(
         currentTicket.trim(),
         currentPlate.trim().toUpperCase(),
         agreementCode.trim() || undefined,
       );
-      const payload = await response.json();
-      if (!response.ok) {
-        setActive(null);
-        setError(payload?.userMessage ?? payload?.error ?? "No se encontro sesion activa");
-        playError();
-        return;
-      }
-      setActive(payload as ActiveLookup);
+      setActive(payload);
       const availableNonMixed = availablePaymentMethods.filter((m) => m.code !== "MIXED") as Array<{ code: Exclude<PaymentMethodCode, "MIXED">; label: string; hint: string; tone: string }>;
       resetSplitPayment(availableNonMixed[0]?.code ?? "CASH", availableNonMixed[1]?.code ?? availableNonMixed[0]?.code ?? "CASH");
       if (payload.receipt.agreementCode) setAgreementCode(payload.receipt.agreementCode);
@@ -73,6 +66,7 @@ export function useExitLookup(availablePaymentMethods: Array<{ code: PaymentMeth
       setReturnConfirmedIds(pending.map((item) => item.id));
       playSuccess();
     } catch (err) {
+      setActive(null);
       setError(errorService.normalize(err).message);
       playError();
     } finally {

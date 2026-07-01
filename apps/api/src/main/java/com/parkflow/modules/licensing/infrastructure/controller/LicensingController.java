@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.*;
  * API REST para sistema de licenciamiento.
  * Endpoints para heartbeat, validación y administración.
  */
-@RestController
-@RequestMapping("/api/v1/licensing")
-@RequiredArgsConstructor
-public class LicensingController {
+  @RestController
+  @RequestMapping("/api/v1/licensing")
+  @RequiredArgsConstructor
+  public class LicensingController {
 
   private final HeartbeatUseCase heartbeatUseCase;
   private final ValidateLicenseUseCase validateLicenseUseCase;
@@ -65,7 +65,7 @@ public class LicensingController {
   @PostMapping("/companies")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   public CompanyResponse createCompany(
-      @Valid @RequestBody CreateCompanyRequest request,
+    @Valid @RequestBody CreateCompanyRequest request,
       @RequestAttribute("currentUserEmail") String performedBy) {
 
     CompanyResponse response = companyManagementUseCase.createCompany(request, performedBy);
@@ -107,8 +107,8 @@ public class LicensingController {
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deactivateCompany(
-      @PathVariable UUID companyId,
-      @RequestAttribute("currentUserEmail") String performedBy) {
+    @PathVariable UUID companyId,
+    @RequestAttribute("currentUserEmail") String performedBy) {
 
     companyManagementUseCase.deactivateCompany(companyId, performedBy);
   }
@@ -117,8 +117,8 @@ public class LicensingController {
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteCompany(
-      @PathVariable UUID companyId,
-      @RequestAttribute("currentUserEmail") String performedBy) {
+    @PathVariable UUID companyId,
+    @RequestAttribute("currentUserEmail") String performedBy) {
 
     companyManagementUseCase.deleteCompany(companyId, performedBy);
   }
@@ -127,8 +127,8 @@ public class LicensingController {
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void purgeCompany(
-      @PathVariable UUID companyId,
-      @RequestAttribute("currentUserEmail") String performedBy) {
+    @PathVariable UUID companyId,
+    @RequestAttribute("currentUserEmail") String performedBy) {
 
     companyManagementUseCase.purgeCompany(companyId, performedBy);
   }

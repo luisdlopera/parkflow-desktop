@@ -38,15 +38,11 @@ export function useEntryPrinting() {
       setReprintLoading(true);
       try {
         const user = await currentUser();
-        const response = await reprintEntryTicket(
+        await reprintEntryTicket(
           printWarning.ticketNumber,
           user?.id ?? "00000000-0000-0000-0000-000000000003",
           newIdempotencyKey(),
         );
-        if (!response.ok) {
-          const text = await response.text().catch(() => null);
-          throw new Error(text || `Error ${response.status}`);
-        }
         onSuccess("Solicitud de reimpresion enviada");
         setPrintWarning(null);
       } catch (err) {

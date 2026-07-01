@@ -75,24 +75,20 @@ public class GlobalExceptionHandler {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
         HttpStatusCode statusCode = ex.getStatusCode();
-        String httpCode = "HTTP_" + statusCode.value();
-
-        String userMessage = ex.getReason() != null
-                ? ex.getReason()
-                : "La solicitud no pudo procesarse.";
 
         log.warn("ResponseStatusException [correlationId={}, status={}, reason={}]",
                 correlationId, statusCode, ex.getReason());
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.SYSTEM_OPERATION_FAILED;
         ApiResponse<Void> response = ApiResponse.error(
-            userMessage,
-            httpCode,
+            code.getMessage(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.status(statusCode).body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -133,9 +129,13 @@ public class GlobalExceptionHandler {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
 
+        // Use error code from exception, or fallback to ErrorCodeRegistry.INTERNAL_ERROR
+        String code = ex.getCode() != null ? ex.getCode() : ErrorCodeRegistry.INTERNAL_ERROR.getCode();
+        String message = ex.getMessage() != null ? ex.getMessage() : ErrorCodeRegistry.INTERNAL_ERROR.getMessage();
+
         ApiResponse<Void> response = ApiResponse.error(
-            ex.getMessage(),
-            ex.getCode() != null ? ex.getCode() : "OPERATION_ERROR",
+            message,
+            code,
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
@@ -238,15 +238,16 @@ public class GlobalExceptionHandler {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.INSUFFICIENT_PERMISSIONS;
         ApiResponse<Void> response = ApiResponse.error(
-            "No tienes permisos para realizar esta accion.",
-            MessagesEnum.ACCESS_DENIED.getCode(),
+            code.getMessage(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -262,15 +263,16 @@ public class GlobalExceptionHandler {
         // FIX #4: never log or return the specific DB constraint message (contains table/column names)
         log.warn("Data integrity violation [correlationId={}]: {}", correlationId, ex.getClass().getSimpleName());
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.RESOURCE_ALREADY_EXISTS;
         ApiResponse<Void> response = ApiResponse.error(
-            "La operacion no pudo completarse por un conflicto de datos. Verifique que el recurso no este duplicado.",
-            "DATABASE_CONSTRAINT_ERROR",
+            code.getMessage(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     @ExceptionHandler({ObjectOptimisticLockingFailureException.class, OptimisticLockException.class})
@@ -281,15 +283,16 @@ public class GlobalExceptionHandler {
 
         log.warn("Optimistic locking failure [correlationId={}]", correlationId);
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.CONCURRENT_MODIFICATION_ERROR;
         ApiResponse<Void> response = ApiResponse.error(
-            "La operacion no pudo completarse porque otro usuario modifico la informacion. Por favor recarga e intenta de nuevo.",
-            "CONCURRENT_MODIFICATION_ERROR",
+            code.getMessage(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     @ExceptionHandler(IllegalStateException.class)
@@ -300,15 +303,16 @@ public class GlobalExceptionHandler {
 
         log.warn("Illegal state [correlationId={}]", correlationId);
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.INVALID_STATE;
         ApiResponse<Void> response = ApiResponse.error(
-            ex.getMessage(),
-            "INVALID_STATE",
+            code.getMessage(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.badRequest().body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     @ExceptionHandler(InvalidDataAccessResourceUsageException.class)
@@ -319,15 +323,16 @@ public class GlobalExceptionHandler {
 
         log.error("Database query error [correlationId={}]", correlationId, ex);
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.DATABASE_QUERY_ERROR;
         ApiResponse<Void> response = ApiResponse.error(
-            "Error interno de base de datos. Contacta al administrador.",
-            "DATABASE_QUERY_ERROR",
+            code.getMessage(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -343,15 +348,16 @@ public class GlobalExceptionHandler {
 
         log.warn("No resource found [correlationId={}, path={}]", correlationId, path);
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.RESOURCE_NOT_FOUND;
         ApiResponse<Void> response = ApiResponse.error(
-            "El recurso solicitado no existe o no esta disponible.",
-            "NOT_FOUND",
+            code.getMessage(),
+            code.getCode(),
             path,
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -360,15 +366,16 @@ public class GlobalExceptionHandler {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.VALIDATION_ERROR;
         ApiResponse<Void> response = ApiResponse.error(
-            "La solicitud no es valida.",
-            "INVALID_ARGUMENT",
+            code.getMessage(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.badRequest().body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -383,15 +390,16 @@ public class GlobalExceptionHandler {
 
         log.warn("AuthenticationException [correlationId={}]", correlationId);
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.TOKEN_INVALID;
         ApiResponse<Void> response = ApiResponse.error(
-            "Tu sesion ha expirado o no estas autenticado.",
-            "AUTH_UNAUTHORIZED",
+            code.getMessage(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
@@ -402,15 +410,16 @@ public class GlobalExceptionHandler {
 
         log.warn("HttpMessageNotReadable [correlationId={}]", correlationId);
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.MALFORMED_REQUEST;
         ApiResponse<Void> response = ApiResponse.error(
-            "El cuerpo de la solicitud JSON es invalido o no pudo leerse.",
-            "MALFORMED_REQUEST",
+            code.getMessage(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.badRequest().body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
@@ -419,15 +428,16 @@ public class GlobalExceptionHandler {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.MISSING_PARAMETER;
         ApiResponse<Void> response = ApiResponse.error(
-            "Falta el parametro requerido: " + ex.getParameterName(),
-            "MISSING_PARAMETER",
+            code.getMessage() + ": " + ex.getParameterName(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.badRequest().body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
@@ -436,16 +446,17 @@ public class GlobalExceptionHandler {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.TYPE_MISMATCH;
         String typeName = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "valido";
         ApiResponse<Void> response = ApiResponse.error(
-            "El parametro '" + ex.getName() + "' debe ser de tipo " + typeName,
-            "TYPE_MISMATCH",
+            code.getMessage() + ": " + ex.getName() + " debe ser " + typeName,
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.badRequest().body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
@@ -454,15 +465,16 @@ public class GlobalExceptionHandler {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.METHOD_NOT_SUPPORTED;
         ApiResponse<Void> response = ApiResponse.error(
-            "Metodo HTTP no soportado para esta ruta.",
-            "METHOD_NOT_SUPPORTED",
+            code.getMessage(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
@@ -471,15 +483,16 @@ public class GlobalExceptionHandler {
 
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.UNSUPPORTED_MEDIA_TYPE;
         ApiResponse<Void> response = ApiResponse.error(
-            "Tipo de contenido (Content-Type) no soportado.",
-            "UNSUPPORTED_MEDIA_TYPE",
+            code.getMessage(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -504,14 +517,15 @@ public class GlobalExceptionHandler {
                     Map.entry("exception", ex.getClass().getSimpleName())));
         }
 
+        ErrorCodeRegistry code = ErrorCodeRegistry.INTERNAL_ERROR;
         ApiResponse<Void> response = ApiResponse.error(
-            "Ocurrio un error inesperado. Intenta nuevamente.",
-            "INTERNAL_ERROR",
+            code.getMessage(),
+            code.getCode(),
             request.getRequestURI(),
             correlationId,
             safeDetails(ex)
         );
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        return ResponseEntity.status(code.getHttpStatus()).body(response);
     }
 }

@@ -1,6 +1,7 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useExitLookup } from "../useExitLookup";
+import { ApiError } from "@/lib/errors/ApiError";
 import type { PaymentMethodCode } from "@/lib/payment-method-catalog";
 
 const mockGetSearchParam = vi.hoisted(() => vi.fn());
@@ -8,7 +9,6 @@ const mockLookupActiveSession = vi.hoisted(() => vi.fn());
 const mockPlaySuccess = vi.hoisted(() => vi.fn());
 const mockPlayError = vi.hoisted(() => vi.fn());
 const mockResetSplitPayment = vi.hoisted(() => vi.fn());
-const mockGetUserFriendlyErrorMessage = vi.hoisted(() => vi.fn((err: unknown) => (err instanceof Error ? err.message : "Error")));
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => ({ get: mockGetSearchParam }),
@@ -54,25 +54,11 @@ const mockActive = {
   },
 };
 
-function okResponse(payload: unknown) {
-  return {
-    ok: true,
-    json: vi.fn().mockResolvedValue(payload),
-  } as unknown as Response;
-}
-
-function errorResponse(message: string) {
-  return {
-    ok: false,
-    json: vi.fn().mockResolvedValue({ userMessage: message }),
-  } as unknown as Response;
-}
-
 describe("useExitLookup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetSearchParam.mockReturnValue(null);
-    mockLookupActiveSession.mockResolvedValue(okResponse(mockActive));
+    mockLookupActiveSession.mockResolvedValue(mockActive);
   });
 
   it("looks up a session by ticket number", async () => {
@@ -158,7 +144,7 @@ describe("useExitLookup", () => {
   });
 
   it("shows an error when the lookup response is not ok", async () => {
-    mockLookupActiveSession.mockResolvedValue(errorResponse("No se encontró sesión activa"));
+    mockLookupActiveSession.mockRejectedValue(new ApiError(404, "RESOURCE_NOT_FOUND", "No se encontró sesión activa"));
 
     const { result } = renderHook(() => useExitLookup(availableMethods as any, mockResetSplitPayment));
 

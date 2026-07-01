@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/settings/users")
+@Deprecated(since = "2.1.0", forRemoval = false)
 @RequiredArgsConstructor
 public class SettingsUsersController {
   private final UserManagementUseCase userManagementUseCase;

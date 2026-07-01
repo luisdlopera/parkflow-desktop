@@ -2,6 +2,7 @@ import { buildApiHeaders } from "@/lib/api";
 import { apiBase } from "@/lib/api/config";
 import { apiFetch } from "@/lib/api/_shared";
 import type { PaginatedResponse } from "@/lib/types/api.types";
+import { normalizePageResponse } from "@/lib/api/pagination";
 
 const API_BASE = apiBase();
 
@@ -43,9 +44,10 @@ export async function fetchCashSessionHistory(
   size = 20,
 ): Promise<PaginatedResponse<CashSessionRow>> {
   const p = new URLSearchParams({ dateFrom, dateTo, page: String(page), size: String(size) });
-  return apiFetch<PaginatedResponse<CashSessionRow>>(`${API_BASE}/reports/cash-session-history?${p.toString()}`, {
+  const payload = await apiFetch<PaginatedResponse<CashSessionRow> | CashSessionRow[] | { content?: CashSessionRow[] }>(`${API_BASE}/reports/cash-session-history?${p.toString()}`, {
     headers: await buildApiHeaders()
   });
+  return normalizePageResponse(payload);
 }
 
 export async function fetchCashSessionSummary(sessionId: string): Promise<CashSummary> {
@@ -71,9 +73,10 @@ export async function fetchPaidTickets(
   if (dateTo) p.set("dateTo", dateTo);
   p.set("page", String(page));
   p.set("size", String(size));
-  return apiFetch<PaginatedResponse<PaidTicketRow>>(`${API_BASE}/reports/paid-tickets?${p.toString()}`, {
+  const payload = await apiFetch<PaginatedResponse<PaidTicketRow> | PaidTicketRow[] | { content?: PaidTicketRow[] }>(`${API_BASE}/reports/paid-tickets?${p.toString()}`, {
     headers: await buildApiHeaders()
   });
+  return normalizePageResponse(payload);
 }
 
 export async function fetchVoidedTickets(dateFrom: string, dateTo: string): Promise<VoidedTicketRow[]> {

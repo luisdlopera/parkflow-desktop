@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/settings/rates")
+@Deprecated(since = "2.1.0", forRemoval = false)
 @RequiredArgsConstructor
 public class SettingsRatesController {
   private final RateManagementUseCase rateManagementUseCase;

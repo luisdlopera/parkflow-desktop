@@ -2,18 +2,21 @@ import { apiFetch, cfgBase, buildApiHeaders, hdr } from "./_shared";
 import { rateFractionSchema } from "@/lib/schemas/config.schemas";
 import { validatePayloadOrThrow } from "@/lib/validation/request-guard";
 import type { RateFractionRow } from "@/lib/types/settings.types";
+import { normalizePageResponse } from "./pagination";
+import type { PaginatedResponse } from "@/lib/types/api.types";
 
 export type { RateFractionRow };
 
 export async function fetchConfigurationRateFractions(
   rateId: string,
-): Promise<RateFractionRow[]> {
+): Promise<PaginatedResponse<RateFractionRow>> {
   const u = new URL(`${cfgBase()}/rate-fractions`);
   u.searchParams.set("rateId", rateId);
-  return apiFetch<RateFractionRow[]>(u.toString(), {
+  const payload = await apiFetch<PaginatedResponse<RateFractionRow> | RateFractionRow[] | { content?: RateFractionRow[] }>(u.toString(), {
     cache: "no-store",
     headers: await buildApiHeaders(),
   });
+  return normalizePageResponse(payload);
 }
 
 export async function createConfigurationRateFraction(

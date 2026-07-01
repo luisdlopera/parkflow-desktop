@@ -96,22 +96,38 @@ describe("dashboard-api", () => {
   });
 
   describe("fetchActiveSessions", () => {
-    it("should fetch and unwrap paginated sessions", async () => {
+    it("should fetch and normalize paginated sessions", async () => {
       const sessions = [{ ticketNumber: "T001", plate: "ABC123", vehicleType: "CAR", entryAt: "2025-06-01T10:00:00Z", status: "ACTIVE", totalAmount: null }];
       vi.mocked(apiFetch).mockResolvedValue({ data: sessions } as never);
 
       const result = await fetchActiveSessions();
 
-      expect(result).toEqual(sessions);
+      expect(result).toEqual({
+        data: sessions,
+        meta: {
+          total: 1,
+          page: 1,
+          limit: 1,
+          totalPages: 1,
+        },
+      });
     });
 
-    it("should return array directly when payload is array", async () => {
+    it("should normalize array payloads", async () => {
       const sessions = [{ ticketNumber: "T001", plate: "ABC123", vehicleType: "CAR", entryAt: "2025-06-01T10:00:00Z", status: "ACTIVE", totalAmount: null }];
       vi.mocked(apiFetch).mockResolvedValue(sessions as never);
 
       const result = await fetchActiveSessions();
 
-      expect(result).toEqual(sessions);
+      expect(result).toEqual({
+        data: sessions,
+        meta: {
+          total: 1,
+          page: 1,
+          limit: 1,
+          totalPages: 1,
+        },
+      });
     });
 
     it("should throw on error", async () => {

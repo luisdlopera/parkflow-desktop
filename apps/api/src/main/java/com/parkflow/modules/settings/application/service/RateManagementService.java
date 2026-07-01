@@ -12,6 +12,7 @@ import com.parkflow.modules.parking.operation.infrastructure.persistence.RateRep
 import com.parkflow.modules.common.dto.RateResponse;
 import com.parkflow.modules.common.dto.RateStatusRequest;
 import com.parkflow.modules.common.dto.RateUpsertRequest;
+import com.parkflow.config.CacheConfig;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -69,6 +71,7 @@ public class RateManagementService {
   }
 
   @Transactional
+  @CacheEvict(value = CacheConfig.RATES, key = "#id")
   public RateResponse update(UUID id, RateUpsertRequest req) {
     Rate rate =
         rateRepository
@@ -125,6 +128,7 @@ public class RateManagementService {
   }
 
   @Transactional
+  @CacheEvict(value = CacheConfig.RATES, key = "#id")
   public RateResponse delete(UUID id) {
     Rate rate =
         rateRepository

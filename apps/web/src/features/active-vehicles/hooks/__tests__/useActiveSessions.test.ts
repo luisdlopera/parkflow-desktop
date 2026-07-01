@@ -111,9 +111,9 @@ describe("useActiveSessions", () => {
     expect(result.current.rows).toEqual([]);
   });
 
-  it("handles array responses without meta", () => {
+  it("handles normalized cursor responses", () => {
     swrState[keyFor({ search: "" })] = {
-      data: { sessions: mockSessions.data, summary: null },
+      data: { sessions: mockSessions, summary: null },
       error: undefined,
       isLoading: false,
       mutate: vi.fn(),
@@ -125,7 +125,7 @@ describe("useActiveSessions", () => {
     expect(result.current.meta).toEqual({
       total: 1,
       page: 1,
-      limit: 1,
+      limit: 20,
       totalPages: 1,
     });
   });

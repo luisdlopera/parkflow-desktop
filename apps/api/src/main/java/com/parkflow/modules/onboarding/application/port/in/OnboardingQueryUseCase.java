@@ -2,6 +2,7 @@ package com.parkflow.modules.onboarding.application.port.in;
 
 import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;
+import com.parkflow.modules.onboarding.dto.CompanySettingsResponse;
 import java.util.Map;
 import java.util.UUID;
 
@@ -11,6 +12,6 @@ import java.util.UUID;
 public interface OnboardingQueryUseCase {
     OnboardingStatusResponse status(UUID companyId);
     boolean isFeatureEnabled(UUID companyId, String featureKey);
-    Map<String, Object> getCompanySettings(UUID companyId);
+    CompanySettingsResponse getCompanySettings(UUID companyId);
     CompanyCapabilitiesResponse getCapabilities(UUID companyId);
 }

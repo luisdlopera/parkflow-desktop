@@ -1,6 +1,7 @@
 import useSWR from "swr";
 import { fetchDashboardSummary, fetchOperationalHealth, fetchActiveSessions, postOperationalAction, type DashboardSummary, type OperationalHealth, type ActiveSessionRow } from "@/lib/api/dashboard-api";
 import { useCallback, useState, useEffect } from "react";
+import type { CursorPaginatedResponse } from "@/lib/types/api.types";
 
 export interface DashboardMetrics {
   activeVehicles: { value: number; trend?: number; status: "ok" | "warning" | "critical" };
@@ -35,22 +36,22 @@ export function useDashboardData() {
   });
 
   const {
-    data: activeSessionsRaw,
+    data: activeSessionsPage,
     error: sessionsError,
     mutate: mutateSessions,
-  } = useSWR<ActiveSessionRow[]>("dashboard-active-sessions", fetchActiveSessions, {
+  } = useSWR<CursorPaginatedResponse<ActiveSessionRow>>("dashboard-active-sessions", fetchActiveSessions, {
     refreshInterval: 15000,
     revalidateOnFocus: false,
   });
 
   // Update timestamp when data changes
   useEffect(() => {
-    if (summary || operational || activeSessionsRaw) {
+    if (summary || operational || activeSessionsPage) {
       setLastUpdated(new Date());
     }
-  }, [summary, operational, activeSessionsRaw]);
+  }, [summary, operational, activeSessionsPage]);
 
-  const activeSessions = activeSessionsRaw?.map((row) => ({
+  const activeSessions = activeSessionsPage?.data?.map((row) => ({
     plate: row.plate,
     type: row.vehicleType,
     started: row.entryAt ? new Date(row.entryAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }) : "—",
@@ -59,7 +60,7 @@ export function useDashboardData() {
   })) ?? [];
 
   // Determine status based on occupancy and vehicle counts
-  const determineStatus = (occupancyPercent?: number, activeVehicles?: number) => {
+  const determineStatus = (occupancyPercent?: number) => {
     if (!occupancyPercent) return "ok";
     if (occupancyPercent >= 90) return "critical";
     if (occupancyPercent >= 75) return "warning";
@@ -70,7 +71,7 @@ export function useDashboardData() {
     activeVehicles: {
       value: summary.activeVehicles,
       trend: 0, // Would come from comparison endpoint if available
-      status: summary.activeVehicles > 0 ? "ok" : "ok",
+      status: "ok",
     },
     availableSpaces: {
       value: summary.availableSpaces,

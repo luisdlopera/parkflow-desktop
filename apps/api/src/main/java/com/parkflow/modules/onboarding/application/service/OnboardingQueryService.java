@@ -6,6 +6,7 @@ import com.parkflow.modules.onboarding.application.port.in.OnboardingQueryUseCas
 import com.parkflow.modules.onboarding.application.port.out.OperationalConfigurationPort;
 import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.dto.CompanyCapabilitiesResponse;
+import com.parkflow.modules.onboarding.dto.CompanySettingsResponse;
 import com.parkflow.modules.onboarding.domain.OnboardingProgress;
 import com.parkflow.modules.onboarding.domain.repository.OnboardingProgressPort;
 import java.util.Comparator;
@@ -60,7 +61,7 @@ public class OnboardingQueryService implements OnboardingQueryUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public Map<String, Object> getCompanySettings(UUID companyId) {
+  public CompanySettingsResponse getCompanySettings(UUID companyId) {
     Company company = getCompany(companyId);
     Map<String, Object> settings = companySettingsService.getSettingsOrDefault(company);
     Map<String, Object> mutable = new LinkedHashMap<>(settings);
@@ -72,7 +73,18 @@ public class OnboardingQueryService implements OnboardingQueryUseCase {
     Map<String, Object> mergedOpConfig = new LinkedHashMap<>(derivedOpConfig);
     mergedOpConfig.putAll(persistedOpConfig);
     mutable.put("operationConfiguration", mergedOpConfig);
-    return mutable;
+    return CompanySettingsResponse.builder()
+        .companyId(company.getId().toString())
+        .companyName(company.getName())
+        .status(company.getStatus() != null ? company.getStatus().name() : "ACTIVE")
+        .country(stringValue(mutable.getOrDefault("country", "CO")))
+        .timezone(stringValue(mutable.getOrDefault("timezone", "America/Bogota")))
+        .currency(stringValue(mutable.getOrDefault("currency", "COP")))
+        .language(stringValue(mutable.getOrDefault("language", "es")))
+        .features(mapOfBoolean(mutable.get("features")))
+        .modules(mapOfBoolean(mutable.get("modules")))
+        .customSettings(mapOfObject(mutable.get("customSettings")))
+        .build();
   }
 
   @Override
@@ -135,6 +147,26 @@ public class OnboardingQueryService implements OnboardingQueryUseCase {
     return companyRepository.findById(companyId)
         .orElseThrow(() -> new com.parkflow.modules.common.exception.OperationException(
             org.springframework.http.HttpStatus.NOT_FOUND, "Empresa no encontrada"));
+  }
+
+  private String stringValue(Object value) {
+    return value == null ? "" : value.toString();
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Boolean> mapOfBoolean(Object value) {
+    if (value instanceof Map<?, ?> map) {
+      return (Map<String, Boolean>) map;
+    }
+    return new LinkedHashMap<>();
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> mapOfObject(Object value) {
+    if (value instanceof Map<?, ?> map) {
+      return (Map<String, Object>) map;
+    }
+    return new LinkedHashMap<>();
   }
 
   private OnboardingProgress findOrCreateProgress(Company company) {

@@ -6,6 +6,7 @@ import { useVehicleEntry } from "@/features/vehicle-entry/hooks/useVehicleEntry"
 import { vehicleEntrySchema } from "@/lib/schemas/vehicle.schema";
 import type { VehicleEntryFormValues } from "@/lib/schemas/vehicle.schema";
 import type { OperatorSettings } from "@/features/vehicle-entry/hooks/useOperatorSettings";
+import { ApiError } from "@/lib/errors/ApiError";
 
 // --- mocks ---
 
@@ -71,23 +72,20 @@ const validValues: VehicleEntryFormValues = {
 };
 
 function makeSuccessResponse(plate = "ABC123") {
-  return new Response(
-    JSON.stringify({
-      sessionId: "session-001",
-      receipt: {
-        ticketNumber: "T-001",
-        plate,
-        vehicleType: "CAR",
-        site: "Principal",
-        lane: null,
-        booth: null,
-        terminal: null,
-        parkingSpaceCode: "A-01",
-        entryAt: "2026-06-19T10:00:00Z",
-      },
-    }),
-    { status: 200 }
-  );
+  return {
+    sessionId: "session-001",
+    receipt: {
+      ticketNumber: "T-001",
+      plate,
+      vehicleType: "CAR",
+      site: "Principal",
+      lane: null,
+      booth: null,
+      terminal: null,
+      parkingSpaceCode: "A-01",
+      entryAt: "2026-06-19T10:00:00Z",
+    },
+  };
 }
 
 function useVehicleEntryWithForm(
@@ -163,9 +161,7 @@ describe("useVehicleEntry", () => {
   });
 
   it("calls onError with 409 duplicate-vehicle message", async () => {
-    vi.mocked(createParkingEntry).mockResolvedValue(
-      new Response(JSON.stringify({ error: "DUPLICATE" }), { status: 409 })
-    );
+    vi.mocked(createParkingEntry).mockRejectedValue(new ApiError(409, "RESOURCE_CONFLICT", "Conflict"));
     const onError = vi.fn();
     const { result } = renderHook(() => useVehicleEntryWithForm(
       { availableSpaces: 10, activeSpaces: 5 },

@@ -42,7 +42,7 @@ describe("rate-fractions-api", () => {
   describe("fetchConfigurationRateFractions", () => {
     it("should fetch rate fractions by rateId", async () => {
       const { apiFetch } = await import("@/lib/api/_shared");
-      vi.mocked(apiFetch).mockResolvedValue([MOCK_FRACTION]);
+      vi.mocked(apiFetch).mockResolvedValue([MOCK_FRACTION] as never);
 
       const result = await fetchConfigurationRateFractions("rate-1");
 
@@ -50,7 +50,13 @@ describe("rate-fractions-api", () => {
         expect.stringContaining("/rate-fractions?rateId=rate-1"),
         expect.objectContaining({ cache: "no-store" }),
       );
-      expect(result).toHaveLength(1);
+      expect(result).toEqual({
+        content: [MOCK_FRACTION],
+        totalElements: 1,
+        totalPages: 1,
+        page: 0,
+        size: 1,
+      });
     });
   });
 

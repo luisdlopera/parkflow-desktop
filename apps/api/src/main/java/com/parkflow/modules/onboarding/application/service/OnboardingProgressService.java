@@ -4,7 +4,6 @@ import com.parkflow.modules.licensing.domain.Company;
 import com.parkflow.modules.licensing.domain.repository.CompanyPort;
 import com.parkflow.modules.onboarding.application.port.in.OnboardingQueryUseCase;
 import com.parkflow.modules.onboarding.application.port.in.OnboardingProgressUseCase;
-import com.parkflow.modules.onboarding.application.port.out.OperationalConfigurationPort;
 import com.parkflow.modules.onboarding.domain.OnboardingDomainInvariants;
 import com.parkflow.modules.onboarding.dto.OnboardingStatusResponse;
 import com.parkflow.modules.onboarding.domain.OnboardingProgress;
@@ -35,22 +34,14 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
   private final CompanyPort companyRepository;
   private final OnboardingProgressPort onboardingProgressPort;
   private final CompanySettingsService companySettingsService;
-  private final FeatureAccessService featureAccessService;
-  private final com.parkflow.modules.onboarding.domain.repository.CompanySettingsSnapshotPort companySettingsSnapshotPort;
-  private final com.parkflow.modules.audit.application.port.out.AuditPort auditService;
-  private final OperationalConfigurationPort operationalConfigurationPort;
-  private final OnboardingQuestionConfigService onboardingQuestionConfigService;
   private final OnboardingSettingsMapper settingsMapper;
-  private final com.parkflow.modules.parking.operation.domain.repository.ParkingSessionPort parkingSessionPort;
-  private final com.parkflow.modules.auth.domain.repository.AuthSessionPort authSessionPort;
-  private final com.parkflow.modules.parking.operation.infrastructure.persistence.AppUserRepository appUserRepository;
-  private final OnboardingMaterializationService materializationService;
   private final Step2DataValidator step2DataValidator;
   private final Step3DataValidator step3DataValidator;
   private final OnboardingQueryUseCase onboardingQueryUseCase;
   private final com.parkflow.modules.onboarding.domain.OnboardingStateMachine onboardingStateMachine;
   private final org.springframework.context.ApplicationEventPublisher eventPublisher;
   private final com.parkflow.modules.onboarding.infrastructure.persistence.OnboardingRuleSnapshotRepository ruleSnapshotRepository;
+  private final OnboardingResetService onboardingResetService;
 
   @Transactional
   public OnboardingStatusResponse saveOnboardingStep(UUID companyId, int step, Map<String, Object> data, Integer targetStep) {
@@ -71,7 +62,6 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
       // I-02, I-03: Use state machine to determine the next valid step
       int nextStep = onboardingStateMachine.determineNextStep(company, progress.getCurrentStep(), targetStep);
       progress.setCurrentStep(nextStep);
-
       progress.setUpdatedAt(OffsetDateTime.now());
       onboardingProgressPort.save(progress);
       return onboardingQueryUseCase.status(companyId);
@@ -198,69 +188,8 @@ public class OnboardingProgressService implements OnboardingProgressUseCase {
 
   @Transactional
   public OnboardingStatusResponse resetOnboarding(UUID companyId, String reason) {
-    UUID currentCompanyId = com.parkflow.modules.auth.security.SecurityUtils.requireCompanyId();
-    com.parkflow.modules.auth.domain.UserRole role = com.parkflow.modules.auth.security.SecurityUtils.requireUserRole();
-    if (!currentCompanyId.equals(companyId) && role != com.parkflow.modules.auth.domain.UserRole.SUPER_ADMIN) {
-      throw new OperationException(HttpStatus.FORBIDDEN, "Acceso denegado a la empresa solicitada");
-    }
-    if (role != com.parkflow.modules.auth.domain.UserRole.SUPER_ADMIN && role != com.parkflow.modules.auth.domain.UserRole.ADMIN) {
-      throw new OperationException(HttpStatus.FORBIDDEN, "Solo administradores pueden reiniciar el onboarding");
-    }
     Company company = getCompany(companyId);
-    long activeSessions = parkingSessionPort.countActive(companyId);
-    StringBuilder auditContext = new StringBuilder();
-    if (activeSessions > 0) {
-      auditContext.append("Reinicio con ").append(activeSessions).append(" vehículos activos. ");
-    }
-    OnboardingProgress progress = findOrCreateProgress(company);
-    Map<String, Object> currentSettings = companySettingsService.getSettingsOrDefault(company);
-    int nextVersion = companySettingsSnapshotPort.countByCompanyId(companyId) + 1;
-    com.parkflow.modules.onboarding.domain.CompanySettingsSnapshot snapshot = new com.parkflow.modules.onboarding.domain.CompanySettingsSnapshot();
-    snapshot.setCompany(company);
-    snapshot.setVersion(nextVersion);
-    snapshot.setSettingsJson(new LinkedHashMap<>(currentSettings));
-    snapshot.setProgressData(new LinkedHashMap<>(progress.getProgressData()));
-    snapshot.setReason(reason != null && !reason.isBlank() ? reason : "RESTART_ONBOARDING");
-    snapshot.setCreatedAt(OffsetDateTime.now());
-    com.parkflow.modules.auth.domain.AppUser appUser = null;
-    String creatorEmail = "SYSTEM";
-    org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-    if (auth != null) {
-      if (auth.getPrincipal() instanceof com.parkflow.modules.auth.domain.AppUser user) {
-        appUser = user;
-        creatorEmail = user.getEmail();
-      } else if (auth.getPrincipal() instanceof com.parkflow.modules.auth.security.AuthPrincipal principal) {
-        creatorEmail = principal.email();
-      }
-    }
-    snapshot.setCreatedBy(creatorEmail);
-    companySettingsSnapshotPort.save(snapshot);
-    company.setOnboardingCompleted(false);
-    companyRepository.save(company);
-    List<com.parkflow.modules.auth.domain.AppUser> companyUsers = appUserRepository.findByCompanyId(companyId);
-    if (!companyUsers.isEmpty()) {
-      final String creator = creatorEmail;
-      List<com.parkflow.modules.auth.domain.AppUser> usersToInvalidate = companyUsers.stream()
-          .filter(u -> !u.getEmail().equalsIgnoreCase(creator))
-          .toList();
-      if (!usersToInvalidate.isEmpty()) {
-        authSessionPort.deleteByUserIn(usersToInvalidate);
-        org.slf4j.LoggerFactory.getLogger(getClass()).info(
-            "Invalidated {} sessions for company {} during onboarding reset by {}",
-            usersToInvalidate.size(), companyId, creatorEmail);
-      }
-    }
-    progress.setCompleted(false);
-    progress.setCurrentStep(1);
-    progress.setUpdatedAt(OffsetDateTime.now());
-    onboardingProgressPort.save(progress);
-    auditService.record(
-        com.parkflow.modules.audit.domain.AuditAction.REINICIAR_ONBOARDING,
-        companyId, appUser,
-        "onboardingCompleted=true, currentStep=" + progress.getCurrentStep(),
-        "onboardingCompleted=false, currentStep=1",
-        "Reinicio de onboarding multi-tenant. Snapshot v" + nextVersion + " guardado. " + auditContext);
-    return onboardingQueryUseCase.status(companyId);
+    return onboardingResetService.resetOnboarding(company, companyId, reason);
   }
 
   private void applyOperationalProfile(Company company, Map<String, Object> step1) {

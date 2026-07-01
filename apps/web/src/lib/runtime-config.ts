@@ -1,7 +1,7 @@
 import { resolveCurrentCompanyId } from "@/lib/current-company";
 import { authHeaders } from "@/lib/services/auth-domain.service";
 import { apiBase } from "@/lib/api/config";
-import { fetchWithCredentials } from "@/lib/api/fetch-with-credentials";
+import { safeFetch } from "@/lib/api/fetch";
 
 
 export type RuntimeConfig = {
@@ -62,23 +62,17 @@ export async function fetchRuntimeConfig(): Promise<RuntimeConfig | null> {
   if (!companyId) return null;
   const headers = await authHeaders();
   try {
-    const res = await fetchWithCredentials(`${apiBase()}/onboarding/companies/${companyId}/settings`, {
+    return await safeFetch<RuntimeConfig>(`${apiBase()}/onboarding/companies/${companyId}/settings`, {
       headers: {
         ...headers,
         "X-Parkflow-Auth-Toast-Silent": "1"
       },
       cache: "no-store"
     });
-    if (!res.ok) {
-      console.warn(`[RuntimeConfig] ${res.status} ${res.statusText} — config not available`);
-      return null;
-    }
-    return (await res.json()) as RuntimeConfig;
   } catch (err) {
     // Silently swallow network errors (API not ready, CORS, etc.)
     console.warn("[RuntimeConfig] Failed to fetch config, returning null:", err);
     return null;
   }
 }
-
 

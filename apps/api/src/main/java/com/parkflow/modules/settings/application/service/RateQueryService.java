@@ -5,9 +5,11 @@ import com.parkflow.modules.common.exception.OperationException;
 import com.parkflow.modules.parking.operation.infrastructure.persistence.RateRepository;
 import com.parkflow.modules.common.dto.RateResponse;
 import com.parkflow.modules.common.dto.PageResponse;
+import com.parkflow.config.CacheConfig;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -33,6 +35,7 @@ public class RateQueryService {
   }
 
   @Transactional(readOnly = true)
+  @Cacheable(value = CacheConfig.RATES, key = "#id")
   public RateResponse get(UUID id) {
     Rate rate =
         rateRepository

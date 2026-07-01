@@ -1,6 +1,8 @@
 import { buildApiHeaders } from "@/lib/api";
 import { opsBase, apiBase } from "@/lib/api/config";
 import { apiFetch } from "./_shared";
+import { normalizeCursorPage } from "./pagination";
+import type { CursorPaginatedResponse } from "@/lib/types/api.types";
 
 
 const OPS_BASE = opsBase();
@@ -55,11 +57,11 @@ export async function fetchOperationalHealth(): Promise<OperationalHealth | null
   }
 }
 
-export async function fetchActiveSessions(): Promise<ActiveSessionRow[]> {
+export async function fetchActiveSessions(): Promise<CursorPaginatedResponse<ActiveSessionRow>> {
   const payload = await apiFetch<ActiveSessionRow[] | { data?: ActiveSessionRow[] }>(`${OPS_BASE}/sessions/active-list`, {
     headers: await buildApiHeaders()
   });
-  return Array.isArray(payload) ? payload : (payload.data ?? []);
+  return normalizeCursorPage(payload);
 }
 
 export async function postOperationalAction(path: "retry-sync" | "test-printer"): Promise<string> {

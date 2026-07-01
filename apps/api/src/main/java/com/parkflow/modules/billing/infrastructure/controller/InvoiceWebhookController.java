@@ -11,8 +11,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
@@ -36,7 +36,7 @@ public class InvoiceWebhookController {
   @PostMapping("/{providerType}")
   @Operation(summary = "Receive webhook event from an invoice provider")
   @RawResponse(reason = "External billing webhooks require raw JSON responses matching their specific protocols (e.g. Stripe, Alegra)")
-  public ResponseEntity<Map<String, String>> receiveWebhook(
+  public Map<String, String> receiveWebhook(
       @PathVariable InvoiceProviderType providerType,
       @RequestHeader(value = "X-Webhook-Signature", required = false) String signature,
       @RequestBody JsonNode payload,
@@ -51,8 +51,7 @@ public class InvoiceWebhookController {
 
       if (!signatureValidator.validate(payloadString, signature, secret)) {
         log.warn("[Billing Webhook] Signature validation failed for provider={}", providerType);
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-            .body(Map.of("status", "unauthorized", "reason", "Invalid signature"));
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid signature");
       }
 
       // Process webhook
@@ -65,11 +64,10 @@ public class InvoiceWebhookController {
           log.warn("[Billing Webhook] No handler for provider: {}", providerType);
       }
 
-      return ResponseEntity.ok(Map.of("status", "processed", "provider", providerType.name()));
+      return Map.of("status", "processed", "provider", providerType.name());
     } catch (Exception e) {
       log.error("[Billing Webhook] Error processing webhook: {}", e.getMessage());
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(Map.of("status", "error", "provider", providerType.name(), "error", e.getMessage()));
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
     }
   }
 

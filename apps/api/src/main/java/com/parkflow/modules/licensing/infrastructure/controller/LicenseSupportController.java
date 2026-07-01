@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,12 +38,11 @@ public class LicenseSupportController {
    */
   @GetMapping("/diagnose/company/{companyId}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
-  public ResponseEntity<LicenseDiagnosticsResponse> diagnoseCompany(
+  public LicenseDiagnosticsResponse diagnoseCompany(
       @PathVariable UUID companyId) {
 
     log.info("[SUPPORT] Diagnóstico solicitado para empresa: {}", companyId);
-    LicenseDiagnosticsResponse diagnosis = auditQuery.diagnoseCompany(companyId);
-    return ResponseEntity.ok(diagnosis);
+    return auditQuery.diagnoseCompany(companyId);
   }
 
   /**
@@ -51,12 +50,11 @@ public class LicenseSupportController {
    */
   @GetMapping("/diagnose/device/{deviceFingerprint}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
-  public ResponseEntity<DeviceDiagnosticsResponse> diagnoseDevice(
+  public DeviceDiagnosticsResponse diagnoseDevice(
       @PathVariable String deviceFingerprint) {
 
     log.info("[SUPPORT] Diagnóstico solicitado para dispositivo: {}", deviceFingerprint);
-    DeviceDiagnosticsResponse diagnosis = auditQuery.diagnoseDevice(deviceFingerprint);
-    return ResponseEntity.ok(diagnosis);
+    return auditQuery.diagnoseDevice(deviceFingerprint);
   }
 
   // ==================== EVENTOS DE BLOQUEO ====================
@@ -66,7 +64,7 @@ public class LicenseSupportController {
    */
   @GetMapping("/blocks/company/{companyId}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
-  public ResponseEntity<List<LicenseBlockEvent>> getCompanyBlockEvents(
+  public List<LicenseBlockEvent> getCompanyBlockEvents(
       @PathVariable UUID companyId,
       @RequestParam(defaultValue = "false") boolean includeResolved) {
 
@@ -77,7 +75,7 @@ public class LicenseSupportController {
       events = blockEventRepository.findUnresolvedByCompanyId(companyId);
     }
 
-    return ResponseEntity.ok(events);
+    return events;
   }
 
   /**
@@ -85,8 +83,8 @@ public class LicenseSupportController {
    */
   @GetMapping("/blocks/unresolved")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
-  public ResponseEntity<List<LicenseBlockEvent>> getUnresolvedBlocks() {
-    return ResponseEntity.ok(blockEventRepository.findUnresolvedEvents());
+  public List<LicenseBlockEvent> getUnresolvedBlocks() {
+    return blockEventRepository.findUnresolvedEvents();
   }
 
   /**
@@ -94,8 +92,8 @@ public class LicenseSupportController {
    */
   @GetMapping("/blocks/false-positives")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  public ResponseEntity<List<LicenseBlockEvent>> getFalsePositives() {
-    return ResponseEntity.ok(blockEventRepository.findFalsePositives());
+  public List<LicenseBlockEvent> getFalsePositives() {
+    return blockEventRepository.findFalsePositives();
   }
 
   // ==================== CASOS DE SOPORTE ====================
@@ -105,9 +103,9 @@ public class LicenseSupportController {
    */
   @GetMapping("/cases/priority")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
-  public ResponseEntity<List<SupportCaseResponse>> getPriorityCases() {
+  public List<SupportCaseResponse> getPriorityCases() {
     log.info("[SUPPORT] Solicitando casos prioritarios");
-    return ResponseEntity.ok(auditQuery.getPrioritySupportCases());
+    return auditQuery.getPrioritySupportCases();
   }
 
   /**
@@ -115,11 +113,11 @@ public class LicenseSupportController {
    */
   @GetMapping("/statistics")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  public ResponseEntity<BlockStatisticsResponse> getStatistics(
+  public BlockStatisticsResponse getStatistics(
       @RequestParam(defaultValue = "7") int days) {
 
     OffsetDateTime since = OffsetDateTime.now().minus(days, ChronoUnit.DAYS);
-    return ResponseEntity.ok(auditQuery.getBlockStatistics(since));
+    return auditQuery.getBlockStatistics(since);
   }
 
   // ==================== RESOLUCIÓN ====================
@@ -129,7 +127,8 @@ public class LicenseSupportController {
    */
   @PostMapping("/blocks/{blockEventId}/resolve")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
-  public ResponseEntity<Void> resolveBlockEvent(
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void resolveBlockEvent(
       @PathVariable UUID blockEventId,
       @Valid @RequestBody ResolveBlockRequest request,
       @RequestAttribute("currentUserEmail") String resolvedBy) {
@@ -143,8 +142,6 @@ public class LicenseSupportController {
         request.getNotes(),
         request.getCorrectiveAction()
     );
-
-    return ResponseEntity.ok().build();
   }
 
   /**
@@ -152,7 +149,8 @@ public class LicenseSupportController {
    */
   @PostMapping("/blocks/{blockEventId}/false-positive")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  public ResponseEntity<Void> markAsFalsePositive(
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void markAsFalsePositive(
       @PathVariable UUID blockEventId,
       @Valid @RequestBody FalsePositiveRequest request,
       @RequestAttribute("currentUserEmail") String resolvedBy) {
@@ -161,7 +159,6 @@ public class LicenseSupportController {
         blockEventId, resolvedBy, request.getNotes());
 
     auditRecorder.markAsFalsePositive(blockEventId, resolvedBy, request.getNotes());
-    return ResponseEntity.ok().build();
   }
 
   /**
@@ -169,7 +166,7 @@ public class LicenseSupportController {
    */
   @PostMapping("/company/{companyId}/unblock")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
-  public ResponseEntity<UnblockCompanyResponse> unblockCompany(
+  public UnblockCompanyResponse unblockCompany(
       @PathVariable UUID companyId,
       @Valid @RequestBody UnblockCompanyRequest request,
       @RequestAttribute("currentUserEmail") String resolvedBy) {
@@ -199,7 +196,7 @@ public class LicenseSupportController {
         .reason(request.getReason())
         .build();
 
-    return ResponseEntity.ok(response);
+    return response;
   }
 
   // ==================== REQUEST/RESPONSE DTOs ====================

@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { RuntimeConfig, fetchRuntimeConfig } from "@/lib/runtime-config";
 import * as currentCompanyModule from "@/lib/current-company";
 import * as authDomainModule from "@/lib/services/auth-domain.service";
-import * as fetchModule from "@/lib/api/fetch-with-credentials";
+import * as fetchModule from "@/lib/api/fetch";
 import * as configModule from "@/lib/api/config";
 
 vi.mock("@/lib/current-company");
 vi.mock("@/lib/services/auth-domain.service");
-vi.mock("@/lib/api/fetch-with-credentials");
+vi.mock("@/lib/api/fetch");
 vi.mock("@/lib/api/config");
 
 describe("fetchRuntimeConfig", () => {
@@ -32,8 +32,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response(JSON.stringify(configData), { status: 200 });
-    vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    vi.spyOn(fetchModule, "default").mockResolvedValueOnce(configData);
 
     const result = await fetchRuntimeConfig();
 
@@ -54,8 +53,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response(JSON.stringify(configData), { status: 200 });
-    vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    vi.spyOn(fetchModule, "default").mockResolvedValueOnce(configData as never);
 
     const result = await fetchRuntimeConfig();
     expect(result).toBeDefined();
@@ -68,8 +66,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response("Not found", { status: 404 });
-    vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    vi.spyOn(fetchModule, "default").mockRejectedValueOnce(new Error("Not found"));
 
     const result = await fetchRuntimeConfig();
     expect(result).toBeNull();
@@ -82,8 +79,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response("Server error", { status: 500 });
-    vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    vi.spyOn(fetchModule, "default").mockRejectedValueOnce(new Error("Server error"));
 
     const result = await fetchRuntimeConfig();
     expect(result).toBeNull();
@@ -96,7 +92,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    vi.spyOn(fetchModule, "fetchWithCredentials").mockRejectedValueOnce(
+    vi.spyOn(fetchModule, "default").mockRejectedValueOnce(
       new Error("Network error")
     );
 
@@ -112,8 +108,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce(authHeaders);
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response(JSON.stringify({}), { status: 200 });
-    const fetchSpy = vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    const fetchSpy = vi.spyOn(fetchModule, "default").mockResolvedValueOnce({} as never);
 
     await fetchRuntimeConfig();
 
@@ -132,8 +127,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response(JSON.stringify({}), { status: 200 });
-    const fetchSpy = vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    const fetchSpy = vi.spyOn(fetchModule, "default").mockResolvedValueOnce({} as never);
 
     await fetchRuntimeConfig();
 
@@ -154,8 +148,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response(JSON.stringify({}), { status: 200 });
-    const fetchSpy = vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    const fetchSpy = vi.spyOn(fetchModule, "default").mockResolvedValueOnce({} as never);
 
     await fetchRuntimeConfig();
 
@@ -174,8 +167,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response(JSON.stringify({}), { status: 200 });
-    const fetchSpy = vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    const fetchSpy = vi.spyOn(fetchModule, "default").mockResolvedValueOnce({} as never);
 
     await fetchRuntimeConfig();
 
@@ -199,8 +191,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response(`Error ${status}`, { status });
-    vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    vi.spyOn(fetchModule, "default").mockRejectedValueOnce(new Error(`Error ${status}`));
 
     const result = await fetchRuntimeConfig();
     expect(result).toBeNull();
@@ -213,8 +204,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response("", { status: 200 });
-    vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    vi.spyOn(fetchModule, "default").mockResolvedValueOnce({} as never);
 
     try {
       await fetchRuntimeConfig();
@@ -230,14 +220,10 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response("not json {]", { status: 200 });
-    vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    vi.spyOn(fetchModule, "default").mockRejectedValueOnce(new Error("Unexpected token"));
 
-    try {
-      await fetchRuntimeConfig();
-    } catch {
-      // Expected to fail JSON.parse
-    }
+    const result = await fetchRuntimeConfig();
+    expect(result).toBeNull();
   });
 
   it("returns full config with all fields", async () => {
@@ -264,8 +250,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response(JSON.stringify(fullConfig), { status: 200 });
-    vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    vi.spyOn(fetchModule, "default").mockResolvedValueOnce(fullConfig as never);
 
     const result = await fetchRuntimeConfig();
     expect(result).toEqual(fullConfig);
@@ -279,8 +264,7 @@ describe("fetchRuntimeConfig", () => {
     vi.spyOn(authDomainModule, "authHeaders").mockResolvedValueOnce({});
     vi.spyOn(configModule, "apiBase").mockReturnValueOnce("http://api.test");
 
-    const response = new Response(JSON.stringify(minimalConfig), { status: 200 });
-    vi.spyOn(fetchModule, "fetchWithCredentials").mockResolvedValueOnce(response);
+    vi.spyOn(fetchModule, "default").mockResolvedValueOnce(minimalConfig as never);
 
     const result = await fetchRuntimeConfig();
     expect(result).toEqual({});
@@ -299,13 +283,10 @@ describe("fetchRuntimeConfig", () => {
       .mockReturnValueOnce("http://api.test")
       .mockReturnValueOnce("http://api.test");
 
-    const response1 = new Response(JSON.stringify({ vehicleTypes: ["auto"] }), { status: 200 });
-    const response2 = new Response(JSON.stringify({ vehicleTypes: ["auto", "moto"] }), { status: 200 });
-
     const fetchSpy = vi
-      .spyOn(fetchModule, "fetchWithCredentials")
-      .mockResolvedValueOnce(response1)
-      .mockResolvedValueOnce(response2);
+      .spyOn(fetchModule, "default")
+      .mockResolvedValueOnce({ vehicleTypes: ["auto"] } as never)
+      .mockResolvedValueOnce({ vehicleTypes: ["auto", "moto"] } as never);
 
     const result1 = await fetchRuntimeConfig();
     const result2 = await fetchRuntimeConfig();

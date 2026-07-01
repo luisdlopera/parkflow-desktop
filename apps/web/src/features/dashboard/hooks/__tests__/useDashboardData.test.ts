@@ -52,6 +52,11 @@ const mockActiveSession = {
   totalAmount: null,
 };
 
+const mockActiveSessionsPage = {
+  data: [mockActiveSession],
+  meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
+};
+
 type SwrReturn<T> = {
   data: T | null | undefined;
   error: Error | undefined;
@@ -81,7 +86,7 @@ function setupSwrMocks() {
     isLoading: false,
   };
   swrState["dashboard-active-sessions"] = {
-    data: [mockActiveSession],
+    data: mockActiveSessionsPage,
     error: undefined,
     mutate: vi.fn(),
     isLoading: false,
@@ -95,7 +100,7 @@ describe("useDashboardData", () => {
     setupSwrMocks();
     vi.mocked(fetchDashboardSummary).mockResolvedValue(mockSummary);
     vi.mocked(fetchOperationalHealth).mockResolvedValue(mockOperationalHealth);
-    vi.mocked(fetchActiveSessions).mockResolvedValue([mockActiveSession]);
+    vi.mocked(fetchActiveSessions).mockResolvedValue(mockActiveSessionsPage);
     vi.mocked(postOperationalAction).mockResolvedValue("Acción ejecutada");
   });
 

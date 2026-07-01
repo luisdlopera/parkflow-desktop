@@ -16,7 +16,7 @@ interface ConfigSectionProps<T extends { id: string }> {
   columns: ColumnDef<T>[];
   schema: z.ZodObject<z.ZodRawShape>;
   defaultValues: Record<string, unknown>;
-  loadFn: (...args: unknown[]) => Promise<PaginatedResponse<T> | T[]>;
+  loadFn: (...args: unknown[]) => Promise<PaginatedResponse<T>>;
   createFn?: (data: Record<string, unknown>) => Promise<unknown>;
   updateFn?: (id: string, data: Record<string, unknown>) => Promise<unknown>;
   deleteFn?: (id: string) => Promise<unknown>;

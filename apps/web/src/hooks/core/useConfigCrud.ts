@@ -5,15 +5,9 @@ import { toast } from "@heroui/react";
 import { errorService } from "@/lib/errors/error-service";
 import type { PaginatedResponse } from "@/lib/types/api.types";
 
-type CrudData<T> = PaginatedResponse<T> | T[];
-
-function toRows<T>(data: CrudData<T>): T[] {
-  return Array.isArray(data) ? data : data.content ?? [];
-}
-
 export interface ConfigCrudOptions<T extends { id: string }> {
-  /** Fetches the data; may return a paginated SettingsPage or a flat array. */
-  loadFn: (...args: unknown[]) => Promise<CrudData<T>>;
+  /** Fetches the data as a paginated response. */
+  loadFn: (...args: unknown[]) => Promise<PaginatedResponse<T>>;
   /** Creates a new item. */
   createFn?: (data: Record<string, unknown>) => Promise<unknown>;
   /** Updates an existing item by id. */
@@ -104,13 +98,8 @@ export function useConfigCrud<T extends { id: string }>(
       setError(null);
       try {
         const result = await loadFnRef.current(...args);
-        if (Array.isArray(result)) {
-          setRows(result);
-          setData({ content: result, totalElements: result.length, totalPages: 1, page: 0, size: result.length });
-        } else {
-          setData(result as PaginatedResponse<T>);
-          setRows((result as PaginatedResponse<T>).content ?? []);
-        }
+        setData(result);
+        setRows(result.content ?? []);
       } catch (e) {
         setError(errorService.normalize(e).message);
       } finally {
