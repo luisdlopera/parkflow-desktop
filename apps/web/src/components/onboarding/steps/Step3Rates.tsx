@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo } from "react";
 import { PricingBuilder, pricingConfigurationToStepData, stepDataToPricingConfiguration } from "@/features/pricing-builder";
-import { useOnboardingData, useOnboardingMetadata } from "../OnboardingContext";
+import { useOnboardingData, useOnboardingMetadata, useOnboardingNavigation } from "../OnboardingContext";
 
 type Step3RatesProps = {
   focusErrorPath?: string | null;
@@ -12,6 +12,7 @@ type Step3RatesProps = {
 const Step3Rates = memo(function Step3Rates({ focusErrorPath, onFocusErrorHandled }: Step3RatesProps) {
   const { stepData, setStepData, stepErrors } = useOnboardingData();
   const { vehicleTypes } = useOnboardingMetadata();
+  const { persistStep, step } = useOnboardingNavigation();
 
   const config = useMemo(() => stepDataToPricingConfiguration(stepData), [stepData]);
 
@@ -33,6 +34,11 @@ const Step3Rates = memo(function Step3Rates({ focusErrorPath, onFocusErrorHandle
         vehicleTypes={vehicleTypes}
         errors={stepErrors}
         onChange={(next) => setStepData((prev) => ({ ...prev, ...pricingConfigurationToStepData(next) }))}
+        onSubmit={async () => {
+          await persistStep(step);
+        }}
+        focusErrorPath={focusErrorPath}
+        onFocusErrorHandled={onFocusErrorHandled}
       />
     </div>
   );

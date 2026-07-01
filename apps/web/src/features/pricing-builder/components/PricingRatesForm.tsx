@@ -23,6 +23,13 @@ export function PricingRatesForm({
   onChange: (config: PricingConfiguration) => void;
 }) {
   const visibleFields = strategyFieldMap[config.strategy.type];
+  const fieldIds: Partial<Record<keyof PricingRates, string>> = {
+    pricePerHour: "rates.pricePerHour",
+    fractionMinutes: "rates.fractionMinutes",
+    fractionPrice: "rates.fractionPrice",
+    dailyPrice: "rates.dailyPrice",
+    nightPrice: "rates.nightPrice",
+  };
 
   const setRate = (key: keyof PricingRates, value: string) => {
     onChange({
@@ -37,6 +44,7 @@ export function PricingRatesForm({
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Input
+        id="name"
         label="Nombre de la tarifa"
         value={config.name}
         onChange={(event) => onChange({ ...config, name: event.target.value })}
@@ -46,6 +54,7 @@ export function PricingRatesForm({
       {visibleFields.map((field) => (
         <Input
           key={field}
+          id={fieldIds[field]}
           type="number"
           min={field === "fractionMinutes" ? 1 : 0}
           step={field === "fractionMinutes" ? 1 : 100}

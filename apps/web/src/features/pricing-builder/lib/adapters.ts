@@ -1,4 +1,4 @@
-import { DEFAULT_PRICING_CONFIGURATION, STRATEGY_LABELS } from "./constants";
+import { DEFAULT_PRICING_CONFIGURATION, PRICING_RULE_EXECUTION_ORDER, STRATEGY_LABELS } from "./constants";
 import type { PricingConfiguration, PricingStrategyType } from "./types";
 
 type RateLike = Record<string, any>;
@@ -20,6 +20,7 @@ export function createPricingConfiguration(seed: Partial<PricingConfiguration> =
     rules: {
       ...DEFAULT_PRICING_CONFIGURATION.rules,
       ...(seed.rules ?? {}),
+      executionOrder: PRICING_RULE_EXECUTION_ORDER,
       rounding: {
         ...DEFAULT_PRICING_CONFIGURATION.rules.rounding,
         ...(seed.rules?.rounding ?? {}),
@@ -93,28 +94,32 @@ export function pricingConfigurationToStepData(config: PricingConfiguration): Re
     config.strategy.type === "DAILY" ? "FULL_DAY" :
     config.strategy.type === "NIGHT" ? "MIXED" :
     config.strategy.type;
+  const hasNightRate = Boolean(config.rules.specialHours?.enabled || config.strategy.type === "NIGHT" || config.rates.nightPrice);
+  const hasFullDayRate = Boolean(config.rates.dailyPrice || config.rules.dailyCaps?.enabled);
+  const hasWeekendRate = Boolean(config.rules.weekends?.enabled && config.rules.weekends.fixedPrice);
+  const ratesByType = overridesToRatesByType(config.rules.vehicleOverrides);
 
   return {
     pricingConfiguration: config,
     billingModel: model,
-    baseValue: config.rates.pricePerHour ?? config.rates.fractionPrice ?? config.rates.nightPrice ?? "",
-    flatRate: config.rates.dailyPrice ?? "",
-    hasNightRate: Boolean(config.rules.specialHours?.enabled || config.strategy.type === "NIGHT" || config.strategy.type === "MIXED"),
+    baseValue: config.rates.pricePerHour ?? config.rates.fractionPrice ?? config.rates.nightPrice,
+    flatRate: config.strategy.type === "DAILY" ? config.rates.dailyPrice : undefined,
+    hasNightRate,
     nightStartTime: config.rules.specialHours?.startTime ?? "20:00",
     nightEndTime: config.rules.specialHours?.endTime ?? "06:00",
-    nightRate: config.rates.nightPrice ?? "",
-    hasFullDayRate: Boolean(config.rates.dailyPrice || config.rules.dailyCaps?.enabled),
-    fullDayRate: config.rates.dailyPrice ?? config.rules.dailyCaps?.maxDailyPrice ?? "",
-    hasWeekendRate: Boolean(config.rules.weekends?.enabled),
-    weekendRate: config.rules.weekends?.fixedPrice ?? "",
+    nightRate: hasNightRate ? config.rates.nightPrice ?? config.rates.pricePerHour : undefined,
+    hasFullDayRate,
+    fullDayRate: hasFullDayRate ? config.rates.dailyPrice ?? config.rules.dailyCaps?.maxDailyPrice : undefined,
+    hasWeekendRate,
+    weekendRate: hasWeekendRate ? config.rules.weekends?.fixedPrice : undefined,
     hasFractions: config.strategy.type === "FRACTIONAL",
-    minFractionMinutes: config.rates.fractionMinutes ?? "",
-    fractionValue: config.rates.fractionPrice ?? "",
+    minFractionMinutes: config.strategy.type === "FRACTIONAL" ? config.rates.fractionMinutes : undefined,
+    fractionValue: config.strategy.type === "FRACTIONAL" ? config.rates.fractionPrice : undefined,
     hasCourtesy: config.rules.graceMinutes > 0,
-    graceMinutes: config.rules.graceMinutes,
+    graceMinutes: config.rules.graceMinutes > 0 ? config.rules.graceMinutes : undefined,
     rounding: pricingRoundingToLegacy(config.rules.rounding),
-    enableRateByType: Object.keys(config.rules.vehicleOverrides ?? {}).length > 0,
-    ratesByType: overridesToRatesByType(config.rules.vehicleOverrides),
+    enableRateByType: Object.keys(ratesByType).length > 0,
+    ratesByType: Object.keys(ratesByType).length > 0 ? ratesByType : undefined,
   };
 }
 
@@ -233,10 +238,14 @@ function pricingRoundingToLegacy(rounding: { mode: string; incrementMinutes?: nu
 
 function ratesByTypeToOverrides(rates?: Record<string, unknown>) {
   if (!rates) return {};
-  return Object.fromEntries(Object.entries(rates).map(([vehicleType, price]) => [vehicleType, { rates: { pricePerHour: num(price) } }]));
+  return Object.fromEntries(Object.entries(rates).map(([vehicleType, price]) => [vehicleType, { inheritsBase: true, rates: { pricePerHour: num(price) } }]));
 }
 
 function overridesToRatesByType(overrides?: PricingConfiguration["rules"]["vehicleOverrides"]) {
   if (!overrides) return {};
-  return Object.fromEntries(Object.entries(overrides).map(([vehicleType, override]) => [vehicleType, override.rates?.pricePerHour ?? ""]));
+  return Object.fromEntries(
+    Object.entries(overrides)
+      .map(([vehicleType, override]) => [vehicleType, override.rates?.pricePerHour])
+      .filter(([, price]) => typeof price === "number" && Number.isFinite(price)),
+  );
 }

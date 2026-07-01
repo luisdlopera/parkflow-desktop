@@ -39,7 +39,9 @@ export function Providers({ children }: ProvidersProps) {
       }}
     >
       <HeroUIProvider navigate={router.push}>
-        <Toast.Provider placement="top end" />
+        <div className="fixed inset-0 z-[9999] pointer-events-none">
+          <Toast.Provider placement="top end" />
+        </div>
         <DialogProvider>
           <AuthProvider>
             {children}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Save } from "lucide-react";
 import { Button } from "@/components/bridge/Button";
 import { STRATEGY_LABELS } from "../lib/constants";
@@ -29,6 +29,8 @@ export function PricingBuilder({
   onChange,
   onCancel,
   onSubmit,
+  focusErrorPath,
+  onFocusErrorHandled,
 }: {
   value: PricingConfiguration;
   mode: PricingBuilderMode;
@@ -38,6 +40,8 @@ export function PricingBuilder({
   onChange: (value: PricingConfiguration) => void;
   onCancel?: () => void;
   onSubmit?: (value: PricingConfiguration) => void | Promise<void>;
+  focusErrorPath?: string | null;
+  onFocusErrorHandled?: () => void;
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [localErrors, setLocalErrors] = useState<PricingBuilderErrors>({});
@@ -56,20 +60,40 @@ export function PricingBuilder({
     });
   };
 
+  useEffect(() => {
+    if (!focusErrorPath) return;
+    const targetStep = getStepForErrorPath(focusErrorPath);
+    if (targetStep !== null) setCurrentStep(targetStep);
+
+    const timer = window.setTimeout(() => {
+      const element = document.getElementById(focusErrorPath);
+      element?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const focusable = element?.querySelector<HTMLElement>("input, button, textarea, select, [tabindex]");
+      focusable?.focus?.();
+      onFocusErrorHandled?.();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [focusErrorPath, onFocusErrorHandled]);
+
   const validateAndContinue = async () => {
     const nextErrors = validatePricingConfiguration(config);
-    if (Object.keys(nextErrors).length > 0 && currentStep >= 1) {
-      setLocalErrors(nextErrors);
+    const scopedErrors = filterErrorsForStep(nextErrors, currentStep);
+    if (Object.keys(scopedErrors).length > 0) {
+      setLocalErrors(scopedErrors);
       return;
     }
+
     if (currentStep < steps.length - 1) {
       setCurrentStep((step) => step + 1);
       return;
     }
+
     if (Object.keys(nextErrors).length > 0) {
       setLocalErrors(nextErrors);
       return;
     }
+
     await onSubmit?.(config);
   };
 
@@ -142,4 +166,23 @@ export function PricingBuilder({
       <PricingSimulator config={config} />
     </div>
   );
+}
+
+function filterErrorsForStep(errors: PricingBuilderErrors, step: number): PricingBuilderErrors {
+  const prefixes =
+    step === 1 ? ["rates.", "rates", "name"] :
+    step === 2 ? ["rules.", "rules"] :
+    step === 3 ? [""] :
+    [];
+  if (prefixes.includes("")) return errors;
+  return Object.fromEntries(
+    Object.entries(errors).filter(([key]) => prefixes.some((prefix) => key === prefix || key.startsWith(prefix))),
+  );
+}
+
+function getStepForErrorPath(path: string): number | null {
+  if (path === "strategy.type" || path === "name" || path === "form") return 0;
+  if (path.startsWith("rates.")) return 1;
+  if (path.startsWith("rules.")) return 2;
+  return null;
 }

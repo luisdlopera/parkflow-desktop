@@ -8,27 +8,14 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isLoading, isAuthenticated } = useAuthStore();
-
-  // Listen for auth expiry event from fetch layer
-  useEffect(() => {
-    const handleAuthExpired = (event: Event) => {
-      const customEvent = event as CustomEvent<{ next: string }>;
-      const nextUrl = customEvent.detail?.next ?? "/";
-      router.push(`/login?next=${encodeURIComponent(nextUrl)}&reason=expired`);
-    };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("parkflow-auth-expired", handleAuthExpired);
-      return () => window.removeEventListener("parkflow-auth-expired", handleAuthExpired);
-    }
-  }, [router]);
+  const { user, isLoading, isAuthenticated, logoutReason } = useAuthStore();
 
   useEffect(() => {
     if (isLoading) return;
 
     if (!isAuthenticated) {
-      router.replace(`/login?next=${encodeURIComponent(pathname ?? "/")}`);
+      const reasonQuery = logoutReason ? `&reason=${encodeURIComponent(logoutReason)}` : "";
+      router.replace(`/login?next=${encodeURIComponent(pathname ?? "/")}${reasonQuery}`);
       return;
     }
 

@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import { Calculator } from "lucide-react";
 import { Input } from "@/components/bridge/Input";
-import { calculatePricingPreview, formatPricingMoney } from "../lib/simulator";
+import { labelVehicle } from "../lib/display";
+import { calculateExplainablePricingPreview, formatPricingMoney } from "../lib/simulator";
 import type { PricingConfiguration } from "../lib/types";
+import { PricingExecutionTimeline } from "./PricingExecutionTimeline";
 
 const scenarios = [
   { label: "1 hora", minutes: 60 },
@@ -15,8 +17,17 @@ const scenarios = [
 export function PricingSimulator({ config }: { config: PricingConfiguration }) {
   const [hours, setHours] = useState(1);
   const [minutes, setMinutes] = useState(0);
+  const [vehicleType, setVehicleType] = useState<string>("");
   const customMinutes = Math.max(0, hours * 60 + minutes);
-  const preview = useMemo(() => calculatePricingPreview(config, customMinutes), [config, customMinutes]);
+  const overrideVehicles = useMemo(() => Object.keys(config.rules.vehicleOverrides ?? {}), [config.rules.vehicleOverrides]);
+  const preview = useMemo(
+    () => calculateExplainablePricingPreview(config, customMinutes, { vehicleType: vehicleType || undefined }),
+    [config, customMinutes, vehicleType],
+  );
+  const basePreview = useMemo(
+    () => calculateExplainablePricingPreview(config, customMinutes),
+    [config, customMinutes],
+  );
 
   return (
     <aside className="sticky top-4 space-y-4 rounded-lg border border-default-200 bg-content1 p-4 shadow-sm">
@@ -35,24 +46,48 @@ export function PricingSimulator({ config }: { config: PricingConfiguration }) {
         <Input type="number" min={0} max={59} label="Minutos" value={String(minutes)} onChange={(event) => setMinutes(Number(event.target.value || 0))} />
       </div>
 
+      {overrideVehicles.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-default-600">Comparar vehículo</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setVehicleType("")}
+              className={`rounded-md border px-3 py-2 text-xs font-semibold ${vehicleType === "" ? "border-brand-500 bg-brand-500 text-white" : "border-default-200 text-default-600"}`}
+            >
+              Tarifa base
+            </button>
+            {overrideVehicles.map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setVehicleType(type)}
+                className={`rounded-md border px-3 py-2 text-xs font-semibold ${vehicleType === type ? "border-brand-500 bg-brand-500 text-white" : "border-default-200 text-default-600"}`}
+              >
+                {labelVehicle(type)}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="rounded-lg bg-default-50 p-4 dark:bg-zinc-900/60">
         <p className="text-xs font-medium text-default-500">{preview.strategyLabel}</p>
         <p className="mt-1 text-3xl font-semibold text-foreground">{formatPricingMoney(preview.total, preview.currency)}</p>
         <p className="mt-1 text-xs text-default-500">{preview.billableMinutes} minutos cobrables</p>
+        {vehicleType ? (
+          <p className="mt-2 text-xs font-medium text-default-600">
+            Base: {formatPricingMoney(basePreview.total, basePreview.currency)} · Diferencia:{" "}
+            {formatPricingMoney(preview.total - basePreview.total, preview.currency)}
+          </p>
+        ) : null}
       </div>
 
-      <div className="space-y-2">
-        {preview.lines.map((line) => (
-          <div key={line.label} className="flex items-center justify-between gap-3 text-xs">
-            <span className="text-default-500">{line.label}</span>
-            <span className="font-medium text-foreground">{line.value}</span>
-          </div>
-        ))}
-      </div>
+      <PricingExecutionTimeline steps={preview.executionSteps} />
 
       <div className="grid gap-2">
         {scenarios.map((scenario) => {
-          const result = calculatePricingPreview(config, scenario.minutes);
+          const result = calculateExplainablePricingPreview(config, scenario.minutes, { vehicleType: vehicleType || undefined });
           return (
             <button
               key={scenario.label}

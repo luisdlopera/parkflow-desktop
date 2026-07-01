@@ -38,4 +38,26 @@ describe("validatePricingConfiguration", () => {
 
     expect(errors["rules.dailyCaps.maxDailyPrice"]).toBe("Ingresa el tope diario");
   });
+
+  it("rejects logical rule inconsistencies with human copy", () => {
+    const errors = validatePricingConfiguration(createPricingConfiguration({
+      rates: { pricePerHour: 5000 },
+      rules: {
+        graceMinutes: 30,
+        minimumChargeMinutes: 15,
+        rounding: { mode: "UP", incrementMinutes: 60 },
+      },
+    }));
+
+    expect(errors["rules.graceMinutes"]).toBe("La cortesía no puede ser mayor que el mínimo de cobro");
+  });
+
+  it("requires mixed to include hourly and at least daily or night", () => {
+    const errors = validatePricingConfiguration(createPricingConfiguration({
+      strategy: { type: "MIXED", label: "Hora + día + horario especial" },
+      rates: { pricePerHour: 5000 },
+    }));
+
+    expect(errors.rates).toBe("Configura valor por hora y al menos tarifa diaria o nocturna");
+  });
 });

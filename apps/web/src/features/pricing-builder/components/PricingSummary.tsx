@@ -1,6 +1,7 @@
 "use client";
 
 import { formatPricingMoney } from "../lib/simulator";
+import { ROUNDING_LABELS } from "../lib/display";
 import type { PricingConfiguration } from "../lib/types";
 
 export function PricingSummary({ config }: { config: PricingConfiguration }) {
@@ -12,7 +13,7 @@ export function PricingSummary({ config }: { config: PricingConfiguration }) {
     ["Tarifa nocturna", config.rates.nightPrice ? formatPricingMoney(config.rates.nightPrice, config.currency) : "No aplica"],
     ["Cortesía", `${config.rules.graceMinutes} min`],
     ["Mínimo de cobro", `${config.rules.minimumChargeMinutes} min`],
-    ["Redondeo", config.rules.rounding.mode === "NONE" ? "Sin redondeo" : `${config.rules.rounding.mode} cada ${config.rules.rounding.incrementMinutes} min`],
+    ["Redondeo", config.rules.rounding.mode === "NONE" ? "Sin redondeo" : `${ROUNDING_LABELS[config.rules.rounding.mode]} cada ${config.rules.rounding.incrementMinutes} min`],
   ];
 
   return (

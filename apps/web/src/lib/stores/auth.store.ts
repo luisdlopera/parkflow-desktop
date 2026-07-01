@@ -17,12 +17,14 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   sessionExpiresAt: string | null;
+  logoutReason: string | null;
   setUser: (user: User | null) => void;
   setPermissions: (permissions: string[]) => void;
   setLoading: (isLoading: boolean) => void;
   setSessionExpiresAt: (expiresAt: string | null) => void;
   setAuthState: (user: User | null, permissions?: string[], expiresAt?: string | null) => void;
-  logout: () => void;
+  logout: (reason?: string) => void;
+  clearLogoutReason: () => void;
   hasPermission: (permission: string) => boolean;
 }
 
@@ -32,7 +34,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: true,
   sessionExpiresAt: null,
-  setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
+  logoutReason: null,
+  setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false, logoutReason: null }),
   setPermissions: (permissions) => set({ permissions }),
   setLoading: (isLoading) => set({ isLoading }),
   setSessionExpiresAt: (expiresAt) => set({ sessionExpiresAt: expiresAt }),
@@ -42,13 +45,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     isAuthenticated: !!user,
     isLoading: false,
     sessionExpiresAt: expiresAt ?? null,
+    logoutReason: null,
   }),
-  logout: () => set({
+  logout: (reason) => set({
     user: null,
     permissions: [],
     isAuthenticated: false,
     isLoading: false,
     sessionExpiresAt: null,
+    logoutReason: reason ?? null,
   }),
+  clearLogoutReason: () => set({ logoutReason: null }),
   hasPermission: (permission) => get().permissions.includes(permission),
 }));

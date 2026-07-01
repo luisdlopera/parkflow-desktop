@@ -3,7 +3,11 @@
 import { AlertTriangle, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/bridge/Input";
 import { Switch } from "@/components/bridge/Switch";
+import { PRICING_RULE_EXECUTION_ORDER, PRICING_RULE_LABELS } from "../lib/constants";
+import { ROUNDING_HELP, ROUNDING_LABELS } from "../lib/display";
 import type { PricingBuilderErrors, PricingConfiguration, PricingRoundingMode } from "../lib/types";
+import { InlineHelp } from "./InlineHelp";
+import { VehicleOverridesPanel } from "./VehicleOverridesPanel";
 
 export function PricingRulesPanel({
   config,
@@ -21,23 +25,28 @@ export function PricingRulesPanel({
 
   const patchAdvancedMode = (advancedMode: boolean) => onChange({ ...config, advancedMode });
 
-  const patchOverride = (vehicleType: string, value: string) => {
-    const next = { ...(config.rules.vehicleOverrides ?? {}) };
-    if (value === "") {
-      delete next[vehicleType];
-    } else {
-      next[vehicleType] = {
-        ...(next[vehicleType] ?? {}),
-        rates: { ...(next[vehicleType]?.rates ?? {}), pricePerHour: Number(value) },
-      };
-    }
-    patchRules({ vehicleOverrides: next });
-  };
-
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="rounded-lg border border-default-200 bg-content1 p-4">
+        <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <span>Orden de cálculo</span>
+          <InlineHelp title="¿Qué significa este orden?">
+            Las reglas se aplican en esta secuencia para que el cobro sea predecible. Primero se descuenta la cortesía, luego se respeta el mínimo de cobro, después se redondea, se calcula la tarifa y al final se aplica el tope diario si existe.
+          </InlineHelp>
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-5">
+          {PRICING_RULE_EXECUTION_ORDER.map((rule, index) => (
+            <div key={rule} className="rounded-md border border-default-200 bg-default-50 px-3 py-2 text-center dark:bg-zinc-900/40">
+              <span className="text-[11px] font-semibold text-default-500">{index + 1}</span>
+              <p className="text-xs font-semibold text-foreground">{PRICING_RULE_LABELS[rule]}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
         <Input
+          id="rules.graceMinutes"
           type="number"
           min={0}
           label="Minutos de cortesía"
@@ -48,31 +57,53 @@ export function PricingRulesPanel({
           errorMessage={errors["rules.graceMinutes"]}
         />
         <Input
+          id="rules.minimumChargeMinutes"
           type="number"
           min={0}
-          label="Mínimo de cobro"
-          description="Minutos mínimos que se cobran."
+          label={
+            <span>
+              Mínimo de cobro
+              <InlineHelp title="¿Para qué sirve?">
+                Define el tiempo mínimo que se cobrará aunque el vehículo permanezca menos. Ejemplo: si el mínimo es 60 minutos y la estancia cobrable es 20 minutos, se cobra como 1 hora.
+              </InlineHelp>
+            </span>
+          }
+          description="Úsalo cuando siempre cobras al menos una base mínima."
           value={String(config.rules.minimumChargeMinutes)}
           onChange={(event) => patchRules({ minimumChargeMinutes: Number(event.target.value || 0) })}
           isInvalid={Boolean(errors["rules.minimumChargeMinutes"])}
           errorMessage={errors["rules.minimumChargeMinutes"]}
         />
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Redondeo</label>
-          <div className="grid grid-cols-4 gap-1 rounded-lg border border-default-200 bg-content1 p-1">
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)]">
+        <div id="rules.rounding" className="space-y-3 rounded-lg border border-default-200 bg-content1 p-3">
+          <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <span>Redondeo</span>
+            <InlineHelp title="Cómo se redondea">
+              Controla cómo se ajustan los minutos después de aplicar cortesía y mínimo de cobro. Elige la opción según tu política comercial.
+            </InlineHelp>
+          </label>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             {(["NONE", "UP", "DOWN", "NEAREST"] as PricingRoundingMode[]).map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => patchRules({ rounding: { ...config.rules.rounding, mode } })}
-                className={`min-h-10 rounded-md text-xs font-semibold ${config.rules.rounding.mode === mode ? "bg-brand-500 text-white" : "text-default-600 hover:bg-default-100"}`}
+                className={`min-h-[92px] rounded-md border px-3 py-2 text-left text-xs transition-colors ${
+                  config.rules.rounding.mode === mode
+                    ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-200"
+                    : "border-default-200 text-default-600 hover:border-brand-300"
+                }`}
               >
-                {mode}
+                <span className="block text-sm font-semibold leading-5">{ROUNDING_LABELS[mode]}</span>
+                <span className="mt-1 block leading-4 text-default-500">{ROUNDING_HELP[mode]}</span>
               </button>
             ))}
           </div>
           {config.rules.rounding.mode !== "NONE" ? (
             <Input
+              id="rules.rounding.incrementMinutes"
               type="number"
               min={1}
               aria-label="Minutos de redondeo"
@@ -116,8 +147,8 @@ export function PricingRulesPanel({
               </Switch>
               {config.rules.specialHours?.enabled ? (
                 <div className="mt-3 grid grid-cols-2 gap-3">
-                  <Input label="Inicio" value={config.rules.specialHours.startTime} onChange={(event) => patchRules({ specialHours: { ...config.rules.specialHours!, startTime: event.target.value } })} />
-                  <Input label="Fin" value={config.rules.specialHours.endTime} onChange={(event) => patchRules({ specialHours: { ...config.rules.specialHours!, endTime: event.target.value } })} />
+                  <Input id="rules.specialHours.startTime" label="Inicio (24 horas)" description="Formato 24 horas, ejemplo 20:00." value={config.rules.specialHours.startTime} onChange={(event) => patchRules({ specialHours: { ...config.rules.specialHours!, startTime: event.target.value } })} />
+                  <Input id="rules.specialHours.endTime" label="Fin (24 horas)" description="Formato 24 horas, ejemplo 06:00." value={config.rules.specialHours.endTime} onChange={(event) => patchRules({ specialHours: { ...config.rules.specialHours!, endTime: event.target.value } })} />
                 </div>
               ) : null}
             </div>
@@ -131,6 +162,7 @@ export function PricingRulesPanel({
               </Switch>
               {config.rules.dailyCaps?.enabled ? (
                 <Input
+                  id="rules.dailyCaps.maxDailyPrice"
                   className="mt-3"
                   type="number"
                   label="Máximo por día (COP)"
@@ -143,24 +175,7 @@ export function PricingRulesPanel({
             </div>
           </div>
 
-          {vehicleTypes.length > 1 ? (
-            <div className="rounded-lg bg-content1 p-4">
-              <p className="text-sm font-semibold text-foreground">Overrides por vehículo</p>
-              <p className="mt-1 text-xs text-default-600">Sobrescribe el valor por hora sin duplicar toda la tarifa.</p>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                {vehicleTypes.map((vehicleType) => (
-                  <Input
-                    key={vehicleType}
-                    type="number"
-                    label={vehicleType}
-                    placeholder={config.rates.pricePerHour ? String(config.rates.pricePerHour) : "Sin override"}
-                    value={config.rules.vehicleOverrides?.[vehicleType]?.rates?.pricePerHour === undefined ? "" : String(config.rules.vehicleOverrides?.[vehicleType]?.rates?.pricePerHour)}
-                    onChange={(event) => patchOverride(vehicleType, event.target.value)}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
+          <VehicleOverridesPanel config={config} vehicleTypes={vehicleTypes} onChange={onChange} />
         </div>
       ) : null}
     </div>

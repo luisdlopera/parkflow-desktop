@@ -1,11 +1,27 @@
-import type { PricingStrategyType } from "./types";
+import type { PricingRuleId, PricingStrategyType } from "./types";
+
+export const PRICING_RULE_EXECUTION_ORDER: PricingRuleId[] = [
+  "GRACE_PERIOD",
+  "MINIMUM_CHARGE",
+  "ROUNDING",
+  "STRATEGY_PRICE",
+  "DAILY_CAP",
+];
+
+export const PRICING_RULE_LABELS: Record<PricingRuleId, string> = {
+  GRACE_PERIOD: "Cortesía",
+  MINIMUM_CHARGE: "Mínimo",
+  ROUNDING: "Redondeo",
+  STRATEGY_PRICE: "Precio",
+  DAILY_CAP: "Tope diario",
+};
 
 export const STRATEGY_LABELS: Record<PricingStrategyType, string> = {
   HOURLY: "Por hora",
   FRACTIONAL: "Por fracción",
   DAILY: "Diaria",
   NIGHT: "Nocturna",
-  MIXED: "Mixta",
+  MIXED: "Hora + día + horario especial",
 };
 
 export const STRATEGY_COPY: Record<PricingStrategyType, { description: string; impact: string }> = {
@@ -26,8 +42,8 @@ export const STRATEGY_COPY: Record<PricingStrategyType, { description: string; i
     impact: "Pensado para operación 24 horas o recargos de noche.",
   },
   MIXED: {
-    description: "Combina hora, día y noche en una sola tarifa.",
-    impact: "Para reglas comerciales más completas.",
+    description: "Combina hora, tarifa diaria y horario especial en una sola regla.",
+    impact: "Cobra por hora, usa tarifa diaria cuando conviene y permite horario especial.",
   },
 };
 
@@ -49,6 +65,7 @@ export const DEFAULT_PRICING_CONFIGURATION = {
   vehicleType: null,
   strategy: { type: "HOURLY", label: STRATEGY_LABELS.HOURLY },
   rules: {
+    executionOrder: PRICING_RULE_EXECUTION_ORDER,
     graceMinutes: 0,
     minimumChargeMinutes: 0,
     rounding: { mode: "UP", incrementMinutes: 60 },

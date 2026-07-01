@@ -18,7 +18,7 @@ export const Switch = React.forwardRef<HTMLLabelElement, SwitchProps>(
       <HeroSwitch
         ref={ref}
         isSelected={isSelected}
-        onChange={(isSelected: boolean) => {
+        onValueChange={(isSelected: boolean) => {
           if (onChange) onChange(isSelected);
           onValueChange?.(isSelected);
         }}
