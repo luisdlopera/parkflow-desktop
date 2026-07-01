@@ -34,7 +34,7 @@ export function ThemeInitializer() {
         // silently fall back to CSS-variable defaults
       }
     })();
-  }, [applyBrandColors, setTheme]);
+  }, [applyBrandColors, setTheme, userSetTheme]);
 
   return null;
 }

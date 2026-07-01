@@ -7,6 +7,8 @@ import { isLocalFirstMode } from "@/lib/local-first/config";
 const mockBack = vi.fn();
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
+  usePathname: () => "",
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({
     back: mockBack,
     push: mockPush,

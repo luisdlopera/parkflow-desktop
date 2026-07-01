@@ -40,6 +40,7 @@ export function TicketChat() {
         <Input 
           placeholder="Type your message..." 
           fullWidth 
+          aria-label="Type your message"
         />
         <Button variant="primary">Send</Button>
       </div>

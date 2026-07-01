@@ -1,9 +1,5 @@
 "use client";
 
-interface Step {
-  title: string;
-  description?: string;
-}
 
 interface StepsProps {
   current: number;
