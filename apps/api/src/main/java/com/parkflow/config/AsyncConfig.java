@@ -11,6 +11,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.core.task.TaskDecorator;
+import com.parkflow.modules.auth.security.TenantContext;
+import java.util.UUID;
 
 @Configuration
 @EnableAsync
@@ -18,6 +21,23 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 public class AsyncConfig {
 
   private static final Logger log = LoggerFactory.getLogger(AsyncConfig.class);
+
+  @Bean
+  public TaskDecorator tenantContextTaskDecorator() {
+    return runnable -> {
+      UUID tenantId = TenantContext.getTenantId();
+      return () -> {
+        try {
+          if (tenantId != null) {
+            TenantContext.setTenantId(tenantId);
+          }
+          runnable.run();
+        } finally {
+          TenantContext.clear();
+        }
+      };
+    };
+  }
 
   /**
    * Bounded executor for async audit tasks.
@@ -38,6 +58,7 @@ public class AsyncConfig {
     executor.setMaxPoolSize(16);
     executor.setQueueCapacity(500);
     executor.setThreadNamePrefix("audit-");
+    executor.setTaskDecorator(tenantContextTaskDecorator());
     executor.setRejectedExecutionHandler((runnable, pool) -> {
       rejected.increment();
       log.error("AUDIT_EXECUTOR_FULL: audit task rejected (queue={}, active={}). " +
@@ -64,6 +85,7 @@ public class AsyncConfig {
     executor.setMaxPoolSize(8);
     executor.setQueueCapacity(200);
     executor.setThreadNamePrefix("print-");
+    executor.setTaskDecorator(tenantContextTaskDecorator());
     executor.setRejectedExecutionHandler((runnable, pool) -> {
       rejected.increment();
       log.error("PRINT_EXECUTOR_FULL: print task rejected (queue={}, active={}). " +
