@@ -9,11 +9,27 @@ server:
 spring:
   application:
     name: parkflow-api
+  cache:
+    type: ${PARKFLOW_CACHE_TYPE:redis}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000
   datasource:
     # Use PARKFLOW_DB_PORT from environment (defaults to 6021 per convention)
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:${PARKFLOW_DB_PORT:6021}/parkflow_dev}
+    # AWS Advanced JDBC Wrapper handles read/write splitting seamlessly via proxy plugins.
+    url: ${DATABASE_URL:jdbc:aws-wrapper:postgresql://localhost:${PARKFLOW_DB_PORT:6021}/parkflow_dev?wrapperPlugins=readWriteSplitting}
     username: ${POSTGRES_USER:parkflow}
     password: ${POSTGRES_PASSWORD}
+    driver-class-name: software.amazon.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${PARKFLOW_DB_POOL_SIZE:20}
+      minimum-idle: ${PARKFLOW_DB_MIN_IDLE:5}
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
   jpa:
     hibernate:
       ddl-auto: validate
