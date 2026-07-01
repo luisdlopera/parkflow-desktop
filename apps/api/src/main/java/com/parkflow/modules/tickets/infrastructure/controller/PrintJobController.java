@@ -9,17 +9,32 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.HttpStatus;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@Tag(name = "PrintJob", description = "PrintJob endpoints")
 @RequestMapping({"/api/v1/print-jobs", "/api/v1/tickets/print-jobs"})
 @RequiredArgsConstructor
 public class PrintJobController {
   private final TicketPrintUseCase ticketPrintUseCase;
 
   @PostMapping
+  @Operation(summary = "POST endpoint")
+  @ApiResponse(responseCode = "200", description = "Success")
+  @ApiResponse(responseCode = "201", description = "Created")
+  @ApiResponse(responseCode = "400", description = "Bad Request")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize("hasAuthority('tickets:imprimir')")
   public PrintJobResponse create(@Valid @RequestBody CreatePrintJobRequest request) {
@@ -27,6 +42,10 @@ public class PrintJobController {
   }
 
   @PatchMapping("/{id}/status")
+  @Operation(summary = "PATCH endpoint")
+  @ApiResponse(responseCode = "200", description = "Success")
+  @ApiResponse(responseCode = "400", description = "Bad Request")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   @PreAuthorize("hasAuthority('tickets:imprimir')")
   public PrintJobResponse updateStatus(
       @PathVariable UUID id,
@@ -35,18 +54,29 @@ public class PrintJobController {
   }
 
   @PostMapping("/{id}/retry")
+  @Operation(summary = "POST endpoint")
+  @ApiResponse(responseCode = "200", description = "Success")
+  @ApiResponse(responseCode = "201", description = "Created")
+  @ApiResponse(responseCode = "400", description = "Bad Request")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   @PreAuthorize("hasAuthority('tickets:imprimir')")
   public PrintJobResponse retry(@PathVariable UUID id, @Valid @RequestBody RetryPrintJobRequest request) {
     return ticketPrintUseCase.retry(id, request);
   }
 
   @GetMapping("/{id}")
+  @Operation(summary = "GET endpoint")
+  @ApiResponse(responseCode = "200", description = "Success")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   @PreAuthorize("hasAuthority('tickets:imprimir')")
   public PrintJobResponse get(@PathVariable UUID id) {
     return ticketPrintUseCase.get(id);
   }
 
   @GetMapping
+  @Operation(summary = "GET endpoint")
+  @ApiResponse(responseCode = "200", description = "Success")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   @PreAuthorize("hasAuthority('tickets:imprimir')")
   public List<PrintJobResponse> list(
       @RequestParam(required = false) UUID sessionId,

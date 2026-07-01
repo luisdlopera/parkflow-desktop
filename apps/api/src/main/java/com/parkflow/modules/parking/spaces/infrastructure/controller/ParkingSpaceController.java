@@ -11,10 +11,17 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@Tag(name = "ParkingSpace", description = "ParkingSpace endpoints")
 @RequestMapping("/api/v1/parking-spaces")
 @RequiredArgsConstructor
 public class ParkingSpaceController {
@@ -23,6 +30,9 @@ public class ParkingSpaceController {
   private final SpaceManagementUseCase spaceManagementService;
 
   @GetMapping
+  @Operation(summary = "GET endpoint")
+  @ApiResponse(responseCode = "200", description = "Success")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   @PreAuthorize("hasAuthority('configuracion:editar') or hasAuthority('reportes:leer')")
   public List<ParkingSpaceDto> listSpaces(@RequestParam(required = false, defaultValue = "ACTIVE") String filter) {
     UUID companyId = SecurityUtils.requireCompanyId();
@@ -30,6 +40,9 @@ public class ParkingSpaceController {
   }
 
   @GetMapping("/summary")
+  @Operation(summary = "GET endpoint")
+  @ApiResponse(responseCode = "200", description = "Success")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   @PreAuthorize("hasAuthority('configuracion:editar') or hasAuthority('reportes:leer')")
   public ParkingSpaceOccupancySummaryResponse summary() {
     UUID companyId = SecurityUtils.requireCompanyId();
@@ -37,6 +50,10 @@ public class ParkingSpaceController {
   }
 
   @PutMapping("/capacity")
+  @Operation(summary = "PUT endpoint")
+  @ApiResponse(responseCode = "200", description = "Success")
+  @ApiResponse(responseCode = "400", description = "Bad Request")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   @PreAuthorize("hasAuthority('configuracion:editar')")
   public ParkingSpaceOccupancySummaryResponse resize(
       @Valid @RequestBody ResizeCapacityRequest request) {
@@ -45,6 +62,10 @@ public class ParkingSpaceController {
   }
 
   @PatchMapping("/{id}")
+  @Operation(summary = "PATCH endpoint")
+  @ApiResponse(responseCode = "200", description = "Success")
+  @ApiResponse(responseCode = "400", description = "Bad Request")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   @PreAuthorize("hasAuthority('configuracion:editar')")
   public ParkingSpaceDto patch(
       @PathVariable UUID id, @Valid @RequestBody PatchParkingSpaceRequest request) {

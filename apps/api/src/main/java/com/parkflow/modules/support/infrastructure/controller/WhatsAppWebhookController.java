@@ -5,14 +5,24 @@ import com.parkflow.modules.support.application.service.WhatsAppMessageProcessor
 import com.parkflow.modules.support.domain.provider.MessagingProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.HttpStatus;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
 @Slf4j
 @RestController
+@Tag(name = "WhatsAppWebhook", description = "WhatsAppWebhook endpoints")
 @RequestMapping("/webhooks/whatsapp")
 @RequiredArgsConstructor
 public class WhatsAppWebhookController {
@@ -21,6 +31,9 @@ public class WhatsAppWebhookController {
     private final MessagingProvider messagingProvider;
 
     @GetMapping
+  @Operation(summary = "GET endpoint")
+  @ApiResponse(responseCode = "200", description = "Success")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
     @RawResponse(reason = "Meta WhatsApp webhook verification requires a plain-text challenge string per the Graph API protocol")
     public String verifyWebhook(
             @RequestParam("hub.mode") String mode,
@@ -33,6 +46,11 @@ public class WhatsAppWebhookController {
     }
 
     @PostMapping
+  @Operation(summary = "POST endpoint")
+  @ApiResponse(responseCode = "200", description = "Success")
+  @ApiResponse(responseCode = "201", description = "Created")
+  @ApiResponse(responseCode = "400", description = "Bad Request")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
     @RawResponse(reason = "Meta WhatsApp webhook events require HTTP 200 without a body per the Graph API protocol")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void receiveMessage(
