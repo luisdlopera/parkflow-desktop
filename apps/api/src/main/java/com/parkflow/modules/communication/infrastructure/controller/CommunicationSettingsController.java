@@ -6,6 +6,9 @@ import com.parkflow.modules.communication.infrastructure.dto.CommunicationStatsR
 import com.parkflow.modules.communication.infrastructure.dto.EmailSettingsDto;
 import com.parkflow.modules.communication.infrastructure.dto.SmsSettingsDto;
 import com.parkflow.modules.communication.infrastructure.dto.TestConnectionResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +19,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/companies/{companyId}/communication-settings")
 @RequiredArgsConstructor
+@Tag(name = "Communication Settings", description = "Email, SMS, and bulk email configuration")
 public class CommunicationSettingsController {
 
     private final com.parkflow.modules.communication.application.usecase.ManageCommunicationSettingsUseCase manageSettingsUseCase;
@@ -24,12 +28,18 @@ public class CommunicationSettingsController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @Operation(summary = "Get communication settings", description = "Retrieve all communication channel settings for company")
+    @ApiResponse(responseCode = "200", description = "Settings retrieved")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     public List<CommunicationSettingsResponseDto> getSettings(@PathVariable UUID companyId) {
         return manageSettingsUseCase.getSettings(companyId);
     }
 
     @PutMapping("/email")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @Operation(summary = "Update email settings", description = "Configure SMTP email provider for company")
+    @ApiResponse(responseCode = "200", description = "Settings updated")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     public CommunicationSettingsResponseDto updateEmailSettings(
             @PathVariable UUID companyId,
             @RequestBody EmailSettingsDto request) {
@@ -38,6 +48,9 @@ public class CommunicationSettingsController {
 
     @PutMapping("/sms")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @Operation(summary = "Update SMS settings", description = "Configure SMS provider credentials")
+    @ApiResponse(responseCode = "200", description = "Settings updated")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     public CommunicationSettingsResponseDto updateSmsSettings(
             @PathVariable UUID companyId,
             @RequestBody SmsSettingsDto request) {
@@ -46,6 +59,9 @@ public class CommunicationSettingsController {
 
     @PutMapping("/bulk-email")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @Operation(summary = "Update bulk email settings", description = "Configure bulk email service credentials")
+    @ApiResponse(responseCode = "200", description = "Settings updated")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     public CommunicationSettingsResponseDto updateBulkEmailSettings(
             @PathVariable UUID companyId,
             @RequestBody BulkEmailSettingsDto request) {
@@ -54,6 +70,10 @@ public class CommunicationSettingsController {
 
     @PostMapping("/email/test-connection")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @Operation(summary = "Test email connection", description = "Verify email provider credentials")
+    @ApiResponse(responseCode = "200", description = "Connection successful")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "400", description = "Invalid credentials")
     public TestConnectionResponse testEmailConnection(@PathVariable UUID companyId) {
         connectionPort.testConnection(companyId, com.parkflow.modules.communication.domain.enums.ChannelType.EMAIL);
         return TestConnectionResponse.builder()
@@ -65,6 +85,10 @@ public class CommunicationSettingsController {
 
     @PostMapping("/sms/test-connection")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @Operation(summary = "Test SMS connection", description = "Verify SMS provider credentials")
+    @ApiResponse(responseCode = "200", description = "Connection successful")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "400", description = "Invalid credentials")
     public TestConnectionResponse testSmsConnection(@PathVariable UUID companyId) {
         connectionPort.testConnection(companyId, com.parkflow.modules.communication.domain.enums.ChannelType.SMS);
         return TestConnectionResponse.builder()
@@ -76,6 +100,10 @@ public class CommunicationSettingsController {
 
     @PostMapping("/bulk-email/test-connection")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @Operation(summary = "Test bulk email connection", description = "Verify bulk email service credentials")
+    @ApiResponse(responseCode = "200", description = "Connection successful")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "400", description = "Invalid credentials")
     public TestConnectionResponse testBulkEmailConnection(@PathVariable UUID companyId) {
         connectionPort.testConnection(companyId, com.parkflow.modules.communication.domain.enums.ChannelType.BULK_EMAIL);
         return TestConnectionResponse.builder()

@@ -5,6 +5,9 @@ import com.parkflow.modules.licensing.dto.*;
 import com.parkflow.modules.licensing.domain.LicenseBlockEvent;
 import com.parkflow.modules.licensing.application.port.in.AuditRecorderUseCase;
 import com.parkflow.modules.licensing.application.port.in.AuditQueryUseCase;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.time.OffsetDateTime;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/licensing/support")
 @RequiredArgsConstructor
+@Tag(name = "License Support", description = "License diagnostics and support tools")
 public class LicenseSupportController {
 
   private final AuditRecorderUseCase auditRecorder;
@@ -38,6 +42,9 @@ public class LicenseSupportController {
    */
   @GetMapping("/diagnose/company/{companyId}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
+  @Operation(summary = "Diagnose company", description = "Comprehensive diagnostics for a company's license status")
+  @ApiResponse(responseCode = "200", description = "Diagnostics retrieved")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   public LicenseDiagnosticsResponse diagnoseCompany(
       @PathVariable UUID companyId) {
 
@@ -50,6 +57,9 @@ public class LicenseSupportController {
    */
   @GetMapping("/diagnose/device/{deviceFingerprint}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
+  @Operation(summary = "Diagnose device", description = "Diagnostics for a specific device")
+  @ApiResponse(responseCode = "200", description = "Diagnostics retrieved")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   public DeviceDiagnosticsResponse diagnoseDevice(
       @PathVariable String deviceFingerprint) {
 
@@ -64,6 +74,9 @@ public class LicenseSupportController {
    */
   @GetMapping("/blocks/company/{companyId}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
+  @Operation(summary = "Get license block events", description = "Retrieve license blocking events for a company")
+  @ApiResponse(responseCode = "200", description = "Block events retrieved")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   public List<LicenseBlockEvent> getCompanyBlockEvents(
       @PathVariable UUID companyId,
       @RequestParam(defaultValue = "false") boolean includeResolved) {

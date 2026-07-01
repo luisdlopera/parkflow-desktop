@@ -2,6 +2,9 @@ package com.parkflow.modules.licensing.infrastructure.controller;
 
 import com.parkflow.modules.licensing.application.port.in.*;
 import com.parkflow.modules.licensing.dto.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
   @RestController
   @RequestMapping("/api/v1/licensing")
   @RequiredArgsConstructor
+  @Tag(name = "Licensing", description = "License management, heartbeat, and company administration")
   public class LicensingController {
 
   private final HeartbeatUseCase heartbeatUseCase;
@@ -32,6 +36,9 @@ import org.springframework.web.bind.annotation.*;
    * Los dispositivos reportan cada 30 minutos para recibir comandos remotos.
    */
   @PostMapping("/heartbeat")
+  @Operation(summary = "Desktop heartbeat", description = "Devices report every 30min to receive remote commands")
+  @ApiResponse(responseCode = "200", description = "Heartbeat processed")
+  @ApiResponse(responseCode = "429", description = "Rate limited")
   public HeartbeatResponse heartbeat(
       @Valid @RequestBody HeartbeatRequest request,
       HttpServletRequest servletRequest) {
@@ -50,6 +57,9 @@ import org.springframework.web.bind.annotation.*;
    * Usada por la app desktop para verificar licencia sin conexión.
    */
   @PostMapping("/validate")
+  @Operation(summary = "Validate license offline", description = "Offline license validation for desktop app")
+  @ApiResponse(responseCode = "200", description = "License valid")
+  @ApiResponse(responseCode = "403", description = "License invalid or expired")
   public LicenseValidationResponse validateLicense(
       @Valid @RequestBody LicenseValidationRequest request) {
 
@@ -64,6 +74,10 @@ import org.springframework.web.bind.annotation.*;
    */
   @PostMapping("/companies")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
+  @Operation(summary = "Create company", description = "Create a new company (Super Admin only)")
+  @ApiResponse(responseCode = "201", description = "Company created")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
+  @ApiResponse(responseCode = "403", description = "Forbidden - Super Admin only")
   public CompanyResponse createCompany(
     @Valid @RequestBody CreateCompanyRequest request,
       @RequestAttribute("currentUserEmail") String performedBy) {
@@ -77,6 +91,9 @@ import org.springframework.web.bind.annotation.*;
    */
   @GetMapping("/companies")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+  @Operation(summary = "List all companies", description = "Retrieve all companies (Super Admin / Admin only)")
+  @ApiResponse(responseCode = "200", description = "Companies listed")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   public List<CompanyResponse> listCompanies() {
     return companyManagementUseCase.listAllCompanies();
   }
